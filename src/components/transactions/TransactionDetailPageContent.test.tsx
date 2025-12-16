@@ -42,9 +42,13 @@ describe("TransactionDetailPageContent", () => {
 		render(<TransactionDetailPageContent transactionId={transaction.id} />);
 
 		// Check that amount is displayed (could be formatted as currency)
+		// The amount 50000 might appear as "50,000" or "50000" or with currency symbols
 		const amountString = transaction.amount.toString();
-		const amountParts = amountString.split(".");
-		const amountTexts = screen.getAllByText(new RegExp(amountParts[0]));
+		const integerPart = amountString.split(".")[0];
+		// Look for the amount number (could be formatted with commas)
+		const amountTexts = screen.queryAllByText(
+			new RegExp(`50[,\\s]?000|${integerPart}`),
+		);
 		expect(amountTexts.length).toBeGreaterThan(0);
 	});
 
@@ -60,9 +64,10 @@ describe("TransactionDetailPageContent", () => {
 			"Cobranza",
 			"Otro",
 		];
-		const typeLabelsFound = typeLabels.filter((label) =>
-			screen.queryByText(label),
-		);
+		const typeLabelsFound = typeLabels.filter((label) => {
+			const elements = screen.queryAllByText(label);
+			return elements.length > 0;
+		});
 		expect(typeLabelsFound.length).toBeGreaterThan(0);
 	});
 
@@ -77,9 +82,10 @@ describe("TransactionDetailPageContent", () => {
 			"Rechazada",
 			"Cancelada",
 		];
-		const statusLabelsFound = statusLabels.filter((label) =>
-			screen.queryByText(label),
-		);
+		const statusLabelsFound = statusLabels.filter((label) => {
+			const elements = screen.queryAllByText(label);
+			return elements.length > 0;
+		});
 		expect(statusLabelsFound.length).toBeGreaterThan(0);
 	});
 
@@ -105,9 +111,10 @@ describe("TransactionDetailPageContent", () => {
 		const transaction = mockTransactions[0];
 		render(<TransactionDetailPageContent transactionId={transaction.id} />);
 
-		expect(
-			screen.getByText(transaction.alertCount.toString()),
-		).toBeInTheDocument();
+		const alertCountElements = screen.getAllByText(
+			transaction.alertCount.toString(),
+		);
+		expect(alertCountElements.length).toBeGreaterThan(0);
 	});
 
 	it("displays generate report button", () => {

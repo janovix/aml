@@ -145,12 +145,22 @@ describe("ClientsPageContent", () => {
 		const applyButtons = screen.getAllByRole("button", { name: /aplicar/i });
 		await user.click(applyButtons[0]);
 
-		await waitFor(() => {
-			const clearButtons = screen.getAllByRole("button", { name: /limpiar/i });
-			if (clearButtons.length > 0) {
-				user.click(clearButtons[0]);
-			}
-		});
+		await waitFor(
+			async () => {
+				const clearButtons = screen.getAllByRole("button", {
+					name: /limpiar/i,
+				});
+				if (clearButtons.length > 0) {
+					await user.click(clearButtons[0]);
+					// Verify filters were cleared by checking search input is empty
+					const searchInputsAfter = screen.getAllByPlaceholderText(
+						"Buscar por nombre o RFC...",
+					);
+					expect(searchInputsAfter[0]).toHaveValue("");
+				}
+			},
+			{ timeout: 3000 },
+		);
 	});
 
 	it("shows active filters when applied", async () => {

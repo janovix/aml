@@ -66,9 +66,10 @@ describe("ClientDetailPageContent", () => {
 		render(<ClientDetailPageContent clientId={client.id} />);
 
 		const riskLabels = ["Bajo", "Medio", "Alto"];
-		const riskLabelsFound = riskLabels.filter((label) =>
-			screen.queryByText(label),
-		);
+		const riskLabelsFound = riskLabels.filter((label) => {
+			const elements = screen.queryAllByText(label);
+			return elements.length > 0;
+		});
 		expect(riskLabelsFound.length).toBeGreaterThan(0);
 	});
 
@@ -77,9 +78,10 @@ describe("ClientDetailPageContent", () => {
 		render(<ClientDetailPageContent clientId={client.id} />);
 
 		const statusLabels = ["Activo", "Inactivo", "Suspendido", "Bloqueado"];
-		const statusLabelsFound = statusLabels.filter((label) =>
-			screen.queryByText(label),
-		);
+		const statusLabelsFound = statusLabels.filter((label) => {
+			const elements = screen.queryAllByText(label);
+			return elements.length > 0;
+		});
 		expect(statusLabelsFound.length).toBeGreaterThan(0);
 	});
 
