@@ -29,7 +29,9 @@ describe("ClientsPageContent", () => {
 	it("renders new client button", () => {
 		render(<ClientsPageContent />);
 
-		const newButtons = screen.getAllByRole("button", { name: /nuevo cliente/i });
+		const newButtons = screen.getAllByRole("button", {
+			name: /nuevo cliente/i,
+		});
 		expect(newButtons.length).toBeGreaterThan(0);
 	});
 
@@ -37,7 +39,9 @@ describe("ClientsPageContent", () => {
 		const user = userEvent.setup();
 		render(<ClientsPageContent />);
 
-		const newButtons = screen.getAllByRole("button", { name: /nuevo cliente/i });
+		const newButtons = screen.getAllByRole("button", {
+			name: /nuevo cliente/i,
+		});
 		await user.click(newButtons[0]);
 
 		expect(mockPush).toHaveBeenCalledWith("/clients/new");
@@ -55,7 +59,9 @@ describe("ClientsPageContent", () => {
 	it("renders filters section", () => {
 		render(<ClientsPageContent />);
 
-		const searchInputs = screen.getAllByPlaceholderText("Buscar por nombre o RFC...");
+		const searchInputs = screen.getAllByPlaceholderText(
+			"Buscar por nombre o RFC...",
+		);
 		expect(searchInputs.length).toBeGreaterThan(0);
 	});
 
@@ -83,7 +89,9 @@ describe("ClientsPageContent", () => {
 		// Menu should be visible - check for mobile menu container
 		await waitFor(
 			() => {
-				const mobileMenus = document.querySelectorAll('[class*="translate-x-0"]');
+				const mobileMenus = document.querySelectorAll(
+					'[class*="translate-x-0"]',
+				);
 				expect(mobileMenus.length).toBeGreaterThan(0);
 			},
 			{ timeout: 2000 },
@@ -110,7 +118,9 @@ describe("ClientsPageContent", () => {
 		const user = userEvent.setup();
 		render(<ClientsPageContent />);
 
-		const searchInputs = screen.getAllByPlaceholderText("Buscar por nombre o RFC...");
+		const searchInputs = screen.getAllByPlaceholderText(
+			"Buscar por nombre o RFC...",
+		);
 		await user.type(searchInputs[0], "test");
 
 		const applyButtons = screen.getAllByRole("button", { name: /aplicar/i });
@@ -127,7 +137,9 @@ describe("ClientsPageContent", () => {
 		const user = userEvent.setup();
 		render(<ClientsPageContent />);
 
-		const searchInputs = screen.getAllByPlaceholderText("Buscar por nombre o RFC...");
+		const searchInputs = screen.getAllByPlaceholderText(
+			"Buscar por nombre o RFC...",
+		);
 		await user.type(searchInputs[0], "test");
 
 		const applyButtons = screen.getAllByRole("button", { name: /aplicar/i });
@@ -145,7 +157,9 @@ describe("ClientsPageContent", () => {
 		const user = userEvent.setup();
 		render(<ClientsPageContent />);
 
-		const searchInputs = screen.getAllByPlaceholderText("Buscar por nombre o RFC...");
+		const searchInputs = screen.getAllByPlaceholderText(
+			"Buscar por nombre o RFC...",
+		);
 		await user.type(searchInputs[0], "test");
 
 		const applyButtons = screen.getAllByRole("button", { name: /aplicar/i });
@@ -161,7 +175,6 @@ describe("ClientsPageContent", () => {
 		);
 	});
 
-
 	it("handles status filter application", () => {
 		render(<ClientsPageContent />);
 
@@ -176,5 +189,4 @@ describe("ClientsPageContent", () => {
 		const sidebars = document.querySelectorAll("aside");
 		expect(sidebars.length).toBeGreaterThan(0);
 	});
-
 });

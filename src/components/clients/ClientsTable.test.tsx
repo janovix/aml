@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ClientsTable } from "./ClientsTable";
 import { mockClients } from "@/data/mockClients";
+import { getClientDisplayName } from "@/types/client";
 
 const mockToast = vi.fn();
 
@@ -38,10 +39,7 @@ describe("ClientsTable", () => {
 		render(<ClientsTable />);
 
 		mockClients.forEach((client) => {
-			const displayName =
-				client.personType === "FISICA"
-					? `${client.firstName} ${client.lastName} ${client.secondLastName || ""}`.trim()
-					: client.businessName;
+			const displayName = getClientDisplayName(client);
 			const elements = screen.getAllByText(displayName);
 			expect(elements.length).toBeGreaterThan(0);
 		});
@@ -124,5 +122,4 @@ describe("ClientsTable", () => {
 		});
 		expect(alertBadges.length).toBeGreaterThan(0);
 	});
-
 });

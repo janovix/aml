@@ -114,9 +114,9 @@ describe("catalogs", () => {
 			status: 404,
 		});
 
-		await expect(
-			fetchCatalogEntries("nonexistent-catalog"),
-		).rejects.toThrow('No se pudo consultar el catálogo "nonexistent-catalog".');
+		await expect(fetchCatalogEntries("nonexistent-catalog")).rejects.toThrow(
+			'No se pudo consultar el catálogo "nonexistent-catalog".',
+		);
 	});
 
 	it("passes through requestInit options", async () => {

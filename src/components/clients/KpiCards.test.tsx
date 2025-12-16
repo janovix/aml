@@ -45,7 +45,9 @@ describe("KpiCards", () => {
 	it("has proper accessibility label", () => {
 		render(<KpiCards />);
 
-		const sections = screen.getAllByLabelText("Indicadores clave de rendimiento");
+		const sections = screen.getAllByLabelText(
+			"Indicadores clave de rendimiento",
+		);
 		expect(sections.length).toBeGreaterThan(0);
 	});
 });

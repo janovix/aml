@@ -15,7 +15,8 @@ describe("api/config", () => {
 
 			try {
 				process.env.ALGTOOLS_API_BASE_URL = "https://server.example";
-				process.env.NEXT_PUBLIC_ALGTOOLS_API_BASE_URL = "https://public.example";
+				process.env.NEXT_PUBLIC_ALGTOOLS_API_BASE_URL =
+					"https://public.example";
 				expect(getUpstreamApiBaseUrl()).toBe("https://server.example");
 			} finally {
 				if (prevAlg === undefined) delete process.env.ALGTOOLS_API_BASE_URL;
@@ -49,7 +50,8 @@ describe("api/config", () => {
 
 			try {
 				delete process.env.ALGTOOLS_API_BASE_URL;
-				process.env.NEXT_PUBLIC_ALGTOOLS_API_BASE_URL = "https://public.example";
+				process.env.NEXT_PUBLIC_ALGTOOLS_API_BASE_URL =
+					"https://public.example";
 				expect(getUpstreamApiBaseUrl()).toBe("https://public.example");
 			} finally {
 				if (prevAlg === undefined) delete process.env.ALGTOOLS_API_BASE_URL;

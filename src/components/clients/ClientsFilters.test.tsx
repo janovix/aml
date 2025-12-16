@@ -20,7 +20,9 @@ describe("ClientsFilters", () => {
 	it("renders search input", () => {
 		render(<ClientsFilters {...defaultProps} />);
 
-		const searchInput = screen.getByPlaceholderText("Buscar por nombre o RFC...");
+		const searchInput = screen.getByPlaceholderText(
+			"Buscar por nombre o RFC...",
+		);
 		expect(searchInput).toBeInTheDocument();
 	});
 
@@ -40,7 +42,9 @@ describe("ClientsFilters", () => {
 	it("renders risk filter select", () => {
 		render(<ClientsFilters {...defaultProps} />);
 
-		const riskSelects = screen.getAllByRole("combobox", { name: /nivel de riesgo/i });
+		const riskSelects = screen.getAllByRole("combobox", {
+			name: /nivel de riesgo/i,
+		});
 		expect(riskSelects.length).toBeGreaterThan(0);
 	});
 
@@ -125,21 +129,18 @@ describe("ClientsFilters", () => {
 		render(
 			<ClientsFilters
 				{...defaultProps}
-				activeFilters={["Búsqueda: \"test\"", "Riesgo: Alto"]}
+				activeFilters={['Búsqueda: "test"', "Riesgo: Alto"]}
 			/>,
 		);
 
-		expect(screen.getByText("Búsqueda: \"test\"")).toBeInTheDocument();
+		expect(screen.getByText('Búsqueda: "test"')).toBeInTheDocument();
 		expect(screen.getByText("Riesgo: Alto")).toBeInTheDocument();
 	});
 
 	it("calls onRemoveFilter when filter chip is removed", async () => {
 		const user = userEvent.setup();
 		const { container } = render(
-			<ClientsFilters
-				{...defaultProps}
-				activeFilters={["Búsqueda: \"test\""]}
-			/>,
+			<ClientsFilters {...defaultProps} activeFilters={['Búsqueda: "test"']} />,
 		);
 
 		const removeButtons = screen.getAllByLabelText(/remover filtro/i);
