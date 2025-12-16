@@ -116,7 +116,7 @@ export function ClientsPageContent(): React.ReactElement {
 					</Button>
 				</header>
 
-				<div className="flex-1 min-h-0 overflow-x-hidden overflow-y-auto px-4 py-4 sm:px-6 sm:py-6 space-y-4 sm:space-y-6">
+				<div className="flex-1 min-h-0 overflow-x-hidden overflow-y-auto px-4 py-6 sm:px-6 sm:py-8 space-y-6 sm:space-y-8">
 					<KpiCards />
 
 					<ClientsFilters

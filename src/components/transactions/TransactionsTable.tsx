@@ -320,7 +320,7 @@ export function TransactionsTable({
 					)}
 				</CardHeader>
 				<CardContent className="p-0">
-					<div className="overflow-x-auto">
+					<div className="overflow-x-auto rounded-lg border-t">
 						<Table>
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">

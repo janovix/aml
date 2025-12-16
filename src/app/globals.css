@@ -191,6 +191,9 @@
 	body {
 		@apply bg-background text-foreground;
 		letter-spacing: var(--tracking-normal);
+		font-feature-settings:
+			"rlig" 1,
+			"calt" 1;
 	}
 }
 
@@ -206,4 +209,66 @@ body {
 main {
 	max-width: 100vw;
 	overflow-x: hidden;
+}
+
+/* Improve card shadows and borders */
+.card {
+	@apply shadow-sm;
+}
+
+/* Better table styling */
+table {
+	@apply border-collapse;
+}
+
+/* Improve form inputs */
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="number"],
+input[type="date"],
+input[type="search"],
+textarea,
+select {
+	@apply transition-colors;
+}
+
+/* Better focus states */
+input:focus,
+textarea:focus,
+select:focus {
+	@apply ring-2 ring-ring ring-offset-2 ring-offset-background;
+}
+
+/* Improve button hover states */
+button {
+	@apply transition-all duration-200;
+}
+
+/* Better spacing for cards */
+.card-content {
+	@apply space-y-4;
+}
+
+/* Improve badge styling */
+.badge {
+	@apply font-medium;
+}
+
+/* Better scrollbar styling */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+::-webkit-scrollbar-track {
+	@apply bg-muted;
+}
+
+::-webkit-scrollbar-thumb {
+	@apply bg-muted-foreground/30 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	@apply bg-muted-foreground/50;
 }
