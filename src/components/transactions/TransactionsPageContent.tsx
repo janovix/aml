@@ -3,33 +3,38 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppSidebar } from "@/components/layout/AppSidebar";
-import { KpiCards } from "@/components/clients/KpiCards";
-import { ClientsTable } from "@/components/clients/ClientsTable";
-import { ClientsFilters } from "@/components/clients/ClientsFilters";
+import { TransactionsKpiCards } from "@/components/transactions/TransactionsKpiCards";
+import { TransactionsTable } from "@/components/transactions/TransactionsTable";
+import { TransactionsFilters } from "@/components/transactions/TransactionsFilters";
 import { Button } from "@/components/ui/button";
 import { Menu, Plus, X } from "lucide-react";
 
-export function ClientsPageContent(): React.ReactElement {
+export function TransactionsPageContent(): React.ReactElement {
 	const router = useRouter();
 	const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [activeFilters, setActiveFilters] = useState<string[]>([]);
 	const [searchQuery, setSearchQuery] = useState("");
-	const [riskFilter, setRiskFilter] = useState("");
+	const [typeFilter, setTypeFilter] = useState("");
 	const [statusFilter, setStatusFilter] = useState("");
+	const [channelFilter, setChannelFilter] = useState("");
 
 	const handleApplyFilters = (): void => {
 		const filters: string[] = [];
 		if (searchQuery) filters.push(`Búsqueda: "${searchQuery}"`);
-		if (riskFilter) filters.push(`Riesgo: ${riskFilter}`);
-		if (statusFilter) filters.push(`Estado: ${statusFilter}`);
+		if (typeFilter && typeFilter !== "all") filters.push(`Tipo: ${typeFilter}`);
+		if (statusFilter && statusFilter !== "all")
+			filters.push(`Estado: ${statusFilter}`);
+		if (channelFilter && channelFilter !== "all")
+			filters.push(`Canal: ${channelFilter}`);
 		setActiveFilters(filters);
 	};
 
 	const handleClearFilters = (): void => {
 		setSearchQuery("");
-		setRiskFilter("");
+		setTypeFilter("");
 		setStatusFilter("");
+		setChannelFilter("");
 		setActiveFilters([]);
 	};
 
@@ -37,8 +42,9 @@ export function ClientsPageContent(): React.ReactElement {
 		setActiveFilters(activeFilters.filter((f) => f !== filter));
 		// Reset corresponding filter
 		if (filter.startsWith("Búsqueda:")) setSearchQuery("");
-		if (filter.startsWith("Riesgo:")) setRiskFilter("");
+		if (filter.startsWith("Tipo:")) setTypeFilter("");
 		if (filter.startsWith("Estado:")) setStatusFilter("");
+		if (filter.startsWith("Canal:")) setChannelFilter("");
 	};
 
 	return (
@@ -100,42 +106,45 @@ export function ClientsPageContent(): React.ReactElement {
 						</Button>
 						<div className="min-w-0">
 							<h1 className="text-xl font-semibold text-foreground truncate">
-								Clientes
+								Transacciones
 							</h1>
 							<p className="text-sm text-muted-foreground hidden sm:block truncate">
-								Gestión y monitoreo de clientes
+								Monitoreo y análisis de transacciones
 							</p>
 						</div>
 					</div>
 					<Button
 						className="gap-2 shrink-0 ml-2"
-						onClick={() => router.push("/clients/new")}
+						onClick={() => router.push("/transactions/new")}
 					>
 						<Plus className="h-4 w-4" />
-						<span className="hidden sm:inline">Nuevo Cliente</span>
+						<span className="hidden sm:inline">Nueva Transacción</span>
 					</Button>
 				</header>
 
 				<div className="flex-1 min-h-0 overflow-x-hidden overflow-y-auto px-4 py-4 sm:px-6 sm:py-6 space-y-4 sm:space-y-6">
-					<KpiCards />
+					<TransactionsKpiCards />
 
-					<ClientsFilters
+					<TransactionsFilters
 						searchQuery={searchQuery}
 						onSearchChange={setSearchQuery}
-						riskFilter={riskFilter}
-						onRiskChange={setRiskFilter}
+						typeFilter={typeFilter}
+						onTypeChange={setTypeFilter}
 						statusFilter={statusFilter}
 						onStatusChange={setStatusFilter}
+						channelFilter={channelFilter}
+						onChannelChange={setChannelFilter}
 						activeFilters={activeFilters}
 						onApplyFilters={handleApplyFilters}
 						onClearFilters={handleClearFilters}
 						onRemoveFilter={handleRemoveFilter}
 					/>
 
-					<ClientsTable
+					<TransactionsTable
 						searchQuery={searchQuery}
-						riskFilter={riskFilter}
+						typeFilter={typeFilter}
 						statusFilter={statusFilter}
+						channelFilter={channelFilter}
 					/>
 				</div>
 			</main>

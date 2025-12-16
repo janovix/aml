@@ -35,78 +35,72 @@ import { useToast } from "@/hooks/use-toast";
 import {
 	MoreHorizontal,
 	Eye,
-	Edit,
-	Flag,
 	FileText,
 	Download,
 	ArrowUpDown,
 	Trash2,
+	Flag,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type {
-	Client,
-	RiskLevel,
-	ClientStatus,
-	ReviewStatus,
-} from "@/types/client";
-import { getClientDisplayName } from "@/types/client";
-import { mockClients } from "@/data/mockClients";
+	Transaction,
+	TransactionStatus,
+	TransactionType,
+} from "@/types/transaction";
+import {
+	getTransactionTypeLabel,
+	getTransactionStatusLabel,
+	getTransactionChannelLabel,
+	formatCurrency,
+} from "@/types/transaction";
+import { mockTransactions } from "@/data/mockTransactions";
 
-const riskBadgeStyles: Record<RiskLevel, string> = {
-	BAJO: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30",
-	MEDIO:
-		"bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/30",
-	ALTO: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30",
-};
-
-const statusBadgeStyles: Record<ClientStatus, string> = {
-	ACTIVO:
+const statusBadgeStyles: Record<TransactionStatus, string> = {
+	COMPLETADA:
 		"bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30",
-	INACTIVO: "bg-muted text-muted-foreground border-muted-foreground/30",
-	SUSPENDIDO:
+	PENDIENTE:
 		"bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/30",
-	BLOQUEADO: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30",
-};
-
-const reviewStatusBadgeStyles: Record<ReviewStatus, string> = {
-	PENDIENTE: "bg-muted text-muted-foreground border-muted-foreground/30",
 	EN_REVISION:
 		"bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/30",
-	APROBADO:
-		"bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30",
-	RECHAZADO: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30",
+	RECHAZADA: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30",
+	CANCELADA: "bg-muted text-muted-foreground border-muted-foreground/30",
 };
 
-interface ClientsTableProps {
+const typeBadgeStyles: Record<TransactionType, string> = {
+	DEPOSITO:
+		"bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30",
+	RETIRO:
+		"bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/30",
+	TRANSFERENCIA:
+		"bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30",
+	PAGO: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30",
+	COBRANZA:
+		"bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/30",
+	OTRO: "bg-muted text-muted-foreground border-muted-foreground/30",
+};
+
+interface TransactionsTableProps {
 	searchQuery?: string;
-	riskFilter?: string;
+	typeFilter?: string;
 	statusFilter?: string;
+	channelFilter?: string;
 }
 
-export function ClientsTable({
+export function TransactionsTable({
 	searchQuery = "",
-	riskFilter = "",
+	typeFilter = "",
 	statusFilter = "",
-}: ClientsTableProps = {}): React.ReactElement {
+	channelFilter = "",
+}: TransactionsTableProps = {}): React.ReactElement {
 	const router = useRouter();
 	const { toast } = useToast();
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 	const [sortColumn, setSortColumn] = useState<string | null>(null);
 	const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-	const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
-
-	const allSelected = selectedIds.size === mockClients.length;
-	const someSelected = selectedIds.size > 0 && !allSelected;
-
-	const handleSelectAll = (): void => {
-		if (allSelected) {
-			setSelectedIds(new Set());
-		} else {
-			setSelectedIds(new Set(mockClients.map((c) => c.id)));
-		}
-	};
+	const [transactionToDelete, setTransactionToDelete] =
+		useState<Transaction | null>(null);
 
 	const handleSelectOne = (id: string): void => {
 		const newSelected = new Set(selectedIds);
@@ -127,78 +121,60 @@ export function ClientsTable({
 		}
 	};
 
-	// Filter clients
-	const filteredClients = mockClients.filter((client) => {
+	// Filter transactions
+	const filteredTransactions = mockTransactions.filter((transaction) => {
 		// Search filter
 		if (searchQuery) {
 			const searchLower = searchQuery.toLowerCase();
 			const matchesSearch =
-				getClientDisplayName(client).toLowerCase().includes(searchLower) ||
-				client.rfc.toLowerCase().includes(searchLower) ||
-				client.email.toLowerCase().includes(searchLower);
+				transaction.clientName.toLowerCase().includes(searchLower) ||
+				transaction.clientRfc.toLowerCase().includes(searchLower) ||
+				transaction.reference?.toLowerCase().includes(searchLower) ||
+				transaction.description?.toLowerCase().includes(searchLower);
 			if (!matchesSearch) return false;
 		}
 
-		// Risk filter
-		if (riskFilter && riskFilter !== "all") {
-			const riskMap: Record<string, RiskLevel> = {
-				Alto: "ALTO",
-				Medio: "MEDIO",
-				Bajo: "BAJO",
-			};
-			if (client.riskLevel !== riskMap[riskFilter]) return false;
+		// Type filter
+		if (typeFilter && typeFilter !== "all") {
+			if (transaction.type !== typeFilter) return false;
 		}
 
 		// Status filter
 		if (statusFilter && statusFilter !== "all") {
-			const statusMap: Record<string, ClientStatus> = {
-				Activo: "ACTIVO",
-				Inactivo: "INACTIVO",
-				Suspendido: "SUSPENDIDO",
-				Bloqueado: "BLOQUEADO",
-			};
-			if (client.status !== statusMap[statusFilter]) return false;
+			if (transaction.status !== statusFilter) return false;
+		}
+
+		// Channel filter
+		if (channelFilter && channelFilter !== "all") {
+			if (transaction.channel !== channelFilter) return false;
 		}
 
 		return true;
 	});
 
-	// Sort clients
-	const sortedClients = [...filteredClients].sort((a, b) => {
+	// Sort transactions
+	const sortedTransactions = [...filteredTransactions].sort((a, b) => {
 		if (!sortColumn) return 0;
 
 		let aValue: string | number;
 		let bValue: string | number;
 
 		switch (sortColumn) {
-			case "name":
-				aValue = getClientDisplayName(a).toLowerCase();
-				bValue = getClientDisplayName(b).toLowerCase();
+			case "clientName":
+				aValue = a.clientName.toLowerCase();
+				bValue = b.clientName.toLowerCase();
 				break;
-			case "riskLevel":
-				const riskOrder: Record<RiskLevel, number> = {
-					BAJO: 1,
-					MEDIO: 2,
-					ALTO: 3,
-				};
-				aValue = riskOrder[a.riskLevel];
-				bValue = riskOrder[b.riskLevel];
-				break;
-			case "rfc":
-				aValue = a.rfc.toLowerCase();
-				bValue = b.rfc.toLowerCase();
+			case "amount":
+				aValue = a.amount;
+				bValue = b.amount;
 				break;
 			case "status":
 				aValue = a.status;
 				bValue = b.status;
 				break;
-			case "lastReview":
-				aValue = new Date(a.lastReview).getTime();
-				bValue = new Date(b.lastReview).getTime();
-				break;
-			case "alertCount":
-				aValue = a.alertCount;
-				bValue = b.alertCount;
+			case "date":
+				aValue = new Date(a.date).getTime();
+				bValue = new Date(b.date).getTime();
 				break;
 			default:
 				return 0;
@@ -209,29 +185,40 @@ export function ClientsTable({
 		return 0;
 	});
 
+	const allSelected =
+		sortedTransactions.length > 0 &&
+		selectedIds.size === sortedTransactions.length;
+	const someSelected = selectedIds.size > 0 && !allSelected;
+
+	const handleSelectAll = (): void => {
+		if (allSelected) {
+			setSelectedIds(new Set());
+		} else {
+			setSelectedIds(new Set(sortedTransactions.map((t) => t.id)));
+		}
+	};
+
 	const formatDate = (dateString: string): string => {
 		return new Date(dateString).toLocaleDateString("es-MX", {
 			day: "2-digit",
 			month: "short",
 			year: "numeric",
+			hour: "2-digit",
+			minute: "2-digit",
 		});
 	};
 
-	const handleViewDetails = (client: Client): void => {
-		router.push(`/clients/${client.id}`);
+	const handleViewDetails = (transaction: Transaction): void => {
+		router.push(`/transactions/${transaction.id}`);
 	};
 
-	const handleEdit = (client: Client): void => {
-		router.push(`/clients/${client.id}/edit`);
-	};
-
-	const handleGenerateReport = (client: Client): void => {
-		const reportData = JSON.stringify(client, null, 2);
+	const handleGenerateReport = (transaction: Transaction): void => {
+		const reportData = JSON.stringify(transaction, null, 2);
 		const blob = new Blob([reportData], { type: "application/json" });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement("a");
 		a.href = url;
-		a.download = `reporte-${client.rfc}.json`;
+		a.download = `reporte-transaccion-${transaction.reference || transaction.id}.json`;
 		document.body.appendChild(a);
 		a.click();
 		document.body.removeChild(a);
@@ -239,41 +226,43 @@ export function ClientsTable({
 
 		toast({
 			title: "Reporte generado",
-			description: `Reporte para ${getClientDisplayName(client)} descargado exitosamente.`,
+			description: `Reporte para transacción ${transaction.reference || transaction.id} descargado exitosamente.`,
 		});
 	};
 
-	const handleFlagSuspicious = (client: Client): void => {
+	const handleFlagSuspicious = (transaction: Transaction): void => {
 		toast({
-			title: "Cliente marcado",
-			description: `${getClientDisplayName(client)} ha sido marcado como sospechoso.`,
+			title: "Transacción marcada",
+			description: `Transacción ${transaction.reference || transaction.id} ha sido marcada como sospechosa.`,
 		});
 	};
 
-	const handleDeleteClick = (client: Client): void => {
-		setClientToDelete(client);
+	const handleDeleteClick = (transaction: Transaction): void => {
+		setTransactionToDelete(transaction);
 		setDeleteDialogOpen(true);
 	};
 
 	const handleDeleteConfirm = (): void => {
-		if (clientToDelete) {
+		if (transactionToDelete) {
 			toast({
-				title: "Cliente eliminado",
-				description: `${getClientDisplayName(clientToDelete)} ha sido eliminado del sistema.`,
+				title: "Transacción eliminada",
+				description: `Transacción ${transactionToDelete.reference || transactionToDelete.id} ha sido eliminada del sistema.`,
 			});
 			setDeleteDialogOpen(false);
-			setClientToDelete(null);
+			setTransactionToDelete(null);
 		}
 	};
 
 	const handleBulkExport = (): void => {
-		const selectedClients = mockClients.filter((c) => selectedIds.has(c.id));
-		const exportData = JSON.stringify(selectedClients, null, 2);
+		const selectedTransactions = sortedTransactions.filter((t) =>
+			selectedIds.has(t.id),
+		);
+		const exportData = JSON.stringify(selectedTransactions, null, 2);
 		const blob = new Blob([exportData], { type: "application/json" });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement("a");
 		a.href = url;
-		a.download = `clientes-export-${new Date().toISOString().split("T")[0]}.json`;
+		a.download = `transacciones-export-${new Date().toISOString().split("T")[0]}.json`;
 		document.body.appendChild(a);
 		a.click();
 		document.body.removeChild(a);
@@ -281,14 +270,14 @@ export function ClientsTable({
 
 		toast({
 			title: "Exportación completa",
-			description: `${selectedIds.size} clientes exportados exitosamente.`,
+			description: `${selectedIds.size} transacciones exportadas exitosamente.`,
 		});
 	};
 
 	const handleBulkFlag = (): void => {
 		toast({
-			title: "Clientes marcados",
-			description: `${selectedIds.size} clientes marcados como sospechosos.`,
+			title: "Transacciones marcadas",
+			description: `${selectedIds.size} transacciones marcadas como sospechosas.`,
 		});
 		setSelectedIds(new Set());
 	};
@@ -299,11 +288,12 @@ export function ClientsTable({
 				<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
 					<div>
 						<CardTitle className="text-lg font-semibold">
-							Lista de Clientes
+							Lista de Transacciones
 						</CardTitle>
 						<p className="text-sm text-muted-foreground mt-1">
-							{sortedClients.length} de {mockClients.length} clientes
-							{selectedIds.size > 0 && ` · ${selectedIds.size} seleccionados`}
+							{sortedTransactions.length} de {mockTransactions.length}{" "}
+							transacciones
+							{selectedIds.size > 0 && ` · ${selectedIds.size} seleccionadas`}
 						</p>
 					</div>
 					{selectedIds.size > 0 && (
@@ -344,7 +334,7 @@ export function ClientsTable({
 													).indeterminate = someSelected;
 											}}
 											onCheckedChange={handleSelectAll}
-											aria-label="Seleccionar todos los clientes"
+											aria-label="Seleccionar todas las transacciones"
 										/>
 									</TableHead>
 									<TableHead className="min-w-[200px]">
@@ -352,31 +342,49 @@ export function ClientsTable({
 											variant="ghost"
 											size="sm"
 											className="-ml-3 h-8 gap-1 font-medium"
-											onClick={() => handleSort("name")}
+											onClick={() => handleSort("clientName")}
 										>
 											Cliente
 											<ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
 										</Button>
 									</TableHead>
-									<TableHead className="hidden md:table-cell">RFC</TableHead>
+									<TableHead className="hidden md:table-cell">
+										<Button
+											variant="ghost"
+											size="sm"
+											className="-ml-3 h-8 gap-1 font-medium"
+											onClick={() => handleSort("amount")}
+										>
+											Monto
+											<ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+										</Button>
+									</TableHead>
 									<TableHead className="hidden lg:table-cell">Tipo</TableHead>
 									<TableHead>
 										<Button
 											variant="ghost"
 											size="sm"
 											className="-ml-3 h-8 gap-1 font-medium"
-											onClick={() => handleSort("riskLevel")}
+											onClick={() => handleSort("status")}
 										>
-											Nivel de Riesgo
+											Estado
 											<ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
 										</Button>
 									</TableHead>
-									<TableHead className="hidden sm:table-cell">Estado</TableHead>
+									<TableHead className="hidden sm:table-cell">Canal</TableHead>
 									<TableHead className="hidden xl:table-cell">
-										Estado de Revisión
+										<Button
+											variant="ghost"
+											size="sm"
+											className="-ml-3 h-8 gap-1 font-medium"
+											onClick={() => handleSort("date")}
+										>
+											Fecha
+											<ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+										</Button>
 									</TableHead>
 									<TableHead className="hidden lg:table-cell">
-										Última Revisión
+										Referencia
 									</TableHead>
 									<TableHead className="hidden md:table-cell text-center">
 										Avisos
@@ -387,101 +395,90 @@ export function ClientsTable({
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{sortedClients.map((client) => (
+								{sortedTransactions.map((transaction) => (
 									<TableRow
-										key={client.id}
+										key={transaction.id}
 										className={cn(
 											"cursor-pointer transition-colors",
-											selectedIds.has(client.id) && "bg-muted/50",
+											selectedIds.has(transaction.id) && "bg-muted/50",
 										)}
-										onClick={() => handleSelectOne(client.id)}
+										onClick={() => handleSelectOne(transaction.id)}
 									>
 										<TableCell
 											className="pl-6"
 											onClick={(e) => e.stopPropagation()}
 										>
 											<Checkbox
-												checked={selectedIds.has(client.id)}
-												onCheckedChange={() => handleSelectOne(client.id)}
-												aria-label={`Seleccionar ${getClientDisplayName(client)}`}
+												checked={selectedIds.has(transaction.id)}
+												onCheckedChange={() => handleSelectOne(transaction.id)}
+												aria-label={`Seleccionar transacción ${transaction.reference || transaction.id}`}
 											/>
 										</TableCell>
 										<TableCell>
 											<Link
-												href={`/clients/${client.id}`}
+												href={`/clients/${transaction.clientId}`}
 												className="font-medium text-foreground hover:text-primary hover:underline underline-offset-2 transition-colors"
 												onClick={(e) => e.stopPropagation()}
 											>
-												{getClientDisplayName(client)}
+												{transaction.clientName}
 											</Link>
+											<p className="text-xs text-muted-foreground font-mono mt-0.5">
+												{transaction.clientRfc}
+											</p>
 										</TableCell>
-										<TableCell className="hidden md:table-cell font-mono text-sm text-muted-foreground">
-											{client.rfc}
+										<TableCell className="hidden md:table-cell">
+											<span className="font-semibold">
+												{formatCurrency(
+													transaction.amount,
+													transaction.currency,
+												)}
+											</span>
+											{transaction.riskScore !== undefined && (
+												<p className="text-xs text-muted-foreground mt-0.5">
+													Riesgo: {transaction.riskScore}
+												</p>
+											)}
 										</TableCell>
 										<TableCell className="hidden lg:table-cell">
-											<Badge variant="outline" className="font-medium">
-												{client.personType === "FISICA" ? "Física" : "Moral"}
+											<Badge
+												variant="outline"
+												className={cn(
+													"font-medium",
+													typeBadgeStyles[transaction.type],
+												)}
+											>
+												{getTransactionTypeLabel(transaction.type)}
 											</Badge>
 										</TableCell>
 										<TableCell>
 											<Badge
 												variant="outline"
 												className={cn(
-													"min-w-[60px] justify-center font-medium",
-													riskBadgeStyles[client.riskLevel],
+													"font-medium",
+													statusBadgeStyles[transaction.status],
 												)}
 											>
-												{client.riskLevel === "BAJO"
-													? "Bajo"
-													: client.riskLevel === "MEDIO"
-														? "Medio"
-														: "Alto"}
+												{getTransactionStatusLabel(transaction.status)}
 											</Badge>
 										</TableCell>
 										<TableCell className="hidden sm:table-cell">
-											<Badge
-												variant="outline"
-												className={cn(
-													"font-medium",
-													statusBadgeStyles[client.status],
-												)}
-											>
-												{client.status === "ACTIVO"
-													? "Activo"
-													: client.status === "INACTIVO"
-														? "Inactivo"
-														: client.status === "SUSPENDIDO"
-															? "Suspendido"
-															: "Bloqueado"}
-											</Badge>
+											<span className="text-sm text-muted-foreground">
+												{getTransactionChannelLabel(transaction.channel)}
+											</span>
 										</TableCell>
-										<TableCell className="hidden xl:table-cell">
-											<Badge
-												variant="outline"
-												className={cn(
-													"font-medium",
-													reviewStatusBadgeStyles[client.reviewStatus],
-												)}
-											>
-												{client.reviewStatus === "PENDIENTE"
-													? "Pendiente"
-													: client.reviewStatus === "EN_REVISION"
-														? "En Revisión"
-														: client.reviewStatus === "APROBADO"
-															? "Aprobado"
-															: "Rechazado"}
-											</Badge>
+										<TableCell className="hidden xl:table-cell text-muted-foreground text-sm">
+											{formatDate(transaction.date)}
 										</TableCell>
-										<TableCell className="hidden lg:table-cell text-muted-foreground">
-											{formatDate(client.lastReview)}
+										<TableCell className="hidden lg:table-cell font-mono text-sm text-muted-foreground">
+											{transaction.reference || "—"}
 										</TableCell>
 										<TableCell className="hidden md:table-cell text-center">
-											{client.alertCount > 0 ? (
+											{transaction.alertCount > 0 ? (
 												<Badge
 													variant="outline"
 													className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30"
 												>
-													{client.alertCount}
+													{transaction.alertCount}
 												</Badge>
 											) : (
 												<span className="text-muted-foreground">—</span>
@@ -497,46 +494,37 @@ export function ClientsTable({
 														variant="ghost"
 														size="icon"
 														className="h-8 w-8"
-														aria-label={`Acciones para ${getClientDisplayName(client)}`}
+														aria-label={`Acciones para transacción ${transaction.reference || transaction.id}`}
 													>
 														<MoreHorizontal className="h-4 w-4" />
 													</Button>
 												</DropdownMenuTrigger>
-												<DropdownMenuContent align="end" className="w-48">
+												<DropdownMenuContent align="end">
 													<DropdownMenuItem
-														className="gap-2"
-														onClick={() => handleViewDetails(client)}
+														onClick={() => handleViewDetails(transaction)}
 													>
-														<Eye className="h-4 w-4" />
+														<Eye className="mr-2 h-4 w-4" />
 														Ver Detalles
 													</DropdownMenuItem>
 													<DropdownMenuItem
-														className="gap-2"
-														onClick={() => handleEdit(client)}
+														onClick={() => handleGenerateReport(transaction)}
 													>
-														<Edit className="h-4 w-4" />
-														Editar
-													</DropdownMenuItem>
-													<DropdownMenuItem
-														className="gap-2"
-														onClick={() => handleGenerateReport(client)}
-													>
-														<FileText className="h-4 w-4" />
+														<FileText className="mr-2 h-4 w-4" />
 														Generar Reporte
 													</DropdownMenuItem>
 													<DropdownMenuSeparator />
 													<DropdownMenuItem
-														className="gap-2 text-red-600 dark:text-red-400"
-														onClick={() => handleFlagSuspicious(client)}
+														onClick={() => handleFlagSuspicious(transaction)}
 													>
-														<Flag className="h-4 w-4" />
-														Marcar como Sospechoso
+														<Flag className="mr-2 h-4 w-4" />
+														Marcar como Sospechosa
 													</DropdownMenuItem>
+													<DropdownMenuSeparator />
 													<DropdownMenuItem
-														className="gap-2 text-destructive"
-														onClick={() => handleDeleteClick(client)}
+														onClick={() => handleDeleteClick(transaction)}
+														className="text-destructive focus:text-destructive"
 													>
-														<Trash2 className="h-4 w-4" />
+														<Trash2 className="mr-2 h-4 w-4" />
 														Eliminar
 													</DropdownMenuItem>
 												</DropdownMenuContent>
@@ -553,14 +541,11 @@ export function ClientsTable({
 			<AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>¿Eliminar cliente?</AlertDialogTitle>
+						<AlertDialogTitle>¿Eliminar transacción?</AlertDialogTitle>
 						<AlertDialogDescription>
-							Esta acción eliminará permanentemente el cliente{" "}
-							<strong>
-								{clientToDelete?.businessName ||
-									`${clientToDelete?.firstName} ${clientToDelete?.lastName} ${clientToDelete?.secondLastName || ""}`.trim()}
-							</strong>{" "}
-							del sistema. Esta acción no se puede deshacer.
+							Esta acción no se puede deshacer. La transacción{" "}
+							{transactionToDelete?.reference || transactionToDelete?.id} será
+							eliminada permanentemente del sistema.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
