@@ -1,3 +1,15 @@
+# 1.0.0 (2025-12-16)
+
+
+### Features
+
+* Add client and transaction detail pages and forms ([fbaf5f5](https://github.com/janovix/aml/commit/fbaf5f5d367946e8ad1afb3451d993a8c7b64d1d))
+* Add clients page and UI components ([ddde4c4](https://github.com/janovix/aml/commit/ddde4c49a8c3f99e96141094ed82621d57461be0))
+* Add comprehensive testing and configuration updates ([25f716d](https://github.com/janovix/aml/commit/25f716d9abb67154da27e4fbb84c92bd67ae64dc))
+* Add tests for client and transaction pages ([d04562e](https://github.com/janovix/aml/commit/d04562e1e3880f48bea95d1ddfec60e79c612496))
+* Add tests for transactions components and types ([ba8b01d](https://github.com/janovix/aml/commit/ba8b01d727aeb21616efdd0b0b53e1d1c9e96e17))
+* Add transactions page with table and filters ([008b5bd](https://github.com/janovix/aml/commit/008b5bd899158fdbedba8e093a858ca9bac0f132))
+
 # 1.0.0 (2025-12-14)
 
 
