@@ -234,3 +234,30 @@ main {
 	max-width: 100vw;
 	overflow-x: hidden;
 }
+
+/* Global minimal scrollbar styles */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+	background: #cbd5e0;
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: #a0aec0;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+	background: #4a5568;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+	background: #718096;
+}
