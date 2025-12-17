@@ -70,11 +70,9 @@ describe("TransactionsPageContent", () => {
 		expect(tableHeaders.length).toBeGreaterThan(0);
 	});
 
-	it("renders mobile menu button", () => {
-		render(<TransactionsPageContent />);
-
-		const menuButtons = screen.getAllByRole("button", { name: /abrir menú/i });
-		expect(menuButtons.length).toBeGreaterThan(0);
+	// Mobile menu button removed - sidebar is now handled by DashboardShell
+	it.skip("renders mobile menu button", () => {
+		// This test is skipped as mobile menu is now handled by DashboardShell
 	});
 
 	it("applies filters when search query changes", async () => {
@@ -96,10 +94,8 @@ describe("TransactionsPageContent", () => {
 		}
 	});
 
-	it("renders sidebar", () => {
-		render(<TransactionsPageContent />);
-
-		const sidebars = screen.getAllByText("Transacciones");
-		expect(sidebars.length).toBeGreaterThan(0);
+	// Sidebar is now handled by DashboardShell, not TransactionsPageContent
+	it.skip("renders sidebar", () => {
+		// This test is skipped as sidebar is now handled by DashboardShell
 	});
 });

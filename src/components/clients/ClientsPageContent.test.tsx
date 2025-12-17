@@ -72,46 +72,17 @@ describe("ClientsPageContent", () => {
 		expect(tableTitles.length).toBeGreaterThan(0);
 	});
 
-	it("renders mobile menu button", () => {
-		render(<ClientsPageContent />);
-
-		const menuButtons = screen.getAllByRole("button", { name: /abrir menú/i });
-		expect(menuButtons.length).toBeGreaterThan(0);
+	// Mobile menu button removed - sidebar is now handled by DashboardShell
+	it.skip("renders mobile menu button", () => {
+		// This test is skipped as mobile menu is now handled by DashboardShell
 	});
 
-	it("opens mobile menu when button is clicked", async () => {
-		const user = userEvent.setup();
-		render(<ClientsPageContent />);
-
-		const menuButtons = screen.getAllByRole("button", { name: /abrir menú/i });
-		await user.click(menuButtons[0]);
-
-		// Menu should be visible - check for mobile menu container
-		await waitFor(
-			() => {
-				const mobileMenus = document.querySelectorAll(
-					'[class*="translate-x-0"]',
-				);
-				expect(mobileMenus.length).toBeGreaterThan(0);
-			},
-			{ timeout: 2000 },
-		);
+	it.skip("opens mobile menu when button is clicked", async () => {
+		// This test is skipped as mobile menu is now handled by DashboardShell
 	});
 
-	it("closes mobile menu when overlay is clicked", async () => {
-		const user = userEvent.setup();
-		render(<ClientsPageContent />);
-
-		const menuButtons = screen.getAllByRole("button", { name: /abrir menú/i });
-		await user.click(menuButtons[0]);
-
-		await waitFor(() => {
-			const overlays = document.querySelectorAll('[aria-hidden="true"]');
-			if (overlays.length > 0) {
-				const overlay = overlays[0] as HTMLElement;
-				user.click(overlay);
-			}
-		});
+	it.skip("closes mobile menu when overlay is clicked", async () => {
+		// This test is skipped as mobile menu is now handled by DashboardShell
 	});
 
 	it("applies filters when apply button is clicked", async () => {
@@ -193,10 +164,8 @@ describe("ClientsPageContent", () => {
 		expect(statusSelects.length).toBeGreaterThan(0);
 	});
 
-	it("toggles sidebar collapse", () => {
-		render(<ClientsPageContent />);
-		// Sidebar should be rendered
-		const sidebars = document.querySelectorAll("aside");
-		expect(sidebars.length).toBeGreaterThan(0);
+	// Sidebar is now handled by DashboardShell, not ClientsPageContent
+	it.skip("toggles sidebar collapse", () => {
+		// This test is skipped as sidebar is now handled by DashboardShell
 	});
 });
