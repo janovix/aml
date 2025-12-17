@@ -112,7 +112,7 @@ function SidebarLogo() {
 	const isCollapsed = state === "collapsed";
 
 	return (
-		<div className="flex h-16 items-center gap-2 px-4">
+		<div className="flex h-16 items-center justify-center px-4">
 			{isCollapsed ? (
 				<Logo variant="icon" width={32} height={32} className="shrink-0" />
 			) : (
