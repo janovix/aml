@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
 	Button,
@@ -24,43 +25,88 @@ import {
 	AlertCircle,
 	User,
 } from "lucide-react";
-import type { Client, RiskLevel, ClientStatus } from "../../types/client";
-import { mockClients } from "../../data/mockClients";
-
-const riskBadgeStyles: Record<RiskLevel, string> = {
-	BAJO: "bg-[hsl(var(--risk-low-bg))] text-[hsl(var(--risk-low))] border-[hsl(var(--risk-low))]/30",
-	MEDIO:
-		"bg-[hsl(var(--risk-medium-bg))] text-[hsl(var(--risk-medium))] border-[hsl(var(--risk-medium))]/30",
-	ALTO: "bg-[hsl(var(--risk-high-bg))] text-[hsl(var(--risk-high))] border-[hsl(var(--risk-high))]/30",
-};
-
-const statusBadgeStyles: Record<ClientStatus, string> = {
-	ACTIVO:
-		"bg-[hsl(var(--risk-low-bg))] text-[hsl(var(--risk-low))] border-[hsl(var(--risk-low))]/30",
-	INACTIVO: "bg-muted text-muted-foreground border-border",
-	SUSPENDIDO:
-		"bg-[hsl(var(--risk-medium-bg))] text-[hsl(var(--risk-medium))] border-[hsl(var(--risk-medium))]/30",
-	BLOQUEADO:
-		"bg-[hsl(var(--risk-high-bg))] text-[hsl(var(--risk-high))] border-[hsl(var(--risk-high))]/30",
-};
-
-const getClientDisplayName = (client: Client): string => {
-	if (client.personType === "FISICA") {
-		return `${client.firstName} ${client.lastName} ${client.secondLastName || ""}`.trim();
-	}
-	return client.businessName || "";
-};
+import type { Client } from "../../types/client";
+import { getClientDisplayName } from "../../types/client";
+import { getClientByRfc } from "../../lib/api/clients";
+import { useToast } from "../../hooks/use-toast";
 
 interface ClientDetailsViewProps {
-	clientId: string;
+	clientId: string; // RFC is passed as clientId
 }
 
 export function ClientDetailsView({
 	clientId,
 }: ClientDetailsViewProps): React.JSX.Element {
 	const router = useRouter();
+	const { toast } = useToast();
+	const [client, setClient] = useState<Client | null>(null);
+	const [isLoading, setIsLoading] = useState(true);
 
-	const client = mockClients.find((c) => c.id === clientId) || mockClients[0];
+	useEffect(() => {
+		const fetchClient = async () => {
+			try {
+				setIsLoading(true);
+				const data = await getClientByRfc({ rfc: clientId });
+				setClient(data);
+			} catch (error) {
+				console.error("Error fetching client:", error);
+				toast({
+					title: "Error",
+					description: "No se pudo cargar la información del cliente.",
+					variant: "destructive",
+				});
+			} finally {
+				setIsLoading(false);
+			}
+		};
+		fetchClient();
+	}, [clientId, toast]);
+
+	if (isLoading) {
+		return (
+			<div className="space-y-6">
+				<div className="flex items-center gap-4">
+					<Button
+						variant="ghost"
+						size="sm"
+						className="gap-2"
+						onClick={() => router.push("/clients")}
+					>
+						<ArrowLeft className="h-4 w-4" />
+						Volver
+					</Button>
+					<div>
+						<h1 className="text-xl font-semibold text-foreground">
+							Cargando cliente...
+						</h1>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
+	if (!client) {
+		return (
+			<div className="space-y-6">
+				<div className="flex items-center gap-4">
+					<Button
+						variant="ghost"
+						size="sm"
+						className="gap-2"
+						onClick={() => router.push("/clients")}
+					>
+						<ArrowLeft className="h-4 w-4" />
+						Volver
+					</Button>
+					<div>
+						<h1 className="text-xl font-semibold text-foreground">
+							Cliente no encontrado
+						</h1>
+					</div>
+				</div>
+			</div>
+		);
+	}
 
 	const formatDate = (dateString: string): string => {
 		return new Date(dateString).toLocaleDateString("es-MX", {
@@ -121,40 +167,14 @@ export function ClientDetailsView({
 					<CardContent className="space-y-6">
 						<div className="flex flex-wrap gap-4">
 							<div className="flex items-center gap-2">
-								<span className="text-sm text-muted-foreground">
-									Nivel de Riesgo:
-								</span>
+								<span className="text-sm text-muted-foreground">RFC:</span>
 								<Badge
 									variant="outline"
-									className={cn(
-										"font-medium text-sm",
-										riskBadgeStyles[client.riskLevel],
-									)}
+									className="font-medium text-sm font-mono"
 								>
-									{client.riskLevel}
+									{client.rfc}
 								</Badge>
 							</div>
-							<div className="flex items-center gap-2">
-								<span className="text-sm text-muted-foreground">Estado:</span>
-								<Badge
-									variant="outline"
-									className={cn(
-										"font-medium text-sm",
-										statusBadgeStyles[client.status],
-									)}
-								>
-									{client.status}
-								</Badge>
-							</div>
-							{client.alertCount > 0 && (
-								<div className="flex items-center gap-2">
-									<AlertCircle className="h-4 w-4 text-[hsl(var(--risk-high))]" />
-									<span className="text-sm font-medium text-[hsl(var(--risk-high))]">
-										{client.alertCount}{" "}
-										{client.alertCount === 1 ? "Aviso" : "Avisos"} Activos
-									</span>
-								</div>
-							)}
 						</div>
 					</CardContent>
 				</Card>
@@ -162,7 +182,7 @@ export function ClientDetailsView({
 				<Card>
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2 text-lg">
-							{client.personType === "FISICA" ? (
+							{client.personType === "physical" ? (
 								<>
 									<User className="h-5 w-5" />
 									Datos Personales
@@ -179,7 +199,7 @@ export function ClientDetailsView({
 						<dl className="grid grid-cols-1 md:grid-cols-2 gap-6">
 							<div>
 								<dt className="text-sm font-medium text-muted-foreground mb-1">
-									{client.personType === "FISICA" ? "Nombre" : "Razón Social"}
+									{client.personType === "physical" ? "Nombre" : "Razón Social"}
 								</dt>
 								<dd className="text-base">{getClientDisplayName(client)}</dd>
 							</div>
@@ -189,6 +209,26 @@ export function ClientDetailsView({
 								</dt>
 								<dd className="text-base font-mono">{client.rfc}</dd>
 							</div>
+							{client.personType === "physical" && client.birthDate && (
+								<div>
+									<dt className="text-sm font-medium text-muted-foreground mb-1">
+										Fecha de Nacimiento
+									</dt>
+									<dd className="text-base">{formatDate(client.birthDate)}</dd>
+								</div>
+							)}
+							{(client.personType === "moral" ||
+								client.personType === "trust") &&
+								client.incorporationDate && (
+									<div>
+										<dt className="text-sm font-medium text-muted-foreground mb-1">
+											Fecha de Constitución
+										</dt>
+										<dd className="text-base">
+											{formatDate(client.incorporationDate)}
+										</dd>
+									</div>
+								)}
 						</dl>
 					</CardContent>
 				</Card>
@@ -207,14 +247,14 @@ export function ClientDetailsView({
 									<Mail className="h-4 w-4" />
 									Email
 								</dt>
-								<dd className="text-base">contacto@cliente.com</dd>
+								<dd className="text-base">{client.email}</dd>
 							</div>
 							<div>
 								<dt className="text-sm font-medium text-muted-foreground mb-1 flex items-center gap-2">
 									<Phone className="h-4 w-4" />
 									Teléfono
 								</dt>
-								<dd className="text-base">+52 81 1234 5678</dd>
+								<dd className="text-base">{client.phone}</dd>
 							</div>
 							<div className="md:col-span-2">
 								<dt className="text-sm font-medium text-muted-foreground mb-1 flex items-center gap-2">
@@ -222,11 +262,13 @@ export function ClientDetailsView({
 									Dirección
 								</dt>
 								<dd className="text-base">
-									Av. Constitución 123
+									{client.street} {client.externalNumber}
+									{client.internalNumber && ` Int. ${client.internalNumber}`}
 									<br />
-									Col. Centro, C.P. 64000
+									{client.neighborhood && `${client.neighborhood}, `}
+									C.P. {client.postalCode}
 									<br />
-									Monterrey, Nuevo León, México
+									{client.city}, {client.stateCode}, {client.country}
 								</dd>
 							</div>
 						</dl>
@@ -246,27 +288,13 @@ export function ClientDetailsView({
 								<dt className="text-sm font-medium text-muted-foreground mb-1">
 									Fecha de Registro
 								</dt>
-								<dd className="text-base">{formatDate(client.lastReview)}</dd>
+								<dd className="text-base">{formatDate(client.createdAt)}</dd>
 							</div>
 							<div>
 								<dt className="text-sm font-medium text-muted-foreground mb-1">
-									Última Transacción
+									Última Actualización
 								</dt>
-								<dd className="text-base">{formatDate(client.lastReview)}</dd>
-							</div>
-							<div>
-								<dt className="text-sm font-medium text-muted-foreground mb-1">
-									Total de Transacciones
-								</dt>
-								<dd className="text-base font-semibold">156</dd>
-							</div>
-							<div>
-								<dt className="text-sm font-medium text-muted-foreground mb-1">
-									Volumen Total
-								</dt>
-								<dd className="text-base font-semibold text-primary">
-									$45,800,000
-								</dd>
+								<dd className="text-base">{formatDate(client.updatedAt)}</dd>
 							</div>
 						</dl>
 					</CardContent>
@@ -278,13 +306,12 @@ export function ClientDetailsView({
 					</CardHeader>
 					<CardContent>
 						<p className="text-sm text-muted-foreground leading-relaxed">
-							Cliente con alto volumen de transacciones. Requiere monitoreo
-							continuo debido al nivel de riesgo.
+							{client.notes || "Sin notas adicionales."}
 						</p>
 						<div className="mt-4 pt-4 border-t">
 							<p className="text-sm text-muted-foreground">
-								<span className="font-medium">Última revisión:</span>{" "}
-								{formatDate(client.lastReview)}
+								<span className="font-medium">Última actualización:</span>{" "}
+								{formatDate(client.updatedAt)}
 							</p>
 						</div>
 					</CardContent>

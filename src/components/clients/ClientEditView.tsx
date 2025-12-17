@@ -21,13 +21,11 @@ import {
 } from "@algtools/ui";
 import { ArrowLeft, Save } from "lucide-react";
 import { useToast } from "../../hooks/use-toast";
-import type { RiskLevel, ClientStatus } from "../../types/client";
+import type { PersonType } from "../../types/client";
 
 interface ClientFormData {
 	name: string;
 	rfc: string;
-	riskLevel: RiskLevel;
-	status: ClientStatus;
 	email: string;
 	phone: string;
 	address: string;
@@ -49,8 +47,6 @@ export function ClientEditView({
 	const [formData, setFormData] = useState<ClientFormData>({
 		name: "Empresas Globales S.A. de C.V.",
 		rfc: "EGL850101AAA",
-		riskLevel: "ALTO",
-		status: "ACTIVO",
 		email: "contacto@empresasglobales.mx",
 		phone: "+52 55 1234 5678",
 		address: "Av. Insurgentes Sur 1234, Col. Del Valle",
@@ -139,53 +135,6 @@ export function ClientEditView({
 									className="font-mono"
 									required
 								/>
-							</div>
-						</div>
-					</CardContent>
-				</Card>
-
-				<Card>
-					<CardHeader>
-						<CardTitle className="text-lg">Evaluación de Riesgo</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-4">
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<div className="space-y-2">
-								<Label htmlFor="riskLevel">Nivel de Riesgo *</Label>
-								<Select
-									value={formData.riskLevel}
-									onValueChange={(value) =>
-										handleInputChange("riskLevel", value as RiskLevel)
-									}
-								>
-									<SelectTrigger id="riskLevel">
-										<SelectValue />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="BAJO">Bajo</SelectItem>
-										<SelectItem value="MEDIO">Medio</SelectItem>
-										<SelectItem value="ALTO">Alto</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="status">Estado *</Label>
-								<Select
-									value={formData.status}
-									onValueChange={(value) =>
-										handleInputChange("status", value as ClientStatus)
-									}
-								>
-									<SelectTrigger id="status">
-										<SelectValue />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="ACTIVO">Activo</SelectItem>
-										<SelectItem value="INACTIVO">Inactivo</SelectItem>
-										<SelectItem value="SUSPENDIDO">Suspendido</SelectItem>
-										<SelectItem value="BLOQUEADO">Bloqueado</SelectItem>
-									</SelectContent>
-								</Select>
 							</div>
 						</div>
 					</CardContent>
