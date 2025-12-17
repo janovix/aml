@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -34,7 +33,6 @@ export function ClientEditPageContent({
 }: ClientEditPageContentProps): React.ReactElement {
 	const router = useRouter();
 	const { toast } = useToast();
-	const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 	const [client, setClient] = useState<Client | null>(null);
 	const [formData, setFormData] = useState<Partial<Client>>({});
 	const [loading, setLoading] = useState(false);
@@ -78,69 +76,49 @@ export function ClientEditPageContent({
 
 	if (!client) {
 		return (
-			<div className="flex h-screen w-full overflow-hidden bg-background">
-				<AppSidebar
-					collapsed={sidebarCollapsed}
-					onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-				/>
-				<main className="flex flex-1 min-h-0 min-w-0 w-full flex-col">
-					<div className="flex-1 flex items-center justify-center">
-						<Card className="w-full max-w-md">
-							<CardContent className="pt-6">
-								<div className="text-center space-y-4">
-									<h2 className="text-2xl font-semibold">
-										Cliente no encontrado
-									</h2>
-									<p className="text-muted-foreground">
-										El cliente con ID {clientId} no existe.
-									</p>
-									<Button
-										onClick={() => router.push("/clients")}
-										className="w-full"
-									>
-										<ArrowLeft className="mr-2 h-4 w-4" />
-										Volver a Clientes
-									</Button>
-								</div>
-							</CardContent>
-						</Card>
-					</div>
-				</main>
+			<div className="flex items-center justify-center min-h-[400px]">
+				<Card className="w-full max-w-md">
+					<CardContent className="pt-6">
+						<div className="text-center space-y-4">
+							<h2 className="text-2xl font-semibold">
+								Cliente no encontrado
+							</h2>
+							<p className="text-muted-foreground">
+								El cliente con ID {clientId} no existe.
+							</p>
+							<Button
+								onClick={() => router.push("/clients")}
+								className="w-full"
+							>
+								<ArrowLeft className="mr-2 h-4 w-4" />
+								Volver a Clientes
+							</Button>
+						</div>
+					</CardContent>
+				</Card>
 			</div>
 		);
 	}
 
 	return (
-		<div className="flex h-screen w-full overflow-hidden bg-background">
-			<AppSidebar
-				collapsed={sidebarCollapsed}
-				onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-			/>
+		<div className="space-y-6">
+			<div className="flex items-center gap-4">
+				<Button
+					variant="ghost"
+					size="icon"
+					onClick={() => router.push(`/clients/${clientId}`)}
+				>
+					<ArrowLeft className="h-5 w-5" />
+				</Button>
+				<div>
+					<h1 className="text-3xl font-bold tracking-tight">Editar Cliente</h1>
+					<p className="text-muted-foreground">
+						Modificar información del cliente
+					</p>
+				</div>
+			</div>
 
-			<main className="flex flex-1 min-h-0 min-w-0 w-full flex-col">
-				<header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background px-3 sm:px-6">
-					<div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-						<Button
-							variant="ghost"
-							size="icon"
-							onClick={() => router.push(`/clients/${clientId}`)}
-							className="shrink-0"
-						>
-							<ArrowLeft className="h-5 w-5" />
-						</Button>
-						<div className="min-w-0">
-							<h1 className="text-xl font-semibold text-foreground truncate">
-								Editar Cliente
-							</h1>
-							<p className="text-sm text-muted-foreground hidden sm:block truncate">
-								Modificar información del cliente
-							</p>
-						</div>
-					</div>
-				</header>
-
-				<div className="flex-1 min-h-0 overflow-x-hidden overflow-y-auto px-4 py-6 sm:px-6 sm:py-8">
-					<div className="max-w-5xl mx-auto">
+			<div className="max-w-5xl">
 						<form onSubmit={handleSubmit}>
 							<div className="space-y-6">
 								{/* Basic Information */}
@@ -445,8 +423,7 @@ export function ClientEditPageContent({
 							</div>
 						</form>
 					</div>
-				</div>
-			</main>
+			</div>
 		</div>
 	);
 }

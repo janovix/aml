@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -26,7 +25,6 @@ import type {
 export function ClientNewPageContent(): React.ReactElement {
 	const router = useRouter();
 	const { toast } = useToast();
-	const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 	const [formData, setFormData] = useState<{
 		rfc: string;
 		personType: PersonType | "";
@@ -82,36 +80,24 @@ export function ClientNewPageContent(): React.ReactElement {
 	};
 
 	return (
-		<div className="flex h-screen w-full overflow-hidden bg-background">
-			<AppSidebar
-				collapsed={sidebarCollapsed}
-				onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-			/>
+		<div className="space-y-6">
+			<div className="flex items-center gap-4">
+				<Button
+					variant="ghost"
+					size="icon"
+					onClick={() => router.push("/clients")}
+				>
+					<ArrowLeft className="h-5 w-5" />
+				</Button>
+				<div>
+					<h1 className="text-3xl font-bold tracking-tight">Nuevo Cliente</h1>
+					<p className="text-muted-foreground">
+						Crear un nuevo cliente en el sistema
+					</p>
+				</div>
+			</div>
 
-			<main className="flex flex-1 min-h-0 min-w-0 w-full flex-col">
-				<header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background px-3 sm:px-6">
-					<div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-						<Button
-							variant="ghost"
-							size="icon"
-							onClick={() => router.push("/clients")}
-							className="shrink-0"
-						>
-							<ArrowLeft className="h-5 w-5" />
-						</Button>
-						<div className="min-w-0">
-							<h1 className="text-xl font-semibold text-foreground truncate">
-								Nuevo Cliente
-							</h1>
-							<p className="text-sm text-muted-foreground hidden sm:block truncate">
-								Crear un nuevo cliente en el sistema
-							</p>
-						</div>
-					</div>
-				</header>
-
-				<div className="flex-1 min-h-0 overflow-x-hidden overflow-y-auto px-4 py-6 sm:px-6 sm:py-8">
-					<div className="max-w-5xl mx-auto">
+			<div className="max-w-5xl">
 						<form onSubmit={handleSubmit}>
 							<div className="space-y-6">
 								{/* Basic Information */}
@@ -416,8 +402,7 @@ export function ClientNewPageContent(): React.ReactElement {
 							</div>
 						</form>
 					</div>
-				</div>
-			</main>
+			</div>
 		</div>
 	);
 }

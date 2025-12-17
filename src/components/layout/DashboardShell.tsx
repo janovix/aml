@@ -30,9 +30,20 @@ import {
 	Database,
 	Clock,
 	Briefcase,
+	User,
+	LogOut,
 } from "lucide-react";
 import { ThemeSwitcher } from "@algtools/ui";
 import { cn } from "@/lib/utils";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 const mainNavItems = [
 	{
@@ -233,6 +244,43 @@ export function DashboardShell({ children }: DashboardShellProps) {
 					<SidebarTrigger className="-ml-1" />
 					<div className="flex flex-1 items-center justify-end gap-2">
 						<ThemeSwitcher />
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<Button
+									variant="ghost"
+									className="relative h-8 w-8 rounded-full"
+								>
+									<div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
+										<User className="h-4 w-4" />
+									</div>
+								</Button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent className="w-56" align="end" forceMount>
+								<DropdownMenuLabel className="font-normal">
+									<div className="flex flex-col space-y-1">
+										<p className="text-sm font-medium leading-none">Usuario</p>
+										<p className="text-xs leading-none text-muted-foreground">
+											usuario@ejemplo.com
+										</p>
+									</div>
+								</DropdownMenuLabel>
+								<DropdownMenuSeparator />
+								<DropdownMenuItem asChild>
+									<Link
+										href="/configuracion"
+										className="flex items-center cursor-pointer"
+									>
+										<Settings className="mr-2 h-4 w-4" />
+										<span>Configuración</span>
+									</Link>
+								</DropdownMenuItem>
+								<DropdownMenuSeparator />
+								<DropdownMenuItem className="cursor-pointer">
+									<LogOut className="mr-2 h-4 w-4" />
+									<span>Cerrar sesión</span>
+								</DropdownMenuItem>
+							</DropdownMenuContent>
+						</DropdownMenu>
 					</div>
 				</header>
 				<main className="flex flex-1 flex-col overflow-auto">
