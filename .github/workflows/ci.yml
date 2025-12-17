@@ -62,19 +62,39 @@ jobs:
         env:
           CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
         run: |
-          # Never publish Chromatic from production branch
-          BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME:-}}"
-          if [ "$BRANCH" = "main" ]; then
+          # Check if Chromatic token is available
+          if [ -z "${CHROMATIC_PROJECT_TOKEN:-}" ]; then
             echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "Chromatic skipped on $BRANCH." >> "$GITHUB_STEP_SUMMARY"
+            echo "Chromatic skipped (no CHROMATIC_PROJECT_TOKEN provided)." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
 
-          if [ -n "${CHROMATIC_PROJECT_TOKEN:-}" ]; then
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          # Determine if Chromatic should run based on event type
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # Only run on PRs from dev to main (UI test gate)
+            BASE_BRANCH="${{ github.event.pull_request.base.ref }}"
+            HEAD_BRANCH="${{ github.event.pull_request.head.ref }}"
+            if [ "$BASE_BRANCH" = "main" ] && [ "$HEAD_BRANCH" = "dev" ]; then
+              echo "enabled=true" >> "$GITHUB_OUTPUT"
+              echo "Chromatic enabled for PR dev->main (UI test gate)." >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "enabled=false" >> "$GITHUB_OUTPUT"
+              echo "Chromatic skipped (PR is not dev->main)." >> "$GITHUB_STEP_SUMMARY"
+            fi
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            # Run on pushes to main and dev (baseline)
+            BRANCH="${GITHUB_REF_NAME}"
+            if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "dev" ]; then
+              echo "enabled=true" >> "$GITHUB_OUTPUT"
+              echo "Chromatic enabled for baseline on $BRANCH." >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "enabled=false" >> "$GITHUB_OUTPUT"
+              echo "Chromatic skipped (push is not to main or dev)." >> "$GITHUB_STEP_SUMMARY"
+            fi
           else
+            # Skip for other event types
             echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "Chromatic skipped (no CHROMATIC_PROJECT_TOKEN provided)." >> "$GITHUB_STEP_SUMMARY"
+            echo "Chromatic skipped (event type: ${{ github.event_name }})." >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - uses: actions/checkout@v4
@@ -103,8 +123,9 @@ jobs:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           buildScriptName: build-storybook
           exitOnceUploaded: true
-          # Note: Chromatic "main branch" is configured in Chromatic project settings.
-          # This workflow avoids publishing from `main` and publishes from `dev` + all other branches.
+          # Chromatic baseline is set in main and dev branches.
+          # UI test gate runs on PRs from dev to main.
+          # Other branches do not trigger Chromatic builds.
 
       - name: Write Chromatic link to run summary
         if: ${{ steps.gate.outputs.enabled == 'true' }}
