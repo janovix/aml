@@ -30,6 +30,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+        with:
+          version: 9
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -46,85 +48,110 @@ jobs:
           path: coverage/**
           if-no-files-found: error
 
-  chromatic:
-    name: chromatic
+  storybook-artifact:
+    name: storybook-artifact
     runs-on: ubuntu-latest
+    # For feature PRs, build Storybook once and upload it as an artifact instead of publishing to Chromatic.
+    # The UI regression "gate" happens on `dev` pushes and the `dev -> main` PR.
+    if: >-
+      ${{
+        github.event_name == 'pull_request' &&
+        !(github.base_ref == 'main' && github.head_ref == 'dev')
+      }}
     permissions:
       contents: read
       pull-requests: write
       issues: write
     steps:
-      - name: Check Chromatic token
-        id: gate
-        shell: bash
-        env:
-          CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
-        run: |
-          # Check if Chromatic token is available
-          if [ -z "${CHROMATIC_PROJECT_TOKEN:-}" ]; then
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "Chromatic skipped (no CHROMATIC_PROJECT_TOKEN provided)." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-
-          # Determine if Chromatic should run based on event type
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            # Only run on PRs from dev to main (UI test gate)
-            BASE_BRANCH="${{ github.event.pull_request.base.ref }}"
-            HEAD_BRANCH="${{ github.event.pull_request.head.ref }}"
-            if [ "$BASE_BRANCH" = "main" ] && [ "$HEAD_BRANCH" = "dev" ]; then
-              echo "enabled=true" >> "$GITHUB_OUTPUT"
-              echo "Chromatic enabled for PR dev->main (UI test gate)." >> "$GITHUB_STEP_SUMMARY"
-            else
-              echo "enabled=false" >> "$GITHUB_OUTPUT"
-              echo "Chromatic skipped (PR is not dev->main)." >> "$GITHUB_STEP_SUMMARY"
-            fi
-          elif [ "${{ github.event_name }}" = "push" ]; then
-            # Run on pushes to main and dev (baseline)
-            BRANCH="${GITHUB_REF_NAME}"
-            if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "dev" ]; then
-              echo "enabled=true" >> "$GITHUB_OUTPUT"
-              echo "Chromatic enabled for baseline on $BRANCH." >> "$GITHUB_STEP_SUMMARY"
-            else
-              echo "enabled=false" >> "$GITHUB_OUTPUT"
-              echo "Chromatic skipped (push is not to main or dev)." >> "$GITHUB_STEP_SUMMARY"
-            fi
-          else
-            # Skip for other event types
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "Chromatic skipped (event type: ${{ github.event_name }})." >> "$GITHUB_STEP_SUMMARY"
-          fi
-
       - uses: actions/checkout@v4
-        if: ${{ steps.gate.outputs.enabled == 'true' }}
-        with:
-          fetch-depth: 0
       - uses: pnpm/action-setup@v4
-        if: ${{ steps.gate.outputs.enabled == 'true' }}
+        with:
+          version: 9
       - uses: actions/setup-node@v4
-        if: ${{ steps.gate.outputs.enabled == 'true' }}
         with:
           node-version: 20
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - name: Install dependencies
-        if: ${{ steps.gate.outputs.enabled == 'true' }}
+        run: pnpm install --frozen-lockfile
+      - name: Build Storybook
+        run: pnpm run build-storybook
+      - name: Upload Storybook artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: storybook-static
+          path: storybook-static/**
+          if-no-files-found: error
+      - name: Comment Storybook artifact link on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- storybook-artifact-link -->'
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            const body = `${marker}\nStorybook build is available as a workflow artifact (no Chromatic build for feature PRs).\n\nActions run: ${runUrl}\nArtifact: \`storybook-static\``
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              per_page: 100,
+            })
+            const existing = comments.find((c) => c.body?.includes(marker))
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              })
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body,
+              })
+            }
+
+  chromatic:
+    name: chromatic
+    runs-on: ubuntu-latest
+    # Only publish Chromatic builds for `dev` pushes and the `dev -> main` PR.
+    if: >-
+      ${{
+        (github.event_name == 'push' && github.ref_name == 'dev') ||
+        (github.event_name == 'pull_request' && github.base_ref == 'main' && github.head_ref == 'dev')
+      }}
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Publish to Chromatic
-        if: ${{ steps.gate.outputs.enabled == 'true' }}
         id: chromatic
         uses: chromaui/action@v1
         with:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           buildScriptName: build-storybook
           exitOnceUploaded: true
-          # Chromatic baseline is set in main and dev branches.
-          # UI test gate runs on PRs from dev to main.
-          # Other branches do not trigger Chromatic builds.
+          # Note: Chromatic "main branch" is configured in Chromatic project settings.
+          # This workflow avoids publishing from `main` and publishes from `dev` + all other branches.
 
       - name: Write Chromatic link to run summary
-        if: ${{ steps.gate.outputs.enabled == 'true' }}
         shell: bash
         run: |
           URL="${{ steps.chromatic.outputs.storybookUrl || steps.chromatic.outputs.buildUrl }}"
@@ -136,7 +163,7 @@ jobs:
           fi
 
       - name: Comment Chromatic link on PR
-        if: ${{ steps.gate.outputs.enabled == 'true' && github.event_name == 'pull_request' }}
+        if: ${{ github.event_name == 'pull_request' }}
         uses: actions/github-script@v7
         with:
           script: |
