@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { TransactionsPageContent } from "../../components/transactions/TransactionsPageContent";
+import { DashboardLayout } from "../../components/layout/DashboardLayout";
 
 const meta = {
 	title: "Views/TransactionsPageContent",
@@ -13,6 +14,13 @@ const meta = {
 		},
 	},
 	tags: ["autodocs"],
+	decorators: [
+		(Story) => (
+			<DashboardLayout>
+				<Story />
+			</DashboardLayout>
+		),
+	],
 } satisfies Meta<typeof TransactionsPageContent>;
 
 export default meta;

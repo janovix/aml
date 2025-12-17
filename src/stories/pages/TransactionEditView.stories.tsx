@@ -1,21 +1,21 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { ClientCreateView } from "../../components/clients/ClientCreateView";
+import { TransactionEditView } from "../../components/transactions/TransactionEditView";
 import { DashboardLayout } from "../../components/layout/DashboardLayout";
 
 const meta = {
-	title: "Views/ClientCreateView",
-	component: ClientCreateView,
+	title: "Views/TransactionEditView",
+	component: TransactionEditView,
 	parameters: {
 		layout: "fullscreen",
 		docs: {
 			description: {
 				component:
-					"View component for creating a new client. Provides form fields for entering client information including business details, risk assessment, contact information, and compliance notes. Includes create and cancel actions.",
+					"View component for editing transaction information. Provides form fields for updating transaction data including vehicle details, client association, transaction amount, and status. Includes save and cancel actions.",
 			},
 		},
 		nextjs: {
 			router: {
-				pathname: "/clients/new",
+				pathname: "/transactions/1/edit",
 			},
 		},
 	},
@@ -27,17 +27,21 @@ const meta = {
 			</DashboardLayout>
 		),
 	],
-} satisfies Meta<typeof ClientCreateView>;
+} satisfies Meta<typeof TransactionEditView>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-	args: {},
+	args: {
+		transactionId: "1",
+	},
 };
 
 export const Mobile: Story = {
-	args: {},
+	args: {
+		transactionId: "1",
+	},
 	parameters: {
 		viewport: {
 			defaultViewport: "mobile1",
@@ -46,7 +50,9 @@ export const Mobile: Story = {
 };
 
 export const Tablet: Story = {
-	args: {},
+	args: {
+		transactionId: "1",
+	},
 	parameters: {
 		viewport: {
 			defaultViewport: "tablet",

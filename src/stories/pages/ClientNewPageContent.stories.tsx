@@ -1,18 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { ClientCreateView } from "../../components/clients/ClientCreateView";
+import { ClientNewPageContent } from "../../components/clients/ClientNewPageContent";
 import { DashboardLayout } from "../../components/layout/DashboardLayout";
 
 const meta = {
-	title: "Views/ClientCreateView",
-	component: ClientCreateView,
+	title: "Views/ClientNewPageContent",
+	component: ClientNewPageContent,
 	parameters: {
 		layout: "fullscreen",
-		docs: {
-			description: {
-				component:
-					"View component for creating a new client. Provides form fields for entering client information including business details, risk assessment, contact information, and compliance notes. Includes create and cancel actions.",
-			},
-		},
 		nextjs: {
 			router: {
 				pathname: "/clients/new",
@@ -27,7 +21,7 @@ const meta = {
 			</DashboardLayout>
 		),
 	],
-} satisfies Meta<typeof ClientCreateView>;
+} satisfies Meta<typeof ClientNewPageContent>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

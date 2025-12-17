@@ -8,8 +8,10 @@ vi.mock("./ThemeProvider", () => ({
 	),
 }));
 
-vi.mock("./ThemeSwitcher", () => ({
-	ThemeSwitcher: () => <div data-testid="theme-switcher">Theme Switcher</div>,
+vi.mock("./layout/DashboardLayout", () => ({
+	DashboardLayout: ({ children }: { children: React.ReactNode }) => (
+		<div data-testid="dashboard-shell">{children}</div>
+	),
 }));
 
 describe("ClientLayout", () => {
@@ -35,15 +37,15 @@ describe("ClientLayout", () => {
 		expect(ourProvider).toBeInTheDocument();
 	});
 
-	it("renders ThemeSwitcher", () => {
+	it("renders DashboardLayout", () => {
 		const { container } = render(
 			<ClientLayout>
 				<div>Test</div>
 			</ClientLayout>,
 		);
 
-		const switchers = screen.getAllByTestId("theme-switcher");
-		const ourSwitcher = switchers.find((s) => container.contains(s));
-		expect(ourSwitcher).toBeInTheDocument();
+		const dashboardShells = screen.getAllByTestId("dashboard-shell");
+		const ourShell = dashboardShells.find((s) => container.contains(s));
+		expect(ourShell).toBeInTheDocument();
 	});
 });

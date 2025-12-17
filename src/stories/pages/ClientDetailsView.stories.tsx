@@ -1,21 +1,21 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { ClientCreateView } from "../../components/clients/ClientCreateView";
+import { ClientDetailsView } from "../../components/clients/ClientDetailsView";
 import { DashboardLayout } from "../../components/layout/DashboardLayout";
 
 const meta = {
-	title: "Views/ClientCreateView",
-	component: ClientCreateView,
+	title: "Views/ClientDetailsView",
+	component: ClientDetailsView,
 	parameters: {
 		layout: "fullscreen",
 		docs: {
 			description: {
 				component:
-					"View component for creating a new client. Provides form fields for entering client information including business details, risk assessment, contact information, and compliance notes. Includes create and cancel actions.",
+					"View component for displaying detailed information about a client. Shows client personal/business data, contact information, transaction history, and compliance notes. Includes navigation controls and action buttons for editing and generating reports.",
 			},
 		},
 		nextjs: {
 			router: {
-				pathname: "/clients/new",
+				pathname: "/clients/1",
 			},
 		},
 	},
@@ -27,17 +27,21 @@ const meta = {
 			</DashboardLayout>
 		),
 	],
-} satisfies Meta<typeof ClientCreateView>;
+} satisfies Meta<typeof ClientDetailsView>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-	args: {},
+	args: {
+		clientId: "1",
+	},
 };
 
 export const Mobile: Story = {
-	args: {},
+	args: {
+		clientId: "1",
+	},
 	parameters: {
 		viewport: {
 			defaultViewport: "mobile1",
@@ -46,7 +50,9 @@ export const Mobile: Story = {
 };
 
 export const Tablet: Story = {
-	args: {},
+	args: {
+		clientId: "1",
+	},
 	parameters: {
 		viewport: {
 			defaultViewport: "tablet",
