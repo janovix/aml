@@ -1,6 +1,6 @@
 "use client";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { ThemeSwitcher } from "@algtools/ui";
+import { DashboardShell } from "@/components/layout/DashboardShell";
 
 export default function ClientLayout({
 	children,
@@ -9,10 +9,7 @@ export default function ClientLayout({
 }) {
 	return (
 		<ThemeProvider>
-			<div className="fixed bottom-4 right-4">
-				<ThemeSwitcher />
-			</div>
-			{children}
+			<DashboardShell>{children}</DashboardShell>
 		</ThemeProvider>
 	);
 }
