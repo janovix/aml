@@ -1,3 +1,10 @@
+# [1.1.0-rc.1](https://github.com/janovix/aml/compare/v1.0.0...v1.1.0-rc.1) (2025-12-17)
+
+
+### Features
+
+* Specify pnpm as package manager ([d2662aa](https://github.com/janovix/aml/commit/d2662aaf96376dfd372ec247ce35bcfeb4baef44))
+
 # 1.0.0 (2025-12-16)
 
 
