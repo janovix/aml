@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { DashboardShell } from "./DashboardShell";
+import { DashboardLayout } from "./DashboardLayout";
 
 const mockPathname = vi.fn(() => "/clients");
 
@@ -20,16 +20,16 @@ vi.mock("@algtools/ui", () => ({
 	ThemeSwitcher: () => <div data-testid="theme-switcher">Theme Switcher</div>,
 }));
 
-describe("DashboardShell", () => {
+describe("DashboardLayout", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 	});
 
 	it("renders children", () => {
 		render(
-			<DashboardShell>
+			<DashboardLayout>
 				<div>Test Content</div>
-			</DashboardShell>,
+			</DashboardLayout>,
 		);
 
 		expect(screen.getByText("Test Content")).toBeInTheDocument();
@@ -37,9 +37,9 @@ describe("DashboardShell", () => {
 
 	it("renders sidebar with navigation items", () => {
 		render(
-			<DashboardShell>
+			<DashboardLayout>
 				<div>Test</div>
-			</DashboardShell>,
+			</DashboardLayout>,
 		);
 
 		// Check for main navigation items
@@ -49,9 +49,9 @@ describe("DashboardShell", () => {
 
 	it("renders sidebar trigger button", () => {
 		render(
-			<DashboardShell>
+			<DashboardLayout>
 				<div>Test</div>
-			</DashboardShell>,
+			</DashboardLayout>,
 		);
 
 		// Check for sidebar trigger by data attribute
@@ -61,9 +61,9 @@ describe("DashboardShell", () => {
 
 	it("renders theme switcher in header", () => {
 		render(
-			<DashboardShell>
+			<DashboardLayout>
 				<div>Test</div>
-			</DashboardShell>,
+			</DashboardLayout>,
 		);
 
 		expect(screen.getByTestId("theme-switcher")).toBeInTheDocument();
@@ -71,9 +71,9 @@ describe("DashboardShell", () => {
 
 	it("renders avatar dropdown", () => {
 		render(
-			<DashboardShell>
+			<DashboardLayout>
 				<div>Test</div>
-			</DashboardShell>,
+			</DashboardLayout>,
 		);
 
 		// Avatar button is in the header, find by checking for User icon or dropdown trigger
@@ -86,9 +86,9 @@ describe("DashboardShell", () => {
 	it("opens avatar dropdown menu when clicked", async () => {
 		const user = userEvent.setup();
 		render(
-			<DashboardShell>
+			<DashboardLayout>
 				<div>Test</div>
-			</DashboardShell>,
+			</DashboardLayout>,
 		);
 
 		// Find the dropdown trigger button
@@ -119,9 +119,9 @@ describe("DashboardShell", () => {
 	it("highlights active navigation item", () => {
 		mockPathname.mockReturnValue("/clients");
 		render(
-			<DashboardShell>
+			<DashboardLayout>
 				<div>Test</div>
-			</DashboardShell>,
+			</DashboardLayout>,
 		);
 
 		const clientesLink = screen.getByRole("link", { name: /clientes/i });
@@ -130,9 +130,9 @@ describe("DashboardShell", () => {
 
 	it("renders sidebar logo", () => {
 		render(
-			<DashboardShell>
+			<DashboardLayout>
 				<div>Test</div>
-			</DashboardShell>,
+			</DashboardLayout>,
 		);
 
 		// Check for Logo SVG element (should be in sidebar header)

@@ -72,17 +72,17 @@ describe("ClientsPageContent", () => {
 		expect(tableTitles.length).toBeGreaterThan(0);
 	});
 
-	// Mobile menu button removed - sidebar is now handled by DashboardShell
+	// Mobile menu button removed - sidebar is now handled by DashboardLayout
 	it.skip("renders mobile menu button", () => {
-		// This test is skipped as mobile menu is now handled by DashboardShell
+		// This test is skipped as mobile menu is now handled by DashboardLayout
 	});
 
 	it.skip("opens mobile menu when button is clicked", async () => {
-		// This test is skipped as mobile menu is now handled by DashboardShell
+		// This test is skipped as mobile menu is now handled by DashboardLayout
 	});
 
 	it.skip("closes mobile menu when overlay is clicked", async () => {
-		// This test is skipped as mobile menu is now handled by DashboardShell
+		// This test is skipped as mobile menu is now handled by DashboardLayout
 	});
 
 	it("applies filters when apply button is clicked", async () => {
@@ -164,8 +164,8 @@ describe("ClientsPageContent", () => {
 		expect(statusSelects.length).toBeGreaterThan(0);
 	});
 
-	// Sidebar is now handled by DashboardShell, not ClientsPageContent
+	// Sidebar is now handled by DashboardLayout, not ClientsPageContent
 	it.skip("toggles sidebar collapse", () => {
-		// This test is skipped as sidebar is now handled by DashboardShell
+		// This test is skipped as sidebar is now handled by DashboardLayout
 	});
 });

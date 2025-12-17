@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { DashboardShell } from "../../components/layout/DashboardShell";
+import { DashboardLayout } from "../../components/layout/DashboardLayout";
 import { ClientsPageContent } from "../../components/clients/ClientsPageContent";
 
 const meta = {
-	title: "Layout/DashboardShell",
-	component: DashboardShell,
+	title: "Layout/DashboardLayout",
+	component: DashboardLayout,
 	parameters: {
 		layout: "fullscreen",
 		nextjs: {
@@ -14,7 +14,7 @@ const meta = {
 		},
 	},
 	tags: ["autodocs"],
-} satisfies Meta<typeof DashboardShell>;
+} satisfies Meta<typeof DashboardLayout>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

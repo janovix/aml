@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { ClientEditView } from "../../components/clients/ClientEditView";
-import { DashboardShell } from "../../components/layout/DashboardShell";
+import { DashboardLayout } from "../../components/layout/DashboardLayout";
 
 const meta = {
 	title: "Views/ClientEditView",
@@ -22,9 +22,9 @@ const meta = {
 	tags: ["autodocs"],
 	decorators: [
 		(Story) => (
-			<DashboardShell>
+			<DashboardLayout>
 				<Story />
-			</DashboardShell>
+			</DashboardLayout>
 		),
 	],
 } satisfies Meta<typeof ClientEditView>;

@@ -8,8 +8,8 @@ vi.mock("./ThemeProvider", () => ({
 	),
 }));
 
-vi.mock("./layout/DashboardShell", () => ({
-	DashboardShell: ({ children }: { children: React.ReactNode }) => (
+vi.mock("./layout/DashboardLayout", () => ({
+	DashboardLayout: ({ children }: { children: React.ReactNode }) => (
 		<div data-testid="dashboard-shell">{children}</div>
 	),
 }));
@@ -37,7 +37,7 @@ describe("ClientLayout", () => {
 		expect(ourProvider).toBeInTheDocument();
 	});
 
-	it("renders DashboardShell", () => {
+	it("renders DashboardLayout", () => {
 		const { container } = render(
 			<ClientLayout>
 				<div>Test</div>

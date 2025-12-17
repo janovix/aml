@@ -70,9 +70,9 @@ describe("TransactionsPageContent", () => {
 		expect(tableHeaders.length).toBeGreaterThan(0);
 	});
 
-	// Mobile menu button removed - sidebar is now handled by DashboardShell
+	// Mobile menu button removed - sidebar is now handled by DashboardLayout
 	it.skip("renders mobile menu button", () => {
-		// This test is skipped as mobile menu is now handled by DashboardShell
+		// This test is skipped as mobile menu is now handled by DashboardLayout
 	});
 
 	it("applies filters when search query changes", async () => {
@@ -94,8 +94,8 @@ describe("TransactionsPageContent", () => {
 		}
 	});
 
-	// Sidebar is now handled by DashboardShell, not TransactionsPageContent
+	// Sidebar is now handled by DashboardLayout, not TransactionsPageContent
 	it.skip("renders sidebar", () => {
-		// This test is skipped as sidebar is now handled by DashboardShell
+		// This test is skipped as sidebar is now handled by DashboardLayout
 	});
 });

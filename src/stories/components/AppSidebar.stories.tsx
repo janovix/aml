@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { AppSidebar } from "../../components/layout/AppSidebar";
 
 /**
- * @deprecated This component is deprecated. Use DashboardShell instead.
+ * @deprecated This component is deprecated. Use DashboardLayout instead.
  * This story is kept for reference only.
  */
 const meta = {

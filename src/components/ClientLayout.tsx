@@ -1,6 +1,6 @@
 "use client";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ViewportHeightProvider } from "@/components/ViewportHeightProvider";
 
 export default function ClientLayout({
@@ -11,7 +11,7 @@ export default function ClientLayout({
 	return (
 		<ThemeProvider>
 			<ViewportHeightProvider>
-				<DashboardShell>{children}</DashboardShell>
+				<DashboardLayout>{children}</DashboardLayout>
 			</ViewportHeightProvider>
 		</ThemeProvider>
 	);

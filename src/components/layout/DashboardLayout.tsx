@@ -103,7 +103,7 @@ const bottomNavItems = [
 	},
 ];
 
-interface DashboardShellProps {
+interface DashboardLayoutProps {
 	children: React.ReactNode;
 }
 
@@ -122,7 +122,7 @@ function SidebarLogo() {
 	);
 }
 
-export function DashboardShell({ children }: DashboardShellProps) {
+export function DashboardLayout({ children }: DashboardLayoutProps) {
 	const pathname = usePathname();
 
 	return (
