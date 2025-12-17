@@ -1,13 +1,17 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { AppSidebar } from "../../components/layout/AppSidebar";
 
+/**
+ * @deprecated This component is deprecated. Use DashboardShell instead.
+ * This story is kept for reference only.
+ */
 const meta = {
-	title: "Layout/AppSidebar",
+	title: "Layout/AppSidebar (Deprecated)",
 	component: AppSidebar,
 	parameters: {
 		layout: "fullscreen",
 	},
-	tags: ["autodocs"],
+	tags: ["autodocs", "deprecated"],
 	argTypes: {
 		collapsed: {
 			control: "boolean",

@@ -1,15 +1,15 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { TransactionsPageContent } from "../../components/transactions/TransactionsPageContent";
+import { TransactionEditView } from "../../components/transactions/TransactionEditView";
 import { DashboardShell } from "../../components/layout/DashboardShell";
 
 const meta = {
-	title: "Views/TransactionsPageContent",
-	component: TransactionsPageContent,
+	title: "Views/TransactionEditView",
+	component: TransactionEditView,
 	parameters: {
 		layout: "fullscreen",
 		nextjs: {
 			router: {
-				pathname: "/transactions",
+				pathname: "/transactions/1/edit",
 			},
 		},
 	},
@@ -21,17 +21,21 @@ const meta = {
 			</DashboardShell>
 		),
 	],
-} satisfies Meta<typeof TransactionsPageContent>;
+} satisfies Meta<typeof TransactionEditView>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-	args: {},
+	args: {
+		transactionId: "1",
+	},
 };
 
 export const Mobile: Story = {
-	args: {},
+	args: {
+		transactionId: "1",
+	},
 	parameters: {
 		viewport: {
 			defaultViewport: "mobile1",
@@ -40,7 +44,9 @@ export const Mobile: Story = {
 };
 
 export const Tablet: Story = {
-	args: {},
+	args: {
+		transactionId: "1",
+	},
 	parameters: {
 		viewport: {
 			defaultViewport: "tablet",

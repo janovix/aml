@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { TransactionCreateView } from "../../components/transactions/TransactionCreateView";
+import { DashboardShell } from "../../components/layout/DashboardShell";
 
 const meta = {
 	title: "Views/TransactionCreateView",
@@ -13,6 +14,13 @@ const meta = {
 		},
 	},
 	tags: ["autodocs"],
+	decorators: [
+		(Story) => (
+			<DashboardShell>
+				<Story />
+			</DashboardShell>
+		),
+	],
 } satisfies Meta<typeof TransactionCreateView>;
 
 export default meta;
