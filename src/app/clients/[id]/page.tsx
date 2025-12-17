@@ -1,32 +1,18 @@
 import type { Metadata } from "next";
-import { ClientDetailPageContent } from "@/components/clients/ClientDetailPageContent";
-import { mockClients } from "@/data/mockClients";
+import { ClientDetailsView } from "../../../components/clients/ClientDetailsView";
 
-export async function generateMetadata({
-	params,
-}: {
+export const metadata: Metadata = {
+	title: "Detalle Cliente | Plataforma AML",
+	description: "Ver detalles del cliente",
+};
+
+interface PageProps {
 	params: Promise<{ id: string }>;
-}): Promise<Metadata> {
-	const { id } = await params;
-	const client = mockClients.find((c) => c.id === id);
-
-	if (!client) {
-		return {
-			title: "Cliente no encontrado | Plataforma AML",
-		};
-	}
-
-	return {
-		title: `${client.personType === "FISICA" ? `${client.firstName} ${client.lastName}` : client.businessName} | Plataforma AML`,
-		description: `Detalles del cliente ${client.rfc}`,
-	};
 }
 
-export default async function ClientDetailPage({
+export default async function ClienteDetallePage({
 	params,
-}: {
-	params: Promise<{ id: string }>;
-}): Promise<React.ReactElement> {
+}: PageProps): Promise<React.ReactElement> {
 	const { id } = await params;
-	return <ClientDetailPageContent clientId={id} />;
+	return <ClientDetailsView clientId={id} />;
 }

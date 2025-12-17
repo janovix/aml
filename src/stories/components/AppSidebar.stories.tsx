@@ -1,50 +1,76 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { useState } from "react";
-import { AppSidebar } from "@/components/layout/AppSidebar";
-import { ThemeProvider } from "@/components/ThemeProvider";
+import { AppSidebar } from "../../components/layout/AppSidebar";
 
-const meta: Meta<typeof AppSidebar> = {
-	title: "Components/AppSidebar",
+const meta = {
+	title: "Layout/AppSidebar",
 	component: AppSidebar,
-	decorators: [
-		(Story) => (
-			<ThemeProvider
-				attribute="class"
-				defaultTheme="light"
-				enableSystem={false}
-			>
-				<div className="flex h-screen w-64">
-					<Story />
-				</div>
-			</ThemeProvider>
-		),
-	],
-};
+	parameters: {
+		layout: "fullscreen",
+	},
+	tags: ["autodocs"],
+	argTypes: {
+		collapsed: {
+			control: "boolean",
+			description: "Whether the sidebar is collapsed",
+		},
+		isMobile: {
+			control: "boolean",
+			description: "Whether to render the mobile version",
+		},
+		onToggle: {
+			action: "toggled",
+			description: "Callback when sidebar is toggled",
+		},
+	},
+} satisfies Meta<typeof AppSidebar>;
 
 export default meta;
+type Story = StoryObj<typeof meta>;
 
-type Story = StoryObj<typeof AppSidebar>;
-
-export const Expanded: Story = {
-	render: () => {
-		const [collapsed, setCollapsed] = useState(false);
-		return (
-			<AppSidebar
-				collapsed={collapsed}
-				onToggle={() => setCollapsed(!collapsed)}
-			/>
-		);
+export const Default: Story = {
+	args: {
+		collapsed: false,
+		isMobile: false,
+		onToggle: () => {},
+	},
+	parameters: {
+		nextjs: {
+			router: {
+				pathname: "/clients",
+			},
+		},
 	},
 };
 
 export const Collapsed: Story = {
-	render: () => {
-		const [collapsed, setCollapsed] = useState(true);
-		return (
-			<AppSidebar
-				collapsed={collapsed}
-				onToggle={() => setCollapsed(!collapsed)}
-			/>
-		);
+	args: {
+		collapsed: true,
+		isMobile: false,
+		onToggle: () => {},
+	},
+	parameters: {
+		nextjs: {
+			router: {
+				pathname: "/clients",
+			},
+		},
+	},
+};
+
+export const Mobile: Story = {
+	args: {
+		collapsed: false,
+		isMobile: true,
+		onToggle: () => {},
+	},
+	parameters: {
+		nextjs: {
+			router: {
+				pathname: "/transactions",
+			},
+		},
+		viewport: {
+			defaultViewport: "mobile1",
+		},
 	},
 };

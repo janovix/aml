@@ -1,15 +1,15 @@
 "use client";
 
 import type React from "react";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
+	Button,
+	ScrollArea,
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+	cn,
+} from "@algtools/ui";
 import {
 	Users,
 	AlertTriangle,

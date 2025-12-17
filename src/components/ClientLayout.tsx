@@ -1,6 +1,6 @@
 "use client";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { ThemeSwitcher } from "@algtools/ui";
 
 export default function ClientLayout({
 	children,

@@ -1,32 +1,18 @@
 import type { Metadata } from "next";
-import { ClientEditPageContent } from "@/components/clients/ClientEditPageContent";
-import { mockClients } from "@/data/mockClients";
+import { ClientEditView } from "../../../../components/clients/ClientEditView";
 
-export async function generateMetadata({
-	params,
-}: {
+export const metadata: Metadata = {
+	title: "Editar Cliente | Plataforma AML",
+	description: "Editar información del cliente",
+};
+
+interface PageProps {
 	params: Promise<{ id: string }>;
-}): Promise<Metadata> {
-	const { id } = await params;
-	const client = mockClients.find((c) => c.id === id);
-
-	if (!client) {
-		return {
-			title: "Cliente no encontrado | Plataforma AML",
-		};
-	}
-
-	return {
-		title: `Editar Cliente | Plataforma AML`,
-		description: `Editar información del cliente ${client.rfc}`,
-	};
 }
 
-export default async function ClientEditPage({
+export default async function EditarClientePage({
 	params,
-}: {
-	params: Promise<{ id: string }>;
-}): Promise<React.ReactElement> {
+}: PageProps): Promise<React.ReactElement> {
 	const { id } = await params;
-	return <ClientEditPageContent clientId={id} />;
+	return <ClientEditView clientId={id} />;
 }
