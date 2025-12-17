@@ -15,12 +15,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Save } from "lucide-react";
-import type {
-	PersonType,
-	RiskLevel,
-	ClientStatus,
-	ReviewStatus,
-} from "@/types/client";
+import type { PersonType } from "@/types/client";
 
 export function ClientNewPageContent(): React.ReactElement {
 	const router = useRouter();
@@ -34,9 +29,6 @@ export function ClientNewPageContent(): React.ReactElement {
 		businessName?: string;
 		email: string;
 		phone: string;
-		riskLevel: RiskLevel | "";
-		status: ClientStatus | "";
-		reviewStatus: ReviewStatus | "";
 		street?: string;
 		extNumber?: string;
 		intNumber?: string;
@@ -50,9 +42,6 @@ export function ClientNewPageContent(): React.ReactElement {
 		personType: "",
 		email: "",
 		phone: "",
-		riskLevel: "",
-		status: "",
-		reviewStatus: "",
 	});
 	const [loading, setLoading] = useState(false);
 
@@ -72,10 +61,7 @@ export function ClientNewPageContent(): React.ReactElement {
 		router.push("/clients");
 	};
 
-	const handleChange = (
-		field: string,
-		value: string | PersonType | RiskLevel | ClientStatus | ReviewStatus,
-	): void => {
+	const handleChange = (field: string, value: string | PersonType): void => {
 		setFormData((prev) => ({ ...prev, [field]: value }));
 	};
 
@@ -128,14 +114,15 @@ export function ClientNewPageContent(): React.ReactElement {
 												<SelectValue placeholder="Seleccionar tipo" />
 											</SelectTrigger>
 											<SelectContent>
-												<SelectItem value="FISICA">Persona Física</SelectItem>
-												<SelectItem value="MORAL">Persona Moral</SelectItem>
+												<SelectItem value="physical">Persona Física</SelectItem>
+												<SelectItem value="moral">Persona Moral</SelectItem>
+												<SelectItem value="trust">Fideicomiso</SelectItem>
 											</SelectContent>
 										</Select>
 									</div>
 								</div>
 
-								{formData.personType === "FISICA" ? (
+								{formData.personType === "physical" ? (
 									<>
 										<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 											<div className="space-y-2">
@@ -172,7 +159,8 @@ export function ClientNewPageContent(): React.ReactElement {
 											</div>
 										</div>
 									</>
-								) : formData.personType === "MORAL" ? (
+								) : formData.personType === "moral" ||
+								  formData.personType === "trust" ? (
 									<div className="space-y-2">
 										<Label htmlFor="businessName">Razón Social *</Label>
 										<Input
@@ -291,73 +279,6 @@ export function ClientNewPageContent(): React.ReactElement {
 											value={formData.country || ""}
 											onChange={(e) => handleChange("country", e.target.value)}
 										/>
-									</div>
-								</div>
-							</CardContent>
-						</Card>
-
-						{/* Status Information */}
-						<Card className="shadow-sm">
-							<CardHeader className="pb-4">
-								<CardTitle>Estado y Riesgo</CardTitle>
-							</CardHeader>
-							<CardContent className="space-y-4">
-								<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-									<div className="space-y-2">
-										<Label htmlFor="riskLevel">Nivel de Riesgo *</Label>
-										<Select
-											value={formData.riskLevel}
-											onValueChange={(value) =>
-												handleChange("riskLevel", value as RiskLevel)
-											}
-										>
-											<SelectTrigger id="riskLevel">
-												<SelectValue placeholder="Seleccionar nivel" />
-											</SelectTrigger>
-											<SelectContent>
-												<SelectItem value="BAJO">Bajo</SelectItem>
-												<SelectItem value="MEDIO">Medio</SelectItem>
-												<SelectItem value="ALTO">Alto</SelectItem>
-											</SelectContent>
-										</Select>
-									</div>
-									<div className="space-y-2">
-										<Label htmlFor="status">Estado *</Label>
-										<Select
-											value={formData.status}
-											onValueChange={(value) =>
-												handleChange("status", value as ClientStatus)
-											}
-										>
-											<SelectTrigger id="status">
-												<SelectValue placeholder="Seleccionar estado" />
-											</SelectTrigger>
-											<SelectContent>
-												<SelectItem value="ACTIVO">Activo</SelectItem>
-												<SelectItem value="INACTIVO">Inactivo</SelectItem>
-												<SelectItem value="SUSPENDIDO">Suspendido</SelectItem>
-												<SelectItem value="BLOQUEADO">Bloqueado</SelectItem>
-											</SelectContent>
-										</Select>
-									</div>
-									<div className="space-y-2">
-										<Label htmlFor="reviewStatus">Estado de Revisión *</Label>
-										<Select
-											value={formData.reviewStatus}
-											onValueChange={(value) =>
-												handleChange("reviewStatus", value as ReviewStatus)
-											}
-										>
-											<SelectTrigger id="reviewStatus">
-												<SelectValue placeholder="Seleccionar estado" />
-											</SelectTrigger>
-											<SelectContent>
-												<SelectItem value="PENDIENTE">Pendiente</SelectItem>
-												<SelectItem value="EN_REVISION">En Revisión</SelectItem>
-												<SelectItem value="APROBADO">Aprobado</SelectItem>
-												<SelectItem value="RECHAZADO">Rechazado</SelectItem>
-											</SelectContent>
-										</Select>
 									</div>
 								</div>
 							</CardContent>

@@ -16,13 +16,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Save } from "lucide-react";
 import { mockClients } from "@/data/mockClients";
-import type {
-	Client,
-	PersonType,
-	RiskLevel,
-	ClientStatus,
-	ReviewStatus,
-} from "@/types/client";
+import type { Client, PersonType } from "@/types/client";
 
 interface ClientEditPageContentProps {
 	clientId: string;
@@ -38,7 +32,7 @@ export function ClientEditPageContent({
 	const [loading, setLoading] = useState(false);
 
 	useEffect(() => {
-		const foundClient = mockClients.find((c) => c.id === clientId);
+		const foundClient = mockClients.find((c) => c.rfc === clientId);
 		if (foundClient) {
 			setClient(foundClient);
 			setFormData(foundClient);
@@ -58,18 +52,12 @@ export function ClientEditPageContent({
 		});
 
 		setLoading(false);
-		router.push(`/clients/${clientId}`);
+		router.push(`/clients/${client?.rfc || clientId}`);
 	};
 
 	const handleChange = (
 		field: keyof Client,
-		value:
-			| string
-			| number
-			| PersonType
-			| RiskLevel
-			| ClientStatus
-			| ReviewStatus,
+		value: string | number | PersonType | null | undefined,
 	): void => {
 		setFormData((prev) => ({ ...prev, [field]: value }));
 	};
@@ -147,14 +135,15 @@ export function ClientEditPageContent({
 												<SelectValue />
 											</SelectTrigger>
 											<SelectContent>
-												<SelectItem value="FISICA">Persona Física</SelectItem>
-												<SelectItem value="MORAL">Persona Moral</SelectItem>
+												<SelectItem value="physical">Persona Física</SelectItem>
+												<SelectItem value="moral">Persona Moral</SelectItem>
+												<SelectItem value="trust">Fideicomiso</SelectItem>
 											</SelectContent>
 										</Select>
 									</div>
 								</div>
 
-								{formData.personType === "FISICA" ? (
+								{formData.personType === "physical" ? (
 									<>
 										<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 											<div className="space-y-2">
@@ -246,24 +235,24 @@ export function ClientEditPageContent({
 										/>
 									</div>
 									<div className="space-y-2">
-										<Label htmlFor="extNumber">Número Exterior</Label>
+										<Label htmlFor="externalNumber">Número Exterior</Label>
 										<Input
-											id="extNumber"
-											value={formData.extNumber || ""}
+											id="externalNumber"
+											value={formData.externalNumber || ""}
 											onChange={(e) =>
-												handleChange("extNumber", e.target.value)
+												handleChange("externalNumber", e.target.value)
 											}
 										/>
 									</div>
 								</div>
 								<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 									<div className="space-y-2">
-										<Label htmlFor="intNumber">Número Interior</Label>
+										<Label htmlFor="internalNumber">Número Interior</Label>
 										<Input
-											id="intNumber"
-											value={formData.intNumber || ""}
+											id="internalNumber"
+											value={formData.internalNumber || ""}
 											onChange={(e) =>
-												handleChange("intNumber", e.target.value)
+												handleChange("internalNumber", e.target.value)
 											}
 										/>
 									</div>
@@ -286,21 +275,25 @@ export function ClientEditPageContent({
 										/>
 									</div>
 									<div className="space-y-2">
-										<Label htmlFor="zipCode">Código Postal</Label>
+										<Label htmlFor="postalCode">Código Postal</Label>
 										<Input
-											id="zipCode"
-											value={formData.zipCode || ""}
-											onChange={(e) => handleChange("zipCode", e.target.value)}
+											id="postalCode"
+											value={formData.postalCode || ""}
+											onChange={(e) =>
+												handleChange("postalCode", e.target.value)
+											}
 										/>
 									</div>
 								</div>
 								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 									<div className="space-y-2">
-										<Label htmlFor="state">Estado</Label>
+										<Label htmlFor="stateCode">Estado</Label>
 										<Input
-											id="state"
-											value={formData.state || ""}
-											onChange={(e) => handleChange("state", e.target.value)}
+											id="stateCode"
+											value={formData.stateCode || ""}
+											onChange={(e) =>
+												handleChange("stateCode", e.target.value)
+											}
 										/>
 									</div>
 									<div className="space-y-2">
@@ -315,79 +308,14 @@ export function ClientEditPageContent({
 							</CardContent>
 						</Card>
 
-						{/* Status Information */}
-						<Card className="shadow-sm">
-							<CardHeader className="pb-4">
-								<CardTitle>Estado y Riesgo</CardTitle>
-							</CardHeader>
-							<CardContent className="space-y-4">
-								<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-									<div className="space-y-2">
-										<Label htmlFor="riskLevel">Nivel de Riesgo *</Label>
-										<Select
-											value={formData.riskLevel}
-											onValueChange={(value) =>
-												handleChange("riskLevel", value as RiskLevel)
-											}
-										>
-											<SelectTrigger id="riskLevel">
-												<SelectValue />
-											</SelectTrigger>
-											<SelectContent>
-												<SelectItem value="BAJO">Bajo</SelectItem>
-												<SelectItem value="MEDIO">Medio</SelectItem>
-												<SelectItem value="ALTO">Alto</SelectItem>
-											</SelectContent>
-										</Select>
-									</div>
-									<div className="space-y-2">
-										<Label htmlFor="status">Estado *</Label>
-										<Select
-											value={formData.status}
-											onValueChange={(value) =>
-												handleChange("status", value as ClientStatus)
-											}
-										>
-											<SelectTrigger id="status">
-												<SelectValue />
-											</SelectTrigger>
-											<SelectContent>
-												<SelectItem value="ACTIVO">Activo</SelectItem>
-												<SelectItem value="INACTIVO">Inactivo</SelectItem>
-												<SelectItem value="SUSPENDIDO">Suspendido</SelectItem>
-												<SelectItem value="BLOQUEADO">Bloqueado</SelectItem>
-											</SelectContent>
-										</Select>
-									</div>
-									<div className="space-y-2">
-										<Label htmlFor="reviewStatus">Estado de Revisión *</Label>
-										<Select
-											value={formData.reviewStatus}
-											onValueChange={(value) =>
-												handleChange("reviewStatus", value as ReviewStatus)
-											}
-										>
-											<SelectTrigger id="reviewStatus">
-												<SelectValue />
-											</SelectTrigger>
-											<SelectContent>
-												<SelectItem value="PENDIENTE">Pendiente</SelectItem>
-												<SelectItem value="EN_REVISION">En Revisión</SelectItem>
-												<SelectItem value="APROBADO">Aprobado</SelectItem>
-												<SelectItem value="RECHAZADO">Rechazado</SelectItem>
-											</SelectContent>
-										</Select>
-									</div>
-								</div>
-							</CardContent>
-						</Card>
-
 						{/* Actions */}
 						<div className="flex justify-end gap-3">
 							<Button
 								type="button"
 								variant="outline"
-								onClick={() => router.push(`/clients/${clientId}`)}
+								onClick={() =>
+									router.push(`/clients/${client?.rfc || clientId}`)
+								}
 							>
 								Cancelar
 							</Button>

@@ -22,32 +22,6 @@ import {
 import Link from "next/link";
 import { mockClients } from "@/data/mockClients";
 import { getClientDisplayName, type Client } from "@/types/client";
-import { cn } from "@/lib/utils";
-
-const riskBadgeStyles: Record<string, string> = {
-	BAJO: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30",
-	MEDIO:
-		"bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/30",
-	ALTO: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30",
-};
-
-const statusBadgeStyles: Record<string, string> = {
-	ACTIVO:
-		"bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30",
-	INACTIVO: "bg-muted text-muted-foreground border-muted-foreground/30",
-	SUSPENDIDO:
-		"bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/30",
-	BLOQUEADO: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30",
-};
-
-const reviewStatusBadgeStyles: Record<string, string> = {
-	PENDIENTE: "bg-muted text-muted-foreground border-muted-foreground/30",
-	EN_REVISION:
-		"bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/30",
-	APROBADO:
-		"bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30",
-	RECHAZADO: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30",
-};
 
 interface ClientDetailPageContentProps {
 	clientId: string;
@@ -60,7 +34,7 @@ export function ClientDetailPageContent({
 	const [client, setClient] = useState<Client | null>(null);
 
 	useEffect(() => {
-		const foundClient = mockClients.find((c) => c.id === clientId);
+		const foundClient = mockClients.find((c) => c.rfc === clientId);
 		setClient(foundClient || null);
 	}, [clientId]);
 
@@ -92,12 +66,12 @@ export function ClientDetailPageContent({
 	const displayName = getClientDisplayName(client);
 	const addressParts = [
 		client.street,
-		client.extNumber && `Ext. ${client.extNumber}`,
-		client.intNumber && `Int. ${client.intNumber}`,
+		client.externalNumber && `Ext. ${client.externalNumber}`,
+		client.internalNumber && `Int. ${client.internalNumber}`,
 		client.neighborhood,
 		client.city,
-		client.state,
-		client.zipCode,
+		client.stateCode,
+		client.postalCode,
 		client.country,
 	]
 		.filter(Boolean)
@@ -119,7 +93,7 @@ export function ClientDetailPageContent({
 						<p className="text-muted-foreground">Detalles del cliente</p>
 					</div>
 				</div>
-				<Link href={`/clients/${client.id}/edit`}>
+				<Link href={`/clients/${client.rfc}/edit`}>
 					<Button className="gap-2">
 						<Edit className="h-4 w-4" />
 						<span>Editar</span>
@@ -135,7 +109,7 @@ export function ClientDetailPageContent({
 							<div className="flex items-start justify-between">
 								<div className="space-y-2">
 									<div className="flex items-center gap-3">
-										{client.personType === "FISICA" ? (
+										{client.personType === "physical" ? (
 											<User className="h-8 w-8 text-primary" />
 										) : (
 											<Building2 className="h-8 w-8 text-primary" />
@@ -149,33 +123,8 @@ export function ClientDetailPageContent({
 									</div>
 								</div>
 								<div className="flex flex-col gap-2 items-end">
-									<Badge
-										variant="outline"
-										className={cn(
-											"font-medium",
-											riskBadgeStyles[client.riskLevel],
-										)}
-									>
-										{client.riskLevel === "BAJO"
-											? "Bajo"
-											: client.riskLevel === "MEDIO"
-												? "Medio"
-												: "Alto"}
-									</Badge>
-									<Badge
-										variant="outline"
-										className={cn(
-											"font-medium",
-											statusBadgeStyles[client.status],
-										)}
-									>
-										{client.status === "ACTIVO"
-											? "Activo"
-											: client.status === "INACTIVO"
-												? "Inactivo"
-												: client.status === "SUSPENDIDO"
-													? "Suspendido"
-													: "Bloqueado"}
+									<Badge variant="outline" className="font-medium">
+										RFC: {client.rfc}
 									</Badge>
 								</div>
 							</div>
@@ -209,80 +158,48 @@ export function ClientDetailPageContent({
 						</CardContent>
 					</Card>
 
-					{/* Status and Review Card */}
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-						<Card className="shadow-sm">
-							<CardHeader className="pb-4">
-								<CardTitle className="text-lg flex items-center gap-2">
-									<Shield className="h-5 w-5" />
-									Estado de Revisión
-								</CardTitle>
-							</CardHeader>
-							<CardContent className="space-y-4">
+					{/* Dates Card */}
+					<Card className="shadow-sm">
+						<CardHeader className="pb-4">
+							<CardTitle className="text-lg flex items-center gap-2">
+								<Calendar className="h-5 w-5" />
+								Fechas Importantes
+							</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div className="flex items-center gap-3">
+								<Calendar className="h-5 w-5 text-muted-foreground" />
 								<div>
-									<p className="text-sm text-muted-foreground mb-2">
-										Estado actual
+									<p className="text-sm text-muted-foreground">
+										Fecha de creación
 									</p>
-									<Badge
-										variant="outline"
-										className={cn(
-											"font-medium",
-											reviewStatusBadgeStyles[client.reviewStatus],
-										)}
-									>
-										{client.reviewStatus === "PENDIENTE"
-											? "Pendiente"
-											: client.reviewStatus === "EN_REVISION"
-												? "En Revisión"
-												: client.reviewStatus === "APROBADO"
-													? "Aprobado"
-													: "Rechazado"}
-									</Badge>
+									<p className="font-medium">
+										{new Date(client.createdAt).toLocaleDateString("es-MX", {
+											day: "2-digit",
+											month: "long",
+											year: "numeric",
+										})}
+									</p>
 								</div>
-								<Separator />
-								<div className="flex items-center gap-3">
-									<Calendar className="h-5 w-5 text-muted-foreground" />
-									<div>
-										<p className="text-sm text-muted-foreground">
-											Última revisión
-										</p>
-										<p className="font-medium">
-											{new Date(client.lastReview).toLocaleDateString("es-MX", {
-												day: "2-digit",
-												month: "long",
-												year: "numeric",
-											})}
-										</p>
-									</div>
+							</div>
+							<Separator />
+							<div className="flex items-center gap-3">
+								<Calendar className="h-5 w-5 text-muted-foreground" />
+								<div>
+									<p className="text-sm text-muted-foreground">
+										Última actualización
+									</p>
+									<p className="font-medium">
+										{new Date(client.updatedAt).toLocaleDateString("es-MX", {
+											day: "2-digit",
+											month: "long",
+											year: "numeric",
+										})}
+									</p>
 								</div>
-							</CardContent>
-						</Card>
-
-						<Card className="shadow-sm">
-							<CardHeader className="pb-4">
-								<CardTitle className="text-lg flex items-center gap-2">
-									<AlertTriangle className="h-5 w-5" />
-									Avisos
-								</CardTitle>
-							</CardHeader>
-							<CardContent>
-								<div className="space-y-4">
-									<div>
-										<p className="text-3xl font-bold">{client.alertCount}</p>
-										<p className="text-sm text-muted-foreground">
-											avisos activos
-										</p>
-									</div>
-									{client.alertCount > 0 && (
-										<Button variant="outline" className="w-full">
-											<FileText className="mr-2 h-4 w-4" />
-											Ver Avisos
-										</Button>
-									)}
-								</div>
-							</CardContent>
-						</Card>
-					</div>
+							</div>
+						</CardContent>
+					</Card>
 
 					{/* Additional Information */}
 					<Card className="shadow-sm">
@@ -296,16 +213,16 @@ export function ClientDetailPageContent({
 										Tipo de Persona
 									</p>
 									<p className="font-medium">
-										{client.personType === "FISICA"
+										{client.personType === "physical"
 											? "Persona Física"
-											: "Persona Moral"}
+											: client.personType === "moral"
+												? "Persona Moral"
+												: "Fideicomiso"}
 									</p>
 								</div>
 								<div>
-									<p className="text-sm text-muted-foreground mb-1">
-										ID del Cliente
-									</p>
-									<p className="font-medium font-mono text-sm">{client.id}</p>
+									<p className="text-sm text-muted-foreground mb-1">RFC</p>
+									<p className="font-medium font-mono text-sm">{client.rfc}</p>
 								</div>
 							</div>
 						</CardContent>

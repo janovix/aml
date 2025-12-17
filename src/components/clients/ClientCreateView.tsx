@@ -21,51 +21,66 @@ import {
 } from "@algtools/ui";
 import { ArrowLeft, Save } from "lucide-react";
 import { useToast } from "../../hooks/use-toast";
-import type { PersonType, ClientStatus } from "../../types/client";
+import type { PersonType, ClientCreateRequest } from "../../types/client";
+import { createClient } from "../../lib/api/clients";
 
 interface ClientFormData {
 	personType: PersonType;
-	rfc: string;
+	// Physical person fields
 	firstName?: string;
 	lastName?: string;
 	secondLastName?: string;
+	birthDate?: string; // date format YYYY-MM-DD
+	curp?: string;
+	// Moral/Trust fields
 	businessName?: string;
+	incorporationDate?: string; // date-time format
+	// Common fields
+	rfc: string;
+	nationality?: string;
 	email: string;
 	phone: string;
-	status: ClientStatus;
-	street?: string;
-	extNumber?: string;
-	intNumber?: string;
-	neighborhood?: string;
-	city?: string;
-	state?: string;
-	zipCode?: string;
-	country?: string;
-	notes: string;
+	country: string;
+	stateCode: string;
+	city: string;
+	municipality: string;
+	neighborhood: string;
+	street: string;
+	externalNumber: string;
+	internalNumber?: string;
+	postalCode: string;
+	reference?: string;
+	notes?: string;
 }
 
 export function ClientCreateView(): React.JSX.Element {
 	const router = useRouter();
 	const { toast } = useToast();
+	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const [formData, setFormData] = useState<ClientFormData>({
-		personType: "MORAL",
+		personType: "moral",
 		rfc: "",
 		firstName: "",
 		lastName: "",
 		secondLastName: "",
+		birthDate: "",
+		curp: "",
 		businessName: "",
+		incorporationDate: "",
+		nationality: "",
 		email: "",
 		phone: "",
-		status: "ACTIVO",
-		street: "",
-		extNumber: "",
-		intNumber: "",
-		neighborhood: "",
-		city: "",
-		state: "",
-		zipCode: "",
 		country: "México",
+		stateCode: "",
+		city: "",
+		municipality: "",
+		neighborhood: "",
+		street: "",
+		externalNumber: "",
+		internalNumber: "",
+		postalCode: "",
+		reference: "",
 		notes: "",
 	});
 
@@ -76,15 +91,70 @@ export function ClientCreateView(): React.JSX.Element {
 		setFormData((prev) => ({ ...prev, [field]: value }));
 	};
 
-	const handleSubmit = (e: React.FormEvent): void => {
+	const handleSubmit = async (e: React.FormEvent): Promise<void> => {
 		e.preventDefault();
+		setIsSubmitting(true);
 
-		toast({
-			title: "Cliente creado",
-			description: "El nuevo cliente se ha registrado exitosamente.",
-		});
+		try {
+			// Build the request payload based on personType
+			const request: ClientCreateRequest = {
+				personType: formData.personType,
+				rfc: formData.rfc,
+				email: formData.email,
+				phone: formData.phone,
+				country: formData.country,
+				stateCode: formData.stateCode,
+				city: formData.city,
+				municipality: formData.municipality,
+				neighborhood: formData.neighborhood,
+				street: formData.street,
+				externalNumber: formData.externalNumber,
+				postalCode: formData.postalCode,
+			};
 
-		router.push("/clients");
+			// Add personType-specific fields
+			if (formData.personType === "physical") {
+				request.firstName = formData.firstName;
+				request.lastName = formData.lastName;
+				if (formData.secondLastName)
+					request.secondLastName = formData.secondLastName;
+				if (formData.birthDate) request.birthDate = formData.birthDate;
+				if (formData.curp) request.curp = formData.curp;
+			} else {
+				// moral or trust
+				request.businessName = formData.businessName;
+				if (formData.incorporationDate)
+					request.incorporationDate = formData.incorporationDate;
+			}
+
+			// Add optional fields
+			if (formData.nationality) request.nationality = formData.nationality;
+			if (formData.internalNumber)
+				request.internalNumber = formData.internalNumber;
+			if (formData.reference) request.reference = formData.reference;
+			if (formData.notes) request.notes = formData.notes;
+
+			await createClient({ input: request });
+
+			toast({
+				title: "Cliente creado",
+				description: "El nuevo cliente se ha registrado exitosamente.",
+			});
+
+			router.push("/clients");
+		} catch (error) {
+			console.error("Error creating client:", error);
+			toast({
+				title: "Error",
+				description:
+					error instanceof Error
+						? error.message
+						: "No se pudo crear el cliente. Por favor, intente nuevamente.",
+				variant: "destructive",
+			});
+		} finally {
+			setIsSubmitting(false);
+		}
 	};
 
 	const handleCancel = (): void => {
@@ -109,9 +179,13 @@ export function ClientCreateView(): React.JSX.Element {
 					<Button variant="outline" onClick={handleCancel}>
 						Cancelar
 					</Button>
-					<Button className="gap-2" onClick={handleSubmit}>
+					<Button
+						className="gap-2"
+						onClick={handleSubmit}
+						disabled={isSubmitting}
+					>
 						<Save className="h-4 w-4" />
-						Crear Cliente
+						{isSubmitting ? "Creando..." : "Crear Cliente"}
 					</Button>
 				</div>
 			</div>
@@ -134,8 +208,9 @@ export function ClientCreateView(): React.JSX.Element {
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="FISICA">Persona Física</SelectItem>
-									<SelectItem value="MORAL">Persona Moral</SelectItem>
+									<SelectItem value="physical">Persona Física</SelectItem>
+									<SelectItem value="moral">Persona Moral</SelectItem>
+									<SelectItem value="trust">Fideicomiso</SelectItem>
 								</SelectContent>
 							</Select>
 						</div>
@@ -145,63 +220,107 @@ export function ClientCreateView(): React.JSX.Element {
 				<Card>
 					<CardHeader>
 						<CardTitle className="text-lg">
-							{formData.personType === "FISICA"
+							{formData.personType === "physical"
 								? "Datos Personales"
 								: "Datos de la Empresa"}
 						</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-4">
-						{formData.personType === "FISICA" ? (
-							<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-								<div className="space-y-2">
-									<Label htmlFor="firstName">Nombre *</Label>
-									<Input
-										id="firstName"
-										value={formData.firstName}
-										onChange={(e) =>
-											handleInputChange("firstName", e.target.value)
-										}
-										placeholder="Juan"
-										required
-									/>
+						{formData.personType === "physical" ? (
+							<>
+								<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+									<div className="space-y-2">
+										<Label htmlFor="firstName">Nombre *</Label>
+										<Input
+											id="firstName"
+											value={formData.firstName}
+											onChange={(e) =>
+												handleInputChange("firstName", e.target.value)
+											}
+											placeholder="Juan"
+											required
+										/>
+									</div>
+									<div className="space-y-2">
+										<Label htmlFor="lastName">Apellido Paterno *</Label>
+										<Input
+											id="lastName"
+											value={formData.lastName}
+											onChange={(e) =>
+												handleInputChange("lastName", e.target.value)
+											}
+											placeholder="Pérez"
+											required
+										/>
+									</div>
+									<div className="space-y-2">
+										<Label htmlFor="secondLastName">Apellido Materno</Label>
+										<Input
+											id="secondLastName"
+											value={formData.secondLastName}
+											onChange={(e) =>
+												handleInputChange("secondLastName", e.target.value)
+											}
+											placeholder="García"
+										/>
+									</div>
 								</div>
-								<div className="space-y-2">
-									<Label htmlFor="lastName">Apellido Paterno *</Label>
-									<Input
-										id="lastName"
-										value={formData.lastName}
-										onChange={(e) =>
-											handleInputChange("lastName", e.target.value)
-										}
-										placeholder="Pérez"
-										required
-									/>
+								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+									<div className="space-y-2">
+										<Label htmlFor="birthDate">Fecha de Nacimiento *</Label>
+										<Input
+											id="birthDate"
+											type="date"
+											value={formData.birthDate}
+											onChange={(e) =>
+												handleInputChange("birthDate", e.target.value)
+											}
+											required
+										/>
+									</div>
+									<div className="space-y-2">
+										<Label htmlFor="curp">CURP *</Label>
+										<Input
+											id="curp"
+											value={formData.curp}
+											onChange={(e) =>
+												handleInputChange("curp", e.target.value)
+											}
+											placeholder="PECJ850615HDFRRN09"
+											required
+										/>
+									</div>
 								</div>
-								<div className="space-y-2">
-									<Label htmlFor="secondLastName">Apellido Materno</Label>
-									<Input
-										id="secondLastName"
-										value={formData.secondLastName}
-										onChange={(e) =>
-											handleInputChange("secondLastName", e.target.value)
-										}
-										placeholder="García"
-									/>
-								</div>
-							</div>
+							</>
 						) : (
-							<div className="space-y-2">
-								<Label htmlFor="businessName">Razón Social *</Label>
-								<Input
-									id="businessName"
-									value={formData.businessName}
-									onChange={(e) =>
-										handleInputChange("businessName", e.target.value)
-									}
-									placeholder="Ej. Empresa S.A. de C.V."
-									required
-								/>
-							</div>
+							<>
+								<div className="space-y-2">
+									<Label htmlFor="businessName">Razón Social *</Label>
+									<Input
+										id="businessName"
+										value={formData.businessName}
+										onChange={(e) =>
+											handleInputChange("businessName", e.target.value)
+										}
+										placeholder="Ej. Empresa S.A. de C.V."
+										required
+									/>
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="incorporationDate">
+										Fecha de Constitución *
+									</Label>
+									<Input
+										id="incorporationDate"
+										type="datetime-local"
+										value={formData.incorporationDate}
+										onChange={(e) =>
+											handleInputChange("incorporationDate", e.target.value)
+										}
+										required
+									/>
+								</div>
+							</>
 						)}
 						<div className="space-y-2">
 							<Label htmlFor="rfc">RFC *</Label>
@@ -209,15 +328,34 @@ export function ClientCreateView(): React.JSX.Element {
 								id="rfc"
 								value={formData.rfc}
 								onChange={(e) => handleInputChange("rfc", e.target.value)}
-								className="font-mono"
+								className="font-mono uppercase"
 								placeholder={
-									formData.personType === "FISICA"
+									formData.personType === "physical"
 										? "PECJ850615E56"
 										: "EMP850101AAA"
 								}
+								maxLength={formData.personType === "physical" ? 13 : 12}
 								required
 							/>
+							<p className="text-xs text-muted-foreground">
+								{formData.personType === "physical"
+									? "13 caracteres para persona física"
+									: "12 caracteres para persona moral/fideicomiso"}
+							</p>
 						</div>
+						{formData.personType === "physical" && (
+							<div className="space-y-2">
+								<Label htmlFor="nationality">Nacionalidad</Label>
+								<Input
+									id="nationality"
+									value={formData.nationality}
+									onChange={(e) =>
+										handleInputChange("nationality", e.target.value)
+									}
+									placeholder="Mexicana"
+								/>
+							</div>
+						)}
 					</CardContent>
 				</Card>
 
@@ -260,40 +398,42 @@ export function ClientCreateView(): React.JSX.Element {
 					<CardContent className="space-y-4">
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 							<div className="md:col-span-2 space-y-2">
-								<Label htmlFor="street">Calle</Label>
+								<Label htmlFor="street">Calle *</Label>
 								<Input
 									id="street"
 									value={formData.street}
 									onChange={(e) => handleInputChange("street", e.target.value)}
 									placeholder="Av. Constitución"
+									required
 								/>
 							</div>
 							<div className="space-y-2">
-								<Label htmlFor="extNumber">Número Ext.</Label>
+								<Label htmlFor="externalNumber">Número Ext. *</Label>
 								<Input
-									id="extNumber"
-									value={formData.extNumber}
+									id="externalNumber"
+									value={formData.externalNumber}
 									onChange={(e) =>
-										handleInputChange("extNumber", e.target.value)
+										handleInputChange("externalNumber", e.target.value)
 									}
 									placeholder="123"
+									required
 								/>
 							</div>
 						</div>
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 							<div className="space-y-2">
-								<Label htmlFor="intNumber">Número Int.</Label>
+								<Label htmlFor="internalNumber">Número Int.</Label>
 								<Input
-									id="intNumber"
-									value={formData.intNumber}
+									id="internalNumber"
+									value={formData.internalNumber}
 									onChange={(e) =>
-										handleInputChange("intNumber", e.target.value)
+										handleInputChange("internalNumber", e.target.value)
 									}
 									placeholder="A"
 								/>
 							</div>
 							<div className="space-y-2">
-								<Label htmlFor="neighborhood">Colonia</Label>
+								<Label htmlFor="neighborhood">Colonia *</Label>
 								<Input
 									id="neighborhood"
 									value={formData.neighborhood}
@@ -301,46 +441,76 @@ export function ClientCreateView(): React.JSX.Element {
 										handleInputChange("neighborhood", e.target.value)
 									}
 									placeholder="Centro"
+									required
 								/>
 							</div>
 							<div className="space-y-2">
-								<Label htmlFor="zipCode">Código Postal</Label>
+								<Label htmlFor="postalCode">Código Postal *</Label>
 								<Input
-									id="zipCode"
-									value={formData.zipCode}
-									onChange={(e) => handleInputChange("zipCode", e.target.value)}
+									id="postalCode"
+									value={formData.postalCode}
+									onChange={(e) =>
+										handleInputChange("postalCode", e.target.value)
+									}
 									placeholder="64000"
+									required
 								/>
 							</div>
 						</div>
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 							<div className="space-y-2">
-								<Label htmlFor="city">Ciudad</Label>
+								<Label htmlFor="city">Ciudad *</Label>
 								<Input
 									id="city"
 									value={formData.city}
 									onChange={(e) => handleInputChange("city", e.target.value)}
 									placeholder="Monterrey"
+									required
 								/>
 							</div>
 							<div className="space-y-2">
-								<Label htmlFor="state">Estado</Label>
+								<Label htmlFor="municipality">Municipio *</Label>
 								<Input
-									id="state"
-									value={formData.state}
-									onChange={(e) => handleInputChange("state", e.target.value)}
-									placeholder="Nuevo León"
+									id="municipality"
+									value={formData.municipality}
+									onChange={(e) =>
+										handleInputChange("municipality", e.target.value)
+									}
+									placeholder="Monterrey"
+									required
 								/>
 							</div>
 							<div className="space-y-2">
-								<Label htmlFor="country">País</Label>
+								<Label htmlFor="stateCode">Estado *</Label>
 								<Input
-									id="country"
-									value={formData.country}
-									onChange={(e) => handleInputChange("country", e.target.value)}
-									placeholder="México"
+									id="stateCode"
+									value={formData.stateCode}
+									onChange={(e) =>
+										handleInputChange("stateCode", e.target.value)
+									}
+									placeholder="NL"
+									required
 								/>
 							</div>
+						</div>
+						<div className="space-y-2">
+							<Label htmlFor="country">País *</Label>
+							<Input
+								id="country"
+								value={formData.country}
+								onChange={(e) => handleInputChange("country", e.target.value)}
+								placeholder="México"
+								required
+							/>
+						</div>
+						<div className="space-y-2">
+							<Label htmlFor="reference">Referencia</Label>
+							<Input
+								id="reference"
+								value={formData.reference}
+								onChange={(e) => handleInputChange("reference", e.target.value)}
+								placeholder="Entre calles X y Y"
+							/>
 						</div>
 					</CardContent>
 				</Card>

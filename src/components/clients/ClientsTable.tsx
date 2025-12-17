@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
 	Card,
 	CardContent,
@@ -43,68 +43,58 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type {
-	Client,
-	RiskLevel,
-	ClientStatus,
-	ReviewStatus,
-} from "@/types/client";
+import type { Client } from "@/types/client";
 import { getClientDisplayName } from "@/types/client";
-import { mockClients } from "@/data/mockClients";
-
-const riskBadgeStyles: Record<RiskLevel, string> = {
-	BAJO: "bg-[rgb(var(--risk-low-bg))] text-[rgb(var(--risk-low))] border-[rgb(var(--risk-low))]/30",
-	MEDIO:
-		"bg-[rgb(var(--risk-medium-bg))] text-[rgb(var(--risk-medium))] border-[rgb(var(--risk-medium))]/30",
-	ALTO: "bg-[rgb(var(--risk-high-bg))] text-[rgb(var(--risk-high))] border-[rgb(var(--risk-high))]/30",
-};
-
-const statusBadgeStyles: Record<ClientStatus, string> = {
-	ACTIVO:
-		"bg-[rgb(var(--risk-low-bg))] text-[rgb(var(--risk-low))] border-[rgb(var(--risk-low))]/30",
-	INACTIVO: "bg-muted text-muted-foreground border-muted-foreground/30",
-	SUSPENDIDO:
-		"bg-[rgb(var(--risk-medium-bg))] text-[rgb(var(--risk-medium))] border-[rgb(var(--risk-medium))]/30",
-	BLOQUEADO:
-		"bg-[rgb(var(--risk-high-bg))] text-[rgb(var(--risk-high))] border-[rgb(var(--risk-high))]/30",
-};
-
-const reviewStatusBadgeStyles: Record<ReviewStatus, string> = {
-	PENDIENTE: "bg-muted text-muted-foreground border-muted-foreground/30",
-	EN_REVISION:
-		"bg-[rgb(var(--risk-medium-bg))] text-[rgb(var(--risk-medium))] border-[rgb(var(--risk-medium))]/30",
-	APROBADO:
-		"bg-[rgb(var(--risk-low-bg))] text-[rgb(var(--risk-low))] border-[rgb(var(--risk-low))]/30",
-	RECHAZADO:
-		"bg-[rgb(var(--risk-high-bg))] text-[rgb(var(--risk-high))] border-[rgb(var(--risk-high))]/30",
-};
+import { listClients, deleteClient } from "@/lib/api/clients";
 
 export function ClientsTable(): React.ReactElement {
 	const router = useRouter();
 	const { toast } = useToast();
+	const [clients, setClients] = useState<Client[]>([]);
+	const [isLoading, setIsLoading] = useState(true);
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 	const [sortColumn, setSortColumn] = useState<string | null>(null);
 	const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
 
-	const allSelected = selectedIds.size === mockClients.length;
+	useEffect(() => {
+		const fetchClients = async () => {
+			try {
+				setIsLoading(true);
+				const response = await listClients({ page: 1, limit: 100 });
+				setClients(response.data);
+			} catch (error) {
+				console.error("Error fetching clients:", error);
+				toast({
+					title: "Error",
+					description: "No se pudieron cargar los clientes.",
+					variant: "destructive",
+				});
+			} finally {
+				setIsLoading(false);
+			}
+		};
+		fetchClients();
+	}, [toast]);
+
+	const allSelected = selectedIds.size === clients.length && clients.length > 0;
 	const someSelected = selectedIds.size > 0 && !allSelected;
 
 	const handleSelectAll = (): void => {
 		if (allSelected) {
 			setSelectedIds(new Set());
 		} else {
-			setSelectedIds(new Set(mockClients.map((c) => c.id)));
+			setSelectedIds(new Set(clients.map((c) => c.rfc)));
 		}
 	};
 
-	const handleSelectOne = (id: string): void => {
+	const handleSelectOne = (rfc: string): void => {
 		const newSelected = new Set(selectedIds);
-		if (newSelected.has(id)) {
-			newSelected.delete(id);
+		if (newSelected.has(rfc)) {
+			newSelected.delete(rfc);
 		} else {
-			newSelected.add(id);
+			newSelected.add(rfc);
 		}
 		setSelectedIds(newSelected);
 	};
@@ -127,11 +117,11 @@ export function ClientsTable(): React.ReactElement {
 	};
 
 	const handleViewDetails = (client: Client): void => {
-		router.push(`/clients/${client.id}`);
+		router.push(`/clients/${client.rfc}`);
 	};
 
 	const handleEdit = (client: Client): void => {
-		router.push(`/clients/${client.id}/edit`);
+		router.push(`/clients/${client.rfc}/edit`);
 	};
 
 	const handleGenerateReport = (client: Client): void => {
@@ -164,19 +154,31 @@ export function ClientsTable(): React.ReactElement {
 		setDeleteDialogOpen(true);
 	};
 
-	const handleDeleteConfirm = (): void => {
+	const handleDeleteConfirm = async (): Promise<void> => {
 		if (clientToDelete) {
-			toast({
-				title: "Cliente eliminado",
-				description: `${getClientDisplayName(clientToDelete)} ha sido eliminado del sistema.`,
-			});
-			setDeleteDialogOpen(false);
-			setClientToDelete(null);
+			try {
+				await deleteClient({ rfc: clientToDelete.rfc });
+				setClients(clients.filter((c) => c.rfc !== clientToDelete.rfc));
+				toast({
+					title: "Cliente eliminado",
+					description: `${getClientDisplayName(clientToDelete)} ha sido eliminado del sistema.`,
+				});
+			} catch (error) {
+				console.error("Error deleting client:", error);
+				toast({
+					title: "Error",
+					description: "No se pudo eliminar el cliente.",
+					variant: "destructive",
+				});
+			} finally {
+				setDeleteDialogOpen(false);
+				setClientToDelete(null);
+			}
 		}
 	};
 
 	const handleBulkExport = (): void => {
-		const selectedClients = mockClients.filter((c) => selectedIds.has(c.id));
+		const selectedClients = clients.filter((c) => selectedIds.has(c.rfc));
 		const exportData = JSON.stringify(selectedClients, null, 2);
 		const blob = new Blob([exportData], { type: "application/json" });
 		const url = URL.createObjectURL(blob);
@@ -211,7 +213,9 @@ export function ClientsTable(): React.ReactElement {
 							Lista de Clientes
 						</CardTitle>
 						<p className="text-sm text-muted-foreground mt-1">
-							{mockClients.length} clientes en total
+							{isLoading
+								? "Cargando..."
+								: `${clients.length} clientes en total`}
 							{selectedIds.size > 0 && ` · ${selectedIds.size} seleccionados`}
 						</p>
 					</div>
@@ -296,163 +300,147 @@ export function ClientsTable(): React.ReactElement {
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{mockClients.map((client) => (
-									<TableRow
-										key={client.id}
-										className={cn(
-											"cursor-pointer transition-colors",
-											selectedIds.has(client.id) && "bg-muted/50",
-										)}
-										onClick={() => handleSelectOne(client.id)}
-									>
+								{isLoading ? (
+									<TableRow>
 										<TableCell
-											className="pl-6"
-											onClick={(e) => e.stopPropagation()}
+											colSpan={10}
+											className="text-center py-8 text-muted-foreground"
 										>
-											<Checkbox
-												checked={selectedIds.has(client.id)}
-												onCheckedChange={() => handleSelectOne(client.id)}
-												aria-label={`Seleccionar ${getClientDisplayName(client)}`}
-											/>
-										</TableCell>
-										<TableCell>
-											<Link
-												href={`/clients/${client.id}`}
-												className="font-medium text-foreground hover:text-primary hover:underline underline-offset-2 transition-colors"
-												onClick={(e) => e.stopPropagation()}
-											>
-												{getClientDisplayName(client)}
-											</Link>
-										</TableCell>
-										<TableCell className="hidden md:table-cell font-mono text-sm text-muted-foreground">
-											{client.rfc}
-										</TableCell>
-										<TableCell className="hidden lg:table-cell">
-											<Badge variant="outline" className="font-medium">
-												{client.personType === "FISICA" ? "Física" : "Moral"}
-											</Badge>
-										</TableCell>
-										<TableCell>
-											<Badge
-												variant="outline"
-												className={cn(
-													"min-w-[60px] justify-center font-medium",
-													riskBadgeStyles[client.riskLevel],
-												)}
-											>
-												{client.riskLevel === "BAJO"
-													? "Bajo"
-													: client.riskLevel === "MEDIO"
-														? "Medio"
-														: "Alto"}
-											</Badge>
-										</TableCell>
-										<TableCell className="hidden sm:table-cell">
-											<Badge
-												variant="outline"
-												className={cn(
-													"font-medium",
-													statusBadgeStyles[client.status],
-												)}
-											>
-												{client.status === "ACTIVO"
-													? "Activo"
-													: client.status === "INACTIVO"
-														? "Inactivo"
-														: client.status === "SUSPENDIDO"
-															? "Suspendido"
-															: "Bloqueado"}
-											</Badge>
-										</TableCell>
-										<TableCell className="hidden xl:table-cell">
-											<Badge
-												variant="outline"
-												className={cn(
-													"font-medium",
-													reviewStatusBadgeStyles[client.reviewStatus],
-												)}
-											>
-												{client.reviewStatus === "PENDIENTE"
-													? "Pendiente"
-													: client.reviewStatus === "EN_REVISION"
-														? "En Revisión"
-														: client.reviewStatus === "APROBADO"
-															? "Aprobado"
-															: "Rechazado"}
-											</Badge>
-										</TableCell>
-										<TableCell className="hidden lg:table-cell text-muted-foreground">
-											{formatDate(client.lastReview)}
-										</TableCell>
-										<TableCell className="hidden md:table-cell text-center">
-											{client.alertCount > 0 ? (
-												<Badge
-													variant="outline"
-													className="bg-[rgb(var(--risk-high-bg))] text-[rgb(var(--risk-high))] border-[rgb(var(--risk-high))]/30"
-												>
-													{client.alertCount}
-												</Badge>
-											) : (
-												<span className="text-muted-foreground">—</span>
-											)}
-										</TableCell>
-										<TableCell
-											className="pr-6"
-											onClick={(e) => e.stopPropagation()}
-										>
-											<DropdownMenu>
-												<DropdownMenuTrigger asChild>
-													<Button
-														variant="ghost"
-														size="icon"
-														className="h-8 w-8"
-														aria-label={`Acciones para ${getClientDisplayName(client)}`}
-													>
-														<MoreHorizontal className="h-4 w-4" />
-													</Button>
-												</DropdownMenuTrigger>
-												<DropdownMenuContent align="end" className="w-48">
-													<DropdownMenuItem
-														className="gap-2"
-														onClick={() => handleViewDetails(client)}
-													>
-														<Eye className="h-4 w-4" />
-														Ver Detalles
-													</DropdownMenuItem>
-													<DropdownMenuItem
-														className="gap-2"
-														onClick={() => handleEdit(client)}
-													>
-														<Edit className="h-4 w-4" />
-														Editar
-													</DropdownMenuItem>
-													<DropdownMenuItem
-														className="gap-2"
-														onClick={() => handleGenerateReport(client)}
-													>
-														<FileText className="h-4 w-4" />
-														Generar Reporte
-													</DropdownMenuItem>
-													<DropdownMenuSeparator />
-													<DropdownMenuItem
-														className="gap-2 text-[rgb(var(--risk-high))]"
-														onClick={() => handleFlagSuspicious(client)}
-													>
-														<Flag className="h-4 w-4" />
-														Marcar como Sospechoso
-													</DropdownMenuItem>
-													<DropdownMenuItem
-														className="gap-2 text-destructive"
-														onClick={() => handleDeleteClick(client)}
-													>
-														<Trash2 className="h-4 w-4" />
-														Eliminar
-													</DropdownMenuItem>
-												</DropdownMenuContent>
-											</DropdownMenu>
+											Cargando clientes...
 										</TableCell>
 									</TableRow>
-								))}
+								) : clients.length === 0 ? (
+									<TableRow>
+										<TableCell
+											colSpan={10}
+											className="text-center py-8 text-muted-foreground"
+										>
+											No hay clientes registrados
+										</TableCell>
+									</TableRow>
+								) : (
+									clients.map((client) => (
+										<TableRow
+											key={client.rfc}
+											className={cn(
+												"cursor-pointer transition-colors",
+												selectedIds.has(client.rfc) && "bg-muted/50",
+											)}
+											onClick={() => handleSelectOne(client.rfc)}
+										>
+											<TableCell
+												className="pl-6"
+												onClick={(e) => e.stopPropagation()}
+											>
+												<Checkbox
+													checked={selectedIds.has(client.rfc)}
+													onCheckedChange={() => handleSelectOne(client.rfc)}
+													aria-label={`Seleccionar ${getClientDisplayName(client)}`}
+												/>
+											</TableCell>
+											<TableCell>
+												<Link
+													href={`/clients/${client.rfc}`}
+													className="font-medium text-foreground hover:text-primary hover:underline underline-offset-2 transition-colors"
+													onClick={(e) => e.stopPropagation()}
+												>
+													{getClientDisplayName(client)}
+												</Link>
+											</TableCell>
+											<TableCell className="hidden md:table-cell font-mono text-sm text-muted-foreground">
+												{client.rfc}
+											</TableCell>
+											<TableCell className="hidden lg:table-cell">
+												<Badge variant="outline" className="font-medium">
+													{client.personType === "physical"
+														? "Física"
+														: client.personType === "moral"
+															? "Moral"
+															: "Fideicomiso"}
+												</Badge>
+											</TableCell>
+											<TableCell>
+												<Badge
+													variant="outline"
+													className="min-w-[60px] justify-center font-medium"
+												>
+													—
+												</Badge>
+											</TableCell>
+											<TableCell className="hidden sm:table-cell">
+												<Badge variant="outline" className="font-medium">
+													—
+												</Badge>
+											</TableCell>
+											<TableCell className="hidden xl:table-cell">
+												<Badge variant="outline" className="font-medium">
+													—
+												</Badge>
+											</TableCell>
+											<TableCell className="hidden lg:table-cell text-muted-foreground">
+												{formatDate(client.createdAt)}
+											</TableCell>
+											<TableCell className="hidden md:table-cell text-center">
+												<span className="text-muted-foreground">—</span>
+											</TableCell>
+											<TableCell
+												className="pr-6"
+												onClick={(e) => e.stopPropagation()}
+											>
+												<DropdownMenu>
+													<DropdownMenuTrigger asChild>
+														<Button
+															variant="ghost"
+															size="icon"
+															className="h-8 w-8"
+															aria-label={`Acciones para ${getClientDisplayName(client)}`}
+														>
+															<MoreHorizontal className="h-4 w-4" />
+														</Button>
+													</DropdownMenuTrigger>
+													<DropdownMenuContent align="end" className="w-48">
+														<DropdownMenuItem
+															className="gap-2"
+															onClick={() => handleViewDetails(client)}
+														>
+															<Eye className="h-4 w-4" />
+															Ver Detalles
+														</DropdownMenuItem>
+														<DropdownMenuItem
+															className="gap-2"
+															onClick={() => handleEdit(client)}
+														>
+															<Edit className="h-4 w-4" />
+															Editar
+														</DropdownMenuItem>
+														<DropdownMenuItem
+															className="gap-2"
+															onClick={() => handleGenerateReport(client)}
+														>
+															<FileText className="h-4 w-4" />
+															Generar Reporte
+														</DropdownMenuItem>
+														<DropdownMenuSeparator />
+														<DropdownMenuItem
+															className="gap-2 text-[rgb(var(--risk-high))]"
+															onClick={() => handleFlagSuspicious(client)}
+														>
+															<Flag className="h-4 w-4" />
+															Marcar como Sospechoso
+														</DropdownMenuItem>
+														<DropdownMenuItem
+															className="gap-2 text-destructive"
+															onClick={() => handleDeleteClick(client)}
+														>
+															<Trash2 className="h-4 w-4" />
+															Eliminar
+														</DropdownMenuItem>
+													</DropdownMenuContent>
+												</DropdownMenu>
+											</TableCell>
+										</TableRow>
+									))
+								)}
 							</TableBody>
 						</Table>
 					</div>
