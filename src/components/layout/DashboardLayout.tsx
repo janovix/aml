@@ -153,11 +153,7 @@ function Navbar() {
 				<ThemeSwitcher />
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
-						<Button
-							variant="ghost"
-							size="icon"
-							className="rounded-full"
-						>
+						<Button variant="ghost" size="icon" className="rounded-full">
 							<div className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
 								<User className="h-4 w-4" />
 							</div>
