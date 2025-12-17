@@ -7,6 +7,12 @@ const meta = {
 	component: TransactionEditView,
 	parameters: {
 		layout: "fullscreen",
+		docs: {
+			description: {
+				component:
+					"View component for editing transaction information. Provides form fields for updating transaction data including vehicle details, client association, transaction amount, and status. Includes save and cancel actions.",
+			},
+		},
 		nextjs: {
 			router: {
 				pathname: "/transactions/1/edit",

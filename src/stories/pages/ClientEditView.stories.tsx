@@ -7,6 +7,12 @@ const meta = {
 	component: ClientEditView,
 	parameters: {
 		layout: "fullscreen",
+		docs: {
+			description: {
+				component:
+					"View component for editing client information. Provides form fields for updating client data including business details, risk assessment, contact information, and compliance notes. Includes save and cancel actions.",
+			},
+		},
 		nextjs: {
 			router: {
 				pathname: "/clients/1/edit",

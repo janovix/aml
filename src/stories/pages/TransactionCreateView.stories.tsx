@@ -7,6 +7,12 @@ const meta = {
 	component: TransactionCreateView,
 	parameters: {
 		layout: "fullscreen",
+		docs: {
+			description: {
+				component:
+					"View component for creating a new transaction. Provides form fields for entering transaction information including vehicle details, client selection, transaction amount, and status. Includes create and cancel actions.",
+			},
+		},
 		nextjs: {
 			router: {
 				pathname: "/transactions/new",

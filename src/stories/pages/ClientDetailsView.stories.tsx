@@ -7,6 +7,12 @@ const meta = {
 	component: ClientDetailsView,
 	parameters: {
 		layout: "fullscreen",
+		docs: {
+			description: {
+				component:
+					"View component for displaying detailed information about a client. Shows client personal/business data, contact information, transaction history, and compliance notes. Includes navigation controls and action buttons for editing and generating reports.",
+			},
+		},
 		nextjs: {
 			router: {
 				pathname: "/clients/1",

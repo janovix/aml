@@ -7,6 +7,12 @@ const meta = {
 	component: ClientCreateView,
 	parameters: {
 		layout: "fullscreen",
+		docs: {
+			description: {
+				component:
+					"View component for creating a new client. Provides form fields for entering client information including business details, risk assessment, contact information, and compliance notes. Includes create and cancel actions.",
+			},
+		},
 		nextjs: {
 			router: {
 				pathname: "/clients/new",

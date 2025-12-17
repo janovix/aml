@@ -7,6 +7,12 @@ const meta = {
 	component: TransactionDetailsView,
 	parameters: {
 		layout: "fullscreen",
+		docs: {
+			description: {
+				component:
+					"View component for displaying detailed information about a transaction. Shows transaction data, related client information, vehicle details, and transaction history. Includes navigation controls and action buttons for editing.",
+			},
+		},
 		nextjs: {
 			router: {
 				pathname: "/transactions/1",
