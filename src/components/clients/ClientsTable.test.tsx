@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { ClientsTable } from "./ClientsTable";
 import { mockClients } from "@/data/mockClients";
 import { getClientDisplayName } from "@/types/client";
+import * as clientsApi from "@/lib/api/clients";
 
 const mockToast = vi.fn();
 
@@ -22,26 +23,48 @@ vi.mock("next/navigation", () => ({
 	}),
 }));
 
+vi.mock("@/lib/api/clients", () => ({
+	listClients: vi.fn(),
+	deleteClient: vi.fn(),
+}));
+
 describe("ClientsTable", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		vi.mocked(clientsApi.listClients).mockResolvedValue({
+			data: mockClients,
+			pagination: {
+				page: 1,
+				limit: 100,
+				total: mockClients.length,
+				totalPages: 1,
+			},
+		});
 	});
-	it("renders table with client data", () => {
+
+	it("renders table with client data", async () => {
 		render(<ClientsTable />);
 
-		expect(screen.getByText("Lista de Clientes")).toBeInTheDocument();
-		expect(
-			screen.getByText(new RegExp(`${mockClients.length} clientes en total`)),
-		).toBeInTheDocument();
+		await waitFor(() => {
+			expect(screen.getByText("Lista de Clientes")).toBeInTheDocument();
+		});
+
+		await waitFor(() => {
+			expect(
+				screen.getByText(new RegExp(`${mockClients.length} clientes en total`)),
+			).toBeInTheDocument();
+		});
 	});
 
-	it("renders all client rows", () => {
+	it("renders all client rows", async () => {
 		render(<ClientsTable />);
 
-		mockClients.forEach((client) => {
-			const displayName = getClientDisplayName(client);
-			const elements = screen.getAllByText(displayName);
-			expect(elements.length).toBeGreaterThan(0);
+		await waitFor(() => {
+			mockClients.forEach((client) => {
+				const displayName = getClientDisplayName(client);
+				const elements = screen.queryAllByText(displayName);
+				expect(elements.length).toBeGreaterThan(0);
+			});
 		});
 	});
 
@@ -49,20 +72,30 @@ describe("ClientsTable", () => {
 		const user = userEvent.setup();
 		render(<ClientsTable />);
 
-		const firstCheckbox = screen.getAllByRole("checkbox")[1]; // Skip select all checkbox
-		await user.click(firstCheckbox);
+		await waitFor(() => {
+			expect(screen.getByText("Lista de Clientes")).toBeInTheDocument();
+		});
 
-		expect(firstCheckbox).toBeChecked();
+		const checkboxes = screen.getAllByRole("checkbox");
+		const firstClientCheckbox = checkboxes[1]; // Skip select all checkbox
+		await user.click(firstClientCheckbox);
+
+		await waitFor(() => {
+			expect(firstClientCheckbox).toBeChecked();
+		});
 	});
 
 	it("allows selecting all clients", async () => {
 		const user = userEvent.setup();
 		render(<ClientsTable />);
 
+		await waitFor(() => {
+			expect(screen.getByText("Lista de Clientes")).toBeInTheDocument();
+		});
+
 		const selectAllCheckbox = screen.getAllByRole("checkbox")[0];
 		await user.click(selectAllCheckbox);
 
-		// Wait for state update and check that select all is checked
 		await waitFor(() => {
 			expect(selectAllCheckbox).toBeChecked();
 		});
@@ -72,16 +105,27 @@ describe("ClientsTable", () => {
 		const user = userEvent.setup();
 		render(<ClientsTable />);
 
-		const firstCheckbox = screen.getAllByRole("checkbox")[1];
-		await user.click(firstCheckbox);
+		await waitFor(() => {
+			expect(screen.getByText("Lista de Clientes")).toBeInTheDocument();
+		});
 
-		expect(screen.getByText("Exportar")).toBeInTheDocument();
-		expect(screen.getByText("Marcar")).toBeInTheDocument();
+		const checkboxes = screen.getAllByRole("checkbox");
+		const firstClientCheckbox = checkboxes[1];
+		await user.click(firstClientCheckbox);
+
+		await waitFor(() => {
+			expect(screen.getByText("Exportar")).toBeInTheDocument();
+			expect(screen.getByText("Marcar")).toBeInTheDocument();
+		});
 	});
 
 	it("renders action menu for each client", async () => {
 		const user = userEvent.setup();
 		render(<ClientsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Lista de Clientes")).toBeInTheDocument();
+		});
 
 		const menuButtons = screen.getAllByRole("button", {
 			name: /acciones para/i,
@@ -95,31 +139,44 @@ describe("ClientsTable", () => {
 		expect(screen.getByText("Generar Reporte")).toBeInTheDocument();
 	});
 
-	it("displays risk level badges", () => {
+	it("displays person type badges", async () => {
 		render(<ClientsTable />);
 
-		const altoBadges = screen.getAllByText("Alto");
-		const medioBadges = screen.getAllByText("Medio");
-		const bajoBadges = screen.getAllByText("Bajo");
-		expect(altoBadges.length).toBeGreaterThan(0);
-		expect(medioBadges.length).toBeGreaterThan(0);
-		expect(bajoBadges.length).toBeGreaterThan(0);
-	});
-
-	it("displays status badges", () => {
-		render(<ClientsTable />);
-
-		const activoBadges = screen.getAllByText("Activo");
-		expect(activoBadges.length).toBeGreaterThan(0);
-	});
-
-	it("displays alert counts", () => {
-		render(<ClientsTable />);
-
-		const alertBadges = screen.getAllByText(/\d+/).filter((el) => {
-			const text = el.textContent || "";
-			return /^[0-9]+$/.test(text.trim());
+		await waitFor(() => {
+			expect(screen.getByText("Lista de Clientes")).toBeInTheDocument();
 		});
-		expect(alertBadges.length).toBeGreaterThan(0);
+
+		await waitFor(() => {
+			const moralBadges = screen.queryAllByText("Moral");
+			const fisicaBadges = screen.queryAllByText("Física");
+			expect(moralBadges.length + fisicaBadges.length).toBeGreaterThan(0);
+		});
+	});
+
+	it("displays RFC for each client", async () => {
+		render(<ClientsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Lista de Clientes")).toBeInTheDocument();
+		});
+
+		await waitFor(() => {
+			mockClients.forEach((client) => {
+				const rfcElements = screen.queryAllByText(client.rfc);
+				expect(rfcElements.length).toBeGreaterThan(0);
+			});
+		});
+	});
+
+	it("displays creation date", async () => {
+		render(<ClientsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Lista de Clientes")).toBeInTheDocument();
+		});
+
+		// Check that dates are rendered (they should be formatted)
+		const dateElements = screen.queryAllByText(/\d{1,2}\s+\w+\s+\d{4}/);
+		expect(dateElements.length).toBeGreaterThan(0);
 	});
 });

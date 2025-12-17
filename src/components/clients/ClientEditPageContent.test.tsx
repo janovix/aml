@@ -54,10 +54,8 @@ describe("ClientEditPageContent", () => {
 
 		const basicInfoElements = screen.getAllByText("Información Básica");
 		const addressElements = screen.getAllByText("Dirección");
-		const statusElements = screen.getAllByText("Estado y Riesgo");
 		expect(basicInfoElements.length).toBeGreaterThan(0);
 		expect(addressElements.length).toBeGreaterThan(0);
-		expect(statusElements.length).toBeGreaterThan(0);
 	});
 
 	it("renders person type specific fields for physical", () => {
@@ -86,8 +84,6 @@ describe("ClientEditPageContent", () => {
 		expect(screen.getByLabelText("RFC *")).toBeInTheDocument();
 		expect(screen.getByLabelText("Email *")).toBeInTheDocument();
 		expect(screen.getByLabelText("Teléfono *")).toBeInTheDocument();
-		expect(screen.getByLabelText("Nivel de Riesgo *")).toBeInTheDocument();
-		expect(screen.getByLabelText("Estado *")).toBeInTheDocument();
 	});
 
 	it("renders cancel and save buttons", () => {
