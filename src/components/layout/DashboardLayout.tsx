@@ -144,7 +144,7 @@ function Navbar() {
 	return (
 		<header
 			className={cn(
-				"sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 transition-transform duration-300",
+				"sticky top-0 z-50 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 transition-transform duration-300",
 				isScrollingDown ? "-translate-y-full" : "translate-y-0",
 			)}
 		>
@@ -318,7 +318,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 				</SidebarFooter>
 				<SidebarRail />
 			</Sidebar>
-			<SidebarInset>
+			<SidebarInset className="flex flex-col">
 				<Navbar />
 				<main className="flex flex-1 flex-col overflow-auto">
 					<div className="flex-1 p-4 md:p-6 lg:p-8">{children}</div>
