@@ -53,13 +53,13 @@ describe("useViewportHeight", () => {
 	});
 
 	it("updates height when visualViewport resize event fires", async () => {
-		let resizeHandler: (() => void) | null = null;
+		const resizeHandlers: Array<() => void> = [];
 
 		const mockVisualViewport = {
 			height: 750,
 			addEventListener: vi.fn((event: string, handler: () => void) => {
 				if (event === "resize") {
-					resizeHandler = handler;
+					resizeHandlers.push(handler);
 				}
 			}),
 			removeEventListener: vi.fn(),
@@ -76,9 +76,10 @@ describe("useViewportHeight", () => {
 		expect(result.current).toBe(750);
 
 		// Simulate resize
-		if (resizeHandler) {
+		if (resizeHandlers.length > 0) {
 			mockVisualViewport.height = 600;
-			resizeHandler();
+			const handler = resizeHandlers[0];
+			handler();
 
 			await waitFor(() => {
 				expect(result.current).toBe(600);
