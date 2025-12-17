@@ -122,13 +122,81 @@ function SidebarLogo() {
 	);
 }
 
+function Navbar() {
+	const [isScrollingDown, setIsScrollingDown] = React.useState(false);
+	const [lastScrollY, setLastScrollY] = React.useState(0);
+
+	React.useEffect(() => {
+		const handleScroll = () => {
+			const currentScrollY = window.scrollY;
+			if (currentScrollY > lastScrollY && currentScrollY > 10) {
+				setIsScrollingDown(true);
+			} else {
+				setIsScrollingDown(false);
+			}
+			setLastScrollY(currentScrollY);
+		};
+
+		window.addEventListener("scroll", handleScroll, { passive: true });
+		return () => window.removeEventListener("scroll", handleScroll);
+	}, [lastScrollY]);
+
+	return (
+		<header
+			className={cn(
+				"sticky top-0 z-50 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 transition-transform duration-300",
+				isScrollingDown ? "-translate-y-full" : "translate-y-0",
+			)}
+		>
+			<SidebarTrigger className="-ml-1" />
+			<div className="flex flex-1 items-center justify-end gap-2">
+				<ThemeSwitcher />
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button variant="ghost" size="icon" className="rounded-full">
+							<div className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
+								<User className="h-4 w-4" />
+							</div>
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent className="w-56" align="end" forceMount>
+						<DropdownMenuLabel className="font-normal">
+							<div className="flex flex-col space-y-1">
+								<p className="text-sm font-medium leading-none">Usuario</p>
+								<p className="text-xs leading-none text-muted-foreground">
+									usuario@ejemplo.com
+								</p>
+							</div>
+						</DropdownMenuLabel>
+						<DropdownMenuSeparator />
+						<DropdownMenuItem asChild>
+							<Link
+								href="/configuracion"
+								className="flex items-center cursor-pointer"
+							>
+								<Settings className="mr-2 h-4 w-4" />
+								<span>Configuración</span>
+							</Link>
+						</DropdownMenuItem>
+						<DropdownMenuSeparator />
+						<DropdownMenuItem className="cursor-pointer">
+							<LogOut className="mr-2 h-4 w-4" />
+							<span>Cerrar sesión</span>
+						</DropdownMenuItem>
+					</DropdownMenuContent>
+				</DropdownMenu>
+			</div>
+		</header>
+	);
+}
+
 export function DashboardLayout({ children }: DashboardLayoutProps) {
 	const pathname = usePathname();
 
 	return (
 		<SidebarProvider defaultOpen={true}>
 			<Sidebar collapsible="icon" variant="sidebar">
-				<SidebarHeader className="border-b border-sidebar-border">
+				<SidebarHeader className="border-b border-sidebar-border h-16 p-0">
 					<SidebarLogo />
 				</SidebarHeader>
 				<SidebarContent>
@@ -250,50 +318,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 				</SidebarFooter>
 				<SidebarRail />
 			</Sidebar>
-			<SidebarInset>
-				<header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4">
-					<SidebarTrigger className="-ml-1" />
-					<div className="flex flex-1 items-center justify-end gap-2">
-						<ThemeSwitcher />
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button
-									variant="ghost"
-									className="relative h-8 w-8 rounded-full"
-								>
-									<div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-										<User className="h-4 w-4" />
-									</div>
-								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent className="w-56" align="end" forceMount>
-								<DropdownMenuLabel className="font-normal">
-									<div className="flex flex-col space-y-1">
-										<p className="text-sm font-medium leading-none">Usuario</p>
-										<p className="text-xs leading-none text-muted-foreground">
-											usuario@ejemplo.com
-										</p>
-									</div>
-								</DropdownMenuLabel>
-								<DropdownMenuSeparator />
-								<DropdownMenuItem asChild>
-									<Link
-										href="/configuracion"
-										className="flex items-center cursor-pointer"
-									>
-										<Settings className="mr-2 h-4 w-4" />
-										<span>Configuración</span>
-									</Link>
-								</DropdownMenuItem>
-								<DropdownMenuSeparator />
-								<DropdownMenuItem className="cursor-pointer">
-									<LogOut className="mr-2 h-4 w-4" />
-									<span>Cerrar sesión</span>
-								</DropdownMenuItem>
-							</DropdownMenuContent>
-						</DropdownMenu>
-					</div>
-				</header>
+			<SidebarInset className="flex flex-col">
+				<Navbar />
 				<main className="flex flex-1 flex-col overflow-auto">
 					<div className="flex-1 p-4 md:p-6 lg:p-8">{children}</div>
 				</main>
