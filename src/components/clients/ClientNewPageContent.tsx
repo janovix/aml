@@ -36,7 +36,6 @@ export function ClientNewPageContent(): React.ReactElement {
 		city?: string;
 		state?: string;
 		zipCode?: string;
-		country?: string;
 	}>({
 		rfc: "",
 		personType: "",
@@ -270,14 +269,6 @@ export function ClientNewPageContent(): React.ReactElement {
 											id="state"
 											value={formData.state || ""}
 											onChange={(e) => handleChange("state", e.target.value)}
-										/>
-									</div>
-									<div className="space-y-2">
-										<Label htmlFor="country">País</Label>
-										<Input
-											id="country"
-											value={formData.country || ""}
-											onChange={(e) => handleChange("country", e.target.value)}
 										/>
 									</div>
 								</div>

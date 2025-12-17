@@ -40,7 +40,6 @@ interface ClientFormData {
 	nationality?: string;
 	email: string;
 	phone: string;
-	country: string;
 	stateCode: string;
 	city: string;
 	municipality: string;
@@ -71,7 +70,6 @@ export function ClientCreateView(): React.JSX.Element {
 		nationality: "",
 		email: "",
 		phone: "",
-		country: "México",
 		stateCode: "",
 		city: "",
 		municipality: "",
@@ -102,7 +100,7 @@ export function ClientCreateView(): React.JSX.Element {
 				rfc: formData.rfc,
 				email: formData.email,
 				phone: formData.phone,
-				country: formData.country,
+				country: "MX",
 				stateCode: formData.stateCode,
 				city: formData.city,
 				municipality: formData.municipality,
@@ -492,16 +490,6 @@ export function ClientCreateView(): React.JSX.Element {
 									required
 								/>
 							</div>
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="country">País *</Label>
-							<Input
-								id="country"
-								value={formData.country}
-								onChange={(e) => handleInputChange("country", e.target.value)}
-								placeholder="México"
-								required
-							/>
 						</div>
 						<div className="space-y-2">
 							<Label htmlFor="reference">Referencia</Label>

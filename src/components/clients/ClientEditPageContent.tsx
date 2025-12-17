@@ -296,14 +296,6 @@ export function ClientEditPageContent({
 											}
 										/>
 									</div>
-									<div className="space-y-2">
-										<Label htmlFor="country">País</Label>
-										<Input
-											id="country"
-											value={formData.country || ""}
-											onChange={(e) => handleChange("country", e.target.value)}
-										/>
-									</div>
 								</div>
 							</CardContent>
 						</Card>
