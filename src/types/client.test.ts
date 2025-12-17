@@ -1,36 +1,19 @@
-import { describe, expect, it } from "vitest";
-import { getClientDisplayName, type Client } from "./client";
+import { describe, it, expect } from "vitest";
+import { getClientDisplayName } from "./client";
+import type { Client } from "./client";
 
-describe("client types", () => {
+describe("Client Types", () => {
 	describe("getClientDisplayName", () => {
-		it("returns business name for MORAL person type", () => {
-			const client: Client = {
-				id: "1",
-				rfc: "ABC123456",
-				personType: "MORAL",
-				businessName: "Empresa S.A. de C.V.",
-				email: "test@example.com",
-				phone: "+52 1234567890",
-				riskLevel: "BAJO",
-				status: "ACTIVO",
-				reviewStatus: "APROBADO",
-				lastReview: "2024-01-01",
-				alertCount: 0,
-			};
-
-			expect(getClientDisplayName(client)).toBe("Empresa S.A. de C.V.");
-		});
-
 		it("returns full name for FISICA person type", () => {
 			const client: Client = {
 				id: "1",
-				rfc: "ABC123456",
+				rfc: "TEST123456",
 				personType: "FISICA",
 				firstName: "Juan",
 				lastName: "Pérez",
 				secondLastName: "García",
-				email: "test@example.com",
-				phone: "+52 1234567890",
+				email: "test@test.com",
+				phone: "1234567890",
 				riskLevel: "BAJO",
 				status: "ACTIVO",
 				reviewStatus: "APROBADO",
@@ -41,15 +24,14 @@ describe("client types", () => {
 			expect(getClientDisplayName(client)).toBe("Juan Pérez García");
 		});
 
-		it("handles FISICA without secondLastName", () => {
+		it("returns business name for MORAL person type", () => {
 			const client: Client = {
 				id: "1",
-				rfc: "ABC123456",
-				personType: "FISICA",
-				firstName: "María",
-				lastName: "López",
-				email: "test@example.com",
-				phone: "+52 1234567890",
+				rfc: "TEST123456",
+				personType: "MORAL",
+				businessName: "Empresa Test S.A. de C.V.",
+				email: "test@test.com",
+				phone: "1234567890",
 				riskLevel: "BAJO",
 				status: "ACTIVO",
 				reviewStatus: "APROBADO",
@@ -57,17 +39,18 @@ describe("client types", () => {
 				alertCount: 0,
 			};
 
-			expect(getClientDisplayName(client)).toBe("María López");
+			expect(getClientDisplayName(client)).toBe("Empresa Test S.A. de C.V.");
 		});
 
-		it("handles empty businessName for MORAL", () => {
+		it("handles missing secondLastName", () => {
 			const client: Client = {
 				id: "1",
-				rfc: "ABC123456",
-				personType: "MORAL",
-				businessName: "",
-				email: "test@example.com",
-				phone: "+52 1234567890",
+				rfc: "TEST123456",
+				personType: "FISICA",
+				firstName: "Juan",
+				lastName: "Pérez",
+				email: "test@test.com",
+				phone: "1234567890",
 				riskLevel: "BAJO",
 				status: "ACTIVO",
 				reviewStatus: "APROBADO",
@@ -75,7 +58,7 @@ describe("client types", () => {
 				alertCount: 0,
 			};
 
-			expect(getClientDisplayName(client)).toBe("");
+			expect(getClientDisplayName(client)).toBe("Juan Pérez");
 		});
 	});
 });

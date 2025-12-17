@@ -1,32 +1,18 @@
 import type { Metadata } from "next";
-import { TransactionDetailPageContent } from "@/components/transactions/TransactionDetailPageContent";
-import { mockTransactions } from "@/data/mockTransactions";
+import { TransactionDetailsView } from "../../../components/transactions/TransactionDetailsView";
 
-export async function generateMetadata({
-	params,
-}: {
+export const metadata: Metadata = {
+	title: "Detalle de Transacción | Plataforma AML",
+	description: "Ver detalles de la transacción",
+};
+
+interface PageProps {
 	params: Promise<{ id: string }>;
-}): Promise<Metadata> {
-	const { id } = await params;
-	const transaction = mockTransactions.find((t) => t.id === id);
-
-	if (!transaction) {
-		return {
-			title: "Transacción no encontrada | Plataforma AML",
-		};
-	}
-
-	return {
-		title: `Transacción ${transaction.reference || transaction.id} | Plataforma AML`,
-		description: `Detalles de la transacción ${transaction.reference || transaction.id}`,
-	};
 }
 
-export default async function TransactionDetailPage({
+export default async function TransaccionDetallePage({
 	params,
-}: {
-	params: Promise<{ id: string }>;
-}): Promise<React.ReactElement> {
+}: PageProps): Promise<React.ReactElement> {
 	const { id } = await params;
-	return <TransactionDetailPageContent transactionId={id} />;
+	return <TransactionDetailsView transactionId={id} />;
 }

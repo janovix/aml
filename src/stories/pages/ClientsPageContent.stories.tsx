@@ -1,30 +1,41 @@
-import type { Decorator, Meta, StoryObj } from "@storybook/react";
-import { ClientsPageContent } from "@/components/clients/ClientsPageContent";
-import { ThemeProvider } from "@/components/ThemeProvider";
+import type { Meta, StoryObj } from "@storybook/react";
+import { ClientsPageContent } from "../../components/clients/ClientsPageContent";
 
-const withProviders: Decorator = (Story) => (
-	<ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-		<Story />
-	</ThemeProvider>
-);
-
-const meta: Meta<typeof ClientsPageContent> = {
-	title: "Pages/ClientsPageContent",
+const meta = {
+	title: "Views/ClientsPageContent",
 	component: ClientsPageContent,
-	decorators: [withProviders],
 	parameters: {
 		layout: "fullscreen",
 		nextjs: {
-			appDirectory: true,
-			navigation: {
+			router: {
 				pathname: "/clients",
 			},
 		},
 	},
-};
+	tags: ["autodocs"],
+} satisfies Meta<typeof ClientsPageContent>;
 
 export default meta;
+type Story = StoryObj<typeof meta>;
 
-type Story = StoryObj<typeof ClientsPageContent>;
+export const Default: Story = {
+	args: {},
+};
 
-export const Default: Story = {};
+export const Mobile: Story = {
+	args: {},
+	parameters: {
+		viewport: {
+			defaultViewport: "mobile1",
+		},
+	},
+};
+
+export const Tablet: Story = {
+	args: {},
+	parameters: {
+		viewport: {
+			defaultViewport: "tablet",
+		},
+	},
+};

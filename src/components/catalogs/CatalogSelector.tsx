@@ -1,0 +1,268 @@
+"use client";
+
+import type React from "react";
+import { useEffect, useId, useMemo, useState } from "react";
+import {
+	Combobox,
+	ComboboxContent,
+	ComboboxEmpty,
+	ComboboxGroup,
+	ComboboxInput,
+	ComboboxItem,
+	ComboboxList,
+	ComboboxTrigger,
+	Label,
+	Spinner,
+	cn,
+} from "@algtools/ui";
+import { Check, ChevronsUpDown } from "lucide-react";
+import type { CatalogItem } from "@/types/catalog";
+import { useCatalogSearch } from "@/hooks/useCatalogSearch";
+
+type OptionRenderer = (
+	option: CatalogItem,
+	isSelected: boolean,
+) => React.ReactNode;
+
+interface CatalogSelectorProps {
+	catalogKey: string;
+	label?: string;
+	value?: string;
+	placeholder?: string;
+	searchPlaceholder?: string;
+	helperText?: string;
+	emptyState?: string;
+	disabled?: boolean;
+	required?: boolean;
+	pageSize?: number;
+	debounceMs?: number;
+	autoFocusSearch?: boolean;
+	typeLabel?: string;
+	onChange?: (option: CatalogItem | null) => void;
+	onValueChange?: (value: string | null) => void;
+	getOptionValue?: (option: CatalogItem) => string;
+	renderOption?: OptionRenderer;
+	className?: string;
+}
+
+const defaultRenderOption: OptionRenderer = (option, isSelected) => (
+	<div className="flex w-full items-center justify-between gap-3">
+		<span className="text-sm font-medium text-foreground">{option.name}</span>
+		{isSelected && (
+			<Check
+				className="h-4 w-4 text-primary"
+				aria-hidden="true"
+				data-testid="catalog-selector-check-icon"
+			/>
+		)}
+	</div>
+);
+
+export function CatalogSelector({
+	catalogKey,
+	label,
+	value,
+	placeholder,
+	searchPlaceholder = "Buscar en el catálogo...",
+	helperText,
+	emptyState = "No se encontraron resultados para tu búsqueda.",
+	disabled = false,
+	required = false,
+	pageSize,
+	debounceMs,
+	autoFocusSearch = false,
+	typeLabel,
+	onChange,
+	onValueChange,
+	getOptionValue,
+	renderOption = defaultRenderOption,
+	className,
+}: CatalogSelectorProps): React.ReactElement {
+	const labelId = useId();
+	const resolvedPlaceholder =
+		placeholder ??
+		(label ? `Seleccionar ${label.toLowerCase()}` : "Seleccionar opción");
+	const resolvedType = typeLabel ?? label?.toLowerCase() ?? "opción";
+	const isControlled = value !== undefined;
+
+	const [selectedLabel, setSelectedLabel] = useState(value ?? "");
+	const [selectedOption, setSelectedOption] = useState<CatalogItem | null>(
+		null,
+	);
+	const [open, setOpen] = useState(false);
+	const [showResults, setShowResults] = useState(false);
+
+	const { items, pagination, loading, error, searchTerm, setSearchTerm } =
+		useCatalogSearch({
+			catalogKey,
+			pageSize,
+			debounceMs,
+			enabled: !disabled,
+		});
+
+	const mappedItems = useMemo(
+		() =>
+			items.map((item) => ({
+				item,
+				value: getOptionValue ? getOptionValue(item) : (item.id ?? item.name),
+				label: item.name,
+			})),
+		[items, getOptionValue],
+	);
+
+	useEffect(() => {
+		if (!isControlled) {
+			return;
+		}
+
+		setSelectedLabel(value ?? "");
+
+		if (!value) {
+			setSelectedOption(null);
+			return;
+		}
+
+		const match = items.find((entry) => entry.name === value);
+		setSelectedOption(match ?? null);
+	}, [isControlled, value, items]);
+
+	const handleSelect = (value: string): void => {
+		const match = mappedItems.find((entry) => entry.value === value);
+		if (!match) {
+			return;
+		}
+
+		setSelectedOption(match.item);
+		const labelValue = match.item.name;
+
+		if (!isControlled) {
+			setSelectedLabel(labelValue);
+		}
+
+		setSearchTerm("");
+		setShowResults(false);
+		setOpen(false);
+
+		onValueChange?.(value);
+		onChange?.(match.item);
+	};
+
+	const handleSearchChange = (next: string): void => {
+		setShowResults(true);
+		setSearchTerm(next);
+	};
+
+	const handleOpenChange = (next: boolean): void => {
+		setOpen(next);
+		setShowResults(next);
+	};
+
+	const resultSummary = useMemo(() => {
+		if (loading) {
+			return "Buscando resultados...";
+		}
+
+		if (error) {
+			return error;
+		}
+
+		if (!pagination) {
+			return "";
+		}
+
+		return `Mostrando ${items.length} de ${pagination.total} resultados`;
+	}, [loading, error, pagination, items.length]);
+
+	const shouldShowSummary = open && showResults && Boolean(resultSummary);
+
+	return (
+		<div className={cn("space-y-2", className)}>
+			{label && (
+				<Label id={labelId} className="text-sm font-medium text-foreground">
+					{label}
+					{required && <span className="ml-1 text-destructive">*</span>}
+				</Label>
+			)}
+
+			<Combobox
+				open={open}
+				onOpenChange={handleOpenChange}
+				type={resolvedType}
+				data={[]}
+			>
+				<ComboboxTrigger
+					className="flex w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-left text-sm shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+					aria-labelledby={label ? labelId : undefined}
+					disabled={disabled}
+				>
+					<span className="truncate">
+						{selectedLabel || resolvedPlaceholder}
+					</span>
+					<span className="ml-2 flex items-center gap-1 text-xs text-muted-foreground">
+						<span className="hidden sm:inline">{resolvedType}</span>
+						<ChevronsUpDown className="h-4 w-4" aria-hidden="true" />
+					</span>
+				</ComboboxTrigger>
+
+				<ComboboxContent filter={() => 1}>
+					<ComboboxInput
+						value={searchTerm}
+						onValueChange={handleSearchChange}
+						placeholder={searchPlaceholder}
+						autoComplete="off"
+						autoFocus={autoFocusSearch}
+					/>
+
+					{loading && (
+						<div className="flex items-center gap-2 px-3 py-4 text-sm text-muted-foreground">
+							<Spinner size="sm" />
+							Buscando resultados…
+						</div>
+					)}
+
+					{!loading && error && (
+						<div className="px-3 py-4 text-sm text-destructive">{error}</div>
+					)}
+
+					{!loading && !error && (
+						<ComboboxList>
+							{mappedItems.length === 0 ? (
+								<ComboboxEmpty>{emptyState}</ComboboxEmpty>
+							) : (
+								<ComboboxGroup heading="Resultados">
+									{mappedItems.map(({ item, value: optionValue }) => {
+										const isSelected = selectedOption
+											? (getOptionValue
+													? getOptionValue(selectedOption)
+													: (selectedOption.id ?? selectedOption.name)) ===
+												optionValue
+											: false;
+
+										return (
+											<ComboboxItem
+												key={optionValue}
+												value={optionValue}
+												onSelect={() => handleSelect(optionValue)}
+											>
+												{renderOption(item, isSelected)}
+											</ComboboxItem>
+										);
+									})}
+								</ComboboxGroup>
+							)}
+						</ComboboxList>
+					)}
+				</ComboboxContent>
+			</Combobox>
+
+			{helperText && (
+				<p className="text-xs text-muted-foreground">{helperText}</p>
+			)}
+			{shouldShowSummary && (
+				<p className="text-[11px] text-muted-foreground" aria-live="polite">
+					{resultSummary}
+				</p>
+			)}
+		</div>
+	);
+}

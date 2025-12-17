@@ -1,20 +1,20 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { fetchCatalogEntries } from "./catalogs";
-import { getAmlCoreBaseUrl } from "./api/config";
-
-vi.mock("./api/config", () => ({
-	getAmlCoreBaseUrl: vi.fn(() => "https://aml-core.example.com"),
-}));
 
 describe("catalogs", () => {
 	let fetchMock: ReturnType<typeof vi.fn>;
+	let previousBffBaseUrl: string | undefined;
 
 	beforeEach(() => {
+		previousBffBaseUrl = process.env.NEXT_PUBLIC_BFF_BASE_URL;
+		process.env.NEXT_PUBLIC_BFF_BASE_URL = "https://aml-bff.example.com/";
+
 		fetchMock = vi.fn();
 		vi.stubGlobal("fetch", fetchMock);
 	});
 
 	afterEach(() => {
+		process.env.NEXT_PUBLIC_BFF_BASE_URL = previousBffBaseUrl;
 		vi.restoreAllMocks();
 	});
 
@@ -49,7 +49,7 @@ describe("catalogs", () => {
 
 		expect(result).toEqual(mockResponse);
 		expect(fetchMock).toHaveBeenCalledWith(
-			"https://aml-core.example.com/api/v1/catalogs/test-catalog",
+			"https://aml-bff.example.com/api/v1/catalogs/test-catalog",
 			expect.objectContaining({
 				headers: {
 					"Content-Type": "application/json",
@@ -77,7 +77,7 @@ describe("catalogs", () => {
 		});
 
 		expect(fetchMock).toHaveBeenCalledWith(
-			"https://aml-core.example.com/api/v1/catalogs/test-catalog?page=2&pageSize=20&search=test",
+			"https://aml-bff.example.com/api/v1/catalogs/test-catalog?page=2&pageSize=20&search=test",
 			expect.any(Object),
 		);
 	});

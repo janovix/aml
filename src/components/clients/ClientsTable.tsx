@@ -1,26 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+	Button,
+	Checkbox,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
 	Table,
 	TableBody,
 	TableCell,
 	TableHead,
 	TableHeader,
 	TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import {
+	Badge,
 	AlertDialog,
 	AlertDialogAction,
 	AlertDialogCancel,
@@ -29,8 +28,8 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { cn } from "@/lib/utils";
+	cn,
+} from "@algtools/ui";
 import { useToast } from "@/hooks/use-toast";
 import {
 	MoreHorizontal,
@@ -54,41 +53,33 @@ import { getClientDisplayName } from "@/types/client";
 import { mockClients } from "@/data/mockClients";
 
 const riskBadgeStyles: Record<RiskLevel, string> = {
-	BAJO: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30",
+	BAJO: "bg-[rgb(var(--risk-low-bg))] text-[rgb(var(--risk-low))] border-[rgb(var(--risk-low))]/30",
 	MEDIO:
-		"bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/30",
-	ALTO: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30",
+		"bg-[rgb(var(--risk-medium-bg))] text-[rgb(var(--risk-medium))] border-[rgb(var(--risk-medium))]/30",
+	ALTO: "bg-[rgb(var(--risk-high-bg))] text-[rgb(var(--risk-high))] border-[rgb(var(--risk-high))]/30",
 };
 
 const statusBadgeStyles: Record<ClientStatus, string> = {
 	ACTIVO:
-		"bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30",
+		"bg-[rgb(var(--risk-low-bg))] text-[rgb(var(--risk-low))] border-[rgb(var(--risk-low))]/30",
 	INACTIVO: "bg-muted text-muted-foreground border-muted-foreground/30",
 	SUSPENDIDO:
-		"bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/30",
-	BLOQUEADO: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30",
+		"bg-[rgb(var(--risk-medium-bg))] text-[rgb(var(--risk-medium))] border-[rgb(var(--risk-medium))]/30",
+	BLOQUEADO:
+		"bg-[rgb(var(--risk-high-bg))] text-[rgb(var(--risk-high))] border-[rgb(var(--risk-high))]/30",
 };
 
 const reviewStatusBadgeStyles: Record<ReviewStatus, string> = {
 	PENDIENTE: "bg-muted text-muted-foreground border-muted-foreground/30",
 	EN_REVISION:
-		"bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/30",
+		"bg-[rgb(var(--risk-medium-bg))] text-[rgb(var(--risk-medium))] border-[rgb(var(--risk-medium))]/30",
 	APROBADO:
-		"bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30",
-	RECHAZADO: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30",
+		"bg-[rgb(var(--risk-low-bg))] text-[rgb(var(--risk-low))] border-[rgb(var(--risk-low))]/30",
+	RECHAZADO:
+		"bg-[rgb(var(--risk-high-bg))] text-[rgb(var(--risk-high))] border-[rgb(var(--risk-high))]/30",
 };
 
-interface ClientsTableProps {
-	searchQuery?: string;
-	riskFilter?: string;
-	statusFilter?: string;
-}
-
-export function ClientsTable({
-	searchQuery = "",
-	riskFilter = "",
-	statusFilter = "",
-}: ClientsTableProps = {}): React.ReactElement {
+export function ClientsTable(): React.ReactElement {
 	const router = useRouter();
 	const { toast } = useToast();
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -126,88 +117,6 @@ export function ClientsTable({
 			setSortDirection("asc");
 		}
 	};
-
-	// Filter clients
-	const filteredClients = mockClients.filter((client) => {
-		// Search filter
-		if (searchQuery) {
-			const searchLower = searchQuery.toLowerCase();
-			const matchesSearch =
-				getClientDisplayName(client).toLowerCase().includes(searchLower) ||
-				client.rfc.toLowerCase().includes(searchLower) ||
-				client.email.toLowerCase().includes(searchLower);
-			if (!matchesSearch) return false;
-		}
-
-		// Risk filter
-		if (riskFilter && riskFilter !== "all") {
-			const riskMap: Record<string, RiskLevel> = {
-				Alto: "ALTO",
-				Medio: "MEDIO",
-				Bajo: "BAJO",
-			};
-			if (client.riskLevel !== riskMap[riskFilter]) return false;
-		}
-
-		// Status filter
-		if (statusFilter && statusFilter !== "all") {
-			const statusMap: Record<string, ClientStatus> = {
-				Activo: "ACTIVO",
-				Inactivo: "INACTIVO",
-				Suspendido: "SUSPENDIDO",
-				Bloqueado: "BLOQUEADO",
-			};
-			if (client.status !== statusMap[statusFilter]) return false;
-		}
-
-		return true;
-	});
-
-	// Sort clients
-	const sortedClients = [...filteredClients].sort((a, b) => {
-		if (!sortColumn) return 0;
-
-		let aValue: string | number;
-		let bValue: string | number;
-
-		switch (sortColumn) {
-			case "name":
-				aValue = getClientDisplayName(a).toLowerCase();
-				bValue = getClientDisplayName(b).toLowerCase();
-				break;
-			case "riskLevel":
-				const riskOrder: Record<RiskLevel, number> = {
-					BAJO: 1,
-					MEDIO: 2,
-					ALTO: 3,
-				};
-				aValue = riskOrder[a.riskLevel];
-				bValue = riskOrder[b.riskLevel];
-				break;
-			case "rfc":
-				aValue = a.rfc.toLowerCase();
-				bValue = b.rfc.toLowerCase();
-				break;
-			case "status":
-				aValue = a.status;
-				bValue = b.status;
-				break;
-			case "lastReview":
-				aValue = new Date(a.lastReview).getTime();
-				bValue = new Date(b.lastReview).getTime();
-				break;
-			case "alertCount":
-				aValue = a.alertCount;
-				bValue = b.alertCount;
-				break;
-			default:
-				return 0;
-		}
-
-		if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
-		if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
-		return 0;
-	});
 
 	const formatDate = (dateString: string): string => {
 		return new Date(dateString).toLocaleDateString("es-MX", {
@@ -302,7 +211,7 @@ export function ClientsTable({
 							Lista de Clientes
 						</CardTitle>
 						<p className="text-sm text-muted-foreground mt-1">
-							{sortedClients.length} de {mockClients.length} clientes
+							{mockClients.length} clientes en total
 							{selectedIds.size > 0 && ` · ${selectedIds.size} seleccionados`}
 						</p>
 					</div>
@@ -330,7 +239,7 @@ export function ClientsTable({
 					)}
 				</CardHeader>
 				<CardContent className="p-0">
-					<div className="overflow-x-auto rounded-lg border-t">
+					<div className="overflow-x-auto">
 						<Table>
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
@@ -387,7 +296,7 @@ export function ClientsTable({
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{sortedClients.map((client) => (
+								{mockClients.map((client) => (
 									<TableRow
 										key={client.id}
 										className={cn(
@@ -479,7 +388,7 @@ export function ClientsTable({
 											{client.alertCount > 0 ? (
 												<Badge
 													variant="outline"
-													className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30"
+													className="bg-[rgb(var(--risk-high-bg))] text-[rgb(var(--risk-high))] border-[rgb(var(--risk-high))]/30"
 												>
 													{client.alertCount}
 												</Badge>
@@ -526,7 +435,7 @@ export function ClientsTable({
 													</DropdownMenuItem>
 													<DropdownMenuSeparator />
 													<DropdownMenuItem
-														className="gap-2 text-red-600 dark:text-red-400"
+														className="gap-2 text-[rgb(var(--risk-high))]"
 														onClick={() => handleFlagSuspicious(client)}
 													>
 														<Flag className="h-4 w-4" />

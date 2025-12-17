@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TransactionsPageContent } from "./TransactionsPageContent";
 
@@ -22,11 +22,11 @@ describe("TransactionsPageContent", () => {
 		render(<TransactionsPageContent />);
 
 		const transaccionesHeaders = screen.getAllByText("Transacciones");
-		const monitoreoTexts = screen.getAllByText(
-			"Monitoreo y análisis de transacciones",
+		const descriptionTexts = screen.getAllByText(
+			"Gestión de transacciones de vehículos",
 		);
 		expect(transaccionesHeaders.length).toBeGreaterThan(0);
-		expect(monitoreoTexts.length).toBeGreaterThan(0);
+		expect(descriptionTexts.length).toBeGreaterThan(0);
 	});
 
 	it("renders new transaction button", () => {
@@ -38,23 +38,18 @@ describe("TransactionsPageContent", () => {
 		expect(newButtons.length).toBeGreaterThan(0);
 	});
 
-	it("navigates to new transaction page when button is clicked", async () => {
-		const user = userEvent.setup();
+	it("links to new transaction page", () => {
 		render(<TransactionsPageContent />);
 
-		const newButtons = screen.getAllByRole("button", {
-			name: /nueva transacción/i,
-		});
-		await user.click(newButtons[0]);
-
-		expect(mockPush).toHaveBeenCalledWith("/transactions/new");
+		const link = screen.getByRole("link", { name: /nueva transacción/i });
+		expect(link).toHaveAttribute("href", "/transactions/new");
 	});
 
 	it("renders KPI cards", () => {
 		render(<TransactionsPageContent />);
 
-		const totalElements = screen.getAllByText("Total Transacciones");
-		const montoElements = screen.getAllByText("Monto Total");
+		const totalElements = screen.getAllByText("Volumen Total");
+		const montoElements = screen.getAllByText("Total Vehículos");
 		expect(totalElements.length).toBeGreaterThan(0);
 		expect(montoElements.length).toBeGreaterThan(0);
 	});
@@ -63,7 +58,7 @@ describe("TransactionsPageContent", () => {
 		render(<TransactionsPageContent />);
 
 		const searchInputs = screen.getAllByPlaceholderText(
-			"Buscar por cliente, referencia o descripción...",
+			"Buscar por VIN, cliente o folio...",
 		);
 		expect(searchInputs.length).toBeGreaterThan(0);
 	});
@@ -87,7 +82,7 @@ describe("TransactionsPageContent", () => {
 		const { container } = render(<TransactionsPageContent />);
 
 		const searchInputs = container.querySelectorAll(
-			'input[placeholder="Buscar por cliente, referencia o descripción..."]',
+			'input[placeholder="Buscar por VIN, cliente o folio..."]',
 		);
 		expect(searchInputs.length).toBeGreaterThan(0);
 		if (searchInputs.length > 0) {

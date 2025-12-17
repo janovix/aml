@@ -1,22 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
+	Button,
+	Input,
+	Label,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@/components/ui/select";
-import {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { Badge } from "@/components/ui/badge";
+	Badge,
+	cn,
+} from "@algtools/ui";
 import { Search, ChevronDown, SlidersHorizontal, X } from "lucide-react";
 
 interface ClientsFiltersProps {
@@ -145,9 +144,10 @@ export function ClientsFilters({
 						<SlidersHorizontal className="h-4 w-4" />
 						Búsqueda avanzada
 						<ChevronDown
-							className={`h-4 w-4 transition-transform duration-200 ${
-								isAdvancedOpen ? "rotate-180" : ""
-							}`}
+							className={cn(
+								"h-4 w-4 transition-transform duration-200",
+								isAdvancedOpen && "rotate-180",
+							)}
 						/>
 					</Button>
 				</CollapsibleTrigger>

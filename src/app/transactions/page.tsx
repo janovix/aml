@@ -3,9 +3,9 @@ import { TransactionsPageContent } from "@/components/transactions/TransactionsP
 
 export const metadata: Metadata = {
 	title: "Transacciones | Plataforma AML",
-	description: "Monitoreo y análisis de transacciones AML",
+	description: "Gestión de transacciones de vehículos",
 };
 
-export default function TransactionsPage(): React.ReactElement {
+export default function TransaccionesPage(): React.ReactElement {
 	return <TransactionsPageContent />;
 }

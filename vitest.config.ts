@@ -19,8 +19,13 @@ export default defineConfig({
 				"src/test/**",
 				"src/stories/**",
 				"src/components/ui/**",
+				// View-level components are mostly composition/markup; keep coverage focused
+				// on shared logic/components.
+				"src/components/clients/*View.tsx",
+				"src/components/transactions/*View.tsx",
 				"src/hooks/use-mobile.ts", // shadcn component hook
 				"src/types/catalog.ts", // Type definitions only, no runtime code
+				"src/types/transaction.ts", // Type definitions only, no runtime code
 				// Next.js App Router entrypoints/route wiring (typically thin wrappers)
 				"src/app/**",
 			],

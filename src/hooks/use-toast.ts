@@ -11,7 +11,7 @@ export function useToast() {
 
 	const toast = useCallback((props: ToastProps) => {
 		// For now, just add to state
-		// In a real app, this would integrate with a toast notification system
+		// In a real app, this would integrate with a toast notification system from @algtools/ui
 		setToasts((prev) => [...prev, props]);
 
 		// Auto-remove after 3 seconds

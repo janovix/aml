@@ -31,7 +31,7 @@ describe("ClientsTable", () => {
 
 		expect(screen.getByText("Lista de Clientes")).toBeInTheDocument();
 		expect(
-			screen.getByText(new RegExp(`${mockClients.length} de \\d+ clientes`)),
+			screen.getByText(new RegExp(`${mockClients.length} clientes en total`)),
 		).toBeInTheDocument();
 	});
 
