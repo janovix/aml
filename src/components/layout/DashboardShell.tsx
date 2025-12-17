@@ -26,7 +26,6 @@ import {
 	FileText,
 	Settings,
 	BarChart3,
-	Shield,
 	Database,
 	Clock,
 	Briefcase,
@@ -44,6 +43,8 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { Logo } from "./Logo";
+import { useSidebar } from "@/components/ui/sidebar";
 
 const mainNavItems = [
 	{
@@ -106,6 +107,21 @@ interface DashboardShellProps {
 	children: React.ReactNode;
 }
 
+function SidebarLogo() {
+	const { state } = useSidebar();
+	const isCollapsed = state === "collapsed";
+
+	return (
+		<div className="flex h-16 items-center gap-2 px-4">
+			{isCollapsed ? (
+				<Logo variant="icon" width={32} height={32} className="shrink-0" />
+			) : (
+				<Logo variant="logo" width={102} height={16} className="shrink-0" />
+			)}
+		</div>
+	);
+}
+
 export function DashboardShell({ children }: DashboardShellProps) {
 	const pathname = usePathname();
 
@@ -113,12 +129,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
 		<SidebarProvider defaultOpen={true}>
 			<Sidebar collapsible="icon" variant="sidebar">
 				<SidebarHeader className="border-b border-sidebar-border">
-					<div className="flex h-16 items-center gap-2 px-4">
-						<Shield className="h-7 w-7 text-primary" />
-						<SidebarGroupLabel className="text-lg font-bold text-sidebar-foreground group-data-[collapsible=icon]:hidden">
-							AML Platform
-						</SidebarGroupLabel>
-					</div>
+					<SidebarLogo />
 				</SidebarHeader>
 				<SidebarContent>
 					<SidebarGroup>

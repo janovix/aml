@@ -9,6 +9,13 @@ vi.mock("next/navigation", () => ({
 	usePathname: () => mockPathname(),
 }));
 
+vi.mock("next-themes", () => ({
+	useTheme: () => ({
+		resolvedTheme: "light",
+		setTheme: vi.fn(),
+	}),
+}));
+
 vi.mock("@algtools/ui", () => ({
 	ThemeSwitcher: () => <div data-testid="theme-switcher">Theme Switcher</div>,
 }));
@@ -128,8 +135,9 @@ describe("DashboardShell", () => {
 			</DashboardShell>,
 		);
 
-		// Check for AML Platform text (should be in sidebar header)
-		const platformText = screen.getByText("AML Platform");
-		expect(platformText).toBeInTheDocument();
+		// Check for Logo SVG element (should be in sidebar header)
+		// When sidebar is open, it should show the logo variant
+		const logoSvg = document.querySelector('svg[viewBox="0 0 102 16"]');
+		expect(logoSvg).toBeInTheDocument();
 	});
 });
