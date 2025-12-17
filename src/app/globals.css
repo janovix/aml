@@ -6,6 +6,30 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* iOS Safari viewport height fix */
+/* Use CSS variable set by ViewportHeightProvider for stable viewport height */
+/* Falls back to dvh (dynamic viewport height) for modern browsers, then 100vh */
+:root {
+	--viewport-height: 100vh;
+	--viewport-height-fallback: 100vh;
+}
+
+@supports (height: 100dvh) {
+	:root {
+		--viewport-height: 100dvh;
+	}
+}
+
+/* Override Tailwind's h-screen to use our viewport height variable */
+.h-screen {
+	height: var(--viewport-height, 100vh);
+}
+
+/* Also override min-h-screen for consistency */
+.min-h-screen {
+	min-height: var(--viewport-height, 100vh);
+}
+
 :root {
 	--background: oklch(0.9319 0.004 286.3215);
 	--foreground: oklch(0.2626 0.0057 301.1438);
