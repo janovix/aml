@@ -235,29 +235,44 @@ main {
 	overflow-x: hidden;
 }
 
-/* Global minimal scrollbar styles */
-::-webkit-scrollbar {
-	width: 8px;
-	height: 8px;
+/* Invisible scrollbar styles - apply with scrollbar-invisible class */
+.scrollbar-invisible::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
 }
 
-::-webkit-scrollbar-track {
+.scrollbar-invisible::-webkit-scrollbar-track {
 	background: transparent;
 }
 
-::-webkit-scrollbar-thumb {
-	background: #cbd5e0;
-	border-radius: 4px;
+.scrollbar-invisible::-webkit-scrollbar-thumb {
+	background: rgba(0, 0, 0, 0.2);
+	border-radius: 5px;
+	opacity: 0;
+	transition: opacity 0.3s ease;
 }
 
-::-webkit-scrollbar-thumb:hover {
-	background: #a0aec0;
+.scrollbar-invisible:hover::-webkit-scrollbar-thumb,
+.scrollbar-invisible:active::-webkit-scrollbar-thumb {
+	opacity: 1;
+	background: rgba(0, 0, 0, 0.4);
 }
 
-.dark ::-webkit-scrollbar-thumb {
-	background: #4a5568;
+.scrollbar-invisible::-webkit-scrollbar-thumb:hover {
+	background: rgba(0, 0, 0, 0.6);
 }
 
-.dark ::-webkit-scrollbar-thumb:hover {
-	background: #718096;
+/* Dark mode support */
+.dark .scrollbar-invisible::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.3);
+}
+
+.dark .scrollbar-invisible:hover::-webkit-scrollbar-thumb,
+.dark .scrollbar-invisible:active::-webkit-scrollbar-thumb {
+	opacity: 1;
+	background: rgba(255, 255, 255, 0.5);
+}
+
+.dark .scrollbar-invisible::-webkit-scrollbar-thumb:hover {
+	background: rgba(255, 255, 255, 0.7);
 }
