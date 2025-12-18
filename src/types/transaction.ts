@@ -55,7 +55,7 @@ export interface TransactionCreateRequest {
 	amount: string;
 	currency: string;
 	paymentMethods: PaymentMethodInput[];
-	paymentDate: string; // date-time format
+	paymentDate?: string; // date-time format (optional)
 }
 
 export interface TransactionUpdateRequest {

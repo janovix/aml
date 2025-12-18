@@ -47,7 +47,6 @@ interface TransactionFormData {
 	amount: string;
 	currency: string;
 	paymentMethods: PaymentMethodInput[];
-	paymentDate: string;
 }
 
 export function TransactionCreateView(): React.JSX.Element {
@@ -57,7 +56,7 @@ export function TransactionCreateView(): React.JSX.Element {
 
 	const [formData, setFormData] = useState<TransactionFormData>({
 		clientId: "",
-		operationDate: new Date().toISOString().slice(0, 16),
+		operationDate: new Date().toISOString().slice(0, 10), // Date only (YYYY-MM-DD)
 		operationType: "sale", // Default to "Venta"
 		branchPostalCode: "",
 		vehicleType: "",
@@ -71,7 +70,6 @@ export function TransactionCreateView(): React.JSX.Element {
 		amount: "", // Calculated from payment methods on submit
 		currency: "MXN",
 		paymentMethods: [{ method: "EFECTIVO", amount: "" }],
-		paymentDate: new Date().toISOString().slice(0, 16),
 	});
 
 	const handleInputChange = (
@@ -149,9 +147,13 @@ export function TransactionCreateView(): React.JSX.Element {
 		try {
 			setIsSaving(true);
 			const calculatedAmount = calculateAmountFromPaymentMethods();
+			// Format operationDate as date-only (YYYY-MM-DD) - convert to ISO date string at midnight UTC
+			const operationDateISO = formData.operationDate
+				? new Date(formData.operationDate + "T00:00:00.000Z").toISOString()
+				: new Date().toISOString();
 			const createData: TransactionCreateRequest = {
 				clientId: formData.clientId,
-				operationDate: new Date(formData.operationDate).toISOString(),
+				operationDate: operationDateISO,
 				operationType: "sale", // Always set to "Venta"
 				branchPostalCode: formData.branchPostalCode,
 				vehicleType: formData.vehicleType as TransactionVehicleType,
@@ -161,7 +163,6 @@ export function TransactionCreateView(): React.JSX.Element {
 				amount: calculatedAmount,
 				currency: formData.currency,
 				paymentMethods: formData.paymentMethods,
-				paymentDate: new Date(formData.paymentDate).toISOString(),
 			};
 
 			if (formData.vehicleType === "land") {
@@ -267,7 +268,7 @@ export function TransactionCreateView(): React.JSX.Element {
 								<Label htmlFor="operation-date">Fecha de operación *</Label>
 								<Input
 									id="operation-date"
-									type="datetime-local"
+									type="date"
 									value={formData.operationDate}
 									onChange={(e) =>
 										handleInputChange("operationDate", e.target.value)
@@ -450,19 +451,6 @@ export function TransactionCreateView(): React.JSX.Element {
 										<SelectItem value="EUR">EUR - Euro</SelectItem>
 									</SelectContent>
 								</Select>
-							</div>
-
-							<div className="space-y-2">
-								<Label htmlFor="payment-date">Fecha de pago *</Label>
-								<Input
-									id="payment-date"
-									type="datetime-local"
-									value={formData.paymentDate}
-									onChange={(e) =>
-										handleInputChange("paymentDate", e.target.value)
-									}
-									required
-								/>
 							</div>
 						</div>
 
