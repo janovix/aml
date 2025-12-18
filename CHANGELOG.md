@@ -1,3 +1,10 @@
+# [1.1.0-rc.4](https://github.com/janovix/aml/compare/v1.1.0-rc.3...v1.1.0-rc.4) (2025-12-18)
+
+
+### Bug Fixes
+
+* **auth:** use onSuccess callback in signOut to control redirect ([6dcdc9e](https://github.com/janovix/aml/commit/6dcdc9e4a328a6925f69031215237ffc87ebee0a))
+
 # [1.1.0-rc.3](https://github.com/janovix/aml/compare/v1.1.0-rc.2...v1.1.0-rc.3) (2025-12-18)
 
 
