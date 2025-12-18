@@ -58,7 +58,7 @@ export function TransactionCreateView(): React.JSX.Element {
 	const [formData, setFormData] = useState<TransactionFormData>({
 		clientId: "",
 		operationDate: new Date().toISOString().slice(0, 16),
-		operationType: "",
+		operationType: "sale", // Default to "Venta"
 		branchPostalCode: "",
 		vehicleType: "",
 		brandId: "",
@@ -152,7 +152,7 @@ export function TransactionCreateView(): React.JSX.Element {
 			const createData: TransactionCreateRequest = {
 				clientId: formData.clientId,
 				operationDate: new Date(formData.operationDate).toISOString(),
-				operationType: formData.operationType as TransactionOperationType,
+				operationType: "sale", // Always set to "Venta"
 				branchPostalCode: formData.branchPostalCode,
 				vehicleType: formData.vehicleType as TransactionVehicleType,
 				brandId: formData.brandId,
@@ -274,25 +274,6 @@ export function TransactionCreateView(): React.JSX.Element {
 									}
 									required
 								/>
-							</div>
-
-							<div className="space-y-2">
-								<Label htmlFor="operation-type">Tipo de operación *</Label>
-								<Select
-									value={formData.operationType}
-									onValueChange={(value) =>
-										handleInputChange("operationType", value)
-									}
-									required
-								>
-									<SelectTrigger id="operation-type">
-										<SelectValue placeholder="Seleccionar tipo" />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="purchase">Compra</SelectItem>
-										<SelectItem value="sale">Venta</SelectItem>
-									</SelectContent>
-								</Select>
 							</div>
 
 							<div className="space-y-2">
