@@ -1,6 +1,6 @@
 import type { CatalogQueryParams, CatalogResponse } from "@/types/catalog";
 
-const DEFAULT_BFF_BASE_URL = "https://aml-bff.janovix.algenium.dev";
+const DEFAULT_BFF_BASE_URL = "https://aml-svc.example.workers.dev";
 
 const stripTrailingSlash = (value: string): string =>
 	value.endsWith("/") ? value.slice(0, -1) : value;
