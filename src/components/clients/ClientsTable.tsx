@@ -271,7 +271,9 @@ export function ClientsTable(): React.ReactElement {
 													<div className="flex items-center gap-2">
 														<Checkbox
 															checked={selectedIds.has(client.rfc)}
-															onCheckedChange={() => handleSelectOne(client.rfc)}
+															onCheckedChange={() =>
+																handleSelectOne(client.rfc)
+															}
 															onClick={(e) => e.stopPropagation()}
 															aria-label={`Seleccionar ${getClientDisplayName(client)}`}
 														/>
@@ -293,10 +295,7 @@ export function ClientsTable(): React.ReactElement {
 															</span>
 														</div>
 														<div className="flex items-center gap-2">
-															<Badge
-																variant="outline"
-																className="font-medium"
-															>
+															<Badge variant="outline" className="font-medium">
 																—
 															</Badge>
 														</div>
@@ -362,204 +361,208 @@ export function ClientsTable(): React.ReactElement {
 					) : (
 						<div className="overflow-x-auto">
 							<Table>
-							<TableHeader>
-								<TableRow className="hover:bg-transparent">
-									<TableHead className="w-12 pl-6">
-										<Checkbox
-											checked={allSelected}
-											ref={(el) => {
-												if (el)
-													(
-														el as HTMLButtonElement & { indeterminate: boolean }
-													).indeterminate = someSelected;
-											}}
-											onCheckedChange={handleSelectAll}
-											aria-label="Seleccionar todos los clientes"
-										/>
-									</TableHead>
-									<TableHead className="min-w-[200px]">
-										<Button
-											variant="ghost"
-											size="sm"
-											className="-ml-3 h-8 gap-1 font-medium"
-											onClick={() => handleSort("name")}
-										>
-											Cliente
-											<ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
-										</Button>
-									</TableHead>
-									<TableHead className="hidden md:table-cell">RFC</TableHead>
-									<TableHead className="hidden lg:table-cell">Tipo</TableHead>
-									<TableHead>
-										<Button
-											variant="ghost"
-											size="sm"
-											className="-ml-3 h-8 gap-1 font-medium"
-											onClick={() => handleSort("riskLevel")}
-										>
-											Nivel de Riesgo
-											<ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
-										</Button>
-									</TableHead>
-									<TableHead className="hidden sm:table-cell">Estado</TableHead>
-									<TableHead className="hidden xl:table-cell">
-										Estado de Revisión
-									</TableHead>
-									<TableHead className="hidden lg:table-cell">
-										Última Revisión
-									</TableHead>
-									<TableHead className="hidden md:table-cell text-center">
-										Avisos
-									</TableHead>
-									<TableHead className="w-12 pr-6">
-										<span className="sr-only">Acciones</span>
-									</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{isLoading ? (
-									<TableRow>
-										<TableCell
-											colSpan={10}
-											className="text-center py-8 text-muted-foreground"
-										>
-											Cargando clientes...
-										</TableCell>
-									</TableRow>
-								) : clients.length === 0 ? (
-									<TableRow>
-										<TableCell
-											colSpan={10}
-											className="text-center py-8 text-muted-foreground"
-										>
-											No hay clientes registrados
-										</TableCell>
-									</TableRow>
-								) : (
-									clients.map((client) => (
-										<TableRow
-											key={client.rfc}
-											className={cn(
-												"cursor-pointer transition-colors",
-												selectedIds.has(client.rfc) && "bg-muted/50",
-											)}
-											onClick={() => handleSelectOne(client.rfc)}
-										>
-											<TableCell
-												className="pl-6"
-												onClick={(e) => e.stopPropagation()}
+								<TableHeader>
+									<TableRow className="hover:bg-transparent">
+										<TableHead className="w-12 pl-6">
+											<Checkbox
+												checked={allSelected}
+												ref={(el) => {
+													if (el)
+														(
+															el as HTMLButtonElement & {
+																indeterminate: boolean;
+															}
+														).indeterminate = someSelected;
+												}}
+												onCheckedChange={handleSelectAll}
+												aria-label="Seleccionar todos los clientes"
+											/>
+										</TableHead>
+										<TableHead className="min-w-[200px]">
+											<Button
+												variant="ghost"
+												size="sm"
+												className="-ml-3 h-8 gap-1 font-medium"
+												onClick={() => handleSort("name")}
 											>
-												<Checkbox
-													checked={selectedIds.has(client.rfc)}
-													onCheckedChange={() => handleSelectOne(client.rfc)}
-													aria-label={`Seleccionar ${getClientDisplayName(client)}`}
-												/>
-											</TableCell>
-											<TableCell>
-												<Link
-													href={`/clients/${client.rfc}`}
-													className="font-medium text-foreground hover:text-primary hover:underline underline-offset-2 transition-colors"
-													onClick={(e) => e.stopPropagation()}
-												>
-													{getClientDisplayName(client)}
-												</Link>
-											</TableCell>
-											<TableCell className="hidden md:table-cell font-mono text-sm text-muted-foreground">
-												{client.rfc}
-											</TableCell>
-											<TableCell className="hidden lg:table-cell">
-												<Badge variant="outline" className="font-medium">
-													{client.personType === "physical"
-														? "Física"
-														: client.personType === "moral"
-															? "Moral"
-															: "Fideicomiso"}
-												</Badge>
-											</TableCell>
-											<TableCell>
-												<Badge
-													variant="outline"
-													className="min-w-[60px] justify-center font-medium"
-												>
-													—
-												</Badge>
-											</TableCell>
-											<TableCell className="hidden sm:table-cell">
-												<Badge variant="outline" className="font-medium">
-													—
-												</Badge>
-											</TableCell>
-											<TableCell className="hidden xl:table-cell">
-												<Badge variant="outline" className="font-medium">
-													—
-												</Badge>
-											</TableCell>
-											<TableCell className="hidden lg:table-cell text-muted-foreground">
-												{formatDate(client.createdAt)}
-											</TableCell>
-											<TableCell className="hidden md:table-cell text-center">
-												<span className="text-muted-foreground">—</span>
-											</TableCell>
-											<TableCell
-												className="pr-6"
-												onClick={(e) => e.stopPropagation()}
+												Cliente
+												<ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+											</Button>
+										</TableHead>
+										<TableHead className="hidden md:table-cell">RFC</TableHead>
+										<TableHead className="hidden lg:table-cell">Tipo</TableHead>
+										<TableHead>
+											<Button
+												variant="ghost"
+												size="sm"
+												className="-ml-3 h-8 gap-1 font-medium"
+												onClick={() => handleSort("riskLevel")}
 											>
-												<DropdownMenu>
-													<DropdownMenuTrigger asChild>
-														<Button
-															variant="ghost"
-															size="icon"
-															className="h-8 w-8"
-															aria-label={`Acciones para ${getClientDisplayName(client)}`}
-														>
-															<MoreHorizontal className="h-4 w-4" />
-														</Button>
-													</DropdownMenuTrigger>
-													<DropdownMenuContent align="end" className="w-48">
-														<DropdownMenuItem
-															className="gap-2"
-															onClick={() => handleViewDetails(client)}
-														>
-															<Eye className="h-4 w-4" />
-															Ver Detalles
-														</DropdownMenuItem>
-														<DropdownMenuItem
-															className="gap-2"
-															onClick={() => handleEdit(client)}
-														>
-															<Edit className="h-4 w-4" />
-															Editar
-														</DropdownMenuItem>
-														<DropdownMenuItem
-															className="gap-2"
-															onClick={() => handleGenerateReport(client)}
-														>
-															<FileText className="h-4 w-4" />
-															Generar Reporte
-														</DropdownMenuItem>
-														<DropdownMenuSeparator />
-														<DropdownMenuItem
-															className="gap-2 text-[rgb(var(--risk-high))]"
-															onClick={() => handleFlagSuspicious(client)}
-														>
-															<Flag className="h-4 w-4" />
-															Marcar como Sospechoso
-														</DropdownMenuItem>
-														<DropdownMenuItem
-															className="gap-2 text-destructive"
-															onClick={() => handleDeleteClick(client)}
-														>
-															<Trash2 className="h-4 w-4" />
-															Eliminar
-														</DropdownMenuItem>
-													</DropdownMenuContent>
-												</DropdownMenu>
+												Nivel de Riesgo
+												<ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+											</Button>
+										</TableHead>
+										<TableHead className="hidden sm:table-cell">
+											Estado
+										</TableHead>
+										<TableHead className="hidden xl:table-cell">
+											Estado de Revisión
+										</TableHead>
+										<TableHead className="hidden lg:table-cell">
+											Última Revisión
+										</TableHead>
+										<TableHead className="hidden md:table-cell text-center">
+											Avisos
+										</TableHead>
+										<TableHead className="w-12 pr-6">
+											<span className="sr-only">Acciones</span>
+										</TableHead>
+									</TableRow>
+								</TableHeader>
+								<TableBody>
+									{isLoading ? (
+										<TableRow>
+											<TableCell
+												colSpan={10}
+												className="text-center py-8 text-muted-foreground"
+											>
+												Cargando clientes...
 											</TableCell>
 										</TableRow>
-									))
-								)}
-							</TableBody>
-						</Table>
+									) : clients.length === 0 ? (
+										<TableRow>
+											<TableCell
+												colSpan={10}
+												className="text-center py-8 text-muted-foreground"
+											>
+												No hay clientes registrados
+											</TableCell>
+										</TableRow>
+									) : (
+										clients.map((client) => (
+											<TableRow
+												key={client.rfc}
+												className={cn(
+													"cursor-pointer transition-colors",
+													selectedIds.has(client.rfc) && "bg-muted/50",
+												)}
+												onClick={() => handleSelectOne(client.rfc)}
+											>
+												<TableCell
+													className="pl-6"
+													onClick={(e) => e.stopPropagation()}
+												>
+													<Checkbox
+														checked={selectedIds.has(client.rfc)}
+														onCheckedChange={() => handleSelectOne(client.rfc)}
+														aria-label={`Seleccionar ${getClientDisplayName(client)}`}
+													/>
+												</TableCell>
+												<TableCell>
+													<Link
+														href={`/clients/${client.rfc}`}
+														className="font-medium text-foreground hover:text-primary hover:underline underline-offset-2 transition-colors"
+														onClick={(e) => e.stopPropagation()}
+													>
+														{getClientDisplayName(client)}
+													</Link>
+												</TableCell>
+												<TableCell className="hidden md:table-cell font-mono text-sm text-muted-foreground">
+													{client.rfc}
+												</TableCell>
+												<TableCell className="hidden lg:table-cell">
+													<Badge variant="outline" className="font-medium">
+														{client.personType === "physical"
+															? "Física"
+															: client.personType === "moral"
+																? "Moral"
+																: "Fideicomiso"}
+													</Badge>
+												</TableCell>
+												<TableCell>
+													<Badge
+														variant="outline"
+														className="min-w-[60px] justify-center font-medium"
+													>
+														—
+													</Badge>
+												</TableCell>
+												<TableCell className="hidden sm:table-cell">
+													<Badge variant="outline" className="font-medium">
+														—
+													</Badge>
+												</TableCell>
+												<TableCell className="hidden xl:table-cell">
+													<Badge variant="outline" className="font-medium">
+														—
+													</Badge>
+												</TableCell>
+												<TableCell className="hidden lg:table-cell text-muted-foreground">
+													{formatDate(client.createdAt)}
+												</TableCell>
+												<TableCell className="hidden md:table-cell text-center">
+													<span className="text-muted-foreground">—</span>
+												</TableCell>
+												<TableCell
+													className="pr-6"
+													onClick={(e) => e.stopPropagation()}
+												>
+													<DropdownMenu>
+														<DropdownMenuTrigger asChild>
+															<Button
+																variant="ghost"
+																size="icon"
+																className="h-8 w-8"
+																aria-label={`Acciones para ${getClientDisplayName(client)}`}
+															>
+																<MoreHorizontal className="h-4 w-4" />
+															</Button>
+														</DropdownMenuTrigger>
+														<DropdownMenuContent align="end" className="w-48">
+															<DropdownMenuItem
+																className="gap-2"
+																onClick={() => handleViewDetails(client)}
+															>
+																<Eye className="h-4 w-4" />
+																Ver Detalles
+															</DropdownMenuItem>
+															<DropdownMenuItem
+																className="gap-2"
+																onClick={() => handleEdit(client)}
+															>
+																<Edit className="h-4 w-4" />
+																Editar
+															</DropdownMenuItem>
+															<DropdownMenuItem
+																className="gap-2"
+																onClick={() => handleGenerateReport(client)}
+															>
+																<FileText className="h-4 w-4" />
+																Generar Reporte
+															</DropdownMenuItem>
+															<DropdownMenuSeparator />
+															<DropdownMenuItem
+																className="gap-2 text-[rgb(var(--risk-high))]"
+																onClick={() => handleFlagSuspicious(client)}
+															>
+																<Flag className="h-4 w-4" />
+																Marcar como Sospechoso
+															</DropdownMenuItem>
+															<DropdownMenuItem
+																className="gap-2 text-destructive"
+																onClick={() => handleDeleteClick(client)}
+															>
+																<Trash2 className="h-4 w-4" />
+																Eliminar
+															</DropdownMenuItem>
+														</DropdownMenuContent>
+													</DropdownMenu>
+												</TableCell>
+											</TableRow>
+										))
+									)}
+								</TableBody>
+							</Table>
 						</div>
 					)}
 				</CardContent>

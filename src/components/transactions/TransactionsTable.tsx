@@ -207,7 +207,9 @@ export function TransactionsTable({
 												<div className="flex items-center gap-2">
 													<Checkbox
 														checked={selectedIds.has(transaction.id)}
-														onCheckedChange={() => handleSelectOne(transaction.id)}
+														onCheckedChange={() =>
+															handleSelectOne(transaction.id)
+														}
 														onClick={(e) => e.stopPropagation()}
 														aria-label={`Seleccionar ${transaction.folio}`}
 													/>
@@ -233,7 +235,10 @@ export function TransactionsTable({
 															Monto:
 														</span>
 														<span className="font-medium">
-															{formatCurrency(transaction.amount, transaction.currency)}
+															{formatCurrency(
+																transaction.amount,
+																transaction.currency,
+															)}
 														</span>
 													</div>
 													<div className="flex items-center gap-2 text-sm">
@@ -248,9 +253,7 @@ export function TransactionsTable({
 														<span className="text-muted-foreground">
 															Fecha:
 														</span>
-														<span>
-															{formatDate(transaction.operationDate)}
-														</span>
+														<span>{formatDate(transaction.operationDate)}</span>
 													</div>
 												</div>
 											</div>
@@ -303,161 +306,166 @@ export function TransactionsTable({
 				) : (
 					<div className="overflow-x-auto">
 						<Table>
-						<TableHeader>
-							<TableRow className="hover:bg-transparent">
-								<TableHead className="w-12 pl-6">
-									<Checkbox
-										checked={allSelected}
-										ref={(el) => {
-											if (el)
-												(
-													el as HTMLButtonElement & { indeterminate: boolean }
-												).indeterminate = someSelected;
-										}}
-										onCheckedChange={handleSelectAll}
-										aria-label="Seleccionar todas las transacciones"
-									/>
-								</TableHead>
-								<TableHead className="min-w-[120px]">Folio</TableHead>
-								<TableHead className="hidden md:table-cell">Tipo</TableHead>
-								<TableHead className="min-w-[150px]">Vehículo</TableHead>
-								<TableHead>Cliente ID</TableHead>
-								<TableHead className="text-right">Monto</TableHead>
-								<TableHead>Métodos de pago</TableHead>
-								<TableHead className="hidden sm:table-cell">
-									Fecha Operación
-								</TableHead>
-								<TableHead className="w-12 pr-6">
-									<span className="sr-only">Acciones</span>
-								</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{isLoading ? (
-								<TableRow>
-									<TableCell
-										colSpan={10}
-										className="text-center py-8 text-muted-foreground"
-									>
-										Cargando transacciones...
-									</TableCell>
+							<TableHeader>
+								<TableRow className="hover:bg-transparent">
+									<TableHead className="w-12 pl-6">
+										<Checkbox
+											checked={allSelected}
+											ref={(el) => {
+												if (el)
+													(
+														el as HTMLButtonElement & { indeterminate: boolean }
+													).indeterminate = someSelected;
+											}}
+											onCheckedChange={handleSelectAll}
+											aria-label="Seleccionar todas las transacciones"
+										/>
+									</TableHead>
+									<TableHead className="min-w-[120px]">Folio</TableHead>
+									<TableHead className="hidden md:table-cell">Tipo</TableHead>
+									<TableHead className="min-w-[150px]">Vehículo</TableHead>
+									<TableHead>Cliente ID</TableHead>
+									<TableHead className="text-right">Monto</TableHead>
+									<TableHead>Métodos de pago</TableHead>
+									<TableHead className="hidden sm:table-cell">
+										Fecha Operación
+									</TableHead>
+									<TableHead className="w-12 pr-6">
+										<span className="sr-only">Acciones</span>
+									</TableHead>
 								</TableRow>
-							) : transactionsData.length === 0 ? (
-								<TableRow>
-									<TableCell
-										colSpan={10}
-										className="text-center py-8 text-muted-foreground"
-									>
-										No hay transacciones registradas
-									</TableCell>
-								</TableRow>
-							) : (
-								transactionsData.map((transaction) => (
-									<TableRow
-										key={transaction.id}
-										className={cn(
-											"cursor-pointer transition-colors",
-											selectedIds.has(transaction.id) && "bg-muted/50",
-										)}
-										onClick={() => handleSelectOne(transaction.id)}
-									>
+							</TableHeader>
+							<TableBody>
+								{isLoading ? (
+									<TableRow>
 										<TableCell
-											className="pl-6"
-											onClick={(e) => e.stopPropagation()}
+											colSpan={10}
+											className="text-center py-8 text-muted-foreground"
 										>
-											<Checkbox
-												checked={selectedIds.has(transaction.id)}
-												onCheckedChange={() => handleSelectOne(transaction.id)}
-												aria-label={`Seleccionar ${transaction.folio}`}
-											/>
-										</TableCell>
-										<TableCell>
-											<Link
-												href={`/transactions/${transaction.id}`}
-												className="font-medium text-foreground hover:text-primary hover:underline underline-offset-2 transition-colors"
-												onClick={(e) => e.stopPropagation()}
-											>
-												{transaction.folio}
-											</Link>
-										</TableCell>
-										<TableCell className="hidden md:table-cell">
-											<Badge variant="outline" className="font-medium">
-												{operationTypeLabels[transaction.type]}
-											</Badge>
-										</TableCell>
-										<TableCell>
-											<div className="flex flex-col">
-												<span className="font-medium">
-													{transaction.brandId} {transaction.model}
-												</span>
-												<span className="text-xs text-muted-foreground">
-													{transaction.year}
-												</span>
-											</div>
-										</TableCell>
-										<TableCell className="max-w-[200px] truncate font-mono text-sm">
-											{transaction.clientId}
-										</TableCell>
-										<TableCell className="text-right font-medium">
-											{formatCurrency(transaction.amount, transaction.currency)}
-										</TableCell>
-										<TableCell>
-											<span className="text-sm">
-												{transaction.paymentMethods}
-											</span>
-										</TableCell>
-										<TableCell className="hidden sm:table-cell text-muted-foreground">
-											{formatDate(transaction.operationDate)}
-										</TableCell>
-										<TableCell
-											className="pr-6"
-											onClick={(e) => e.stopPropagation()}
-										>
-											<DropdownMenu>
-												<DropdownMenuTrigger asChild>
-													<Button
-														variant="ghost"
-														size="icon"
-														className="h-8 w-8"
-														aria-label={`Acciones para ${transaction.folio}`}
-													>
-														<MoreHorizontal className="h-4 w-4" />
-													</Button>
-												</DropdownMenuTrigger>
-												<DropdownMenuContent align="end" className="w-48">
-													<DropdownMenuItem
-														className="gap-2"
-														onClick={() =>
-															router.push(`/transactions/${transaction.id}`)
-														}
-													>
-														<Eye className="h-4 w-4" />
-														Ver Detalles
-													</DropdownMenuItem>
-													<DropdownMenuItem
-														className="gap-2"
-														onClick={() =>
-															router.push(
-																`/transactions/${transaction.id}/edit`,
-															)
-														}
-													>
-														<Edit className="h-4 w-4" />
-														Editar
-													</DropdownMenuItem>
-													<DropdownMenuSeparator />
-													<DropdownMenuItem className="gap-2">
-														<FileText className="h-4 w-4" />
-														Generar Reporte
-													</DropdownMenuItem>
-												</DropdownMenuContent>
-											</DropdownMenu>
+											Cargando transacciones...
 										</TableCell>
 									</TableRow>
-								))
-							)}
-						</TableBody>
-					</Table>
+								) : transactionsData.length === 0 ? (
+									<TableRow>
+										<TableCell
+											colSpan={10}
+											className="text-center py-8 text-muted-foreground"
+										>
+											No hay transacciones registradas
+										</TableCell>
+									</TableRow>
+								) : (
+									transactionsData.map((transaction) => (
+										<TableRow
+											key={transaction.id}
+											className={cn(
+												"cursor-pointer transition-colors",
+												selectedIds.has(transaction.id) && "bg-muted/50",
+											)}
+											onClick={() => handleSelectOne(transaction.id)}
+										>
+											<TableCell
+												className="pl-6"
+												onClick={(e) => e.stopPropagation()}
+											>
+												<Checkbox
+													checked={selectedIds.has(transaction.id)}
+													onCheckedChange={() =>
+														handleSelectOne(transaction.id)
+													}
+													aria-label={`Seleccionar ${transaction.folio}`}
+												/>
+											</TableCell>
+											<TableCell>
+												<Link
+													href={`/transactions/${transaction.id}`}
+													className="font-medium text-foreground hover:text-primary hover:underline underline-offset-2 transition-colors"
+													onClick={(e) => e.stopPropagation()}
+												>
+													{transaction.folio}
+												</Link>
+											</TableCell>
+											<TableCell className="hidden md:table-cell">
+												<Badge variant="outline" className="font-medium">
+													{operationTypeLabels[transaction.type]}
+												</Badge>
+											</TableCell>
+											<TableCell>
+												<div className="flex flex-col">
+													<span className="font-medium">
+														{transaction.brandId} {transaction.model}
+													</span>
+													<span className="text-xs text-muted-foreground">
+														{transaction.year}
+													</span>
+												</div>
+											</TableCell>
+											<TableCell className="max-w-[200px] truncate font-mono text-sm">
+												{transaction.clientId}
+											</TableCell>
+											<TableCell className="text-right font-medium">
+												{formatCurrency(
+													transaction.amount,
+													transaction.currency,
+												)}
+											</TableCell>
+											<TableCell>
+												<span className="text-sm">
+													{transaction.paymentMethods}
+												</span>
+											</TableCell>
+											<TableCell className="hidden sm:table-cell text-muted-foreground">
+												{formatDate(transaction.operationDate)}
+											</TableCell>
+											<TableCell
+												className="pr-6"
+												onClick={(e) => e.stopPropagation()}
+											>
+												<DropdownMenu>
+													<DropdownMenuTrigger asChild>
+														<Button
+															variant="ghost"
+															size="icon"
+															className="h-8 w-8"
+															aria-label={`Acciones para ${transaction.folio}`}
+														>
+															<MoreHorizontal className="h-4 w-4" />
+														</Button>
+													</DropdownMenuTrigger>
+													<DropdownMenuContent align="end" className="w-48">
+														<DropdownMenuItem
+															className="gap-2"
+															onClick={() =>
+																router.push(`/transactions/${transaction.id}`)
+															}
+														>
+															<Eye className="h-4 w-4" />
+															Ver Detalles
+														</DropdownMenuItem>
+														<DropdownMenuItem
+															className="gap-2"
+															onClick={() =>
+																router.push(
+																	`/transactions/${transaction.id}/edit`,
+																)
+															}
+														>
+															<Edit className="h-4 w-4" />
+															Editar
+														</DropdownMenuItem>
+														<DropdownMenuSeparator />
+														<DropdownMenuItem className="gap-2">
+															<FileText className="h-4 w-4" />
+															Generar Reporte
+														</DropdownMenuItem>
+													</DropdownMenuContent>
+												</DropdownMenu>
+											</TableCell>
+										</TableRow>
+									))
+								)}
+							</TableBody>
+						</Table>
 					</div>
 				)}
 			</CardContent>
