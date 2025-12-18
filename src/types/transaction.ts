@@ -1,33 +1,80 @@
-export type TransactionType = "COMPRA" | "VENTA";
-export type VehicleType = "TERRESTRE" | "MARITIMO" | "AEREO";
-export type PaymentMethod =
-	| "EFECTIVO"
-	| "TRANSFERENCIA"
-	| "CHEQUE"
-	| "FINANCIAMIENTO";
-export type TransactionStatus = "COMPLETADA" | "PENDIENTE" | "EN_REVISION";
+export type TransactionOperationType = "purchase" | "sale";
+export type TransactionVehicleType = "land" | "marine" | "air";
 
 export interface Transaction {
 	id: string;
-	date: string;
 	clientId: string;
-	clientName: string;
-	transactionType: TransactionType;
-	vehicleType: VehicleType;
-	vehicle: string;
-	brand: string;
+	operationDate: string; // date-time format
+	operationType: TransactionOperationType;
+	branchPostalCode: string;
+	vehicleType: TransactionVehicleType;
+	brandId: string;
 	model: string;
-	year: string;
+	year: number;
 	serialNumber: string;
-	plates?: string;
-	engineNumber?: string;
-	registrationNumber?: string;
-	flagCountry?: string;
+	armorLevel?: string | null;
+	engineNumber?: string | null;
+	plates?: string | null;
+	registrationNumber?: string | null;
+	flagCountryId?: string | null;
 	amount: string;
 	currency: string;
-	paymentMethod: PaymentMethod;
-	paymentDate: string;
-	branch: string;
-	status: TransactionStatus;
-	riskFlag: boolean;
+	paymentMethod: string;
+	paymentDate: string; // date-time format
+	createdAt: string; // date-time format
+	updatedAt: string; // date-time format
+	deletedAt?: string | null; // date-time format
+}
+
+export interface TransactionCreateRequest {
+	clientId: string;
+	operationDate: string; // date-time format
+	operationType: TransactionOperationType;
+	branchPostalCode: string;
+	vehicleType: TransactionVehicleType;
+	brandId: string;
+	model: string;
+	year: number;
+	serialNumber: string;
+	armorLevel?: string | null;
+	engineNumber?: string | null;
+	plates?: string | null;
+	registrationNumber?: string | null;
+	flagCountryId?: string | null;
+	amount: string;
+	currency: string;
+	paymentMethod: string;
+	paymentDate: string; // date-time format
+}
+
+export interface TransactionUpdateRequest {
+	operationDate: string; // date-time format
+	operationType: TransactionOperationType;
+	branchPostalCode: string;
+	vehicleType: TransactionVehicleType;
+	brandId: string;
+	model: string;
+	year: number;
+	serialNumber: string;
+	armorLevel?: string | null;
+	engineNumber?: string | null;
+	plates?: string | null;
+	registrationNumber?: string | null;
+	flagCountryId?: string | null;
+	amount: string;
+	currency: string;
+	paymentMethod: string;
+	paymentDate: string; // date-time format
+}
+
+export interface TransactionPagination {
+	page: number;
+	limit: number;
+	total: number;
+	totalPages: number;
+}
+
+export interface TransactionListResponse {
+	data: Transaction[];
+	pagination: TransactionPagination;
 }
