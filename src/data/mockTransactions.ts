@@ -1,5 +1,6 @@
-import type { Transaction } from "../types/transaction";
+import type { Transaction, TransactionLegacy } from "../types/transaction";
 
+// Mock transactions in new API format
 export const mockTransactions: Transaction[] = [
 	{
 		id: "TRX-2024-001",

@@ -22,6 +22,7 @@ import {
 import { ArrowLeft, Save } from "lucide-react";
 import { useToast } from "../../hooks/use-toast";
 import { mockTransactions } from "../../data/mockTransactions";
+import { transactionToLegacy } from "../../types/transaction";
 import { CatalogSelector } from "../catalogs/CatalogSelector";
 
 interface TransactionEditViewProps {
@@ -34,9 +35,10 @@ export function TransactionEditView({
 	const router = useRouter();
 	const { toast } = useToast();
 
-	const transaction =
+	const transactionData =
 		mockTransactions.find((item) => item.id === transactionId) ||
 		mockTransactions[0];
+	const transaction = transactionToLegacy(transactionData);
 	const [formData, setFormData] = useState({
 		clientId: transaction.clientId,
 		date: transaction.date,

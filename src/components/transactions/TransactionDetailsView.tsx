@@ -27,7 +27,9 @@ import type {
 	VehicleType,
 	PaymentMethod,
 	TransactionStatus,
+	TransactionLegacy,
 } from "../../types/transaction";
+import { transactionToLegacy } from "../../types/transaction";
 
 const transactionTypeLabels: Record<TransactionType, string> = {
 	COMPRA: "Compra",
@@ -64,9 +66,10 @@ export function TransactionDetailsView({
 	const router = useRouter();
 	const { toast } = useToast();
 
-	const transaction =
+	const transactionData =
 		mockTransactions.find((item) => item.id === transactionId) ||
 		mockTransactions[0];
+	const transaction: TransactionLegacy = transactionToLegacy(transactionData);
 
 	const formatDate = (dateString: string): string => {
 		return new Date(dateString).toLocaleDateString("es-MX", {

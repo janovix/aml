@@ -26,7 +26,8 @@ import { MoreHorizontal, Eye, Edit, FileText, Download } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { mockTransactions } from "@/data/mockTransactions";
-import type { PaymentMethod } from "@/types/transaction";
+import type { PaymentMethod, TransactionLegacy } from "@/types/transaction";
+import { transactionToLegacy } from "@/types/transaction";
 
 interface TransactionRow {
 	id: string;
@@ -52,21 +53,24 @@ const paymentMethodLabels: Record<PaymentMethod, string> = {
 };
 
 // Transform mockTransactions to TransactionRow format
-const transactionsData: TransactionRow[] = mockTransactions.map((tx) => ({
-	id: tx.id,
-	folio: tx.id,
-	type: tx.transactionType,
-	vin: tx.serialNumber,
-	brand: tx.brand,
-	model: tx.model,
-	year: parseInt(tx.year, 10),
-	amount: parseFloat(tx.amount.replace(/[^0-9.-]+/g, "")),
-	clientName: tx.clientName,
-	date: tx.date,
-	status: tx.status,
-	suspicious: tx.riskFlag,
-	paymentMethod: tx.paymentMethod,
-}));
+const transactionsData: TransactionRow[] = mockTransactions.map((tx) => {
+	const legacy = transactionToLegacy(tx);
+	return {
+		id: legacy.id,
+		folio: legacy.id,
+		type: legacy.transactionType,
+		vin: legacy.serialNumber,
+		brand: legacy.brand,
+		model: legacy.model,
+		year: parseInt(legacy.year, 10),
+		amount: parseFloat(legacy.amount.replace(/[^0-9.-]+/g, "")),
+		clientName: legacy.clientName,
+		date: legacy.date,
+		status: legacy.status,
+		suspicious: legacy.riskFlag,
+		paymentMethod: legacy.paymentMethod,
+	};
+});
 
 const statusBadgeStyles = {
 	COMPLETADA:
