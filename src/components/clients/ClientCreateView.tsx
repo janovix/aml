@@ -34,7 +34,7 @@ interface ClientFormData {
 	curp?: string;
 	// Moral/Trust fields
 	businessName?: string;
-	incorporationDate?: string; // date-time format
+	incorporationDate?: string; // date format YYYY-MM-DD
 	// Common fields
 	rfc: string;
 	nationality?: string;
@@ -121,8 +121,12 @@ export function ClientCreateView(): React.JSX.Element {
 			} else {
 				// moral or trust
 				request.businessName = formData.businessName;
-				if (formData.incorporationDate)
-					request.incorporationDate = formData.incorporationDate;
+				if (formData.incorporationDate) {
+					// Convert date (YYYY-MM-DD) to date-time format (YYYY-MM-DDTHH:mm:ss.sssZ)
+					// Use midnight UTC to avoid timezone issues
+					const date = new Date(`${formData.incorporationDate}T00:00:00.000Z`);
+					request.incorporationDate = date.toISOString();
+				}
 			}
 
 			// Add optional fields
@@ -310,7 +314,7 @@ export function ClientCreateView(): React.JSX.Element {
 									</Label>
 									<Input
 										id="incorporationDate"
-										type="datetime-local"
+										type="date"
 										value={formData.incorporationDate}
 										onChange={(e) =>
 											handleInputChange("incorporationDate", e.target.value)
