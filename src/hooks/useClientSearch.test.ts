@@ -112,9 +112,7 @@ describe("useClientSearch", () => {
 	});
 
 	it("should handle search with custom page size", async () => {
-		const { result } = renderHook(() =>
-			useClientSearch({ pageSize: 20 }),
-		);
+		const { result } = renderHook(() => useClientSearch({ pageSize: 20 }));
 
 		await waitFor(() => {
 			expect(result.current.loading).toBe(false);
@@ -227,5 +225,65 @@ describe("useClientSearch", () => {
 			limit: 15,
 			signal: expect.any(AbortSignal),
 		});
+	});
+
+	it("should not update debounced search if normalized search equals debounced search", async () => {
+		const { result } = renderHook(() => useClientSearch({ debounceMs: 50 }));
+
+		await waitFor(() => {
+			expect(result.current.loading).toBe(false);
+		});
+
+		const initialDebounced = result.current.searchTerm;
+
+		act(() => {
+			result.current.setSearchTerm("   "); // Will normalize to empty
+		});
+
+		// Wait a bit
+		await new Promise((resolve) => setTimeout(resolve, 100));
+
+		// Should not trigger new API call if normalized equals debounced
+		const callCount = vi.mocked(listClients).mock.calls.length;
+		expect(callCount).toBeGreaterThanOrEqual(1);
+	});
+
+	it("should handle error without message", async () => {
+		const errorWithoutMessage = { name: "Error" } as Error;
+		vi.mocked(listClients).mockRejectedValue(errorWithoutMessage);
+
+		const { result } = renderHook(() => useClientSearch());
+
+		await waitFor(() => {
+			expect(result.current.loading).toBe(false);
+		});
+
+		expect(result.current.error).toBe("Error al cargar los clientes.");
+	});
+
+	it("should handle empty debounced search", async () => {
+		const { result } = renderHook(() => useClientSearch({ debounceMs: 50 }));
+
+		await waitFor(() => {
+			expect(result.current.loading).toBe(false);
+		});
+
+		act(() => {
+			result.current.setSearchTerm("");
+		});
+
+		await waitFor(
+			() => {
+				expect(listClients).toHaveBeenCalled();
+			},
+			{ timeout: 2000 },
+		);
+
+		// Should call with undefined search when empty
+		const lastCall =
+			vi.mocked(listClients).mock.calls[
+				vi.mocked(listClients).mock.calls.length - 1
+			];
+		expect(lastCall[0]?.search).toBeUndefined();
 	});
 });

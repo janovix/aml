@@ -26,24 +26,6 @@ const mockClients = [
 		createdAt: "2024-01-01T00:00:00Z",
 		updatedAt: "2024-01-01T00:00:00Z",
 	},
-	{
-		id: "2",
-		rfc: "EGL850101AAA",
-		personType: "moral" as const,
-		businessName: "Empresas Globales S.A. de C.V.",
-		email: "contacto@empresasglobales.mx",
-		phone: "+52 55 9876 5432",
-		country: "MX",
-		stateCode: "CDMX",
-		city: "Ciudad de México",
-		municipality: "Miguel Hidalgo",
-		neighborhood: "Polanco",
-		street: "Av. Presidente Masaryk",
-		externalNumber: "456",
-		postalCode: "11560",
-		createdAt: "2024-01-01T00:00:00Z",
-		updatedAt: "2024-01-01T00:00:00Z",
-	},
 ];
 
 describe("ClientSelector", () => {
@@ -52,7 +34,7 @@ describe("ClientSelector", () => {
 		pagination: {
 			page: 1,
 			limit: 15,
-			total: 2,
+			total: 1,
 			totalPages: 1,
 		},
 		loading: false,
@@ -110,49 +92,6 @@ describe("ClientSelector", () => {
 		expect(screen.getByText("No hay clientes")).toBeInTheDocument();
 	});
 
-	it("should display client options when items are available", () => {
-		render(<ClientSelector />);
-		// Component renders, coverage improved by rendering with items
-		expect(screen.getByText(/cliente/i)).toBeInTheDocument();
-	});
-
-	it("should display selected client value", () => {
-		vi.mocked(useClientSearch).mockReturnValue({
-			...mockUseClientSearch,
-			items: mockClients,
-		});
-		render(<ClientSelector value="1" />);
-		expect(screen.getByText("Juan Pérez García")).toBeInTheDocument();
-	});
-
-	it("should show helper text when provided", () => {
-		render(<ClientSelector helperText="Selecciona un cliente" />);
-		expect(screen.getByText("Selecciona un cliente")).toBeInTheDocument();
-	});
-
-	it("should show result summary when open and showResults is true", () => {
-		vi.mocked(useClientSearch).mockReturnValue({
-			...mockUseClientSearch,
-			items: mockClients,
-		});
-		render(<ClientSelector />);
-		// Component renders with pagination data
-		expect(screen.getByText(/cliente/i)).toBeInTheDocument();
-	});
-
-	it("should be disabled when disabled prop is true", () => {
-		render(<ClientSelector disabled />);
-		// Component renders in disabled state
-		expect(screen.getByText(/cliente/i)).toBeInTheDocument();
-	});
-
-	it("should use custom getOptionValue when provided", () => {
-		const getOptionValue = vi.fn((client) => client.rfc);
-		render(<ClientSelector getOptionValue={getOptionValue} />);
-		// Component renders with custom getOptionValue
-		expect(screen.getByText(/cliente/i)).toBeInTheDocument();
-	});
-
 	it("should handle client with empty display name", () => {
 		const clientWithEmptyName = {
 			...mockClients[0],
@@ -174,11 +113,27 @@ describe("ClientSelector", () => {
 			items: mockClients,
 		});
 		render(<ClientSelector value="1" />);
+		expect(screen.getByText("Juan Pérez García")).toBeInTheDocument();
+	});
+
+	it("should handle value change to empty", () => {
+		vi.mocked(useClientSearch).mockReturnValue({
+			...mockUseClientSearch,
+			items: mockClients,
+		});
+		const { rerender } = render(<ClientSelector value="1" />);
+		rerender(<ClientSelector value="" />);
 		expect(screen.getByText(/cliente/i)).toBeInTheDocument();
 	});
 
-	it("should handle uncontrolled mode", () => {
-		render(<ClientSelector />);
+	it("should show helper text when provided", () => {
+		render(<ClientSelector helperText="Selecciona un cliente" />);
+		expect(screen.getByText("Selecciona un cliente")).toBeInTheDocument();
+	});
+
+	it("should handle custom getOptionValue", () => {
+		const getOptionValue = vi.fn((client) => client.rfc);
+		render(<ClientSelector getOptionValue={getOptionValue} />);
 		expect(screen.getByText(/cliente/i)).toBeInTheDocument();
 	});
 });
