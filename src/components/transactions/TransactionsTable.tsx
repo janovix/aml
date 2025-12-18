@@ -180,9 +180,9 @@ export function TransactionsTable({
 					</div>
 				)}
 			</CardHeader>
-			<CardContent className={cn("p-0", isMobile && "p-4")}>
+			<CardContent className={cn("p-0", isMobile && "p-3")}>
 				{isMobile ? (
-					<div className="space-y-3">
+					<div className="space-y-2">
 						{isLoading ? (
 							<div className="text-center py-8 text-muted-foreground">
 								Cargando transacciones...
@@ -201,60 +201,36 @@ export function TransactionsTable({
 									)}
 									onClick={() => handleSelectOne(transaction.id)}
 								>
-									<CardContent className="p-4">
-										<div className="flex items-start justify-between gap-3">
-											<div className="flex-1 min-w-0 space-y-2">
-												<div className="flex items-center gap-2">
-													<Checkbox
-														checked={selectedIds.has(transaction.id)}
-														onCheckedChange={() =>
-															handleSelectOne(transaction.id)
-														}
-														onClick={(e) => e.stopPropagation()}
-														aria-label={`Seleccionar ${transaction.folio}`}
-													/>
-													<Link
-														href={`/transactions/${transaction.id}`}
-														className="font-medium text-foreground hover:text-primary hover:underline underline-offset-2 transition-colors flex-1 min-w-0"
-														onClick={(e) => e.stopPropagation()}
-													>
-														{transaction.folio}
-													</Link>
-												</div>
-												<div className="space-y-1.5 pl-6">
-													<div className="flex items-center gap-2">
-														<span className="text-sm font-medium">
-															{transaction.brandId} {transaction.model}
-														</span>
-														<span className="text-xs text-muted-foreground">
+									<CardContent className="p-3">
+										<div className="flex items-start gap-3">
+											<Checkbox
+												checked={selectedIds.has(transaction.id)}
+												onCheckedChange={() => handleSelectOne(transaction.id)}
+												onClick={(e) => e.stopPropagation()}
+												aria-label={`Seleccionar ${transaction.folio}`}
+												className="mt-0.5 shrink-0"
+											/>
+											<div className="flex-1 min-w-0">
+												<Link
+													href={`/transactions/${transaction.id}`}
+													className="font-medium text-foreground hover:text-primary hover:underline underline-offset-2 transition-colors block"
+													onClick={(e) => e.stopPropagation()}
+												>
+													{transaction.folio}
+												</Link>
+												<div className="mt-1 space-y-0.5">
+													<p className="text-sm text-foreground">
+														{transaction.brandId} {transaction.model}{" "}
+														<span className="text-muted-foreground">
 															{transaction.year}
 														</span>
-													</div>
-													<div className="flex items-center gap-2 text-sm">
-														<span className="text-muted-foreground">
-															Monto:
-														</span>
-														<span className="font-medium">
-															{formatCurrency(
-																transaction.amount,
-																transaction.currency,
-															)}
-														</span>
-													</div>
-													<div className="flex items-center gap-2 text-sm">
-														<span className="text-muted-foreground">
-															Cliente:
-														</span>
-														<span className="font-mono text-xs">
-															{transaction.clientId}
-														</span>
-													</div>
-													<div className="flex items-center gap-2 text-sm">
-														<span className="text-muted-foreground">
-															Fecha:
-														</span>
-														<span>{formatDate(transaction.operationDate)}</span>
-													</div>
+													</p>
+													<p className="text-sm text-muted-foreground">
+														{formatCurrency(
+															transaction.amount,
+															transaction.currency,
+														)}
+													</p>
 												</div>
 											</div>
 											<DropdownMenu>

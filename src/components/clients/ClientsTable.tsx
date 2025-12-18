@@ -244,9 +244,9 @@ export function ClientsTable(): React.ReactElement {
 						</div>
 					)}
 				</CardHeader>
-				<CardContent className={cn("p-0", isMobile && "p-4")}>
+				<CardContent className={cn("p-0", isMobile && "p-3")}>
 					{isMobile ? (
-						<div className="space-y-3">
+						<div className="space-y-2">
 							{isLoading ? (
 								<div className="text-center py-8 text-muted-foreground">
 									Cargando clientes...
@@ -265,93 +265,86 @@ export function ClientsTable(): React.ReactElement {
 										)}
 										onClick={() => handleSelectOne(client.rfc)}
 									>
-										<CardContent className="p-4">
-											<div className="flex items-start justify-between gap-3">
-												<div className="flex-1 min-w-0 space-y-2">
-													<div className="flex items-center gap-2">
-														<Checkbox
-															checked={selectedIds.has(client.rfc)}
-															onCheckedChange={() =>
-																handleSelectOne(client.rfc)
-															}
-															onClick={(e) => e.stopPropagation()}
-															aria-label={`Seleccionar ${getClientDisplayName(client)}`}
-														/>
-														<Link
-															href={`/clients/${client.rfc}`}
-															className="font-medium text-foreground hover:text-primary hover:underline underline-offset-2 transition-colors flex-1 min-w-0"
-															onClick={(e) => e.stopPropagation()}
-														>
-															{getClientDisplayName(client)}
-														</Link>
-													</div>
-													<div className="space-y-1.5 pl-6">
-														<div className="flex items-center gap-2 text-sm">
-															<span className="text-muted-foreground font-mono">
-																RFC:
-															</span>
-															<span className="text-foreground font-mono">
-																{client.rfc}
-															</span>
-														</div>
-														<div className="flex items-center gap-2">
-															<Badge variant="outline" className="font-medium">
-																—
-															</Badge>
-														</div>
-													</div>
+										<CardContent className="p-3">
+											<div className="flex items-start gap-3">
+												<Checkbox
+													checked={selectedIds.has(client.rfc)}
+													onCheckedChange={() => handleSelectOne(client.rfc)}
+													onClick={(e) => e.stopPropagation()}
+													aria-label={`Seleccionar ${getClientDisplayName(client)}`}
+													className="mt-0.5 shrink-0"
+												/>
+												<div className="flex-1 min-w-0">
+													<Link
+														href={`/clients/${client.rfc}`}
+														className="font-medium text-foreground hover:text-primary hover:underline underline-offset-2 transition-colors block"
+														onClick={(e) => e.stopPropagation()}
+													>
+														{getClientDisplayName(client)}
+													</Link>
+													<p className="text-sm text-muted-foreground font-mono mt-0.5">
+														{client.rfc}
+													</p>
 												</div>
-												<DropdownMenu>
-													<DropdownMenuTrigger asChild>
-														<Button
-															variant="ghost"
-															size="icon"
-															className="h-8 w-8 shrink-0"
-															onClick={(e) => e.stopPropagation()}
-															aria-label={`Acciones para ${getClientDisplayName(client)}`}
-														>
-															<MoreHorizontal className="h-4 w-4" />
-														</Button>
-													</DropdownMenuTrigger>
-													<DropdownMenuContent align="end" className="w-48">
-														<DropdownMenuItem
-															className="gap-2"
-															onClick={() => handleViewDetails(client)}
-														>
-															<Eye className="h-4 w-4" />
-															Ver Detalles
-														</DropdownMenuItem>
-														<DropdownMenuItem
-															className="gap-2"
-															onClick={() => handleEdit(client)}
-														>
-															<Edit className="h-4 w-4" />
-															Editar
-														</DropdownMenuItem>
-														<DropdownMenuItem
-															className="gap-2"
-															onClick={() => handleGenerateReport(client)}
-														>
-															<FileText className="h-4 w-4" />
-															Generar Reporte
-														</DropdownMenuItem>
-														<DropdownMenuSeparator />
-														<DropdownMenuItem
-															className="gap-2 text-[rgb(var(--risk-high))]"
-															onClick={() => handleFlagSuspicious(client)}
-														>
-															<Flag className="h-4 w-4" />
-															Marcar como Sospechoso
-														</DropdownMenuItem>
-														<DropdownMenuItem
-															className="gap-2 text-destructive"
-															onClick={() => handleDeleteClick(client)}
-														>
-															<Trash2 className="h-4 w-4" />
-															Eliminar
-														</DropdownMenuItem>
-													</DropdownMenuContent>
-												</DropdownMenu>
+												<div className="flex items-center gap-2 shrink-0">
+													<Badge
+														variant="outline"
+														className="font-medium text-xs"
+													>
+														—
+													</Badge>
+													<DropdownMenu>
+														<DropdownMenuTrigger asChild>
+															<Button
+																variant="ghost"
+																size="icon"
+																className="h-8 w-8"
+																onClick={(e) => e.stopPropagation()}
+																aria-label={`Acciones para ${getClientDisplayName(client)}`}
+															>
+																<MoreHorizontal className="h-4 w-4" />
+															</Button>
+														</DropdownMenuTrigger>
+														<DropdownMenuContent align="end" className="w-48">
+															<DropdownMenuItem
+																className="gap-2"
+																onClick={() => handleViewDetails(client)}
+															>
+																<Eye className="h-4 w-4" />
+																Ver Detalles
+															</DropdownMenuItem>
+															<DropdownMenuItem
+																className="gap-2"
+																onClick={() => handleEdit(client)}
+															>
+																<Edit className="h-4 w-4" />
+																Editar
+															</DropdownMenuItem>
+															<DropdownMenuItem
+																className="gap-2"
+																onClick={() => handleGenerateReport(client)}
+															>
+																<FileText className="h-4 w-4" />
+																Generar Reporte
+															</DropdownMenuItem>
+															<DropdownMenuSeparator />
+															<DropdownMenuItem
+																className="gap-2 text-[rgb(var(--risk-high))]"
+																onClick={() => handleFlagSuspicious(client)}
+															>
+																<Flag className="h-4 w-4" />
+																Marcar como Sospechoso
+															</DropdownMenuItem>
+															<DropdownMenuItem
+																className="gap-2 text-destructive"
+																onClick={() => handleDeleteClick(client)}
+															>
+																<Trash2 className="h-4 w-4" />
+																Eliminar
+															</DropdownMenuItem>
+														</DropdownMenuContent>
+													</DropdownMenu>
+												</div>
 											</div>
 										</CardContent>
 									</Card>
