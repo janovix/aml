@@ -112,8 +112,30 @@ export function TransactionCreateView(): React.JSX.Element {
 		}));
 	};
 
+	const validatePaymentMethods = (): boolean => {
+		const totalAmount = parseFloat(formData.amount) || 0;
+		const paymentMethodsSum = formData.paymentMethods.reduce(
+			(sum, pm) => sum + (parseFloat(pm.amount) || 0),
+			0,
+		);
+
+		if (paymentMethodsSum > totalAmount) {
+			toast({
+				title: "Error de validación",
+				description: `La suma de los métodos de pago (${paymentMethodsSum.toFixed(2)}) excede el monto total de la transacción (${totalAmount.toFixed(2)}).`,
+				variant: "destructive",
+			});
+			return false;
+		}
+		return true;
+	};
+
 	const handleSubmit = async (e: React.FormEvent): Promise<void> => {
 		e.preventDefault();
+
+		if (!validatePaymentMethods()) {
+			return;
+		}
 
 		try {
 			setIsSaving(true);
@@ -196,7 +218,13 @@ export function TransactionCreateView(): React.JSX.Element {
 						size="sm"
 						className="gap-2"
 						onClick={handleSubmit}
-						disabled={isSaving}
+						disabled={
+							isSaving ||
+							formData.paymentMethods.reduce(
+								(sum, pm) => sum + (parseFloat(pm.amount) || 0),
+								0,
+							) > (parseFloat(formData.amount) || 0)
+						}
 					>
 						<Save className="h-4 w-4" />
 						<span className="hidden sm:inline">
@@ -492,6 +520,56 @@ export function TransactionCreateView(): React.JSX.Element {
 									Agregar Método
 								</Button>
 							</div>
+
+							{/* Payment methods summary */}
+							{formData.amount && (
+								<div className="p-3 rounded-lg border bg-muted/30">
+									<div className="flex items-center justify-between text-sm">
+										<span className="text-muted-foreground">
+											Monto total de la transacción:
+										</span>
+										<span className="font-medium">
+											{new Intl.NumberFormat("es-MX", {
+												style: "currency",
+												currency: formData.currency,
+											}).format(parseFloat(formData.amount) || 0)}
+										</span>
+									</div>
+									<div className="flex items-center justify-between text-sm mt-2">
+										<span className="text-muted-foreground">
+											Suma de métodos de pago:
+										</span>
+										<span
+											className={`font-medium ${
+												formData.paymentMethods.reduce(
+													(sum, pm) => sum + (parseFloat(pm.amount) || 0),
+													0,
+												) > (parseFloat(formData.amount) || 0)
+													? "text-destructive"
+													: "text-foreground"
+											}`}
+										>
+											{new Intl.NumberFormat("es-MX", {
+												style: "currency",
+												currency: formData.currency,
+											}).format(
+												formData.paymentMethods.reduce(
+													(sum, pm) => sum + (parseFloat(pm.amount) || 0),
+													0,
+												),
+											)}
+										</span>
+									</div>
+									{formData.paymentMethods.reduce(
+										(sum, pm) => sum + (parseFloat(pm.amount) || 0),
+										0,
+									) > (parseFloat(formData.amount) || 0) && (
+										<p className="text-xs text-destructive mt-2">
+											⚠️ La suma de los métodos de pago excede el monto total
+										</p>
+									)}
+								</div>
+							)}
 
 							{formData.paymentMethods.map((pm, index) => (
 								<div
