@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
 	Button,
@@ -21,7 +21,10 @@ import {
 } from "@algtools/ui";
 import { ArrowLeft, Edit, Download, Trash2 } from "lucide-react";
 import { useToast } from "../../hooks/use-toast";
-import { mockTransactions } from "../../data/mockTransactions";
+import {
+	getTransactionById,
+	deleteTransaction,
+} from "../../lib/api/transactions";
 import type { Transaction } from "../../types/transaction";
 
 const operationTypeLabels: Record<Transaction["operationType"], string> = {
@@ -50,12 +53,79 @@ export function TransactionDetailsView({
 	transactionId,
 }: TransactionDetailsViewProps): React.JSX.Element {
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+	const [transaction, setTransaction] = useState<Transaction | null>(null);
+	const [isLoading, setIsLoading] = useState(true);
 	const router = useRouter();
 	const { toast } = useToast();
 
-	const transaction: Transaction =
-		mockTransactions.find((item) => item.id === transactionId) ||
-		mockTransactions[0];
+	useEffect(() => {
+		const fetchTransaction = async () => {
+			try {
+				setIsLoading(true);
+				const data = await getTransactionById({ id: transactionId });
+				setTransaction(data);
+			} catch (error) {
+				console.error("Error fetching transaction:", error);
+				toast({
+					title: "Error",
+					description: "No se pudo cargar la transacción.",
+					variant: "destructive",
+				});
+				router.push("/transactions");
+			} finally {
+				setIsLoading(false);
+			}
+		};
+		fetchTransaction();
+	}, [transactionId, router, toast]);
+
+	if (isLoading) {
+		return (
+			<div className="space-y-6">
+				<div className="flex items-center gap-4">
+					<Button
+						variant="ghost"
+						size="sm"
+						className="gap-2"
+						onClick={() => router.push("/transactions")}
+					>
+						<ArrowLeft className="h-4 w-4" />
+						Volver
+					</Button>
+					<Separator orientation="vertical" className="h-6" />
+					<div>
+						<h1 className="text-xl font-semibold text-foreground">
+							Cargando...
+						</h1>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
+	if (!transaction) {
+		return (
+			<div className="space-y-6">
+				<div className="flex items-center gap-4">
+					<Button
+						variant="ghost"
+						size="sm"
+						className="gap-2"
+						onClick={() => router.push("/transactions")}
+					>
+						<ArrowLeft className="h-4 w-4" />
+						Volver
+					</Button>
+					<Separator orientation="vertical" className="h-6" />
+					<div>
+						<h1 className="text-xl font-semibold text-foreground">
+							Transacción no encontrada
+						</h1>
+					</div>
+				</div>
+			</div>
+		);
+	}
 
 	const formatDate = (dateString: string): string => {
 		return new Date(dateString).toLocaleDateString("es-MX", {
@@ -82,13 +152,23 @@ export function TransactionDetailsView({
 		});
 	};
 
-	const handleDelete = (): void => {
-		toast({
-			title: "Transacción eliminada",
-			description: `La transacción ${transaction.id} ha sido eliminada.`,
-			variant: "destructive",
-		});
-		router.push("/transactions");
+	const handleDelete = async (): Promise<void> => {
+		try {
+			await deleteTransaction({ id: transactionId });
+			toast({
+				title: "Transacción eliminada",
+				description: `La transacción ${transaction.id} ha sido eliminada.`,
+				variant: "destructive",
+			});
+			router.push("/transactions");
+		} catch (error) {
+			console.error("Error deleting transaction:", error);
+			toast({
+				title: "Error",
+				description: "No se pudo eliminar la transacción.",
+				variant: "destructive",
+			});
+		}
 	};
 
 	return (

@@ -21,9 +21,11 @@ import {
 } from "@algtools/ui";
 import { ArrowLeft, Save } from "lucide-react";
 import { useToast } from "../../hooks/use-toast";
+import { createTransaction } from "../../lib/api/transactions";
 import type {
 	TransactionOperationType,
 	TransactionVehicleType,
+	TransactionCreateRequest,
 } from "../../types/transaction";
 import { CatalogSelector } from "../catalogs/CatalogSelector";
 
@@ -50,6 +52,7 @@ interface TransactionFormData {
 export function TransactionCreateView(): React.JSX.Element {
 	const router = useRouter();
 	const { toast } = useToast();
+	const [isSaving, setIsSaving] = useState(false);
 
 	const [formData, setFormData] = useState<TransactionFormData>({
 		clientId: "",
@@ -78,15 +81,54 @@ export function TransactionCreateView(): React.JSX.Element {
 		setFormData((prev) => ({ ...prev, [field]: value }));
 	};
 
-	const handleSubmit = (e: React.FormEvent): void => {
+	const handleSubmit = async (e: React.FormEvent): Promise<void> => {
 		e.preventDefault();
 
-		toast({
-			title: "Transacción creada",
-			description: "La nueva transacción se ha registrado exitosamente.",
-		});
+		try {
+			setIsSaving(true);
+			const createData: TransactionCreateRequest = {
+				clientId: formData.clientId,
+				operationDate: new Date(formData.operationDate).toISOString(),
+				operationType: formData.operationType as TransactionOperationType,
+				branchPostalCode: formData.branchPostalCode,
+				vehicleType: formData.vehicleType as TransactionVehicleType,
+				brandId: formData.brandId,
+				model: formData.model,
+				year: parseInt(formData.year, 10),
+				serialNumber: formData.serialNumber,
+				amount: formData.amount,
+				currency: formData.currency,
+				paymentMethod: formData.paymentMethod,
+				paymentDate: new Date(formData.paymentDate).toISOString(),
+			};
 
-		router.push("/transactions");
+			if (formData.vehicleType === "land") {
+				if (formData.plates) createData.plates = formData.plates;
+				if (formData.engineNumber)
+					createData.engineNumber = formData.engineNumber;
+			} else {
+				if (formData.registrationNumber)
+					createData.registrationNumber = formData.registrationNumber;
+				if (formData.flagCountryId)
+					createData.flagCountryId = formData.flagCountryId;
+			}
+
+			await createTransaction({ input: createData });
+			toast({
+				title: "Transacción creada",
+				description: "La nueva transacción se ha registrado exitosamente.",
+			});
+			router.push("/transactions");
+		} catch (error) {
+			console.error("Error creating transaction:", error);
+			toast({
+				title: "Error",
+				description: "No se pudo crear la transacción.",
+				variant: "destructive",
+			});
+		} finally {
+			setIsSaving(false);
+		}
 	};
 
 	const handleCancel = (): void => {
@@ -120,9 +162,16 @@ export function TransactionCreateView(): React.JSX.Element {
 					<Button variant="outline" size="sm" onClick={handleCancel}>
 						Cancelar
 					</Button>
-					<Button size="sm" className="gap-2" onClick={handleSubmit}>
+					<Button
+						size="sm"
+						className="gap-2"
+						onClick={handleSubmit}
+						disabled={isSaving}
+					>
 						<Save className="h-4 w-4" />
-						<span className="hidden sm:inline">Crear Transacción</span>
+						<span className="hidden sm:inline">
+							{isSaving ? "Creando..." : "Crear Transacción"}
+						</span>
 					</Button>
 				</div>
 			</div>

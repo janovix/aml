@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
 	Button,
@@ -21,10 +21,14 @@ import {
 } from "@algtools/ui";
 import { ArrowLeft, Save } from "lucide-react";
 import { useToast } from "../../hooks/use-toast";
-import { mockTransactions } from "../../data/mockTransactions";
+import {
+	getTransactionById,
+	updateTransaction,
+} from "../../lib/api/transactions";
 import type {
 	TransactionOperationType,
 	TransactionVehicleType,
+	TransactionUpdateRequest,
 } from "../../types/transaction";
 import { CatalogSelector } from "../catalogs/CatalogSelector";
 
@@ -37,39 +41,116 @@ export function TransactionEditView({
 }: TransactionEditViewProps): React.JSX.Element {
 	const router = useRouter();
 	const { toast } = useToast();
-
-	const transaction =
-		mockTransactions.find((item) => item.id === transactionId) ||
-		mockTransactions[0];
+	const [isLoading, setIsLoading] = useState(true);
+	const [isSaving, setIsSaving] = useState(false);
 	const [formData, setFormData] = useState({
-		clientId: transaction.clientId,
-		operationDate:
-			transaction.operationDate.split("T")[0] || transaction.operationDate,
-		operationType: transaction.operationType,
-		branchPostalCode: transaction.branchPostalCode,
-		vehicleType: transaction.vehicleType,
-		brandId: transaction.brandId,
-		model: transaction.model,
-		year: String(transaction.year),
-		serialNumber: transaction.serialNumber,
-		plates: transaction.plates || "",
-		engineNumber: transaction.engineNumber || "",
-		registrationNumber: transaction.registrationNumber || "",
-		flagCountryId: transaction.flagCountryId || "",
-		amount: transaction.amount,
-		currency: transaction.currency,
-		paymentMethod: transaction.paymentMethod,
-		paymentDate:
-			transaction.paymentDate.split("T")[0] || transaction.paymentDate,
+		clientId: "",
+		operationDate: "",
+		operationType: "purchase" as TransactionOperationType,
+		branchPostalCode: "",
+		vehicleType: "land" as TransactionVehicleType,
+		brandId: "",
+		model: "",
+		year: "",
+		serialNumber: "",
+		plates: "",
+		engineNumber: "",
+		registrationNumber: "",
+		flagCountryId: "",
+		amount: "",
+		currency: "MXN",
+		paymentMethod: "EFECTIVO",
+		paymentDate: "",
 	});
 
-	const handleSubmit = (e: React.FormEvent): void => {
+	useEffect(() => {
+		const fetchTransaction = async () => {
+			try {
+				setIsLoading(true);
+				const transaction = await getTransactionById({ id: transactionId });
+				setFormData({
+					clientId: transaction.clientId,
+					operationDate:
+						transaction.operationDate.split("T")[0] ||
+						transaction.operationDate,
+					operationType: transaction.operationType,
+					branchPostalCode: transaction.branchPostalCode,
+					vehicleType: transaction.vehicleType,
+					brandId: transaction.brandId,
+					model: transaction.model,
+					year: String(transaction.year),
+					serialNumber: transaction.serialNumber,
+					plates: transaction.plates || "",
+					engineNumber: transaction.engineNumber || "",
+					registrationNumber: transaction.registrationNumber || "",
+					flagCountryId: transaction.flagCountryId || "",
+					amount: transaction.amount,
+					currency: transaction.currency,
+					paymentMethod: transaction.paymentMethod,
+					paymentDate:
+						transaction.paymentDate.split("T")[0] || transaction.paymentDate,
+				});
+			} catch (error) {
+				console.error("Error fetching transaction:", error);
+				toast({
+					title: "Error",
+					description: "No se pudo cargar la transacción.",
+					variant: "destructive",
+				});
+				router.push("/transactions");
+			} finally {
+				setIsLoading(false);
+			}
+		};
+		fetchTransaction();
+	}, [transactionId, router, toast]);
+
+	const handleSubmit = async (e: React.FormEvent): Promise<void> => {
 		e.preventDefault();
-		toast({
-			title: "Transacción actualizada",
-			description: "Los cambios han sido guardados exitosamente.",
-		});
-		router.push(`/transactions/${transactionId}`);
+		try {
+			setIsSaving(true);
+			const updateData: TransactionUpdateRequest = {
+				operationDate: new Date(formData.operationDate).toISOString(),
+				operationType: formData.operationType,
+				branchPostalCode: formData.branchPostalCode,
+				vehicleType: formData.vehicleType,
+				brandId: formData.brandId,
+				model: formData.model,
+				year: parseInt(formData.year, 10),
+				serialNumber: formData.serialNumber,
+				amount: formData.amount,
+				currency: formData.currency,
+				paymentMethod: formData.paymentMethod,
+				paymentDate: new Date(formData.paymentDate).toISOString(),
+			};
+
+			if (formData.vehicleType === "land") {
+				if (formData.plates) updateData.plates = formData.plates;
+				if (formData.engineNumber)
+					updateData.engineNumber = formData.engineNumber;
+			} else {
+				if (formData.registrationNumber)
+					updateData.registrationNumber = formData.registrationNumber;
+				if (formData.flagCountryId)
+					updateData.flagCountryId = formData.flagCountryId;
+			}
+
+			await updateTransaction({ id: transactionId, input: updateData });
+			toast({
+				title: "Transacción actualizada",
+				description: "Los cambios han sido guardados exitosamente.",
+			});
+			router.push(`/transactions/${transactionId}`);
+		} catch (error) {
+			console.error("Error updating transaction:", error);
+			toast({
+				title: "Error",
+				description: "No se pudo actualizar la transacción.",
+				variant: "destructive",
+			});
+		} finally {
+			setIsSaving(false);
+		}
 	};
 
 	const handleCancel = (): void => {
@@ -79,6 +160,30 @@ export function TransactionEditView({
 	const handleChange = (field: string, value: string): void => {
 		setFormData((prev) => ({ ...prev, [field]: value }));
 	};
+
+	if (isLoading) {
+		return (
+			<div className="space-y-6">
+				<div className="flex items-center gap-4">
+					<Button
+						variant="ghost"
+						size="sm"
+						className="gap-2"
+						onClick={handleCancel}
+					>
+						<ArrowLeft className="h-4 w-4" />
+						Volver
+					</Button>
+					<Separator orientation="vertical" className="h-6" />
+					<div>
+						<h1 className="text-xl font-semibold text-foreground">
+							Cargando...
+						</h1>
+					</div>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="space-y-6">
@@ -98,16 +203,23 @@ export function TransactionEditView({
 						<h1 className="text-xl font-semibold text-foreground">
 							Editar Transacción
 						</h1>
-						<p className="text-sm text-muted-foreground">{transaction.id}</p>
+						<p className="text-sm text-muted-foreground">{transactionId}</p>
 					</div>
 				</div>
 				<div className="flex items-center gap-2">
 					<Button variant="outline" size="sm" onClick={handleCancel}>
 						Cancelar
 					</Button>
-					<Button size="sm" className="gap-2" onClick={handleSubmit}>
+					<Button
+						size="sm"
+						className="gap-2"
+						onClick={handleSubmit}
+						disabled={isLoading || isSaving}
+					>
 						<Save className="h-4 w-4" />
-						<span className="hidden sm:inline">Guardar Cambios</span>
+						<span className="hidden sm:inline">
+							{isSaving ? "Guardando..." : "Guardar Cambios"}
+						</span>
 					</Button>
 				</div>
 			</div>

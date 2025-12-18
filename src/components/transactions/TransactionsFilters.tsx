@@ -16,9 +16,62 @@ import {
 	cn,
 } from "@algtools/ui";
 import { Search, ChevronDown, SlidersHorizontal } from "lucide-react";
+import type { ListTransactionsOptions } from "@/lib/api/transactions";
 
-export function TransactionsFilters(): React.ReactElement {
+interface TransactionsFiltersProps {
+	filters: ListTransactionsOptions;
+	onFiltersChange: (filters: ListTransactionsOptions) => void;
+}
+
+export function TransactionsFilters({
+	filters,
+	onFiltersChange,
+}: TransactionsFiltersProps): React.ReactElement {
 	const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+	const [localFilters, setLocalFilters] = useState({
+		search: "",
+		operationType: filters.operationType || "",
+		vehicleType: filters.vehicleType || "",
+		startDate: filters.startDate ? filters.startDate.split("T")[0] : "",
+		endDate: filters.endDate ? filters.endDate.split("T")[0] : "",
+	});
+
+	const handleApplyFilters = (): void => {
+		const newFilters: ListTransactionsOptions = {};
+		if (localFilters.operationType) {
+			newFilters.operationType = localFilters.operationType as
+				| "purchase"
+				| "sale";
+		}
+		if (localFilters.vehicleType) {
+			newFilters.vehicleType = localFilters.vehicleType as
+				| "land"
+				| "marine"
+				| "air";
+		}
+		if (localFilters.startDate) {
+			newFilters.startDate = new Date(
+				localFilters.startDate + "T00:00:00Z",
+			).toISOString();
+		}
+		if (localFilters.endDate) {
+			newFilters.endDate = new Date(
+				localFilters.endDate + "T23:59:59Z",
+			).toISOString();
+		}
+		onFiltersChange(newFilters);
+	};
+
+	const handleClearFilters = (): void => {
+		setLocalFilters({
+			search: "",
+			operationType: "",
+			vehicleType: "",
+			startDate: "",
+			endDate: "",
+		});
+		onFiltersChange({});
+	};
 
 	return (
 		<section
@@ -39,6 +92,10 @@ export function TransactionsFilters(): React.ReactElement {
 							type="search"
 							placeholder="Buscar por VIN, cliente o folio..."
 							className="pl-10"
+							value={localFilters.search}
+							onChange={(e) =>
+								setLocalFilters({ ...localFilters, search: e.target.value })
+							}
 						/>
 					</div>
 				</div>
@@ -49,44 +106,65 @@ export function TransactionsFilters(): React.ReactElement {
 						<Label htmlFor="type-filter" className="sr-only">
 							Tipo de Transacción
 						</Label>
-						<Select>
+						<Select
+							value={localFilters.operationType}
+							onValueChange={(value) =>
+								setLocalFilters({
+									...localFilters,
+									operationType: value === "all" ? "" : value,
+								})
+							}
+						>
 							<SelectTrigger id="type-filter">
 								<SelectValue placeholder="Tipo" />
 							</SelectTrigger>
 							<SelectContent>
 								<SelectItem value="all">Todos</SelectItem>
-								<SelectItem value="compra">Compra</SelectItem>
-								<SelectItem value="venta">Venta</SelectItem>
+								<SelectItem value="purchase">Compra</SelectItem>
+								<SelectItem value="sale">Venta</SelectItem>
 							</SelectContent>
 						</Select>
 					</div>
 
 					<div className="w-full sm:w-[140px]">
-						<Label htmlFor="status-filter" className="sr-only">
-							Estado
+						<Label htmlFor="vehicle-type-filter" className="sr-only">
+							Tipo de Vehículo
 						</Label>
-						<Select>
-							<SelectTrigger id="status-filter">
-								<SelectValue placeholder="Estado" />
+						<Select
+							value={localFilters.vehicleType}
+							onValueChange={(value) =>
+								setLocalFilters({
+									...localFilters,
+									vehicleType: value === "all" ? "" : value,
+								})
+							}
+						>
+							<SelectTrigger id="vehicle-type-filter">
+								<SelectValue placeholder="Vehículo" />
 							</SelectTrigger>
 							<SelectContent>
 								<SelectItem value="all">Todos</SelectItem>
-								<SelectItem value="completada">Completada</SelectItem>
-								<SelectItem value="pendiente">Pendiente</SelectItem>
-								<SelectItem value="revision">En Revisión</SelectItem>
+								<SelectItem value="land">Terrestre</SelectItem>
+								<SelectItem value="marine">Marítimo</SelectItem>
+								<SelectItem value="air">Aéreo</SelectItem>
 							</SelectContent>
 						</Select>
 					</div>
 
 					{/* Action buttons */}
 					<div className="flex items-center gap-2 sm:ml-2">
-						<Button size="default" className="flex-1 sm:flex-none">
+						<Button
+							size="default"
+							className="flex-1 sm:flex-none"
+							onClick={handleApplyFilters}
+						>
 							Aplicar
 						</Button>
 						<Button
 							variant="outline"
 							size="default"
 							className="flex-1 sm:flex-none bg-transparent"
+							onClick={handleClearFilters}
 						>
 							Limpiar
 						</Button>
@@ -117,11 +195,31 @@ export function TransactionsFilters(): React.ReactElement {
 						<div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
 							<div className="space-y-2">
 								<Label htmlFor="date-from">Fecha desde</Label>
-								<Input id="date-from" type="date" />
+								<Input
+									id="date-from"
+									type="date"
+									value={localFilters.startDate}
+									onChange={(e) =>
+										setLocalFilters({
+											...localFilters,
+											startDate: e.target.value,
+										})
+									}
+								/>
 							</div>
 							<div className="space-y-2">
 								<Label htmlFor="date-to">Fecha hasta</Label>
-								<Input id="date-to" type="date" />
+								<Input
+									id="date-to"
+									type="date"
+									value={localFilters.endDate}
+									onChange={(e) =>
+										setLocalFilters({
+											...localFilters,
+											endDate: e.target.value,
+										})
+									}
+								/>
 							</div>
 							<div className="space-y-2">
 								<Label htmlFor="amount-min">Monto mínimo</Label>
