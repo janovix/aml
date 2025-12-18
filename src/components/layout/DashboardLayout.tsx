@@ -45,6 +45,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Logo } from "./Logo";
 import { useSidebar } from "@/components/ui/sidebar";
+import { useAuthSession } from "@/lib/auth/useAuthSession";
+import { logout } from "@/lib/auth/actions";
 
 const mainNavItems = [
 	{
@@ -125,6 +127,7 @@ function SidebarLogo() {
 function Navbar() {
 	const [isScrollingDown, setIsScrollingDown] = React.useState(false);
 	const [lastScrollY, setLastScrollY] = React.useState(0);
+	const { data: session, isPending } = useAuthSession();
 
 	React.useEffect(() => {
 		const handleScroll = () => {
@@ -140,6 +143,10 @@ function Navbar() {
 		window.addEventListener("scroll", handleScroll, { passive: true });
 		return () => window.removeEventListener("scroll", handleScroll);
 	}, [lastScrollY]);
+
+	const handleLogout = async () => {
+		await logout();
+	};
 
 	return (
 		<header
@@ -162,9 +169,13 @@ function Navbar() {
 					<DropdownMenuContent className="w-56" align="end" forceMount>
 						<DropdownMenuLabel className="font-normal">
 							<div className="flex flex-col space-y-1">
-								<p className="text-sm font-medium leading-none">Usuario</p>
+								<p className="text-sm font-medium leading-none">
+									{isPending ? "Cargando..." : session?.user?.name || "Usuario"}
+								</p>
 								<p className="text-xs leading-none text-muted-foreground">
-									usuario@ejemplo.com
+									{isPending
+										? "..."
+										: session?.user?.email || "usuario@ejemplo.com"}
 								</p>
 							</div>
 						</DropdownMenuLabel>
@@ -179,7 +190,7 @@ function Navbar() {
 							</Link>
 						</DropdownMenuItem>
 						<DropdownMenuSeparator />
-						<DropdownMenuItem className="cursor-pointer">
+						<DropdownMenuItem className="cursor-pointer" onClick={handleLogout}>
 							<LogOut className="mr-2 h-4 w-4" />
 							<span>Cerrar sesión</span>
 						</DropdownMenuItem>
