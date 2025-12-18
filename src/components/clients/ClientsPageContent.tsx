@@ -39,17 +39,18 @@ export function ClientsPageContent(): React.ReactElement {
 	};
 
 	return (
-		<div className="space-y-6">
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-3xl font-bold tracking-tight">Clientes</h1>
-					<p className="text-muted-foreground">
+		<div className="space-y-4 sm:space-y-6">
+			<div className="flex items-center justify-between gap-4">
+				<div className="min-w-0 flex-1">
+					<h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Clientes</h1>
+					<p className="text-sm sm:text-base text-muted-foreground">
 						Gestión y monitoreo de clientes
 					</p>
 				</div>
-				<Button className="gap-2" onClick={() => router.push("/clients/new")}>
+				<Button className="gap-2 shrink-0" onClick={() => router.push("/clients/new")}>
 					<Plus className="h-4 w-4" />
-					<span>Nuevo Cliente</span>
+					<span className="hidden sm:inline">Nuevo Cliente</span>
+					<span className="sm:hidden">Nuevo</span>
 				</Button>
 			</div>
 

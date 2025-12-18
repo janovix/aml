@@ -26,6 +26,7 @@ import { MoreHorizontal, Eye, Edit, FileText, Download } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
 	listTransactions,
 	type ListTransactionsOptions,
@@ -67,6 +68,7 @@ export function TransactionsTable({
 }: TransactionsTableProps = {}): React.ReactElement {
 	const router = useRouter();
 	const { toast } = useToast();
+	const isMobile = useIsMobile();
 	const [transactions, setTransactions] = useState<Transaction[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -165,7 +167,7 @@ export function TransactionsTable({
 						{selectedIds.size > 0 && ` · ${selectedIds.size} seleccionadas`}
 					</p>
 				</div>
-				{selectedIds.size > 0 && (
+				{selectedIds.size > 0 && !isMobile && (
 					<div className="flex items-center gap-2">
 						<Button
 							variant="outline"
@@ -178,9 +180,129 @@ export function TransactionsTable({
 					</div>
 				)}
 			</CardHeader>
-			<CardContent className="p-0">
-				<div className="overflow-x-auto">
-					<Table>
+			<CardContent className={cn("p-0", isMobile && "p-4")}>
+				{isMobile ? (
+					<div className="space-y-3">
+						{isLoading ? (
+							<div className="text-center py-8 text-muted-foreground">
+								Cargando transacciones...
+							</div>
+						) : transactionsData.length === 0 ? (
+							<div className="text-center py-8 text-muted-foreground">
+								No hay transacciones registradas
+							</div>
+						) : (
+							transactionsData.map((transaction) => (
+								<Card
+									key={transaction.id}
+									className={cn(
+										"transition-colors cursor-pointer",
+										selectedIds.has(transaction.id) && "bg-muted/50",
+									)}
+									onClick={() => handleSelectOne(transaction.id)}
+								>
+									<CardContent className="p-4">
+										<div className="flex items-start justify-between gap-3">
+											<div className="flex-1 min-w-0 space-y-2">
+												<div className="flex items-center gap-2">
+													<Checkbox
+														checked={selectedIds.has(transaction.id)}
+														onCheckedChange={() => handleSelectOne(transaction.id)}
+														onClick={(e) => e.stopPropagation()}
+														aria-label={`Seleccionar ${transaction.folio}`}
+													/>
+													<Link
+														href={`/transactions/${transaction.id}`}
+														className="font-medium text-foreground hover:text-primary hover:underline underline-offset-2 transition-colors flex-1 min-w-0"
+														onClick={(e) => e.stopPropagation()}
+													>
+														{transaction.folio}
+													</Link>
+												</div>
+												<div className="space-y-1.5 pl-6">
+													<div className="flex items-center gap-2">
+														<span className="text-sm font-medium">
+															{transaction.brandId} {transaction.model}
+														</span>
+														<span className="text-xs text-muted-foreground">
+															{transaction.year}
+														</span>
+													</div>
+													<div className="flex items-center gap-2 text-sm">
+														<span className="text-muted-foreground">
+															Monto:
+														</span>
+														<span className="font-medium">
+															{formatCurrency(transaction.amount, transaction.currency)}
+														</span>
+													</div>
+													<div className="flex items-center gap-2 text-sm">
+														<span className="text-muted-foreground">
+															Cliente:
+														</span>
+														<span className="font-mono text-xs">
+															{transaction.clientId}
+														</span>
+													</div>
+													<div className="flex items-center gap-2 text-sm">
+														<span className="text-muted-foreground">
+															Fecha:
+														</span>
+														<span>
+															{formatDate(transaction.operationDate)}
+														</span>
+													</div>
+												</div>
+											</div>
+											<DropdownMenu>
+												<DropdownMenuTrigger asChild>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="h-8 w-8 shrink-0"
+														onClick={(e) => e.stopPropagation()}
+														aria-label={`Acciones para ${transaction.folio}`}
+													>
+														<MoreHorizontal className="h-4 w-4" />
+													</Button>
+												</DropdownMenuTrigger>
+												<DropdownMenuContent align="end" className="w-48">
+													<DropdownMenuItem
+														className="gap-2"
+														onClick={() =>
+															router.push(`/transactions/${transaction.id}`)
+														}
+													>
+														<Eye className="h-4 w-4" />
+														Ver Detalles
+													</DropdownMenuItem>
+													<DropdownMenuItem
+														className="gap-2"
+														onClick={() =>
+															router.push(
+																`/transactions/${transaction.id}/edit`,
+															)
+														}
+													>
+														<Edit className="h-4 w-4" />
+														Editar
+													</DropdownMenuItem>
+													<DropdownMenuSeparator />
+													<DropdownMenuItem className="gap-2">
+														<FileText className="h-4 w-4" />
+														Generar Reporte
+													</DropdownMenuItem>
+												</DropdownMenuContent>
+											</DropdownMenu>
+										</div>
+									</CardContent>
+								</Card>
+							))
+						)}
+					</div>
+				) : (
+					<div className="overflow-x-auto">
+						<Table>
 						<TableHeader>
 							<TableRow className="hover:bg-transparent">
 								<TableHead className="w-12 pl-6">
@@ -336,7 +458,8 @@ export function TransactionsTable({
 							)}
 						</TableBody>
 					</Table>
-				</div>
+					</div>
+				)}
 			</CardContent>
 		</Card>
 	);

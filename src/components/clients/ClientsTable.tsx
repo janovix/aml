@@ -31,6 +31,7 @@ import {
 	cn,
 } from "@algtools/ui";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
 	MoreHorizontal,
 	Eye,
@@ -50,6 +51,7 @@ import { listClients, deleteClient } from "@/lib/api/clients";
 export function ClientsTable(): React.ReactElement {
 	const router = useRouter();
 	const { toast } = useToast();
+	const isMobile = useIsMobile();
 	const [clients, setClients] = useState<Client[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -219,7 +221,7 @@ export function ClientsTable(): React.ReactElement {
 							{selectedIds.size > 0 && ` · ${selectedIds.size} seleccionados`}
 						</p>
 					</div>
-					{selectedIds.size > 0 && (
+					{selectedIds.size > 0 && !isMobile && (
 						<div className="flex items-center gap-2">
 							<Button
 								variant="outline"
@@ -242,9 +244,124 @@ export function ClientsTable(): React.ReactElement {
 						</div>
 					)}
 				</CardHeader>
-				<CardContent className="p-0">
-					<div className="overflow-x-auto">
-						<Table>
+				<CardContent className={cn("p-0", isMobile && "p-4")}>
+					{isMobile ? (
+						<div className="space-y-3">
+							{isLoading ? (
+								<div className="text-center py-8 text-muted-foreground">
+									Cargando clientes...
+								</div>
+							) : clients.length === 0 ? (
+								<div className="text-center py-8 text-muted-foreground">
+									No hay clientes registrados
+								</div>
+							) : (
+								clients.map((client) => (
+									<Card
+										key={client.rfc}
+										className={cn(
+											"transition-colors cursor-pointer",
+											selectedIds.has(client.rfc) && "bg-muted/50",
+										)}
+										onClick={() => handleSelectOne(client.rfc)}
+									>
+										<CardContent className="p-4">
+											<div className="flex items-start justify-between gap-3">
+												<div className="flex-1 min-w-0 space-y-2">
+													<div className="flex items-center gap-2">
+														<Checkbox
+															checked={selectedIds.has(client.rfc)}
+															onCheckedChange={() => handleSelectOne(client.rfc)}
+															onClick={(e) => e.stopPropagation()}
+															aria-label={`Seleccionar ${getClientDisplayName(client)}`}
+														/>
+														<Link
+															href={`/clients/${client.rfc}`}
+															className="font-medium text-foreground hover:text-primary hover:underline underline-offset-2 transition-colors flex-1 min-w-0"
+															onClick={(e) => e.stopPropagation()}
+														>
+															{getClientDisplayName(client)}
+														</Link>
+													</div>
+													<div className="space-y-1.5 pl-6">
+														<div className="flex items-center gap-2 text-sm">
+															<span className="text-muted-foreground font-mono">
+																RFC:
+															</span>
+															<span className="text-foreground font-mono">
+																{client.rfc}
+															</span>
+														</div>
+														<div className="flex items-center gap-2">
+															<Badge
+																variant="outline"
+																className="font-medium"
+															>
+																—
+															</Badge>
+														</div>
+													</div>
+												</div>
+												<DropdownMenu>
+													<DropdownMenuTrigger asChild>
+														<Button
+															variant="ghost"
+															size="icon"
+															className="h-8 w-8 shrink-0"
+															onClick={(e) => e.stopPropagation()}
+															aria-label={`Acciones para ${getClientDisplayName(client)}`}
+														>
+															<MoreHorizontal className="h-4 w-4" />
+														</Button>
+													</DropdownMenuTrigger>
+													<DropdownMenuContent align="end" className="w-48">
+														<DropdownMenuItem
+															className="gap-2"
+															onClick={() => handleViewDetails(client)}
+														>
+															<Eye className="h-4 w-4" />
+															Ver Detalles
+														</DropdownMenuItem>
+														<DropdownMenuItem
+															className="gap-2"
+															onClick={() => handleEdit(client)}
+														>
+															<Edit className="h-4 w-4" />
+															Editar
+														</DropdownMenuItem>
+														<DropdownMenuItem
+															className="gap-2"
+															onClick={() => handleGenerateReport(client)}
+														>
+															<FileText className="h-4 w-4" />
+															Generar Reporte
+														</DropdownMenuItem>
+														<DropdownMenuSeparator />
+														<DropdownMenuItem
+															className="gap-2 text-[rgb(var(--risk-high))]"
+															onClick={() => handleFlagSuspicious(client)}
+														>
+															<Flag className="h-4 w-4" />
+															Marcar como Sospechoso
+														</DropdownMenuItem>
+														<DropdownMenuItem
+															className="gap-2 text-destructive"
+															onClick={() => handleDeleteClick(client)}
+														>
+															<Trash2 className="h-4 w-4" />
+															Eliminar
+														</DropdownMenuItem>
+													</DropdownMenuContent>
+												</DropdownMenu>
+											</div>
+										</CardContent>
+									</Card>
+								))
+							)}
+						</div>
+					) : (
+						<div className="overflow-x-auto">
+							<Table>
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
 									<TableHead className="w-12 pl-6">
@@ -443,7 +560,8 @@ export function ClientsTable(): React.ReactElement {
 								)}
 							</TableBody>
 						</Table>
-					</div>
+						</div>
+					)}
 				</CardContent>
 			</Card>
 
