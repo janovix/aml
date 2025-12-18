@@ -1,3 +1,10 @@
+# [1.1.0-rc.2](https://github.com/janovix/aml/compare/v1.1.0-rc.1...v1.1.0-rc.2) (2025-12-18)
+
+
+### Bug Fixes
+
+* replace hardcoded URL with example fallback URL ([a533441](https://github.com/janovix/aml/commit/a53344118494579ee528b3da941dc74503404b0e))
+
 # [1.1.0-rc.1](https://github.com/janovix/aml/compare/v1.0.0...v1.1.0-rc.1) (2025-12-17)
 
 
