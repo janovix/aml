@@ -318,11 +318,23 @@ export function TransactionDetailsView({
 							<Separator />
 							<div>
 								<p className="text-sm font-medium text-muted-foreground">
-									Método de Pago
+									Métodos de Pago
 								</p>
-								<Badge variant="secondary" className="mt-1">
-									{paymentMethodLabels[transaction.paymentMethod]}
-								</Badge>
+								<div className="flex flex-wrap gap-2 mt-1">
+									{transaction.paymentMethods.map((pm, index) => (
+										<Badge
+											key={index}
+											variant="secondary"
+											className="font-medium"
+										>
+											{paymentMethodLabels[pm.method] || pm.method}:{" "}
+											{new Intl.NumberFormat("es-MX", {
+												style: "currency",
+												currency: transaction.currency,
+											}).format(parseFloat(pm.amount))}
+										</Badge>
+									))}
+								</div>
 							</div>
 							<Separator />
 							<div>
@@ -390,14 +402,6 @@ export function TransactionDetailsView({
 							</div>
 							<Separator />
 							<div className="grid gap-4 md:grid-cols-2">
-								<div>
-									<p className="text-sm font-medium text-muted-foreground">
-										Número de Serie
-									</p>
-									<p className="text-base font-mono mt-1">
-										{transaction.serialNumber}
-									</p>
-								</div>
 								{transaction.plates && (
 									<div>
 										<p className="text-sm font-medium text-muted-foreground">

@@ -36,7 +36,6 @@ interface TransactionRow {
 	id: string;
 	folio: string;
 	type: "purchase" | "sale";
-	vin: string;
 	brandId: string;
 	model: string;
 	year: number;
@@ -44,7 +43,7 @@ interface TransactionRow {
 	currency: string;
 	clientId: string;
 	operationDate: string;
-	paymentMethod: string;
+	paymentMethods: string; // Display string for payment methods
 }
 
 const operationTypeLabels: Record<"purchase" | "sale", string> = {
@@ -101,7 +100,6 @@ export function TransactionsTable({
 		id: tx.id,
 		folio: tx.id,
 		type: tx.operationType,
-		vin: tx.serialNumber,
 		brandId: tx.brandId,
 		model: tx.model,
 		year: tx.year,
@@ -109,7 +107,9 @@ export function TransactionsTable({
 		currency: tx.currency,
 		clientId: tx.clientId,
 		operationDate: tx.operationDate,
-		paymentMethod: tx.paymentMethod,
+		paymentMethods: tx.paymentMethods
+			.map((pm) => paymentMethodLabels[pm.method] || pm.method)
+			.join(", "),
 	}));
 
 	const allSelected =
@@ -199,10 +199,9 @@ export function TransactionsTable({
 								<TableHead className="min-w-[120px]">Folio</TableHead>
 								<TableHead className="hidden md:table-cell">Tipo</TableHead>
 								<TableHead className="min-w-[150px]">Vehículo</TableHead>
-								<TableHead className="hidden lg:table-cell">VIN</TableHead>
 								<TableHead>Cliente ID</TableHead>
 								<TableHead className="text-right">Monto</TableHead>
-								<TableHead>Método de pago</TableHead>
+								<TableHead>Métodos de pago</TableHead>
 								<TableHead className="hidden sm:table-cell">
 									Fecha Operación
 								</TableHead>
@@ -274,9 +273,6 @@ export function TransactionsTable({
 												</span>
 											</div>
 										</TableCell>
-										<TableCell className="hidden lg:table-cell font-mono text-xs text-muted-foreground">
-											{transaction.vin}
-										</TableCell>
 										<TableCell className="max-w-[200px] truncate font-mono text-sm">
 											{transaction.clientId}
 										</TableCell>
@@ -284,10 +280,9 @@ export function TransactionsTable({
 											{formatCurrency(transaction.amount, transaction.currency)}
 										</TableCell>
 										<TableCell>
-											<Badge variant="outline" className="font-medium">
-												{paymentMethodLabels[transaction.paymentMethod] ||
-													transaction.paymentMethod}
-											</Badge>
+											<span className="text-sm">
+												{transaction.paymentMethods}
+											</span>
 										</TableCell>
 										<TableCell className="hidden sm:table-cell text-muted-foreground">
 											{formatDate(transaction.operationDate)}

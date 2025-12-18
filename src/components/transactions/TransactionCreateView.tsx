@@ -19,13 +19,14 @@ import {
 	SelectValue,
 	Separator,
 } from "@algtools/ui";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Plus, Trash2 } from "lucide-react";
 import { useToast } from "../../hooks/use-toast";
 import { createTransaction } from "../../lib/api/transactions";
 import type {
 	TransactionOperationType,
 	TransactionVehicleType,
 	TransactionCreateRequest,
+	PaymentMethodInput,
 } from "../../types/transaction";
 import { CatalogSelector } from "../catalogs/CatalogSelector";
 
@@ -38,14 +39,13 @@ interface TransactionFormData {
 	brandId: string;
 	model: string;
 	year: string;
-	serialNumber: string;
 	plates?: string;
 	engineNumber?: string;
 	registrationNumber?: string;
 	flagCountryId?: string;
 	amount: string;
 	currency: string;
-	paymentMethod: string;
+	paymentMethods: PaymentMethodInput[];
 	paymentDate: string;
 }
 
@@ -63,22 +63,53 @@ export function TransactionCreateView(): React.JSX.Element {
 		brandId: "",
 		model: "",
 		year: "",
-		serialNumber: "",
 		plates: "",
 		engineNumber: "",
 		registrationNumber: "",
 		flagCountryId: "",
 		amount: "",
 		currency: "MXN",
-		paymentMethod: "",
+		paymentMethods: [{ method: "EFECTIVO", amount: "" }],
 		paymentDate: new Date().toISOString().slice(0, 16),
 	});
 
 	const handleInputChange = (
 		field: keyof TransactionFormData,
-		value: string,
+		value: string | PaymentMethodInput[],
 	): void => {
 		setFormData((prev) => ({ ...prev, [field]: value }));
+	};
+
+	const handlePaymentMethodChange = (
+		index: number,
+		field: "method" | "amount",
+		value: string,
+	): void => {
+		setFormData((prev) => {
+			const newPaymentMethods = [...prev.paymentMethods];
+			newPaymentMethods[index] = {
+				...newPaymentMethods[index],
+				[field]: value,
+			};
+			return { ...prev, paymentMethods: newPaymentMethods };
+		});
+	};
+
+	const handleAddPaymentMethod = (): void => {
+		setFormData((prev) => ({
+			...prev,
+			paymentMethods: [
+				...prev.paymentMethods,
+				{ method: "EFECTIVO", amount: "" },
+			],
+		}));
+	};
+
+	const handleRemovePaymentMethod = (index: number): void => {
+		setFormData((prev) => ({
+			...prev,
+			paymentMethods: prev.paymentMethods.filter((_, i) => i !== index),
+		}));
 	};
 
 	const handleSubmit = async (e: React.FormEvent): Promise<void> => {
@@ -95,10 +126,9 @@ export function TransactionCreateView(): React.JSX.Element {
 				brandId: formData.brandId,
 				model: formData.model,
 				year: parseInt(formData.year, 10),
-				serialNumber: formData.serialNumber,
 				amount: formData.amount,
 				currency: formData.currency,
-				paymentMethod: formData.paymentMethod,
+				paymentMethods: formData.paymentMethods,
 				paymentDate: new Date(formData.paymentDate).toISOString(),
 			};
 
@@ -327,19 +357,6 @@ export function TransactionCreateView(): React.JSX.Element {
 								/>
 							</div>
 
-							<div className="space-y-2">
-								<Label htmlFor="serial-number">Número de serie *</Label>
-								<Input
-									id="serial-number"
-									value={formData.serialNumber}
-									onChange={(e) =>
-										handleInputChange("serialNumber", e.target.value)
-									}
-									placeholder="VIN o número de serie"
-									required
-								/>
-							</div>
-
 							{formData.vehicleType === "land" && (
 								<>
 									<div className="space-y-2">
@@ -446,29 +463,6 @@ export function TransactionCreateView(): React.JSX.Element {
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="payment-method">Método de pago *</Label>
-								<Select
-									value={formData.paymentMethod}
-									onValueChange={(value) =>
-										handleInputChange("paymentMethod", value)
-									}
-									required
-								>
-									<SelectTrigger id="payment-method">
-										<SelectValue placeholder="Seleccionar método" />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="EFECTIVO">Efectivo</SelectItem>
-										<SelectItem value="TRANSFERENCIA">Transferencia</SelectItem>
-										<SelectItem value="CHEQUE">Cheque</SelectItem>
-										<SelectItem value="FINANCIAMIENTO">
-											Financiamiento
-										</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
-
-							<div className="space-y-2">
 								<Label htmlFor="payment-date">Fecha de pago *</Label>
 								<Input
 									id="payment-date"
@@ -480,6 +474,95 @@ export function TransactionCreateView(): React.JSX.Element {
 									required
 								/>
 							</div>
+						</div>
+
+						<Separator />
+
+						<div className="space-y-4">
+							<div className="flex items-center justify-between">
+								<Label>Métodos de Pago *</Label>
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									onClick={handleAddPaymentMethod}
+									className="gap-2"
+								>
+									<Plus className="h-4 w-4" />
+									Agregar Método
+								</Button>
+							</div>
+
+							{formData.paymentMethods.map((pm, index) => (
+								<div
+									key={index}
+									className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-lg"
+								>
+									<div className="space-y-2">
+										<Label htmlFor={`payment-method-${index}`}>
+											Método {index + 1} *
+										</Label>
+										<Select
+											value={pm.method}
+											onValueChange={(value) =>
+												handlePaymentMethodChange(index, "method", value)
+											}
+											required
+										>
+											<SelectTrigger id={`payment-method-${index}`}>
+												<SelectValue />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="EFECTIVO">Efectivo</SelectItem>
+												<SelectItem value="TRANSFERENCIA">
+													Transferencia
+												</SelectItem>
+												<SelectItem value="CHEQUE">Cheque</SelectItem>
+												<SelectItem value="FINANCIAMIENTO">
+													Financiamiento
+												</SelectItem>
+											</SelectContent>
+										</Select>
+									</div>
+
+									<div className="space-y-2">
+										<Label htmlFor={`payment-amount-${index}`}>
+											Monto {index + 1} *
+										</Label>
+										<Input
+											id={`payment-amount-${index}`}
+											type="number"
+											value={pm.amount}
+											onChange={(e) =>
+												handlePaymentMethodChange(
+													index,
+													"amount",
+													e.target.value,
+												)
+											}
+											placeholder="0.00"
+											required
+											min="0"
+											step="0.01"
+										/>
+									</div>
+
+									<div className="flex items-end">
+										{formData.paymentMethods.length > 1 && (
+											<Button
+												type="button"
+												variant="outline"
+												size="sm"
+												onClick={() => handleRemovePaymentMethod(index)}
+												className="gap-2 text-destructive"
+											>
+												<Trash2 className="h-4 w-4" />
+												Eliminar
+											</Button>
+										)}
+									</div>
+								</div>
+							))}
 						</div>
 					</CardContent>
 				</Card>

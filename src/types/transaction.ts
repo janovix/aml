@@ -1,6 +1,19 @@
 export type TransactionOperationType = "purchase" | "sale";
 export type TransactionVehicleType = "land" | "marine" | "air";
 
+export interface PaymentMethod {
+	id: string;
+	method: string;
+	amount: string;
+	createdAt: string; // date-time format
+	updatedAt: string; // date-time format
+}
+
+export interface PaymentMethodInput {
+	method: string;
+	amount: string;
+}
+
 export interface Transaction {
 	id: string;
 	clientId: string;
@@ -11,7 +24,6 @@ export interface Transaction {
 	brandId: string;
 	model: string;
 	year: number;
-	serialNumber: string;
 	armorLevel?: string | null;
 	engineNumber?: string | null;
 	plates?: string | null;
@@ -19,8 +31,8 @@ export interface Transaction {
 	flagCountryId?: string | null;
 	amount: string;
 	currency: string;
-	paymentMethod: string;
 	paymentDate: string; // date-time format
+	paymentMethods: PaymentMethod[];
 	createdAt: string; // date-time format
 	updatedAt: string; // date-time format
 	deletedAt?: string | null; // date-time format
@@ -35,7 +47,6 @@ export interface TransactionCreateRequest {
 	brandId: string;
 	model: string;
 	year: number;
-	serialNumber: string;
 	armorLevel?: string | null;
 	engineNumber?: string | null;
 	plates?: string | null;
@@ -43,7 +54,7 @@ export interface TransactionCreateRequest {
 	flagCountryId?: string | null;
 	amount: string;
 	currency: string;
-	paymentMethod: string;
+	paymentMethods: PaymentMethodInput[];
 	paymentDate: string; // date-time format
 }
 
@@ -55,7 +66,6 @@ export interface TransactionUpdateRequest {
 	brandId: string;
 	model: string;
 	year: number;
-	serialNumber: string;
 	armorLevel?: string | null;
 	engineNumber?: string | null;
 	plates?: string | null;
@@ -63,7 +73,7 @@ export interface TransactionUpdateRequest {
 	flagCountryId?: string | null;
 	amount: string;
 	currency: string;
-	paymentMethod: string;
+	paymentMethods: PaymentMethodInput[];
 	paymentDate: string; // date-time format
 }
 
