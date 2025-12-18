@@ -1,3 +1,19 @@
+# [1.1.0-rc.6](https://github.com/janovix/aml/compare/v1.1.0-rc.5...v1.1.0-rc.6) (2025-12-18)
+
+
+### Bug Fixes
+
+* change incorporationDate input to date-only for moral person ([330ebd2](https://github.com/janovix/aml/commit/330ebd22a884a1ab17a6605511f2d9ffa7d0d6b5))
+* use consistent API base URL for catalog endpoints ([7fcbd88](https://github.com/janovix/aml/commit/7fcbd88358ae287034da926a4b0b6502a5c87dff))
+
+
+### Features
+
+* add validation to prevent payment methods sum exceeding transaction amount ([6ae6f8e](https://github.com/janovix/aml/commit/6ae6f8e276dbec288f5c9fd32463346deaafd831))
+* integrate transactions API and remove mock data ([377e80c](https://github.com/janovix/aml/commit/377e80cca14b5a9b4ebecc5adddda2f278c488b6))
+* replace client dropdown with ClientSelector in transaction creation ([63a6d22](https://github.com/janovix/aml/commit/63a6d22d4389b669e590ce313aa4f0c823059c2e))
+* update transactions to support multiple payment methods and remove serialNumber ([d871748](https://github.com/janovix/aml/commit/d8717480de630717f53b76efe8cea96bb2fa213c))
+
 # [1.1.0-rc.5](https://github.com/janovix/aml/compare/v1.1.0-rc.4...v1.1.0-rc.5) (2025-12-18)
 
 
