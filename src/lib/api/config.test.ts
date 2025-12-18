@@ -5,7 +5,7 @@ import {
 	getAmlCoreBaseUrl,
 } from "./config";
 
-const DEFAULT_AML_CORE_URL = "https://aml-bff.janovix.algenium.dev";
+const DEFAULT_AML_CORE_URL = "https://aml-svc.example.workers.dev";
 
 describe("api/config", () => {
 	describe("getUpstreamApiBaseUrl", () => {

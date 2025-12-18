@@ -1,4 +1,6 @@
-const DEFAULT_AML_CORE_URL = "https://aml-bff.janovix.algenium.dev";
+// Fallback example URL - will fail if NEXT_PUBLIC_AML_CORE_URL is not set
+// This helps detect missing environment variable configuration
+const DEFAULT_AML_CORE_URL = "https://aml-svc.example.workers.dev";
 export const DEFAULT_API_BASE_URL =
 	"https://backend-template.algtools.workers.dev";
 
@@ -7,6 +9,7 @@ export const DEFAULT_API_BASE_URL =
  *
  * Uses NEXT_PUBLIC_AML_CORE_URL environment variable, which is available during build.
  * In Next.js, NEXT_PUBLIC_* variables are replaced at build time.
+ * Falls back to an example URL that will fail if the environment variable is missing.
  */
 export function getAmlCoreBaseUrl(): string {
 	// In Next.js, NEXT_PUBLIC_* variables are replaced at build time
