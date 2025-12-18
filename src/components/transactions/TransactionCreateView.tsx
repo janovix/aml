@@ -29,6 +29,7 @@ import type {
 	PaymentMethodInput,
 } from "../../types/transaction";
 import { CatalogSelector } from "../catalogs/CatalogSelector";
+import { ClientSelector } from "../clients/ClientSelector";
 
 interface TransactionFormData {
 	clientId: string;
@@ -247,25 +248,16 @@ export function TransactionCreateView(): React.JSX.Element {
 					<CardContent className="space-y-4">
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div className="space-y-2">
-								<Label htmlFor="client">Cliente *</Label>
-								<Select
+								<ClientSelector
+									label="Cliente"
 									value={formData.clientId}
+									placeholder="Seleccionar cliente"
+									searchPlaceholder="Buscar cliente por nombre o RFC..."
 									onValueChange={(value) =>
-										handleInputChange("clientId", value)
+										handleInputChange("clientId", value || "")
 									}
 									required
-								>
-									<SelectTrigger id="client">
-										<SelectValue placeholder="Seleccionar cliente" />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="1">Juan Pérez García</SelectItem>
-										<SelectItem value="2">María González López</SelectItem>
-										<SelectItem value="3">Carlos Ramírez Santos</SelectItem>
-										<SelectItem value="4">Ana Martínez Ruiz</SelectItem>
-										<SelectItem value="5">Roberto Silva Castro</SelectItem>
-									</SelectContent>
-								</Select>
+								/>
 							</div>
 
 							<div className="space-y-2">
