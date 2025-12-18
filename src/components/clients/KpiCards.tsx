@@ -6,7 +6,6 @@ import {
 	Users,
 	AlertTriangle,
 	Clock,
-	ListChecks,
 	TrendingUp,
 	TrendingDown,
 } from "lucide-react";
@@ -117,13 +116,6 @@ export function KpiCards(): React.ReactElement {
 			severity: "warning" as const,
 		},
 		{
-			title: "Revisiones Completadas",
-			value: 156,
-			icon: <ListChecks className="h-6 w-6" />,
-			trend: { value: 23, label: "este mes", direction: "up" as const },
-			severity: "success" as const,
-		},
-		{
 			title: "Total Clientes",
 			value: "1,248",
 			icon: <Users className="h-6 w-6" />,
@@ -134,7 +126,7 @@ export function KpiCards(): React.ReactElement {
 
 	return (
 		<section aria-label="Indicadores clave de rendimiento">
-			<div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
+			<div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
 				{kpis.map((kpi) => (
 					<KpiCard key={kpi.title} {...kpi} />
 				))}

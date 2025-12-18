@@ -8,7 +8,6 @@ describe("KpiCards", () => {
 
 		expect(screen.getByText("Avisos Abiertos")).toBeInTheDocument();
 		expect(screen.getByText("Revisiones Urgentes")).toBeInTheDocument();
-		expect(screen.getByText("Revisiones Completadas")).toBeInTheDocument();
 		expect(screen.getByText("Total Clientes")).toBeInTheDocument();
 	});
 
@@ -17,7 +16,6 @@ describe("KpiCards", () => {
 
 		expect(screen.getByText("37")).toBeInTheDocument();
 		expect(screen.getByText("12")).toBeInTheDocument();
-		expect(screen.getByText("156")).toBeInTheDocument();
 		expect(screen.getByText("1,248")).toBeInTheDocument();
 	});
 
@@ -25,6 +23,6 @@ describe("KpiCards", () => {
 		render(<KpiCards />);
 
 		expect(screen.getByText("nuevos hoy")).toBeInTheDocument();
-		expect(screen.getByText("este mes")).toBeInTheDocument();
+		expect(screen.getByText("vs mes anterior")).toBeInTheDocument();
 	});
 });
