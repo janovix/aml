@@ -1,6 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
 import { TransactionDetailsView } from "./TransactionDetailsView";
+import * as transactionsApi from "@/lib/api/transactions";
+import { mockTransactions } from "@/data/mockTransactions";
 
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
@@ -9,9 +11,36 @@ vi.mock("next/navigation", () => ({
 	usePathname: () => "/transactions/TRX-2024-001",
 }));
 
+vi.mock("@/hooks/use-toast", () => ({
+	useToast: () => ({
+		toast: vi.fn(),
+		toasts: [],
+	}),
+}));
+
+vi.mock("@/lib/api/transactions", () => ({
+	getTransactionById: vi.fn(),
+	deleteTransaction: vi.fn(),
+}));
+
 describe("TransactionDetailsView", () => {
-	it("renders the transaction id in the header", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it("renders the transaction id in the header", async () => {
+		const transaction = mockTransactions[0];
+		vi.mocked(transactionsApi.getTransactionById).mockResolvedValue(
+			transaction,
+		);
+
 		render(<TransactionDetailsView transactionId="TRX-2024-001" />);
-		expect(screen.getByText("TRX-2024-001")).toBeInTheDocument();
+
+		await waitFor(
+			() => {
+				expect(screen.getByText("TRX-2024-001")).toBeInTheDocument();
+			},
+			{ timeout: 3000 },
+		);
 	});
 });

@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
 	Button,
@@ -19,12 +19,17 @@ import {
 	SelectValue,
 	Separator,
 } from "@algtools/ui";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Plus, Trash2 } from "lucide-react";
 import { useToast } from "../../hooks/use-toast";
-import { mockTransactions } from "../../data/mockTransactions";
+import {
+	getTransactionById,
+	updateTransaction,
+} from "../../lib/api/transactions";
 import type {
 	TransactionOperationType,
 	TransactionVehicleType,
+	TransactionUpdateRequest,
+	PaymentMethodInput,
 } from "../../types/transaction";
 import { CatalogSelector } from "../catalogs/CatalogSelector";
 
@@ -37,39 +42,142 @@ export function TransactionEditView({
 }: TransactionEditViewProps): React.JSX.Element {
 	const router = useRouter();
 	const { toast } = useToast();
-
-	const transaction =
-		mockTransactions.find((item) => item.id === transactionId) ||
-		mockTransactions[0];
+	const [isLoading, setIsLoading] = useState(true);
+	const [isSaving, setIsSaving] = useState(false);
 	const [formData, setFormData] = useState({
-		clientId: transaction.clientId,
-		operationDate:
-			transaction.operationDate.split("T")[0] || transaction.operationDate,
-		operationType: transaction.operationType,
-		branchPostalCode: transaction.branchPostalCode,
-		vehicleType: transaction.vehicleType,
-		brandId: transaction.brandId,
-		model: transaction.model,
-		year: String(transaction.year),
-		serialNumber: transaction.serialNumber,
-		plates: transaction.plates || "",
-		engineNumber: transaction.engineNumber || "",
-		registrationNumber: transaction.registrationNumber || "",
-		flagCountryId: transaction.flagCountryId || "",
-		amount: transaction.amount,
-		currency: transaction.currency,
-		paymentMethod: transaction.paymentMethod,
-		paymentDate:
-			transaction.paymentDate.split("T")[0] || transaction.paymentDate,
+		clientId: "",
+		operationDate: "",
+		operationType: "purchase" as TransactionOperationType,
+		branchPostalCode: "",
+		vehicleType: "land" as TransactionVehicleType,
+		brandId: "",
+		model: "",
+		year: "",
+		plates: "",
+		engineNumber: "",
+		registrationNumber: "",
+		flagCountryId: "",
+		amount: "",
+		currency: "MXN",
+		paymentMethods: [
+			{ method: "EFECTIVO", amount: "" },
+		] as PaymentMethodInput[],
+		paymentDate: "",
 	});
 
-	const handleSubmit = (e: React.FormEvent): void => {
+	useEffect(() => {
+		const fetchTransaction = async () => {
+			try {
+				setIsLoading(true);
+				const transaction = await getTransactionById({ id: transactionId });
+				setFormData({
+					clientId: transaction.clientId,
+					operationDate:
+						transaction.operationDate.split("T")[0] ||
+						transaction.operationDate,
+					operationType: transaction.operationType,
+					branchPostalCode: transaction.branchPostalCode,
+					vehicleType: transaction.vehicleType,
+					brandId: transaction.brandId,
+					model: transaction.model,
+					year: String(transaction.year),
+					plates: transaction.plates || "",
+					engineNumber: transaction.engineNumber || "",
+					registrationNumber: transaction.registrationNumber || "",
+					flagCountryId: transaction.flagCountryId || "",
+					amount: transaction.amount,
+					currency: transaction.currency,
+					paymentMethods: transaction.paymentMethods.map((pm) => ({
+						method: pm.method,
+						amount: pm.amount,
+					})),
+					paymentDate:
+						transaction.paymentDate.split("T")[0] || transaction.paymentDate,
+				});
+			} catch (error) {
+				console.error("Error fetching transaction:", error);
+				toast({
+					title: "Error",
+					description: "No se pudo cargar la transacción.",
+					variant: "destructive",
+				});
+				router.push("/transactions");
+			} finally {
+				setIsLoading(false);
+			}
+		};
+		fetchTransaction();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [transactionId]);
+
+	const validatePaymentMethods = (): boolean => {
+		const totalAmount = parseFloat(formData.amount) || 0;
+		const paymentMethodsSum = formData.paymentMethods.reduce(
+			(sum, pm) => sum + (parseFloat(pm.amount) || 0),
+			0,
+		);
+
+		if (paymentMethodsSum > totalAmount) {
+			toast({
+				title: "Error de validación",
+				description: `La suma de los métodos de pago (${paymentMethodsSum.toFixed(2)}) excede el monto total de la transacción (${totalAmount.toFixed(2)}).`,
+				variant: "destructive",
+			});
+			return false;
+		}
+		return true;
+	};
+
+	const handleSubmit = async (e: React.FormEvent): Promise<void> => {
 		e.preventDefault();
-		toast({
-			title: "Transacción actualizada",
-			description: "Los cambios han sido guardados exitosamente.",
-		});
-		router.push(`/transactions/${transactionId}`);
+
+		if (!validatePaymentMethods()) {
+			return;
+		}
+
+		try {
+			setIsSaving(true);
+			const updateData: TransactionUpdateRequest = {
+				operationDate: new Date(formData.operationDate).toISOString(),
+				operationType: formData.operationType,
+				branchPostalCode: formData.branchPostalCode,
+				vehicleType: formData.vehicleType,
+				brandId: formData.brandId,
+				model: formData.model,
+				year: parseInt(formData.year, 10),
+				amount: formData.amount,
+				currency: formData.currency,
+				paymentMethods: formData.paymentMethods,
+				paymentDate: new Date(formData.paymentDate).toISOString(),
+			};
+
+			if (formData.vehicleType === "land") {
+				if (formData.plates) updateData.plates = formData.plates;
+				if (formData.engineNumber)
+					updateData.engineNumber = formData.engineNumber;
+			} else {
+				if (formData.registrationNumber)
+					updateData.registrationNumber = formData.registrationNumber;
+				if (formData.flagCountryId)
+					updateData.flagCountryId = formData.flagCountryId;
+			}
+
+			await updateTransaction({ id: transactionId, input: updateData });
+			toast({
+				title: "Transacción actualizada",
+				description: "Los cambios han sido guardados exitosamente.",
+			});
+			router.push(`/transactions/${transactionId}`);
+		} catch (error) {
+			console.error("Error updating transaction:", error);
+			toast({
+				title: "Error",
+				description: "No se pudo actualizar la transacción.",
+				variant: "destructive",
+			});
+		} finally {
+			setIsSaving(false);
+		}
 	};
 
 	const handleCancel = (): void => {
@@ -79,6 +187,62 @@ export function TransactionEditView({
 	const handleChange = (field: string, value: string): void => {
 		setFormData((prev) => ({ ...prev, [field]: value }));
 	};
+
+	const handlePaymentMethodChange = (
+		index: number,
+		field: "method" | "amount",
+		value: string,
+	): void => {
+		setFormData((prev) => {
+			const newPaymentMethods = [...prev.paymentMethods];
+			newPaymentMethods[index] = {
+				...newPaymentMethods[index],
+				[field]: value,
+			};
+			return { ...prev, paymentMethods: newPaymentMethods };
+		});
+	};
+
+	const handleAddPaymentMethod = (): void => {
+		setFormData((prev) => ({
+			...prev,
+			paymentMethods: [
+				...prev.paymentMethods,
+				{ method: "EFECTIVO", amount: "" },
+			],
+		}));
+	};
+
+	const handleRemovePaymentMethod = (index: number): void => {
+		setFormData((prev) => ({
+			...prev,
+			paymentMethods: prev.paymentMethods.filter((_, i) => i !== index),
+		}));
+	};
+
+	if (isLoading) {
+		return (
+			<div className="space-y-6">
+				<div className="flex items-center gap-4">
+					<Button
+						variant="ghost"
+						size="sm"
+						className="gap-2"
+						onClick={handleCancel}
+					>
+						<ArrowLeft className="h-4 w-4" />
+						Volver
+					</Button>
+					<Separator orientation="vertical" className="h-6" />
+					<div>
+						<h1 className="text-xl font-semibold text-foreground">
+							Cargando...
+						</h1>
+					</div>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="space-y-6">
@@ -98,16 +262,30 @@ export function TransactionEditView({
 						<h1 className="text-xl font-semibold text-foreground">
 							Editar Transacción
 						</h1>
-						<p className="text-sm text-muted-foreground">{transaction.id}</p>
+						<p className="text-sm text-muted-foreground">{transactionId}</p>
 					</div>
 				</div>
 				<div className="flex items-center gap-2">
 					<Button variant="outline" size="sm" onClick={handleCancel}>
 						Cancelar
 					</Button>
-					<Button size="sm" className="gap-2" onClick={handleSubmit}>
+					<Button
+						size="sm"
+						className="gap-2"
+						onClick={handleSubmit}
+						disabled={
+							isLoading ||
+							isSaving ||
+							formData.paymentMethods.reduce(
+								(sum, pm) => sum + (parseFloat(pm.amount) || 0),
+								0,
+							) > (parseFloat(formData.amount) || 0)
+						}
+					>
 						<Save className="h-4 w-4" />
-						<span className="hidden sm:inline">Guardar Cambios</span>
+						<span className="hidden sm:inline">
+							{isSaving ? "Guardando..." : "Guardar Cambios"}
+						</span>
 					</Button>
 				</div>
 			</div>
@@ -257,17 +435,6 @@ export function TransactionEditView({
 								/>
 							</div>
 
-							<div className="space-y-2">
-								<Label htmlFor="serial-number">Número de serie *</Label>
-								<Input
-									id="serial-number"
-									value={formData.serialNumber}
-									onChange={(e) => handleChange("serialNumber", e.target.value)}
-									placeholder="VIN o número de serie"
-									required
-								/>
-							</div>
-
 							{formData.vehicleType === "land" && (
 								<>
 									<div className="space-y-2">
@@ -370,29 +537,6 @@ export function TransactionEditView({
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="payment-method">Método de pago *</Label>
-								<Select
-									value={formData.paymentMethod}
-									onValueChange={(value) =>
-										handleChange("paymentMethod", value)
-									}
-									required
-								>
-									<SelectTrigger id="payment-method">
-										<SelectValue />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="EFECTIVO">Efectivo</SelectItem>
-										<SelectItem value="TRANSFERENCIA">Transferencia</SelectItem>
-										<SelectItem value="CHEQUE">Cheque</SelectItem>
-										<SelectItem value="FINANCIAMIENTO">
-											Financiamiento
-										</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
-
-							<div className="space-y-2">
 								<Label htmlFor="payment-date">Fecha de pago *</Label>
 								<Input
 									id="payment-date"
@@ -402,6 +546,145 @@ export function TransactionEditView({
 									required
 								/>
 							</div>
+						</div>
+
+						<Separator />
+
+						<div className="space-y-4">
+							<div className="flex items-center justify-between">
+								<Label>Métodos de Pago *</Label>
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									onClick={handleAddPaymentMethod}
+									className="gap-2"
+								>
+									<Plus className="h-4 w-4" />
+									Agregar Método
+								</Button>
+							</div>
+
+							{/* Payment methods summary */}
+							{formData.amount && (
+								<div className="p-3 rounded-lg border bg-muted/30">
+									<div className="flex items-center justify-between text-sm">
+										<span className="text-muted-foreground">
+											Monto total de la transacción:
+										</span>
+										<span className="font-medium">
+											{new Intl.NumberFormat("es-MX", {
+												style: "currency",
+												currency: formData.currency,
+											}).format(parseFloat(formData.amount) || 0)}
+										</span>
+									</div>
+									<div className="flex items-center justify-between text-sm mt-2">
+										<span className="text-muted-foreground">
+											Suma de métodos de pago:
+										</span>
+										<span
+											className={`font-medium ${
+												formData.paymentMethods.reduce(
+													(sum, pm) => sum + (parseFloat(pm.amount) || 0),
+													0,
+												) > (parseFloat(formData.amount) || 0)
+													? "text-destructive"
+													: "text-foreground"
+											}`}
+										>
+											{new Intl.NumberFormat("es-MX", {
+												style: "currency",
+												currency: formData.currency,
+											}).format(
+												formData.paymentMethods.reduce(
+													(sum, pm) => sum + (parseFloat(pm.amount) || 0),
+													0,
+												),
+											)}
+										</span>
+									</div>
+									{formData.paymentMethods.reduce(
+										(sum, pm) => sum + (parseFloat(pm.amount) || 0),
+										0,
+									) > (parseFloat(formData.amount) || 0) && (
+										<p className="text-xs text-destructive mt-2">
+											⚠️ La suma de los métodos de pago excede el monto total
+										</p>
+									)}
+								</div>
+							)}
+
+							{formData.paymentMethods.map((pm, index) => (
+								<div
+									key={index}
+									className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-lg"
+								>
+									<div className="space-y-2">
+										<Label htmlFor={`payment-method-${index}`}>
+											Método {index + 1} *
+										</Label>
+										<Select
+											value={pm.method}
+											onValueChange={(value) =>
+												handlePaymentMethodChange(index, "method", value)
+											}
+											required
+										>
+											<SelectTrigger id={`payment-method-${index}`}>
+												<SelectValue />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="EFECTIVO">Efectivo</SelectItem>
+												<SelectItem value="TRANSFERENCIA">
+													Transferencia
+												</SelectItem>
+												<SelectItem value="CHEQUE">Cheque</SelectItem>
+												<SelectItem value="FINANCIAMIENTO">
+													Financiamiento
+												</SelectItem>
+											</SelectContent>
+										</Select>
+									</div>
+
+									<div className="space-y-2">
+										<Label htmlFor={`payment-amount-${index}`}>
+											Monto {index + 1} *
+										</Label>
+										<Input
+											id={`payment-amount-${index}`}
+											type="number"
+											value={pm.amount}
+											onChange={(e) =>
+												handlePaymentMethodChange(
+													index,
+													"amount",
+													e.target.value,
+												)
+											}
+											placeholder="0.00"
+											required
+											min="0"
+											step="0.01"
+										/>
+									</div>
+
+									<div className="flex items-end">
+										{formData.paymentMethods.length > 1 && (
+											<Button
+												type="button"
+												variant="outline"
+												size="sm"
+												onClick={() => handleRemovePaymentMethod(index)}
+												className="gap-2 text-destructive"
+											>
+												<Trash2 className="h-4 w-4" />
+												Eliminar
+											</Button>
+										)}
+									</div>
+								</div>
+							))}
 						</div>
 					</CardContent>
 				</Card>

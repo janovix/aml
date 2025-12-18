@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
 	Card,
 	CardContent,
@@ -25,14 +25,17 @@ import {
 import { MoreHorizontal, Eye, Edit, FileText, Download } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { mockTransactions } from "@/data/mockTransactions";
+import { useToast } from "@/hooks/use-toast";
+import {
+	listTransactions,
+	type ListTransactionsOptions,
+} from "@/lib/api/transactions";
 import type { Transaction } from "@/types/transaction";
 
 interface TransactionRow {
 	id: string;
 	folio: string;
 	type: "purchase" | "sale";
-	vin: string;
 	brandId: string;
 	model: string;
 	year: number;
@@ -40,7 +43,7 @@ interface TransactionRow {
 	currency: string;
 	clientId: string;
 	operationDate: string;
-	paymentMethod: string;
+	paymentMethods: string; // Display string for payment methods
 }
 
 const operationTypeLabels: Record<"purchase" | "sale", string> = {
@@ -55,27 +58,62 @@ const paymentMethodLabels: Record<string, string> = {
 	FINANCIAMIENTO: "Financiamiento",
 };
 
-// Transform mockTransactions to TransactionRow format
-const transactionsData: TransactionRow[] = mockTransactions.map((tx) => ({
-	id: tx.id,
-	folio: tx.id,
-	type: tx.operationType,
-	vin: tx.serialNumber,
-	brandId: tx.brandId,
-	model: tx.model,
-	year: tx.year,
-	amount: parseFloat(tx.amount),
-	currency: tx.currency,
-	clientId: tx.clientId,
-	operationDate: tx.operationDate,
-	paymentMethod: tx.paymentMethod,
-}));
+interface TransactionsTableProps {
+	filters?: ListTransactionsOptions;
+}
 
-export function TransactionsTable(): React.ReactElement {
+export function TransactionsTable({
+	filters,
+}: TransactionsTableProps = {}): React.ReactElement {
 	const router = useRouter();
+	const { toast } = useToast();
+	const [transactions, setTransactions] = useState<Transaction[]>([]);
+	const [isLoading, setIsLoading] = useState(true);
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-	const allSelected = selectedIds.size === transactionsData.length;
+	useEffect(() => {
+		const fetchTransactions = async () => {
+			try {
+				setIsLoading(true);
+				const response = await listTransactions({
+					page: 1,
+					limit: 100,
+					...filters,
+				});
+				setTransactions(response.data);
+			} catch (error) {
+				console.error("Error fetching transactions:", error);
+				toast({
+					title: "Error",
+					description: "No se pudieron cargar las transacciones.",
+					variant: "destructive",
+				});
+			} finally {
+				setIsLoading(false);
+			}
+		};
+		fetchTransactions();
+	}, [filters, toast]);
+
+	// Transform Transaction to TransactionRow format
+	const transactionsData: TransactionRow[] = transactions.map((tx) => ({
+		id: tx.id,
+		folio: tx.id,
+		type: tx.operationType,
+		brandId: tx.brandId,
+		model: tx.model,
+		year: tx.year,
+		amount: parseFloat(tx.amount),
+		currency: tx.currency,
+		clientId: tx.clientId,
+		operationDate: tx.operationDate,
+		paymentMethods: tx.paymentMethods
+			.map((pm) => paymentMethodLabels[pm.method] || pm.method)
+			.join(", "),
+	}));
+
+	const allSelected =
+		selectedIds.size === transactionsData.length && transactionsData.length > 0;
 	const someSelected = selectedIds.size > 0 && !allSelected;
 
 	const handleSelectAll = (): void => {
@@ -121,7 +159,9 @@ export function TransactionsTable(): React.ReactElement {
 						Lista de Transacciones
 					</CardTitle>
 					<p className="text-sm text-muted-foreground mt-1">
-						{transactionsData.length} transacciones en total
+						{isLoading
+							? "Cargando..."
+							: `${transactionsData.length} transacciones en total`}
 						{selectedIds.size > 0 && ` · ${selectedIds.size} seleccionadas`}
 					</p>
 				</div>
@@ -159,10 +199,9 @@ export function TransactionsTable(): React.ReactElement {
 								<TableHead className="min-w-[120px]">Folio</TableHead>
 								<TableHead className="hidden md:table-cell">Tipo</TableHead>
 								<TableHead className="min-w-[150px]">Vehículo</TableHead>
-								<TableHead className="hidden lg:table-cell">VIN</TableHead>
 								<TableHead>Cliente ID</TableHead>
 								<TableHead className="text-right">Monto</TableHead>
-								<TableHead>Método de pago</TableHead>
+								<TableHead>Métodos de pago</TableHead>
 								<TableHead className="hidden sm:table-cell">
 									Fecha Operación
 								</TableHead>
@@ -172,111 +211,129 @@ export function TransactionsTable(): React.ReactElement {
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{transactionsData.map((transaction) => (
-								<TableRow
-									key={transaction.id}
-									className={cn(
-										"cursor-pointer transition-colors",
-										selectedIds.has(transaction.id) && "bg-muted/50",
-									)}
-									onClick={() => handleSelectOne(transaction.id)}
-								>
+							{isLoading ? (
+								<TableRow>
 									<TableCell
-										className="pl-6"
-										onClick={(e) => e.stopPropagation()}
+										colSpan={10}
+										className="text-center py-8 text-muted-foreground"
 									>
-										<Checkbox
-											checked={selectedIds.has(transaction.id)}
-											onCheckedChange={() => handleSelectOne(transaction.id)}
-											aria-label={`Seleccionar ${transaction.folio}`}
-										/>
-									</TableCell>
-									<TableCell>
-										<Link
-											href={`/transactions/${transaction.id}`}
-											className="font-medium text-foreground hover:text-primary hover:underline underline-offset-2 transition-colors"
-											onClick={(e) => e.stopPropagation()}
-										>
-											{transaction.folio}
-										</Link>
-									</TableCell>
-									<TableCell className="hidden md:table-cell">
-										<Badge variant="outline" className="font-medium">
-											{operationTypeLabels[transaction.type]}
-										</Badge>
-									</TableCell>
-									<TableCell>
-										<div className="flex flex-col">
-											<span className="font-medium">
-												{transaction.brandId} {transaction.model}
-											</span>
-											<span className="text-xs text-muted-foreground">
-												{transaction.year}
-											</span>
-										</div>
-									</TableCell>
-									<TableCell className="hidden lg:table-cell font-mono text-xs text-muted-foreground">
-										{transaction.vin}
-									</TableCell>
-									<TableCell className="max-w-[200px] truncate font-mono text-sm">
-										{transaction.clientId}
-									</TableCell>
-									<TableCell className="text-right font-medium">
-										{formatCurrency(transaction.amount, transaction.currency)}
-									</TableCell>
-									<TableCell>
-										<Badge variant="outline" className="font-medium">
-											{paymentMethodLabels[transaction.paymentMethod] ||
-												transaction.paymentMethod}
-										</Badge>
-									</TableCell>
-									<TableCell className="hidden sm:table-cell text-muted-foreground">
-										{formatDate(transaction.operationDate)}
-									</TableCell>
-									<TableCell
-										className="pr-6"
-										onClick={(e) => e.stopPropagation()}
-									>
-										<DropdownMenu>
-											<DropdownMenuTrigger asChild>
-												<Button
-													variant="ghost"
-													size="icon"
-													className="h-8 w-8"
-													aria-label={`Acciones para ${transaction.folio}`}
-												>
-													<MoreHorizontal className="h-4 w-4" />
-												</Button>
-											</DropdownMenuTrigger>
-											<DropdownMenuContent align="end" className="w-48">
-												<DropdownMenuItem
-													className="gap-2"
-													onClick={() =>
-														router.push(`/transactions/${transaction.id}`)
-													}
-												>
-													<Eye className="h-4 w-4" />
-													Ver Detalles
-												</DropdownMenuItem>
-												<DropdownMenuItem
-													className="gap-2"
-													onClick={() =>
-														router.push(`/transactions/${transaction.id}/edit`)
-													}
-												>
-													<Edit className="h-4 w-4" />
-													Editar
-												</DropdownMenuItem>
-												<DropdownMenuSeparator />
-												<DropdownMenuItem className="gap-2">
-													<FileText className="h-4 w-4" />
-													Generar Reporte
-												</DropdownMenuItem>
-											</DropdownMenuContent>
-										</DropdownMenu>
+										Cargando transacciones...
 									</TableCell>
 								</TableRow>
-							))}
+							) : transactionsData.length === 0 ? (
+								<TableRow>
+									<TableCell
+										colSpan={10}
+										className="text-center py-8 text-muted-foreground"
+									>
+										No hay transacciones registradas
+									</TableCell>
+								</TableRow>
+							) : (
+								transactionsData.map((transaction) => (
+									<TableRow
+										key={transaction.id}
+										className={cn(
+											"cursor-pointer transition-colors",
+											selectedIds.has(transaction.id) && "bg-muted/50",
+										)}
+										onClick={() => handleSelectOne(transaction.id)}
+									>
+										<TableCell
+											className="pl-6"
+											onClick={(e) => e.stopPropagation()}
+										>
+											<Checkbox
+												checked={selectedIds.has(transaction.id)}
+												onCheckedChange={() => handleSelectOne(transaction.id)}
+												aria-label={`Seleccionar ${transaction.folio}`}
+											/>
+										</TableCell>
+										<TableCell>
+											<Link
+												href={`/transactions/${transaction.id}`}
+												className="font-medium text-foreground hover:text-primary hover:underline underline-offset-2 transition-colors"
+												onClick={(e) => e.stopPropagation()}
+											>
+												{transaction.folio}
+											</Link>
+										</TableCell>
+										<TableCell className="hidden md:table-cell">
+											<Badge variant="outline" className="font-medium">
+												{operationTypeLabels[transaction.type]}
+											</Badge>
+										</TableCell>
+										<TableCell>
+											<div className="flex flex-col">
+												<span className="font-medium">
+													{transaction.brandId} {transaction.model}
+												</span>
+												<span className="text-xs text-muted-foreground">
+													{transaction.year}
+												</span>
+											</div>
+										</TableCell>
+										<TableCell className="max-w-[200px] truncate font-mono text-sm">
+											{transaction.clientId}
+										</TableCell>
+										<TableCell className="text-right font-medium">
+											{formatCurrency(transaction.amount, transaction.currency)}
+										</TableCell>
+										<TableCell>
+											<span className="text-sm">
+												{transaction.paymentMethods}
+											</span>
+										</TableCell>
+										<TableCell className="hidden sm:table-cell text-muted-foreground">
+											{formatDate(transaction.operationDate)}
+										</TableCell>
+										<TableCell
+											className="pr-6"
+											onClick={(e) => e.stopPropagation()}
+										>
+											<DropdownMenu>
+												<DropdownMenuTrigger asChild>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="h-8 w-8"
+														aria-label={`Acciones para ${transaction.folio}`}
+													>
+														<MoreHorizontal className="h-4 w-4" />
+													</Button>
+												</DropdownMenuTrigger>
+												<DropdownMenuContent align="end" className="w-48">
+													<DropdownMenuItem
+														className="gap-2"
+														onClick={() =>
+															router.push(`/transactions/${transaction.id}`)
+														}
+													>
+														<Eye className="h-4 w-4" />
+														Ver Detalles
+													</DropdownMenuItem>
+													<DropdownMenuItem
+														className="gap-2"
+														onClick={() =>
+															router.push(
+																`/transactions/${transaction.id}/edit`,
+															)
+														}
+													>
+														<Edit className="h-4 w-4" />
+														Editar
+													</DropdownMenuItem>
+													<DropdownMenuSeparator />
+													<DropdownMenuItem className="gap-2">
+														<FileText className="h-4 w-4" />
+														Generar Reporte
+													</DropdownMenuItem>
+												</DropdownMenuContent>
+											</DropdownMenu>
+										</TableCell>
+									</TableRow>
+								))
+							)}
 						</TableBody>
 					</Table>
 				</div>

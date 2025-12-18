@@ -3,18 +3,18 @@ import { fetchCatalogEntries } from "./catalogs";
 
 describe("catalogs", () => {
 	let fetchMock: ReturnType<typeof vi.fn>;
-	let previousBffBaseUrl: string | undefined;
+	let previousAmlCoreUrl: string | undefined;
 
 	beforeEach(() => {
-		previousBffBaseUrl = process.env.NEXT_PUBLIC_BFF_BASE_URL;
-		process.env.NEXT_PUBLIC_BFF_BASE_URL = "https://aml-bff.example.com/";
+		previousAmlCoreUrl = process.env.NEXT_PUBLIC_AML_CORE_URL;
+		process.env.NEXT_PUBLIC_AML_CORE_URL = "https://aml-bff.example.com/";
 
 		fetchMock = vi.fn();
 		vi.stubGlobal("fetch", fetchMock);
 	});
 
 	afterEach(() => {
-		process.env.NEXT_PUBLIC_BFF_BASE_URL = previousBffBaseUrl;
+		process.env.NEXT_PUBLIC_AML_CORE_URL = previousAmlCoreUrl;
 		vi.restoreAllMocks();
 	});
 

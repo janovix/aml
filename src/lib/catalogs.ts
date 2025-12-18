@@ -1,32 +1,5 @@
 import type { CatalogQueryParams, CatalogResponse } from "@/types/catalog";
-
-const DEFAULT_BFF_BASE_URL = "https://aml-svc.example.workers.dev";
-
-const stripTrailingSlash = (value: string): string =>
-	value.endsWith("/") ? value.slice(0, -1) : value;
-
-const resolveBaseUrl = (): string => {
-	// Safely access process.env (may not be available in Storybook/browser)
-	try {
-		// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-		const envValue =
-			typeof process !== "undefined" && process?.env?.NEXT_PUBLIC_BFF_BASE_URL;
-		if (
-			envValue &&
-			typeof envValue === "string" &&
-			envValue.trim().length > 0
-		) {
-			return stripTrailingSlash(envValue.trim());
-		}
-	} catch {
-		// process is not available (e.g., in Storybook browser environment)
-	}
-
-	return DEFAULT_BFF_BASE_URL;
-};
-
-// Lazy evaluation to avoid process.env access at module load time
-const getBffBaseUrl = (): string => resolveBaseUrl();
+import { getAmlCoreBaseUrl } from "./api/config";
 
 const buildQueryString = (params?: CatalogQueryParams): string => {
 	const searchParams = new URLSearchParams();
@@ -67,7 +40,8 @@ export async function fetchCatalogEntries(
 	params?: CatalogQueryParams,
 	requestInit?: RequestInit,
 ): Promise<CatalogResponse> {
-	const url = `${getBffBaseUrl()}/api/v1/catalogs/${catalogKey}${buildQueryString(params)}`;
+	const baseUrl = getAmlCoreBaseUrl();
+	const url = `${baseUrl}/api/v1/catalogs/${catalogKey}${buildQueryString(params)}`;
 
 	const response = await fetch(url, {
 		...requestInit,
