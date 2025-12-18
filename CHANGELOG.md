@@ -1,3 +1,10 @@
+# [1.1.0-rc.5](https://github.com/janovix/aml/compare/v1.1.0-rc.4...v1.1.0-rc.5) (2025-12-18)
+
+
+### Features
+
+* Add transaction and client document/address APIs ([6e70bd4](https://github.com/janovix/aml/commit/6e70bd49c6b7414110de49870d7214b5880084bd))
+
 # [1.1.0-rc.4](https://github.com/janovix/aml/compare/v1.1.0-rc.3...v1.1.0-rc.4) (2025-12-18)
 
 
