@@ -10,7 +10,7 @@ const meta = {
 		docs: {
 			description: {
 				component:
-					"View component for creating a new transaction. Provides form fields for entering transaction information including vehicle details, client selection, transaction amount, and status. Includes create and cancel actions.",
+					"View component for creating a new transaction. Provides form fields for entering transaction information including vehicle details, client selection, and payment methods. The transaction amount is automatically calculated from the payment methods. Includes create and cancel actions.",
 			},
 		},
 		nextjs: {
