@@ -26,26 +26,29 @@ import { MoreHorizontal, Eye, Edit, FileText, Download } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { mockTransactions } from "@/data/mockTransactions";
-import type { PaymentMethod, TransactionLegacy } from "@/types/transaction";
-import { transactionToLegacy } from "@/types/transaction";
+import type { Transaction } from "@/types/transaction";
 
 interface TransactionRow {
 	id: string;
 	folio: string;
-	type: "COMPRA" | "VENTA";
+	type: "purchase" | "sale";
 	vin: string;
-	brand: string;
+	brandId: string;
 	model: string;
 	year: number;
 	amount: number;
-	clientName: string;
-	date: string;
-	status: "COMPLETADA" | "PENDIENTE" | "EN_REVISION";
-	suspicious: boolean;
-	paymentMethod: PaymentMethod;
+	currency: string;
+	clientId: string;
+	operationDate: string;
+	paymentMethod: string;
 }
 
-const paymentMethodLabels: Record<PaymentMethod, string> = {
+const operationTypeLabels: Record<"purchase" | "sale", string> = {
+	purchase: "Compra",
+	sale: "Venta",
+};
+
+const paymentMethodLabels: Record<string, string> = {
 	EFECTIVO: "Efectivo",
 	TRANSFERENCIA: "Transferencia",
 	CHEQUE: "Cheque",
@@ -53,33 +56,20 @@ const paymentMethodLabels: Record<PaymentMethod, string> = {
 };
 
 // Transform mockTransactions to TransactionRow format
-const transactionsData: TransactionRow[] = mockTransactions.map((tx) => {
-	const legacy = transactionToLegacy(tx);
-	return {
-		id: legacy.id,
-		folio: legacy.id,
-		type: legacy.transactionType,
-		vin: legacy.serialNumber,
-		brand: legacy.brand,
-		model: legacy.model,
-		year: parseInt(legacy.year, 10),
-		amount: parseFloat(legacy.amount.replace(/[^0-9.-]+/g, "")),
-		clientName: legacy.clientName,
-		date: legacy.date,
-		status: legacy.status,
-		suspicious: legacy.riskFlag,
-		paymentMethod: legacy.paymentMethod,
-	};
-});
-
-const statusBadgeStyles = {
-	COMPLETADA:
-		"bg-[rgb(var(--risk-low-bg))] text-[rgb(var(--risk-low))] border-[rgb(var(--risk-low))]/30",
-	PENDIENTE:
-		"bg-[rgb(var(--risk-medium-bg))] text-[rgb(var(--risk-medium))] border-[rgb(var(--risk-medium))]/30",
-	EN_REVISION:
-		"bg-[rgb(var(--risk-high-bg))] text-[rgb(var(--risk-high))] border-[rgb(var(--risk-high))]/30",
-};
+const transactionsData: TransactionRow[] = mockTransactions.map((tx) => ({
+	id: tx.id,
+	folio: tx.id,
+	type: tx.operationType,
+	vin: tx.serialNumber,
+	brandId: tx.brandId,
+	model: tx.model,
+	year: tx.year,
+	amount: parseFloat(tx.amount),
+	currency: tx.currency,
+	clientId: tx.clientId,
+	operationDate: tx.operationDate,
+	paymentMethod: tx.paymentMethod,
+}));
 
 export function TransactionsTable(): React.ReactElement {
 	const router = useRouter();
@@ -108,10 +98,10 @@ export function TransactionsTable(): React.ReactElement {
 		setSelectedIds(newSelected);
 	};
 
-	const formatCurrency = (amount: number): string => {
+	const formatCurrency = (amount: number, currency: string): string => {
 		return new Intl.NumberFormat("es-MX", {
 			style: "currency",
-			currency: "MXN",
+			currency: currency,
 		}).format(amount);
 	};
 
@@ -170,11 +160,12 @@ export function TransactionsTable(): React.ReactElement {
 								<TableHead className="hidden md:table-cell">Tipo</TableHead>
 								<TableHead className="min-w-[150px]">Vehículo</TableHead>
 								<TableHead className="hidden lg:table-cell">VIN</TableHead>
-								<TableHead>Cliente</TableHead>
+								<TableHead>Cliente ID</TableHead>
 								<TableHead className="text-right">Monto</TableHead>
 								<TableHead>Método de pago</TableHead>
-								<TableHead className="hidden sm:table-cell">Fecha</TableHead>
-								<TableHead>Estado</TableHead>
+								<TableHead className="hidden sm:table-cell">
+									Fecha Operación
+								</TableHead>
 								<TableHead className="w-12 pr-6">
 									<span className="sr-only">Acciones</span>
 								</TableHead>
@@ -187,8 +178,6 @@ export function TransactionsTable(): React.ReactElement {
 									className={cn(
 										"cursor-pointer transition-colors",
 										selectedIds.has(transaction.id) && "bg-muted/50",
-										transaction.suspicious &&
-											"bg-[rgb(var(--risk-high-bg))]/20",
 									)}
 									onClick={() => handleSelectOne(transaction.id)}
 								>
@@ -213,13 +202,13 @@ export function TransactionsTable(): React.ReactElement {
 									</TableCell>
 									<TableCell className="hidden md:table-cell">
 										<Badge variant="outline" className="font-medium">
-											{transaction.type === "COMPRA" ? "Compra" : "Venta"}
+											{operationTypeLabels[transaction.type]}
 										</Badge>
 									</TableCell>
 									<TableCell>
 										<div className="flex flex-col">
 											<span className="font-medium">
-												{transaction.brand} {transaction.model}
+												{transaction.brandId} {transaction.model}
 											</span>
 											<span className="text-xs text-muted-foreground">
 												{transaction.year}
@@ -229,34 +218,20 @@ export function TransactionsTable(): React.ReactElement {
 									<TableCell className="hidden lg:table-cell font-mono text-xs text-muted-foreground">
 										{transaction.vin}
 									</TableCell>
-									<TableCell className="max-w-[200px] truncate">
-										{transaction.clientName}
+									<TableCell className="max-w-[200px] truncate font-mono text-sm">
+										{transaction.clientId}
 									</TableCell>
 									<TableCell className="text-right font-medium">
-										{formatCurrency(transaction.amount)}
+										{formatCurrency(transaction.amount, transaction.currency)}
 									</TableCell>
 									<TableCell>
 										<Badge variant="outline" className="font-medium">
-											{paymentMethodLabels[transaction.paymentMethod]}
+											{paymentMethodLabels[transaction.paymentMethod] ||
+												transaction.paymentMethod}
 										</Badge>
 									</TableCell>
 									<TableCell className="hidden sm:table-cell text-muted-foreground">
-										{formatDate(transaction.date)}
-									</TableCell>
-									<TableCell>
-										<Badge
-											variant="outline"
-											className={cn(
-												"font-medium",
-												statusBadgeStyles[transaction.status],
-											)}
-										>
-											{transaction.status === "COMPLETADA"
-												? "Completada"
-												: transaction.status === "PENDIENTE"
-													? "Pendiente"
-													: "En Revisión"}
-										</Badge>
+										{formatDate(transaction.operationDate)}
 									</TableCell>
 									<TableCell
 										className="pr-6"
