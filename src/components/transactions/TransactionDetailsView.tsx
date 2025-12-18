@@ -19,38 +19,27 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@algtools/ui";
-import { ArrowLeft, Edit, Flag, Download, Trash2 } from "lucide-react";
+import { ArrowLeft, Edit, Download, Trash2 } from "lucide-react";
 import { useToast } from "../../hooks/use-toast";
 import { mockTransactions } from "../../data/mockTransactions";
-import type {
-	TransactionType,
-	VehicleType,
-	PaymentMethod,
-	TransactionStatus,
-} from "../../types/transaction";
+import type { Transaction } from "../../types/transaction";
 
-const transactionTypeLabels: Record<TransactionType, string> = {
-	COMPRA: "Compra",
-	VENTA: "Venta",
+const operationTypeLabels: Record<Transaction["operationType"], string> = {
+	purchase: "Compra",
+	sale: "Venta",
 };
 
-const vehicleTypeLabels: Record<VehicleType, string> = {
-	TERRESTRE: "Terrestre",
-	MARITIMO: "Marítimo",
-	AEREO: "Aéreo",
+const vehicleTypeLabels: Record<Transaction["vehicleType"], string> = {
+	land: "Terrestre",
+	marine: "Marítimo",
+	air: "Aéreo",
 };
 
-const paymentMethodLabels: Record<PaymentMethod, string> = {
+const paymentMethodLabels: Record<string, string> = {
 	EFECTIVO: "Efectivo",
 	TRANSFERENCIA: "Transferencia",
 	CHEQUE: "Cheque",
 	FINANCIAMIENTO: "Financiamiento",
-};
-
-const statusLabels: Record<TransactionStatus, string> = {
-	COMPLETADA: "Completada",
-	PENDIENTE: "Pendiente",
-	EN_REVISION: "En Revisión",
 };
 
 interface TransactionDetailsViewProps {
@@ -64,7 +53,7 @@ export function TransactionDetailsView({
 	const router = useRouter();
 	const { toast } = useToast();
 
-	const transaction =
+	const transaction: Transaction =
 		mockTransactions.find((item) => item.id === transactionId) ||
 		mockTransactions[0];
 
@@ -76,12 +65,13 @@ export function TransactionDetailsView({
 		});
 	};
 
-	const handleToggleRiskFlag = (): void => {
-		toast({
-			title: transaction.riskFlag
-				? "Marca removida"
-				: "Transacción marcada como sospechosa",
-			description: `La transacción ${transaction.id} ha sido ${transaction.riskFlag ? "desmarcada" : "marcada"}.`,
+	const formatDateTime = (dateString: string): string => {
+		return new Date(dateString).toLocaleString("es-MX", {
+			day: "2-digit",
+			month: "long",
+			year: "numeric",
+			hour: "2-digit",
+			minute: "2-digit",
 		});
 	};
 
@@ -138,15 +128,6 @@ export function TransactionDetailsView({
 						variant="outline"
 						size="sm"
 						className="gap-2 hidden sm:flex"
-						onClick={handleToggleRiskFlag}
-					>
-						<Flag className="h-4 w-4" />
-						{transaction.riskFlag ? "Desmarcar" : "Marcar"}
-					</Button>
-					<Button
-						variant="outline"
-						size="sm"
-						className="gap-2 hidden sm:flex"
 						onClick={handleExport}
 					>
 						<Download className="h-4 w-4" />
@@ -173,78 +154,69 @@ export function TransactionDetailsView({
 						<CardContent className="space-y-4">
 							<div>
 								<p className="text-sm font-medium text-muted-foreground">
-									Fecha
+									Fecha de Operación
 								</p>
 								<p className="text-base font-medium mt-1">
-									{formatDate(transaction.date)}
+									{formatDateTime(transaction.operationDate)}
 								</p>
 							</div>
 							<Separator />
 							<div>
 								<p className="text-sm font-medium text-muted-foreground">
-									Cliente
+									Cliente ID
 								</p>
 								<p className="text-base font-medium mt-1">
-									{transaction.clientName}
+									{transaction.clientId}
 								</p>
 							</div>
 							<Separator />
 							<div className="grid grid-cols-2 gap-4">
 								<div>
 									<p className="text-sm font-medium text-muted-foreground">
-										Tipo de Transacción
+										Tipo de Operación
 									</p>
 									<Badge
 										variant={
-											transaction.transactionType === "COMPRA"
+											transaction.operationType === "purchase"
 												? "default"
 												: "secondary"
 										}
 										className="mt-1"
 									>
-										{transactionTypeLabels[transaction.transactionType]}
+										{operationTypeLabels[transaction.operationType]}
 									</Badge>
 								</div>
 								<div>
 									<p className="text-sm font-medium text-muted-foreground">
-										Sucursal
+										Código Postal Sucursal
 									</p>
 									<p className="text-base font-medium mt-1">
-										{transaction.branch}
+										{transaction.branchPostalCode}
 									</p>
 								</div>
 							</div>
 							<Separator />
-							<div className="grid grid-cols-2 gap-4">
-								<div>
-									<p className="text-sm font-medium text-muted-foreground">
-										Estado
-									</p>
-									<Badge
-										variant={
-											transaction.status === "COMPLETADA"
-												? "default"
-												: transaction.status === "EN_REVISION"
-													? "destructive"
-													: "secondary"
-										}
-										className="mt-1"
-									>
-										{statusLabels[transaction.status]}
-									</Badge>
-								</div>
-								<div>
-									<p className="text-sm font-medium text-muted-foreground">
-										Marca de Riesgo
-									</p>
-									<Badge
-										variant={transaction.riskFlag ? "destructive" : "secondary"}
-										className="mt-1"
-									>
-										{transaction.riskFlag ? "Sospechosa" : "Normal"}
-									</Badge>
-								</div>
+							<div>
+								<p className="text-sm font-medium text-muted-foreground">
+									Creado
+								</p>
+								<p className="text-base font-medium mt-1">
+									{formatDateTime(transaction.createdAt)}
+								</p>
 							</div>
+							{transaction.deletedAt && (
+								<>
+									<Separator />
+									<div>
+										<p className="text-sm font-medium text-muted-foreground">
+											Eliminado
+										</p>
+										<p className="text-base font-medium mt-1">
+											{formatDateTime(transaction.deletedAt)}
+										</p>
+									</div>
+								</>
+							)}
 						</CardContent>
 					</Card>
 
@@ -277,7 +249,7 @@ export function TransactionDetailsView({
 									Fecha de Pago
 								</p>
 								<p className="text-base font-medium mt-1">
-									{formatDate(transaction.paymentDate)}
+									{formatDateTime(transaction.paymentDate)}
 								</p>
 							</div>
 						</CardContent>
@@ -297,23 +269,15 @@ export function TransactionDetailsView({
 										{vehicleTypeLabels[transaction.vehicleType]}
 									</Badge>
 								</div>
-								<div className="md:col-span-2">
-									<p className="text-sm font-medium text-muted-foreground">
-										Vehículo
-									</p>
-									<p className="text-lg font-medium mt-1">
-										{transaction.vehicle}
-									</p>
-								</div>
 							</div>
 							<Separator />
 							<div className="grid gap-4 md:grid-cols-3">
 								<div>
 									<p className="text-sm font-medium text-muted-foreground">
-										Marca
+										Marca ID
 									</p>
 									<p className="text-base font-medium mt-1">
-										{transaction.brand}
+										{transaction.brandId}
 									</p>
 								</div>
 								<div>
@@ -332,6 +296,16 @@ export function TransactionDetailsView({
 										{transaction.year}
 									</p>
 								</div>
+								{transaction.armorLevel && (
+									<div>
+										<p className="text-sm font-medium text-muted-foreground">
+											Nivel de Blindaje
+										</p>
+										<p className="text-base font-medium mt-1">
+											{transaction.armorLevel}
+										</p>
+									</div>
+								)}
 							</div>
 							<Separator />
 							<div className="grid gap-4 md:grid-cols-2">
@@ -373,13 +347,13 @@ export function TransactionDetailsView({
 										</p>
 									</div>
 								)}
-								{transaction.flagCountry && (
+								{transaction.flagCountryId && (
 									<div>
 										<p className="text-sm font-medium text-muted-foreground">
-											País de Bandera
+											País de Bandera ID
 										</p>
 										<p className="text-base font-medium mt-1">
-											{transaction.flagCountry}
+											{transaction.flagCountryId}
 										</p>
 									</div>
 								)}

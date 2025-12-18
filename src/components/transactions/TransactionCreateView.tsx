@@ -22,29 +22,28 @@ import {
 import { ArrowLeft, Save } from "lucide-react";
 import { useToast } from "../../hooks/use-toast";
 import type {
-	TransactionType,
-	VehicleType,
-	PaymentMethod,
+	TransactionOperationType,
+	TransactionVehicleType,
 } from "../../types/transaction";
 import { CatalogSelector } from "../catalogs/CatalogSelector";
 
 interface TransactionFormData {
 	clientId: string;
-	date: string;
-	transactionType: TransactionType | "";
-	branch: string;
-	vehicleType: VehicleType | "";
-	brand: string;
+	operationDate: string;
+	operationType: TransactionOperationType | "";
+	branchPostalCode: string;
+	vehicleType: TransactionVehicleType | "";
+	brandId: string;
 	model: string;
 	year: string;
 	serialNumber: string;
 	plates?: string;
 	engineNumber?: string;
 	registrationNumber?: string;
-	flagCountry?: string;
+	flagCountryId?: string;
 	amount: string;
 	currency: string;
-	paymentMethod: PaymentMethod | "";
+	paymentMethod: string;
 	paymentDate: string;
 }
 
@@ -54,22 +53,22 @@ export function TransactionCreateView(): React.JSX.Element {
 
 	const [formData, setFormData] = useState<TransactionFormData>({
 		clientId: "",
-		date: new Date().toISOString().split("T")[0],
-		transactionType: "",
-		branch: "",
+		operationDate: new Date().toISOString().slice(0, 16),
+		operationType: "",
+		branchPostalCode: "",
 		vehicleType: "",
-		brand: "",
+		brandId: "",
 		model: "",
 		year: "",
 		serialNumber: "",
 		plates: "",
 		engineNumber: "",
 		registrationNumber: "",
-		flagCountry: "México",
+		flagCountryId: "",
 		amount: "",
 		currency: "MXN",
 		paymentMethod: "",
-		paymentDate: new Date().toISOString().split("T")[0],
+		paymentDate: new Date().toISOString().slice(0, 16),
 	});
 
 	const handleInputChange = (
@@ -163,41 +162,47 @@ export function TransactionCreateView(): React.JSX.Element {
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="transaction-date">Fecha de transacción *</Label>
+								<Label htmlFor="operation-date">Fecha de operación *</Label>
 								<Input
-									id="transaction-date"
-									type="date"
-									value={formData.date}
-									onChange={(e) => handleInputChange("date", e.target.value)}
+									id="operation-date"
+									type="datetime-local"
+									value={formData.operationDate}
+									onChange={(e) =>
+										handleInputChange("operationDate", e.target.value)
+									}
 									required
 								/>
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="transaction-type">Tipo de transacción *</Label>
+								<Label htmlFor="operation-type">Tipo de operación *</Label>
 								<Select
-									value={formData.transactionType}
+									value={formData.operationType}
 									onValueChange={(value) =>
-										handleInputChange("transactionType", value)
+										handleInputChange("operationType", value)
 									}
 									required
 								>
-									<SelectTrigger id="transaction-type">
+									<SelectTrigger id="operation-type">
 										<SelectValue placeholder="Seleccionar tipo" />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="COMPRA">Compra</SelectItem>
-										<SelectItem value="VENTA">Venta</SelectItem>
+										<SelectItem value="purchase">Compra</SelectItem>
+										<SelectItem value="sale">Venta</SelectItem>
 									</SelectContent>
 								</Select>
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="branch">Sucursal (Código Postal) *</Label>
+								<Label htmlFor="branch-postal-code">
+									Código Postal Sucursal *
+								</Label>
 								<Input
-									id="branch"
-									value={formData.branch}
-									onChange={(e) => handleInputChange("branch", e.target.value)}
+									id="branch-postal-code"
+									value={formData.branchPostalCode}
+									onChange={(e) =>
+										handleInputChange("branchPostalCode", e.target.value)
+									}
 									placeholder="64000"
 									required
 								/>
@@ -227,9 +232,9 @@ export function TransactionCreateView(): React.JSX.Element {
 									<SelectValue placeholder="Seleccionar tipo" />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="TERRESTRE">Terrestre</SelectItem>
-									<SelectItem value="MARITIMO">Marítimo</SelectItem>
-									<SelectItem value="AEREO">Aéreo</SelectItem>
+									<SelectItem value="land">Terrestre</SelectItem>
+									<SelectItem value="marine">Marítimo</SelectItem>
+									<SelectItem value="air">Aéreo</SelectItem>
 								</SelectContent>
 							</Select>
 						</div>
@@ -239,12 +244,12 @@ export function TransactionCreateView(): React.JSX.Element {
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<CatalogSelector
 								catalogKey="vehicle-brands"
-								label="Marca"
-								value={formData.brand}
+								label="Marca ID"
+								value={formData.brandId}
 								required
 								searchPlaceholder="Buscar marca..."
 								onChange={(option) =>
-									handleInputChange("brand", option?.name ?? "")
+									handleInputChange("brandId", option?.id ?? "")
 								}
 							/>
 
@@ -286,7 +291,7 @@ export function TransactionCreateView(): React.JSX.Element {
 								/>
 							</div>
 
-							{formData.vehicleType === "TERRESTRE" && (
+							{formData.vehicleType === "land" && (
 								<>
 									<div className="space-y-2">
 										<Label htmlFor="plates">Placas *</Label>
@@ -314,8 +319,8 @@ export function TransactionCreateView(): React.JSX.Element {
 								</>
 							)}
 
-							{(formData.vehicleType === "MARITIMO" ||
-								formData.vehicleType === "AEREO") && (
+							{(formData.vehicleType === "marine" ||
+								formData.vehicleType === "air") && (
 								<>
 									<div className="space-y-2">
 										<Label htmlFor="registration-number">
@@ -332,14 +337,14 @@ export function TransactionCreateView(): React.JSX.Element {
 										/>
 									</div>
 									<div className="space-y-2">
-										<Label htmlFor="flag-country">País de bandera</Label>
+										<Label htmlFor="flag-country-id">País de bandera ID</Label>
 										<Input
-											id="flag-country"
-											value={formData.flagCountry}
+											id="flag-country-id"
+											value={formData.flagCountryId}
 											onChange={(e) =>
-												handleInputChange("flagCountry", e.target.value)
+												handleInputChange("flagCountryId", e.target.value)
 											}
-											placeholder="México"
+											placeholder="MX"
 										/>
 									</div>
 								</>
@@ -418,7 +423,7 @@ export function TransactionCreateView(): React.JSX.Element {
 								<Label htmlFor="payment-date">Fecha de pago *</Label>
 								<Input
 									id="payment-date"
-									type="date"
+									type="datetime-local"
 									value={formData.paymentDate}
 									onChange={(e) =>
 										handleInputChange("paymentDate", e.target.value)

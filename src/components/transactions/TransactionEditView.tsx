@@ -22,6 +22,10 @@ import {
 import { ArrowLeft, Save } from "lucide-react";
 import { useToast } from "../../hooks/use-toast";
 import { mockTransactions } from "../../data/mockTransactions";
+import type {
+	TransactionOperationType,
+	TransactionVehicleType,
+} from "../../types/transaction";
 import { CatalogSelector } from "../catalogs/CatalogSelector";
 
 interface TransactionEditViewProps {
@@ -39,22 +43,24 @@ export function TransactionEditView({
 		mockTransactions[0];
 	const [formData, setFormData] = useState({
 		clientId: transaction.clientId,
-		date: transaction.date,
-		transactionType: transaction.transactionType,
-		branch: transaction.branch,
+		operationDate:
+			transaction.operationDate.split("T")[0] || transaction.operationDate,
+		operationType: transaction.operationType,
+		branchPostalCode: transaction.branchPostalCode,
 		vehicleType: transaction.vehicleType,
-		brand: transaction.brand,
+		brandId: transaction.brandId,
 		model: transaction.model,
-		year: transaction.year,
+		year: String(transaction.year),
 		serialNumber: transaction.serialNumber,
 		plates: transaction.plates || "",
 		engineNumber: transaction.engineNumber || "",
 		registrationNumber: transaction.registrationNumber || "",
-		flagCountry: transaction.flagCountry || "México",
-		amount: transaction.amount.replace(/[^0-9.]/g, ""),
+		flagCountryId: transaction.flagCountryId || "",
+		amount: transaction.amount,
 		currency: transaction.currency,
 		paymentMethod: transaction.paymentMethod,
-		paymentDate: transaction.paymentDate,
+		paymentDate:
+			transaction.paymentDate.split("T")[0] || transaction.paymentDate,
 	});
 
 	const handleSubmit = (e: React.FormEvent): void => {
@@ -139,41 +145,47 @@ export function TransactionEditView({
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="transaction-date">Fecha de transacción *</Label>
+								<Label htmlFor="operation-date">Fecha de operación *</Label>
 								<Input
-									id="transaction-date"
-									type="date"
-									value={formData.date}
-									onChange={(e) => handleChange("date", e.target.value)}
+									id="operation-date"
+									type="datetime-local"
+									value={formData.operationDate}
+									onChange={(e) =>
+										handleChange("operationDate", e.target.value)
+									}
 									required
 								/>
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="transaction-type">Tipo de transacción *</Label>
+								<Label htmlFor="operation-type">Tipo de operación *</Label>
 								<Select
-									value={formData.transactionType}
+									value={formData.operationType}
 									onValueChange={(value) =>
-										handleChange("transactionType", value)
+										handleChange("operationType", value)
 									}
 									required
 								>
-									<SelectTrigger id="transaction-type">
+									<SelectTrigger id="operation-type">
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="COMPRA">Compra</SelectItem>
-										<SelectItem value="VENTA">Venta</SelectItem>
+										<SelectItem value="purchase">Compra</SelectItem>
+										<SelectItem value="sale">Venta</SelectItem>
 									</SelectContent>
 								</Select>
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="branch">Sucursal (Código Postal) *</Label>
+								<Label htmlFor="branch-postal-code">
+									Código Postal Sucursal *
+								</Label>
 								<Input
-									id="branch"
-									value={formData.branch}
-									onChange={(e) => handleChange("branch", e.target.value)}
+									id="branch-postal-code"
+									value={formData.branchPostalCode}
+									onChange={(e) =>
+										handleChange("branchPostalCode", e.target.value)
+									}
 									placeholder="64000"
 									required
 								/>
@@ -201,9 +213,9 @@ export function TransactionEditView({
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="TERRESTRE">Terrestre</SelectItem>
-									<SelectItem value="MARITIMO">Marítimo</SelectItem>
-									<SelectItem value="AEREO">Aéreo</SelectItem>
+									<SelectItem value="land">Terrestre</SelectItem>
+									<SelectItem value="marine">Marítimo</SelectItem>
+									<SelectItem value="air">Aéreo</SelectItem>
 								</SelectContent>
 							</Select>
 						</div>
@@ -213,11 +225,11 @@ export function TransactionEditView({
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<CatalogSelector
 								catalogKey="vehicle-brands"
-								label="Marca"
-								value={formData.brand}
+								label="Marca ID"
+								value={formData.brandId}
 								required
 								searchPlaceholder="Buscar marca..."
-								onChange={(option) => handleChange("brand", option?.name ?? "")}
+								onChange={(option) => handleChange("brandId", option?.id ?? "")}
 							/>
 
 							<div className="space-y-2">
@@ -256,7 +268,7 @@ export function TransactionEditView({
 								/>
 							</div>
 
-							{formData.vehicleType === "TERRESTRE" && (
+							{formData.vehicleType === "land" && (
 								<>
 									<div className="space-y-2">
 										<Label htmlFor="plates">Placas *</Label>
@@ -282,8 +294,8 @@ export function TransactionEditView({
 								</>
 							)}
 
-							{(formData.vehicleType === "MARITIMO" ||
-								formData.vehicleType === "AEREO") && (
+							{(formData.vehicleType === "marine" ||
+								formData.vehicleType === "air") && (
 								<>
 									<div className="space-y-2">
 										<Label htmlFor="registration-number">
@@ -300,14 +312,14 @@ export function TransactionEditView({
 										/>
 									</div>
 									<div className="space-y-2">
-										<Label htmlFor="flag-country">País de bandera</Label>
+										<Label htmlFor="flag-country-id">País de bandera ID</Label>
 										<Input
-											id="flag-country"
-											value={formData.flagCountry}
+											id="flag-country-id"
+											value={formData.flagCountryId}
 											onChange={(e) =>
-												handleChange("flagCountry", e.target.value)
+												handleChange("flagCountryId", e.target.value)
 											}
-											placeholder="México"
+											placeholder="MX"
 										/>
 									</div>
 								</>
@@ -384,7 +396,7 @@ export function TransactionEditView({
 								<Label htmlFor="payment-date">Fecha de pago *</Label>
 								<Input
 									id="payment-date"
-									type="date"
+									type="datetime-local"
 									value={formData.paymentDate}
 									onChange={(e) => handleChange("paymentDate", e.target.value)}
 									required
