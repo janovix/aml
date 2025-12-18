@@ -1,3 +1,11 @@
+# [1.1.0-rc.3](https://github.com/janovix/aml/compare/v1.1.0-rc.2...v1.1.0-rc.3) (2025-12-18)
+
+
+### Features
+
+* Add auth session and logout to navbar ([01bf8de](https://github.com/janovix/aml/commit/01bf8def33d3f56f7cb788776e410e783e8b78b7))
+* Add authentication using better-auth and nanostores ([61521fa](https://github.com/janovix/aml/commit/61521fa26aa9367a9fb9263ee17815c07a64ae62))
+
 # [1.1.0-rc.2](https://github.com/janovix/aml/compare/v1.1.0-rc.1...v1.1.0-rc.2) (2025-12-18)
 
 
