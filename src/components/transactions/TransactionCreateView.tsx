@@ -47,7 +47,6 @@ interface TransactionFormData {
 	amount: string;
 	currency: string;
 	paymentMethods: PaymentMethodInput[];
-	paymentDate: string;
 }
 
 export function TransactionCreateView(): React.JSX.Element {
@@ -57,8 +56,8 @@ export function TransactionCreateView(): React.JSX.Element {
 
 	const [formData, setFormData] = useState<TransactionFormData>({
 		clientId: "",
-		operationDate: new Date().toISOString().slice(0, 16),
-		operationType: "",
+		operationDate: new Date().toISOString().slice(0, 10), // Date only (YYYY-MM-DD)
+		operationType: "sale", // Default to "Venta"
 		branchPostalCode: "",
 		vehicleType: "",
 		brandId: "",
@@ -68,10 +67,9 @@ export function TransactionCreateView(): React.JSX.Element {
 		engineNumber: "",
 		registrationNumber: "",
 		flagCountryId: "",
-		amount: "",
+		amount: "", // Calculated from payment methods on submit
 		currency: "MXN",
 		paymentMethods: [{ method: "EFECTIVO", amount: "" }],
-		paymentDate: new Date().toISOString().slice(0, 16),
 	});
 
 	const handleInputChange = (
@@ -113,17 +111,25 @@ export function TransactionCreateView(): React.JSX.Element {
 		}));
 	};
 
+	const calculateAmountFromPaymentMethods = (): string => {
+		const paymentMethodsSum = formData.paymentMethods.reduce(
+			(sum, pm) => sum + (parseFloat(pm.amount) || 0),
+			0,
+		);
+		return paymentMethodsSum.toFixed(2);
+	};
+
 	const validatePaymentMethods = (): boolean => {
-		const totalAmount = parseFloat(formData.amount) || 0;
 		const paymentMethodsSum = formData.paymentMethods.reduce(
 			(sum, pm) => sum + (parseFloat(pm.amount) || 0),
 			0,
 		);
 
-		if (paymentMethodsSum > totalAmount) {
+		if (paymentMethodsSum <= 0) {
 			toast({
 				title: "Error de validación",
-				description: `La suma de los métodos de pago (${paymentMethodsSum.toFixed(2)}) excede el monto total de la transacción (${totalAmount.toFixed(2)}).`,
+				description:
+					"Debe ingresar al menos un método de pago con un monto mayor a cero.",
 				variant: "destructive",
 			});
 			return false;
@@ -140,19 +146,23 @@ export function TransactionCreateView(): React.JSX.Element {
 
 		try {
 			setIsSaving(true);
+			const calculatedAmount = calculateAmountFromPaymentMethods();
+			// Format operationDate as date-only (YYYY-MM-DD) - convert to ISO date string at midnight UTC
+			const operationDateISO = formData.operationDate
+				? new Date(formData.operationDate + "T00:00:00.000Z").toISOString()
+				: new Date().toISOString();
 			const createData: TransactionCreateRequest = {
 				clientId: formData.clientId,
-				operationDate: new Date(formData.operationDate).toISOString(),
-				operationType: formData.operationType as TransactionOperationType,
+				operationDate: operationDateISO,
+				operationType: "sale", // Always set to "Venta"
 				branchPostalCode: formData.branchPostalCode,
 				vehicleType: formData.vehicleType as TransactionVehicleType,
 				brandId: formData.brandId,
 				model: formData.model,
 				year: parseInt(formData.year, 10),
-				amount: formData.amount,
+				amount: calculatedAmount,
 				currency: formData.currency,
 				paymentMethods: formData.paymentMethods,
-				paymentDate: new Date(formData.paymentDate).toISOString(),
 			};
 
 			if (formData.vehicleType === "land") {
@@ -219,13 +229,7 @@ export function TransactionCreateView(): React.JSX.Element {
 						size="sm"
 						className="gap-2"
 						onClick={handleSubmit}
-						disabled={
-							isSaving ||
-							formData.paymentMethods.reduce(
-								(sum, pm) => sum + (parseFloat(pm.amount) || 0),
-								0,
-							) > (parseFloat(formData.amount) || 0)
-						}
+						disabled={isSaving}
 					>
 						<Save className="h-4 w-4" />
 						<span className="hidden sm:inline">
@@ -264,32 +268,13 @@ export function TransactionCreateView(): React.JSX.Element {
 								<Label htmlFor="operation-date">Fecha de operación *</Label>
 								<Input
 									id="operation-date"
-									type="datetime-local"
+									type="date"
 									value={formData.operationDate}
 									onChange={(e) =>
 										handleInputChange("operationDate", e.target.value)
 									}
 									required
 								/>
-							</div>
-
-							<div className="space-y-2">
-								<Label htmlFor="operation-type">Tipo de operación *</Label>
-								<Select
-									value={formData.operationType}
-									onValueChange={(value) =>
-										handleInputChange("operationType", value)
-									}
-									required
-								>
-									<SelectTrigger id="operation-type">
-										<SelectValue placeholder="Seleccionar tipo" />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="purchase">Compra</SelectItem>
-										<SelectItem value="sale">Venta</SelectItem>
-									</SelectContent>
-								</Select>
 							</div>
 
 							<div className="space-y-2">
@@ -449,20 +434,6 @@ export function TransactionCreateView(): React.JSX.Element {
 					<CardContent className="space-y-4">
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div className="space-y-2">
-								<Label htmlFor="amount">Monto *</Label>
-								<Input
-									id="amount"
-									type="number"
-									value={formData.amount}
-									onChange={(e) => handleInputChange("amount", e.target.value)}
-									placeholder="0.00"
-									required
-									min="0"
-									step="0.01"
-								/>
-							</div>
-
-							<div className="space-y-2">
 								<Label htmlFor="currency">Moneda *</Label>
 								<Select
 									value={formData.currency}
@@ -480,19 +451,6 @@ export function TransactionCreateView(): React.JSX.Element {
 										<SelectItem value="EUR">EUR - Euro</SelectItem>
 									</SelectContent>
 								</Select>
-							</div>
-
-							<div className="space-y-2">
-								<Label htmlFor="payment-date">Fecha de pago *</Label>
-								<Input
-									id="payment-date"
-									type="datetime-local"
-									value={formData.paymentDate}
-									onChange={(e) =>
-										handleInputChange("paymentDate", e.target.value)
-									}
-									required
-								/>
 							</div>
 						</div>
 
@@ -514,33 +472,15 @@ export function TransactionCreateView(): React.JSX.Element {
 							</div>
 
 							{/* Payment methods summary */}
-							{formData.amount && (
+							{formData.paymentMethods.some(
+								(pm) => parseFloat(pm.amount) > 0,
+							) && (
 								<div className="p-3 rounded-lg border bg-muted/30">
 									<div className="flex items-center justify-between text-sm">
 										<span className="text-muted-foreground">
-											Monto total de la transacción:
+											Monto total de la transacción (calculado):
 										</span>
 										<span className="font-medium">
-											{new Intl.NumberFormat("es-MX", {
-												style: "currency",
-												currency: formData.currency,
-											}).format(parseFloat(formData.amount) || 0)}
-										</span>
-									</div>
-									<div className="flex items-center justify-between text-sm mt-2">
-										<span className="text-muted-foreground">
-											Suma de métodos de pago:
-										</span>
-										<span
-											className={`font-medium ${
-												formData.paymentMethods.reduce(
-													(sum, pm) => sum + (parseFloat(pm.amount) || 0),
-													0,
-												) > (parseFloat(formData.amount) || 0)
-													? "text-destructive"
-													: "text-foreground"
-											}`}
-										>
 											{new Intl.NumberFormat("es-MX", {
 												style: "currency",
 												currency: formData.currency,
@@ -552,14 +492,6 @@ export function TransactionCreateView(): React.JSX.Element {
 											)}
 										</span>
 									</div>
-									{formData.paymentMethods.reduce(
-										(sum, pm) => sum + (parseFloat(pm.amount) || 0),
-										0,
-									) > (parseFloat(formData.amount) || 0) && (
-										<p className="text-xs text-destructive mt-2">
-											⚠️ La suma de los métodos de pago excede el monto total
-										</p>
-									)}
 								</div>
 							)}
 
