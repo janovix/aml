@@ -77,7 +77,8 @@ export function TransactionDetailsView({
 			}
 		};
 		fetchTransaction();
-	}, [transactionId, router, toast]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [transactionId]);
 
 	if (isLoading) {
 		return (

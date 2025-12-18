@@ -103,7 +103,8 @@ export function TransactionEditView({
 			}
 		};
 		fetchTransaction();
-	}, [transactionId, router, toast]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [transactionId]);
 
 	const handleSubmit = async (e: React.FormEvent): Promise<void> => {
 		e.preventDefault();
