@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Client, ClientsListResponse, Pagination } from "@/types/client";
 import { listClients } from "@/lib/api/clients";
+import { useJwt } from "./useJwt";
 
 interface UseClientSearchOptions {
 	pageSize?: number;
@@ -27,6 +28,7 @@ export function useClientSearch({
 	enabled = true,
 	initialSearch = "",
 }: UseClientSearchOptions = {}): UseClientSearchResult {
+	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const [searchTerm, setSearchTerm] = useState(initialSearch);
 	const [debouncedSearch, setDebouncedSearch] = useState(initialSearch.trim());
 	const [items, setItems] = useState<Client[]>([]);
@@ -55,7 +57,8 @@ export function useClientSearch({
 	}, [searchTerm, debouncedSearch, debounceMs, enabled]);
 
 	useEffect(() => {
-		if (!enabled) {
+		// Wait for JWT to be ready
+		if (!enabled || isJwtLoading) {
 			return;
 		}
 
@@ -70,6 +73,7 @@ export function useClientSearch({
 			page: 1,
 			limit: pageSize,
 			signal: controller.signal,
+			jwt: jwt ?? undefined,
 		})
 			.then((response: ClientsListResponse) => {
 				if (isCancelled) {
@@ -98,7 +102,7 @@ export function useClientSearch({
 			isCancelled = true;
 			controller.abort();
 		};
-	}, [debouncedSearch, pageSize, enabled, reloadKey]);
+	}, [debouncedSearch, pageSize, enabled, reloadKey, jwt, isJwtLoading]);
 
 	const reload = useCallback(() => {
 		setReloadKey((prev) => prev + 1);

@@ -15,6 +15,15 @@ vi.mock("@/hooks/use-toast", () => ({
 	}),
 }));
 
+vi.mock("@/hooks/useJwt", () => ({
+	useJwt: () => ({
+		jwt: "test-jwt-token",
+		isLoading: false,
+		error: null,
+		refetch: vi.fn(),
+	}),
+}));
+
 const mockPush = vi.fn();
 
 vi.mock("next/navigation", () => ({

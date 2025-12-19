@@ -18,6 +18,8 @@ export interface ListTransactionsOptions {
 	endDate?: string; // date-time format
 	baseUrl?: string;
 	signal?: AbortSignal;
+	/** JWT token for authentication */
+	jwt?: string;
 }
 
 export async function listTransactions(
@@ -41,6 +43,7 @@ export async function listTransactions(
 		method: "GET",
 		cache: "no-store",
 		signal: opts?.signal,
+		jwt: opts?.jwt,
 	});
 	return json;
 }
@@ -49,6 +52,8 @@ export async function getTransactionById(opts: {
 	id: string;
 	baseUrl?: string;
 	signal?: AbortSignal;
+	/** JWT token for authentication */
+	jwt?: string;
 }): Promise<Transaction> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL(`/api/v1/transactions/${opts.id}`, baseUrl);
@@ -57,6 +62,7 @@ export async function getTransactionById(opts: {
 		method: "GET",
 		cache: "no-store",
 		signal: opts.signal,
+		jwt: opts.jwt,
 	});
 	return json;
 }
@@ -65,6 +71,8 @@ export async function createTransaction(opts: {
 	input: TransactionCreateRequest;
 	baseUrl?: string;
 	signal?: AbortSignal;
+	/** JWT token for authentication */
+	jwt?: string;
 }): Promise<Transaction> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL("/api/v1/transactions", baseUrl);
@@ -75,6 +83,7 @@ export async function createTransaction(opts: {
 		headers: { "content-type": "application/json" },
 		body: JSON.stringify(opts.input),
 		signal: opts.signal,
+		jwt: opts.jwt,
 	});
 	return json;
 }
@@ -84,6 +93,8 @@ export async function updateTransaction(opts: {
 	input: TransactionUpdateRequest;
 	baseUrl?: string;
 	signal?: AbortSignal;
+	/** JWT token for authentication */
+	jwt?: string;
 }): Promise<Transaction> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL(`/api/v1/transactions/${opts.id}`, baseUrl);
@@ -94,6 +105,7 @@ export async function updateTransaction(opts: {
 		headers: { "content-type": "application/json" },
 		body: JSON.stringify(opts.input),
 		signal: opts.signal,
+		jwt: opts.jwt,
 	});
 	return json;
 }
@@ -102,6 +114,8 @@ export async function deleteTransaction(opts: {
 	id: string;
 	baseUrl?: string;
 	signal?: AbortSignal;
+	/** JWT token for authentication */
+	jwt?: string;
 }): Promise<void> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL(`/api/v1/transactions/${opts.id}`, baseUrl);
@@ -110,5 +124,6 @@ export async function deleteTransaction(opts: {
 		method: "DELETE",
 		cache: "no-store",
 		signal: opts.signal,
+		jwt: opts.jwt,
 	});
 }

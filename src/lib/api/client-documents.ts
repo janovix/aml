@@ -11,6 +11,8 @@ export async function listClientDocuments(opts: {
 	clientId: string;
 	baseUrl?: string;
 	signal?: AbortSignal;
+	/** JWT token for authentication */
+	jwt?: string;
 }): Promise<ClientDocumentsListResponse> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL(`/api/v1/clients/${opts.clientId}/documents`, baseUrl);
@@ -21,6 +23,7 @@ export async function listClientDocuments(opts: {
 			method: "GET",
 			cache: "no-store",
 			signal: opts.signal,
+			jwt: opts.jwt,
 		},
 	);
 	return json;
@@ -31,6 +34,8 @@ export async function createClientDocument(opts: {
 	input: ClientDocumentCreateRequest;
 	baseUrl?: string;
 	signal?: AbortSignal;
+	/** JWT token for authentication */
+	jwt?: string;
 }): Promise<ClientDocument> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL(`/api/v1/clients/${opts.clientId}/documents`, baseUrl);
@@ -41,6 +46,7 @@ export async function createClientDocument(opts: {
 		headers: { "content-type": "application/json" },
 		body: JSON.stringify(opts.input),
 		signal: opts.signal,
+		jwt: opts.jwt,
 	});
 	return json;
 }
@@ -51,6 +57,8 @@ export async function updateClientDocument(opts: {
 	input: ClientDocumentCreateRequest;
 	baseUrl?: string;
 	signal?: AbortSignal;
+	/** JWT token for authentication */
+	jwt?: string;
 }): Promise<ClientDocument> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL(
@@ -64,6 +72,7 @@ export async function updateClientDocument(opts: {
 		headers: { "content-type": "application/json" },
 		body: JSON.stringify(opts.input),
 		signal: opts.signal,
+		jwt: opts.jwt,
 	});
 	return json;
 }
@@ -74,6 +83,8 @@ export async function patchClientDocument(opts: {
 	input: ClientDocumentPatchRequest;
 	baseUrl?: string;
 	signal?: AbortSignal;
+	/** JWT token for authentication */
+	jwt?: string;
 }): Promise<ClientDocument> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL(
@@ -87,6 +98,7 @@ export async function patchClientDocument(opts: {
 		headers: { "content-type": "application/json" },
 		body: JSON.stringify(opts.input),
 		signal: opts.signal,
+		jwt: opts.jwt,
 	});
 	return json;
 }
@@ -96,6 +108,8 @@ export async function deleteClientDocument(opts: {
 	documentId: string;
 	baseUrl?: string;
 	signal?: AbortSignal;
+	/** JWT token for authentication */
+	jwt?: string;
 }): Promise<void> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL(
@@ -107,5 +121,6 @@ export async function deleteClientDocument(opts: {
 		method: "DELETE",
 		cache: "no-store",
 		signal: opts.signal,
+		jwt: opts.jwt,
 	});
 }

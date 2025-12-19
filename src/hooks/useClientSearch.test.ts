@@ -5,6 +5,15 @@ import { listClients } from "@/lib/api/clients";
 
 vi.mock("@/lib/api/clients");
 
+vi.mock("./useJwt", () => ({
+	useJwt: () => ({
+		jwt: "test-jwt-token",
+		isLoading: false,
+		error: null,
+		refetch: vi.fn(),
+	}),
+}));
+
 describe("useClientSearch", () => {
 	const mockClients = [
 		{
@@ -75,6 +84,7 @@ describe("useClientSearch", () => {
 			page: 1,
 			limit: 15,
 			signal: expect.any(AbortSignal),
+			jwt: "test-jwt-token",
 		});
 
 		await waitFor(() => {
@@ -123,6 +133,7 @@ describe("useClientSearch", () => {
 			page: 1,
 			limit: 20,
 			signal: expect.any(AbortSignal),
+			jwt: "test-jwt-token",
 		});
 	});
 
@@ -224,6 +235,7 @@ describe("useClientSearch", () => {
 			page: 1,
 			limit: 15,
 			signal: expect.any(AbortSignal),
+			jwt: "test-jwt-token",
 		});
 	});
 

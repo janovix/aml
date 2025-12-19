@@ -11,6 +11,8 @@ export async function listClientAddresses(opts: {
 	clientId: string;
 	baseUrl?: string;
 	signal?: AbortSignal;
+	/** JWT token for authentication */
+	jwt?: string;
 }): Promise<ClientAddressesListResponse> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL(`/api/v1/clients/${opts.clientId}/addresses`, baseUrl);
@@ -21,6 +23,7 @@ export async function listClientAddresses(opts: {
 			method: "GET",
 			cache: "no-store",
 			signal: opts.signal,
+			jwt: opts.jwt,
 		},
 	);
 	return json;
@@ -31,6 +34,8 @@ export async function createClientAddress(opts: {
 	input: ClientAddressCreateRequest;
 	baseUrl?: string;
 	signal?: AbortSignal;
+	/** JWT token for authentication */
+	jwt?: string;
 }): Promise<ClientAddress> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL(`/api/v1/clients/${opts.clientId}/addresses`, baseUrl);
@@ -41,6 +46,7 @@ export async function createClientAddress(opts: {
 		headers: { "content-type": "application/json" },
 		body: JSON.stringify(opts.input),
 		signal: opts.signal,
+		jwt: opts.jwt,
 	});
 	return json;
 }
@@ -51,6 +57,8 @@ export async function updateClientAddress(opts: {
 	input: ClientAddressCreateRequest;
 	baseUrl?: string;
 	signal?: AbortSignal;
+	/** JWT token for authentication */
+	jwt?: string;
 }): Promise<ClientAddress> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL(
@@ -64,6 +72,7 @@ export async function updateClientAddress(opts: {
 		headers: { "content-type": "application/json" },
 		body: JSON.stringify(opts.input),
 		signal: opts.signal,
+		jwt: opts.jwt,
 	});
 	return json;
 }
@@ -74,6 +83,8 @@ export async function patchClientAddress(opts: {
 	input: ClientAddressPatchRequest;
 	baseUrl?: string;
 	signal?: AbortSignal;
+	/** JWT token for authentication */
+	jwt?: string;
 }): Promise<ClientAddress> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL(
@@ -87,6 +98,7 @@ export async function patchClientAddress(opts: {
 		headers: { "content-type": "application/json" },
 		body: JSON.stringify(opts.input),
 		signal: opts.signal,
+		jwt: opts.jwt,
 	});
 	return json;
 }
@@ -96,6 +108,8 @@ export async function deleteClientAddress(opts: {
 	addressId: string;
 	baseUrl?: string;
 	signal?: AbortSignal;
+	/** JWT token for authentication */
+	jwt?: string;
 }): Promise<void> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL(
@@ -107,5 +121,6 @@ export async function deleteClientAddress(opts: {
 		method: "DELETE",
 		cache: "no-store",
 		signal: opts.signal,
+		jwt: opts.jwt,
 	});
 }

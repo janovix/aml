@@ -10,7 +10,6 @@ import {
 	CardTitle,
 	Badge,
 	Separator,
-	cn,
 } from "@algtools/ui";
 import {
 	ArrowLeft,
@@ -22,13 +21,13 @@ import {
 	Phone,
 	Mail,
 	Calendar,
-	AlertCircle,
 	User,
 } from "lucide-react";
 import type { Client } from "../../types/client";
 import { getClientDisplayName } from "../../types/client";
 import { getClientByRfc } from "../../lib/api/clients";
 import { useToast } from "../../hooks/use-toast";
+import { useJwt } from "../../hooks/useJwt";
 
 interface ClientDetailsViewProps {
 	clientId: string; // RFC is passed as clientId
@@ -39,14 +38,21 @@ export function ClientDetailsView({
 }: ClientDetailsViewProps): React.JSX.Element {
 	const router = useRouter();
 	const { toast } = useToast();
+	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const [client, setClient] = useState<Client | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 
 	useEffect(() => {
+		// Wait for JWT to be ready
+		if (isJwtLoading) return;
+
 		const fetchClient = async () => {
 			try {
 				setIsLoading(true);
-				const data = await getClientByRfc({ rfc: clientId });
+				const data = await getClientByRfc({
+					rfc: clientId,
+					jwt: jwt ?? undefined,
+				});
 				setClient(data);
 			} catch (error) {
 				console.error("Error fetching client:", error);
@@ -60,7 +66,7 @@ export function ClientDetailsView({
 			}
 		};
 		fetchClient();
-	}, [clientId, toast]);
+	}, [clientId, toast, jwt, isJwtLoading]);
 
 	if (isLoading) {
 		return (

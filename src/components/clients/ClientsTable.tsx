@@ -31,6 +31,7 @@ import {
 	cn,
 } from "@algtools/ui";
 import { useToast } from "@/hooks/use-toast";
+import { useJwt } from "@/hooks/useJwt";
 import {
 	MoreHorizontal,
 	Eye,
@@ -50,6 +51,7 @@ import { listClients, deleteClient } from "@/lib/api/clients";
 export function ClientsTable(): React.ReactElement {
 	const router = useRouter();
 	const { toast } = useToast();
+	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const [clients, setClients] = useState<Client[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -59,10 +61,17 @@ export function ClientsTable(): React.ReactElement {
 	const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
 
 	useEffect(() => {
+		// Wait for JWT to be ready
+		if (isJwtLoading) return;
+
 		const fetchClients = async () => {
 			try {
 				setIsLoading(true);
-				const response = await listClients({ page: 1, limit: 100 });
+				const response = await listClients({
+					page: 1,
+					limit: 100,
+					jwt: jwt ?? undefined,
+				});
 				setClients(response.data);
 			} catch (error) {
 				console.error("Error fetching clients:", error);
@@ -76,7 +85,7 @@ export function ClientsTable(): React.ReactElement {
 			}
 		};
 		fetchClients();
-	}, [toast]);
+	}, [toast, jwt, isJwtLoading]);
 
 	const allSelected = selectedIds.size === clients.length && clients.length > 0;
 	const someSelected = selectedIds.size > 0 && !allSelected;
@@ -157,7 +166,7 @@ export function ClientsTable(): React.ReactElement {
 	const handleDeleteConfirm = async (): Promise<void> => {
 		if (clientToDelete) {
 			try {
-				await deleteClient({ rfc: clientToDelete.rfc });
+				await deleteClient({ rfc: clientToDelete.rfc, jwt: jwt ?? undefined });
 				setClients(clients.filter((c) => c.rfc !== clientToDelete.rfc));
 				toast({
 					title: "Cliente eliminado",

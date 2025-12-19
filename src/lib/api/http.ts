@@ -10,16 +10,32 @@ export class ApiError extends Error {
 	}
 }
 
+export interface FetchJsonOptions extends RequestInit {
+	/**
+	 * JWT token to include in Authorization header.
+	 * When provided, adds `Authorization: Bearer <jwt>` header.
+	 */
+	jwt?: string;
+}
+
 export async function fetchJson<T>(
 	url: string,
-	init?: RequestInit,
+	init?: FetchJsonOptions,
 ): Promise<{ status: number; json: T }> {
+	const { jwt, ...fetchInit } = init ?? {};
+
+	const headers: Record<string, string> = {
+		accept: "application/json",
+		...(fetchInit?.headers as Record<string, string> | undefined),
+	};
+
+	if (jwt) {
+		headers.Authorization = `Bearer ${jwt}`;
+	}
+
 	const res = await fetch(url, {
-		...init,
-		headers: {
-			accept: "application/json",
-			...(init?.headers ?? {}),
-		},
+		...fetchInit,
+		headers,
 	});
 
 	const contentType = res.headers.get("content-type") ?? "";

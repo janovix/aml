@@ -4,7 +4,6 @@ import type {
 	Client,
 	ClientCreateRequest,
 	ClientsListResponse,
-	Pagination,
 } from "@/types/client";
 
 export interface ListClientsOptions {
@@ -15,6 +14,8 @@ export interface ListClientsOptions {
 	personType?: "physical" | "moral" | "trust";
 	baseUrl?: string;
 	signal?: AbortSignal;
+	/** JWT token for authentication */
+	jwt?: string;
 }
 
 export async function listClients(
@@ -33,6 +34,7 @@ export async function listClients(
 		method: "GET",
 		cache: "no-store",
 		signal: opts?.signal,
+		jwt: opts?.jwt,
 	});
 	return json;
 }
@@ -41,6 +43,8 @@ export async function getClientByRfc(opts: {
 	rfc: string;
 	baseUrl?: string;
 	signal?: AbortSignal;
+	/** JWT token for authentication */
+	jwt?: string;
 }): Promise<Client> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL(`/api/v1/clients/${opts.rfc}`, baseUrl);
@@ -49,6 +53,7 @@ export async function getClientByRfc(opts: {
 		method: "GET",
 		cache: "no-store",
 		signal: opts.signal,
+		jwt: opts.jwt,
 	});
 	return json;
 }
@@ -57,6 +62,8 @@ export async function createClient(opts: {
 	input: ClientCreateRequest;
 	baseUrl?: string;
 	signal?: AbortSignal;
+	/** JWT token for authentication */
+	jwt?: string;
 }): Promise<Client> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL("/api/v1/clients", baseUrl);
@@ -67,6 +74,7 @@ export async function createClient(opts: {
 		headers: { "content-type": "application/json" },
 		body: JSON.stringify(opts.input),
 		signal: opts.signal,
+		jwt: opts.jwt,
 	});
 	return json;
 }
@@ -76,6 +84,8 @@ export async function updateClient(opts: {
 	input: ClientCreateRequest;
 	baseUrl?: string;
 	signal?: AbortSignal;
+	/** JWT token for authentication */
+	jwt?: string;
 }): Promise<Client> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL(`/api/v1/clients/${opts.rfc}`, baseUrl);
@@ -86,6 +96,7 @@ export async function updateClient(opts: {
 		headers: { "content-type": "application/json" },
 		body: JSON.stringify(opts.input),
 		signal: opts.signal,
+		jwt: opts.jwt,
 	});
 	return json;
 }
@@ -95,6 +106,8 @@ export async function patchClient(opts: {
 	input: Partial<ClientCreateRequest>;
 	baseUrl?: string;
 	signal?: AbortSignal;
+	/** JWT token for authentication */
+	jwt?: string;
 }): Promise<Client> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL(`/api/v1/clients/${opts.rfc}`, baseUrl);
@@ -105,6 +118,7 @@ export async function patchClient(opts: {
 		headers: { "content-type": "application/json" },
 		body: JSON.stringify(opts.input),
 		signal: opts.signal,
+		jwt: opts.jwt,
 	});
 	return json;
 }
@@ -113,6 +127,8 @@ export async function deleteClient(opts: {
 	rfc: string;
 	baseUrl?: string;
 	signal?: AbortSignal;
+	/** JWT token for authentication */
+	jwt?: string;
 }): Promise<void> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL(`/api/v1/clients/${opts.rfc}`, baseUrl);
@@ -121,5 +137,6 @@ export async function deleteClient(opts: {
 		method: "DELETE",
 		cache: "no-store",
 		signal: opts.signal,
+		jwt: opts.jwt,
 	});
 }
