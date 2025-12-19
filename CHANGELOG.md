@@ -1,3 +1,13 @@
+# [1.1.0-rc.7](https://github.com/janovix/aml/compare/v1.1.0-rc.6...v1.1.0-rc.7) (2025-12-19)
+
+
+### Bug Fixes
+
+* adjusted list for clients and transactions ([9b27ea8](https://github.com/janovix/aml/commit/9b27ea83b5e1ce749f5719a0b0c833b0ef703662))
+* dropdown spaces removed ([f6ebe5c](https://github.com/janovix/aml/commit/f6ebe5cb819b38d6ca683d6db648e6d16ecf4843))
+* smooth style for clients and transactions view ([8717ad7](https://github.com/janovix/aml/commit/8717ad75b2a40ee1cfefae1cf16b40f3ba916b22))
+* styles still looking awful ([5221a4c](https://github.com/janovix/aml/commit/5221a4c156e76f81780153219acd17b32f92894a))
+
 # [1.1.0-rc.6](https://github.com/janovix/aml/compare/v1.1.0-rc.5...v1.1.0-rc.6) (2025-12-18)
 
 
