@@ -116,3 +116,12 @@ export const WithSelectedValue: Story = {
 		searchPlaceholder: "Buscar marca...",
 	},
 };
+
+export const WithSelectedId: Story = {
+	args: {
+		catalogKey: "vehicle-brands",
+		label: "Marca",
+		value: "01JCXAVB0001ABCDEFGHJ1", // ID of Toyota
+		searchPlaceholder: "Buscar marca...",
+	},
+};

@@ -115,15 +115,24 @@ export function CatalogSelector({
 			return;
 		}
 
-		setSelectedLabel(value ?? "");
-
 		if (!value) {
+			setSelectedLabel("");
 			setSelectedOption(null);
 			return;
 		}
 
-		const match = items.find((entry) => entry.name === value);
-		setSelectedOption(match ?? null);
+		// Try to find by ID first (for controlled components that pass IDs)
+		const matchById = items.find((entry) => entry.id === value);
+		// Fallback to name match for backward compatibility
+		const match = matchById ?? items.find((entry) => entry.name === value);
+
+		if (match) {
+			setSelectedOption(match);
+			setSelectedLabel(match.name);
+		} else {
+			setSelectedLabel(value);
+			setSelectedOption(null);
+		}
 	}, [isControlled, value, items]);
 
 	const handleSelect = (value: string): void => {

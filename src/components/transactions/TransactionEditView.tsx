@@ -403,7 +403,7 @@ export function TransactionEditView({
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<CatalogSelector
 								catalogKey="vehicle-brands"
-								label="Marca ID"
+								label="Marca"
 								value={formData.brandId}
 								required
 								searchPlaceholder="Buscar marca..."

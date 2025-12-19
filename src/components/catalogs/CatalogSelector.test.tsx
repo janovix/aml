@@ -68,6 +68,13 @@ describe("CatalogSelector", () => {
 		expect(trigger).toHaveTextContent("Toyota");
 	});
 
+	it("shows the name when value is an ID", () => {
+		render(<CatalogSelector catalogKey="vehicle-brands" value="brand-1" />);
+
+		const trigger = screen.getByRole("button");
+		expect(trigger).toHaveTextContent("Toyota");
+	});
+
 	it("clears the search field and hides results after selecting an option", async () => {
 		const user = userEvent.setup();
 		render(
