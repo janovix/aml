@@ -79,13 +79,13 @@ export function ClientsFilters({
 				</div>
 
 				{/* Quick filters */}
-				<div className="flex gap-1">
-					<div className="flex-1">
+				<div className="grid grid-cols-2 gap-2">
+					<div>
 						<Label htmlFor="risk-filter" className="sr-only">
 							Nivel de Riesgo
 						</Label>
 						<Select value={riskFilter} onValueChange={onRiskChange}>
-							<SelectTrigger id="risk-filter">
+							<SelectTrigger id="risk-filter" className="w-full">
 								<SelectValue placeholder="Nivel de Riesgo" />
 							</SelectTrigger>
 							<SelectContent>
@@ -97,12 +97,12 @@ export function ClientsFilters({
 						</Select>
 					</div>
 
-					<div className="flex-1">
+					<div>
 						<Label htmlFor="status-filter" className="sr-only">
 							Estado
 						</Label>
 						<Select value={statusFilter} onValueChange={onStatusChange}>
-							<SelectTrigger id="status-filter">
+							<SelectTrigger id="status-filter" className="w-full">
 								<SelectValue placeholder="Estado" />
 							</SelectTrigger>
 							<SelectContent>

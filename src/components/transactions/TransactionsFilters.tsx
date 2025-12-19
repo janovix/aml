@@ -106,8 +106,8 @@ export function TransactionsFilters({
 				</div>
 
 				{/* Quick filters */}
-				<div className="flex gap-1">
-					<div className="flex-1">
+				<div className="grid grid-cols-2 gap-2">
+					<div>
 						<Label htmlFor="type-filter" className="sr-only">
 							Tipo de Transacción
 						</Label>
@@ -120,7 +120,7 @@ export function TransactionsFilters({
 								})
 							}
 						>
-							<SelectTrigger id="type-filter">
+							<SelectTrigger id="type-filter" className="w-full">
 								<SelectValue placeholder="Tipo" />
 							</SelectTrigger>
 							<SelectContent>
@@ -131,7 +131,7 @@ export function TransactionsFilters({
 						</Select>
 					</div>
 
-					<div className="flex-1">
+					<div>
 						<Label htmlFor="vehicle-type-filter" className="sr-only">
 							Tipo de Vehículo
 						</Label>
@@ -144,7 +144,7 @@ export function TransactionsFilters({
 								})
 							}
 						>
-							<SelectTrigger id="vehicle-type-filter">
+							<SelectTrigger id="vehicle-type-filter" className="w-full">
 								<SelectValue placeholder="Vehículo" />
 							</SelectTrigger>
 							<SelectContent>
