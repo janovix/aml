@@ -1,3 +1,10 @@
+# [1.1.0-rc.9](https://github.com/janovix/aml/compare/v1.1.0-rc.8...v1.1.0-rc.9) (2025-12-19)
+
+
+### Bug Fixes
+
+* **auth:** validate session in middleware instead of just checking cookie ([d9e47eb](https://github.com/janovix/aml/commit/d9e47eb4511f97ad819307f97059fb9aad0c659b))
+
 # [1.1.0-rc.8](https://github.com/janovix/aml/compare/v1.1.0-rc.7...v1.1.0-rc.8) (2025-12-19)
 
 
