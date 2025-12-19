@@ -28,7 +28,9 @@ describe("ClientsFilters", () => {
 		render(<ClientsFilters {...mockProps} />);
 
 		expect(screen.getByText("Aplicar")).toBeInTheDocument();
-		expect(screen.getByText("Búsqueda avanzada")).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Búsqueda avanzada" }),
+		).toBeInTheDocument();
 	});
 
 	it("displays active filters when present", () => {

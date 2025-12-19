@@ -47,9 +47,15 @@ export function ClientsPageContent(): React.ReactElement {
 						Gestión y monitoreo de clientes
 					</p>
 				</div>
-				<Button className="gap-2" onClick={() => router.push("/clients/new")}>
-					<Plus className="h-4 w-4" />
-					<span>Nuevo Cliente</span>
+				<Button
+					className="h-10 w-10 sm:h-10 sm:w-auto sm:px-4 sm:gap-2 rounded-lg p-0 bg-primary hover:bg-primary/90"
+					onClick={() => router.push("/clients/new")}
+					aria-label="Nuevo Cliente"
+				>
+					<Plus className="h-4 w-4 text-primary-foreground" />
+					<span className="hidden sm:inline text-primary-foreground">
+						Nuevo Cliente
+					</span>
 				</Button>
 			</div>
 

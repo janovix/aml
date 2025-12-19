@@ -74,23 +74,19 @@ export function TransactionsFilters({
 	};
 
 	return (
-		<section
-			aria-label="Filtros de búsqueda"
-			className="space-y-3 sm:space-y-4"
-		>
-			{/* Main filter bar */}
-			<div className="flex flex-col gap-2.5 sm:gap-3 sm:flex-row sm:items-end">
+		<Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
+			<section
+				aria-label="Filtros de búsqueda"
+				className="space-y-3 sm:space-y-4"
+			>
 				{/* Search input */}
-				<div className="flex-1 space-y-2">
-					<Label htmlFor="search-transactions" className="sr-only">
-						Buscar transacciones
-					</Label>
-					<div className="relative">
-						<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+				<div className="flex items-center gap-2">
+					<div className="relative flex-1">
+						<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" />
 						<Input
 							id="search-transactions"
 							type="search"
-							placeholder="Buscar por VIN, cliente o folio..."
+							placeholder="Buscar por cliente o folio..."
 							className="pl-10"
 							value={localFilters.search}
 							onChange={(e) =>
@@ -98,11 +94,20 @@ export function TransactionsFilters({
 							}
 						/>
 					</div>
+					<CollapsibleTrigger asChild>
+						<button
+							type="button"
+							className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-input bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+							aria-label="Búsqueda avanzada"
+						>
+							<SlidersHorizontal className="h-4 w-4" />
+						</button>
+					</CollapsibleTrigger>
 				</div>
 
 				{/* Quick filters */}
-				<div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-2">
-					<div className="w-full sm:w-[160px]">
+				<div className="grid grid-cols-2 gap-2">
+					<div>
 						<Label htmlFor="type-filter" className="sr-only">
 							Tipo de Transacción
 						</Label>
@@ -115,7 +120,7 @@ export function TransactionsFilters({
 								})
 							}
 						>
-							<SelectTrigger id="type-filter">
+							<SelectTrigger id="type-filter" className="w-full">
 								<SelectValue placeholder="Tipo" />
 							</SelectTrigger>
 							<SelectContent>
@@ -126,7 +131,7 @@ export function TransactionsFilters({
 						</Select>
 					</div>
 
-					<div className="w-full sm:w-[140px]">
+					<div>
 						<Label htmlFor="vehicle-type-filter" className="sr-only">
 							Tipo de Vehículo
 						</Label>
@@ -139,7 +144,7 @@ export function TransactionsFilters({
 								})
 							}
 						>
-							<SelectTrigger id="vehicle-type-filter">
+							<SelectTrigger id="vehicle-type-filter" className="w-full">
 								<SelectValue placeholder="Vehículo" />
 							</SelectTrigger>
 							<SelectContent>
@@ -150,46 +155,18 @@ export function TransactionsFilters({
 							</SelectContent>
 						</Select>
 					</div>
-
-					{/* Action buttons */}
-					<div className="flex items-center gap-2 sm:ml-2">
-						<Button
-							size="default"
-							className="flex-1 sm:flex-none"
-							onClick={handleApplyFilters}
-						>
-							Aplicar
-						</Button>
-						<Button
-							variant="outline"
-							size="default"
-							className="flex-1 sm:flex-none bg-transparent"
-							onClick={handleClearFilters}
-						>
-							Limpiar
-						</Button>
-					</div>
 				</div>
-			</div>
 
-			{/* Advanced filters toggle */}
-			<Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
-				<CollapsibleTrigger asChild>
-					<Button
-						variant="ghost"
-						size="sm"
-						className="gap-2 text-muted-foreground hover:text-foreground"
-					>
-						<SlidersHorizontal className="h-4 w-4" />
-						Búsqueda avanzada
-						<ChevronDown
-							className={cn(
-								"h-4 w-4 transition-transform duration-200",
-								isAdvancedOpen && "rotate-180",
-							)}
-						/>
-					</Button>
-				</CollapsibleTrigger>
+				{/* Action buttons */}
+				<Button
+					size="default"
+					className="w-full sm:w-auto"
+					onClick={handleApplyFilters}
+				>
+					Aplicar
+				</Button>
+
+				{/* Advanced filters */}
 				<CollapsibleContent className="pt-3 sm:pt-4">
 					<div className="rounded-lg border bg-muted/30 p-3 sm:p-4">
 						<div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -232,7 +209,7 @@ export function TransactionsFilters({
 						</div>
 					</div>
 				</CollapsibleContent>
-			</Collapsible>
-		</section>
+			</section>
+		</Collapsible>
 	);
 }

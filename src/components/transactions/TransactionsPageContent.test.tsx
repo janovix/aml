@@ -41,8 +41,10 @@ describe("TransactionsPageContent", () => {
 	it("links to new transaction page", () => {
 		render(<TransactionsPageContent />);
 
-		const link = screen.getByRole("link", { name: /nueva transacción/i });
+		const link = screen.getByRole("link");
 		expect(link).toHaveAttribute("href", "/transactions/new");
+		const button = screen.getByRole("button", { name: /nueva transacción/i });
+		expect(button).toBeInTheDocument();
 	});
 
 	it("renders KPI cards", () => {
@@ -58,7 +60,7 @@ describe("TransactionsPageContent", () => {
 		render(<TransactionsPageContent />);
 
 		const searchInputs = screen.getAllByPlaceholderText(
-			"Buscar por VIN, cliente o folio...",
+			"Buscar por cliente o folio...",
 		);
 		expect(searchInputs.length).toBeGreaterThan(0);
 	});
@@ -80,7 +82,7 @@ describe("TransactionsPageContent", () => {
 		const { container } = render(<TransactionsPageContent />);
 
 		const searchInputs = container.querySelectorAll(
-			'input[placeholder="Buscar por VIN, cliente o folio..."]',
+			'input[placeholder="Buscar por cliente o folio..."]',
 		);
 		expect(searchInputs.length).toBeGreaterThan(0);
 		if (searchInputs.length > 0) {

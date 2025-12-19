@@ -49,19 +49,15 @@ export function ClientsFilters({
 	const hasActiveFilters = activeFilters.length > 0;
 
 	return (
-		<section
-			aria-label="Filtros de búsqueda"
-			className="space-y-3 sm:space-y-4"
-		>
-			{/* Main filter bar */}
-			<div className="flex flex-col gap-2.5 sm:gap-3 sm:flex-row sm:items-end">
+		<Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
+			<section
+				aria-label="Filtros de búsqueda"
+				className="space-y-3 sm:space-y-4"
+			>
 				{/* Search input */}
-				<div className="flex-1 space-y-2">
-					<Label htmlFor="search-clients" className="sr-only">
-						Buscar clientes
-					</Label>
-					<div className="relative">
-						<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+				<div className="flex items-center gap-2">
+					<div className="relative flex-1">
+						<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" />
 						<Input
 							id="search-clients"
 							type="search"
@@ -71,16 +67,25 @@ export function ClientsFilters({
 							className="pl-10"
 						/>
 					</div>
+					<CollapsibleTrigger asChild>
+						<button
+							type="button"
+							className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-input bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+							aria-label="Búsqueda avanzada"
+						>
+							<SlidersHorizontal className="h-4 w-4" />
+						</button>
+					</CollapsibleTrigger>
 				</div>
 
 				{/* Quick filters */}
-				<div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-2">
-					<div className="w-full sm:w-[160px]">
+				<div className="grid grid-cols-2 gap-2">
+					<div>
 						<Label htmlFor="risk-filter" className="sr-only">
 							Nivel de Riesgo
 						</Label>
 						<Select value={riskFilter} onValueChange={onRiskChange}>
-							<SelectTrigger id="risk-filter">
+							<SelectTrigger id="risk-filter" className="w-full">
 								<SelectValue placeholder="Nivel de Riesgo" />
 							</SelectTrigger>
 							<SelectContent>
@@ -92,12 +97,12 @@ export function ClientsFilters({
 						</Select>
 					</div>
 
-					<div className="w-full sm:w-[140px]">
+					<div>
 						<Label htmlFor="status-filter" className="sr-only">
 							Estado
 						</Label>
 						<Select value={statusFilter} onValueChange={onStatusChange}>
-							<SelectTrigger id="status-filter">
+							<SelectTrigger id="status-filter" className="w-full">
 								<SelectValue placeholder="Estado" />
 							</SelectTrigger>
 							<SelectContent>
@@ -108,49 +113,19 @@ export function ClientsFilters({
 							</SelectContent>
 						</Select>
 					</div>
-
-					{/* Action buttons */}
-					<div className="flex items-center gap-2 sm:ml-2">
-						<Button
-							onClick={onApplyFilters}
-							disabled={!hasFilters}
-							size="default"
-							className="flex-1 sm:flex-none"
-						>
-							Aplicar
-						</Button>
-						{hasFilters && (
-							<Button
-								variant="outline"
-								onClick={onClearFilters}
-								size="default"
-								className="flex-1 sm:flex-none bg-transparent"
-							>
-								Limpiar
-							</Button>
-						)}
-					</div>
 				</div>
-			</div>
 
-			{/* Advanced filters toggle */}
-			<Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
-				<CollapsibleTrigger asChild>
-					<Button
-						variant="ghost"
-						size="sm"
-						className="gap-2 text-muted-foreground hover:text-foreground"
-					>
-						<SlidersHorizontal className="h-4 w-4" />
-						Búsqueda avanzada
-						<ChevronDown
-							className={cn(
-								"h-4 w-4 transition-transform duration-200",
-								isAdvancedOpen && "rotate-180",
-							)}
-						/>
-					</Button>
-				</CollapsibleTrigger>
+				{/* Action buttons */}
+				<Button
+					onClick={onApplyFilters}
+					disabled={!hasFilters}
+					size="default"
+					className="w-full sm:w-auto"
+				>
+					Aplicar
+				</Button>
+
+				{/* Advanced filters */}
 				<CollapsibleContent className="pt-3 sm:pt-4">
 					<div className="rounded-lg border bg-muted/30 p-3 sm:p-4">
 						<div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -183,40 +158,40 @@ export function ClientsFilters({
 						</div>
 					</div>
 				</CollapsibleContent>
-			</Collapsible>
 
-			{/* Active filter chips */}
-			{hasActiveFilters && (
-				<div className="flex flex-wrap items-center gap-2">
-					<span className="text-sm text-muted-foreground">
-						Filtros activos:
-					</span>
-					{activeFilters.map((filter) => (
-						<Badge
-							key={filter}
-							variant="secondary"
-							className="gap-1 pl-2.5 pr-1.5 py-1"
-						>
-							{filter}
-							<button
-								onClick={() => onRemoveFilter(filter)}
-								className="ml-1 rounded-full p-0.5 hover:bg-muted-foreground/20 transition-colors"
-								aria-label={`Remover filtro: ${filter}`}
+				{/* Active filter chips */}
+				{hasActiveFilters && (
+					<div className="flex flex-wrap items-center gap-2">
+						<span className="text-sm text-muted-foreground">
+							Filtros activos:
+						</span>
+						{activeFilters.map((filter) => (
+							<Badge
+								key={filter}
+								variant="secondary"
+								className="gap-1 pl-2.5 pr-1.5 py-1"
 							>
-								<X className="h-3 w-3" />
-							</button>
-						</Badge>
-					))}
-					<Button
-						variant="ghost"
-						size="sm"
-						onClick={onClearFilters}
-						className="h-7 text-xs text-muted-foreground hover:text-foreground"
-					>
-						Limpiar todos
-					</Button>
-				</div>
-			)}
-		</section>
+								{filter}
+								<button
+									onClick={() => onRemoveFilter(filter)}
+									className="ml-1 rounded-full p-0.5 hover:bg-muted-foreground/20 transition-colors"
+									aria-label={`Remover filtro: ${filter}`}
+								>
+									<X className="h-3 w-3" />
+								</button>
+							</Badge>
+						))}
+						<Button
+							variant="ghost"
+							size="sm"
+							onClick={onClearFilters}
+							className="h-7 text-xs text-muted-foreground hover:text-foreground"
+						>
+							Limpiar todos
+						</Button>
+					</div>
+				)}
+			</section>
+		</Collapsible>
 	);
 }
