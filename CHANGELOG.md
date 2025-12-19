@@ -1,3 +1,10 @@
+# [1.1.0-rc.8](https://github.com/janovix/aml/compare/v1.1.0-rc.7...v1.1.0-rc.8) (2025-12-19)
+
+
+### Features
+
+* **auth:** add JWT token support for API authentication ([e616ec6](https://github.com/janovix/aml/commit/e616ec69b25ec4c4597bf657a57af0586121d877))
+
 # [1.1.0-rc.7](https://github.com/janovix/aml/compare/v1.1.0-rc.6...v1.1.0-rc.7) (2025-12-19)
 
 
