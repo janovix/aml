@@ -135,9 +135,13 @@ export function TransactionsKPICards(): React.ReactElement {
 
 	return (
 		<section aria-label="Indicadores clave de transacciones">
-			<div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
+			<div className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-x-visible sm:pb-0">
 				{kpis.map((kpi) => (
-					<KpiCard key={kpi.title} {...kpi} />
+					<KpiCard
+						key={kpi.title}
+						{...kpi}
+						className="min-w-[280px] sm:min-w-0"
+					/>
 				))}
 			</div>
 		</section>

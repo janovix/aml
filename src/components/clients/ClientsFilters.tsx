@@ -53,84 +53,81 @@ export function ClientsFilters({
 			aria-label="Filtros de búsqueda"
 			className="space-y-3 sm:space-y-4"
 		>
-			{/* Main filter bar */}
-			<div className="flex flex-col gap-2.5 sm:gap-3 sm:flex-row sm:items-end">
-				{/* Search input */}
-				<div className="flex-1 space-y-2">
-					<Label htmlFor="search-clients" className="sr-only">
-						Buscar clientes
+			{/* Search input */}
+			<div className="space-y-2">
+				<Label htmlFor="search-clients" className="sr-only">
+					Buscar clientes
+				</Label>
+				<div className="relative">
+					<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+					<Input
+						id="search-clients"
+						type="search"
+						placeholder="Buscar por nombre o RFC..."
+						value={searchQuery}
+						onChange={(e) => onSearchChange(e.target.value)}
+						className="pl-10"
+					/>
+				</div>
+			</div>
+
+			{/* Quick filters */}
+			<div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-2">
+				<div className="w-full sm:w-[160px]">
+					<Label htmlFor="risk-filter" className="sr-only">
+						Nivel de Riesgo
 					</Label>
-					<div className="relative">
-						<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-						<Input
-							id="search-clients"
-							type="search"
-							placeholder="Buscar por nombre o RFC..."
-							value={searchQuery}
-							onChange={(e) => onSearchChange(e.target.value)}
-							className="pl-10"
-						/>
-					</div>
+					<Select value={riskFilter} onValueChange={onRiskChange}>
+						<SelectTrigger id="risk-filter">
+							<SelectValue placeholder="Nivel de Riesgo" />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">Todos los niveles</SelectItem>
+							<SelectItem value="Alto">Alto</SelectItem>
+							<SelectItem value="Medio">Medio</SelectItem>
+							<SelectItem value="Bajo">Bajo</SelectItem>
+						</SelectContent>
+					</Select>
 				</div>
 
-				{/* Quick filters */}
-				<div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-2">
-					<div className="w-full sm:w-[160px]">
-						<Label htmlFor="risk-filter" className="sr-only">
-							Nivel de Riesgo
-						</Label>
-						<Select value={riskFilter} onValueChange={onRiskChange}>
-							<SelectTrigger id="risk-filter">
-								<SelectValue placeholder="Nivel de Riesgo" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="all">Todos los niveles</SelectItem>
-								<SelectItem value="Alto">Alto</SelectItem>
-								<SelectItem value="Medio">Medio</SelectItem>
-								<SelectItem value="Bajo">Bajo</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
-
-					<div className="w-full sm:w-[140px]">
-						<Label htmlFor="status-filter" className="sr-only">
-							Estado
-						</Label>
-						<Select value={statusFilter} onValueChange={onStatusChange}>
-							<SelectTrigger id="status-filter">
-								<SelectValue placeholder="Estado" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="all">Todos</SelectItem>
-								<SelectItem value="Activo">Activo</SelectItem>
-								<SelectItem value="En Revisión">En Revisión</SelectItem>
-								<SelectItem value="Bloqueado">Bloqueado</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
-
-					{/* Action buttons */}
-					<div className="flex items-center gap-2 sm:ml-2">
-						<Button
-							onClick={onApplyFilters}
-							disabled={!hasFilters}
-							size="default"
-							className="flex-1 sm:flex-none"
-						>
-							Aplicar
-						</Button>
-						{hasFilters && (
-							<Button
-								variant="outline"
-								onClick={onClearFilters}
-								size="default"
-								className="flex-1 sm:flex-none bg-transparent"
-							>
-								Limpiar
-							</Button>
-						)}
-					</div>
+				<div className="w-full sm:w-[140px]">
+					<Label htmlFor="status-filter" className="sr-only">
+						Estado
+					</Label>
+					<Select value={statusFilter} onValueChange={onStatusChange}>
+						<SelectTrigger id="status-filter">
+							<SelectValue placeholder="Estado" />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">Todos</SelectItem>
+							<SelectItem value="Activo">Activo</SelectItem>
+							<SelectItem value="En Revisión">En Revisión</SelectItem>
+							<SelectItem value="Bloqueado">Bloqueado</SelectItem>
+						</SelectContent>
+					</Select>
 				</div>
+			</div>
+
+			{/* Action buttons */}
+			<div className="flex items-center gap-2 sm:ml-0">
+				<Button
+					onClick={onApplyFilters}
+					disabled={!hasFilters}
+					size="default"
+					className="w-full sm:w-auto"
+				>
+					Aplicar
+				</Button>
+				{hasFilters && (
+					<Button
+						variant="outline"
+						onClick={onClearFilters}
+						size="default"
+						className="w-full sm:w-auto bg-transparent"
+					>
+						Limpiar
+					</Button>
+				)}
 			</div>
 
 			{/* Advanced filters toggle */}

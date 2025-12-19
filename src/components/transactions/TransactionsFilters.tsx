@@ -78,98 +78,95 @@ export function TransactionsFilters({
 			aria-label="Filtros de búsqueda"
 			className="space-y-3 sm:space-y-4"
 		>
-			{/* Main filter bar */}
-			<div className="flex flex-col gap-2.5 sm:gap-3 sm:flex-row sm:items-end">
-				{/* Search input */}
-				<div className="flex-1 space-y-2">
-					<Label htmlFor="search-transactions" className="sr-only">
-						Buscar transacciones
+			{/* Search input */}
+			<div className="space-y-2">
+				<Label htmlFor="search-transactions" className="sr-only">
+					Buscar transacciones
+				</Label>
+				<div className="relative">
+					<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+					<Input
+						id="search-transactions"
+						type="search"
+						placeholder="Buscar por VIN, cliente o folio..."
+						className="pl-10"
+						value={localFilters.search}
+						onChange={(e) =>
+							setLocalFilters({ ...localFilters, search: e.target.value })
+						}
+					/>
+				</div>
+			</div>
+
+			{/* Quick filters */}
+			<div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-2">
+				<div className="w-full sm:w-[160px]">
+					<Label htmlFor="type-filter" className="sr-only">
+						Tipo de Transacción
 					</Label>
-					<div className="relative">
-						<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-						<Input
-							id="search-transactions"
-							type="search"
-							placeholder="Buscar por VIN, cliente o folio..."
-							className="pl-10"
-							value={localFilters.search}
-							onChange={(e) =>
-								setLocalFilters({ ...localFilters, search: e.target.value })
-							}
-						/>
-					</div>
+					<Select
+						value={localFilters.operationType}
+						onValueChange={(value) =>
+							setLocalFilters({
+								...localFilters,
+								operationType: value === "all" ? "" : value,
+							})
+						}
+					>
+						<SelectTrigger id="type-filter">
+							<SelectValue placeholder="Tipo" />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">Todos</SelectItem>
+							<SelectItem value="purchase">Compra</SelectItem>
+							<SelectItem value="sale">Venta</SelectItem>
+						</SelectContent>
+					</Select>
 				</div>
 
-				{/* Quick filters */}
-				<div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-2">
-					<div className="w-full sm:w-[160px]">
-						<Label htmlFor="type-filter" className="sr-only">
-							Tipo de Transacción
-						</Label>
-						<Select
-							value={localFilters.operationType}
-							onValueChange={(value) =>
-								setLocalFilters({
-									...localFilters,
-									operationType: value === "all" ? "" : value,
-								})
-							}
-						>
-							<SelectTrigger id="type-filter">
-								<SelectValue placeholder="Tipo" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="all">Todos</SelectItem>
-								<SelectItem value="purchase">Compra</SelectItem>
-								<SelectItem value="sale">Venta</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
-
-					<div className="w-full sm:w-[140px]">
-						<Label htmlFor="vehicle-type-filter" className="sr-only">
-							Tipo de Vehículo
-						</Label>
-						<Select
-							value={localFilters.vehicleType}
-							onValueChange={(value) =>
-								setLocalFilters({
-									...localFilters,
-									vehicleType: value === "all" ? "" : value,
-								})
-							}
-						>
-							<SelectTrigger id="vehicle-type-filter">
-								<SelectValue placeholder="Vehículo" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="all">Todos</SelectItem>
-								<SelectItem value="land">Terrestre</SelectItem>
-								<SelectItem value="marine">Marítimo</SelectItem>
-								<SelectItem value="air">Aéreo</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
-
-					{/* Action buttons */}
-					<div className="flex items-center gap-2 sm:ml-2">
-						<Button
-							size="default"
-							className="flex-1 sm:flex-none"
-							onClick={handleApplyFilters}
-						>
-							Aplicar
-						</Button>
-						<Button
-							variant="outline"
-							size="default"
-							className="flex-1 sm:flex-none bg-transparent"
-							onClick={handleClearFilters}
-						>
-							Limpiar
-						</Button>
-					</div>
+				<div className="w-full sm:w-[140px]">
+					<Label htmlFor="vehicle-type-filter" className="sr-only">
+						Tipo de Vehículo
+					</Label>
+					<Select
+						value={localFilters.vehicleType}
+						onValueChange={(value) =>
+							setLocalFilters({
+								...localFilters,
+								vehicleType: value === "all" ? "" : value,
+							})
+						}
+					>
+						<SelectTrigger id="vehicle-type-filter">
+							<SelectValue placeholder="Vehículo" />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">Todos</SelectItem>
+							<SelectItem value="land">Terrestre</SelectItem>
+							<SelectItem value="marine">Marítimo</SelectItem>
+							<SelectItem value="air">Aéreo</SelectItem>
+						</SelectContent>
+					</Select>
 				</div>
+			</div>
+
+			{/* Action buttons */}
+			<div className="flex items-center gap-2 sm:ml-0">
+				<Button
+					size="default"
+					className="w-full sm:w-auto"
+					onClick={handleApplyFilters}
+				>
+					Aplicar
+				</Button>
+				<Button
+					variant="outline"
+					size="default"
+					className="w-full sm:w-auto bg-transparent"
+					onClick={handleClearFilters}
+				>
+					Limpiar
+				</Button>
 			</div>
 
 			{/* Advanced filters toggle */}
