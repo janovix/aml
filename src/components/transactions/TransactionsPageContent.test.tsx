@@ -22,7 +22,11 @@ describe("TransactionsPageContent", () => {
 		render(<TransactionsPageContent />);
 
 		const transaccionesHeaders = screen.getAllByText("Transacciones");
+		const descriptionTexts = screen.getAllByText(
+			"Gestión de transacciones de vehículos",
+		);
 		expect(transaccionesHeaders.length).toBeGreaterThan(0);
+		expect(descriptionTexts.length).toBeGreaterThan(0);
 	});
 
 	it("renders new transaction button", () => {

@@ -15,10 +15,15 @@ export function TransactionsPageContent(): React.ReactElement {
 	return (
 		<div className="space-y-6">
 			<div className="flex items-center justify-between">
-				<h1 className="text-3xl font-bold tracking-tight">Transacciones</h1>
+				<div>
+					<h1 className="text-3xl font-bold tracking-tight">Transacciones</h1>
+					<p className="text-muted-foreground">
+						Gestión de transacciones de vehículos
+					</p>
+				</div>
 				<Link href="/transactions/new">
 					<Button
-						className="h-10 w-10 sm:h-auto sm:w-auto sm:px-4 sm:gap-2 rounded-lg p-0 bg-primary hover:bg-primary/90"
+						className="h-10 w-10 sm:h-10 sm:w-auto sm:px-4 sm:gap-2 rounded-lg p-0 bg-primary hover:bg-primary/90"
 						aria-label="Nueva Transacción"
 					>
 						<Plus className="h-4 w-4 text-primary-foreground" />

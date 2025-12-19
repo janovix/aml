@@ -79,7 +79,7 @@ export function ClientsFilters({
 				</div>
 
 				{/* Quick filters */}
-				<div className="flex gap-2">
+				<div className="flex gap-1">
 					<div className="flex-1">
 						<Label htmlFor="risk-filter" className="sr-only">
 							Nivel de Riesgo
