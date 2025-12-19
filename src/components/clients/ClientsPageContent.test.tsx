@@ -21,9 +21,7 @@ describe("ClientsPageContent", () => {
 		render(<ClientsPageContent />);
 
 		const clientesHeaders = screen.getAllByText("Clientes");
-		const gestionTexts = screen.getAllByText("Gestión y monitoreo de clientes");
 		expect(clientesHeaders.length).toBeGreaterThan(0);
-		expect(gestionTexts.length).toBeGreaterThan(0);
 	});
 
 	it("renders new client button", () => {

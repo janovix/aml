@@ -89,28 +89,37 @@ export function TransactionsFilters({
 						<Input
 							id="search-transactions"
 							type="search"
-							placeholder="Buscar por VIN, cliente o folio..."
-							className="pl-10 pr-10"
+							placeholder="Buscar por cliente o folio..."
+							className="pl-10"
 							value={localFilters.search}
 							onChange={(e) =>
 								setLocalFilters({ ...localFilters, search: e.target.value })
 							}
 						/>
-						<CollapsibleTrigger asChild>
-							<button
-								type="button"
-								className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors z-10"
-								aria-label="Búsqueda avanzada"
-							>
-								<SlidersHorizontal className="h-4 w-4" />
-							</button>
-						</CollapsibleTrigger>
 					</div>
 				</div>
 
+				{/* Advanced search toggle */}
+				<CollapsibleTrigger asChild>
+					<Button
+						variant="ghost"
+						size="sm"
+						className="w-full sm:w-auto gap-2 text-muted-foreground hover:text-foreground"
+					>
+						<SlidersHorizontal className="h-4 w-4" />
+						Búsqueda avanzada
+						<ChevronDown
+							className={cn(
+								"h-4 w-4 transition-transform duration-200",
+								isAdvancedOpen && "rotate-180",
+							)}
+						/>
+					</Button>
+				</CollapsibleTrigger>
+
 				{/* Quick filters */}
 				<div className="flex gap-2.5 sm:flex-row sm:items-center sm:gap-2">
-					<div className="flex-1 sm:w-[160px]">
+					<div className="w-full sm:w-[160px]">
 						<Label htmlFor="type-filter" className="sr-only">
 							Tipo de Transacción
 						</Label>
@@ -134,7 +143,7 @@ export function TransactionsFilters({
 						</Select>
 					</div>
 
-					<div className="flex-1 sm:w-[140px]">
+					<div className="w-full sm:w-[140px]">
 						<Label htmlFor="vehicle-type-filter" className="sr-only">
 							Tipo de Vehículo
 						</Label>
