@@ -74,84 +74,93 @@ export function TransactionsFilters({
 	};
 
 	return (
-		<section
-			aria-label="Filtros de búsqueda"
-			className="space-y-3 sm:space-y-4"
-		>
-			{/* Search input */}
-			<div className="space-y-2">
-				<Label htmlFor="search-transactions" className="sr-only">
-					Buscar transacciones
-				</Label>
-				<div className="relative">
-					<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-					<Input
-						id="search-transactions"
-						type="search"
-						placeholder="Buscar por VIN, cliente o folio..."
-						className="pl-10"
-						value={localFilters.search}
-						onChange={(e) =>
-							setLocalFilters({ ...localFilters, search: e.target.value })
-						}
-					/>
-				</div>
-			</div>
-
-			{/* Quick filters */}
-			<div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-2">
-				<div className="w-full sm:w-[160px]">
-					<Label htmlFor="type-filter" className="sr-only">
-						Tipo de Transacción
+		<Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
+			<section
+				aria-label="Filtros de búsqueda"
+				className="space-y-3 sm:space-y-4"
+			>
+				{/* Search input */}
+				<div className="space-y-2">
+					<Label htmlFor="search-transactions" className="sr-only">
+						Buscar transacciones
 					</Label>
-					<Select
-						value={localFilters.operationType}
-						onValueChange={(value) =>
-							setLocalFilters({
-								...localFilters,
-								operationType: value === "all" ? "" : value,
-							})
-						}
-					>
-						<SelectTrigger id="type-filter">
-							<SelectValue placeholder="Tipo" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="all">Todos</SelectItem>
-							<SelectItem value="purchase">Compra</SelectItem>
-							<SelectItem value="sale">Venta</SelectItem>
-						</SelectContent>
-					</Select>
+					<div className="relative">
+						<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" />
+						<Input
+							id="search-transactions"
+							type="search"
+							placeholder="Buscar por VIN, cliente o folio..."
+							className="pl-10 pr-10"
+							value={localFilters.search}
+							onChange={(e) =>
+								setLocalFilters({ ...localFilters, search: e.target.value })
+							}
+						/>
+						<CollapsibleTrigger asChild>
+							<button
+								type="button"
+								className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors z-10"
+								aria-label="Búsqueda avanzada"
+							>
+								<SlidersHorizontal className="h-4 w-4" />
+							</button>
+						</CollapsibleTrigger>
+					</div>
 				</div>
 
-				<div className="w-full sm:w-[140px]">
-					<Label htmlFor="vehicle-type-filter" className="sr-only">
-						Tipo de Vehículo
-					</Label>
-					<Select
-						value={localFilters.vehicleType}
-						onValueChange={(value) =>
-							setLocalFilters({
-								...localFilters,
-								vehicleType: value === "all" ? "" : value,
-							})
-						}
-					>
-						<SelectTrigger id="vehicle-type-filter">
-							<SelectValue placeholder="Vehículo" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="all">Todos</SelectItem>
-							<SelectItem value="land">Terrestre</SelectItem>
-							<SelectItem value="marine">Marítimo</SelectItem>
-							<SelectItem value="air">Aéreo</SelectItem>
-						</SelectContent>
-					</Select>
-				</div>
-			</div>
+				{/* Quick filters */}
+				<div className="flex gap-2.5 sm:flex-row sm:items-center sm:gap-2">
+					<div className="flex-1 sm:w-[160px]">
+						<Label htmlFor="type-filter" className="sr-only">
+							Tipo de Transacción
+						</Label>
+						<Select
+							value={localFilters.operationType}
+							onValueChange={(value) =>
+								setLocalFilters({
+									...localFilters,
+									operationType: value === "all" ? "" : value,
+								})
+							}
+						>
+							<SelectTrigger id="type-filter">
+								<SelectValue placeholder="Tipo" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="all">Todos</SelectItem>
+								<SelectItem value="purchase">Compra</SelectItem>
+								<SelectItem value="sale">Venta</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
 
-			{/* Action buttons */}
-			<div className="flex items-center gap-2 sm:ml-0">
+					<div className="flex-1 sm:w-[140px]">
+						<Label htmlFor="vehicle-type-filter" className="sr-only">
+							Tipo de Vehículo
+						</Label>
+						<Select
+							value={localFilters.vehicleType}
+							onValueChange={(value) =>
+								setLocalFilters({
+									...localFilters,
+									vehicleType: value === "all" ? "" : value,
+								})
+							}
+						>
+							<SelectTrigger id="vehicle-type-filter">
+								<SelectValue placeholder="Vehículo" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="all">Todos</SelectItem>
+								<SelectItem value="land">Terrestre</SelectItem>
+								<SelectItem value="marine">Marítimo</SelectItem>
+								<SelectItem value="air">Aéreo</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
+				</div>
+
+				{/* Action buttons */}
 				<Button
 					size="default"
 					className="w-full sm:w-auto"
@@ -159,34 +168,8 @@ export function TransactionsFilters({
 				>
 					Aplicar
 				</Button>
-				<Button
-					variant="outline"
-					size="default"
-					className="w-full sm:w-auto bg-transparent"
-					onClick={handleClearFilters}
-				>
-					Limpiar
-				</Button>
-			</div>
 
-			{/* Advanced filters toggle */}
-			<Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
-				<CollapsibleTrigger asChild>
-					<Button
-						variant="ghost"
-						size="sm"
-						className="gap-2 text-muted-foreground hover:text-foreground"
-					>
-						<SlidersHorizontal className="h-4 w-4" />
-						Búsqueda avanzada
-						<ChevronDown
-							className={cn(
-								"h-4 w-4 transition-transform duration-200",
-								isAdvancedOpen && "rotate-180",
-							)}
-						/>
-					</Button>
-				</CollapsibleTrigger>
+				{/* Advanced filters */}
 				<CollapsibleContent className="pt-3 sm:pt-4">
 					<div className="rounded-lg border bg-muted/30 p-3 sm:p-4">
 						<div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -229,7 +212,7 @@ export function TransactionsFilters({
 						</div>
 					</div>
 				</CollapsibleContent>
-			</Collapsible>
-		</section>
+			</section>
+		</Collapsible>
 	);
 }
