@@ -65,7 +65,7 @@ const mainNavItems = [
 		title: "Avisos",
 		href: "/alertas",
 		icon: AlertTriangle,
-		available: false,
+		available: true,
 	},
 	{
 		title: "Transacciones",
