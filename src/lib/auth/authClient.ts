@@ -1,8 +1,8 @@
 import { createAuthClient } from "better-auth/client";
-import { getAuthCoreBaseUrl } from "./config";
+import { getAuthServiceUrl } from "./config";
 
 export const authClient = createAuthClient({
-	baseURL: getAuthCoreBaseUrl(),
+	baseURL: getAuthServiceUrl(),
 	fetchOptions: {
 		credentials: "include", // CRITICAL: Required for cookies
 	},
