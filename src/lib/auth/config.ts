@@ -1,6 +1,6 @@
 export const getAuthServiceUrl = (): string => {
 	return (
-		process.env.AUTH_SERVICE_URL ||
+		process.env.NEXT_PUBLIC_AUTH_SERVICE_URL ||
 		"https://auth-svc.example.workers.dev"
 	);
 };
