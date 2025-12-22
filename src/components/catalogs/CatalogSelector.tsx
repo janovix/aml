@@ -95,13 +95,22 @@ export function CatalogSelector({
 	const [open, setOpen] = useState(false);
 	const [showResults, setShowResults] = useState(false);
 
-	const { items, pagination, loading, error, searchTerm, setSearchTerm } =
-		useCatalogSearch({
-			catalogKey,
-			pageSize,
-			debounceMs,
-			enabled: !disabled,
-		});
+	const {
+		items,
+		pagination,
+		loading,
+		loadingMore,
+		error,
+		searchTerm,
+		setSearchTerm,
+		loadMore,
+		hasMore,
+	} = useCatalogSearch({
+		catalogKey,
+		pageSize,
+		debounceMs,
+		enabled: !disabled,
+	});
 
 	const mappedItems = useMemo(
 		() =>
@@ -250,7 +259,11 @@ export function CatalogSelector({
 
 					{!loading && !error && (
 						<>
-							<ComboboxList>
+							<ComboboxList
+								onScrollToBottom={
+									hasMore && !loadingMore ? loadMore : undefined
+								}
+							>
 								{mappedItems.length === 0 ? (
 									<ComboboxEmpty>{emptyState}</ComboboxEmpty>
 								) : (
@@ -274,6 +287,12 @@ export function CatalogSelector({
 											);
 										})}
 									</ComboboxGroup>
+								)}
+								{loadingMore && (
+									<div className="flex items-center justify-center gap-2 px-3 py-4 text-sm text-muted-foreground">
+										<Spinner size="sm" />
+										Cargando más resultados...
+									</div>
 								)}
 							</ComboboxList>
 							{shouldShowSummary && (

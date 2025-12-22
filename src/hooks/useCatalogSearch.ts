@@ -16,10 +16,13 @@ interface UseCatalogSearchResult {
 	items: CatalogItem[];
 	pagination: CatalogPagination | null;
 	loading: boolean;
+	loadingMore: boolean;
 	error: string | null;
 	searchTerm: string;
 	setSearchTerm: (value: string) => void;
+	loadMore: () => Promise<void>;
 	reload: () => void;
+	hasMore: boolean;
 }
 
 export function useCatalogSearch({
@@ -34,8 +37,10 @@ export function useCatalogSearch({
 	const [items, setItems] = useState<CatalogItem[]>([]);
 	const [pagination, setPagination] = useState<CatalogPagination | null>(null);
 	const [loading, setLoading] = useState(false);
+	const [loadingMore, setLoadingMore] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [reloadKey, setReloadKey] = useState(0);
+	const [currentPage, setCurrentPage] = useState(1);
 
 	useEffect(() => {
 		if (!enabled) {
@@ -55,6 +60,12 @@ export function useCatalogSearch({
 			clearTimeout(handler);
 		};
 	}, [searchTerm, debouncedSearch, debounceMs, enabled]);
+
+	// Reset to page 1 when search term changes
+	useEffect(() => {
+		setCurrentPage(1);
+		setItems([]);
+	}, [debouncedSearch, catalogKey]);
 
 	useEffect(() => {
 		if (!enabled) {
@@ -83,6 +94,7 @@ export function useCatalogSearch({
 
 				setItems(response.data);
 				setPagination(response.pagination);
+				setCurrentPage(1);
 			})
 			.catch((fetchError: Error) => {
 				if (isCancelled || fetchError.name === "AbortError") {
@@ -105,20 +117,84 @@ export function useCatalogSearch({
 		};
 	}, [catalogKey, debouncedSearch, pageSize, enabled, reloadKey]);
 
+	const loadMore = useCallback(async (): Promise<void> => {
+		if (!pagination || loadingMore || loading) {
+			return;
+		}
+
+		const nextPage = currentPage + 1;
+		if (nextPage > pagination.totalPages) {
+			return;
+		}
+
+		setLoadingMore(true);
+		setError(null);
+
+		try {
+			const response = await fetchCatalogEntries(catalogKey, {
+				search: debouncedSearch,
+				page: nextPage,
+				pageSize,
+			});
+
+			setItems((prev) => [...prev, ...response.data]);
+			setPagination(response.pagination);
+			setCurrentPage(nextPage);
+		} catch (fetchError) {
+			const errorMessage =
+				fetchError instanceof Error
+					? fetchError.message
+					: "Error al cargar más resultados.";
+			setError(errorMessage);
+		} finally {
+			setLoadingMore(false);
+		}
+	}, [
+		catalogKey,
+		debouncedSearch,
+		pageSize,
+		pagination,
+		currentPage,
+		loadingMore,
+		loading,
+	]);
+
 	const reload = useCallback(() => {
 		setReloadKey((prev) => prev + 1);
+		setCurrentPage(1);
+		setItems([]);
 	}, []);
+
+	const hasMore = useMemo(() => {
+		if (!pagination) {
+			return false;
+		}
+		return currentPage < pagination.totalPages;
+	}, [pagination, currentPage]);
 
 	return useMemo(
 		() => ({
 			items,
 			pagination,
 			loading,
+			loadingMore,
 			error,
 			searchTerm,
 			setSearchTerm,
+			loadMore,
 			reload,
+			hasMore,
 		}),
-		[items, pagination, loading, error, searchTerm, reload],
+		[
+			items,
+			pagination,
+			loading,
+			loadingMore,
+			error,
+			searchTerm,
+			loadMore,
+			reload,
+			hasMore,
+		],
 	);
 }

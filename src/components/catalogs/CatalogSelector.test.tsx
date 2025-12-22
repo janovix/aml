@@ -36,10 +36,13 @@ const createHookResult = (
 		totalPages: 1,
 	},
 	loading: false,
+	loadingMore: false,
 	error: null,
 	searchTerm: "",
 	setSearchTerm: vi.fn(),
+	loadMore: vi.fn().mockResolvedValue(undefined),
 	reload: vi.fn(),
+	hasMore: false,
 	...overrides,
 });
 

@@ -254,9 +254,54 @@ function ComboboxInput({
 	);
 }
 
-function ComboboxList({ className, ...props }: React.ComponentProps<"div">) {
+function ComboboxList({
+	className,
+	onScrollToBottom,
+	...props
+}: React.ComponentProps<"div"> & {
+	onScrollToBottom?: () => void | Promise<void>;
+}) {
+	const listRef = React.useRef<HTMLDivElement>(null);
+
+	React.useEffect(() => {
+		const list = listRef.current;
+		if (!list || !onScrollToBottom) {
+			return;
+		}
+
+		let isLoading = false;
+
+		const handleScroll = async () => {
+			if (isLoading) {
+				return;
+			}
+
+			const { scrollTop, scrollHeight, clientHeight } = list;
+			const threshold = 50; // Trigger when 50px from bottom
+
+			if (scrollTop + clientHeight >= scrollHeight - threshold) {
+				isLoading = true;
+				try {
+					await onScrollToBottom();
+				} finally {
+					// Small delay to prevent rapid firing
+					setTimeout(() => {
+						isLoading = false;
+					}, 300);
+				}
+			}
+		};
+
+		list.addEventListener("scroll", handleScroll, { passive: true });
+
+		return () => {
+			list.removeEventListener("scroll", handleScroll);
+		};
+	}, [onScrollToBottom]);
+
 	return (
 		<div
+			ref={listRef}
 			data-slot="combobox-list"
 			role="listbox"
 			className={cn("flex-1 overflow-auto p-1", className)}
