@@ -18,6 +18,7 @@ import {
 import { Check, ChevronsUpDown } from "lucide-react";
 import type { CatalogItem } from "@/types/catalog";
 import { useCatalogSearch } from "@/hooks/useCatalogSearch";
+import { LabelWithInfo } from "../ui/LabelWithInfo";
 
 type OptionRenderer = (
 	option: CatalogItem,
@@ -27,6 +28,7 @@ type OptionRenderer = (
 interface CatalogSelectorProps {
 	catalogKey: string;
 	label?: string;
+	labelDescription?: string;
 	value?: string;
 	placeholder?: string;
 	searchPlaceholder?: string;
@@ -61,6 +63,7 @@ const defaultRenderOption: OptionRenderer = (option, isSelected) => (
 export function CatalogSelector({
 	catalogKey,
 	label,
+	labelDescription,
 	value,
 	placeholder,
 	searchPlaceholder = "Buscar en el catálogo...",
@@ -178,10 +181,20 @@ export function CatalogSelector({
 	return (
 		<div className={cn("space-y-2", className)}>
 			{label && (
-				<Label id={labelId} className="text-sm font-medium text-foreground">
-					{label}
-					{required && <span className="ml-1 text-destructive">*</span>}
-				</Label>
+				labelDescription ? (
+					<LabelWithInfo
+						htmlFor={labelId}
+						description={labelDescription}
+						required={required}
+					>
+						{label}
+					</LabelWithInfo>
+				) : (
+					<Label id={labelId} className="text-sm font-medium text-foreground">
+						{label}
+						{required && <span className="ml-1 text-destructive">*</span>}
+					</Label>
+				)
 			)}
 
 			<Combobox
