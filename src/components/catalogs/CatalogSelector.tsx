@@ -180,8 +180,8 @@ export function CatalogSelector({
 
 	return (
 		<div className={cn("space-y-2", className)}>
-			{label && (
-				labelDescription ? (
+			{label &&
+				(labelDescription ? (
 					<LabelWithInfo
 						htmlFor={labelId}
 						description={labelDescription}
@@ -194,8 +194,7 @@ export function CatalogSelector({
 						{label}
 						{required && <span className="ml-1 text-destructive">*</span>}
 					</Label>
-				)
-			)}
+				))}
 
 			<Combobox
 				open={open}

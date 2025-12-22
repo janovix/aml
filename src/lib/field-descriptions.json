@@ -1,347 +1,347 @@
 {
-  "descriptions": {
-    "archivo": {
-      "name": "Archivo XML",
-      "description": "La etiqueta es obligatoria. La etiqueta es el padre del documento XML."
-    },
-    "informe": {
-      "name": "Informe",
-      "description": "La etiqueta es obligatoria. En caso de Entidad Colegiada debe incluirse una etiqueta <informe> por cada Sujeto Obligado, en caso contrario incluir solo una etiqueta."
-    },
-    "mes_reportado": {
-      "name": "Mes reportado",
-      "description": "El campo es obligatorio. La longitud es de 6 dígitos.\n\nLongitud: 6\nFormato: AAAAMM"
-    },
-    "sujeto_obligado": {
-      "name": "Datos de identificación de quien realiza la Actividad Vulnerable",
-      "description": "La etiqueta es obligatoria. Se debe encontrar el cierre de etiqueta </sujeto_obligado>"
-    },
-    "clave_entidad_colegiada": {
-      "name": "Clave de la Entidad Colegiada por medio de la cual se remiten los avisos",
-      "description": "El campo es opcional si el sujeto obligado no se encuentra registrado con una entidad colegiada. La longitud es de 12 caracteres.\n\nLongitud: 12\nFormato: Patrón:\nLLLAAMMDDXXX;\nen donde, L=(A-Z) letra o caracteres & o Ñ, AA=año, MM=mes, DD=día, X=alfanumérico"
-    },
-    "clave_sujeto_obligado": {
-      "name": "Clave de quien realiza la Actividad Vulnerable que genera el aviso",
-      "description": "El campo es obligatorio. La longitud mínima es de 12 dígitos y máxima de 13.\n\nLongitud: 12-13\nFormato: Patrón:\nLLLLAAMMDDXXX/LLLAAMMDDXXX;\nen donde, L=(A-Z) letra o caracteres &o Ñ, AA=año, MM=mes, DD=día, X=alfanumérico"
-    },
-    "clave_actividad": {
-      "name": "Clave de la actividad vulnerable",
-      "description": "El campo es obligatorio. La longitud es de 3 caracteres\n\nLongitud: 3\nFormato: Patrón: AAA"
-    },
-    "exento": {
-      "name": "¿El envío del informe corresponde a la realización de actos u operaciones previstos en el artículo 27 Bis de las Reglas de Carácter General de la LFPIORPI?",
-      "description": "El campo es obligatorio en caso de que el sujeto obligado realice el envío del informe correspondiente a la realización de actos u operaciones previstos en el artículo 27 Bis de las Reglas de Carácter General de la LFPIORPI, en caso contrario no debe colocarse. La longitud es de 1 dígito.\n\nLongitud: 1"
-    },
-    "aviso": {
-      "name": "Datos del Aviso",
-      "description": "Si existe la etiqueta, se debe encontrar el cierre de etiqueta </aviso>"
-    },
-    "referencia_aviso": {
-      "name": "Referencia del Aviso",
-      "description": "El campo es obligatorio para cada aviso. La longitud mínima es de 1 carácter y la máxima es de 14.\n\nLongitud: 1 -14"
-    },
-    "modificatorio": {
-      "name": "Datos si el aviso es modificatorio",
-      "description": "Si existe la etiqueta, se debe encontrar el cierre de la misma </modificatorio>"
-    },
-    "folio_modificacion": {
-      "name": "Folio del Aviso previo que se modifica",
-      "description": "El campo es obligatorio si existe la etiqueta <modificatorio>. La longitud mínima es de 6 caracteres y la máxima es de 14.\n\nLongitud: 6 - 14\nFormato: Patrón: AAAA-999999999 (sin ceros a la izquierda)"
-    },
-    "descripcion_modificacion": {
-      "name": "Descripción de la modificación",
-      "description": "El campo es obligatorio si existe la etiqueta <modificatorio>. La longitud mínima es de 1 caracteres y la máxima es de 3000.\n\nLongitud: 1-3000"
-    },
-    "prioridad": {
-      "name": "Prioridad de aviso",
-      "description": "El campo es obligatorio para cada aviso. Se debe especificar la prioridad del aviso con la clave numérica que le corresponda de acuerdo al siguiente listado:\n     1 - Normal.\n     2 - 24 hrs. con operaciones\n\nLongitud: 1\nFormato: Patrón: 9"
-    },
-    "alerta": {
-      "name": "Alertas",
-      "description": "La etiqueta es obligatoria. Se debe encontrar el cierre de etiqueta </alerta>"
-    },
-    "tipo_alerta": {
-      "name": "Tipo de alerta",
-      "description": "El campo es obligatorio. La longitud mínima es de 3 caracteres y máxima de 4.\n\nLongitud: 3-4\nFormato: Patrón: 9999"
-    },
-    "descripcion_alerta": {
-      "name": "Descripción de alerta",
-      "description": "La longitud mínima es de 1 caracteres y la máxima es de 3000. El campo es alfanumérico.\n\nLongitud: 1-3000"
-    },
-    "persona_aviso": {
-      "name": "Datos de identificación de la persona objeto del aviso",
-      "description": "La etiqueta es obligatoria. Se debe encontrar el cierre de etiqueta </persona_aviso>"
-    },
-    "tipo_persona": {
-      "name": "Datos de tipo de persona del beneficiario controlador o dueño beneficiario",
-      "description": "Si existe la etiqueta <dueno_beneficiario>, entonces la etiqueta es obligatoria. Se debe encontrar el cierre de etiqueta </tipo_persona>"
-    },
-    "persona_fisica": {
-      "name": "Datos de la persona cuando se trata de persona física",
-      "description": "Si no existe la etiqueta <persona_moral> o <fideicomiso>, entonces es obligatoria la etiqueta <persona_fisica>. No puede existir más de una. Se debe encontrar el cierre de etiqueta </persona_fisica>"
-    },
-    "nombre": {
-      "name": "Nombre(s)",
-      "description": "El campo es obligatorio si existe la etiqueta <persona_fisica>. La longitud mínima es de 1 carácter y máxima de 200.\n\nLongitud: 1-200"
-    },
-    "apellido_paterno": {
-      "name": "Apellido Paterno",
-      "description": "El campo es obligatorio si existe la etiqueta <persona_fisica>. La longitud mínima es de 1 carácter y máxima de 200.\n\nLongitud: 1-200"
-    },
-    "apellido_materno": {
-      "name": "Apellido Materno",
-      "description": "El campo es obligatorio si existe la etiqueta <persona_fisica>. La longitud mínima es de 1 carácter y máxima de 200.\n\nLongitud: 1-200"
-    },
-    "fecha_nacimiento": {
-      "name": "Fecha de Nacimiento",
-      "description": "La longitud es de 8 dígitos. El campo es numérico y sigue el patrón AAAAMMDD que representa el formato de fecha, donde:\n- AAAA corresponde al año en 4 dígitos.\n- MM mes a dos dígitos.\n- DD día a dos dígitos\n\nLongitud: 8\nFormato: AAAAMMDD"
-    },
-    "rfc": {
-      "name": "Registro Federal de Contribuyentes (RFC) del Fideicomiso",
-      "description": "La longitud es de 12 caracteres. El campo es alfanumérico y sigue el patrón LLLAAMMDDCCC que representa el formato donde:\n- LLL Letras en mayúsculas, sin acentos ni diéresis de A-Z, se pueden incluir los caracteres & o Ñ.\n- AA  dos dígitos.\n- MM  dos dígitos.\n- DD dos dígitos\n- CCC Caracteres que representan la homoclave, pueden ser letras de A-Z (mayúsculas, sin acentos y sin diéresis) y/o números.\n\n-\n\nLongitud: 12\nFormato: Patrón: LLLAAMMDDXXX; en donde, L=(A-Z) letra o caracteres & o Ñ,  AA=año, MM=mes, DD=día, X= alfanumérico."
-    },
-    "curp": {
-      "name": "Clave Única de Registro de Población",
-      "description": "La longitud es de 18 caracteres. El campo es alfanumérico y sigue el patrón LLLLAAMMDDGEFCCC99 que representa el formato donde:\n- LLLL Letras en mayúsculas, sin acentos ni diéresis de A-Z \n- AA dos dígitos\n- MM dos dígitos\n- DD dos dígitos\n- G un carácter. Caracteres permitidos  H o M\n- EF dos caracteres. Caracteres permitidos de A-Z\n- CCC tres caracteres. Caracteres permitidos de A-Z\n- 99 dos dígitos\n\nLongitud: 18\nFormato: Formato: AAAAAAAAAAAAAAAAAA\nPatrón: LLLLAAMMDDGEFCCC99; en donde, L=(A-Z) letra,  AA=año, MM=mes, DD=día, G=M ó H, EF= Entidad federativa CC= (A-Z) letras 99=(0-9) número"
-    },
-    "pais_nacionalidad": {
-      "name": "Clave país de nacionalidad",
-      "description": "La longitud es de 2 caracteres. El campo es alfabético.\n\nLongitud: 2\nFormato: Formato: AA"
-    },
-    "actividad_economica": {
-      "name": "Actividad económica u ocupación",
-      "description": "El campo es obligatorio si existe la etiqueta <persona_fisica>. La longitud es de 7 dígitos.\n\nLongitud: 7\nFormato: Patrón: 9999999"
-    },
-    "persona_moral": {
-      "name": "Datos de la persona cuando se trata de persona moral",
-      "description": "Si no existe la etiqueta <persona_fisica> o <fideicomiso>, entonces es obligatoria la etiqueta <persona_moral>. No puede existir más de una. Se debe encontrar el cierre de etiqueta </persona_moral>"
-    },
-    "denominacion_razon": {
-      "name": "Denominación o Razón Social del Fiduciario",
-      "description": "El campo es obligatorio si existe la etiqueta <fideicomiso>. La longitud mínima es de 1 carácter y máxima de 254.\n\nLongitud: 1 -254"
-    },
-    "fecha_constitucion": {
-      "name": "Fecha de Constitución",
-      "description": "La longitud es de 8 dígitos. El campo es numérico y sigue el patrón AAAAMMDD que representa el formato de fecha, donde:\n- AAAA corresponde al año en 4 dígitos.\n- MM mes a dos dígitos.\n- DD día a dos dígitos\n\nLongitud: 8\nFormato: Patrón: AAAAMMDD"
-    },
-    "giro_mercantil": {
-      "name": "Actividad económica o giro mercantil u objeto social",
-      "description": "El campo es obligatorio si existe la etiqueta <persona_moral>. La longitud es de 7 dígitos.\n\nLongitud: 7\nFormato: Formato: 9999999"
-    },
-    "representante_apoderado": {
-      "name": "Representante o apoderado legal o persona que realice el acto u operación a nombre de la persona moral",
-      "description": "La etiqueta es obligatoria si existe la etiqueta <persona_moral>. Se debe encontrar el cierre de etiqueta <\\representante_apoderado>"
-    },
-    "fideicomiso": {
-      "name": "Datos de la persona cuando se trata de fideicomiso",
-      "description": "Si no existe la etiqueta <persona_fisica> o <persona_moral>, entonces es obligatoria la etiqueta <fideicomiso>. No puede existir más de una. Se debe encontrar el cierre de etiqueta </fideicomiso>"
-    },
-    "identificador_fideicomiso": {
-      "name": "Número, referencia o identificador del fideicomiso",
-      "description": "La longitud mínima es de 1 carácter y máxima de 40. El campo es alfanumérico.\n\nLongitud: 1-40"
-    },
-    "apoderado_delegado": {
-      "name": "Apoderado legal o delegado fiduciario que realice el acto u operación a nombre del fideicomiso",
-      "description": "La etiqueta es obligatoria si existe la etiqueta <fideicomiso>. Se debe encontrar el cierre de etiqueta <\\apoderado_delegado>"
-    },
-    "tipo_domicilio": {
-      "name": "Datos de tipo de domicilio de la persona objeto del aviso",
-      "description": "Se debe encontrar el cierre de etiqueta </tipo_domicilio>"
-    },
-    "nacional": {
-      "name": "Datos del domicilio si es nacional",
-      "description": "Si no existe la etiqueta <extranjero>, entonces es obligatoria la etiqueta <nacional>. No pueden existir las dos. Se debe encontrar el cierre de etiqueta </nacional>"
-    },
-    "colonia": {
-      "name": "Colonia",
-      "description": "El campo es obligatorio si existe la etiqueta <extranjero>. La longitud mínima es de 1 carácter y máxima de 50.\n\nLongitud: 1-50"
-    },
-    "calle": {
-      "name": "Calle, avenida o vía",
-      "description": "El campo es obligatorio si existe la etiqueta <extranjero>. La longitud mínima es de 1 carácter y máxima de 100.\n\nLongitud: 1-100"
-    },
-    "numero_exterior": {
-      "name": "Número exterior",
-      "description": "El campo es obligatorio si existe la etiqueta <extranjero>. La longitud mínima es de 1 carácter y máxima de 56.\n\nLongitud: 1-56"
-    },
-    "numero_interior": {
-      "name": "Número interior",
-      "description": "La longitud mínima es de 1 carácter y máxima de 40. Únicamente acepta los siguientes caracteres letras de A-Z (mayúsculas y  sin acentos ni diéresis), letra Ñ, números del 0-9, espacio ( ), coma (,), punto (.), dos puntos (:), diagonal (/), guión medio(-).\nNota. Los paréntesis no se incluyen en caracteres permitidos.\n\nLongitud: 1-40"
-    },
-    "codigo_postal": {
-      "name": "Codigo Postal de la sucursal donde se realizó la operación o acto",
-      "description": "El campo es obligatorio si existe la etiqueta <datos_operacion>. La longitud es de 5 caracteres.\n\nLongitud: 5"
-    },
-    "extranjero": {
-      "name": "Datos del domicilio si es extranjero",
-      "description": "Si no existe la etiqueta <nacional>, entonces es obligatoria la etiqueta <extranjero>. No pueden existir las dos. Se debe encontrar el cierre de etiqueta </extranjero>"
-    },
-    "pais": {
-      "name": "Clave del país donde se encuentra el domicilio",
-      "description": "El campo es obligatorio si existe la etiqueta <extranjero>. La longitud es de 2 caracteres.\n\nLongitud: 2\nFormato: Formato: AA"
-    },
-    "estado_provincia": {
-      "name": "Estado, provincia, departamento o demarcación política similar que corresponda",
-      "description": "El campo es obligatorio si existe la etiqueta <extranjero>. La longitud mínima es de 1 carácter y máxima de 100.\n\nLongitud: 1-100"
-    },
-    "ciudad_poblacion": {
-      "name": "Ciudad o población",
-      "description": "El campo es obligatorio si se encuentra la etiqueta <extranjero>. La longitud mínima es de 1 carácter y máxima de 100.\n\nLongitud: 1-100"
-    },
-    "telefono": {
-      "name": "Datos del número telefónico",
-      "description": "La etiqueta es obligatoria. Se debe encontrar el cierre de etiqueta </telefono>"
-    },
-    "clave_pais": {
-      "name": "Clave del país",
-      "description": "La longitud es de 2 caracteres. El campo es alfabético.\n\nLongitud: 2\nFormato: Formato: AA"
-    },
-    "numero_telefono": {
-      "name": "Número de teléfono",
-      "description": "El campo es obligatorio si se cuenta con la información. La longitud mínima es de 10 caracteres y máxima de 12.\n\nLongitud: 10-12\nFormato: Formato: Clave de región + número telefónico"
-    },
-    "correo_electronico": {
-      "name": "Correo electrónico",
-      "description": "La longitud mínima es de 5 caracteres y máxima de 60. De acuerdo al patrón, permite los caracteres: letras de A-Z, números del 0-9, guión medio (-), punto (.), guión bajo (_), apóstrofe (').\nEs obligatorio contar con el carácter @ y al menos una letra, un punto y otra letra después de @. ejemplo a@a.a\nNota. Los paréntesis no se incluyen en caracteres permitidos.\n\nLongitud: 5 - 60\nFormato: Patrón: ([A-Z][0-9]._-')+@([A-Z][0-9]._-')+"
-    },
-    "dueno_beneficiario": {
-      "name": "Datos de identificación del beneficiario controlador o dueño beneficiario",
-      "description": "Se debe encontrar el cierre de etiqueta </dueno_beneficiario>. En caso de no contar con la información, no necesita incluirse la sección en el reporte."
-    },
-    "detalle_operaciones": {
-      "name": "Detalle de la(s) operación(es) o acto(s)",
-      "description": "La etiqueta es obligatoria. Se debe encontrar el cierre de etiqueta </detalle_operaciones>."
-    },
-    "datos_operacion": {
-      "name": "Datos de la Operación",
-      "description": "La etiqueta es obligatoria si existe la etiqueta <detalle_operaciones> (por lo menos deberá incluirse una operación). Se debe encontrar el cierre de etiqueta </datos_operacion>."
-    },
-    "fecha_operacion": {
-      "name": "Fecha de la operación o acto",
-      "description": "El campo es obligatorio si existe la etiqueta <datos_operacion>. La longitud es de 8 dígitos.\n\nLongitud: 8\nFormato: Patrón: AAAAMMDD"
-    },
-    "tipo_operacion": {
-      "name": "Tipo de Operación",
-      "description": "El campo es obligatorio si existe la etiqueta <datos_operacion>. La longitud mínima es de 3 dígitos y máxima de 4.\n\nLongitud: 3-4\nFormato: Patrón:\n9999"
-    },
-    "tipo_vehiculo": {
-      "name": "Tipo de Vehículo",
-      "description": "Obligatorio si existe la etiqueta <datos_operacion>. Se debe encontrar el cierre de etiqueta </tipo_vehiculo>."
-    },
-    "datos_vehiculo_terrestre": {
-      "name": "Datos del vehículo cuando es un Vehículo Terrestre",
-      "description": "La etiqueta es obligatoria, si el Tipo de Vehículo es Terrestre y no existen las etiquetas <datos_vehiculo_maritimo> o <datos_vehiculo_aereo>. Solo debe existir una de ellas. Se debe encontrar el cierre de etiqueta </datos_vehiculo_terrestre>."
-    },
-    "marca_fabricante": {
-      "name": "Marca/ Fabricante",
-      "description": "El campo es obligatorio si existe la etiqueta <datos_vehiculo_aereo>. La longitud mínima es de 1 carácter y máxima de 40.\n\nLongitud: 1-40"
-    },
-    "modelo": {
-      "name": "Modelo",
-      "description": "El campo es obligatorio si existe la etiqueta <datos_vehiculo_aereo>. La longitud mínima es de 1 carácter y máxima de 40.\n\nLongitud: 1-40"
-    },
-    "anio": {
-      "name": "Año",
-      "description": "El campo es obligatorio si existe la etiqueta <datos_vehiculo_aereo>. La longitud es de 4 dígitos.\n\nLongitud: 4\nFormato: Formato: AAAA"
-    },
-    "vin": {
-      "name": "Número de Identificación Vehivular (VIN)",
-      "description": "La longitud es de 17 caracteres. El campo es alfanumérico.\n\nLongitud: 17"
-    },
-    "repuve": {
-      "name": "No. de inscripción en el Registro Público Vehícular",
-      "description": "La longitud es de 8 caracteres. El campo es alfanumérico.\n\nLongitud: 8"
-    },
-    "placas": {
-      "name": "Placas",
-      "description": "La longitud mínima es de 1 carácter y máxima de 12. El campo es alfanumérico.\n\nLongitud: 1 - 12"
-    },
-    "nivel_blindaje": {
-      "name": "Nivel de blindaje",
-      "description": "La longitud debe ser de 1 carácter. El campo es entero numérico sin ceros a la izquierda.\n\nLongitud: 1\nFormato: Patrón:\n9"
-    },
-    "datos_vehiculo_maritimo": {
-      "name": "Datos del vehículo cuando es un Vehículo Marítimo",
-      "description": "La etiqueta es obligatoria, si el Tipo de Vehículo es Marítimo y no existen las etiquetas <datos_vehiculo_terrestre> o <datos_vehiculo_aereo>. Solo debe existir una de ellas. Se debe encontrar el cierre de etiqueta </datos_vehiculo_maritimo>."
-    },
-    "numero_serie": {
-      "name": "Número de serie",
-      "description": "El campo es obligatorio si existe la etiqueta <datos_vehiculo_aereo>. La longitud mínima es de 1 carácter y máxima de 20\n\nLongitud: 20"
-    },
-    "bandera": {
-      "name": "Bandera",
-      "description": "El campo es obligatorio si existe la etiqueta <datos_vehiculo_maritimo>. La longitud es de 2 caracteres.\n\nLongitud: 2\nFormato: Formato: AA"
-    },
-    "matricula": {
-      "name": "Matrícula",
-      "description": "La longitud mínima es de 1 carácter y máxima de 12. El campo es alfanumérico.\n\nLongitud: 1 - 12"
-    },
-    "datos_vehiculo_aereo": {
-      "name": "Datos del vehículo cuando es un Vehículo Aéreo",
-      "description": "La etiqueta es obligatoria, si el Tipo de Vehículo es Aéreo y no existen las etiquetas <datos_vehiculo_terrestre> o <datos_vehiculo_maritimo>. Solo debe existir una de ellas. Se debe encontrar el cierre de etiqueta </datos_vehiculo_aereo>."
-    },
-    "datos_liquidacion": {
-      "name": "Datos de liquidación de la operación o acto",
-      "description": "La etiqueta es obligatoria si existe la etiqueta <datos_operacion> y el Tipo de operación es diferente a \"Intercambio\". Se debe encontrar el cierre de etiqueta </datos_liquidacion>"
-    },
-    "fecha_pago": {
-      "name": "Fecha de pago",
-      "description": "El campo es obligatorio si existe la etiqueta <datos_liquidacion>. La longitud es de 8 dígitos.\n\nLongitud: 8\nFormato: Patrón: \nAAAAMMDD"
-    },
-    "forma_pago": {
-      "name": "Forma de pago",
-      "description": "El campo es obligatorio si existe la etiqueta <datos_liquidacion>. La longitud es de 1 dígito.\n\nLongitud: 1\nFormato: 9"
-    },
-    "instrumento_monetario": {
-      "name": "Instrumento monetario con el que se realizó la operación o acto",
-      "description": "Obligatorio si existe la etiqueta <datos_liquidacion> y si la forma de pago es \"Contado\", \"Diferido o en parcialidades\" o \"Permuta\". La longitud mínima es de 1 dígito y máxima de 2.\n\nLongitud: 1-2\nFormato: Patrón:\n99"
-    },
-    "moneda": {
-      "name": "Tipo de moneda o divisa de la operación o acto",
-      "description": "El campo es obligatorio si existe la etiqueta <datos_liquidacion>. La longitud mínima es de 1 dígito y máxima de 3.\n\nLongitud: 1-3\nFormato: Patrón:\n999"
-    },
-    "monto_operacion": {
-      "name": "Monto de la operación o acto",
-      "description": "El campo es obligatorio si existe la etiqueta <datos_liquidacion>. El monto expresado en este campo debe corresponder al instrumento y moneda de cada liquidación.\n\nLongitud: 4 - 17\nFormato: Formato: 14 dígitos con 2 decimales obligatorios."
-    }
-  },
-  "uiMapping": {
-    "firstName": "nombre",
-    "lastName": "apellido_paterno",
-    "secondLastName": "apellido_materno",
-    "birthDate": "fecha_nacimiento",
-    "curp": "curp",
-    "rfc": "rfc",
-    "businessName": "denominacion_razon",
-    "incorporationDate": "fecha_constitucion",
-    "nationality": "pais_nacionalidad",
-    "email": "correo_electronico",
-    "phone": "telefono",
-    "street": "calle",
-    "externalNumber": "numero_exterior",
-    "internalNumber": "numero_interior",
-    "neighborhood": "colonia",
-    "postalCode": "codigo_postal",
-    "city": "municipio",
-    "municipality": "municipio",
-    "stateCode": "entidad_federativa",
-    "operationDate": "fecha_operacion",
-    "operationType": "tipo_operacion",
-    "branchPostalCode": "codigo_postal",
-    "vehicleType": "tipo_vehiculo",
-    "brandId": "marca_fabricante",
-    "model": "modelo",
-    "year": "anio",
-    "plates": "placas",
-    "engineNumber": "numero_motor",
-    "registrationNumber": "numero_registro",
-    "flagCountryId": "pais_bandera",
-    "armorLevel": "nivel_blindaje",
-    "amount": "monto_operacion",
-    "currency": "moneda",
-    "paymentDate": "fecha_pago",
-    "paymentMethods": "forma_pago",
-    "vin": "vin",
-    "repuve": "repuve"
-  }
+	"descriptions": {
+		"archivo": {
+			"name": "Archivo XML",
+			"description": "La etiqueta es obligatoria. La etiqueta es el padre del documento XML."
+		},
+		"informe": {
+			"name": "Informe",
+			"description": "La etiqueta es obligatoria. En caso de Entidad Colegiada debe incluirse una etiqueta <informe> por cada Sujeto Obligado, en caso contrario incluir solo una etiqueta."
+		},
+		"mes_reportado": {
+			"name": "Mes reportado",
+			"description": "El campo es obligatorio. La longitud es de 6 dígitos.\n\nLongitud: 6\nFormato: AAAAMM"
+		},
+		"sujeto_obligado": {
+			"name": "Datos de identificación de quien realiza la Actividad Vulnerable",
+			"description": "La etiqueta es obligatoria. Se debe encontrar el cierre de etiqueta </sujeto_obligado>"
+		},
+		"clave_entidad_colegiada": {
+			"name": "Clave de la Entidad Colegiada por medio de la cual se remiten los avisos",
+			"description": "El campo es opcional si el sujeto obligado no se encuentra registrado con una entidad colegiada. La longitud es de 12 caracteres.\n\nLongitud: 12\nFormato: Patrón:\nLLLAAMMDDXXX;\nen donde, L=(A-Z) letra o caracteres & o Ñ, AA=año, MM=mes, DD=día, X=alfanumérico"
+		},
+		"clave_sujeto_obligado": {
+			"name": "Clave de quien realiza la Actividad Vulnerable que genera el aviso",
+			"description": "El campo es obligatorio. La longitud mínima es de 12 dígitos y máxima de 13.\n\nLongitud: 12-13\nFormato: Patrón:\nLLLLAAMMDDXXX/LLLAAMMDDXXX;\nen donde, L=(A-Z) letra o caracteres &o Ñ, AA=año, MM=mes, DD=día, X=alfanumérico"
+		},
+		"clave_actividad": {
+			"name": "Clave de la actividad vulnerable",
+			"description": "El campo es obligatorio. La longitud es de 3 caracteres\n\nLongitud: 3\nFormato: Patrón: AAA"
+		},
+		"exento": {
+			"name": "¿El envío del informe corresponde a la realización de actos u operaciones previstos en el artículo 27 Bis de las Reglas de Carácter General de la LFPIORPI?",
+			"description": "El campo es obligatorio en caso de que el sujeto obligado realice el envío del informe correspondiente a la realización de actos u operaciones previstos en el artículo 27 Bis de las Reglas de Carácter General de la LFPIORPI, en caso contrario no debe colocarse. La longitud es de 1 dígito.\n\nLongitud: 1"
+		},
+		"aviso": {
+			"name": "Datos del Aviso",
+			"description": "Si existe la etiqueta, se debe encontrar el cierre de etiqueta </aviso>"
+		},
+		"referencia_aviso": {
+			"name": "Referencia del Aviso",
+			"description": "El campo es obligatorio para cada aviso. La longitud mínima es de 1 carácter y la máxima es de 14.\n\nLongitud: 1 -14"
+		},
+		"modificatorio": {
+			"name": "Datos si el aviso es modificatorio",
+			"description": "Si existe la etiqueta, se debe encontrar el cierre de la misma </modificatorio>"
+		},
+		"folio_modificacion": {
+			"name": "Folio del Aviso previo que se modifica",
+			"description": "El campo es obligatorio si existe la etiqueta <modificatorio>. La longitud mínima es de 6 caracteres y la máxima es de 14.\n\nLongitud: 6 - 14\nFormato: Patrón: AAAA-999999999 (sin ceros a la izquierda)"
+		},
+		"descripcion_modificacion": {
+			"name": "Descripción de la modificación",
+			"description": "El campo es obligatorio si existe la etiqueta <modificatorio>. La longitud mínima es de 1 caracteres y la máxima es de 3000.\n\nLongitud: 1-3000"
+		},
+		"prioridad": {
+			"name": "Prioridad de aviso",
+			"description": "El campo es obligatorio para cada aviso. Se debe especificar la prioridad del aviso con la clave numérica que le corresponda de acuerdo al siguiente listado:\n     1 - Normal.\n     2 - 24 hrs. con operaciones\n\nLongitud: 1\nFormato: Patrón: 9"
+		},
+		"alerta": {
+			"name": "Alertas",
+			"description": "La etiqueta es obligatoria. Se debe encontrar el cierre de etiqueta </alerta>"
+		},
+		"tipo_alerta": {
+			"name": "Tipo de alerta",
+			"description": "El campo es obligatorio. La longitud mínima es de 3 caracteres y máxima de 4.\n\nLongitud: 3-4\nFormato: Patrón: 9999"
+		},
+		"descripcion_alerta": {
+			"name": "Descripción de alerta",
+			"description": "La longitud mínima es de 1 caracteres y la máxima es de 3000. El campo es alfanumérico.\n\nLongitud: 1-3000"
+		},
+		"persona_aviso": {
+			"name": "Datos de identificación de la persona objeto del aviso",
+			"description": "La etiqueta es obligatoria. Se debe encontrar el cierre de etiqueta </persona_aviso>"
+		},
+		"tipo_persona": {
+			"name": "Datos de tipo de persona del beneficiario controlador o dueño beneficiario",
+			"description": "Si existe la etiqueta <dueno_beneficiario>, entonces la etiqueta es obligatoria. Se debe encontrar el cierre de etiqueta </tipo_persona>"
+		},
+		"persona_fisica": {
+			"name": "Datos de la persona cuando se trata de persona física",
+			"description": "Si no existe la etiqueta <persona_moral> o <fideicomiso>, entonces es obligatoria la etiqueta <persona_fisica>. No puede existir más de una. Se debe encontrar el cierre de etiqueta </persona_fisica>"
+		},
+		"nombre": {
+			"name": "Nombre(s)",
+			"description": "El campo es obligatorio si existe la etiqueta <persona_fisica>. La longitud mínima es de 1 carácter y máxima de 200.\n\nLongitud: 1-200"
+		},
+		"apellido_paterno": {
+			"name": "Apellido Paterno",
+			"description": "El campo es obligatorio si existe la etiqueta <persona_fisica>. La longitud mínima es de 1 carácter y máxima de 200.\n\nLongitud: 1-200"
+		},
+		"apellido_materno": {
+			"name": "Apellido Materno",
+			"description": "El campo es obligatorio si existe la etiqueta <persona_fisica>. La longitud mínima es de 1 carácter y máxima de 200.\n\nLongitud: 1-200"
+		},
+		"fecha_nacimiento": {
+			"name": "Fecha de Nacimiento",
+			"description": "La longitud es de 8 dígitos. El campo es numérico y sigue el patrón AAAAMMDD que representa el formato de fecha, donde:\n- AAAA corresponde al año en 4 dígitos.\n- MM mes a dos dígitos.\n- DD día a dos dígitos\n\nLongitud: 8\nFormato: AAAAMMDD"
+		},
+		"rfc": {
+			"name": "Registro Federal de Contribuyentes (RFC) del Fideicomiso",
+			"description": "La longitud es de 12 caracteres. El campo es alfanumérico y sigue el patrón LLLAAMMDDCCC que representa el formato donde:\n- LLL Letras en mayúsculas, sin acentos ni diéresis de A-Z, se pueden incluir los caracteres & o Ñ.\n- AA  dos dígitos.\n- MM  dos dígitos.\n- DD dos dígitos\n- CCC Caracteres que representan la homoclave, pueden ser letras de A-Z (mayúsculas, sin acentos y sin diéresis) y/o números.\n\n-\n\nLongitud: 12\nFormato: Patrón: LLLAAMMDDXXX; en donde, L=(A-Z) letra o caracteres & o Ñ,  AA=año, MM=mes, DD=día, X= alfanumérico."
+		},
+		"curp": {
+			"name": "Clave Única de Registro de Población",
+			"description": "La longitud es de 18 caracteres. El campo es alfanumérico y sigue el patrón LLLLAAMMDDGEFCCC99 que representa el formato donde:\n- LLLL Letras en mayúsculas, sin acentos ni diéresis de A-Z \n- AA dos dígitos\n- MM dos dígitos\n- DD dos dígitos\n- G un carácter. Caracteres permitidos  H o M\n- EF dos caracteres. Caracteres permitidos de A-Z\n- CCC tres caracteres. Caracteres permitidos de A-Z\n- 99 dos dígitos\n\nLongitud: 18\nFormato: Formato: AAAAAAAAAAAAAAAAAA\nPatrón: LLLLAAMMDDGEFCCC99; en donde, L=(A-Z) letra,  AA=año, MM=mes, DD=día, G=M ó H, EF= Entidad federativa CC= (A-Z) letras 99=(0-9) número"
+		},
+		"pais_nacionalidad": {
+			"name": "Clave país de nacionalidad",
+			"description": "La longitud es de 2 caracteres. El campo es alfabético.\n\nLongitud: 2\nFormato: Formato: AA"
+		},
+		"actividad_economica": {
+			"name": "Actividad económica u ocupación",
+			"description": "El campo es obligatorio si existe la etiqueta <persona_fisica>. La longitud es de 7 dígitos.\n\nLongitud: 7\nFormato: Patrón: 9999999"
+		},
+		"persona_moral": {
+			"name": "Datos de la persona cuando se trata de persona moral",
+			"description": "Si no existe la etiqueta <persona_fisica> o <fideicomiso>, entonces es obligatoria la etiqueta <persona_moral>. No puede existir más de una. Se debe encontrar el cierre de etiqueta </persona_moral>"
+		},
+		"denominacion_razon": {
+			"name": "Denominación o Razón Social del Fiduciario",
+			"description": "El campo es obligatorio si existe la etiqueta <fideicomiso>. La longitud mínima es de 1 carácter y máxima de 254.\n\nLongitud: 1 -254"
+		},
+		"fecha_constitucion": {
+			"name": "Fecha de Constitución",
+			"description": "La longitud es de 8 dígitos. El campo es numérico y sigue el patrón AAAAMMDD que representa el formato de fecha, donde:\n- AAAA corresponde al año en 4 dígitos.\n- MM mes a dos dígitos.\n- DD día a dos dígitos\n\nLongitud: 8\nFormato: Patrón: AAAAMMDD"
+		},
+		"giro_mercantil": {
+			"name": "Actividad económica o giro mercantil u objeto social",
+			"description": "El campo es obligatorio si existe la etiqueta <persona_moral>. La longitud es de 7 dígitos.\n\nLongitud: 7\nFormato: Formato: 9999999"
+		},
+		"representante_apoderado": {
+			"name": "Representante o apoderado legal o persona que realice el acto u operación a nombre de la persona moral",
+			"description": "La etiqueta es obligatoria si existe la etiqueta <persona_moral>. Se debe encontrar el cierre de etiqueta <\\representante_apoderado>"
+		},
+		"fideicomiso": {
+			"name": "Datos de la persona cuando se trata de fideicomiso",
+			"description": "Si no existe la etiqueta <persona_fisica> o <persona_moral>, entonces es obligatoria la etiqueta <fideicomiso>. No puede existir más de una. Se debe encontrar el cierre de etiqueta </fideicomiso>"
+		},
+		"identificador_fideicomiso": {
+			"name": "Número, referencia o identificador del fideicomiso",
+			"description": "La longitud mínima es de 1 carácter y máxima de 40. El campo es alfanumérico.\n\nLongitud: 1-40"
+		},
+		"apoderado_delegado": {
+			"name": "Apoderado legal o delegado fiduciario que realice el acto u operación a nombre del fideicomiso",
+			"description": "La etiqueta es obligatoria si existe la etiqueta <fideicomiso>. Se debe encontrar el cierre de etiqueta <\\apoderado_delegado>"
+		},
+		"tipo_domicilio": {
+			"name": "Datos de tipo de domicilio de la persona objeto del aviso",
+			"description": "Se debe encontrar el cierre de etiqueta </tipo_domicilio>"
+		},
+		"nacional": {
+			"name": "Datos del domicilio si es nacional",
+			"description": "Si no existe la etiqueta <extranjero>, entonces es obligatoria la etiqueta <nacional>. No pueden existir las dos. Se debe encontrar el cierre de etiqueta </nacional>"
+		},
+		"colonia": {
+			"name": "Colonia",
+			"description": "El campo es obligatorio si existe la etiqueta <extranjero>. La longitud mínima es de 1 carácter y máxima de 50.\n\nLongitud: 1-50"
+		},
+		"calle": {
+			"name": "Calle, avenida o vía",
+			"description": "El campo es obligatorio si existe la etiqueta <extranjero>. La longitud mínima es de 1 carácter y máxima de 100.\n\nLongitud: 1-100"
+		},
+		"numero_exterior": {
+			"name": "Número exterior",
+			"description": "El campo es obligatorio si existe la etiqueta <extranjero>. La longitud mínima es de 1 carácter y máxima de 56.\n\nLongitud: 1-56"
+		},
+		"numero_interior": {
+			"name": "Número interior",
+			"description": "La longitud mínima es de 1 carácter y máxima de 40. Únicamente acepta los siguientes caracteres letras de A-Z (mayúsculas y  sin acentos ni diéresis), letra Ñ, números del 0-9, espacio ( ), coma (,), punto (.), dos puntos (:), diagonal (/), guión medio(-).\nNota. Los paréntesis no se incluyen en caracteres permitidos.\n\nLongitud: 1-40"
+		},
+		"codigo_postal": {
+			"name": "Codigo Postal de la sucursal donde se realizó la operación o acto",
+			"description": "El campo es obligatorio si existe la etiqueta <datos_operacion>. La longitud es de 5 caracteres.\n\nLongitud: 5"
+		},
+		"extranjero": {
+			"name": "Datos del domicilio si es extranjero",
+			"description": "Si no existe la etiqueta <nacional>, entonces es obligatoria la etiqueta <extranjero>. No pueden existir las dos. Se debe encontrar el cierre de etiqueta </extranjero>"
+		},
+		"pais": {
+			"name": "Clave del país donde se encuentra el domicilio",
+			"description": "El campo es obligatorio si existe la etiqueta <extranjero>. La longitud es de 2 caracteres.\n\nLongitud: 2\nFormato: Formato: AA"
+		},
+		"estado_provincia": {
+			"name": "Estado, provincia, departamento o demarcación política similar que corresponda",
+			"description": "El campo es obligatorio si existe la etiqueta <extranjero>. La longitud mínima es de 1 carácter y máxima de 100.\n\nLongitud: 1-100"
+		},
+		"ciudad_poblacion": {
+			"name": "Ciudad o población",
+			"description": "El campo es obligatorio si se encuentra la etiqueta <extranjero>. La longitud mínima es de 1 carácter y máxima de 100.\n\nLongitud: 1-100"
+		},
+		"telefono": {
+			"name": "Datos del número telefónico",
+			"description": "La etiqueta es obligatoria. Se debe encontrar el cierre de etiqueta </telefono>"
+		},
+		"clave_pais": {
+			"name": "Clave del país",
+			"description": "La longitud es de 2 caracteres. El campo es alfabético.\n\nLongitud: 2\nFormato: Formato: AA"
+		},
+		"numero_telefono": {
+			"name": "Número de teléfono",
+			"description": "El campo es obligatorio si se cuenta con la información. La longitud mínima es de 10 caracteres y máxima de 12.\n\nLongitud: 10-12\nFormato: Formato: Clave de región + número telefónico"
+		},
+		"correo_electronico": {
+			"name": "Correo electrónico",
+			"description": "La longitud mínima es de 5 caracteres y máxima de 60. De acuerdo al patrón, permite los caracteres: letras de A-Z, números del 0-9, guión medio (-), punto (.), guión bajo (_), apóstrofe (').\nEs obligatorio contar con el carácter @ y al menos una letra, un punto y otra letra después de @. ejemplo a@a.a\nNota. Los paréntesis no se incluyen en caracteres permitidos.\n\nLongitud: 5 - 60\nFormato: Patrón: ([A-Z][0-9]._-')+@([A-Z][0-9]._-')+"
+		},
+		"dueno_beneficiario": {
+			"name": "Datos de identificación del beneficiario controlador o dueño beneficiario",
+			"description": "Se debe encontrar el cierre de etiqueta </dueno_beneficiario>. En caso de no contar con la información, no necesita incluirse la sección en el reporte."
+		},
+		"detalle_operaciones": {
+			"name": "Detalle de la(s) operación(es) o acto(s)",
+			"description": "La etiqueta es obligatoria. Se debe encontrar el cierre de etiqueta </detalle_operaciones>."
+		},
+		"datos_operacion": {
+			"name": "Datos de la Operación",
+			"description": "La etiqueta es obligatoria si existe la etiqueta <detalle_operaciones> (por lo menos deberá incluirse una operación). Se debe encontrar el cierre de etiqueta </datos_operacion>."
+		},
+		"fecha_operacion": {
+			"name": "Fecha de la operación o acto",
+			"description": "El campo es obligatorio si existe la etiqueta <datos_operacion>. La longitud es de 8 dígitos.\n\nLongitud: 8\nFormato: Patrón: AAAAMMDD"
+		},
+		"tipo_operacion": {
+			"name": "Tipo de Operación",
+			"description": "El campo es obligatorio si existe la etiqueta <datos_operacion>. La longitud mínima es de 3 dígitos y máxima de 4.\n\nLongitud: 3-4\nFormato: Patrón:\n9999"
+		},
+		"tipo_vehiculo": {
+			"name": "Tipo de Vehículo",
+			"description": "Obligatorio si existe la etiqueta <datos_operacion>. Se debe encontrar el cierre de etiqueta </tipo_vehiculo>."
+		},
+		"datos_vehiculo_terrestre": {
+			"name": "Datos del vehículo cuando es un Vehículo Terrestre",
+			"description": "La etiqueta es obligatoria, si el Tipo de Vehículo es Terrestre y no existen las etiquetas <datos_vehiculo_maritimo> o <datos_vehiculo_aereo>. Solo debe existir una de ellas. Se debe encontrar el cierre de etiqueta </datos_vehiculo_terrestre>."
+		},
+		"marca_fabricante": {
+			"name": "Marca/ Fabricante",
+			"description": "El campo es obligatorio si existe la etiqueta <datos_vehiculo_aereo>. La longitud mínima es de 1 carácter y máxima de 40.\n\nLongitud: 1-40"
+		},
+		"modelo": {
+			"name": "Modelo",
+			"description": "El campo es obligatorio si existe la etiqueta <datos_vehiculo_aereo>. La longitud mínima es de 1 carácter y máxima de 40.\n\nLongitud: 1-40"
+		},
+		"anio": {
+			"name": "Año",
+			"description": "El campo es obligatorio si existe la etiqueta <datos_vehiculo_aereo>. La longitud es de 4 dígitos.\n\nLongitud: 4\nFormato: Formato: AAAA"
+		},
+		"vin": {
+			"name": "Número de Identificación Vehivular (VIN)",
+			"description": "La longitud es de 17 caracteres. El campo es alfanumérico.\n\nLongitud: 17"
+		},
+		"repuve": {
+			"name": "No. de inscripción en el Registro Público Vehícular",
+			"description": "La longitud es de 8 caracteres. El campo es alfanumérico.\n\nLongitud: 8"
+		},
+		"placas": {
+			"name": "Placas",
+			"description": "La longitud mínima es de 1 carácter y máxima de 12. El campo es alfanumérico.\n\nLongitud: 1 - 12"
+		},
+		"nivel_blindaje": {
+			"name": "Nivel de blindaje",
+			"description": "La longitud debe ser de 1 carácter. El campo es entero numérico sin ceros a la izquierda.\n\nLongitud: 1\nFormato: Patrón:\n9"
+		},
+		"datos_vehiculo_maritimo": {
+			"name": "Datos del vehículo cuando es un Vehículo Marítimo",
+			"description": "La etiqueta es obligatoria, si el Tipo de Vehículo es Marítimo y no existen las etiquetas <datos_vehiculo_terrestre> o <datos_vehiculo_aereo>. Solo debe existir una de ellas. Se debe encontrar el cierre de etiqueta </datos_vehiculo_maritimo>."
+		},
+		"numero_serie": {
+			"name": "Número de serie",
+			"description": "El campo es obligatorio si existe la etiqueta <datos_vehiculo_aereo>. La longitud mínima es de 1 carácter y máxima de 20\n\nLongitud: 20"
+		},
+		"bandera": {
+			"name": "Bandera",
+			"description": "El campo es obligatorio si existe la etiqueta <datos_vehiculo_maritimo>. La longitud es de 2 caracteres.\n\nLongitud: 2\nFormato: Formato: AA"
+		},
+		"matricula": {
+			"name": "Matrícula",
+			"description": "La longitud mínima es de 1 carácter y máxima de 12. El campo es alfanumérico.\n\nLongitud: 1 - 12"
+		},
+		"datos_vehiculo_aereo": {
+			"name": "Datos del vehículo cuando es un Vehículo Aéreo",
+			"description": "La etiqueta es obligatoria, si el Tipo de Vehículo es Aéreo y no existen las etiquetas <datos_vehiculo_terrestre> o <datos_vehiculo_maritimo>. Solo debe existir una de ellas. Se debe encontrar el cierre de etiqueta </datos_vehiculo_aereo>."
+		},
+		"datos_liquidacion": {
+			"name": "Datos de liquidación de la operación o acto",
+			"description": "La etiqueta es obligatoria si existe la etiqueta <datos_operacion> y el Tipo de operación es diferente a \"Intercambio\". Se debe encontrar el cierre de etiqueta </datos_liquidacion>"
+		},
+		"fecha_pago": {
+			"name": "Fecha de pago",
+			"description": "El campo es obligatorio si existe la etiqueta <datos_liquidacion>. La longitud es de 8 dígitos.\n\nLongitud: 8\nFormato: Patrón: \nAAAAMMDD"
+		},
+		"forma_pago": {
+			"name": "Forma de pago",
+			"description": "El campo es obligatorio si existe la etiqueta <datos_liquidacion>. La longitud es de 1 dígito.\n\nLongitud: 1\nFormato: 9"
+		},
+		"instrumento_monetario": {
+			"name": "Instrumento monetario con el que se realizó la operación o acto",
+			"description": "Obligatorio si existe la etiqueta <datos_liquidacion> y si la forma de pago es \"Contado\", \"Diferido o en parcialidades\" o \"Permuta\". La longitud mínima es de 1 dígito y máxima de 2.\n\nLongitud: 1-2\nFormato: Patrón:\n99"
+		},
+		"moneda": {
+			"name": "Tipo de moneda o divisa de la operación o acto",
+			"description": "El campo es obligatorio si existe la etiqueta <datos_liquidacion>. La longitud mínima es de 1 dígito y máxima de 3.\n\nLongitud: 1-3\nFormato: Patrón:\n999"
+		},
+		"monto_operacion": {
+			"name": "Monto de la operación o acto",
+			"description": "El campo es obligatorio si existe la etiqueta <datos_liquidacion>. El monto expresado en este campo debe corresponder al instrumento y moneda de cada liquidación.\n\nLongitud: 4 - 17\nFormato: Formato: 14 dígitos con 2 decimales obligatorios."
+		}
+	},
+	"uiMapping": {
+		"firstName": "nombre",
+		"lastName": "apellido_paterno",
+		"secondLastName": "apellido_materno",
+		"birthDate": "fecha_nacimiento",
+		"curp": "curp",
+		"rfc": "rfc",
+		"businessName": "denominacion_razon",
+		"incorporationDate": "fecha_constitucion",
+		"nationality": "pais_nacionalidad",
+		"email": "correo_electronico",
+		"phone": "telefono",
+		"street": "calle",
+		"externalNumber": "numero_exterior",
+		"internalNumber": "numero_interior",
+		"neighborhood": "colonia",
+		"postalCode": "codigo_postal",
+		"city": "municipio",
+		"municipality": "municipio",
+		"stateCode": "entidad_federativa",
+		"operationDate": "fecha_operacion",
+		"operationType": "tipo_operacion",
+		"branchPostalCode": "codigo_postal",
+		"vehicleType": "tipo_vehiculo",
+		"brandId": "marca_fabricante",
+		"model": "modelo",
+		"year": "anio",
+		"plates": "placas",
+		"engineNumber": "numero_motor",
+		"registrationNumber": "numero_registro",
+		"flagCountryId": "pais_bandera",
+		"armorLevel": "nivel_blindaje",
+		"amount": "monto_operacion",
+		"currency": "moneda",
+		"paymentDate": "fecha_pago",
+		"paymentMethods": "forma_pago",
+		"vin": "vin",
+		"repuve": "repuve"
+	}
 }

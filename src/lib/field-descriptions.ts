@@ -15,9 +15,7 @@ const data = fieldDescriptionsData as FieldDescriptionsData;
 /**
  * Get field description by UI field name
  */
-export function getFieldDescription(
-	uiFieldName: string,
-): string | undefined {
+export function getFieldDescription(uiFieldName: string): string | undefined {
 	const xmlTag = data.uiMapping[uiFieldName];
 	if (!xmlTag) return undefined;
 
@@ -28,7 +26,9 @@ export function getFieldDescription(
 /**
  * Get field description by XML tag directly
  */
-export function getFieldDescriptionByXmlTag(xmlTag: string): string | undefined {
+export function getFieldDescriptionByXmlTag(
+	xmlTag: string,
+): string | undefined {
 	const description = data.descriptions[xmlTag];
 	return description?.description;
 }
