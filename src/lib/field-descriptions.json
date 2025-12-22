@@ -82,31 +82,31 @@
 		},
 		"nombre": {
 			"name": "Nombre(s)",
-			"description": "El campo es obligatorio si existe la etiqueta <persona_fisica>. La longitud mínima es de 1 carácter y máxima de 200.\n\nLongitud: 1-200"
+			"description": "Ingresa el nombre o nombres de la persona física. Puede contener hasta 200 caracteres."
 		},
 		"apellido_paterno": {
 			"name": "Apellido Paterno",
-			"description": "El campo es obligatorio si existe la etiqueta <persona_fisica>. La longitud mínima es de 1 carácter y máxima de 200.\n\nLongitud: 1-200"
+			"description": "Ingresa el apellido paterno de la persona física. Puede contener hasta 200 caracteres."
 		},
 		"apellido_materno": {
 			"name": "Apellido Materno",
-			"description": "El campo es obligatorio si existe la etiqueta <persona_fisica>. La longitud mínima es de 1 carácter y máxima de 200.\n\nLongitud: 1-200"
+			"description": "Ingresa el apellido materno de la persona física. Este campo es opcional. Puede contener hasta 200 caracteres."
 		},
 		"fecha_nacimiento": {
 			"name": "Fecha de Nacimiento",
-			"description": "La longitud es de 8 dígitos. El campo es numérico y sigue el patrón AAAAMMDD que representa el formato de fecha, donde:\n- AAAA corresponde al año en 4 dígitos.\n- MM mes a dos dígitos.\n- DD día a dos dígitos\n\nLongitud: 8\nFormato: AAAAMMDD"
+			"description": "Selecciona la fecha de nacimiento de la persona física. El formato debe ser año, mes y día (AAAA-MM-DD)."
 		},
 		"rfc": {
-			"name": "Registro Federal de Contribuyentes (RFC) del Fideicomiso",
-			"description": "La longitud es de 12 caracteres. El campo es alfanumérico y sigue el patrón LLLAAMMDDCCC que representa el formato donde:\n- LLL Letras en mayúsculas, sin acentos ni diéresis de A-Z, se pueden incluir los caracteres & o Ñ.\n- AA  dos dígitos.\n- MM  dos dígitos.\n- DD dos dígitos\n- CCC Caracteres que representan la homoclave, pueden ser letras de A-Z (mayúsculas, sin acentos y sin diéresis) y/o números.\n\n-\n\nLongitud: 12\nFormato: Patrón: LLLAAMMDDXXX; en donde, L=(A-Z) letra o caracteres & o Ñ,  AA=año, MM=mes, DD=día, X= alfanumérico."
+			"name": "Registro Federal de Contribuyentes (RFC)",
+			"description": "Ingresa el RFC de la persona o empresa. Para persona física debe tener 13 caracteres, para persona moral o fideicomiso debe tener 12 caracteres. El formato incluye letras mayúsculas (sin acentos), números y los caracteres & o Ñ."
 		},
 		"curp": {
 			"name": "Clave Única de Registro de Población",
-			"description": "La longitud es de 18 caracteres. El campo es alfanumérico y sigue el patrón LLLLAAMMDDGEFCCC99 que representa el formato donde:\n- LLLL Letras en mayúsculas, sin acentos ni diéresis de A-Z \n- AA dos dígitos\n- MM dos dígitos\n- DD dos dígitos\n- G un carácter. Caracteres permitidos  H o M\n- EF dos caracteres. Caracteres permitidos de A-Z\n- CCC tres caracteres. Caracteres permitidos de A-Z\n- 99 dos dígitos\n\nLongitud: 18\nFormato: Formato: AAAAAAAAAAAAAAAAAA\nPatrón: LLLLAAMMDDGEFCCC99; en donde, L=(A-Z) letra,  AA=año, MM=mes, DD=día, G=M ó H, EF= Entidad federativa CC= (A-Z) letras 99=(0-9) número"
+			"description": "Ingresa la CURP de la persona física. Debe tener exactamente 18 caracteres alfanuméricos. La CURP incluye información sobre nombre, fecha de nacimiento, género y entidad federativa."
 		},
 		"pais_nacionalidad": {
-			"name": "Clave país de nacionalidad",
-			"description": "La longitud es de 2 caracteres. El campo es alfabético.\n\nLongitud: 2\nFormato: Formato: AA"
+			"name": "País de nacionalidad",
+			"description": "Selecciona el país de nacionalidad de la persona física. Este campo se utiliza para identificar la nacionalidad del cliente según los requerimientos de la UIF."
 		},
 		"actividad_economica": {
 			"name": "Actividad económica u ocupación",
@@ -117,12 +117,12 @@
 			"description": "Si no existe la etiqueta <persona_fisica> o <fideicomiso>, entonces es obligatoria la etiqueta <persona_moral>. No puede existir más de una. Se debe encontrar el cierre de etiqueta </persona_moral>"
 		},
 		"denominacion_razon": {
-			"name": "Denominación o Razón Social del Fiduciario",
-			"description": "El campo es obligatorio si existe la etiqueta <fideicomiso>. La longitud mínima es de 1 carácter y máxima de 254.\n\nLongitud: 1 -254"
+			"name": "Razón Social",
+			"description": "Ingresa la razón social o denominación completa de la empresa o fideicomiso. Este es el nombre oficial registrado ante las autoridades. Puede contener hasta 254 caracteres."
 		},
 		"fecha_constitucion": {
 			"name": "Fecha de Constitución",
-			"description": "La longitud es de 8 dígitos. El campo es numérico y sigue el patrón AAAAMMDD que representa el formato de fecha, donde:\n- AAAA corresponde al año en 4 dígitos.\n- MM mes a dos dígitos.\n- DD día a dos dígitos\n\nLongitud: 8\nFormato: Patrón: AAAAMMDD"
+			"description": "Selecciona la fecha en que se constituyó la empresa o fideicomiso. El formato debe ser año, mes y día (AAAA-MM-DD)."
 		},
 		"giro_mercantil": {
 			"name": "Actividad económica o giro mercantil u objeto social",
@@ -154,23 +154,23 @@
 		},
 		"colonia": {
 			"name": "Colonia",
-			"description": "El campo es obligatorio si existe la etiqueta <extranjero>. La longitud mínima es de 1 carácter y máxima de 50.\n\nLongitud: 1-50"
+			"description": "Ingresa el nombre de la colonia, fraccionamiento o asentamiento donde se encuentra el domicilio. Puede contener hasta 50 caracteres."
 		},
 		"calle": {
-			"name": "Calle, avenida o vía",
-			"description": "El campo es obligatorio si existe la etiqueta <extranjero>. La longitud mínima es de 1 carácter y máxima de 100.\n\nLongitud: 1-100"
+			"name": "Calle",
+			"description": "Ingresa el nombre de la calle, avenida o vía donde se encuentra el domicilio. Puede contener hasta 100 caracteres."
 		},
 		"numero_exterior": {
 			"name": "Número exterior",
-			"description": "El campo es obligatorio si existe la etiqueta <extranjero>. La longitud mínima es de 1 carácter y máxima de 56.\n\nLongitud: 1-56"
+			"description": "Ingresa el número exterior del domicilio. Puede contener hasta 56 caracteres."
 		},
 		"numero_interior": {
 			"name": "Número interior",
-			"description": "La longitud mínima es de 1 carácter y máxima de 40. Únicamente acepta los siguientes caracteres letras de A-Z (mayúsculas y  sin acentos ni diéresis), letra Ñ, números del 0-9, espacio ( ), coma (,), punto (.), dos puntos (:), diagonal (/), guión medio(-).\nNota. Los paréntesis no se incluyen en caracteres permitidos.\n\nLongitud: 1-40"
+			"description": "Ingresa el número interior, departamento, oficina o local si aplica. Este campo es opcional. Puede contener letras, números, espacios y los caracteres: coma, punto, dos puntos, diagonal y guión medio. Máximo 40 caracteres."
 		},
 		"codigo_postal": {
-			"name": "Codigo Postal de la sucursal donde se realizó la operación o acto",
-			"description": "El campo es obligatorio si existe la etiqueta <datos_operacion>. La longitud es de 5 caracteres.\n\nLongitud: 5"
+			"name": "Código Postal",
+			"description": "Ingresa el código postal del domicilio o de la sucursal donde se realizó la operación. Debe tener exactamente 5 dígitos."
 		},
 		"extranjero": {
 			"name": "Datos del domicilio si es extranjero",
@@ -186,23 +186,31 @@
 		},
 		"ciudad_poblacion": {
 			"name": "Ciudad o población",
-			"description": "El campo es obligatorio si se encuentra la etiqueta <extranjero>. La longitud mínima es de 1 carácter y máxima de 100.\n\nLongitud: 1-100"
+			"description": "Ingresa el nombre de la ciudad o población donde se encuentra el domicilio. Puede contener hasta 100 caracteres."
+		},
+		"municipio": {
+			"name": "Municipio",
+			"description": "Ingresa el nombre del municipio o delegación donde se encuentra el domicilio. Este campo es requerido para domicilios en México."
+		},
+		"entidad_federativa": {
+			"name": "Entidad Federativa",
+			"description": "Selecciona el estado o entidad federativa donde se encuentra el domicilio. Este campo es requerido para cumplir con los reportes de la UIF."
 		},
 		"telefono": {
-			"name": "Datos del número telefónico",
-			"description": "La etiqueta es obligatoria. Se debe encontrar el cierre de etiqueta </telefono>"
+			"name": "Teléfono",
+			"description": "Ingresa el número de teléfono de contacto del cliente. Debe incluir la clave de región (lada) seguida del número telefónico. Debe tener entre 10 y 12 dígitos."
 		},
 		"clave_pais": {
 			"name": "Clave del país",
-			"description": "La longitud es de 2 caracteres. El campo es alfabético.\n\nLongitud: 2\nFormato: Formato: AA"
+			"description": "Selecciona el código del país para el número telefónico. Debe ser un código de 2 letras según el estándar internacional."
 		},
 		"numero_telefono": {
 			"name": "Número de teléfono",
-			"description": "El campo es obligatorio si se cuenta con la información. La longitud mínima es de 10 caracteres y máxima de 12.\n\nLongitud: 10-12\nFormato: Formato: Clave de región + número telefónico"
+			"description": "Ingresa el número de teléfono completo incluyendo la clave de región (lada). Debe tener entre 10 y 12 dígitos."
 		},
 		"correo_electronico": {
 			"name": "Correo electrónico",
-			"description": "La longitud mínima es de 5 caracteres y máxima de 60. De acuerdo al patrón, permite los caracteres: letras de A-Z, números del 0-9, guión medio (-), punto (.), guión bajo (_), apóstrofe (').\nEs obligatorio contar con el carácter @ y al menos una letra, un punto y otra letra después de @. ejemplo a@a.a\nNota. Los paréntesis no se incluyen en caracteres permitidos.\n\nLongitud: 5 - 60\nFormato: Patrón: ([A-Z][0-9]._-')+@([A-Z][0-9]._-')+"
+			"description": "Ingresa la dirección de correo electrónico del cliente. Debe ser una dirección válida con el formato estándar (ejemplo: nombre@dominio.com). Puede contener letras, números, guiones, puntos y guiones bajos. Máximo 60 caracteres."
 		},
 		"dueno_beneficiario": {
 			"name": "Datos de identificación del beneficiario controlador o dueño beneficiario",
@@ -217,64 +225,76 @@
 			"description": "La etiqueta es obligatoria si existe la etiqueta <detalle_operaciones> (por lo menos deberá incluirse una operación). Se debe encontrar el cierre de etiqueta </datos_operacion>."
 		},
 		"fecha_operacion": {
-			"name": "Fecha de la operación o acto",
-			"description": "El campo es obligatorio si existe la etiqueta <datos_operacion>. La longitud es de 8 dígitos.\n\nLongitud: 8\nFormato: Patrón: AAAAMMDD"
+			"name": "Fecha de la operación",
+			"description": "Selecciona la fecha en que se realizó la operación o transacción con el vehículo. Esta fecha es importante para el reporte a la UIF."
 		},
 		"tipo_operacion": {
 			"name": "Tipo de Operación",
-			"description": "El campo es obligatorio si existe la etiqueta <datos_operacion>. La longitud mínima es de 3 dígitos y máxima de 4.\n\nLongitud: 3-4\nFormato: Patrón:\n9999"
+			"description": "Selecciona el tipo de operación realizada. Puede ser compra, venta u otro tipo de transacción relacionada con el vehículo."
 		},
 		"tipo_vehiculo": {
 			"name": "Tipo de Vehículo",
-			"description": "Obligatorio si existe la etiqueta <datos_operacion>. Se debe encontrar el cierre de etiqueta </tipo_vehiculo>."
+			"description": "Selecciona el tipo de vehículo involucrado en la operación: Terrestre (automóviles, motocicletas), Marítimo (barcos, yates) o Aéreo (aviones, helicópteros)."
 		},
 		"datos_vehiculo_terrestre": {
-			"name": "Datos del vehículo cuando es un Vehículo Terrestre",
-			"description": "La etiqueta es obligatoria, si el Tipo de Vehículo es Terrestre y no existen las etiquetas <datos_vehiculo_maritimo> o <datos_vehiculo_aereo>. Solo debe existir una de ellas. Se debe encontrar el cierre de etiqueta </datos_vehiculo_terrestre>."
+			"name": "Datos del vehículo terrestre",
+			"description": "Información específica del vehículo cuando es de tipo terrestre (automóvil, motocicleta, etc.)."
 		},
 		"marca_fabricante": {
-			"name": "Marca/ Fabricante",
-			"description": "El campo es obligatorio si existe la etiqueta <datos_vehiculo_aereo>. La longitud mínima es de 1 carácter y máxima de 40.\n\nLongitud: 1-40"
+			"name": "Marca/Fabricante",
+			"description": "Selecciona la marca o fabricante del vehículo (ejemplo: Toyota, Nissan, Honda). Este campo es obligatorio para identificar correctamente el vehículo en el reporte."
 		},
 		"modelo": {
 			"name": "Modelo",
-			"description": "El campo es obligatorio si existe la etiqueta <datos_vehiculo_aereo>. La longitud mínima es de 1 carácter y máxima de 40.\n\nLongitud: 1-40"
+			"description": "Ingresa el modelo del vehículo (ejemplo: Corolla, Sentra, Civic). Puede contener hasta 40 caracteres."
 		},
 		"anio": {
 			"name": "Año",
-			"description": "El campo es obligatorio si existe la etiqueta <datos_vehiculo_aereo>. La longitud es de 4 dígitos.\n\nLongitud: 4\nFormato: Formato: AAAA"
+			"description": "Ingresa el año de fabricación del vehículo. Debe ser un año válido de 4 dígitos (ejemplo: 2024)."
 		},
 		"vin": {
-			"name": "Número de Identificación Vehivular (VIN)",
-			"description": "La longitud es de 17 caracteres. El campo es alfanumérico.\n\nLongitud: 17"
+			"name": "Número de Identificación Vehicular (VIN)",
+			"description": "Ingresa el VIN del vehículo si está disponible. El VIN es un número único de 17 caracteres que identifica al vehículo. Este campo es opcional, pero se requiere al menos uno de: VIN, REPUVE o Placas."
 		},
 		"repuve": {
-			"name": "No. de inscripción en el Registro Público Vehícular",
-			"description": "La longitud es de 8 caracteres. El campo es alfanumérico.\n\nLongitud: 8"
+			"name": "REPUVE (Registro Público Vehicular)",
+			"description": "Ingresa el número de inscripción en el REPUVE si está disponible. Debe tener 8 caracteres alfanuméricos. Este campo es opcional, pero se requiere al menos uno de: VIN, REPUVE o Placas."
 		},
 		"placas": {
 			"name": "Placas",
-			"description": "La longitud mínima es de 1 carácter y máxima de 12. El campo es alfanumérico.\n\nLongitud: 1 - 12"
+			"description": "Ingresa el número de placas del vehículo si está disponible. Puede contener hasta 12 caracteres alfanuméricos. Este campo es opcional, pero se requiere al menos uno de: VIN, REPUVE o Placas."
 		},
 		"nivel_blindaje": {
 			"name": "Nivel de blindaje",
-			"description": "La longitud debe ser de 1 carácter. El campo es entero numérico sin ceros a la izquierda.\n\nLongitud: 1\nFormato: Patrón:\n9"
+			"description": "Selecciona el nivel de blindaje del vehículo si aplica. Este campo es opcional y solo se utiliza cuando el vehículo tiene blindaje certificado."
+		},
+		"numero_motor": {
+			"name": "Número de motor",
+			"description": "Ingresa el número de motor del vehículo si está disponible. Este campo es opcional y se utiliza para identificar vehículos terrestres."
+		},
+		"numero_registro": {
+			"name": "Número de registro",
+			"description": "Ingresa el número de registro o matrícula del vehículo marítimo o aéreo. Este campo es requerido para vehículos marítimos y aéreos."
+		},
+		"pais_bandera": {
+			"name": "País de bandera",
+			"description": "Selecciona el país de la bandera bajo la cual está registrado el vehículo marítimo o aéreo. Este campo es requerido para vehículos marítimos y aéreos."
 		},
 		"datos_vehiculo_maritimo": {
-			"name": "Datos del vehículo cuando es un Vehículo Marítimo",
-			"description": "La etiqueta es obligatoria, si el Tipo de Vehículo es Marítimo y no existen las etiquetas <datos_vehiculo_terrestre> o <datos_vehiculo_aereo>. Solo debe existir una de ellas. Se debe encontrar el cierre de etiqueta </datos_vehiculo_maritimo>."
+			"name": "Datos del vehículo marítimo",
+			"description": "Información específica del vehículo cuando es de tipo marítimo (barco, yate, etc.)."
 		},
 		"numero_serie": {
 			"name": "Número de serie",
-			"description": "El campo es obligatorio si existe la etiqueta <datos_vehiculo_aereo>. La longitud mínima es de 1 carácter y máxima de 20\n\nLongitud: 20"
+			"description": "Ingresa el número de serie del vehículo aéreo. Este campo es requerido para identificar vehículos aéreos. Puede contener hasta 20 caracteres."
 		},
 		"bandera": {
 			"name": "Bandera",
-			"description": "El campo es obligatorio si existe la etiqueta <datos_vehiculo_maritimo>. La longitud es de 2 caracteres.\n\nLongitud: 2\nFormato: Formato: AA"
+			"description": "Selecciona el país de la bandera bajo la cual está registrado el vehículo marítimo. Debe ser un código de país de 2 letras."
 		},
 		"matricula": {
 			"name": "Matrícula",
-			"description": "La longitud mínima es de 1 carácter y máxima de 12. El campo es alfanumérico.\n\nLongitud: 1 - 12"
+			"description": "Ingresa el número de matrícula del vehículo marítimo o aéreo. Puede contener hasta 12 caracteres alfanuméricos."
 		},
 		"datos_vehiculo_aereo": {
 			"name": "Datos del vehículo cuando es un Vehículo Aéreo",
@@ -286,23 +306,27 @@
 		},
 		"fecha_pago": {
 			"name": "Fecha de pago",
-			"description": "El campo es obligatorio si existe la etiqueta <datos_liquidacion>. La longitud es de 8 dígitos.\n\nLongitud: 8\nFormato: Patrón: \nAAAAMMDD"
+			"description": "Selecciona la fecha en que se realizó el pago de la operación. Esta fecha puede ser diferente a la fecha de la operación y es importante para el reporte a la UIF."
 		},
 		"forma_pago": {
 			"name": "Forma de pago",
-			"description": "El campo es obligatorio si existe la etiqueta <datos_liquidacion>. La longitud es de 1 dígito.\n\nLongitud: 1\nFormato: 9"
+			"description": "Selecciona la forma en que se realizó el pago de la operación (efectivo, transferencia, cheque, etc.). Este campo es requerido para el reporte."
 		},
 		"instrumento_monetario": {
-			"name": "Instrumento monetario con el que se realizó la operación o acto",
-			"description": "Obligatorio si existe la etiqueta <datos_liquidacion> y si la forma de pago es \"Contado\", \"Diferido o en parcialidades\" o \"Permuta\". La longitud mínima es de 1 dígito y máxima de 2.\n\nLongitud: 1-2\nFormato: Patrón:\n99"
+			"name": "Instrumento monetario",
+			"description": "Selecciona el tipo de instrumento monetario utilizado para el pago (efectivo, cheque, transferencia, etc.). Este campo es requerido cuando la forma de pago es contado, diferido o permuta."
 		},
 		"moneda": {
-			"name": "Tipo de moneda o divisa de la operación o acto",
-			"description": "El campo es obligatorio si existe la etiqueta <datos_liquidacion>. La longitud mínima es de 1 dígito y máxima de 3.\n\nLongitud: 1-3\nFormato: Patrón:\n999"
+			"name": "Moneda",
+			"description": "Selecciona la moneda en que se realizó la operación (MXN, USD, EUR, etc.). Este campo es requerido y debe coincidir con la moneda del monto ingresado."
 		},
 		"monto_operacion": {
-			"name": "Monto de la operación o acto",
-			"description": "El campo es obligatorio si existe la etiqueta <datos_liquidacion>. El monto expresado en este campo debe corresponder al instrumento y moneda de cada liquidación.\n\nLongitud: 4 - 17\nFormato: Formato: 14 dígitos con 2 decimales obligatorios."
+			"name": "Monto de la operación",
+			"description": "Ingresa el monto total de la operación. El formato debe incluir 2 decimales (ejemplo: 1500000.50). El monto debe corresponder a la moneda seleccionada y la suma de los métodos de pago debe igualar este monto."
+		},
+		"clave_actividad": {
+			"name": "Clave de actividad vulnerable",
+			"description": "Código que identifica el tipo de actividad vulnerable que realiza la organización. Actualmente solo se soporta VEH (Vehículos)."
 		}
 	},
 	"uiMapping": {
