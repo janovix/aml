@@ -121,38 +121,72 @@ function ComboboxContent({
 			const viewportWidth = window.innerWidth;
 			const viewportHeight = window.innerHeight;
 
+			// Dropdown maxHeight from style (400px)
+			const dropdownMaxHeight = 400;
+			const gap = 4; // Gap between trigger and dropdown
+			const minPadding = 8; // Minimum padding from viewport edges
+
+			// Try to get actual dropdown height if content is rendered
+			let dropdownHeight = dropdownMaxHeight;
+			if (contentRef.current) {
+				const contentRect = contentRef.current.getBoundingClientRect();
+				if (contentRect.height > 0) {
+					dropdownHeight = Math.min(contentRect.height, dropdownMaxHeight);
+				}
+			}
+
 			// Calculate available space
-			const spaceBelow = viewportHeight - rect.bottom;
-			const spaceAbove = rect.top;
+			const spaceBelow = viewportHeight - rect.bottom - gap;
+			const spaceAbove = rect.top - gap;
 
 			// Default: position below, align left edge with trigger
-			let top = rect.bottom + scrollY + 4; // 4px gap
+			let top = rect.bottom + scrollY + gap;
 			let left = rect.left + scrollX;
 			let width = Math.max(rect.width, 250); // Minimum width
 
-			// If not enough space below, position above
-			if (spaceBelow < 300 && spaceAbove > spaceBelow) {
-				top = rect.top + scrollY - 4; // 4px gap above
+			// Determine if we should position above based on available space
+			// Check if dropdown fits below, considering its actual/max height
+			const fitsBelow = spaceBelow >= dropdownHeight;
+			const fitsAbove = spaceAbove >= dropdownHeight;
+
+			if (!fitsBelow && fitsAbove) {
+				// Not enough space below, but enough above - position above
+				top = rect.top + scrollY - dropdownHeight - gap;
+				// Ensure we don't go above viewport
+				top = Math.max(scrollY + minPadding, top);
+			} else if (!fitsBelow && !fitsAbove) {
+				// Not enough space in either direction
+				// Position where there's more space, but ensure visibility
+				if (spaceAbove > spaceBelow) {
+					// More space above, position above but clamp
+					top = rect.top + scrollY - Math.min(dropdownHeight, spaceAbove - gap);
+					top = Math.max(scrollY + minPadding, top);
+				} else {
+					// More space below, position below but clamp
+					top = rect.bottom + scrollY + gap;
+					const maxTop =
+						viewportHeight +
+						scrollY -
+						minPadding -
+						Math.min(dropdownHeight, spaceBelow);
+					top = Math.min(top, maxTop);
+				}
 			}
+			// else: fitsBelow is true, use default position below
 
 			// Ensure content stays within viewport
 			const maxWidth = Math.min(viewportWidth - 16, 400); // 16px padding from edges
 			width = Math.min(width, maxWidth);
 
 			// Keep aligned with trigger left edge, but adjust if it would overflow
-			const maxLeft = viewportWidth - width - 8;
-			if (left + width > viewportWidth - 8) {
+			const maxLeft = viewportWidth - width - minPadding;
+			if (left + width > viewportWidth - minPadding) {
 				// If dropdown would overflow right, shift left to fit
-				left = Math.max(8, viewportWidth - width - 8);
+				left = Math.max(minPadding, viewportWidth - width - minPadding);
 			} else {
 				// Ensure minimum left padding
-				left = Math.max(8, left);
+				left = Math.max(minPadding, left);
 			}
-
-			// Clamp to viewport vertically (ensure at least 200px visible)
-			const minVisibleHeight = 200;
-			const maxTop = viewportHeight + scrollY - minVisibleHeight;
-			top = Math.max(8, Math.min(top, maxTop));
 
 			setPosition({ top, left, width });
 		};
@@ -160,7 +194,23 @@ function ComboboxContent({
 		// Initial position calculation with small delay to ensure DOM is ready
 		const timeoutId = setTimeout(() => {
 			updatePosition();
+			// Recalculate position after content renders to get actual height
+			setTimeout(() => {
+				updatePosition();
+			}, 50);
 		}, 0);
+
+		// Use ResizeObserver to recalculate when content size changes
+		let resizeObserver: ResizeObserver | null = null;
+		// Set up ResizeObserver after a delay to ensure content is rendered
+		const observerTimeoutId = setTimeout(() => {
+			if (contentRef.current && typeof ResizeObserver !== "undefined") {
+				resizeObserver = new ResizeObserver(() => {
+					updatePosition();
+				});
+				resizeObserver.observe(contentRef.current);
+			}
+		}, 100);
 
 		// Handle click outside to close
 		const handleClickOutside = (event: MouseEvent) => {
@@ -190,6 +240,10 @@ function ComboboxContent({
 
 		return () => {
 			clearTimeout(timeoutId);
+			clearTimeout(observerTimeoutId);
+			if (resizeObserver) {
+				resizeObserver.disconnect();
+			}
 			window.removeEventListener("scroll", updatePosition, true);
 			window.removeEventListener("resize", updatePosition);
 			document.removeEventListener("mousedown", handleClickOutside);
