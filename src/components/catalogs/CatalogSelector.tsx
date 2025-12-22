@@ -118,16 +118,28 @@ export function CatalogSelector({
 			return;
 		}
 
-		setSelectedLabel(value ?? "");
-
 		if (!value) {
+			setSelectedLabel("");
 			setSelectedOption(null);
 			return;
 		}
 
-		const match = items.find((entry) => entry.name === value);
-		setSelectedOption(match ?? null);
-	}, [isControlled, value, items]);
+		// Find the item by comparing the value (ID) with the item's ID or computed value
+		const match = items.find((entry) => {
+			const entryValue = getOptionValue
+				? getOptionValue(entry)
+				: (entry.id ?? entry.name);
+			return entryValue === value;
+		});
+
+		if (match) {
+			setSelectedOption(match);
+			setSelectedLabel(match.name);
+		} else {
+			setSelectedOption(null);
+			setSelectedLabel(value);
+		}
+	}, [isControlled, value, items, getOptionValue]);
 
 	const handleSelect = (value: string): void => {
 		const match = mappedItems.find((entry) => entry.value === value);
