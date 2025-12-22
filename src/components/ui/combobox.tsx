@@ -125,10 +125,10 @@ function ComboboxContent({
 			const spaceBelow = viewportHeight - rect.bottom;
 			const spaceAbove = rect.top;
 
-			// Default: position below, align left
+			// Default: position below, align left edge with trigger
 			let top = rect.bottom + scrollY + 4; // 4px gap
 			let left = rect.left + scrollX;
-			let width = Math.max(rect.width, 200); // Minimum width
+			let width = Math.max(rect.width, 250); // Minimum width
 
 			// If not enough space below, position above
 			if (spaceBelow < 300 && spaceAbove > spaceBelow) {
@@ -139,8 +139,15 @@ function ComboboxContent({
 			const maxWidth = Math.min(viewportWidth - 16, 400); // 16px padding from edges
 			width = Math.min(width, maxWidth);
 
-			// Clamp to viewport horizontally
-			left = Math.max(8, Math.min(left, viewportWidth - width - 8));
+			// Keep aligned with trigger left edge, but adjust if it would overflow
+			const maxLeft = viewportWidth - width - 8;
+			if (left + width > viewportWidth - 8) {
+				// If dropdown would overflow right, shift left to fit
+				left = Math.max(8, viewportWidth - width - 8);
+			} else {
+				// Ensure minimum left padding
+				left = Math.max(8, left);
+			}
 
 			// Clamp to viewport vertically (ensure at least 200px visible)
 			const minVisibleHeight = 200;
@@ -150,8 +157,10 @@ function ComboboxContent({
 			setPosition({ top, left, width });
 		};
 
-		// Initial position calculation
-		updatePosition();
+		// Initial position calculation with small delay to ensure DOM is ready
+		const timeoutId = setTimeout(() => {
+			updatePosition();
+		}, 0);
 
 		// Handle click outside to close
 		const handleClickOutside = (event: MouseEvent) => {
@@ -180,6 +189,7 @@ function ComboboxContent({
 		document.addEventListener("keydown", handleEscape);
 
 		return () => {
+			clearTimeout(timeoutId);
 			window.removeEventListener("scroll", updatePosition, true);
 			window.removeEventListener("resize", updatePosition);
 			document.removeEventListener("mousedown", handleClickOutside);
@@ -204,6 +214,7 @@ function ComboboxContent({
 				maxHeight: "400px",
 				display: "flex",
 				flexDirection: "column",
+				overflow: "hidden",
 			}}
 			{...props}
 		>
@@ -248,8 +259,8 @@ function ComboboxList({ className, ...props }: React.ComponentProps<"div">) {
 		<div
 			data-slot="combobox-list"
 			role="listbox"
-			className={cn("overflow-auto p-1", className)}
-			style={{ maxHeight: "calc(400px - 60px)" }} // Account for input height
+			className={cn("flex-1 overflow-auto p-1", className)}
+			style={{ maxHeight: "calc(400px - 100px)" }} // Account for input and summary height
 			{...props}
 		/>
 	);

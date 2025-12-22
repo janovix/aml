@@ -237,43 +237,50 @@ export function CatalogSelector({
 					)}
 
 					{!loading && !error && (
-						<ComboboxList>
-							{mappedItems.length === 0 ? (
-								<ComboboxEmpty>{emptyState}</ComboboxEmpty>
-							) : (
-								<ComboboxGroup heading="Resultados">
-									{mappedItems.map(({ item, value: optionValue }) => {
-										const isSelected = selectedOption
-											? (getOptionValue
-													? getOptionValue(selectedOption)
-													: (selectedOption.id ?? selectedOption.name)) ===
-												optionValue
-											: false;
+						<>
+							<ComboboxList>
+								{mappedItems.length === 0 ? (
+									<ComboboxEmpty>{emptyState}</ComboboxEmpty>
+								) : (
+									<ComboboxGroup heading="Resultados">
+										{mappedItems.map(({ item, value: optionValue }) => {
+											const isSelected = selectedOption
+												? (getOptionValue
+														? getOptionValue(selectedOption)
+														: (selectedOption.id ?? selectedOption.name)) ===
+													optionValue
+												: false;
 
-										return (
-											<ComboboxItem
-												key={optionValue}
-												value={optionValue}
-												onSelect={() => handleSelect(optionValue)}
-											>
-												{renderOption(item, isSelected)}
-											</ComboboxItem>
-										);
-									})}
-								</ComboboxGroup>
+											return (
+												<ComboboxItem
+													key={optionValue}
+													value={optionValue}
+													onSelect={() => handleSelect(optionValue)}
+												>
+													{renderOption(item, isSelected)}
+												</ComboboxItem>
+											);
+										})}
+									</ComboboxGroup>
+								)}
+							</ComboboxList>
+							{shouldShowSummary && (
+								<div className="sticky bottom-0 border-t bg-popover px-3 py-2">
+									<p
+										className="text-[11px] text-muted-foreground"
+										aria-live="polite"
+									>
+										{resultSummary}
+									</p>
+								</div>
 							)}
-						</ComboboxList>
+						</>
 					)}
 				</ComboboxContent>
 			</Combobox>
 
 			{helperText && (
 				<p className="text-xs text-muted-foreground">{helperText}</p>
-			)}
-			{shouldShowSummary && (
-				<p className="text-[11px] text-muted-foreground" aria-live="polite">
-					{resultSummary}
-				</p>
 			)}
 		</div>
 	);
