@@ -25,6 +25,7 @@ import type { PersonType, ClientCreateRequest } from "../../types/client";
 import { createClient } from "../../lib/api/clients";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
 import { getFieldDescription } from "../../lib/field-descriptions";
+import { CatalogSelector } from "../catalogs/CatalogSelector";
 
 interface ClientFormData {
 	personType: PersonType;
@@ -394,22 +395,16 @@ export function ClientCreateView(): React.JSX.Element {
 							</p>
 						</div>
 						{formData.personType === "physical" && (
-							<div className="space-y-2">
-								<LabelWithInfo
-									htmlFor="nationality"
-									description={getFieldDescription("nationality")}
-								>
-									Nacionalidad
-								</LabelWithInfo>
-								<Input
-									id="nationality"
-									value={formData.nationality}
-									onChange={(e) =>
-										handleInputChange("nationality", e.target.value)
-									}
-									placeholder="Mexicana"
-								/>
-							</div>
+							<CatalogSelector
+								catalogKey="countries"
+								label="Nacionalidad"
+								labelDescription={getFieldDescription("nationality")}
+								value={formData.nationality}
+								searchPlaceholder="Buscar país..."
+								onChange={(option) =>
+									handleInputChange("nationality", option?.id ?? "")
+								}
+							/>
 						)}
 					</CardContent>
 				</Card>
