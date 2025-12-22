@@ -1,12 +1,14 @@
 "use client";
 
 import * as React from "react";
+import * as ReactDOM from "react-dom";
 
 import { cn } from "@/lib/utils";
 
 type ComboboxContextValue = {
 	open: boolean;
 	setOpen: (next: boolean) => void;
+	triggerId: string;
 };
 
 const ComboboxContext = React.createContext<ComboboxContextValue | null>(null);
@@ -38,6 +40,7 @@ function Combobox({
 	const [uncontrolledOpen, setUncontrolledOpen] =
 		React.useState<boolean>(defaultOpen);
 	const open = openProp ?? uncontrolledOpen;
+	const triggerId = React.useId();
 
 	const setOpen = React.useCallback(
 		(next: boolean) => {
@@ -48,8 +51,8 @@ function Combobox({
 	);
 
 	const value = React.useMemo<ComboboxContextValue>(
-		() => ({ open, setOpen }),
-		[open, setOpen],
+		() => ({ open, setOpen, triggerId }),
+		[open, setOpen, triggerId],
 	);
 
 	return (
@@ -65,11 +68,12 @@ function ComboboxTrigger({
 	disabled,
 	...props
 }: React.ComponentProps<"button">) {
-	const { open, setOpen } = useComboboxContext();
+	const { open, setOpen, triggerId } = useComboboxContext();
 	return (
 		<button
 			type="button"
 			data-slot="combobox-trigger"
+			data-combobox-id={triggerId}
 			aria-haspopup="listbox"
 			aria-expanded={open}
 			disabled={disabled}
@@ -91,20 +95,128 @@ function ComboboxContent({
 	// kept for compat (unused in this lightweight implementation)
 	filter?: unknown;
 }) {
-	const { open } = useComboboxContext();
+	const { open, triggerId, setOpen } = useComboboxContext();
+	const contentRef = React.useRef<HTMLDivElement | null>(null);
+	const [position, setPosition] = React.useState<{
+		top: number;
+		left: number;
+		width: number;
+	}>({ top: 0, left: 0, width: 0 });
+
+	React.useEffect(() => {
+		if (!open) return;
+
+		// Find the trigger element for this specific combobox
+		const trigger = document.querySelector(
+			`[data-combobox-id="${triggerId}"][data-slot="combobox-trigger"]`,
+		) as HTMLElement;
+		if (!trigger) return;
+
+		const updatePosition = () => {
+			if (!trigger) return;
+
+			const rect = trigger.getBoundingClientRect();
+			const scrollY = window.scrollY;
+			const scrollX = window.scrollX;
+			const viewportWidth = window.innerWidth;
+			const viewportHeight = window.innerHeight;
+
+			// Calculate available space
+			const spaceBelow = viewportHeight - rect.bottom;
+			const spaceAbove = rect.top;
+
+			// Default: position below, align left
+			let top = rect.bottom + scrollY + 4; // 4px gap
+			let left = rect.left + scrollX;
+			let width = Math.max(rect.width, 200); // Minimum width
+
+			// If not enough space below, position above
+			if (spaceBelow < 300 && spaceAbove > spaceBelow) {
+				top = rect.top + scrollY - 4; // 4px gap above
+			}
+
+			// Ensure content stays within viewport
+			const maxWidth = Math.min(viewportWidth - 16, 400); // 16px padding from edges
+			width = Math.min(width, maxWidth);
+
+			// Clamp to viewport horizontally
+			left = Math.max(8, Math.min(left, viewportWidth - width - 8));
+
+			// Clamp to viewport vertically (ensure at least 200px visible)
+			const minVisibleHeight = 200;
+			const maxTop = viewportHeight + scrollY - minVisibleHeight;
+			top = Math.max(8, Math.min(top, maxTop));
+
+			setPosition({ top, left, width });
+		};
+
+		// Initial position calculation
+		updatePosition();
+
+		// Handle click outside to close
+		const handleClickOutside = (event: MouseEvent) => {
+			const target = event.target as Node;
+			if (
+				contentRef.current &&
+				!contentRef.current.contains(target) &&
+				trigger &&
+				!trigger.contains(target)
+			) {
+				setOpen(false);
+			}
+		};
+
+		// Handle escape key to close
+		const handleEscape = (event: KeyboardEvent) => {
+			if (event.key === "Escape") {
+				setOpen(false);
+			}
+		};
+
+		// Update position on scroll and resize
+		window.addEventListener("scroll", updatePosition, true);
+		window.addEventListener("resize", updatePosition);
+		document.addEventListener("mousedown", handleClickOutside);
+		document.addEventListener("keydown", handleEscape);
+
+		return () => {
+			window.removeEventListener("scroll", updatePosition, true);
+			window.removeEventListener("resize", updatePosition);
+			document.removeEventListener("mousedown", handleClickOutside);
+			document.removeEventListener("keydown", handleEscape);
+		};
+	}, [open, triggerId, setOpen]);
+
 	if (!open) return null;
-	return (
+
+	const content = (
 		<div
+			ref={contentRef}
 			data-slot="combobox-content"
 			className={cn(
-				"mt-2 w-full rounded-md border bg-popover text-popover-foreground shadow-md",
+				"fixed z-50 rounded-md border bg-popover text-popover-foreground shadow-lg",
 				className,
 			)}
+			style={{
+				top: `${position.top}px`,
+				left: `${position.left}px`,
+				width: `${position.width}px`,
+				maxHeight: "400px",
+				display: "flex",
+				flexDirection: "column",
+			}}
 			{...props}
 		>
 			{children}
 		</div>
 	);
+
+	// Use Portal to render outside the normal flow
+	if (typeof window !== "undefined") {
+		return ReactDOM.createPortal(content, document.body);
+	}
+
+	return content;
 }
 
 function ComboboxInput({
@@ -116,7 +228,7 @@ function ComboboxInput({
 	onValueChange?: (value: string) => void;
 }) {
 	return (
-		<div className="border-b p-2">
+		<div className="sticky top-0 z-10 border-b bg-popover p-2">
 			<input
 				data-slot="combobox-input"
 				className={cn(
@@ -136,7 +248,8 @@ function ComboboxList({ className, ...props }: React.ComponentProps<"div">) {
 		<div
 			data-slot="combobox-list"
 			role="listbox"
-			className={cn("max-h-60 overflow-auto p-1", className)}
+			className={cn("overflow-auto p-1", className)}
+			style={{ maxHeight: "calc(400px - 60px)" }} // Account for input height
 			{...props}
 		/>
 	);
