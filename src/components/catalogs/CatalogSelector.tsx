@@ -94,6 +94,10 @@ export function CatalogSelector({
 	);
 	const [open, setOpen] = useState(false);
 	const [showResults, setShowResults] = useState(false);
+	const [pagesSearchedForValue, setPagesSearchedForValue] = useState(0);
+	const [lastSearchedValue, setLastSearchedValue] = useState<
+		string | undefined
+	>(value);
 
 	const {
 		items,
@@ -122,6 +126,15 @@ export function CatalogSelector({
 		[items, getOptionValue],
 	);
 
+	// Reset search counter when value changes
+	useEffect(() => {
+		if (value !== lastSearchedValue) {
+			setPagesSearchedForValue(0);
+			setLastSearchedValue(value);
+		}
+	}, [value, lastSearchedValue]);
+
+	// Effect to find and set the selected item when value or items change
 	useEffect(() => {
 		if (!isControlled) {
 			return;
@@ -144,11 +157,35 @@ export function CatalogSelector({
 		if (match) {
 			setSelectedOption(match);
 			setSelectedLabel(match.name);
-		} else {
-			setSelectedOption(null);
+			setPagesSearchedForValue(0); // Reset search counter when found
+		} else if (
+			!loading &&
+			!loadingMore &&
+			items.length > 0 &&
+			hasMore &&
+			pagesSearchedForValue < 5
+		) {
+			// If we have items loaded but no match, try loading more pages
+			// Limit to 5 pages to avoid infinite loops
+			setPagesSearchedForValue((prev) => prev + 1);
+			loadMore().catch(() => {
+				// Ignore errors, will fall back to showing value
+			});
+		} else if (!loading && !loadingMore && !match) {
+			// After searching or if no more pages, show the value as fallback
 			setSelectedLabel(value);
 		}
-	}, [isControlled, value, items, getOptionValue]);
+	}, [
+		isControlled,
+		value,
+		items,
+		getOptionValue,
+		loading,
+		loadingMore,
+		hasMore,
+		loadMore,
+		pagesSearchedForValue,
+	]);
 
 	const handleSelect = (value: string): void => {
 		const match = mappedItems.find((entry) => entry.value === value);
