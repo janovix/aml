@@ -88,7 +88,9 @@ export function CatalogSelector({
 	const resolvedType = typeLabel ?? label?.toLowerCase() ?? "opción";
 	const isControlled = value !== undefined;
 
-	const [selectedLabel, setSelectedLabel] = useState(value ?? "");
+	// Initialize selectedLabel as empty - don't use value directly as it may be an ID
+	// The label will be resolved once items are loaded and matched
+	const [selectedLabel, setSelectedLabel] = useState("");
 	const [selectedOption, setSelectedOption] = useState<CatalogItem | null>(
 		null,
 	);
@@ -171,8 +173,10 @@ export function CatalogSelector({
 			loadMore().catch(() => {
 				// Ignore errors, will fall back to showing value
 			});
-		} else if (!loading && !loadingMore && !match) {
-			// After searching or if no more pages, show the value as fallback
+		} else if (!loading && !loadingMore && !match && pagination !== null) {
+			// Only fallback to showing the raw value after we've actually loaded data
+			// (pagination !== null indicates at least one successful fetch)
+			// and confirmed no match exists
 			setSelectedLabel(value);
 		}
 	}, [
@@ -185,6 +189,7 @@ export function CatalogSelector({
 		hasMore,
 		loadMore,
 		pagesSearchedForValue,
+		pagination,
 	]);
 
 	const handleSelect = (value: string): void => {
