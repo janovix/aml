@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
 	Badge,
@@ -69,6 +69,18 @@ export function ClientEditView({
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
 	const [client, setClient] = useState<Client | null>(null);
+	const formRef = useRef<HTMLFormElement | null>(null);
+	const hiddenSubmitButtonRef = useRef<HTMLButtonElement | null>(null);
+	const handleToolbarSubmit = (): void => {
+		const form = formRef.current;
+		if (!form) return;
+
+		if (typeof form.requestSubmit === "function") {
+			form.requestSubmit();
+		}
+
+		hiddenSubmitButtonRef.current?.click();
+	};
 
 	const [formData, setFormData] = useState<ClientFormData>({
 		personType: "moral",
@@ -163,6 +175,7 @@ export function ClientEditView({
 
 	const handleSubmit = async (e: React.FormEvent): Promise<void> => {
 		e.preventDefault();
+		if (isSubmitting) return;
 		setIsSubmitting(true);
 
 		const currentPersonType = client?.personType ?? formData.personType;
@@ -322,7 +335,8 @@ export function ClientEditView({
 					</Button>
 					<Button
 						className="gap-2"
-						onClick={handleSubmit}
+						type="button"
+						onClick={handleToolbarSubmit}
 						disabled={isSubmitting}
 					>
 						<Save className="h-4 w-4" />
@@ -331,7 +345,19 @@ export function ClientEditView({
 				</div>
 			</div>
 
-			<form onSubmit={handleSubmit} className="max-w-4xl space-y-6">
+			<form
+				id="client-edit-form"
+				ref={formRef}
+				onSubmit={handleSubmit}
+				className="max-w-4xl space-y-6"
+			>
+				<button
+					ref={hiddenSubmitButtonRef}
+					type="submit"
+					tabIndex={-1}
+					aria-hidden="true"
+					className="sr-only"
+				/>
 				<Card>
 					<CardHeader>
 						<CardTitle className="text-lg">Tipo de Persona</CardTitle>

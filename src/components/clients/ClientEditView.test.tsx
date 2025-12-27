@@ -1,4 +1,12 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import {
+	describe,
+	expect,
+	it,
+	vi,
+	beforeEach,
+	beforeAll,
+	afterAll,
+} from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ClientEditView } from "./ClientEditView";
@@ -8,6 +16,7 @@ const mockPush = vi.fn();
 const mockToast = vi.fn();
 const mockGetClientByRfc = vi.fn();
 const mockUpdateClient = vi.fn();
+const originalRequestSubmit = HTMLFormElement.prototype.requestSubmit;
 
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
@@ -64,6 +73,18 @@ const buildClient = (overrides?: Partial<Client>): Client => ({
 });
 
 describe("ClientEditView", () => {
+	beforeAll(() => {
+		HTMLFormElement.prototype.requestSubmit = function requestSubmitPolyfill() {
+			this.dispatchEvent(
+				new Event("submit", { bubbles: true, cancelable: true }),
+			);
+		};
+	});
+
+	afterAll(() => {
+		HTMLFormElement.prototype.requestSubmit = originalRequestSubmit;
+	});
+
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockGetClientByRfc.mockReset();
@@ -94,7 +115,7 @@ describe("ClientEditView", () => {
 		const saveButtons = screen.getAllByRole("button", {
 			name: /guardar cambios/i,
 		});
-		await user.click(saveButtons[0]);
+		await user.click(saveButtons.at(-1)!);
 
 		await waitFor(() => expect(mockUpdateClient).toHaveBeenCalled());
 		expect(mockUpdateClient).toHaveBeenCalledWith({
@@ -127,7 +148,7 @@ describe("ClientEditView", () => {
 		const saveButtons = screen.getAllByRole("button", {
 			name: /guardar cambios/i,
 		});
-		await user.click(saveButtons[0]);
+		await user.click(saveButtons.at(-1)!);
 
 		await waitFor(() => expect(mockUpdateClient).toHaveBeenCalled());
 		expect(mockUpdateClient.mock.calls[0][0].input).toMatchObject({
@@ -154,7 +175,7 @@ describe("ClientEditView", () => {
 		const saveButtons = screen.getAllByRole("button", {
 			name: /guardar cambios/i,
 		});
-		await user.click(saveButtons[0]);
+		await user.click(saveButtons.at(-1)!);
 
 		await waitFor(() =>
 			expect(mockToast).toHaveBeenCalledWith(
