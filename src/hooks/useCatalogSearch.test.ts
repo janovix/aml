@@ -97,4 +97,225 @@ describe("useCatalogSearch", () => {
 		expect(mockFetch).toHaveBeenCalledTimes(2);
 		expect(mockFetch.mock.calls[1][0]).toContain("search=toy");
 	});
+
+	it("loads more pages when loadMore is called", async () => {
+		const page1Items = sampleItems;
+		const page2Items: CatalogItem[] = [
+			{
+				id: "brand-3",
+				catalogId: "cat-1",
+				name: "Honda",
+				normalizedName: "honda",
+				active: true,
+				metadata: {},
+				createdAt: "2024-01-01T00:00:00Z",
+				updatedAt: "2024-01-01T00:00:00Z",
+			},
+		];
+
+		mockFetch
+			.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({
+					...buildResponse(page1Items),
+					pagination: {
+						page: 1,
+						pageSize: 2,
+						total: 3,
+						totalPages: 2,
+					},
+				}),
+			})
+			.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({
+					...buildResponse(page2Items),
+					pagination: {
+						page: 2,
+						pageSize: 2,
+						total: 3,
+						totalPages: 2,
+					},
+				}),
+			});
+
+		const { result } = renderHook(() =>
+			useCatalogSearch({ catalogKey: "vehicle-brands", debounceMs: 0 }),
+		);
+
+		await waitFor(() => expect(result.current.loading).toBe(false));
+		expect(result.current.items).toHaveLength(2);
+		expect(result.current.hasMore).toBe(true);
+
+		await act(async () => {
+			await result.current.loadMore();
+		});
+
+		await waitFor(() => expect(result.current.loadingMore).toBe(false));
+		expect(result.current.items).toHaveLength(3);
+		expect(result.current.items[2].name).toBe("Honda");
+		expect(mockFetch).toHaveBeenCalledTimes(2);
+		expect(mockFetch.mock.calls[1][0]).toContain("page=2");
+	});
+
+	it("has correct hasMore value based on pagination", async () => {
+		mockFetch.mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				...buildResponse(sampleItems),
+				pagination: {
+					page: 1,
+					pageSize: 2,
+					total: 5,
+					totalPages: 3,
+				},
+			}),
+		});
+
+		const { result } = renderHook(() =>
+			useCatalogSearch({ catalogKey: "vehicle-brands", debounceMs: 0 }),
+		);
+
+		await waitFor(() => expect(result.current.loading).toBe(false));
+		expect(result.current.hasMore).toBe(true);
+		expect(result.current.pagination?.totalPages).toBe(3);
+	});
+
+	it("does not load more if no more pages available", async () => {
+		mockFetch.mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				...buildResponse(sampleItems),
+				pagination: {
+					page: 1,
+					pageSize: 2,
+					total: 2,
+					totalPages: 1,
+				},
+			}),
+		});
+
+		const { result } = renderHook(() =>
+			useCatalogSearch({ catalogKey: "vehicle-brands", debounceMs: 0 }),
+		);
+
+		await waitFor(() => expect(result.current.loading).toBe(false));
+		expect(result.current.hasMore).toBe(false);
+
+		const initialCallCount = mockFetch.mock.calls.length;
+
+		await act(async () => {
+			await result.current.loadMore();
+		});
+
+		// Should not make additional fetch calls
+		expect(mockFetch.mock.calls.length).toBe(initialCallCount);
+	});
+
+	it("resets to page 1 when search term changes", async () => {
+		const page1Items = sampleItems;
+		const page2Items: CatalogItem[] = [
+			{
+				id: "brand-3",
+				catalogId: "cat-1",
+				name: "Honda",
+				normalizedName: "honda",
+				active: true,
+				metadata: {},
+				createdAt: "2024-01-01T00:00:00Z",
+				updatedAt: "2024-01-01T00:00:00Z",
+			},
+		];
+
+		mockFetch
+			.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({
+					...buildResponse(page1Items),
+					pagination: {
+						page: 1,
+						pageSize: 2,
+						total: 3,
+						totalPages: 2,
+					},
+				}),
+			})
+			.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({
+					...buildResponse(page2Items),
+					pagination: {
+						page: 2,
+						pageSize: 2,
+						total: 3,
+						totalPages: 2,
+					},
+				}),
+			})
+			.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({
+					...buildResponse([page1Items[0]]),
+					pagination: {
+						page: 1,
+						pageSize: 2,
+						total: 1,
+						totalPages: 1,
+					},
+				}),
+			});
+
+		const { result } = renderHook(() =>
+			useCatalogSearch({ catalogKey: "vehicle-brands", debounceMs: 0 }),
+		);
+
+		await waitFor(() => expect(result.current.loading).toBe(false));
+
+		// Load page 2
+		await act(async () => {
+			await result.current.loadMore();
+		});
+
+		await waitFor(() => expect(result.current.loadingMore).toBe(false));
+		expect(result.current.items).toHaveLength(3);
+
+		// Change search term - should reset to page 1
+		act(() => {
+			result.current.setSearchTerm("toy");
+		});
+
+		await waitFor(() => expect(result.current.items).toHaveLength(1));
+		expect(result.current.items[0].name).toBe("Toyota");
+	});
+
+	it("handles errors when loading more pages", async () => {
+		mockFetch
+			.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({
+					...buildResponse(sampleItems),
+					pagination: {
+						page: 1,
+						pageSize: 2,
+						total: 4,
+						totalPages: 2,
+					},
+				}),
+			})
+			.mockRejectedValueOnce(new Error("Network error"));
+
+		const { result } = renderHook(() =>
+			useCatalogSearch({ catalogKey: "vehicle-brands", debounceMs: 0 }),
+		);
+
+		await waitFor(() => expect(result.current.loading).toBe(false));
+
+		await act(async () => {
+			await result.current.loadMore();
+		});
+
+		await waitFor(() => expect(result.current.loadingMore).toBe(false));
+		expect(result.current.error).toBe("Network error");
+		expect(result.current.items).toHaveLength(2); // Should not have added items
+	});
 });

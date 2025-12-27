@@ -18,6 +18,7 @@ import {
 import { Check, ChevronsUpDown } from "lucide-react";
 import type { CatalogItem } from "@/types/catalog";
 import { useCatalogSearch } from "@/hooks/useCatalogSearch";
+import { LabelWithInfo } from "../ui/LabelWithInfo";
 
 type OptionRenderer = (
 	option: CatalogItem,
@@ -27,6 +28,7 @@ type OptionRenderer = (
 interface CatalogSelectorProps {
 	catalogKey: string;
 	label?: string;
+	labelDescription?: string;
 	value?: string;
 	placeholder?: string;
 	searchPlaceholder?: string;
@@ -61,6 +63,7 @@ const defaultRenderOption: OptionRenderer = (option, isSelected) => (
 export function CatalogSelector({
 	catalogKey,
 	label,
+	labelDescription,
 	value,
 	placeholder,
 	searchPlaceholder = "Buscar en el catálogo...",
@@ -91,14 +94,27 @@ export function CatalogSelector({
 	);
 	const [open, setOpen] = useState(false);
 	const [showResults, setShowResults] = useState(false);
+	const [pagesSearchedForValue, setPagesSearchedForValue] = useState(0);
+	const [lastSearchedValue, setLastSearchedValue] = useState<
+		string | undefined
+	>(value);
 
-	const { items, pagination, loading, error, searchTerm, setSearchTerm } =
-		useCatalogSearch({
-			catalogKey,
-			pageSize,
-			debounceMs,
-			enabled: !disabled,
-		});
+	const {
+		items,
+		pagination,
+		loading,
+		loadingMore,
+		error,
+		searchTerm,
+		setSearchTerm,
+		loadMore,
+		hasMore,
+	} = useCatalogSearch({
+		catalogKey,
+		pageSize,
+		debounceMs,
+		enabled: !disabled,
+	});
 
 	const mappedItems = useMemo(
 		() =>
@@ -110,21 +126,66 @@ export function CatalogSelector({
 		[items, getOptionValue],
 	);
 
+	// Reset search counter when value changes
+	useEffect(() => {
+		if (value !== lastSearchedValue) {
+			setPagesSearchedForValue(0);
+			setLastSearchedValue(value);
+		}
+	}, [value, lastSearchedValue]);
+
+	// Effect to find and set the selected item when value or items change
 	useEffect(() => {
 		if (!isControlled) {
 			return;
 		}
 
-		setSelectedLabel(value ?? "");
-
 		if (!value) {
+			setSelectedLabel("");
 			setSelectedOption(null);
 			return;
 		}
 
-		const match = items.find((entry) => entry.name === value);
-		setSelectedOption(match ?? null);
-	}, [isControlled, value, items]);
+		// Find the item by comparing the value (ID) with the item's ID or computed value
+		const match = items.find((entry) => {
+			const entryValue = getOptionValue
+				? getOptionValue(entry)
+				: (entry.id ?? entry.name);
+			return entryValue === value;
+		});
+
+		if (match) {
+			setSelectedOption(match);
+			setSelectedLabel(match.name);
+			setPagesSearchedForValue(0); // Reset search counter when found
+		} else if (
+			!loading &&
+			!loadingMore &&
+			items.length > 0 &&
+			hasMore &&
+			pagesSearchedForValue < 5
+		) {
+			// If we have items loaded but no match, try loading more pages
+			// Limit to 5 pages to avoid infinite loops
+			setPagesSearchedForValue((prev) => prev + 1);
+			loadMore().catch(() => {
+				// Ignore errors, will fall back to showing value
+			});
+		} else if (!loading && !loadingMore && !match) {
+			// After searching or if no more pages, show the value as fallback
+			setSelectedLabel(value);
+		}
+	}, [
+		isControlled,
+		value,
+		items,
+		getOptionValue,
+		loading,
+		loadingMore,
+		hasMore,
+		loadMore,
+		pagesSearchedForValue,
+	]);
 
 	const handleSelect = (value: string): void => {
 		const match = mappedItems.find((entry) => entry.value === value);
@@ -177,12 +238,21 @@ export function CatalogSelector({
 
 	return (
 		<div className={cn("space-y-2", className)}>
-			{label && (
-				<Label id={labelId} className="text-sm font-medium text-foreground">
-					{label}
-					{required && <span className="ml-1 text-destructive">*</span>}
-				</Label>
-			)}
+			{label &&
+				(labelDescription ? (
+					<LabelWithInfo
+						htmlFor={labelId}
+						description={labelDescription}
+						required={required}
+					>
+						{label}
+					</LabelWithInfo>
+				) : (
+					<Label id={labelId} className="text-sm font-medium text-foreground">
+						{label}
+						{required && <span className="ml-1 text-destructive">*</span>}
+					</Label>
+				))}
 
 			<Combobox
 				open={open}
@@ -225,43 +295,60 @@ export function CatalogSelector({
 					)}
 
 					{!loading && !error && (
-						<ComboboxList>
-							{mappedItems.length === 0 ? (
-								<ComboboxEmpty>{emptyState}</ComboboxEmpty>
-							) : (
-								<ComboboxGroup heading="Resultados">
-									{mappedItems.map(({ item, value: optionValue }) => {
-										const isSelected = selectedOption
-											? (getOptionValue
-													? getOptionValue(selectedOption)
-													: (selectedOption.id ?? selectedOption.name)) ===
-												optionValue
-											: false;
+						<>
+							<ComboboxList
+								onScrollToBottom={
+									hasMore && !loadingMore ? loadMore : undefined
+								}
+							>
+								{mappedItems.length === 0 ? (
+									<ComboboxEmpty>{emptyState}</ComboboxEmpty>
+								) : (
+									<ComboboxGroup heading="Resultados">
+										{mappedItems.map(({ item, value: optionValue }) => {
+											const isSelected = selectedOption
+												? (getOptionValue
+														? getOptionValue(selectedOption)
+														: (selectedOption.id ?? selectedOption.name)) ===
+													optionValue
+												: false;
 
-										return (
-											<ComboboxItem
-												key={optionValue}
-												value={optionValue}
-												onSelect={() => handleSelect(optionValue)}
-											>
-												{renderOption(item, isSelected)}
-											</ComboboxItem>
-										);
-									})}
-								</ComboboxGroup>
+											return (
+												<ComboboxItem
+													key={optionValue}
+													value={optionValue}
+													onSelect={() => handleSelect(optionValue)}
+												>
+													{renderOption(item, isSelected)}
+												</ComboboxItem>
+											);
+										})}
+									</ComboboxGroup>
+								)}
+								{loadingMore && (
+									<div className="flex items-center justify-center gap-2 px-3 py-4 text-sm text-muted-foreground">
+										<Spinner size="sm" />
+										Cargando más resultados...
+									</div>
+								)}
+							</ComboboxList>
+							{shouldShowSummary && (
+								<div className="sticky bottom-0 border-t bg-popover px-3 py-2">
+									<p
+										className="text-[11px] text-muted-foreground"
+										aria-live="polite"
+									>
+										{resultSummary}
+									</p>
+								</div>
 							)}
-						</ComboboxList>
+						</>
 					)}
 				</ComboboxContent>
 			</Combobox>
 
 			{helperText && (
 				<p className="text-xs text-muted-foreground">{helperText}</p>
-			)}
-			{shouldShowSummary && (
-				<p className="text-[11px] text-muted-foreground" aria-live="polite">
-					{resultSummary}
-				</p>
 			)}
 		</div>
 	);

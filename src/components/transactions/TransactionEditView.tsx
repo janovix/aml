@@ -32,6 +32,8 @@ import type {
 	PaymentMethodInput,
 } from "../../types/transaction";
 import { CatalogSelector } from "../catalogs/CatalogSelector";
+import { LabelWithInfo } from "../ui/LabelWithInfo";
+import { getFieldDescription } from "../../lib/field-descriptions";
 
 interface TransactionEditViewProps {
 	transactionId: string;
@@ -53,6 +55,8 @@ export function TransactionEditView({
 		brandId: "",
 		model: "",
 		year: "",
+		vin: "",
+		repuve: "",
 		plates: "",
 		engineNumber: "",
 		registrationNumber: "",
@@ -81,6 +85,8 @@ export function TransactionEditView({
 					brandId: transaction.brandId,
 					model: transaction.model,
 					year: String(transaction.year),
+					vin: transaction.vin || "",
+					repuve: transaction.repuve || "",
 					plates: transaction.plates || "",
 					engineNumber: transaction.engineNumber || "",
 					registrationNumber: transaction.registrationNumber || "",
@@ -152,6 +158,8 @@ export function TransactionEditView({
 			};
 
 			if (formData.vehicleType === "land") {
+				if (formData.vin) updateData.vin = formData.vin;
+				if (formData.repuve) updateData.repuve = formData.repuve;
 				if (formData.plates) updateData.plates = formData.plates;
 				if (formData.engineNumber)
 					updateData.engineNumber = formData.engineNumber;
@@ -438,17 +446,56 @@ export function TransactionEditView({
 							{formData.vehicleType === "land" && (
 								<>
 									<div className="space-y-2">
-										<Label htmlFor="plates">Placas *</Label>
+										<LabelWithInfo
+											htmlFor="vin"
+											description={getFieldDescription("vin")}
+										>
+											VIN (Número de Identificación Vehicular)
+										</LabelWithInfo>
+										<Input
+											id="vin"
+											value={formData.vin}
+											onChange={(e) => handleChange("vin", e.target.value)}
+											placeholder="17 caracteres"
+											maxLength={17}
+										/>
+									</div>
+									<div className="space-y-2">
+										<LabelWithInfo
+											htmlFor="repuve"
+											description={getFieldDescription("repuve")}
+										>
+											REPUVE (Registro Público Vehicular)
+										</LabelWithInfo>
+										<Input
+											id="repuve"
+											value={formData.repuve}
+											onChange={(e) => handleChange("repuve", e.target.value)}
+											placeholder="8 caracteres"
+											maxLength={8}
+										/>
+									</div>
+									<div className="space-y-2">
+										<LabelWithInfo
+											htmlFor="plates"
+											description={getFieldDescription("plates")}
+										>
+											Placas
+										</LabelWithInfo>
 										<Input
 											id="plates"
 											value={formData.plates}
 											onChange={(e) => handleChange("plates", e.target.value)}
 											placeholder="ABC-123-D"
-											required
 										/>
 									</div>
 									<div className="space-y-2">
-										<Label htmlFor="engine-number">Número de motor</Label>
+										<LabelWithInfo
+											htmlFor="engine-number"
+											description={getFieldDescription("engineNumber")}
+										>
+											Número de motor
+										</LabelWithInfo>
 										<Input
 											id="engine-number"
 											value={formData.engineNumber}
@@ -478,17 +525,16 @@ export function TransactionEditView({
 											required
 										/>
 									</div>
-									<div className="space-y-2">
-										<Label htmlFor="flag-country-id">País de bandera ID</Label>
-										<Input
-											id="flag-country-id"
-											value={formData.flagCountryId}
-											onChange={(e) =>
-												handleChange("flagCountryId", e.target.value)
-											}
-											placeholder="MX"
-										/>
-									</div>
+									<CatalogSelector
+										catalogKey="countries"
+										label="País de bandera"
+										labelDescription={getFieldDescription("flagCountryId")}
+										value={formData.flagCountryId}
+										searchPlaceholder="Buscar país..."
+										onChange={(option) =>
+											handleChange("flagCountryId", option?.id ?? "")
+										}
+									/>
 								</>
 							)}
 						</div>
@@ -518,23 +564,17 @@ export function TransactionEditView({
 								/>
 							</div>
 
-							<div className="space-y-2">
-								<Label htmlFor="currency">Moneda *</Label>
-								<Select
-									value={formData.currency}
-									onValueChange={(value) => handleChange("currency", value)}
-									required
-								>
-									<SelectTrigger id="currency">
-										<SelectValue />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="MXN">MXN - Peso Mexicano</SelectItem>
-										<SelectItem value="USD">USD - Dólar Americano</SelectItem>
-										<SelectItem value="EUR">EUR - Euro</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
+							<CatalogSelector
+								catalogKey="currencies"
+								label="Moneda"
+								labelDescription={getFieldDescription("currency")}
+								value={formData.currency}
+								required
+								searchPlaceholder="Buscar moneda..."
+								onChange={(option) =>
+									handleChange("currency", option?.id ?? "")
+								}
+							/>
 
 							<div className="space-y-2">
 								<Label htmlFor="payment-date">Fecha de pago *</Label>

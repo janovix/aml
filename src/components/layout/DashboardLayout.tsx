@@ -99,9 +99,9 @@ const secondaryNavItems = [
 const bottomNavItems = [
 	{
 		title: "Configuración",
-		href: "/configuracion",
+		href: "/settings",
 		icon: Settings,
-		available: false,
+		available: true,
 	},
 ];
 
@@ -182,7 +182,7 @@ function Navbar() {
 						<DropdownMenuSeparator />
 						<DropdownMenuItem asChild>
 							<Link
-								href="/configuracion"
+								href="/settings"
 								className="flex items-center cursor-pointer"
 							>
 								<Settings className="mr-2 h-4 w-4" />

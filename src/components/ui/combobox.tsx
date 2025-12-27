@@ -1,12 +1,14 @@
 "use client";
 
 import * as React from "react";
+import * as ReactDOM from "react-dom";
 
 import { cn } from "@/lib/utils";
 
 type ComboboxContextValue = {
 	open: boolean;
 	setOpen: (next: boolean) => void;
+	triggerId: string;
 };
 
 const ComboboxContext = React.createContext<ComboboxContextValue | null>(null);
@@ -38,6 +40,7 @@ function Combobox({
 	const [uncontrolledOpen, setUncontrolledOpen] =
 		React.useState<boolean>(defaultOpen);
 	const open = openProp ?? uncontrolledOpen;
+	const triggerId = React.useId();
 
 	const setOpen = React.useCallback(
 		(next: boolean) => {
@@ -48,8 +51,8 @@ function Combobox({
 	);
 
 	const value = React.useMemo<ComboboxContextValue>(
-		() => ({ open, setOpen }),
-		[open, setOpen],
+		() => ({ open, setOpen, triggerId }),
+		[open, setOpen, triggerId],
 	);
 
 	return (
@@ -65,11 +68,12 @@ function ComboboxTrigger({
 	disabled,
 	...props
 }: React.ComponentProps<"button">) {
-	const { open, setOpen } = useComboboxContext();
+	const { open, setOpen, triggerId } = useComboboxContext();
 	return (
 		<button
 			type="button"
 			data-slot="combobox-trigger"
+			data-combobox-id={triggerId}
 			aria-haspopup="listbox"
 			aria-expanded={open}
 			disabled={disabled}
@@ -91,20 +95,193 @@ function ComboboxContent({
 	// kept for compat (unused in this lightweight implementation)
 	filter?: unknown;
 }) {
-	const { open } = useComboboxContext();
+	const { open, triggerId, setOpen } = useComboboxContext();
+	const contentRef = React.useRef<HTMLDivElement | null>(null);
+	const [position, setPosition] = React.useState<{
+		top: number;
+		left: number;
+		width: number;
+	}>({ top: 0, left: 0, width: 0 });
+
+	React.useEffect(() => {
+		if (!open) return;
+
+		// Find the trigger element for this specific combobox
+		const trigger = document.querySelector(
+			`[data-combobox-id="${triggerId}"][data-slot="combobox-trigger"]`,
+		) as HTMLElement;
+		if (!trigger) return;
+
+		const updatePosition = () => {
+			if (!trigger) return;
+
+			const rect = trigger.getBoundingClientRect();
+			const scrollY = window.scrollY;
+			const scrollX = window.scrollX;
+			const viewportWidth = window.innerWidth;
+			const viewportHeight = window.innerHeight;
+
+			// Dropdown maxHeight from style (400px)
+			const dropdownMaxHeight = 400;
+			const gap = 4; // Gap between trigger and dropdown
+			const minPadding = 8; // Minimum padding from viewport edges
+
+			// Try to get actual dropdown height if content is rendered
+			let dropdownHeight = dropdownMaxHeight;
+			if (contentRef.current) {
+				const contentRect = contentRef.current.getBoundingClientRect();
+				if (contentRect.height > 0) {
+					dropdownHeight = Math.min(contentRect.height, dropdownMaxHeight);
+				}
+			}
+
+			// Calculate available space
+			const spaceBelow = viewportHeight - rect.bottom - gap;
+			const spaceAbove = rect.top - gap;
+
+			// Default: position below, align left edge with trigger
+			let top = rect.bottom + scrollY + gap;
+			let left = rect.left + scrollX;
+			let width = Math.max(rect.width, 250); // Minimum width
+
+			// Determine if we should position above based on available space
+			// Check if dropdown fits below, considering its actual/max height
+			const fitsBelow = spaceBelow >= dropdownHeight;
+			const fitsAbove = spaceAbove >= dropdownHeight;
+
+			if (!fitsBelow && fitsAbove) {
+				// Not enough space below, but enough above - position above
+				top = rect.top + scrollY - dropdownHeight - gap;
+				// Ensure we don't go above viewport
+				top = Math.max(scrollY + minPadding, top);
+			} else if (!fitsBelow && !fitsAbove) {
+				// Not enough space in either direction
+				// Position where there's more space, but ensure visibility
+				if (spaceAbove > spaceBelow) {
+					// More space above, position above but clamp
+					top = rect.top + scrollY - Math.min(dropdownHeight, spaceAbove - gap);
+					top = Math.max(scrollY + minPadding, top);
+				} else {
+					// More space below, position below but clamp
+					top = rect.bottom + scrollY + gap;
+					const maxTop =
+						viewportHeight +
+						scrollY -
+						minPadding -
+						Math.min(dropdownHeight, spaceBelow);
+					top = Math.min(top, maxTop);
+				}
+			}
+			// else: fitsBelow is true, use default position below
+
+			// Ensure content stays within viewport
+			const maxWidth = Math.min(viewportWidth - 16, 400); // 16px padding from edges
+			width = Math.min(width, maxWidth);
+
+			// Keep aligned with trigger left edge, but adjust if it would overflow
+			const maxLeft = viewportWidth - width - minPadding;
+			if (left + width > viewportWidth - minPadding) {
+				// If dropdown would overflow right, shift left to fit
+				left = Math.max(minPadding, viewportWidth - width - minPadding);
+			} else {
+				// Ensure minimum left padding
+				left = Math.max(minPadding, left);
+			}
+
+			setPosition({ top, left, width });
+		};
+
+		// Initial position calculation with small delay to ensure DOM is ready
+		const timeoutId = setTimeout(() => {
+			updatePosition();
+			// Recalculate position after content renders to get actual height
+			setTimeout(() => {
+				updatePosition();
+			}, 50);
+		}, 0);
+
+		// Use ResizeObserver to recalculate when content size changes
+		let resizeObserver: ResizeObserver | null = null;
+		// Set up ResizeObserver after a delay to ensure content is rendered
+		const observerTimeoutId = setTimeout(() => {
+			if (contentRef.current && typeof ResizeObserver !== "undefined") {
+				resizeObserver = new ResizeObserver(() => {
+					updatePosition();
+				});
+				resizeObserver.observe(contentRef.current);
+			}
+		}, 100);
+
+		// Handle click outside to close
+		const handleClickOutside = (event: MouseEvent) => {
+			const target = event.target as Node;
+			if (
+				contentRef.current &&
+				!contentRef.current.contains(target) &&
+				trigger &&
+				!trigger.contains(target)
+			) {
+				setOpen(false);
+			}
+		};
+
+		// Handle escape key to close
+		const handleEscape = (event: KeyboardEvent) => {
+			if (event.key === "Escape") {
+				setOpen(false);
+			}
+		};
+
+		// Update position on scroll and resize
+		window.addEventListener("scroll", updatePosition, true);
+		window.addEventListener("resize", updatePosition);
+		document.addEventListener("mousedown", handleClickOutside);
+		document.addEventListener("keydown", handleEscape);
+
+		return () => {
+			clearTimeout(timeoutId);
+			clearTimeout(observerTimeoutId);
+			if (resizeObserver) {
+				resizeObserver.disconnect();
+			}
+			window.removeEventListener("scroll", updatePosition, true);
+			window.removeEventListener("resize", updatePosition);
+			document.removeEventListener("mousedown", handleClickOutside);
+			document.removeEventListener("keydown", handleEscape);
+		};
+	}, [open, triggerId, setOpen]);
+
 	if (!open) return null;
-	return (
+
+	const content = (
 		<div
+			ref={contentRef}
 			data-slot="combobox-content"
 			className={cn(
-				"mt-2 w-full rounded-md border bg-popover text-popover-foreground shadow-md",
+				"fixed z-50 rounded-md border bg-popover text-popover-foreground shadow-lg",
 				className,
 			)}
+			style={{
+				top: `${position.top}px`,
+				left: `${position.left}px`,
+				width: `${position.width}px`,
+				maxHeight: "400px",
+				display: "flex",
+				flexDirection: "column",
+				overflow: "hidden",
+			}}
 			{...props}
 		>
 			{children}
 		</div>
 	);
+
+	// Use Portal to render outside the normal flow
+	if (typeof window !== "undefined") {
+		return ReactDOM.createPortal(content, document.body);
+	}
+
+	return content;
 }
 
 function ComboboxInput({
@@ -116,7 +293,7 @@ function ComboboxInput({
 	onValueChange?: (value: string) => void;
 }) {
 	return (
-		<div className="border-b p-2">
+		<div className="sticky top-0 z-10 border-b bg-popover p-2">
 			<input
 				data-slot="combobox-input"
 				className={cn(
@@ -131,12 +308,58 @@ function ComboboxInput({
 	);
 }
 
-function ComboboxList({ className, ...props }: React.ComponentProps<"div">) {
+function ComboboxList({
+	className,
+	onScrollToBottom,
+	...props
+}: React.ComponentProps<"div"> & {
+	onScrollToBottom?: () => void | Promise<void>;
+}) {
+	const listRef = React.useRef<HTMLDivElement>(null);
+
+	React.useEffect(() => {
+		const list = listRef.current;
+		if (!list || !onScrollToBottom) {
+			return;
+		}
+
+		let isLoading = false;
+
+		const handleScroll = async () => {
+			if (isLoading) {
+				return;
+			}
+
+			const { scrollTop, scrollHeight, clientHeight } = list;
+			const threshold = 50; // Trigger when 50px from bottom
+
+			if (scrollTop + clientHeight >= scrollHeight - threshold) {
+				isLoading = true;
+				try {
+					await onScrollToBottom();
+				} finally {
+					// Small delay to prevent rapid firing
+					setTimeout(() => {
+						isLoading = false;
+					}, 300);
+				}
+			}
+		};
+
+		list.addEventListener("scroll", handleScroll, { passive: true });
+
+		return () => {
+			list.removeEventListener("scroll", handleScroll);
+		};
+	}, [onScrollToBottom]);
+
 	return (
 		<div
+			ref={listRef}
 			data-slot="combobox-list"
 			role="listbox"
-			className={cn("max-h-60 overflow-auto p-1", className)}
+			className={cn("flex-1 overflow-auto p-1", className)}
+			style={{ maxHeight: "calc(400px - 100px)" }} // Account for input and summary height
 			{...props}
 		/>
 	);

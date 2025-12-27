@@ -23,6 +23,9 @@ import { useToast } from "../../hooks/use-toast";
 import { useJwt } from "../../hooks/useJwt";
 import type { PersonType, ClientCreateRequest } from "../../types/client";
 import { createClient } from "../../lib/api/clients";
+import { LabelWithInfo } from "../ui/LabelWithInfo";
+import { getFieldDescription } from "../../lib/field-descriptions";
+import { CatalogSelector } from "../catalogs/CatalogSelector";
 
 interface ClientFormData {
 	personType: PersonType;
@@ -233,7 +236,13 @@ export function ClientCreateView(): React.JSX.Element {
 							<>
 								<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 									<div className="space-y-2">
-										<Label htmlFor="firstName">Nombre *</Label>
+										<LabelWithInfo
+											htmlFor="firstName"
+											description={getFieldDescription("firstName")}
+											required
+										>
+											Nombre
+										</LabelWithInfo>
 										<Input
 											id="firstName"
 											value={formData.firstName}
@@ -245,7 +254,13 @@ export function ClientCreateView(): React.JSX.Element {
 										/>
 									</div>
 									<div className="space-y-2">
-										<Label htmlFor="lastName">Apellido Paterno *</Label>
+										<LabelWithInfo
+											htmlFor="lastName"
+											description={getFieldDescription("lastName")}
+											required
+										>
+											Apellido Paterno
+										</LabelWithInfo>
 										<Input
 											id="lastName"
 											value={formData.lastName}
@@ -257,7 +272,12 @@ export function ClientCreateView(): React.JSX.Element {
 										/>
 									</div>
 									<div className="space-y-2">
-										<Label htmlFor="secondLastName">Apellido Materno</Label>
+										<LabelWithInfo
+											htmlFor="secondLastName"
+											description={getFieldDescription("secondLastName")}
+										>
+											Apellido Materno
+										</LabelWithInfo>
 										<Input
 											id="secondLastName"
 											value={formData.secondLastName}
@@ -270,7 +290,13 @@ export function ClientCreateView(): React.JSX.Element {
 								</div>
 								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 									<div className="space-y-2">
-										<Label htmlFor="birthDate">Fecha de Nacimiento *</Label>
+										<LabelWithInfo
+											htmlFor="birthDate"
+											description={getFieldDescription("birthDate")}
+											required
+										>
+											Fecha de Nacimiento
+										</LabelWithInfo>
 										<Input
 											id="birthDate"
 											type="date"
@@ -282,7 +308,13 @@ export function ClientCreateView(): React.JSX.Element {
 										/>
 									</div>
 									<div className="space-y-2">
-										<Label htmlFor="curp">CURP *</Label>
+										<LabelWithInfo
+											htmlFor="curp"
+											description={getFieldDescription("curp")}
+											required
+										>
+											CURP
+										</LabelWithInfo>
 										<Input
 											id="curp"
 											value={formData.curp}
@@ -298,7 +330,13 @@ export function ClientCreateView(): React.JSX.Element {
 						) : (
 							<>
 								<div className="space-y-2">
-									<Label htmlFor="businessName">Razón Social *</Label>
+									<LabelWithInfo
+										htmlFor="businessName"
+										description={getFieldDescription("businessName")}
+										required
+									>
+										Razón Social
+									</LabelWithInfo>
 									<Input
 										id="businessName"
 										value={formData.businessName}
@@ -310,9 +348,13 @@ export function ClientCreateView(): React.JSX.Element {
 									/>
 								</div>
 								<div className="space-y-2">
-									<Label htmlFor="incorporationDate">
-										Fecha de Constitución *
-									</Label>
+									<LabelWithInfo
+										htmlFor="incorporationDate"
+										description={getFieldDescription("incorporationDate")}
+										required
+									>
+										Fecha de Constitución
+									</LabelWithInfo>
 									<Input
 										id="incorporationDate"
 										type="date"
@@ -326,7 +368,13 @@ export function ClientCreateView(): React.JSX.Element {
 							</>
 						)}
 						<div className="space-y-2">
-							<Label htmlFor="rfc">RFC *</Label>
+							<LabelWithInfo
+								htmlFor="rfc"
+								description={getFieldDescription("rfc")}
+								required
+							>
+								RFC
+							</LabelWithInfo>
 							<Input
 								id="rfc"
 								value={formData.rfc}
@@ -347,17 +395,16 @@ export function ClientCreateView(): React.JSX.Element {
 							</p>
 						</div>
 						{formData.personType === "physical" && (
-							<div className="space-y-2">
-								<Label htmlFor="nationality">Nacionalidad</Label>
-								<Input
-									id="nationality"
-									value={formData.nationality}
-									onChange={(e) =>
-										handleInputChange("nationality", e.target.value)
-									}
-									placeholder="Mexicana"
-								/>
-							</div>
+							<CatalogSelector
+								catalogKey="countries"
+								label="Nacionalidad"
+								labelDescription={getFieldDescription("nationality")}
+								value={formData.nationality}
+								searchPlaceholder="Buscar país..."
+								onChange={(option) =>
+									handleInputChange("nationality", option?.id ?? "")
+								}
+							/>
 						)}
 					</CardContent>
 				</Card>
@@ -369,7 +416,13 @@ export function ClientCreateView(): React.JSX.Element {
 					<CardContent className="space-y-4">
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div className="space-y-2">
-								<Label htmlFor="email">Email *</Label>
+								<LabelWithInfo
+									htmlFor="email"
+									description={getFieldDescription("email")}
+									required
+								>
+									Email
+								</LabelWithInfo>
 								<Input
 									id="email"
 									type="email"
@@ -380,7 +433,13 @@ export function ClientCreateView(): React.JSX.Element {
 								/>
 							</div>
 							<div className="space-y-2">
-								<Label htmlFor="phone">Teléfono *</Label>
+								<LabelWithInfo
+									htmlFor="phone"
+									description={getFieldDescription("phone")}
+									required
+								>
+									Teléfono
+								</LabelWithInfo>
 								<Input
 									id="phone"
 									type="tel"
@@ -401,7 +460,13 @@ export function ClientCreateView(): React.JSX.Element {
 					<CardContent className="space-y-4">
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 							<div className="md:col-span-2 space-y-2">
-								<Label htmlFor="street">Calle *</Label>
+								<LabelWithInfo
+									htmlFor="street"
+									description={getFieldDescription("street")}
+									required
+								>
+									Calle
+								</LabelWithInfo>
 								<Input
 									id="street"
 									value={formData.street}
@@ -411,7 +476,13 @@ export function ClientCreateView(): React.JSX.Element {
 								/>
 							</div>
 							<div className="space-y-2">
-								<Label htmlFor="externalNumber">Número Ext. *</Label>
+								<LabelWithInfo
+									htmlFor="externalNumber"
+									description={getFieldDescription("externalNumber")}
+									required
+								>
+									Número Ext.
+								</LabelWithInfo>
 								<Input
 									id="externalNumber"
 									value={formData.externalNumber}
@@ -425,7 +496,12 @@ export function ClientCreateView(): React.JSX.Element {
 						</div>
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 							<div className="space-y-2">
-								<Label htmlFor="internalNumber">Número Int.</Label>
+								<LabelWithInfo
+									htmlFor="internalNumber"
+									description={getFieldDescription("internalNumber")}
+								>
+									Número Int.
+								</LabelWithInfo>
 								<Input
 									id="internalNumber"
 									value={formData.internalNumber}
@@ -436,7 +512,13 @@ export function ClientCreateView(): React.JSX.Element {
 								/>
 							</div>
 							<div className="space-y-2">
-								<Label htmlFor="neighborhood">Colonia *</Label>
+								<LabelWithInfo
+									htmlFor="neighborhood"
+									description={getFieldDescription("neighborhood")}
+									required
+								>
+									Colonia
+								</LabelWithInfo>
 								<Input
 									id="neighborhood"
 									value={formData.neighborhood}
@@ -448,7 +530,13 @@ export function ClientCreateView(): React.JSX.Element {
 								/>
 							</div>
 							<div className="space-y-2">
-								<Label htmlFor="postalCode">Código Postal *</Label>
+								<LabelWithInfo
+									htmlFor="postalCode"
+									description={getFieldDescription("postalCode")}
+									required
+								>
+									Código Postal
+								</LabelWithInfo>
 								<Input
 									id="postalCode"
 									value={formData.postalCode}
@@ -462,7 +550,13 @@ export function ClientCreateView(): React.JSX.Element {
 						</div>
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 							<div className="space-y-2">
-								<Label htmlFor="city">Ciudad *</Label>
+								<LabelWithInfo
+									htmlFor="city"
+									description={getFieldDescription("city")}
+									required
+								>
+									Ciudad
+								</LabelWithInfo>
 								<Input
 									id="city"
 									value={formData.city}
@@ -472,7 +566,13 @@ export function ClientCreateView(): React.JSX.Element {
 								/>
 							</div>
 							<div className="space-y-2">
-								<Label htmlFor="municipality">Municipio *</Label>
+								<LabelWithInfo
+									htmlFor="municipality"
+									description={getFieldDescription("municipality")}
+									required
+								>
+									Municipio
+								</LabelWithInfo>
 								<Input
 									id="municipality"
 									value={formData.municipality}
@@ -484,7 +584,13 @@ export function ClientCreateView(): React.JSX.Element {
 								/>
 							</div>
 							<div className="space-y-2">
-								<Label htmlFor="stateCode">Estado *</Label>
+								<LabelWithInfo
+									htmlFor="stateCode"
+									description={getFieldDescription("stateCode")}
+									required
+								>
+									Estado
+								</LabelWithInfo>
 								<Input
 									id="stateCode"
 									value={formData.stateCode}

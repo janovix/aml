@@ -24,6 +24,8 @@ export interface Transaction {
 	brandId: string;
 	model: string;
 	year: number;
+	vin?: string | null;
+	repuve?: string | null;
 	armorLevel?: string | null;
 	engineNumber?: string | null;
 	plates?: string | null;
@@ -47,6 +49,8 @@ export interface TransactionCreateRequest {
 	brandId: string;
 	model: string;
 	year: number;
+	vin?: string | null;
+	repuve?: string | null;
 	armorLevel?: string | null;
 	engineNumber?: string | null;
 	plates?: string | null;
@@ -66,6 +70,8 @@ export interface TransactionUpdateRequest {
 	brandId: string;
 	model: string;
 	year: number;
+	vin?: string | null;
+	repuve?: string | null;
 	armorLevel?: string | null;
 	engineNumber?: string | null;
 	plates?: string | null;

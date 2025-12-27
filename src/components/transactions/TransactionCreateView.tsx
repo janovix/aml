@@ -30,6 +30,8 @@ import type {
 } from "../../types/transaction";
 import { CatalogSelector } from "../catalogs/CatalogSelector";
 import { ClientSelector } from "../clients/ClientSelector";
+import { LabelWithInfo } from "../ui/LabelWithInfo";
+import { getFieldDescription } from "../../lib/field-descriptions";
 
 interface TransactionFormData {
 	clientId: string;
@@ -40,6 +42,8 @@ interface TransactionFormData {
 	brandId: string;
 	model: string;
 	year: string;
+	vin?: string;
+	repuve?: string;
 	plates?: string;
 	engineNumber?: string;
 	registrationNumber?: string;
@@ -63,6 +67,8 @@ export function TransactionCreateView(): React.JSX.Element {
 		brandId: "",
 		model: "",
 		year: "",
+		vin: "",
+		repuve: "",
 		plates: "",
 		engineNumber: "",
 		registrationNumber: "",
@@ -166,6 +172,8 @@ export function TransactionCreateView(): React.JSX.Element {
 			};
 
 			if (formData.vehicleType === "land") {
+				if (formData.vin) createData.vin = formData.vin;
+				if (formData.repuve) createData.repuve = formData.repuve;
 				if (formData.plates) createData.plates = formData.plates;
 				if (formData.engineNumber)
 					createData.engineNumber = formData.engineNumber;
@@ -265,7 +273,13 @@ export function TransactionCreateView(): React.JSX.Element {
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="operation-date">Fecha de operación *</Label>
+								<LabelWithInfo
+									htmlFor="operation-date"
+									description={getFieldDescription("operationDate")}
+									required
+								>
+									Fecha de operación
+								</LabelWithInfo>
 								<Input
 									id="operation-date"
 									type="date"
@@ -278,9 +292,13 @@ export function TransactionCreateView(): React.JSX.Element {
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="branch-postal-code">
-									Código Postal Sucursal *
-								</Label>
+								<LabelWithInfo
+									htmlFor="branch-postal-code"
+									description={getFieldDescription("branchPostalCode")}
+									required
+								>
+									Código Postal Sucursal
+								</LabelWithInfo>
 								<Input
 									id="branch-postal-code"
 									value={formData.branchPostalCode}
@@ -304,7 +322,13 @@ export function TransactionCreateView(): React.JSX.Element {
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="space-y-2">
-							<Label htmlFor="vehicle-type">Tipo de vehículo *</Label>
+							<LabelWithInfo
+								htmlFor="vehicle-type"
+								description={getFieldDescription("vehicleType")}
+								required
+							>
+								Tipo de vehículo
+							</LabelWithInfo>
 							<Select
 								value={formData.vehicleType}
 								onValueChange={(value) =>
@@ -329,6 +353,7 @@ export function TransactionCreateView(): React.JSX.Element {
 							<CatalogSelector
 								catalogKey="vehicle-brands"
 								label="Marca ID"
+								labelDescription={getFieldDescription("brandId")}
 								value={formData.brandId}
 								required
 								searchPlaceholder="Buscar marca..."
@@ -338,7 +363,13 @@ export function TransactionCreateView(): React.JSX.Element {
 							/>
 
 							<div className="space-y-2">
-								<Label htmlFor="model">Modelo *</Label>
+								<LabelWithInfo
+									htmlFor="model"
+									description={getFieldDescription("model")}
+									required
+								>
+									Modelo
+								</LabelWithInfo>
 								<Input
 									id="model"
 									value={formData.model}
@@ -349,7 +380,13 @@ export function TransactionCreateView(): React.JSX.Element {
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="year">Año *</Label>
+								<LabelWithInfo
+									htmlFor="year"
+									description={getFieldDescription("year")}
+									required
+								>
+									Año
+								</LabelWithInfo>
 								<Input
 									id="year"
 									type="number"
@@ -365,7 +402,44 @@ export function TransactionCreateView(): React.JSX.Element {
 							{formData.vehicleType === "land" && (
 								<>
 									<div className="space-y-2">
-										<Label htmlFor="plates">Placas *</Label>
+										<LabelWithInfo
+											htmlFor="vin"
+											description={getFieldDescription("vin")}
+										>
+											VIN (Número de Identificación Vehicular)
+										</LabelWithInfo>
+										<Input
+											id="vin"
+											value={formData.vin}
+											onChange={(e) => handleInputChange("vin", e.target.value)}
+											placeholder="17 caracteres"
+											maxLength={17}
+										/>
+									</div>
+									<div className="space-y-2">
+										<LabelWithInfo
+											htmlFor="repuve"
+											description={getFieldDescription("repuve")}
+										>
+											REPUVE (Registro Público Vehicular)
+										</LabelWithInfo>
+										<Input
+											id="repuve"
+											value={formData.repuve}
+											onChange={(e) =>
+												handleInputChange("repuve", e.target.value)
+											}
+											placeholder="8 caracteres"
+											maxLength={8}
+										/>
+									</div>
+									<div className="space-y-2">
+										<LabelWithInfo
+											htmlFor="plates"
+											description={getFieldDescription("plates")}
+										>
+											Placas
+										</LabelWithInfo>
 										<Input
 											id="plates"
 											value={formData.plates}
@@ -373,11 +447,15 @@ export function TransactionCreateView(): React.JSX.Element {
 												handleInputChange("plates", e.target.value)
 											}
 											placeholder="ABC-123-D"
-											required
 										/>
 									</div>
 									<div className="space-y-2">
-										<Label htmlFor="engine-number">Número de motor</Label>
+										<LabelWithInfo
+											htmlFor="engine-number"
+											description={getFieldDescription("engineNumber")}
+										>
+											Número de motor
+										</LabelWithInfo>
 										<Input
 											id="engine-number"
 											value={formData.engineNumber}
@@ -394,9 +472,13 @@ export function TransactionCreateView(): React.JSX.Element {
 								formData.vehicleType === "air") && (
 								<>
 									<div className="space-y-2">
-										<Label htmlFor="registration-number">
-											Número de registro *
-										</Label>
+										<LabelWithInfo
+											htmlFor="registration-number"
+											description={getFieldDescription("registrationNumber")}
+											required
+										>
+											Número de registro
+										</LabelWithInfo>
 										<Input
 											id="registration-number"
 											value={formData.registrationNumber}
@@ -407,17 +489,16 @@ export function TransactionCreateView(): React.JSX.Element {
 											required
 										/>
 									</div>
-									<div className="space-y-2">
-										<Label htmlFor="flag-country-id">País de bandera ID</Label>
-										<Input
-											id="flag-country-id"
-											value={formData.flagCountryId}
-											onChange={(e) =>
-												handleInputChange("flagCountryId", e.target.value)
-											}
-											placeholder="MX"
-										/>
-									</div>
+									<CatalogSelector
+										catalogKey="countries"
+										label="País de bandera"
+										labelDescription={getFieldDescription("flagCountryId")}
+										value={formData.flagCountryId}
+										searchPlaceholder="Buscar país..."
+										onChange={(option) =>
+											handleInputChange("flagCountryId", option?.id ?? "")
+										}
+									/>
 								</>
 							)}
 						</div>
@@ -433,25 +514,17 @@ export function TransactionCreateView(): React.JSX.Element {
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<div className="space-y-2">
-								<Label htmlFor="currency">Moneda *</Label>
-								<Select
-									value={formData.currency}
-									onValueChange={(value) =>
-										handleInputChange("currency", value)
-									}
-									required
-								>
-									<SelectTrigger id="currency">
-										<SelectValue />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="MXN">MXN - Peso Mexicano</SelectItem>
-										<SelectItem value="USD">USD - Dólar Americano</SelectItem>
-										<SelectItem value="EUR">EUR - Euro</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
+							<CatalogSelector
+								catalogKey="currencies"
+								label="Moneda"
+								labelDescription={getFieldDescription("currency")}
+								value={formData.currency}
+								required
+								searchPlaceholder="Buscar moneda..."
+								onChange={(option) =>
+									handleInputChange("currency", option?.id ?? "")
+								}
+							/>
 						</div>
 
 						<Separator />
