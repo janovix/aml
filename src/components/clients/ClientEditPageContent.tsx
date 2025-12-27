@@ -2,21 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Save } from "lucide-react";
 import { mockClients } from "@/data/mockClients";
 import type { Client, PersonType } from "@/types/client";
+import { getPersonTypeDisplay } from "@/lib/person-type";
 
 interface ClientEditPageContentProps {
 	clientId: string;
@@ -86,6 +81,10 @@ export function ClientEditPageContent({
 		);
 	}
 
+	const lockedPersonType = formData.personType ?? client.personType ?? null;
+	const { label: personTypeLabel, helper: personTypeHelper } =
+		getPersonTypeDisplay(lockedPersonType);
+
 	return (
 		<div className="space-y-6">
 			<div className="flex items-center gap-4">
@@ -124,22 +123,20 @@ export function ClientEditPageContent({
 										/>
 									</div>
 									<div className="space-y-2">
-										<Label htmlFor="personType">Tipo de Persona *</Label>
-										<Select
-											value={formData.personType}
-											onValueChange={(value) =>
-												handleChange("personType", value as PersonType)
-											}
-										>
-											<SelectTrigger id="personType">
-												<SelectValue />
-											</SelectTrigger>
-											<SelectContent>
-												<SelectItem value="physical">Persona Física</SelectItem>
-												<SelectItem value="moral">Persona Moral</SelectItem>
-												<SelectItem value="trust">Fideicomiso</SelectItem>
-											</SelectContent>
-										</Select>
+										<p className="text-sm font-medium leading-none">
+											Tipo de Persona *
+										</p>
+										<div className="flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-muted bg-muted/60 p-3">
+											<Badge
+												variant="outline"
+												className="px-3 py-1 text-sm font-medium"
+											>
+												{personTypeLabel}
+											</Badge>
+											<p className="text-sm text-muted-foreground">
+												{personTypeHelper}
+											</p>
+										</div>
 									</div>
 								</div>
 

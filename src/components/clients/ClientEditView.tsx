@@ -4,6 +4,7 @@ import type React from "react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
+	Badge,
 	Button,
 	Card,
 	CardContent,
@@ -11,11 +12,6 @@ import {
 	CardTitle,
 	Input,
 	Label,
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
 	Textarea,
 } from "@algtools/ui";
 import { ArrowLeft, Save } from "lucide-react";
@@ -27,6 +23,7 @@ import type {
 	Client,
 } from "../../types/client";
 import { getClientByRfc, updateClient } from "../../lib/api/clients";
+import { getPersonTypeDisplay } from "../../lib/person-type";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
 import { getFieldDescription } from "../../lib/field-descriptions";
 import { CatalogSelector } from "../catalogs/CatalogSelector";
@@ -168,10 +165,23 @@ export function ClientEditView({
 		e.preventDefault();
 		setIsSubmitting(true);
 
+		const currentPersonType = client?.personType ?? formData.personType;
+
+		if (!currentPersonType) {
+			toast({
+				title: "Tipo de persona no disponible",
+				description:
+					"No se pudo determinar el tipo de persona del cliente. Vuelve a cargar la página e inténtalo de nuevo.",
+				variant: "destructive",
+			});
+			setIsSubmitting(false);
+			return;
+		}
+
 		try {
 			// Build the request payload based on personType
 			const request: ClientCreateRequest = {
-				personType: formData.personType,
+				personType: currentPersonType,
 				rfc: formData.rfc,
 				email: formData.email,
 				phone: formData.phone,
@@ -186,7 +196,7 @@ export function ClientEditView({
 			};
 
 			// Add personType-specific fields
-			if (formData.personType === "physical") {
+			if (currentPersonType === "physical") {
 				request.firstName = formData.firstName;
 				request.lastName = formData.lastName;
 				if (formData.secondLastName)
@@ -286,6 +296,10 @@ export function ClientEditView({
 		);
 	}
 
+	const lockedPersonType = formData.personType ?? client.personType;
+	const { label: personTypeLabel, helper: personTypeHelper } =
+		getPersonTypeDisplay(lockedPersonType);
+
 	return (
 		<div className="space-y-6">
 			<div className="flex items-center justify-between">
@@ -324,22 +338,18 @@ export function ClientEditView({
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="space-y-2">
-							<Label htmlFor="personType">Tipo *</Label>
-							<Select
-								value={formData.personType}
-								onValueChange={(value) =>
-									handleInputChange("personType", value as PersonType)
-								}
-							>
-								<SelectTrigger id="personType">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="physical">Persona Física</SelectItem>
-									<SelectItem value="moral">Persona Moral</SelectItem>
-									<SelectItem value="trust">Fideicomiso</SelectItem>
-								</SelectContent>
-							</Select>
+							<Label className="text-sm font-medium leading-none">Tipo *</Label>
+							<div className="flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-muted bg-muted/60 p-3">
+								<Badge
+									variant="outline"
+									className="px-3 py-1 text-sm font-medium"
+								>
+									{personTypeLabel}
+								</Badge>
+								<p className="text-sm text-muted-foreground">
+									{personTypeHelper}
+								</p>
+							</div>
 						</div>
 					</CardContent>
 				</Card>
