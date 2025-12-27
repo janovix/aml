@@ -1,3 +1,10 @@
+# [1.1.0-rc.11](https://github.com/janovix/aml/compare/v1.1.0-rc.10...v1.1.0-rc.11) (2025-12-27)
+
+
+### Features
+
+* enhance KPI cards and transaction forms with new stats fetching and brand field updates ([19920c9](https://github.com/janovix/aml/commit/19920c95c5f7de38d1d425a0cf0084eb06305e3d))
+
 # [1.1.0-rc.10](https://github.com/janovix/aml/compare/v1.1.0-rc.9...v1.1.0-rc.10) (2025-12-27)
 
 
