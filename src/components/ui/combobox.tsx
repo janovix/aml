@@ -116,8 +116,8 @@ function ComboboxContent({
 			if (!trigger) return;
 
 			const rect = trigger.getBoundingClientRect();
-			const scrollY = window.scrollY;
-			const scrollX = window.scrollX;
+			// For fixed positioning, use viewport-relative coordinates from getBoundingClientRect
+			// Do NOT add scrollY/scrollX since fixed elements are positioned relative to viewport
 			const viewportWidth = window.innerWidth;
 			const viewportHeight = window.innerHeight;
 
@@ -140,8 +140,8 @@ function ComboboxContent({
 			const spaceAbove = rect.top - gap;
 
 			// Default: position below, align left edge with trigger
-			let top = rect.bottom + scrollY + gap;
-			let left = rect.left + scrollX;
+			let top = rect.bottom + gap;
+			let left = rect.left;
 			let width = Math.max(rect.width, 250); // Minimum width
 
 			// Determine if we should position above based on available space
@@ -151,24 +151,21 @@ function ComboboxContent({
 
 			if (!fitsBelow && fitsAbove) {
 				// Not enough space below, but enough above - position above
-				top = rect.top + scrollY - dropdownHeight - gap;
+				top = rect.top - dropdownHeight - gap;
 				// Ensure we don't go above viewport
-				top = Math.max(scrollY + minPadding, top);
+				top = Math.max(minPadding, top);
 			} else if (!fitsBelow && !fitsAbove) {
 				// Not enough space in either direction
 				// Position where there's more space, but ensure visibility
 				if (spaceAbove > spaceBelow) {
 					// More space above, position above but clamp
-					top = rect.top + scrollY - Math.min(dropdownHeight, spaceAbove - gap);
-					top = Math.max(scrollY + minPadding, top);
+					top = rect.top - Math.min(dropdownHeight, spaceAbove - gap);
+					top = Math.max(minPadding, top);
 				} else {
 					// More space below, position below but clamp
-					top = rect.bottom + scrollY + gap;
+					top = rect.bottom + gap;
 					const maxTop =
-						viewportHeight +
-						scrollY -
-						minPadding -
-						Math.min(dropdownHeight, spaceBelow);
+						viewportHeight - minPadding - Math.min(dropdownHeight, spaceBelow);
 					top = Math.min(top, maxTop);
 				}
 			}
@@ -179,7 +176,6 @@ function ComboboxContent({
 			width = Math.min(width, maxWidth);
 
 			// Keep aligned with trigger left edge, but adjust if it would overflow
-			const maxLeft = viewportWidth - width - minPadding;
 			if (left + width > viewportWidth - minPadding) {
 				// If dropdown would overflow right, shift left to fit
 				left = Math.max(minPadding, viewportWidth - width - minPadding);
