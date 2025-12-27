@@ -21,7 +21,7 @@ export interface Transaction {
 	operationType: TransactionOperationType;
 	branchPostalCode: string;
 	vehicleType: TransactionVehicleType;
-	brandId: string;
+	brand: string;
 	model: string;
 	year: number;
 	vin?: string | null;
@@ -46,7 +46,7 @@ export interface TransactionCreateRequest {
 	operationType: TransactionOperationType;
 	branchPostalCode: string;
 	vehicleType: TransactionVehicleType;
-	brandId: string;
+	brand: string;
 	model: string;
 	year: number;
 	vin?: string | null;
@@ -67,7 +67,7 @@ export interface TransactionUpdateRequest {
 	operationType: TransactionOperationType;
 	branchPostalCode: string;
 	vehicleType: TransactionVehicleType;
-	brandId: string;
+	brand: string;
 	model: string;
 	year: number;
 	vin?: string | null;

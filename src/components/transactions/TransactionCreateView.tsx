@@ -39,7 +39,7 @@ interface TransactionFormData {
 	operationType: TransactionOperationType | "";
 	branchPostalCode: string;
 	vehicleType: TransactionVehicleType | "";
-	brandId: string;
+	brand: string;
 	model: string;
 	year: string;
 	vin?: string;
@@ -64,7 +64,7 @@ export function TransactionCreateView(): React.JSX.Element {
 		operationType: "sale", // Default to "Venta"
 		branchPostalCode: "",
 		vehicleType: "",
-		brandId: "",
+		brand: "",
 		model: "",
 		year: "",
 		vin: "",
@@ -163,7 +163,7 @@ export function TransactionCreateView(): React.JSX.Element {
 				operationType: "sale", // Always set to "Venta"
 				branchPostalCode: formData.branchPostalCode,
 				vehicleType: formData.vehicleType as TransactionVehicleType,
-				brandId: formData.brandId,
+				brand: formData.brand,
 				model: formData.model,
 				year: parseInt(formData.year, 10),
 				amount: calculatedAmount,
@@ -350,17 +350,22 @@ export function TransactionCreateView(): React.JSX.Element {
 						<Separator />
 
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<CatalogSelector
-								catalogKey="vehicle-brands"
-								label="Marca ID"
-								labelDescription={getFieldDescription("brandId")}
-								value={formData.brandId}
-								required
-								searchPlaceholder="Buscar marca..."
-								onChange={(option) =>
-									handleInputChange("brandId", option?.id ?? "")
-								}
-							/>
+							<div className="space-y-2">
+								<LabelWithInfo
+									htmlFor="brand"
+									description={getFieldDescription("brand")}
+									required
+								>
+									Marca
+								</LabelWithInfo>
+								<Input
+									id="brand"
+									value={formData.brand}
+									onChange={(e) => handleInputChange("brand", e.target.value)}
+									placeholder="Toyota, Honda, BMW, etc."
+									required
+								/>
+							</div>
 
 							<div className="space-y-2">
 								<LabelWithInfo

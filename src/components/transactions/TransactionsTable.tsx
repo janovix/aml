@@ -36,7 +36,7 @@ interface TransactionRow {
 	id: string;
 	folio: string;
 	type: "purchase" | "sale";
-	brandId: string;
+	brand: string;
 	model: string;
 	year: number;
 	amount: number;
@@ -100,7 +100,7 @@ export function TransactionsTable({
 		id: tx.id,
 		folio: tx.id,
 		type: tx.operationType,
-		brandId: tx.brandId,
+		brand: tx.brand,
 		model: tx.model,
 		year: tx.year,
 		amount: parseFloat(tx.amount),
@@ -266,7 +266,7 @@ export function TransactionsTable({
 										<TableCell>
 											<div className="flex flex-col">
 												<span className="font-medium">
-													{transaction.brandId} {transaction.model}
+													{transaction.brand} {transaction.model}
 												</span>
 												<span className="text-xs text-muted-foreground">
 													{transaction.year}

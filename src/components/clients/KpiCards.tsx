@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, cn } from "@algtools/ui";
 import {
 	Users,
@@ -9,6 +9,8 @@ import {
 	TrendingUp,
 	TrendingDown,
 } from "lucide-react";
+import { getClientStats } from "../../lib/api/stats";
+import { useToast } from "../../hooks/use-toast";
 
 interface KpiCardProps {
 	title: string;
@@ -101,25 +103,60 @@ function KpiCard({
 }
 
 export function KpiCards(): React.ReactElement {
+	const { toast } = useToast();
+	const [stats, setStats] = useState<{
+		openAlerts: number;
+		urgentReviews: number;
+		totalClients: number;
+	} | null>(null);
+	const [isLoading, setIsLoading] = useState(true);
+
+	useEffect(() => {
+		const fetchStats = async () => {
+			try {
+				setIsLoading(true);
+				const data = await getClientStats();
+				setStats(data);
+			} catch (error) {
+				console.error("Error fetching client stats:", error);
+				toast({
+					title: "Error",
+					description: "No se pudieron cargar las estadísticas.",
+					variant: "destructive",
+				});
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
+		fetchStats();
+	}, [toast]);
+
+	const formatNumber = (num: number): string => {
+		return new Intl.NumberFormat("es-MX").format(num);
+	};
+
 	const kpis = [
 		{
 			title: "Avisos Abiertos",
-			value: 37,
+			value: isLoading ? "..." : (stats?.openAlerts ?? 0),
 			icon: <AlertTriangle className="h-6 w-6" />,
-			trend: { value: 8, label: "nuevos hoy", direction: "up" as const },
 			severity: "danger" as const,
 		},
 		{
 			title: "Revisiones Urgentes",
-			value: 12,
+			value: isLoading ? "..." : (stats?.urgentReviews ?? 0),
 			icon: <Clock className="h-6 w-6" />,
 			severity: "warning" as const,
 		},
 		{
 			title: "Total Clientes",
-			value: "1,248",
+			value: isLoading
+				? "..."
+				: stats?.totalClients
+					? formatNumber(stats.totalClients)
+					: "0",
 			icon: <Users className="h-6 w-6" />,
-			trend: { value: 12, label: "vs mes anterior", direction: "up" as const },
 			severity: "default" as const,
 		},
 	];
