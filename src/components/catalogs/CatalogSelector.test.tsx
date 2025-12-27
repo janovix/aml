@@ -51,6 +51,63 @@ beforeEach(() => {
 });
 
 describe("CatalogSelector", () => {
+	it("does not show raw ID in trigger while data is loading", () => {
+		// Simulate initial loading state where pagination is null
+		mockedUseCatalogSearch.mockReturnValue(
+			createHookResult({
+				items: [],
+				pagination: null,
+				loading: true,
+			}),
+		);
+
+		render(
+			<CatalogSelector
+				catalogKey="countries"
+				value="e4d46ea04f22ddfb2f82286f6ee226d3"
+			/>,
+		);
+
+		const trigger = screen.getByRole("button");
+		// Should show placeholder, not the raw ID
+		expect(trigger).not.toHaveTextContent("e4d46ea04f22ddfb2f82286f6ee226d3");
+	});
+
+	it("shows item name after loading when value matches item ID", () => {
+		const itemsWithId: CatalogItem[] = [
+			{
+				id: "country-mx-id",
+				catalogId: "countries",
+				name: "México",
+				normalizedName: "mexico",
+				active: true,
+				metadata: {},
+				createdAt: "2024-01-01T00:00:00Z",
+				updatedAt: "2024-01-01T00:00:00Z",
+			},
+		];
+
+		mockedUseCatalogSearch.mockReturnValue(
+			createHookResult({
+				items: itemsWithId,
+				pagination: {
+					page: 1,
+					pageSize: 25,
+					total: 1,
+					totalPages: 1,
+				},
+				loading: false,
+			}),
+		);
+
+		render(<CatalogSelector catalogKey="countries" value="country-mx-id" />);
+
+		const trigger = screen.getByRole("button");
+		// Should show the name, not the ID
+		expect(trigger).toHaveTextContent("México");
+		expect(trigger).not.toHaveTextContent("country-mx-id");
+	});
+
 	it("renders label and options", async () => {
 		const user = userEvent.setup();
 		render(
@@ -137,5 +194,63 @@ describe("CatalogSelector", () => {
 		await user.type(input, "toy");
 
 		expect(await screen.findByText(/Mostrando/)).toBeInTheDocument();
+	});
+
+	it("preserves selected label when search results change and no longer include selected item", () => {
+		const mexicoItem: CatalogItem = {
+			id: "country-mx",
+			catalogId: "countries",
+			name: "México",
+			normalizedName: "mexico",
+			active: true,
+			metadata: {},
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		};
+
+		const usaItem: CatalogItem = {
+			id: "country-us",
+			catalogId: "countries",
+			name: "Estados Unidos",
+			normalizedName: "estados-unidos",
+			active: true,
+			metadata: {},
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		};
+
+		// First render with México in results
+		mockedUseCatalogSearch.mockReturnValue(
+			createHookResult({
+				items: [mexicoItem, usaItem],
+				pagination: { page: 1, pageSize: 25, total: 2, totalPages: 1 },
+				loading: false,
+			}),
+		);
+
+		const { rerender } = render(
+			<CatalogSelector catalogKey="countries" value="country-mx" />,
+		);
+
+		const trigger = screen.getByRole("button");
+		// Should show México, not the ID
+		expect(trigger).toHaveTextContent("México");
+
+		// Simulate search results that don't include México (e.g., user typed "Estados")
+		mockedUseCatalogSearch.mockReturnValue(
+			createHookResult({
+				items: [usaItem], // Only USA in filtered results
+				pagination: { page: 1, pageSize: 25, total: 1, totalPages: 1 },
+				loading: false,
+				searchTerm: "Estados",
+			}),
+		);
+
+		// Re-render with same value but filtered items
+		rerender(<CatalogSelector catalogKey="countries" value="country-mx" />);
+
+		// Should still show México, not fall back to ID
+		expect(trigger).toHaveTextContent("México");
+		expect(trigger).not.toHaveTextContent("country-mx");
 	});
 });

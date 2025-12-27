@@ -73,7 +73,7 @@ export function CatalogSelector({
 	required = false,
 	pageSize,
 	debounceMs,
-	autoFocusSearch = false,
+	autoFocusSearch = true,
 	typeLabel,
 	onChange,
 	onValueChange,
@@ -88,7 +88,9 @@ export function CatalogSelector({
 	const resolvedType = typeLabel ?? label?.toLowerCase() ?? "opción";
 	const isControlled = value !== undefined;
 
-	const [selectedLabel, setSelectedLabel] = useState(value ?? "");
+	// Initialize selectedLabel as empty - don't use value directly as it may be an ID
+	// The label will be resolved once items are loaded and matched
+	const [selectedLabel, setSelectedLabel] = useState("");
 	const [selectedOption, setSelectedOption] = useState<CatalogItem | null>(
 		null,
 	);
@@ -134,6 +136,11 @@ export function CatalogSelector({
 		}
 	}, [value, lastSearchedValue]);
 
+	// Helper to get the value from an option
+	const getOptionValueResolved = (option: CatalogItem): string => {
+		return getOptionValue ? getOptionValue(option) : (option.id ?? option.name);
+	};
+
 	// Effect to find and set the selected item when value or items change
 	useEffect(() => {
 		if (!isControlled) {
@@ -146,12 +153,19 @@ export function CatalogSelector({
 			return;
 		}
 
+		// If we already have a selectedOption that matches the current value,
+		// preserve it - don't let filtered search results overwrite the label
+		if (selectedOption && getOptionValueResolved(selectedOption) === value) {
+			// Ensure label is set correctly (in case it was empty initially)
+			if (selectedLabel !== selectedOption.name) {
+				setSelectedLabel(selectedOption.name);
+			}
+			return;
+		}
+
 		// Find the item by comparing the value (ID) with the item's ID or computed value
 		const match = items.find((entry) => {
-			const entryValue = getOptionValue
-				? getOptionValue(entry)
-				: (entry.id ?? entry.name);
-			return entryValue === value;
+			return getOptionValueResolved(entry) === value;
 		});
 
 		if (match) {
@@ -171,8 +185,16 @@ export function CatalogSelector({
 			loadMore().catch(() => {
 				// Ignore errors, will fall back to showing value
 			});
-		} else if (!loading && !loadingMore && !match) {
-			// After searching or if no more pages, show the value as fallback
+		} else if (
+			!loading &&
+			!loadingMore &&
+			!match &&
+			pagination !== null &&
+			!selectedOption
+		) {
+			// Only fallback to showing the raw value after we've actually loaded data
+			// (pagination !== null indicates at least one successful fetch)
+			// and confirmed no match exists AND we don't already have a valid selection
 			setSelectedLabel(value);
 		}
 	}, [
@@ -185,6 +207,9 @@ export function CatalogSelector({
 		hasMore,
 		loadMore,
 		pagesSearchedForValue,
+		pagination,
+		selectedOption,
+		selectedLabel,
 	]);
 
 	const handleSelect = (value: string): void => {
