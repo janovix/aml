@@ -1,3 +1,14 @@
+# [1.1.0-rc.10](https://github.com/janovix/aml/compare/v1.1.0-rc.9...v1.1.0-rc.10) (2025-12-27)
+
+
+### Features
+
+* Add LabelWithInfo component and field descriptions ([52ccc35](https://github.com/janovix/aml/commit/52ccc35b202fdcab92993291f9d61108e9245748))
+* Add settings page and refactor transaction forms ([d39b4ea](https://github.com/janovix/aml/commit/d39b4ea4990f323d450c20e4dae4f5a18ceae64b))
+* Implement Combobox positioning and portal rendering ([37c2492](https://github.com/janovix/aml/commit/37c2492986b6e28ec4cb874a59a9cec28720e040))
+* Implement infinite scroll for catalog search ([5b6ae22](https://github.com/janovix/aml/commit/5b6ae22700e6369cc0ea11bf45e6acac177ea603))
+* Improve catalog selector search and reset logic ([37383b2](https://github.com/janovix/aml/commit/37383b2aed2e1e0ab590d6a0a4545dbe150d7abd))
+
 # [1.1.0-rc.9](https://github.com/janovix/aml/compare/v1.1.0-rc.8...v1.1.0-rc.9) (2025-12-19)
 
 
