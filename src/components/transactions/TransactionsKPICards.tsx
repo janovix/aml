@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, cn } from "@algtools/ui";
 import {
 	DollarSign,
@@ -10,6 +10,8 @@ import {
 	TrendingUp,
 	TrendingDown,
 } from "lucide-react";
+import { getTransactionStats } from "../../lib/api/stats";
+import { useToast } from "../../hooks/use-toast";
 
 interface KpiCardProps {
 	title: string;
@@ -103,32 +105,88 @@ function KpiCard({
 }
 
 export function TransactionsKPICards(): React.ReactElement {
+	const { toast } = useToast();
+	const [stats, setStats] = useState<{
+		transactionsToday: number;
+		suspiciousTransactions: number;
+		totalVolume: string;
+		totalVehicles: number;
+	} | null>(null);
+	const [isLoading, setIsLoading] = useState(true);
+
+	useEffect(() => {
+		const fetchStats = async () => {
+			try {
+				setIsLoading(true);
+				const data = await getTransactionStats();
+				setStats(data);
+			} catch (error) {
+				console.error("Error fetching transaction stats:", error);
+				toast({
+					title: "Error",
+					description: "No se pudieron cargar las estadísticas.",
+					variant: "destructive",
+				});
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
+		fetchStats();
+	}, [toast]);
+
+	const formatCurrency = (amount: string): string => {
+		const num = parseFloat(amount);
+		if (isNaN(num)) return "$0";
+		if (num >= 1000000) {
+			return `$${(num / 1000000).toFixed(1)}M`;
+		}
+		if (num >= 1000) {
+			return `$${(num / 1000).toFixed(1)}K`;
+		}
+		return new Intl.NumberFormat("es-MX", {
+			style: "currency",
+			currency: "MXN",
+			minimumFractionDigits: 0,
+			maximumFractionDigits: 0,
+		}).format(num);
+	};
+
+	const formatNumber = (num: number): string => {
+		return new Intl.NumberFormat("es-MX").format(num);
+	};
+
 	const kpis = [
 		{
 			title: "Transacciones Hoy",
-			value: 47,
+			value: isLoading ? "..." : (stats?.transactionsToday ?? 0),
 			icon: <Calendar className="h-6 w-6" />,
 			severity: "default" as const,
 		},
 		{
 			title: "Transacciones Sospechosas",
-			value: 23,
+			value: isLoading ? "..." : (stats?.suspiciousTransactions ?? 0),
 			icon: <AlertCircle className="h-6 w-6" />,
-			trend: { value: 8, label: "nuevas hoy", direction: "up" as const },
 			severity: "danger" as const,
 		},
 		{
 			title: "Volumen Total",
-			value: "$2.4M",
+			value: isLoading
+				? "..."
+				: stats?.totalVolume
+					? formatCurrency(stats.totalVolume)
+					: "$0",
 			icon: <DollarSign className="h-6 w-6" />,
-			trend: { value: 15, label: "vs mes anterior", direction: "up" as const },
 			severity: "success" as const,
 		},
 		{
 			title: "Total Vehículos",
-			value: "1,856",
+			value: isLoading
+				? "..."
+				: stats?.totalVehicles
+					? formatNumber(stats.totalVehicles)
+					: "0",
 			icon: <Package className="h-6 w-6" />,
-			trend: { value: 12, label: "vs mes anterior", direction: "up" as const },
 			severity: "default" as const,
 		},
 	];

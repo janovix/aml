@@ -52,7 +52,7 @@ export function TransactionEditView({
 		operationType: "purchase" as TransactionOperationType,
 		branchPostalCode: "",
 		vehicleType: "land" as TransactionVehicleType,
-		brandId: "",
+		brand: "",
 		model: "",
 		year: "",
 		vin: "",
@@ -82,7 +82,7 @@ export function TransactionEditView({
 					operationType: transaction.operationType,
 					branchPostalCode: transaction.branchPostalCode,
 					vehicleType: transaction.vehicleType,
-					brandId: transaction.brandId,
+					brand: transaction.brand,
 					model: transaction.model,
 					year: String(transaction.year),
 					vin: transaction.vin || "",
@@ -148,7 +148,7 @@ export function TransactionEditView({
 				operationType: formData.operationType,
 				branchPostalCode: formData.branchPostalCode,
 				vehicleType: formData.vehicleType,
-				brandId: formData.brandId,
+				brand: formData.brand,
 				model: formData.model,
 				year: parseInt(formData.year, 10),
 				amount: formData.amount,
@@ -409,14 +409,22 @@ export function TransactionEditView({
 						<Separator />
 
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<CatalogSelector
-								catalogKey="vehicle-brands"
-								label="Marca ID"
-								value={formData.brandId}
-								required
-								searchPlaceholder="Buscar marca..."
-								onChange={(option) => handleChange("brandId", option?.id ?? "")}
-							/>
+							<div className="space-y-2">
+								<LabelWithInfo
+									htmlFor="brand"
+									description={getFieldDescription("brand")}
+									required
+								>
+									Marca
+								</LabelWithInfo>
+								<Input
+									id="brand"
+									value={formData.brand}
+									onChange={(e) => handleChange("brand", e.target.value)}
+									placeholder="Toyota, Honda, BMW, etc."
+									required
+								/>
+							</div>
 
 							<div className="space-y-2">
 								<Label htmlFor="model">Modelo *</Label>

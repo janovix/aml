@@ -353,7 +353,7 @@
 		"operationType": "tipo_operacion",
 		"branchPostalCode": "codigo_postal",
 		"vehicleType": "tipo_vehiculo",
-		"brandId": "marca_fabricante",
+		"brand": "marca_fabricante",
 		"model": "modelo",
 		"year": "anio",
 		"plates": "placas",

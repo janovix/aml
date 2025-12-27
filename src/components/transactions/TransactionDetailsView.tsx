@@ -367,10 +367,10 @@ export function TransactionDetailsView({
 							<div className="grid gap-4 md:grid-cols-3">
 								<div>
 									<p className="text-sm font-medium text-muted-foreground">
-										Marca ID
+										Marca
 									</p>
 									<p className="text-base font-medium mt-1">
-										{transaction.brandId}
+										{transaction.brand}
 									</p>
 								</div>
 								<div>
