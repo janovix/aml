@@ -86,6 +86,19 @@ describe("ClientEditPageContent", () => {
 		expect(screen.getByLabelText("Teléfono *")).toBeInTheDocument();
 	});
 
+	it("shows person type as a read-only indicator", () => {
+		const client = mockClients[0];
+		render(<ClientEditPageContent clientId={client.rfc} />);
+
+		expect(screen.getByText("Persona Moral")).toBeInTheDocument();
+		expect(
+			screen.getByText(
+				"Este valor se define al dar de alta al cliente y no se puede modificar desde esta vista.",
+			),
+		).toBeInTheDocument();
+		expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+	});
+
 	it("renders cancel and save buttons", () => {
 		const client = mockClients[0];
 		render(<ClientEditPageContent clientId={client.rfc} />);
