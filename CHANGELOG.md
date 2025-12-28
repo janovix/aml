@@ -1,3 +1,15 @@
+# [1.1.0-rc.12](https://github.com/janovix/aml/compare/v1.1.0-rc.11...v1.1.0-rc.12) (2025-12-28)
+
+
+### Bug Fixes
+
+* ensure client edit submits validate ([2758777](https://github.com/janovix/aml/commit/275877752ee529a533c805eed39d73bf32207abc))
+
+
+### Features
+
+* enhance ClientEditView with comprehensive client data handling and improved form structure ([b0a40d7](https://github.com/janovix/aml/commit/b0a40d720a5f32f35b9f9e7b35d44c793ba6ca2e))
+
 # [1.1.0-rc.11](https://github.com/janovix/aml/compare/v1.1.0-rc.10...v1.1.0-rc.11) (2025-12-27)
 
 
