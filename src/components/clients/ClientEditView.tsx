@@ -16,7 +16,6 @@ import {
 } from "@algtools/ui";
 import { ArrowLeft, Save } from "lucide-react";
 import { useToast } from "../../hooks/use-toast";
-import { useJwt } from "../../hooks/useJwt";
 import type {
 	PersonType,
 	ClientCreateRequest,
@@ -65,7 +64,6 @@ export function ClientEditView({
 }: ClientEditViewProps): React.JSX.Element {
 	const router = useRouter();
 	const { toast } = useToast();
-	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
 	const [client, setClient] = useState<Client | null>(null);
@@ -108,15 +106,11 @@ export function ClientEditView({
 	});
 
 	useEffect(() => {
-		// Wait for JWT to be ready
-		if (isJwtLoading) return;
-
 		const fetchClient = async () => {
 			try {
 				setIsLoading(true);
 				const data = await getClientByRfc({
 					rfc: clientId,
-					jwt: jwt ?? undefined,
 				});
 				setClient(data);
 
@@ -164,7 +158,7 @@ export function ClientEditView({
 			}
 		};
 		fetchClient();
-	}, [clientId, toast, jwt, isJwtLoading]);
+	}, [clientId, toast]);
 
 	const handleInputChange = (
 		field: keyof ClientFormData,
@@ -237,7 +231,6 @@ export function ClientEditView({
 			await updateClient({
 				rfc: clientId,
 				input: request,
-				jwt: jwt ?? undefined,
 			});
 
 			toast({
@@ -265,7 +258,7 @@ export function ClientEditView({
 		router.push(`/clients/${clientId}`);
 	};
 
-	if (isLoading || isJwtLoading) {
+	if (isLoading) {
 		return (
 			<div className="space-y-6">
 				<div className="flex items-center gap-4">

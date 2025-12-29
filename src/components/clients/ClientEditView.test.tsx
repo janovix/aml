@@ -124,7 +124,6 @@ describe("ClientEditView", () => {
 				personType: "moral",
 				businessName: "Visionaria S.A.",
 			}),
-			jwt: "jwt-token",
 		});
 	});
 

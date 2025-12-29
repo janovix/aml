@@ -20,7 +20,6 @@ import {
 } from "@algtools/ui";
 import { ArrowLeft, Save } from "lucide-react";
 import { useToast } from "../../hooks/use-toast";
-import { useJwt } from "../../hooks/useJwt";
 import type { PersonType, ClientCreateRequest } from "../../types/client";
 import { createClient } from "../../lib/api/clients";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
@@ -58,7 +57,6 @@ interface ClientFormData {
 export function ClientCreateView(): React.JSX.Element {
 	const router = useRouter();
 	const { toast } = useToast();
-	const { jwt } = useJwt();
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const [formData, setFormData] = useState<ClientFormData>({
@@ -140,7 +138,7 @@ export function ClientCreateView(): React.JSX.Element {
 			if (formData.reference) request.reference = formData.reference;
 			if (formData.notes) request.notes = formData.notes;
 
-			await createClient({ input: request, jwt: jwt ?? undefined });
+			await createClient({ input: request });
 
 			toast({
 				title: "Cliente creado",

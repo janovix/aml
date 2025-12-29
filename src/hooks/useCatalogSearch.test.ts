@@ -42,22 +42,28 @@ const sampleItems: CatalogItem[] = [
 ];
 
 const mockFetch = vi.fn();
+let previousAmlCoreUrl: string | undefined;
 
 beforeEach(() => {
+	previousAmlCoreUrl = process.env.NEXT_PUBLIC_AML_CORE_URL;
+	process.env.NEXT_PUBLIC_AML_CORE_URL = "https://aml-bff.example.com";
 	mockFetch.mockReset();
 	global.fetch = mockFetch as unknown as typeof fetch;
 });
 
 afterEach(() => {
+	process.env.NEXT_PUBLIC_AML_CORE_URL = previousAmlCoreUrl;
 	vi.restoreAllMocks();
 });
 
 describe("useCatalogSearch", () => {
 	it("fetches catalog data on mount", async () => {
-		mockFetch.mockResolvedValue({
-			ok: true,
-			json: async () => buildResponse(sampleItems),
-		});
+		mockFetch.mockResolvedValue(
+			new Response(JSON.stringify(buildResponse(sampleItems)), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			}),
+		);
 
 		const { result } = renderHook(() =>
 			useCatalogSearch({ catalogKey: "vehicle-brands", debounceMs: 0 }),
@@ -72,14 +78,18 @@ describe("useCatalogSearch", () => {
 
 	it("updates results when the search term changes", async () => {
 		mockFetch
-			.mockResolvedValueOnce({
-				ok: true,
-				json: async () => buildResponse(sampleItems),
-			})
-			.mockResolvedValueOnce({
-				ok: true,
-				json: async () => buildResponse([sampleItems[0]]),
-			});
+			.mockResolvedValueOnce(
+				new Response(JSON.stringify(buildResponse(sampleItems)), {
+					status: 200,
+					headers: { "content-type": "application/json" },
+				}),
+			)
+			.mockResolvedValueOnce(
+				new Response(JSON.stringify(buildResponse([sampleItems[0]])), {
+					status: 200,
+					headers: { "content-type": "application/json" },
+				}),
+			);
 
 		const { result } = renderHook(() =>
 			useCatalogSearch({ catalogKey: "vehicle-brands", debounceMs: 0 }),
@@ -114,30 +124,40 @@ describe("useCatalogSearch", () => {
 		];
 
 		mockFetch
-			.mockResolvedValueOnce({
-				ok: true,
-				json: async () => ({
-					...buildResponse(page1Items),
-					pagination: {
-						page: 1,
-						pageSize: 2,
-						total: 3,
-						totalPages: 2,
+			.mockResolvedValueOnce(
+				new Response(
+					JSON.stringify({
+						...buildResponse(page1Items),
+						pagination: {
+							page: 1,
+							pageSize: 2,
+							total: 3,
+							totalPages: 2,
+						},
+					}),
+					{
+						status: 200,
+						headers: { "content-type": "application/json" },
 					},
-				}),
-			})
-			.mockResolvedValueOnce({
-				ok: true,
-				json: async () => ({
-					...buildResponse(page2Items),
-					pagination: {
-						page: 2,
-						pageSize: 2,
-						total: 3,
-						totalPages: 2,
+				),
+			)
+			.mockResolvedValueOnce(
+				new Response(
+					JSON.stringify({
+						...buildResponse(page2Items),
+						pagination: {
+							page: 2,
+							pageSize: 2,
+							total: 3,
+							totalPages: 2,
+						},
+					}),
+					{
+						status: 200,
+						headers: { "content-type": "application/json" },
 					},
-				}),
-			});
+				),
+			);
 
 		const { result } = renderHook(() =>
 			useCatalogSearch({ catalogKey: "vehicle-brands", debounceMs: 0 }),
@@ -159,18 +179,23 @@ describe("useCatalogSearch", () => {
 	});
 
 	it("has correct hasMore value based on pagination", async () => {
-		mockFetch.mockResolvedValue({
-			ok: true,
-			json: async () => ({
-				...buildResponse(sampleItems),
-				pagination: {
-					page: 1,
-					pageSize: 2,
-					total: 5,
-					totalPages: 3,
+		mockFetch.mockResolvedValue(
+			new Response(
+				JSON.stringify({
+					...buildResponse(sampleItems),
+					pagination: {
+						page: 1,
+						pageSize: 2,
+						total: 5,
+						totalPages: 3,
+					},
+				}),
+				{
+					status: 200,
+					headers: { "content-type": "application/json" },
 				},
-			}),
-		});
+			),
+		);
 
 		const { result } = renderHook(() =>
 			useCatalogSearch({ catalogKey: "vehicle-brands", debounceMs: 0 }),
@@ -182,18 +207,23 @@ describe("useCatalogSearch", () => {
 	});
 
 	it("does not load more if no more pages available", async () => {
-		mockFetch.mockResolvedValue({
-			ok: true,
-			json: async () => ({
-				...buildResponse(sampleItems),
-				pagination: {
-					page: 1,
-					pageSize: 2,
-					total: 2,
-					totalPages: 1,
+		mockFetch.mockResolvedValue(
+			new Response(
+				JSON.stringify({
+					...buildResponse(sampleItems),
+					pagination: {
+						page: 1,
+						pageSize: 2,
+						total: 2,
+						totalPages: 1,
+					},
+				}),
+				{
+					status: 200,
+					headers: { "content-type": "application/json" },
 				},
-			}),
-		});
+			),
+		);
 
 		const { result } = renderHook(() =>
 			useCatalogSearch({ catalogKey: "vehicle-brands", debounceMs: 0 }),
@@ -228,42 +258,57 @@ describe("useCatalogSearch", () => {
 		];
 
 		mockFetch
-			.mockResolvedValueOnce({
-				ok: true,
-				json: async () => ({
-					...buildResponse(page1Items),
-					pagination: {
-						page: 1,
-						pageSize: 2,
-						total: 3,
-						totalPages: 2,
+			.mockResolvedValueOnce(
+				new Response(
+					JSON.stringify({
+						...buildResponse(page1Items),
+						pagination: {
+							page: 1,
+							pageSize: 2,
+							total: 3,
+							totalPages: 2,
+						},
+					}),
+					{
+						status: 200,
+						headers: { "content-type": "application/json" },
 					},
-				}),
-			})
-			.mockResolvedValueOnce({
-				ok: true,
-				json: async () => ({
-					...buildResponse(page2Items),
-					pagination: {
-						page: 2,
-						pageSize: 2,
-						total: 3,
-						totalPages: 2,
+				),
+			)
+			.mockResolvedValueOnce(
+				new Response(
+					JSON.stringify({
+						...buildResponse(page2Items),
+						pagination: {
+							page: 2,
+							pageSize: 2,
+							total: 3,
+							totalPages: 2,
+						},
+					}),
+					{
+						status: 200,
+						headers: { "content-type": "application/json" },
 					},
-				}),
-			})
-			.mockResolvedValueOnce({
-				ok: true,
-				json: async () => ({
-					...buildResponse([page1Items[0]]),
-					pagination: {
-						page: 1,
-						pageSize: 2,
-						total: 1,
-						totalPages: 1,
+				),
+			)
+			.mockResolvedValueOnce(
+				new Response(
+					JSON.stringify({
+						...buildResponse([page1Items[0]]),
+						pagination: {
+							page: 1,
+							pageSize: 2,
+							total: 1,
+							totalPages: 1,
+						},
+					}),
+					{
+						status: 200,
+						headers: { "content-type": "application/json" },
 					},
-				}),
-			});
+				),
+			);
 
 		const { result } = renderHook(() =>
 			useCatalogSearch({ catalogKey: "vehicle-brands", debounceMs: 0 }),
@@ -290,18 +335,23 @@ describe("useCatalogSearch", () => {
 
 	it("handles errors when loading more pages", async () => {
 		mockFetch
-			.mockResolvedValueOnce({
-				ok: true,
-				json: async () => ({
-					...buildResponse(sampleItems),
-					pagination: {
-						page: 1,
-						pageSize: 2,
-						total: 4,
-						totalPages: 2,
+			.mockResolvedValueOnce(
+				new Response(
+					JSON.stringify({
+						...buildResponse(sampleItems),
+						pagination: {
+							page: 1,
+							pageSize: 2,
+							total: 4,
+							totalPages: 2,
+						},
+					}),
+					{
+						status: 200,
+						headers: { "content-type": "application/json" },
 					},
-				}),
-			})
+				),
+			)
 			.mockRejectedValueOnce(new Error("Network error"));
 
 		const { result } = renderHook(() =>
@@ -315,7 +365,7 @@ describe("useCatalogSearch", () => {
 		});
 
 		await waitFor(() => expect(result.current.loadingMore).toBe(false));
-		expect(result.current.error).toBe("Network error");
+		expect(result.current.error).toContain("Network error");
 		expect(result.current.items).toHaveLength(2); // Should not have added items
 	});
 });
