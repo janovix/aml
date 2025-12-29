@@ -13,6 +13,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Save } from "lucide-react";
 import type { PersonType } from "@/types/client";
@@ -44,8 +45,8 @@ export function ClientNewPageContent(): React.ReactElement {
 	});
 	const [loading, setLoading] = useState(false);
 
-	const handleSubmit = async (e: React.FormEvent): Promise<void> => {
-		e.preventDefault();
+	const handleSubmit = async (e?: React.FormEvent): Promise<void> => {
+		e?.preventDefault();
 		setLoading(true);
 
 		// Simulate API call
@@ -64,21 +65,48 @@ export function ClientNewPageContent(): React.ReactElement {
 		setFormData((prev) => ({ ...prev, [field]: value }));
 	};
 
+	const handleCancel = (): void => {
+		router.push("/clients");
+	};
+
 	return (
 		<div className="space-y-6">
-			<div className="flex items-center gap-4">
-				<Button
-					variant="ghost"
-					size="icon"
-					onClick={() => router.push("/clients")}
-				>
-					<ArrowLeft className="h-5 w-5" />
-				</Button>
-				<div>
-					<h1 className="text-3xl font-bold tracking-tight">Nuevo Cliente</h1>
-					<p className="text-muted-foreground">
-						Crear un nuevo cliente en el sistema
-					</p>
+			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+				<div className="flex items-center gap-4">
+					<Button
+						variant="ghost"
+						size="sm"
+						className="gap-2"
+						onClick={handleCancel}
+					>
+						<ArrowLeft className="h-4 w-4" />
+						<span className="hidden sm:inline">Volver</span>
+					</Button>
+					<Separator orientation="vertical" className="hidden h-6 sm:block" />
+					<div>
+						<h1 className="text-xl font-semibold text-foreground">
+							Nuevo Cliente
+						</h1>
+						<p className="text-sm text-muted-foreground">
+							Registrar un nuevo cliente en el sistema
+						</p>
+					</div>
+				</div>
+				<div className="flex items-center gap-2">
+					<Button variant="outline" size="sm" onClick={handleCancel}>
+						Cancelar
+					</Button>
+					<Button
+						size="sm"
+						className="gap-2"
+						onClick={handleSubmit}
+						disabled={loading}
+					>
+						<Save className="h-4 w-4" />
+						<span className="hidden sm:inline">
+							{loading ? "Creando..." : "Crear Cliente"}
+						</span>
+					</Button>
 				</div>
 			</div>
 
@@ -274,21 +302,6 @@ export function ClientNewPageContent(): React.ReactElement {
 								</div>
 							</CardContent>
 						</Card>
-
-						{/* Actions */}
-						<div className="flex justify-end gap-3">
-							<Button
-								type="button"
-								variant="outline"
-								onClick={() => router.push("/clients")}
-							>
-								Cancelar
-							</Button>
-							<Button type="submit" disabled={loading}>
-								<Save className="mr-2 h-4 w-4" />
-								{loading ? "Creando..." : "Crear Cliente"}
-							</Button>
-						</div>
 					</div>
 				</form>
 			</div>

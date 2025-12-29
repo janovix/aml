@@ -71,6 +71,23 @@ export {
 	ComboboxTrigger,
 } from "@/components/ui/combobox";
 export {
+	Command,
+	CommandDialog,
+	CommandInput,
+	CommandList,
+	CommandEmpty,
+	CommandGroup,
+	CommandItem,
+	CommandShortcut,
+	CommandSeparator,
+} from "@/components/ui/command";
+export {
+	Popover,
+	PopoverTrigger,
+	PopoverContent,
+	PopoverAnchor,
+} from "@/components/ui/popover";
+export {
 	Table,
 	TableBody,
 	TableCaption,

@@ -16,12 +16,13 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
+	Separator,
 	Textarea,
 } from "@algtools/ui";
 import { ArrowLeft, Save } from "lucide-react";
-import { useToast } from "../../hooks/use-toast";
 import type { PersonType, ClientCreateRequest } from "../../types/client";
 import { createClient } from "../../lib/api/clients";
+import { executeMutation } from "../../lib/mutations";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
 import { getFieldDescription } from "../../lib/field-descriptions";
 import { CatalogSelector } from "../catalogs/CatalogSelector";
@@ -56,7 +57,6 @@ interface ClientFormData {
 
 export function ClientCreateView(): React.JSX.Element {
 	const router = useRouter();
-	const { toast } = useToast();
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const [formData, setFormData] = useState<ClientFormData>({
@@ -95,67 +95,60 @@ export function ClientCreateView(): React.JSX.Element {
 		e.preventDefault();
 		setIsSubmitting(true);
 
-		try {
-			// Build the request payload based on personType
-			const request: ClientCreateRequest = {
-				personType: formData.personType,
-				rfc: formData.rfc,
-				email: formData.email,
-				phone: formData.phone,
-				country: "MX",
-				stateCode: formData.stateCode,
-				city: formData.city,
-				municipality: formData.municipality,
-				neighborhood: formData.neighborhood,
-				street: formData.street,
-				externalNumber: formData.externalNumber,
-				postalCode: formData.postalCode,
-			};
+		// Build the request payload based on personType
+		const request: ClientCreateRequest = {
+			personType: formData.personType,
+			rfc: formData.rfc,
+			email: formData.email,
+			phone: formData.phone,
+			country: "MX",
+			stateCode: formData.stateCode,
+			city: formData.city,
+			municipality: formData.municipality,
+			neighborhood: formData.neighborhood,
+			street: formData.street,
+			externalNumber: formData.externalNumber,
+			postalCode: formData.postalCode,
+		};
 
-			// Add personType-specific fields
-			if (formData.personType === "physical") {
-				request.firstName = formData.firstName;
-				request.lastName = formData.lastName;
-				if (formData.secondLastName)
-					request.secondLastName = formData.secondLastName;
-				if (formData.birthDate) request.birthDate = formData.birthDate;
-				if (formData.curp) request.curp = formData.curp;
-			} else {
-				// moral or trust
-				request.businessName = formData.businessName;
-				if (formData.incorporationDate) {
-					// Convert date (YYYY-MM-DD) to date-time format (YYYY-MM-DDTHH:mm:ss.sssZ)
-					// Use midnight UTC to avoid timezone issues
-					const date = new Date(`${formData.incorporationDate}T00:00:00.000Z`);
-					request.incorporationDate = date.toISOString();
-				}
+		// Add personType-specific fields
+		if (formData.personType === "physical") {
+			request.firstName = formData.firstName;
+			request.lastName = formData.lastName;
+			if (formData.secondLastName)
+				request.secondLastName = formData.secondLastName;
+			if (formData.birthDate) request.birthDate = formData.birthDate;
+			if (formData.curp) request.curp = formData.curp;
+		} else {
+			// moral or trust
+			request.businessName = formData.businessName;
+			if (formData.incorporationDate) {
+				// Convert date (YYYY-MM-DD) to date-time format (YYYY-MM-DDTHH:mm:ss.sssZ)
+				// Use midnight UTC to avoid timezone issues
+				const date = new Date(`${formData.incorporationDate}T00:00:00.000Z`);
+				request.incorporationDate = date.toISOString();
 			}
+		}
 
-			// Add optional fields
-			if (formData.nationality) request.nationality = formData.nationality;
-			if (formData.internalNumber)
-				request.internalNumber = formData.internalNumber;
-			if (formData.reference) request.reference = formData.reference;
-			if (formData.notes) request.notes = formData.notes;
+		// Add optional fields
+		if (formData.nationality) request.nationality = formData.nationality;
+		if (formData.internalNumber)
+			request.internalNumber = formData.internalNumber;
+		if (formData.reference) request.reference = formData.reference;
+		if (formData.notes) request.notes = formData.notes;
 
-			await createClient({ input: request });
-
-			toast({
-				title: "Cliente creado",
-				description: "El nuevo cliente se ha registrado exitosamente.",
+		try {
+			await executeMutation({
+				mutation: () => createClient({ input: request }),
+				loading: "Creando cliente...",
+				success: "Cliente creado exitosamente",
+				onSuccess: () => {
+					router.push("/clients");
+				},
 			});
-
-			router.push("/clients");
 		} catch (error) {
+			// Error is already handled by executeMutation via Sonner
 			console.error("Error creating client:", error);
-			toast({
-				title: "Error",
-				description:
-					error instanceof Error
-						? error.message
-						: "No se pudo crear el cliente. Por favor, intente nuevamente.",
-				variant: "destructive",
-			});
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -167,29 +160,41 @@ export function ClientCreateView(): React.JSX.Element {
 
 	return (
 		<div className="space-y-6">
-			<div className="flex items-center justify-between">
+			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<div className="flex items-center gap-4">
-					<Button variant="ghost" size="icon" onClick={handleCancel}>
-						<ArrowLeft className="h-5 w-5" />
+					<Button
+						variant="ghost"
+						size="sm"
+						className="gap-2"
+						onClick={handleCancel}
+					>
+						<ArrowLeft className="h-4 w-4" />
+						<span className="hidden sm:inline">Volver</span>
 					</Button>
+					<Separator orientation="vertical" className="hidden h-6 sm:block" />
 					<div>
-						<h1 className="text-3xl font-bold tracking-tight">Nuevo Cliente</h1>
-						<p className="text-muted-foreground">
+						<h1 className="text-xl font-semibold text-foreground">
+							Nuevo Cliente
+						</h1>
+						<p className="text-sm text-muted-foreground">
 							Registrar un nuevo cliente en el sistema
 						</p>
 					</div>
 				</div>
-				<div className="flex gap-2">
-					<Button variant="outline" onClick={handleCancel}>
+				<div className="flex items-center gap-2">
+					<Button variant="outline" size="sm" onClick={handleCancel}>
 						Cancelar
 					</Button>
 					<Button
+						size="sm"
 						className="gap-2"
 						onClick={handleSubmit}
 						disabled={isSubmitting}
 					>
 						<Save className="h-4 w-4" />
-						{isSubmitting ? "Creando..." : "Crear Cliente"}
+						<span className="hidden sm:inline">
+							{isSubmitting ? "Creando..." : "Crear Cliente"}
+						</span>
 					</Button>
 				</div>
 			</div>

@@ -291,9 +291,9 @@ export function TransactionEditView({
 						onClick={handleCancel}
 					>
 						<ArrowLeft className="h-4 w-4" />
-						Volver
+						<span className="hidden sm:inline">Volver</span>
 					</Button>
-					<Separator orientation="vertical" className="h-6" />
+					<Separator orientation="vertical" className="hidden h-6 sm:block" />
 					<div>
 						<h1 className="text-xl font-semibold text-foreground">
 							Editar Transacción

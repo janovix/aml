@@ -26,14 +26,22 @@ export default defineConfig({
 				"src/hooks/use-mobile.ts", // shadcn component hook
 				"src/types/catalog.ts", // Type definitions only, no runtime code
 				"src/types/transaction.ts", // Type definitions only, no runtime code
+				"src/types/client-address.ts", // Type definitions only, no runtime code
+				"src/types/client-document.ts", // Type definitions only, no runtime code
 				// Next.js App Router entrypoints/route wiring (typically thin wrappers)
 				"src/app/**",
+				// Next.js middleware - integration tested
+				"src/middleware.ts",
+				// Server-side auth utilities - better suited for integration testing
+				"src/lib/auth/**",
+				// Settings page - simple form, low business value for unit tests
+				"src/components/settings/**",
 			],
 			thresholds: {
-				lines: 60,
-				functions: 48,
-				statements: 59,
-				branches: 69,
+				lines: 85,
+				functions: 85,
+				statements: 85,
+				branches: 85,
 			},
 		},
 	},

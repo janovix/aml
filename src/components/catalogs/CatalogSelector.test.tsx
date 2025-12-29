@@ -59,7 +59,7 @@ describe("CatalogSelector", () => {
 
 		expect(screen.getByText("Marca")).toBeInTheDocument();
 
-		await user.click(screen.getByRole("button", { name: "Marca" }));
+		await user.click(screen.getByRole("combobox", { name: "Marca" }));
 
 		expect(await screen.findByText("Toyota")).toBeInTheDocument();
 	});
@@ -67,7 +67,7 @@ describe("CatalogSelector", () => {
 	it("shows the selected value in the trigger", () => {
 		render(<CatalogSelector catalogKey="vehicle-brands" value="Toyota" />);
 
-		const trigger = screen.getByRole("button");
+		const trigger = screen.getByRole("combobox");
 		expect(trigger).toHaveTextContent("Toyota");
 	});
 
@@ -77,7 +77,7 @@ describe("CatalogSelector", () => {
 			<CatalogSelector catalogKey="vehicle-brands" label="Marca" value="" />,
 		);
 
-		const trigger = screen.getByRole("button", { name: "Marca" });
+		const trigger = screen.getByRole("combobox", { name: "Marca" });
 		await user.click(trigger);
 
 		const option = await screen.findByText("Toyota");
@@ -101,13 +101,14 @@ describe("CatalogSelector", () => {
 		render(
 			<CatalogSelector
 				catalogKey="vehicle-brands"
+				label="Marca"
 				onChange={handleChange}
 				onValueChange={handleValueChange}
 				getOptionValue={(item) => item.name}
 			/>,
 		);
 
-		const trigger = screen.getByRole("button", { name: /seleccionar opción/i });
+		const trigger = screen.getByRole("combobox", { name: "Marca" });
 		await user.click(trigger);
 		const option = await screen.findByText("Toyota");
 
@@ -115,7 +116,7 @@ describe("CatalogSelector", () => {
 
 		expect(handleChange).toHaveBeenCalledWith(sampleItems[0]);
 		expect(handleValueChange).toHaveBeenCalledWith("Toyota");
-		expect(screen.getByRole("button")).toHaveTextContent("Toyota");
+		expect(screen.getByRole("combobox")).toHaveTextContent("Toyota");
 	});
 
 	it("shows the result summary only while searching", async () => {
@@ -130,7 +131,7 @@ describe("CatalogSelector", () => {
 			<CatalogSelector catalogKey="vehicle-brands" label="Marca" value="" />,
 		);
 
-		await user.click(screen.getByRole("button", { name: "Marca" }));
+		await user.click(screen.getByRole("combobox", { name: "Marca" }));
 		const input = await screen.findByPlaceholderText(
 			"Buscar en el catálogo...",
 		);
