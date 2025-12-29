@@ -1,7 +1,10 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, afterEach } from "vitest";
 import { ApiError, fetchJson } from "./http";
 
 describe("api/http fetchJson", () => {
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
 	it("returns parsed JSON for ok responses", async () => {
 		vi.stubGlobal(
 			"fetch",
@@ -93,5 +96,47 @@ describe("api/http fetchJson", () => {
 			expect(err.status).toBe(500);
 			expect(err.body).toBe("oops");
 		}
+	});
+
+	it("includes Authorization header when jwt option is provided", async () => {
+		const mockFetch = vi.fn(async () => {
+			return new Response(JSON.stringify({ ok: true }), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			});
+		});
+		vi.stubGlobal("fetch", mockFetch);
+
+		await fetchJson("https://example.com", { jwt: "test-token-123" });
+
+		expect(mockFetch).toHaveBeenCalledWith(
+			"https://example.com",
+			expect.objectContaining({
+				headers: expect.objectContaining({
+					Authorization: "Bearer test-token-123",
+				}),
+			}),
+		);
+	});
+
+	it("does not include Authorization header when jwt is null", async () => {
+		const mockFetch = vi.fn(async () => {
+			return new Response(JSON.stringify({ ok: true }), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			});
+		});
+		vi.stubGlobal("fetch", mockFetch);
+
+		await fetchJson("https://example.com", { jwt: null });
+
+		expect(mockFetch).toHaveBeenCalledWith(
+			"https://example.com",
+			expect.objectContaining({
+				headers: expect.not.objectContaining({
+					Authorization: expect.any(String),
+				}),
+			}),
+		);
 	});
 });

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { getClientStats } from "../../lib/api/stats";
 import { useToast } from "../../hooks/use-toast";
+import { ApiError } from "../../lib/api/http";
 
 interface KpiCardProps {
 	title: string;
@@ -118,7 +119,21 @@ export function KpiCards(): React.ReactElement {
 				const data = await getClientStats();
 				setStats(data);
 			} catch (error) {
-				console.error("Error fetching client stats:", error);
+				// Enhanced error logging for debugging API issues
+				if (error instanceof ApiError) {
+					console.error(
+						"[KpiCards] API error fetching client stats:",
+						`status=${error.status}`,
+						`message=${error.message}`,
+						"body=",
+						error.body,
+					);
+				} else {
+					console.error(
+						"[KpiCards] Error fetching client stats:",
+						error instanceof Error ? error.message : error,
+					);
+				}
 				toast({
 					title: "Error",
 					description: "No se pudieron cargar las estadísticas.",

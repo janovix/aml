@@ -134,6 +134,26 @@ export function TransactionEditView({
 		return true;
 	};
 
+	const validateLandVehicleFields = (): boolean => {
+		if (formData.vehicleType === "land") {
+			const hasPlates = formData.plates && formData.plates.trim().length > 0;
+			const hasVIN = formData.vin && formData.vin.trim().length > 0;
+			const hasEngineNumber =
+				formData.engineNumber && formData.engineNumber.trim().length > 0;
+
+			if (!hasPlates && !hasVIN && !hasEngineNumber) {
+				toast({
+					title: "Error de validación",
+					description:
+						"Para vehículos terrestres, debe proporcionar al menos uno de: Placas, VIN o Número de motor.",
+					variant: "destructive",
+				});
+				return false;
+			}
+		}
+		return true;
+	};
+
 	const handleSubmit = async (e: React.FormEvent): Promise<void> => {
 		e.preventDefault();
 
@@ -141,10 +161,17 @@ export function TransactionEditView({
 			return;
 		}
 
+		if (!validateLandVehicleFields()) {
+			return;
+		}
+
 		try {
 			setIsSaving(true);
+			// Format operationDate as date-only (YYYY-MM-DD) - API expects this format, not ISO date-time
+			const operationDateFormatted =
+				formData.operationDate || new Date().toISOString().slice(0, 10);
 			const updateData: TransactionUpdateRequest = {
-				operationDate: new Date(formData.operationDate).toISOString(),
+				operationDate: operationDateFormatted,
 				operationType: formData.operationType,
 				branchPostalCode: formData.branchPostalCode,
 				vehicleType: formData.vehicleType,
@@ -158,6 +185,7 @@ export function TransactionEditView({
 			};
 
 			if (formData.vehicleType === "land") {
+				// At least one of plates, VIN, or engineNumber must be provided
 				if (formData.vin) updateData.vin = formData.vin;
 				if (formData.repuve) updateData.repuve = formData.repuve;
 				if (formData.plates) updateData.plates = formData.plates;
@@ -510,8 +538,15 @@ export function TransactionEditView({
 											onChange={(e) =>
 												handleChange("engineNumber", e.target.value)
 											}
-											placeholder="Opcional"
+											placeholder="Número de motor"
 										/>
+									</div>
+									<div className="col-span-full">
+										<p className="text-sm text-muted-foreground">
+											<strong>Nota:</strong> Para vehículos terrestres, debe
+											proporcionar al menos uno de: Placas, VIN o Número de
+											motor.
+										</p>
 									</div>
 								</>
 							)}
