@@ -1,3 +1,15 @@
+# [1.1.0-rc.13](https://github.com/janovix/aml/compare/v1.1.0-rc.12...v1.1.0-rc.13) (2025-12-30)
+
+
+### Bug Fixes
+
+* update operationDate format to date-only and enhance vehicle validation in transaction forms ([ecdaeef](https://github.com/janovix/aml/commit/ecdaeefbcb5cc627c6665dba3b4e9092c4ef27a4))
+
+
+### Features
+
+* add new UI components and integrate popover functionality ([b6681d1](https://github.com/janovix/aml/commit/b6681d15e3133200523d9a17b6acf310cab856a3))
+
 # [1.1.0-rc.12](https://github.com/janovix/aml/compare/v1.1.0-rc.11...v1.1.0-rc.12) (2025-12-28)
 
 
