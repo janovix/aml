@@ -1,14 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { TransactionsKPICards } from "../../components/transactions/TransactionsKPICards";
+import { ReportsTable } from "../../components/reports/ReportsTable";
 
 const meta = {
-	title: "Transactions/TransactionsKPICards",
-	component: TransactionsKPICards,
+	title: "Reports/ReportsTable",
+	component: ReportsTable,
 	parameters: {
 		layout: "padded",
 	},
 	tags: ["autodocs"],
-} satisfies Meta<typeof TransactionsKPICards>;
+} satisfies Meta<typeof ReportsTable>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
