@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ClientsPageContent } from "./ClientsPageContent";
 
@@ -56,16 +56,7 @@ describe("ClientsPageContent", () => {
 		expect(total.length).toBeGreaterThan(0);
 	});
 
-	it("renders filters section", () => {
-		render(<ClientsPageContent />);
-
-		const searchInputs = screen.getAllByPlaceholderText(
-			"Buscar por nombre o RFC...",
-		);
-		expect(searchInputs.length).toBeGreaterThan(0);
-	});
-
-	it("renders clients table", () => {
+	it("renders clients table with built-in search", () => {
 		render(<ClientsPageContent />);
 
 		// Check for the DataTable by looking for search placeholder
@@ -84,85 +75,6 @@ describe("ClientsPageContent", () => {
 
 	it.skip("closes mobile menu when overlay is clicked", async () => {
 		// This test is skipped as mobile menu is now handled by DashboardLayout
-	});
-
-	it("applies filters when apply button is clicked", async () => {
-		const user = userEvent.setup();
-		render(<ClientsPageContent />);
-
-		const searchInputs = screen.getAllByPlaceholderText(
-			"Buscar por nombre o RFC...",
-		);
-		await user.type(searchInputs[0], "test");
-
-		const applyButtons = screen.getAllByRole("button", { name: /aplicar/i });
-		await user.click(applyButtons[0]);
-
-		// Should show active filters
-		await waitFor(() => {
-			const filterChips = screen.queryAllByText(/Búsqueda:/i);
-			expect(filterChips.length).toBeGreaterThan(0);
-		});
-	});
-
-	it("clears filters when clear button is clicked", async () => {
-		const user = userEvent.setup();
-		render(<ClientsPageContent />);
-
-		const searchInputs = screen.getAllByPlaceholderText(
-			"Buscar por nombre o RFC...",
-		);
-		await user.type(searchInputs[0], "test");
-
-		const applyButtons = screen.getAllByRole("button", { name: /aplicar/i });
-		await user.click(applyButtons[0]);
-
-		await waitFor(
-			async () => {
-				const clearButtons = screen.getAllByRole("button", {
-					name: /limpiar/i,
-				});
-				if (clearButtons.length > 0) {
-					await user.click(clearButtons[0]);
-					// Verify filters were cleared by checking search input is empty
-					const searchInputsAfter = screen.getAllByPlaceholderText(
-						"Buscar por nombre o RFC...",
-					);
-					expect(searchInputsAfter[0]).toHaveValue("");
-				}
-			},
-			{ timeout: 3000 },
-		);
-	});
-
-	it("shows active filters when applied", async () => {
-		const user = userEvent.setup();
-		render(<ClientsPageContent />);
-
-		const searchInputs = screen.getAllByPlaceholderText(
-			"Buscar por nombre o RFC...",
-		);
-		await user.type(searchInputs[0], "test");
-
-		const applyButtons = screen.getAllByRole("button", { name: /aplicar/i });
-		await user.click(applyButtons[0]);
-
-		// Wait for filters to be applied and check they appear
-		await waitFor(
-			() => {
-				const filterChips = screen.queryAllByText(/Búsqueda:/i);
-				expect(filterChips.length).toBeGreaterThan(0);
-			},
-			{ timeout: 3000 },
-		);
-	});
-
-	it("handles status filter application", () => {
-		render(<ClientsPageContent />);
-
-		// Find status filter
-		const statusSelects = screen.getAllByRole("combobox", { name: /estado/i });
-		expect(statusSelects.length).toBeGreaterThan(0);
 	});
 
 	// Sidebar is now handled by DashboardLayout, not ClientsPageContent
