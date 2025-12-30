@@ -95,6 +95,34 @@ export interface DataTableProps<T> {
 	isLoading?: boolean;
 	/** Loading message */
 	loadingMessage?: string;
+	/** Text for filter button */
+	filterButtonText?: string;
+	/** Text for clear all button */
+	clearAllText?: string;
+	/** Text for clear button */
+	clearText?: string;
+	/** Text for filters title */
+	filtersTitleText?: string;
+	/** Text for apply filters button */
+	applyFiltersText?: string;
+	/** Text for result (singular) */
+	resultText?: string;
+	/** Text for results (plural) */
+	resultsText?: string;
+	/** Text for selected (singular) */
+	selectedText?: string;
+	/** Text for selected (plural) */
+	selectedPluralText?: string;
+	/** Text for filter (singular) */
+	filterText?: string;
+	/** Text for filters (plural) */
+	filtersText?: string;
+	/** Text for active (singular) */
+	activeText?: string;
+	/** Text for active (plural) */
+	activePluralText?: string;
+	/** Aria label for clear search button */
+	clearSearchAriaLabel?: string;
 }
 
 /**
