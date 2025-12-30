@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { CheckIcon, ChevronDownIcon } from "lucide-react";
-import PhoneInputWithCountry from "react-phone-number-input";
+import * as RPNInput from "react-phone-number-input";
 import type { Country, Value as PhoneValue } from "react-phone-number-input";
 import flags from "react-phone-number-input/flags";
 
@@ -25,32 +25,30 @@ import {
 import "react-phone-number-input/style.css";
 
 type PhoneInputProps = Omit<
-	React.ComponentProps<typeof PhoneInputWithCountry>,
-	"inputComponent"
-> & {
-	className?: string;
-};
+	React.ComponentProps<"input">,
+	"onChange" | "value" | "ref"
+> &
+	Omit<RPNInput.Props<typeof RPNInput.default>, "onChange"> & {
+		onChange?: (value: PhoneValue) => void;
+		className?: string;
+	};
 
 const PhoneInput = React.forwardRef<
-	React.ElementRef<typeof PhoneInputWithCountry>,
+	React.ElementRef<typeof RPNInput.default>,
 	PhoneInputProps
 >(({ className, onChange, value, ...props }, ref) => {
-	// Normalize phone value to E.164 format (remove spaces)
+	// Normalize phone value to E.164 format (remove spaces) before passing to library
 	const normalizedValue = React.useMemo(() => {
-		if (!value || typeof value !== "string") return value;
+		if (!value || typeof value !== "string") {
+			return value || undefined;
+		}
 		// Remove all spaces from the phone number to ensure E.164 format
-		return value.replace(/\s/g, "") as PhoneValue;
+		const cleaned = value.replace(/\s/g, "");
+		return cleaned || undefined;
 	}, [value]);
 
-	const handleChange = React.useCallback(
-		(newValue: PhoneValue) => {
-			onChange?.(newValue);
-		},
-		[onChange],
-	);
-
 	return (
-		<PhoneInputWithCountry
+		<RPNInput.default
 			ref={ref}
 			className={cn(
 				"flex h-9 w-full rounded-md border border-input bg-transparent shadow-xs transition-[color,box-shadow] outline-none disabled:cursor-not-allowed disabled:opacity-50",
@@ -63,7 +61,16 @@ const PhoneInput = React.forwardRef<
 			countrySelectComponent={CountrySelect}
 			inputComponent={NumberInput}
 			value={normalizedValue}
-			onChange={handleChange}
+			/**
+			 * Handles the onChange event.
+			 *
+			 * react-phone-number-input might trigger the onChange event as undefined
+			 * when a valid phone number is not entered. To prevent this,
+			 * the value is coerced to an empty string.
+			 *
+			 * @param {E164Number | undefined} value - The entered value
+			 */
+			onChange={(value) => onChange?.(value || ("" as PhoneValue))}
 			{...props}
 		/>
 	);
