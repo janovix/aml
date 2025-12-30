@@ -1,3 +1,24 @@
+# [1.1.0-rc.14](https://github.com/janovix/aml/compare/v1.1.0-rc.13...v1.1.0-rc.14) (2025-12-30)
+
+
+### Features
+
+* add payment method badge variants and improve date formatting in TransactionDetailsView ([60621fb](https://github.com/janovix/aml/commit/60621fb7d65b50082c65beaa5b1ca4e3da4d2ae0))
+* enhance client and transaction components with improved URL handling and new UI features ([b465ca9](https://github.com/janovix/aml/commit/b465ca98727007e5ebc2bb2d354618d1b54004bc))
+* implement DataTable component with filtering, sorting, and action capabilities ([1b65991](https://github.com/janovix/aml/commit/1b65991c0eb98511bef08390314194ab054956ed))
+
+# [1.1.0-rc.13](https://github.com/janovix/aml/compare/v1.1.0-rc.12...v1.1.0-rc.13) (2025-12-30)
+
+
+### Bug Fixes
+
+* update operationDate format to date-only and enhance vehicle validation in transaction forms ([ecdaeef](https://github.com/janovix/aml/commit/ecdaeefbcb5cc627c6665dba3b4e9092c4ef27a4))
+
+
+### Features
+
+* add new UI components and integrate popover functionality ([b6681d1](https://github.com/janovix/aml/commit/b6681d15e3133200523d9a17b6acf310cab856a3))
+
 # [1.1.0-rc.12](https://github.com/janovix/aml/compare/v1.1.0-rc.11...v1.1.0-rc.12) (2025-12-28)
 
 

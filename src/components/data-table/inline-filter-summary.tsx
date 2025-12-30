@@ -9,6 +9,10 @@ interface InlineFilterSummaryProps {
 	onClearAll: () => void;
 	onOpenFilters: () => void;
 	compact?: boolean;
+	filterButtonText?: string;
+	clearAllText?: string;
+	filterText?: string;
+	filtersText?: string;
 }
 
 export function InlineFilterSummary({
@@ -17,6 +21,10 @@ export function InlineFilterSummary({
 	onClearAll,
 	onOpenFilters,
 	compact = false,
+	filterButtonText = "Filtrar",
+	clearAllText = "Limpiar todo",
+	filterText = "filtro",
+	filtersText = "filtros",
 }: InlineFilterSummaryProps) {
 	const totalCount = activeFilters.reduce((acc, f) => acc + f.values.length, 0);
 
@@ -27,7 +35,7 @@ export function InlineFilterSummary({
 				className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors border border-dashed border-border"
 			>
 				<Filter className="h-3.5 w-3.5" />
-				<span>Filtrar</span>
+				<span>{filterButtonText}</span>
 			</button>
 		);
 	}
@@ -40,7 +48,7 @@ export function InlineFilterSummary({
 			>
 				<Filter className="h-3.5 w-3.5" />
 				<span>
-					{totalCount} filtro{totalCount !== 1 ? "s" : ""}
+					{totalCount} {totalCount !== 1 ? filtersText : filterText}
 				</span>
 			</button>
 		);
@@ -58,6 +66,7 @@ export function InlineFilterSummary({
 						<span className="max-w-[100px] truncate">{label}</span>
 						<button
 							onClick={() => onRemoveFilter(filter.filterId, value)}
+							aria-label={`Eliminar filtro ${label}`}
 							className="p-0.5 rounded hover:bg-muted transition-colors"
 						>
 							<X className="h-3 w-3 text-muted-foreground" />
@@ -69,7 +78,7 @@ export function InlineFilterSummary({
 				onClick={onClearAll}
 				className="px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
 			>
-				Limpiar todo
+				{clearAllText}
 			</button>
 		</div>
 	);

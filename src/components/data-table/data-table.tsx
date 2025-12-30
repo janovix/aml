@@ -33,6 +33,20 @@ export function DataTable<T extends object>({
 	getId,
 	isLoading = false,
 	loadingMessage = "Cargando...",
+	filterButtonText = "Filtrar",
+	clearAllText = "Limpiar todo",
+	clearText = "Limpiar",
+	filtersTitleText = "Filtros",
+	applyFiltersText = "Aplicar Filtros",
+	resultText = "resultado",
+	resultsText = "resultados",
+	selectedText = "seleccionado",
+	selectedPluralText = "seleccionados",
+	filterText = "filtro",
+	filtersText = "filtros",
+	activeText = "activo",
+	activePluralText = "activos",
+	clearSearchAriaLabel = "Limpiar búsqueda",
 }: DataTableProps<T>) {
 	const isMobile = useIsMobile();
 	const [searchQuery, setSearchQuery] = useState("");
@@ -231,6 +245,7 @@ export function DataTable<T extends object>({
 							{searchQuery && (
 								<button
 									onClick={() => setSearchQuery("")}
+									aria-label={clearSearchAriaLabel}
 									className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
 								>
 									<X className="h-4 w-4" />
@@ -247,6 +262,7 @@ export function DataTable<T extends object>({
 									activeValues={activeFilters[filter.id] || []}
 									onToggleFilter={(value) => toggleFilter(filter.id, value)}
 									onClear={() => clearFilterGroup(filter.id)}
+									clearText={clearText}
 								/>
 							))}
 						</div>
@@ -259,6 +275,10 @@ export function DataTable<T extends object>({
 								onClearAll={clearAllFilters}
 								onOpenFilters={() => setIsDrawerOpen(true)}
 								compact
+								filterButtonText={filterButtonText}
+								clearAllText={clearAllText}
+								filterText={filterText}
+								filtersText={filtersText}
 							/>
 						</div>
 					</div>
@@ -271,6 +291,10 @@ export function DataTable<T extends object>({
 								onRemoveFilter={removeFilter}
 								onClearAll={clearAllFilters}
 								onOpenFilters={() => {}}
+								filterButtonText={filterButtonText}
+								clearAllText={clearAllText}
+								filterText={filterText}
+								filtersText={filtersText}
 							/>
 						</div>
 					)}
@@ -303,6 +327,7 @@ export function DataTable<T extends object>({
 										{column.sortable ? (
 											<button
 												onClick={() => toggleSort(column.accessorKey as string)}
+												aria-label={`Ordenar por ${column.header}`}
 												className="flex items-center gap-1 hover:text-foreground transition-colors"
 											>
 												{column.header}
@@ -408,11 +433,11 @@ export function DataTable<T extends object>({
 				<div className="border-t border-border px-3 py-2 flex items-center justify-between text-sm text-muted-foreground bg-muted/20">
 					<div className="flex items-center gap-2">
 						<span className="tabular-nums">{filteredData.length}</span>
-						<span>resultado{filteredData.length !== 1 ? "s" : ""}</span>
+						<span>{filteredData.length !== 1 ? resultsText : resultText}</span>
 						{selectedRows.size > 0 && (
 							<span className="text-primary">
-								• {selectedRows.size} seleccionado
-								{selectedRows.size !== 1 ? "s" : ""}
+								• {selectedRows.size}{" "}
+								{selectedRows.size !== 1 ? selectedPluralText : selectedText}
 							</span>
 						)}
 					</div>
@@ -454,6 +479,13 @@ export function DataTable<T extends object>({
 				activeFilters={activeFilters}
 				onToggleFilter={toggleFilter}
 				onClearAll={clearAllFilters}
+				filtersTitleText={filtersTitleText}
+				clearText={clearText}
+				applyFiltersText={applyFiltersText}
+				filterText={filterText}
+				filtersText={filtersText}
+				activeText={activeText}
+				activePluralText={activePluralText}
 			/>
 		</>
 	);
