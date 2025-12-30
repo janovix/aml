@@ -45,6 +45,23 @@ const paymentMethodLabels: Record<string, string> = {
 	FINANCIAMIENTO: "Financiamiento",
 };
 
+const getPaymentMethodBadgeVariant = (
+	method: string,
+): "default" | "secondary" | "destructive" | "outline" => {
+	switch (method.toUpperCase()) {
+		case "EFECTIVO":
+			return "default";
+		case "TRANSFERENCIA":
+			return "secondary";
+		case "CHEQUE":
+			return "outline";
+		case "FINANCIAMIENTO":
+			return "destructive";
+		default:
+			return "outline";
+	}
+};
+
 interface TransactionDetailsViewProps {
 	transactionId: string;
 }
@@ -136,8 +153,15 @@ export function TransactionDetailsView({
 		});
 	};
 
-	const formatDateTime = (dateString: string): string => {
-		return new Date(dateString).toLocaleString("es-MX", {
+	const formatDateTime = (dateString: string | null | undefined): string => {
+		if (!dateString) {
+			return "No disponible";
+		}
+		const date = new Date(dateString);
+		if (isNaN(date.getTime())) {
+			return "Fecha inválida";
+		}
+		return date.toLocaleString("es-MX", {
 			day: "2-digit",
 			month: "long",
 			year: "numeric",
@@ -310,29 +334,40 @@ export function TransactionDetailsView({
 								<p className="text-sm font-medium text-muted-foreground">
 									Monto
 								</p>
-								<p className="text-3xl font-bold mt-1">{transaction.amount}</p>
+								<p className="text-3xl font-bold mt-1">
+									{new Intl.NumberFormat("es-MX", {
+										style: "currency",
+										currency: transaction.currency,
+									}).format(parseFloat(transaction.amount))}
+								</p>
 								<p className="text-xs text-muted-foreground mt-1">
 									{transaction.currency}
 								</p>
 							</div>
 							<Separator />
 							<div>
-								<p className="text-sm font-medium text-muted-foreground">
+								<p className="text-sm font-medium text-muted-foreground mb-3">
 									Métodos de Pago
 								</p>
-								<div className="flex flex-wrap gap-2 mt-1">
+								<div className="space-y-2">
 									{transaction.paymentMethods.map((pm, index) => (
-										<Badge
+										<div
 											key={index}
-											variant="secondary"
-											className="font-medium"
+											className="flex items-center justify-between py-2 px-3 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors"
 										>
-											{paymentMethodLabels[pm.method] || pm.method}:{" "}
-											{new Intl.NumberFormat("es-MX", {
-												style: "currency",
-												currency: transaction.currency,
-											}).format(parseFloat(pm.amount))}
-										</Badge>
+											<span className="text-base font-medium">
+												{new Intl.NumberFormat("es-MX", {
+													style: "currency",
+													currency: transaction.currency,
+												}).format(parseFloat(pm.amount))}
+											</span>
+											<Badge
+												variant={getPaymentMethodBadgeVariant(pm.method)}
+												className="font-medium"
+											>
+												{paymentMethodLabels[pm.method] || pm.method}
+											</Badge>
+										</div>
 									))}
 								</div>
 							</div>

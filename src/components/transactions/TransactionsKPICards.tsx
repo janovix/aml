@@ -216,7 +216,7 @@ export function TransactionsKPICards(): React.ReactElement {
 					<KpiCard
 						key={kpi.title}
 						{...kpi}
-						className="min-w-[140px] flex-shrink-0 sm:min-w-0 sm:flex-shrink"
+						className="min-w-[140px] shrink-0 sm:min-w-0 sm:shrink"
 					/>
 				))}
 			</div>

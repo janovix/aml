@@ -68,16 +68,16 @@ function KpiCard({
 						{trend && (
 							<div className="flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm">
 								{trend.direction === "up" ? (
-									<TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[var(--risk-low)]" />
+									<TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-(--risk-low)" />
 								) : (
-									<TrendingDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[var(--risk-high)]" />
+									<TrendingDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-(--risk-high)" />
 								)}
 								<span
 									className={cn(
 										"font-medium",
 										trend.direction === "up"
-											? "text-[var(--risk-low)]"
-											: "text-[var(--risk-high)]",
+											? "text-(--risk-low)"
+											: "text-(--risk-high)",
 									)}
 								>
 									{trend.value}%
@@ -186,7 +186,7 @@ export function KpiCards(): React.ReactElement {
 					<KpiCard
 						key={kpi.title}
 						{...kpi}
-						className="min-w-[140px] flex-shrink-0 sm:min-w-0 sm:flex-shrink"
+						className="min-w-[140px] shrink-0 sm:min-w-0 sm:shrink"
 					/>
 				))}
 			</div>

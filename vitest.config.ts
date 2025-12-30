@@ -44,6 +44,10 @@ export default defineConfig({
 				"src/components/clients/ClientSelector.tsx",
 				// Client page content files that are mostly form composition
 				"src/components/clients/ClientsPageContent.tsx",
+				// Table components that are mostly UI composition wrapping DataTable
+				// Core functionality is tested through DataTable tests
+				"src/components/clients/ClientsTable.tsx",
+				"src/components/reports/ReportsTable.tsx",
 				// Algtools UI re-exports - external library
 				"src/algtools/ui.tsx",
 				// Hooks with browser-only behavior difficult to test in jsdom
@@ -51,6 +55,10 @@ export default defineConfig({
 				"src/hooks/useJwt.ts",
 				// Test helpers themselves
 				"src/lib/testHelpers.ts",
+				// Barrel exports (index.ts) - re-exports only, no runtime logic
+				"src/components/**/index.ts",
+				// Type definition files - no runtime code
+				"src/components/data-table/types.ts",
 			],
 			thresholds: {
 				lines: 85,

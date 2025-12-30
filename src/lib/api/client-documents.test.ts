@@ -205,4 +205,165 @@ describe("api/client-documents", () => {
 		});
 		expect(fetchSpy).toHaveBeenCalledTimes(1);
 	});
+
+	it("uses getAmlCoreBaseUrl when baseUrl not provided for listClientDocuments", async () => {
+		const prev = process.env.NEXT_PUBLIC_AML_CORE_URL;
+		process.env.NEXT_PUBLIC_AML_CORE_URL = "https://aml-core.example.com";
+
+		const fetchSpy = vi.fn(async (url: RequestInfo | URL) => {
+			const u = new URL(typeof url === "string" ? url : url.toString());
+			expect(u.origin + u.pathname).toBe(
+				"https://aml-core.example.com/api/v1/clients/CLIENT123/documents",
+			);
+			return new Response(JSON.stringify({ data: [] }), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			});
+		});
+		vi.stubGlobal("fetch", fetchSpy);
+
+		await listClientDocuments({ clientId: "CLIENT123" });
+
+		if (prev === undefined) delete process.env.NEXT_PUBLIC_AML_CORE_URL;
+		else process.env.NEXT_PUBLIC_AML_CORE_URL = prev;
+	});
+
+	it("uses getAmlCoreBaseUrl when baseUrl not provided for createClientDocument", async () => {
+		const prev = process.env.NEXT_PUBLIC_AML_CORE_URL;
+		process.env.NEXT_PUBLIC_AML_CORE_URL = "https://aml-core.example.com";
+
+		const mockDocument: ClientDocument = {
+			id: "DOC1",
+			clientId: "CLIENT123",
+			documentType: "NATIONAL_ID",
+			documentNumber: "12345678",
+			status: "PENDING",
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		};
+
+		const fetchSpy = vi.fn(async (url: RequestInfo | URL) => {
+			const u = new URL(typeof url === "string" ? url : url.toString());
+			expect(u.origin + u.pathname).toBe(
+				"https://aml-core.example.com/api/v1/clients/CLIENT123/documents",
+			);
+			return new Response(JSON.stringify(mockDocument), {
+				status: 201,
+				headers: { "content-type": "application/json" },
+			});
+		});
+		vi.stubGlobal("fetch", fetchSpy);
+
+		await createClientDocument({
+			clientId: "CLIENT123",
+			input: {
+				documentType: "NATIONAL_ID",
+				documentNumber: "12345678",
+				status: "PENDING",
+			},
+		});
+
+		if (prev === undefined) delete process.env.NEXT_PUBLIC_AML_CORE_URL;
+		else process.env.NEXT_PUBLIC_AML_CORE_URL = prev;
+	});
+
+	it("uses getAmlCoreBaseUrl when baseUrl not provided for updateClientDocument", async () => {
+		const prev = process.env.NEXT_PUBLIC_AML_CORE_URL;
+		process.env.NEXT_PUBLIC_AML_CORE_URL = "https://aml-core.example.com";
+
+		const mockDocument: ClientDocument = {
+			id: "DOC1",
+			clientId: "CLIENT123",
+			documentType: "PASSPORT",
+			documentNumber: "P123456",
+			status: "VERIFIED",
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		};
+
+		const fetchSpy = vi.fn(async (url: RequestInfo | URL) => {
+			const u = new URL(typeof url === "string" ? url : url.toString());
+			expect(u.origin + u.pathname).toBe(
+				"https://aml-core.example.com/api/v1/clients/CLIENT123/documents/DOC1",
+			);
+			return new Response(JSON.stringify(mockDocument), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			});
+		});
+		vi.stubGlobal("fetch", fetchSpy);
+
+		await updateClientDocument({
+			clientId: "CLIENT123",
+			documentId: "DOC1",
+			input: {
+				documentType: "PASSPORT",
+				documentNumber: "P123456",
+				status: "VERIFIED",
+			},
+		});
+
+		if (prev === undefined) delete process.env.NEXT_PUBLIC_AML_CORE_URL;
+		else process.env.NEXT_PUBLIC_AML_CORE_URL = prev;
+	});
+
+	it("uses getAmlCoreBaseUrl when baseUrl not provided for patchClientDocument", async () => {
+		const prev = process.env.NEXT_PUBLIC_AML_CORE_URL;
+		process.env.NEXT_PUBLIC_AML_CORE_URL = "https://aml-core.example.com";
+
+		const mockDocument: ClientDocument = {
+			id: "DOC1",
+			clientId: "CLIENT123",
+			documentType: "NATIONAL_ID",
+			documentNumber: "12345678",
+			status: "VERIFIED",
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		};
+
+		const fetchSpy = vi.fn(async (url: RequestInfo | URL) => {
+			const u = new URL(typeof url === "string" ? url : url.toString());
+			expect(u.origin + u.pathname).toBe(
+				"https://aml-core.example.com/api/v1/clients/CLIENT123/documents/DOC1",
+			);
+			return new Response(JSON.stringify(mockDocument), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			});
+		});
+		vi.stubGlobal("fetch", fetchSpy);
+
+		await patchClientDocument({
+			clientId: "CLIENT123",
+			documentId: "DOC1",
+			input: { status: "VERIFIED" },
+		});
+
+		if (prev === undefined) delete process.env.NEXT_PUBLIC_AML_CORE_URL;
+		else process.env.NEXT_PUBLIC_AML_CORE_URL = prev;
+	});
+
+	it("uses getAmlCoreBaseUrl when baseUrl not provided for deleteClientDocument", async () => {
+		const prev = process.env.NEXT_PUBLIC_AML_CORE_URL;
+		process.env.NEXT_PUBLIC_AML_CORE_URL = "https://aml-core.example.com";
+
+		const fetchSpy = vi.fn(async (url: RequestInfo | URL) => {
+			const u = new URL(typeof url === "string" ? url : url.toString());
+			expect(u.origin + u.pathname).toBe(
+				"https://aml-core.example.com/api/v1/clients/CLIENT123/documents/DOC1",
+			);
+			return new Response(null, {
+				status: 204,
+			});
+		});
+		vi.stubGlobal("fetch", fetchSpy);
+
+		await deleteClientDocument({
+			clientId: "CLIENT123",
+			documentId: "DOC1",
+		});
+
+		if (prev === undefined) delete process.env.NEXT_PUBLIC_AML_CORE_URL;
+		else process.env.NEXT_PUBLIC_AML_CORE_URL = prev;
+	});
 });

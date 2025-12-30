@@ -1,21 +1,25 @@
 "use client";
 
 import type React from "react";
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { Check, ChevronsUpDown, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
-	Combobox,
-	ComboboxContent,
-	ComboboxEmpty,
-	ComboboxGroup,
-	ComboboxInput,
-	ComboboxItem,
-	ComboboxList,
-	ComboboxTrigger,
-	Label,
-	Spinner,
-	cn,
-} from "@algtools/ui";
-import { Check, ChevronsUpDown } from "lucide-react";
+	Command,
+	CommandEmpty,
+	CommandGroup,
+	CommandInput,
+	CommandItem,
+	CommandList,
+	CommandSeparator,
+} from "@/components/ui/command";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import type { Client } from "@/types/client";
 import { useClientSearch } from "@/hooks/useClientSearch";
 import { getClientDisplayName } from "@/types/client";
@@ -39,6 +43,31 @@ interface ClientSelectorProps {
 	getOptionValue?: (client: Client) => string;
 	renderOption?: OptionRenderer;
 	className?: string;
+	/** Callback when "Create New Client" button is clicked */
+	onCreateNew?: () => void;
+}
+
+function Spinner({
+	size = "md",
+	className,
+	...props
+}: React.ComponentProps<"div"> & { size?: "sm" | "md" | "lg" }) {
+	const sizeClass =
+		size === "sm" ? "h-4 w-4" : size === "lg" ? "h-6 w-6" : "h-5 w-5";
+
+	return (
+		<div
+			data-slot="spinner"
+			className={cn(
+				"inline-block animate-spin rounded-full border-2 border-current border-t-transparent",
+				sizeClass,
+				className,
+			)}
+			aria-label="Loading"
+			role="status"
+			{...props}
+		/>
+	);
 }
 
 const defaultRenderOption: OptionRenderer = (client, isSelected) => {
@@ -73,14 +102,16 @@ export function ClientSelector({
 	required = false,
 	pageSize,
 	debounceMs,
-	autoFocusSearch = false,
+	autoFocusSearch = true,
 	onChange,
 	onValueChange,
 	getOptionValue,
 	renderOption = defaultRenderOption,
 	className,
+	onCreateNew,
 }: ClientSelectorProps): React.ReactElement {
 	const labelId = useId();
+	const listRef = useRef<HTMLDivElement>(null);
 	const resolvedPlaceholder =
 		placeholder ??
 		(label ? `Seleccionar ${label.toLowerCase()}` : "Seleccionar cliente");
@@ -127,8 +158,8 @@ export function ClientSelector({
 		setSelectedClient(match ?? null);
 	}, [isControlled, value, items, getOptionValue]);
 
-	const handleSelect = (value: string): void => {
-		const match = mappedItems.find((entry) => entry.value === value);
+	const handleSelect = (optionValue: string): void => {
+		const match = mappedItems.find((entry) => entry.value === optionValue);
 		if (!match) {
 			return;
 		}
@@ -144,7 +175,7 @@ export function ClientSelector({
 		setShowResults(false);
 		setOpen(false);
 
-		onValueChange?.(value);
+		onValueChange?.(optionValue);
 		onChange?.(match.client);
 	};
 
@@ -156,6 +187,11 @@ export function ClientSelector({
 	const handleOpenChange = (next: boolean): void => {
 		setOpen(next);
 		setShowResults(next);
+	};
+
+	const handleCreateNew = (): void => {
+		setOpen(false);
+		onCreateNew?.();
 	};
 
 	const resultSummary = useMemo(() => {
@@ -185,83 +221,132 @@ export function ClientSelector({
 				</Label>
 			)}
 
-			<Combobox
-				open={open}
-				onOpenChange={handleOpenChange}
-				type="cliente"
-				data={[]}
-			>
-				<ComboboxTrigger
-					className="flex w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-left text-sm shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-					aria-labelledby={label ? labelId : undefined}
-					disabled={disabled}
+			<Popover open={open} onOpenChange={handleOpenChange}>
+				<PopoverTrigger asChild>
+					<Button
+						variant="outline"
+						role="combobox"
+						aria-expanded={open}
+						aria-labelledby={label ? labelId : undefined}
+						disabled={disabled}
+						className="w-full justify-between text-left font-normal"
+					>
+						<span className="truncate">
+							{selectedLabel || resolvedPlaceholder}
+						</span>
+						<span className="ml-2 flex items-center gap-1 text-xs text-muted-foreground">
+							<span className="hidden sm:inline">cliente</span>
+							<ChevronsUpDown
+								className="h-4 w-4 shrink-0 opacity-50"
+								aria-hidden="true"
+							/>
+						</span>
+					</Button>
+				</PopoverTrigger>
+
+				<PopoverContent
+					className="w-[--radix-popover-trigger-width] p-0"
+					align="start"
 				>
-					<span className="truncate">
-						{selectedLabel || resolvedPlaceholder}
-					</span>
-					<span className="ml-2 flex items-center gap-1 text-xs text-muted-foreground">
-						<span className="hidden sm:inline">cliente</span>
-						<ChevronsUpDown className="h-4 w-4" aria-hidden="true" />
-					</span>
-				</ComboboxTrigger>
+					<Command shouldFilter={false}>
+						<CommandInput
+							value={searchTerm}
+							onValueChange={handleSearchChange}
+							placeholder={searchPlaceholder}
+							autoFocus={autoFocusSearch}
+						/>
 
-				<ComboboxContent filter={() => 1}>
-					<ComboboxInput
-						value={searchTerm}
-						onValueChange={handleSearchChange}
-						placeholder={searchPlaceholder}
-						autoComplete="off"
-						autoFocus={autoFocusSearch}
-					/>
+						{/* Create New Client button - always visible at top */}
+						{onCreateNew && (
+							<>
+								<div className="px-2 py-2">
+									<Button
+										type="button"
+										variant="ghost"
+										size="sm"
+										className="w-full justify-start gap-2 text-primary hover:text-primary"
+										onClick={handleCreateNew}
+									>
+										<Plus className="h-4 w-4" />
+										Crear nuevo cliente
+									</Button>
+								</div>
+								<CommandSeparator />
+							</>
+						)}
 
-					{loading && (
-						<div className="flex items-center gap-2 px-3 py-4 text-sm text-muted-foreground">
-							<Spinner size="sm" />
-							Buscando clientes…
-						</div>
-					)}
+						{loading && (
+							<div className="flex items-center gap-2 px-3 py-4 text-sm text-muted-foreground">
+								<Spinner size="sm" />
+								Buscando clientes…
+							</div>
+						)}
 
-					{!loading && error && (
-						<div className="px-3 py-4 text-sm text-destructive">{error}</div>
-					)}
+						{!loading && error && (
+							<div className="px-3 py-4 text-sm text-destructive">{error}</div>
+						)}
 
-					{!loading && !error && (
-						<ComboboxList>
-							{mappedItems.length === 0 ? (
-								<ComboboxEmpty>{emptyState}</ComboboxEmpty>
-							) : (
-								<ComboboxGroup heading="Clientes">
-									{mappedItems.map(({ client, value: optionValue }) => {
-										const isSelected = selectedClient
-											? (getOptionValue
-													? getOptionValue(selectedClient)
-													: selectedClient.id) === optionValue
-											: false;
+						{!loading && !error && (
+							<>
+								<CommandList ref={listRef} className="max-h-[300px]">
+									{mappedItems.length === 0 ? (
+										<CommandEmpty>
+											<div className="flex flex-col items-center gap-3 py-2">
+												<span>{emptyState}</span>
+												{onCreateNew && (
+													<Button
+														type="button"
+														variant="outline"
+														size="sm"
+														className="gap-2"
+														onClick={handleCreateNew}
+													>
+														<Plus className="h-4 w-4" />
+														Crear nuevo cliente
+													</Button>
+												)}
+											</div>
+										</CommandEmpty>
+									) : (
+										<CommandGroup heading="Clientes">
+											{mappedItems.map(({ client, value: optionValue }) => {
+												const isSelected = selectedClient
+													? (getOptionValue
+															? getOptionValue(selectedClient)
+															: selectedClient.id) === optionValue
+													: false;
 
-										return (
-											<ComboboxItem
-												key={optionValue}
-												value={optionValue}
-												onSelect={() => handleSelect(optionValue)}
-											>
-												{renderOption(client, isSelected)}
-											</ComboboxItem>
-										);
-									})}
-								</ComboboxGroup>
-							)}
-						</ComboboxList>
-					)}
-				</ComboboxContent>
-			</Combobox>
+												return (
+													<CommandItem
+														key={optionValue}
+														value={optionValue}
+														onSelect={() => handleSelect(optionValue)}
+													>
+														{renderOption(client, isSelected)}
+													</CommandItem>
+												);
+											})}
+										</CommandGroup>
+									)}
+								</CommandList>
+								{shouldShowSummary && (
+									<div className="sticky bottom-0 border-t bg-popover px-3 py-2">
+										<p
+											className="text-[11px] text-muted-foreground"
+											aria-live="polite"
+										>
+											{resultSummary}
+										</p>
+									</div>
+								)}
+							</>
+						)}
+					</Command>
+				</PopoverContent>
+			</Popover>
 
 			{helperText && (
 				<p className="text-xs text-muted-foreground">{helperText}</p>
-			)}
-			{shouldShowSummary && (
-				<p className="text-[11px] text-muted-foreground" aria-live="polite">
-					{resultSummary}
-				</p>
 			)}
 		</div>
 	);

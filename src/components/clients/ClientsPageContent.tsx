@@ -1,42 +1,13 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { KpiCards } from "@/components/clients/KpiCards";
 import { ClientsTable } from "@/components/clients/ClientsTable";
-import { ClientsFilters } from "@/components/clients/ClientsFilters";
 import { Button } from "@algtools/ui";
 import { Plus } from "lucide-react";
 
 export function ClientsPageContent(): React.ReactElement {
 	const router = useRouter();
-	const [activeFilters, setActiveFilters] = useState<string[]>([]);
-	const [searchQuery, setSearchQuery] = useState("");
-	const [riskFilter, setRiskFilter] = useState("");
-	const [statusFilter, setStatusFilter] = useState("");
-
-	const handleApplyFilters = (): void => {
-		const filters: string[] = [];
-		if (searchQuery) filters.push(`Búsqueda: "${searchQuery}"`);
-		if (riskFilter) filters.push(`Riesgo: ${riskFilter}`);
-		if (statusFilter) filters.push(`Estado: ${statusFilter}`);
-		setActiveFilters(filters);
-	};
-
-	const handleClearFilters = (): void => {
-		setSearchQuery("");
-		setRiskFilter("");
-		setStatusFilter("");
-		setActiveFilters([]);
-	};
-
-	const handleRemoveFilter = (filter: string): void => {
-		setActiveFilters(activeFilters.filter((f) => f !== filter));
-		// Reset corresponding filter
-		if (filter.startsWith("Búsqueda:")) setSearchQuery("");
-		if (filter.startsWith("Riesgo:")) setRiskFilter("");
-		if (filter.startsWith("Estado:")) setStatusFilter("");
-	};
 
 	return (
 		<div className="space-y-6">
@@ -60,19 +31,6 @@ export function ClientsPageContent(): React.ReactElement {
 			</div>
 
 			<KpiCards />
-
-			<ClientsFilters
-				searchQuery={searchQuery}
-				onSearchChange={setSearchQuery}
-				riskFilter={riskFilter}
-				onRiskChange={setRiskFilter}
-				statusFilter={statusFilter}
-				onStatusChange={setStatusFilter}
-				activeFilters={activeFilters}
-				onApplyFilters={handleApplyFilters}
-				onClearFilters={handleClearFilters}
-				onRemoveFilter={handleRemoveFilter}
-			/>
 
 			<ClientsTable />
 		</div>
