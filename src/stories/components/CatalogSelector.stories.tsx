@@ -112,7 +112,8 @@ export const WithSelectedValue: Story = {
 	args: {
 		catalogKey: "vehicle-brands",
 		label: "Marca",
-		value: "Toyota",
+		// Use the actual item ID to properly demonstrate selected value displaying name
+		value: "01JCXAVB0001ABCDEFGHJ1",
 		searchPlaceholder: "Buscar marca...",
 	},
 };
