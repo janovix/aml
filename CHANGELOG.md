@@ -1,3 +1,18 @@
+# [1.1.0-rc.16](https://github.com/janovix/aml/compare/v1.1.0-rc.15...v1.1.0-rc.16) (2025-12-30)
+
+
+### Features
+
+* Set default country to Mexico for phone input ([faeb2a2](https://github.com/janovix/aml/commit/faeb2a217fb4447eacd8a20b873201cc04bde12a))
+
+# [1.1.0-rc.15](https://github.com/janovix/aml/compare/v1.1.0-rc.14...v1.1.0-rc.15) (2025-12-30)
+
+
+### Features
+
+* integrate phone number input component across client forms and update package dependencies ([7ab7f84](https://github.com/janovix/aml/commit/7ab7f849214f59095c3a5799828093591b2b3215))
+* introduce PageHero component for enhanced page headers and statistics display across various pages ([f48dd06](https://github.com/janovix/aml/commit/f48dd065dedb6862c66a09cc9baac4435656ec3e))
+
 # [1.1.0-rc.14](https://github.com/janovix/aml/compare/v1.1.0-rc.13...v1.1.0-rc.14) (2025-12-30)
 
 
