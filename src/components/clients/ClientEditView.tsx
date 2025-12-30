@@ -12,17 +12,18 @@ import {
 	CardTitle,
 	Input,
 	Label,
+	Separator,
 	Textarea,
 } from "@algtools/ui";
 import { ArrowLeft, Save } from "lucide-react";
-import { useToast } from "../../hooks/use-toast";
-import { useJwt } from "../../hooks/useJwt";
 import type {
 	PersonType,
 	ClientCreateRequest,
 	Client,
 } from "../../types/client";
+import { useToast } from "../../hooks/use-toast";
 import { getClientByRfc, updateClient } from "../../lib/api/clients";
+import { executeMutation } from "../../lib/mutations";
 import { getPersonTypeDisplay } from "../../lib/person-type";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
 import { getFieldDescription } from "../../lib/field-descriptions";
@@ -65,7 +66,6 @@ export function ClientEditView({
 }: ClientEditViewProps): React.JSX.Element {
 	const router = useRouter();
 	const { toast } = useToast();
-	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
 	const [client, setClient] = useState<Client | null>(null);
@@ -108,15 +108,11 @@ export function ClientEditView({
 	});
 
 	useEffect(() => {
-		// Wait for JWT to be ready
-		if (isJwtLoading) return;
-
 		const fetchClient = async () => {
 			try {
 				setIsLoading(true);
 				const data = await getClientByRfc({
 					rfc: clientId,
-					jwt: jwt ?? undefined,
 				});
 				setClient(data);
 
@@ -155,8 +151,7 @@ export function ClientEditView({
 			} catch (error) {
 				console.error("Error fetching client:", error);
 				toast({
-					title: "Error",
-					description: "No se pudo cargar la información del cliente.",
+					title: "No se pudo cargar la información del cliente.",
 					variant: "destructive",
 				});
 			} finally {
@@ -164,7 +159,7 @@ export function ClientEditView({
 			}
 		};
 		fetchClient();
-	}, [clientId, toast, jwt, isJwtLoading]);
+	}, [clientId, toast]);
 
 	const handleInputChange = (
 		field: keyof ClientFormData,
@@ -183,79 +178,70 @@ export function ClientEditView({
 		if (!currentPersonType) {
 			toast({
 				title: "Tipo de persona no disponible",
-				description:
-					"No se pudo determinar el tipo de persona del cliente. Vuelve a cargar la página e inténtalo de nuevo.",
 				variant: "destructive",
 			});
 			setIsSubmitting(false);
 			return;
 		}
 
-		try {
-			// Build the request payload based on personType
-			const request: ClientCreateRequest = {
-				personType: currentPersonType,
-				rfc: formData.rfc,
-				email: formData.email,
-				phone: formData.phone,
-				country: client?.country ?? "MX",
-				stateCode: formData.stateCode,
-				city: formData.city,
-				municipality: formData.municipality,
-				neighborhood: formData.neighborhood,
-				street: formData.street,
-				externalNumber: formData.externalNumber,
-				postalCode: formData.postalCode,
-			};
+		// Build the request payload based on personType
+		const request: ClientCreateRequest = {
+			personType: currentPersonType,
+			rfc: formData.rfc,
+			email: formData.email,
+			phone: formData.phone,
+			country: client?.country ?? "MX",
+			stateCode: formData.stateCode,
+			city: formData.city,
+			municipality: formData.municipality,
+			neighborhood: formData.neighborhood,
+			street: formData.street,
+			externalNumber: formData.externalNumber,
+			postalCode: formData.postalCode,
+		};
 
-			// Add personType-specific fields
-			if (currentPersonType === "physical") {
-				request.firstName = formData.firstName;
-				request.lastName = formData.lastName;
-				if (formData.secondLastName)
-					request.secondLastName = formData.secondLastName;
-				if (formData.birthDate) request.birthDate = formData.birthDate;
-				if (formData.curp) request.curp = formData.curp;
-			} else {
-				// moral or trust
-				request.businessName = formData.businessName;
-				if (formData.incorporationDate) {
-					// Convert date (YYYY-MM-DD) to date-time format (YYYY-MM-DDTHH:mm:ss.sssZ)
-					// Use midnight UTC to avoid timezone issues
-					const date = new Date(`${formData.incorporationDate}T00:00:00.000Z`);
-					request.incorporationDate = date.toISOString();
-				}
+		// Add personType-specific fields
+		if (currentPersonType === "physical") {
+			request.firstName = formData.firstName;
+			request.lastName = formData.lastName;
+			if (formData.secondLastName)
+				request.secondLastName = formData.secondLastName;
+			if (formData.birthDate) request.birthDate = formData.birthDate;
+			if (formData.curp) request.curp = formData.curp;
+		} else {
+			// moral or trust
+			request.businessName = formData.businessName;
+			if (formData.incorporationDate) {
+				// Convert date (YYYY-MM-DD) to date-time format (YYYY-MM-DDTHH:mm:ss.sssZ)
+				// Use midnight UTC to avoid timezone issues
+				const date = new Date(`${formData.incorporationDate}T00:00:00.000Z`);
+				request.incorporationDate = date.toISOString();
 			}
+		}
 
-			// Add optional fields
-			if (formData.nationality) request.nationality = formData.nationality;
-			if (formData.internalNumber)
-				request.internalNumber = formData.internalNumber;
-			if (formData.reference) request.reference = formData.reference;
-			if (formData.notes) request.notes = formData.notes;
+		// Add optional fields
+		if (formData.nationality) request.nationality = formData.nationality;
+		if (formData.internalNumber)
+			request.internalNumber = formData.internalNumber;
+		if (formData.reference) request.reference = formData.reference;
+		if (formData.notes) request.notes = formData.notes;
 
-			await updateClient({
-				rfc: clientId,
-				input: request,
-				jwt: jwt ?? undefined,
+		try {
+			await executeMutation({
+				mutation: () =>
+					updateClient({
+						rfc: clientId,
+						input: request,
+					}),
+				loading: "Actualizando cliente...",
+				success: "Cliente actualizado exitosamente",
+				onSuccess: () => {
+					router.push(`/clients/${clientId}`);
+				},
 			});
-
-			toast({
-				title: "Cliente actualizado",
-				description: "Los cambios se han guardado exitosamente.",
-			});
-
-			router.push(`/clients/${clientId}`);
 		} catch (error) {
+			// Error is already handled by executeMutation via Sonner
 			console.error("Error updating client:", error);
-			toast({
-				title: "Error",
-				description:
-					error instanceof Error
-						? error.message
-						: "No se pudo actualizar el cliente. Por favor, intente nuevamente.",
-				variant: "destructive",
-			});
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -265,7 +251,7 @@ export function ClientEditView({
 		router.push(`/clients/${clientId}`);
 	};
 
-	if (isLoading || isJwtLoading) {
+	if (isLoading) {
 		return (
 			<div className="space-y-6">
 				<div className="flex items-center gap-4">
@@ -315,32 +301,42 @@ export function ClientEditView({
 
 	return (
 		<div className="space-y-6">
-			<div className="flex items-center justify-between">
+			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<div className="flex items-center gap-4">
-					<Button variant="ghost" size="icon" onClick={handleCancel}>
-						<ArrowLeft className="h-5 w-5" />
+					<Button
+						variant="ghost"
+						size="sm"
+						className="gap-2"
+						onClick={handleCancel}
+					>
+						<ArrowLeft className="h-4 w-4" />
+						<span className="hidden sm:inline">Volver</span>
 					</Button>
+					<Separator orientation="vertical" className="hidden h-6 sm:block" />
 					<div>
-						<h1 className="text-3xl font-bold tracking-tight">
+						<h1 className="text-xl font-semibold text-foreground">
 							Editar Cliente
 						</h1>
-						<p className="text-muted-foreground">
+						<p className="text-sm text-muted-foreground">
 							Modificar información del cliente
 						</p>
 					</div>
 				</div>
-				<div className="flex gap-2">
-					<Button variant="outline" onClick={handleCancel}>
+				<div className="flex items-center gap-2">
+					<Button variant="outline" size="sm" onClick={handleCancel}>
 						Cancelar
 					</Button>
 					<Button
+						size="sm"
 						className="gap-2"
 						type="button"
 						onClick={handleToolbarSubmit}
 						disabled={isSubmitting}
 					>
 						<Save className="h-4 w-4" />
-						{isSubmitting ? "Guardando..." : "Guardar Cambios"}
+						<span className="hidden sm:inline">
+							{isSubmitting ? "Guardando..." : "Guardar Cambios"}
+						</span>
 					</Button>
 				</div>
 			</div>

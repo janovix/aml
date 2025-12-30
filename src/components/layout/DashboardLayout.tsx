@@ -201,132 +201,151 @@ function Navbar() {
 	);
 }
 
-export function DashboardLayout({ children }: DashboardLayoutProps) {
+function SidebarNavigation() {
 	const pathname = usePathname();
+	const { isMobile, setOpenMobile } = useSidebar();
 
+	// Handler to close mobile drawer when a link is clicked
+	const handleLinkClick = React.useCallback(() => {
+		if (isMobile) {
+			setOpenMobile(false);
+		}
+	}, [isMobile, setOpenMobile]);
+
+	return (
+		<>
+			<SidebarContent>
+				<SidebarGroup>
+					<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
+						Transacción
+					</SidebarGroupLabel>
+					<SidebarGroupContent>
+						<SidebarMenu>
+							{mainNavItems.map((item) => {
+								const Icon = item.icon;
+								const isActive =
+									pathname === item.href ||
+									pathname?.startsWith(`${item.href}/`);
+
+								return (
+									<SidebarMenuItem key={item.href}>
+										<SidebarMenuButton
+											asChild
+											isActive={isActive}
+											tooltip={item.title}
+										>
+											<Link
+												href={item.available ? item.href : "#"}
+												aria-disabled={!item.available}
+												className={cn(
+													!item.available && "pointer-events-none opacity-50",
+												)}
+												onClick={item.available ? handleLinkClick : undefined}
+											>
+												<Icon />
+												<span>{item.title}</span>
+												{!item.available && (
+													<span className="ml-auto text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded group-data-[collapsible=icon]:hidden">
+														Pronto
+													</span>
+												)}
+											</Link>
+										</SidebarMenuButton>
+									</SidebarMenuItem>
+								);
+							})}
+						</SidebarMenu>
+					</SidebarGroupContent>
+				</SidebarGroup>
+
+				<SidebarSeparator />
+
+				<SidebarGroup>
+					<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
+						Análisis
+					</SidebarGroupLabel>
+					<SidebarGroupContent>
+						<SidebarMenu>
+							{secondaryNavItems.map((item) => {
+								const Icon = item.icon;
+								const isActive =
+									pathname === item.href ||
+									pathname?.startsWith(`${item.href}/`);
+
+								return (
+									<SidebarMenuItem key={item.href}>
+										<SidebarMenuButton
+											asChild
+											isActive={isActive}
+											tooltip={item.title}
+										>
+											<Link
+												href={item.available ? item.href : "#"}
+												aria-disabled={!item.available}
+												className={cn(
+													!item.available && "pointer-events-none opacity-50",
+												)}
+												onClick={item.available ? handleLinkClick : undefined}
+											>
+												<Icon />
+												<span>{item.title}</span>
+												{!item.available && (
+													<span className="ml-auto text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded group-data-[collapsible=icon]:hidden">
+														Pronto
+													</span>
+												)}
+											</Link>
+										</SidebarMenuButton>
+									</SidebarMenuItem>
+								);
+							})}
+						</SidebarMenu>
+					</SidebarGroupContent>
+				</SidebarGroup>
+			</SidebarContent>
+			<SidebarFooter className="border-t border-sidebar-border">
+				<SidebarMenu>
+					{bottomNavItems.map((item) => {
+						const Icon = item.icon;
+						const isActive =
+							pathname === item.href || pathname?.startsWith(`${item.href}/`);
+
+						return (
+							<SidebarMenuItem key={item.href}>
+								<SidebarMenuButton
+									asChild
+									isActive={isActive}
+									tooltip={item.title}
+								>
+									<Link
+										href={item.available ? item.href : "#"}
+										aria-disabled={!item.available}
+										className={cn(
+											!item.available && "pointer-events-none opacity-50",
+										)}
+										onClick={item.available ? handleLinkClick : undefined}
+									>
+										<Icon />
+										<span>{item.title}</span>
+									</Link>
+								</SidebarMenuButton>
+							</SidebarMenuItem>
+						);
+					})}
+				</SidebarMenu>
+			</SidebarFooter>
+		</>
+	);
+}
+
+export function DashboardLayout({ children }: DashboardLayoutProps) {
 	return (
 		<SidebarProvider defaultOpen={true}>
 			<Sidebar collapsible="icon" variant="sidebar">
 				<SidebarHeader className="border-b border-sidebar-border h-16 p-0">
 					<SidebarLogo />
 				</SidebarHeader>
-				<SidebarContent>
-					<SidebarGroup>
-						<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
-							Transacción
-						</SidebarGroupLabel>
-						<SidebarGroupContent>
-							<SidebarMenu>
-								{mainNavItems.map((item) => {
-									const Icon = item.icon;
-									const isActive =
-										pathname === item.href ||
-										pathname?.startsWith(`${item.href}/`);
-
-									return (
-										<SidebarMenuItem key={item.href}>
-											<SidebarMenuButton
-												asChild
-												isActive={isActive}
-												tooltip={item.title}
-											>
-												<Link
-													href={item.available ? item.href : "#"}
-													aria-disabled={!item.available}
-													className={cn(
-														!item.available && "pointer-events-none opacity-50",
-													)}
-												>
-													<Icon />
-													<span>{item.title}</span>
-													{!item.available && (
-														<span className="ml-auto text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded group-data-[collapsible=icon]:hidden">
-															Pronto
-														</span>
-													)}
-												</Link>
-											</SidebarMenuButton>
-										</SidebarMenuItem>
-									);
-								})}
-							</SidebarMenu>
-						</SidebarGroupContent>
-					</SidebarGroup>
-
-					<SidebarSeparator />
-
-					<SidebarGroup>
-						<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
-							Análisis
-						</SidebarGroupLabel>
-						<SidebarGroupContent>
-							<SidebarMenu>
-								{secondaryNavItems.map((item) => {
-									const Icon = item.icon;
-									const isActive =
-										pathname === item.href ||
-										pathname?.startsWith(`${item.href}/`);
-
-									return (
-										<SidebarMenuItem key={item.href}>
-											<SidebarMenuButton
-												asChild
-												isActive={isActive}
-												tooltip={item.title}
-											>
-												<Link
-													href={item.available ? item.href : "#"}
-													aria-disabled={!item.available}
-													className={cn(
-														!item.available && "pointer-events-none opacity-50",
-													)}
-												>
-													<Icon />
-													<span>{item.title}</span>
-													{!item.available && (
-														<span className="ml-auto text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded group-data-[collapsible=icon]:hidden">
-															Pronto
-														</span>
-													)}
-												</Link>
-											</SidebarMenuButton>
-										</SidebarMenuItem>
-									);
-								})}
-							</SidebarMenu>
-						</SidebarGroupContent>
-					</SidebarGroup>
-				</SidebarContent>
-				<SidebarFooter className="border-t border-sidebar-border">
-					<SidebarMenu>
-						{bottomNavItems.map((item) => {
-							const Icon = item.icon;
-							const isActive =
-								pathname === item.href || pathname?.startsWith(`${item.href}/`);
-
-							return (
-								<SidebarMenuItem key={item.href}>
-									<SidebarMenuButton
-										asChild
-										isActive={isActive}
-										tooltip={item.title}
-									>
-										<Link
-											href={item.available ? item.href : "#"}
-											aria-disabled={!item.available}
-											className={cn(
-												!item.available && "pointer-events-none opacity-50",
-											)}
-										>
-											<Icon />
-											<span>{item.title}</span>
-										</Link>
-									</SidebarMenuButton>
-								</SidebarMenuItem>
-							);
-						})}
-					</SidebarMenu>
-				</SidebarFooter>
+				<SidebarNavigation />
 				<SidebarRail />
 			</Sidebar>
 			<SidebarInset className="flex flex-col">

@@ -1,21 +1,31 @@
 "use client";
 
 import type React from "react";
-import { useEffect, useId, useMemo, useState } from "react";
 import {
-	Combobox,
-	ComboboxContent,
-	ComboboxEmpty,
-	ComboboxGroup,
-	ComboboxInput,
-	ComboboxItem,
-	ComboboxList,
-	ComboboxTrigger,
-	Label,
-	Spinner,
-	cn,
-} from "@algtools/ui";
+	useCallback,
+	useEffect,
+	useId,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+	Command,
+	CommandEmpty,
+	CommandGroup,
+	CommandInput,
+	CommandItem,
+	CommandList,
+} from "@/components/ui/command";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import type { CatalogItem } from "@/types/catalog";
 import { useCatalogSearch } from "@/hooks/useCatalogSearch";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
@@ -45,6 +55,29 @@ interface CatalogSelectorProps {
 	getOptionValue?: (option: CatalogItem) => string;
 	renderOption?: OptionRenderer;
 	className?: string;
+}
+
+function Spinner({
+	size = "md",
+	className,
+	...props
+}: React.ComponentProps<"div"> & { size?: "sm" | "md" | "lg" }) {
+	const sizeClass =
+		size === "sm" ? "h-4 w-4" : size === "lg" ? "h-6 w-6" : "h-5 w-5";
+
+	return (
+		<div
+			data-slot="spinner"
+			className={cn(
+				"inline-block animate-spin rounded-full border-2 border-current border-t-transparent",
+				sizeClass,
+				className,
+			)}
+			aria-label="Loading"
+			role="status"
+			{...props}
+		/>
+	);
 }
 
 const defaultRenderOption: OptionRenderer = (option, isSelected) => (
@@ -82,6 +115,7 @@ export function CatalogSelector({
 	className,
 }: CatalogSelectorProps): React.ReactElement {
 	const labelId = useId();
+	const listRef = useRef<HTMLDivElement>(null);
 	const resolvedPlaceholder =
 		placeholder ??
 		(label ? `Seleccionar ${label.toLowerCase()}` : "Seleccionar opción");
@@ -212,8 +246,8 @@ export function CatalogSelector({
 		selectedLabel,
 	]);
 
-	const handleSelect = (value: string): void => {
-		const match = mappedItems.find((entry) => entry.value === value);
+	const handleSelect = (optionValue: string): void => {
+		const match = mappedItems.find((entry) => entry.value === optionValue);
 		if (!match) {
 			return;
 		}
@@ -229,7 +263,7 @@ export function CatalogSelector({
 		setShowResults(false);
 		setOpen(false);
 
-		onValueChange?.(value);
+		onValueChange?.(optionValue);
 		onChange?.(match.item);
 	};
 
@@ -242,6 +276,38 @@ export function CatalogSelector({
 		setOpen(next);
 		setShowResults(next);
 	};
+
+	// Handle infinite scroll
+	const handleScroll = useCallback(async () => {
+		const list = listRef.current;
+		if (!list || loadingMore || loading || !hasMore) {
+			return;
+		}
+
+		const { scrollTop, scrollHeight, clientHeight } = list;
+		const threshold = 50; // Trigger when 50px from bottom
+
+		if (scrollTop + clientHeight >= scrollHeight - threshold) {
+			try {
+				await loadMore();
+			} catch {
+				// Ignore errors
+			}
+		}
+	}, [loadMore, loadingMore, loading, hasMore]);
+
+	// Set up scroll listener
+	useEffect(() => {
+		const list = listRef.current;
+		if (!list || !open) {
+			return;
+		}
+
+		list.addEventListener("scroll", handleScroll, { passive: true });
+		return () => {
+			list.removeEventListener("scroll", handleScroll);
+		};
+	}, [handleScroll, open]);
 
 	const resultSummary = useMemo(() => {
 		if (loading) {
@@ -279,98 +345,101 @@ export function CatalogSelector({
 					</Label>
 				))}
 
-			<Combobox
-				open={open}
-				onOpenChange={handleOpenChange}
-				type={resolvedType}
-				data={[]}
-			>
-				<ComboboxTrigger
-					className="flex w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-left text-sm shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-					aria-labelledby={label ? labelId : undefined}
-					disabled={disabled}
+			<Popover open={open} onOpenChange={handleOpenChange}>
+				<PopoverTrigger asChild>
+					<Button
+						variant="outline"
+						role="combobox"
+						aria-expanded={open}
+						aria-labelledby={label ? labelId : undefined}
+						disabled={disabled}
+						className="w-full justify-between text-left font-normal"
+					>
+						<span className="truncate">
+							{selectedLabel || resolvedPlaceholder}
+						</span>
+						<span className="ml-2 flex items-center gap-1 text-xs text-muted-foreground">
+							<span className="hidden sm:inline">{resolvedType}</span>
+							<ChevronsUpDown
+								className="h-4 w-4 shrink-0 opacity-50"
+								aria-hidden="true"
+							/>
+						</span>
+					</Button>
+				</PopoverTrigger>
+
+				<PopoverContent
+					className="w-[--radix-popover-trigger-width] p-0"
+					align="start"
 				>
-					<span className="truncate">
-						{selectedLabel || resolvedPlaceholder}
-					</span>
-					<span className="ml-2 flex items-center gap-1 text-xs text-muted-foreground">
-						<span className="hidden sm:inline">{resolvedType}</span>
-						<ChevronsUpDown className="h-4 w-4" aria-hidden="true" />
-					</span>
-				</ComboboxTrigger>
+					<Command shouldFilter={false}>
+						<CommandInput
+							value={searchTerm}
+							onValueChange={handleSearchChange}
+							placeholder={searchPlaceholder}
+							autoFocus={autoFocusSearch}
+						/>
 
-				<ComboboxContent filter={() => 1}>
-					<ComboboxInput
-						value={searchTerm}
-						onValueChange={handleSearchChange}
-						placeholder={searchPlaceholder}
-						autoComplete="off"
-						autoFocus={autoFocusSearch}
-					/>
+						{loading && (
+							<div className="flex items-center gap-2 px-3 py-4 text-sm text-muted-foreground">
+								<Spinner size="sm" />
+								Buscando resultados…
+							</div>
+						)}
 
-					{loading && (
-						<div className="flex items-center gap-2 px-3 py-4 text-sm text-muted-foreground">
-							<Spinner size="sm" />
-							Buscando resultados…
-						</div>
-					)}
+						{!loading && error && (
+							<div className="px-3 py-4 text-sm text-destructive">{error}</div>
+						)}
 
-					{!loading && error && (
-						<div className="px-3 py-4 text-sm text-destructive">{error}</div>
-					)}
+						{!loading && !error && (
+							<>
+								<CommandList ref={listRef} className="max-h-[300px]">
+									{mappedItems.length === 0 ? (
+										<CommandEmpty>{emptyState}</CommandEmpty>
+									) : (
+										<CommandGroup heading="Resultados">
+											{mappedItems.map(({ item, value: optionValue }) => {
+												const isSelected = selectedOption
+													? (getOptionValue
+															? getOptionValue(selectedOption)
+															: (selectedOption.id ?? selectedOption.name)) ===
+														optionValue
+													: false;
 
-					{!loading && !error && (
-						<>
-							<ComboboxList
-								onScrollToBottom={
-									hasMore && !loadingMore ? loadMore : undefined
-								}
-							>
-								{mappedItems.length === 0 ? (
-									<ComboboxEmpty>{emptyState}</ComboboxEmpty>
-								) : (
-									<ComboboxGroup heading="Resultados">
-										{mappedItems.map(({ item, value: optionValue }) => {
-											const isSelected = selectedOption
-												? (getOptionValue
-														? getOptionValue(selectedOption)
-														: (selectedOption.id ?? selectedOption.name)) ===
-													optionValue
-												: false;
-
-											return (
-												<ComboboxItem
-													key={optionValue}
-													value={optionValue}
-													onSelect={() => handleSelect(optionValue)}
-												>
-													{renderOption(item, isSelected)}
-												</ComboboxItem>
-											);
-										})}
-									</ComboboxGroup>
-								)}
-								{loadingMore && (
-									<div className="flex items-center justify-center gap-2 px-3 py-4 text-sm text-muted-foreground">
-										<Spinner size="sm" />
-										Cargando más resultados...
+												return (
+													<CommandItem
+														key={optionValue}
+														value={optionValue}
+														onSelect={() => handleSelect(optionValue)}
+													>
+														{renderOption(item, isSelected)}
+													</CommandItem>
+												);
+											})}
+										</CommandGroup>
+									)}
+									{loadingMore && (
+										<div className="flex items-center justify-center gap-2 px-3 py-4 text-sm text-muted-foreground">
+											<Spinner size="sm" />
+											Cargando más resultados...
+										</div>
+									)}
+								</CommandList>
+								{shouldShowSummary && (
+									<div className="sticky bottom-0 border-t bg-popover px-3 py-2">
+										<p
+											className="text-[11px] text-muted-foreground"
+											aria-live="polite"
+										>
+											{resultSummary}
+										</p>
 									</div>
 								)}
-							</ComboboxList>
-							{shouldShowSummary && (
-								<div className="sticky bottom-0 border-t bg-popover px-3 py-2">
-									<p
-										className="text-[11px] text-muted-foreground"
-										aria-live="polite"
-									>
-										{resultSummary}
-									</p>
-								</div>
-							)}
-						</>
-					)}
-				</ComboboxContent>
-			</Combobox>
+							</>
+						)}
+					</Command>
+				</PopoverContent>
+			</Popover>
 
 			{helperText && (
 				<p className="text-xs text-muted-foreground">{helperText}</p>

@@ -20,8 +20,9 @@ import {
 	Separator,
 } from "@algtools/ui";
 import { ArrowLeft, Save, Plus, Trash2 } from "lucide-react";
-import { useToast } from "../../hooks/use-toast";
+import { toast } from "sonner";
 import { createTransaction } from "../../lib/api/transactions";
+import { executeMutation } from "../../lib/mutations";
 import type {
 	TransactionOperationType,
 	TransactionVehicleType,
@@ -55,7 +56,6 @@ interface TransactionFormData {
 
 export function TransactionCreateView(): React.JSX.Element {
 	const router = useRouter();
-	const { toast } = useToast();
 	const [isSaving, setIsSaving] = useState(false);
 
 	const [formData, setFormData] = useState<TransactionFormData>({
@@ -132,13 +132,27 @@ export function TransactionCreateView(): React.JSX.Element {
 		);
 
 		if (paymentMethodsSum <= 0) {
-			toast({
-				title: "Error de validación",
-				description:
-					"Debe ingresar al menos un método de pago con un monto mayor a cero.",
-				variant: "destructive",
-			});
+			toast.error(
+				"Debe ingresar al menos un método de pago con un monto mayor a cero.",
+			);
 			return false;
+		}
+		return true;
+	};
+
+	const validateLandVehicleFields = (): boolean => {
+		if (formData.vehicleType === "land") {
+			const hasPlates = formData.plates && formData.plates.trim().length > 0;
+			const hasVIN = formData.vin && formData.vin.trim().length > 0;
+			const hasEngineNumber =
+				formData.engineNumber && formData.engineNumber.trim().length > 0;
+
+			if (!hasPlates && !hasVIN && !hasEngineNumber) {
+				toast.error(
+					"Para vehículos terrestres, debe proporcionar al menos uno de: Placas, VIN o Número de motor.",
+				);
+				return false;
+			}
 		}
 		return true;
 	};
@@ -150,53 +164,55 @@ export function TransactionCreateView(): React.JSX.Element {
 			return;
 		}
 
+		if (!validateLandVehicleFields()) {
+			return;
+		}
+
+		setIsSaving(true);
+		const calculatedAmount = calculateAmountFromPaymentMethods();
+		// Format operationDate as date-only (YYYY-MM-DD) - API expects this format, not ISO date-time
+		const operationDateFormatted =
+			formData.operationDate || new Date().toISOString().slice(0, 10);
+		const createData: TransactionCreateRequest = {
+			clientId: formData.clientId,
+			operationDate: operationDateFormatted,
+			operationType: "sale", // Always set to "Venta"
+			branchPostalCode: formData.branchPostalCode,
+			vehicleType: formData.vehicleType as TransactionVehicleType,
+			brand: formData.brand,
+			model: formData.model,
+			year: parseInt(formData.year, 10),
+			amount: calculatedAmount,
+			currency: formData.currency,
+			paymentMethods: formData.paymentMethods,
+		};
+
+		if (formData.vehicleType === "land") {
+			// At least one of plates, VIN, or engineNumber must be provided
+			if (formData.vin) createData.vin = formData.vin;
+			if (formData.repuve) createData.repuve = formData.repuve;
+			if (formData.plates) createData.plates = formData.plates;
+			if (formData.engineNumber)
+				createData.engineNumber = formData.engineNumber;
+		} else {
+			if (formData.registrationNumber)
+				createData.registrationNumber = formData.registrationNumber;
+			if (formData.flagCountryId)
+				createData.flagCountryId = formData.flagCountryId;
+		}
+
 		try {
-			setIsSaving(true);
-			const calculatedAmount = calculateAmountFromPaymentMethods();
-			// Format operationDate as date-only (YYYY-MM-DD) - convert to ISO date string at midnight UTC
-			const operationDateISO = formData.operationDate
-				? new Date(formData.operationDate + "T00:00:00.000Z").toISOString()
-				: new Date().toISOString();
-			const createData: TransactionCreateRequest = {
-				clientId: formData.clientId,
-				operationDate: operationDateISO,
-				operationType: "sale", // Always set to "Venta"
-				branchPostalCode: formData.branchPostalCode,
-				vehicleType: formData.vehicleType as TransactionVehicleType,
-				brand: formData.brand,
-				model: formData.model,
-				year: parseInt(formData.year, 10),
-				amount: calculatedAmount,
-				currency: formData.currency,
-				paymentMethods: formData.paymentMethods,
-			};
-
-			if (formData.vehicleType === "land") {
-				if (formData.vin) createData.vin = formData.vin;
-				if (formData.repuve) createData.repuve = formData.repuve;
-				if (formData.plates) createData.plates = formData.plates;
-				if (formData.engineNumber)
-					createData.engineNumber = formData.engineNumber;
-			} else {
-				if (formData.registrationNumber)
-					createData.registrationNumber = formData.registrationNumber;
-				if (formData.flagCountryId)
-					createData.flagCountryId = formData.flagCountryId;
-			}
-
-			await createTransaction({ input: createData });
-			toast({
-				title: "Transacción creada",
-				description: "La nueva transacción se ha registrado exitosamente.",
+			await executeMutation({
+				mutation: () => createTransaction({ input: createData }),
+				loading: "Creando transacción...",
+				success: "Transacción creada exitosamente",
+				onSuccess: () => {
+					router.push("/transactions");
+				},
 			});
-			router.push("/transactions");
 		} catch (error) {
+			// Error is already handled by executeMutation via Sonner
 			console.error("Error creating transaction:", error);
-			toast({
-				title: "Error",
-				description: "No se pudo crear la transacción.",
-				variant: "destructive",
-			});
 		} finally {
 			setIsSaving(false);
 		}
@@ -217,9 +233,9 @@ export function TransactionCreateView(): React.JSX.Element {
 						onClick={handleCancel}
 					>
 						<ArrowLeft className="h-4 w-4" />
-						Volver
+						<span className="hidden sm:inline">Volver</span>
 					</Button>
-					<Separator orientation="vertical" className="h-6" />
+					<Separator orientation="vertical" className="hidden h-6 sm:block" />
 					<div>
 						<h1 className="text-xl font-semibold text-foreground">
 							Nueva Transacción
@@ -423,23 +439,6 @@ export function TransactionCreateView(): React.JSX.Element {
 									</div>
 									<div className="space-y-2">
 										<LabelWithInfo
-											htmlFor="repuve"
-											description={getFieldDescription("repuve")}
-										>
-											REPUVE (Registro Público Vehicular)
-										</LabelWithInfo>
-										<Input
-											id="repuve"
-											value={formData.repuve}
-											onChange={(e) =>
-												handleInputChange("repuve", e.target.value)
-											}
-											placeholder="8 caracteres"
-											maxLength={8}
-										/>
-									</div>
-									<div className="space-y-2">
-										<LabelWithInfo
 											htmlFor="plates"
 											description={getFieldDescription("plates")}
 										>
@@ -467,8 +466,15 @@ export function TransactionCreateView(): React.JSX.Element {
 											onChange={(e) =>
 												handleInputChange("engineNumber", e.target.value)
 											}
-											placeholder="Opcional"
+											placeholder="Número de motor"
 										/>
+									</div>
+									<div className="col-span-full">
+										<p className="text-sm text-muted-foreground">
+											<strong>Nota:</strong> Para vehículos terrestres, debe
+											proporcionar al menos uno de: Placas, VIN o Número de
+											motor.
+										</p>
 									</div>
 								</>
 							)}

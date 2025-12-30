@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { getTransactionStats } from "../../lib/api/stats";
 import { useToast } from "../../hooks/use-toast";
+import { ApiError } from "../../lib/api/http";
 
 interface KpiCardProps {
 	title: string;
@@ -121,7 +122,21 @@ export function TransactionsKPICards(): React.ReactElement {
 				const data = await getTransactionStats();
 				setStats(data);
 			} catch (error) {
-				console.error("Error fetching transaction stats:", error);
+				// Enhanced error logging for debugging API issues
+				if (error instanceof ApiError) {
+					console.error(
+						"[TransactionsKPICards] API error fetching transaction stats:",
+						`status=${error.status}`,
+						`message=${error.message}`,
+						"body=",
+						error.body,
+					);
+				} else {
+					console.error(
+						"[TransactionsKPICards] Error fetching transaction stats:",
+						error instanceof Error ? error.message : error,
+					);
+				}
 				toast({
 					title: "Error",
 					description: "No se pudieron cargar las estadísticas.",

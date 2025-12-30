@@ -27,7 +27,6 @@ import type { Client } from "../../types/client";
 import { getClientDisplayName } from "../../types/client";
 import { getClientByRfc } from "../../lib/api/clients";
 import { useToast } from "../../hooks/use-toast";
-import { useJwt } from "../../hooks/useJwt";
 
 interface ClientDetailsViewProps {
 	clientId: string; // RFC is passed as clientId
@@ -38,20 +37,15 @@ export function ClientDetailsView({
 }: ClientDetailsViewProps): React.JSX.Element {
 	const router = useRouter();
 	const { toast } = useToast();
-	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const [client, setClient] = useState<Client | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 
 	useEffect(() => {
-		// Wait for JWT to be ready
-		if (isJwtLoading) return;
-
 		const fetchClient = async () => {
 			try {
 				setIsLoading(true);
 				const data = await getClientByRfc({
 					rfc: clientId,
-					jwt: jwt ?? undefined,
 				});
 				setClient(data);
 			} catch (error) {
@@ -66,7 +60,7 @@ export function ClientDetailsView({
 			}
 		};
 		fetchClient();
-	}, [clientId, toast, jwt, isJwtLoading]);
+	}, [clientId, toast]);
 
 	if (isLoading) {
 		return (
@@ -133,9 +127,9 @@ export function ClientDetailsView({
 						onClick={() => router.push("/clients")}
 					>
 						<ArrowLeft className="h-4 w-4" />
-						Volver
+						<span className="hidden sm:inline">Volver</span>
 					</Button>
-					<Separator orientation="vertical" className="h-6" />
+					<Separator orientation="vertical" className="hidden h-6 sm:block" />
 					<div>
 						<h1 className="text-xl font-semibold text-foreground">
 							Detalles del Cliente

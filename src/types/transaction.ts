@@ -42,7 +42,7 @@ export interface Transaction {
 
 export interface TransactionCreateRequest {
 	clientId: string;
-	operationDate: string; // date-time format
+	operationDate: string; // date format (YYYY-MM-DD)
 	operationType: TransactionOperationType;
 	branchPostalCode: string;
 	vehicleType: TransactionVehicleType;
@@ -63,7 +63,7 @@ export interface TransactionCreateRequest {
 }
 
 export interface TransactionUpdateRequest {
-	operationDate: string; // date-time format
+	operationDate: string; // date format (YYYY-MM-DD)
 	operationType: TransactionOperationType;
 	branchPostalCode: string;
 	vehicleType: TransactionVehicleType;
