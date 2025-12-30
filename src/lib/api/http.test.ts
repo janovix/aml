@@ -212,4 +212,32 @@ describe("api/http fetchJson", () => {
 			}),
 		);
 	});
+
+	it("handles missing content-type header gracefully", async () => {
+		const mockFetch = vi.fn(async () => {
+			return new Response("ok", {
+				status: 200,
+				// No content-type header
+			});
+		});
+		vi.stubGlobal("fetch", mockFetch);
+
+		const res = await fetchJson<string>("https://example.com");
+		expect(res.json).toBe("ok");
+	});
+
+	it("handles null content-type header gracefully", async () => {
+		const mockFetch = vi.fn(async () => {
+			const response = new Response("ok", {
+				status: 200,
+			});
+			// Mock headers.get to return null
+			vi.spyOn(response.headers, "get").mockReturnValue(null);
+			return response;
+		});
+		vi.stubGlobal("fetch", mockFetch);
+
+		const res = await fetchJson<string>("https://example.com");
+		expect(res.json).toBe("ok");
+	});
 });

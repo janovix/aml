@@ -43,4 +43,25 @@ describe("TransactionDetailsView", () => {
 			{ timeout: 3000 },
 		);
 	});
+
+	it("displays formatted payment amount", async () => {
+		const transaction = mockTransactions[0];
+		vi.mocked(transactionsApi.getTransactionById).mockResolvedValue(
+			transaction,
+		);
+
+		render(<TransactionDetailsView transactionId="TRX-2024-001" />);
+
+		await waitFor(
+			() => {
+				// Check that the formatted amount is displayed (e.g., "$450,000.00" for MXN)
+				const formattedAmount = new Intl.NumberFormat("es-MX", {
+					style: "currency",
+					currency: transaction.currency,
+				}).format(parseFloat(transaction.amount));
+				expect(screen.getByText(formattedAmount)).toBeInTheDocument();
+			},
+			{ timeout: 3000 },
+		);
+	});
 });

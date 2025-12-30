@@ -7,6 +7,9 @@ vi.mock("next/navigation", () => ({
 		push: vi.fn(),
 	}),
 	usePathname: () => "/transactions/new",
+	useSearchParams: () => ({
+		get: () => null,
+	}),
 }));
 
 describe("TransactionCreateView", () => {

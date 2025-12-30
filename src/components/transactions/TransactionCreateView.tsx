@@ -1,8 +1,8 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
 	Button,
 	Card,
@@ -56,6 +56,8 @@ interface TransactionFormData {
 
 export function TransactionCreateView(): React.JSX.Element {
 	const router = useRouter();
+	const pathname = usePathname();
+	const searchParams = useSearchParams();
 	const [isSaving, setIsSaving] = useState(false);
 
 	const [formData, setFormData] = useState<TransactionFormData>({
@@ -77,6 +79,19 @@ export function TransactionCreateView(): React.JSX.Element {
 		currency: "MXN",
 		paymentMethods: [{ method: "EFECTIVO", amount: "" }],
 	});
+
+	// Auto-select client from URL params (after returning from client creation)
+	useEffect(() => {
+		const clientIdFromUrl = searchParams.get("clientId");
+		if (clientIdFromUrl && !formData.clientId) {
+			setFormData((prev) => ({ ...prev, clientId: clientIdFromUrl }));
+		}
+	}, [searchParams, formData.clientId]);
+
+	const handleCreateNewClient = (): void => {
+		const returnUrl = encodeURIComponent(pathname);
+		router.push(`/clients/new?returnUrl=${returnUrl}`);
+	};
 
 	const handleInputChange = (
 		field: keyof TransactionFormData,
@@ -284,6 +299,7 @@ export function TransactionCreateView(): React.JSX.Element {
 									onValueChange={(value) =>
 										handleInputChange("clientId", value || "")
 									}
+									onCreateNew={handleCreateNewClient}
 									required
 								/>
 							</div>

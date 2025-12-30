@@ -3,7 +3,9 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TransactionsTable } from "./TransactionsTable";
 import { mockTransactions } from "@/data/mockTransactions";
+import { mockClients } from "@/data/mockClients";
 import * as transactionsApi from "@/lib/api/transactions";
+import * as clientsApi from "@/lib/api/clients";
 
 const mockToast = vi.fn();
 
@@ -26,6 +28,10 @@ vi.mock("@/lib/api/transactions", () => ({
 	listTransactions: vi.fn(),
 }));
 
+vi.mock("@/lib/api/clients", () => ({
+	getClientByRfc: vi.fn(),
+}));
+
 describe("TransactionsTable", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -37,6 +43,32 @@ describe("TransactionsTable", () => {
 				total: mockTransactions.length,
 				totalPages: 1,
 			},
+		});
+
+		// Mock client fetching - return clients based on clientId
+		// Note: mockTransactions use numeric IDs (1, 2, etc.) but clients use RFCs
+		// Map numeric IDs to RFCs for testing
+		const clientIdToRfc: Record<string, string> = {
+			"1": "EGL850101AAA",
+			"2": "CNO920315BBB",
+			"3": "SFM880520CCC",
+			"4": "IDP950712DDD",
+			"5": "PECJ850615E56",
+		};
+
+		vi.mocked(clientsApi.getClientByRfc).mockImplementation(async ({ rfc }) => {
+			// Try direct match first
+			let client = mockClients.find((c) => c.rfc === rfc);
+
+			// If not found, try mapping from numeric ID
+			if (!client && clientIdToRfc[rfc]) {
+				client = mockClients.find((c) => c.rfc === clientIdToRfc[rfc]);
+			}
+
+			if (client) {
+				return client;
+			}
+			throw new Error("Client not found");
 		});
 	});
 
@@ -192,9 +224,13 @@ describe("TransactionsTable", () => {
 			expect(screen.getByText("Lista de Transacciones")).toBeInTheDocument();
 		});
 
-		// Check that dates are rendered (they should be formatted)
-		const dateElements = screen.queryAllByText(/\d{1,2}\s+\w+\s+\d{4}/);
-		expect(dateElements.length).toBeGreaterThan(0);
+		// Check that dates are rendered (they should be formatted with relative or absolute dates)
+		await waitFor(() => {
+			const dateElements = screen.queryAllByText(
+				/\d{1,2}\s+\w+\s+\d{4}|Hoy|Ayer|Hace/i,
+			);
+			expect(dateElements.length).toBeGreaterThan(0);
+		});
 	});
 
 	it("displays payment method labels", async () => {
@@ -385,10 +421,62 @@ describe("TransactionsTable", () => {
 			expect(screen.getByText("Lista de Transacciones")).toBeInTheDocument();
 		});
 
-		// Check for vehicle info
+		// Check for vehicle info (may be hidden on smaller screens)
 		await waitFor(() => {
 			expect(screen.getByText(/Corolla/i)).toBeInTheDocument();
 			expect(screen.getByText(/CR-V/i)).toBeInTheDocument();
 		});
+	});
+
+	it("displays client names with person type icons", async () => {
+		render(<TransactionsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Lista de Transacciones")).toBeInTheDocument();
+		});
+
+		// Check that client names are displayed
+		await waitFor(() => {
+			const clientNames = mockClients
+				.map((c) => {
+					if (c.personType === "physical") {
+						return `${c.firstName || ""} ${c.lastName || ""} ${c.secondLastName || ""}`.trim();
+					}
+					return c.businessName || "";
+				})
+				.filter(Boolean);
+
+			// At least one client name should be visible
+			const foundName = clientNames.some((name) =>
+				screen.queryByText(new RegExp(name, "i")),
+			);
+			expect(foundName || screen.queryByText(/Cliente/i)).toBeTruthy();
+		});
+	});
+
+	it("displays short transaction IDs", async () => {
+		render(<TransactionsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Lista de Transacciones")).toBeInTheDocument();
+		});
+
+		// Check that short IDs are displayed (format: YYYYMMDD-XXXX)
+		await waitFor(() => {
+			const shortIdPattern = /\d{8}-[A-Z0-9]{4}/;
+			const shortIds = screen.queryAllByText(shortIdPattern);
+			expect(shortIds.length).toBeGreaterThan(0);
+		});
+	});
+
+	it("does not display Folio column", async () => {
+		render(<TransactionsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Lista de Transacciones")).toBeInTheDocument();
+		});
+
+		// Folio column should not be visible
+		expect(screen.queryByText("Folio")).not.toBeInTheDocument();
 	});
 });

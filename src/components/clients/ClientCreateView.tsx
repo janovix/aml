@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
 	Button,
 	Card,
@@ -57,6 +57,8 @@ interface ClientFormData {
 
 export function ClientCreateView(): React.JSX.Element {
 	const router = useRouter();
+	const searchParams = useSearchParams();
+	const returnUrl = searchParams.get("returnUrl");
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const [formData, setFormData] = useState<ClientFormData>({
@@ -142,8 +144,14 @@ export function ClientCreateView(): React.JSX.Element {
 				mutation: () => createClient({ input: request }),
 				loading: "Creando cliente...",
 				success: "Cliente creado exitosamente",
-				onSuccess: () => {
-					router.push("/clients");
+				onSuccess: (client) => {
+					if (returnUrl) {
+						// Append client ID to return URL for auto-selection
+						const separator = returnUrl.includes("?") ? "&" : "?";
+						router.push(`${returnUrl}${separator}clientId=${client.id}`);
+					} else {
+						router.push("/clients");
+					}
 				},
 			});
 		} catch (error) {
@@ -155,7 +163,11 @@ export function ClientCreateView(): React.JSX.Element {
 	};
 
 	const handleCancel = (): void => {
-		router.push("/clients");
+		if (returnUrl) {
+			router.push(returnUrl);
+		} else {
+			router.push("/clients");
+		}
 	};
 
 	return (

@@ -310,7 +310,12 @@ export function TransactionDetailsView({
 								<p className="text-sm font-medium text-muted-foreground">
 									Monto
 								</p>
-								<p className="text-3xl font-bold mt-1">{transaction.amount}</p>
+								<p className="text-3xl font-bold mt-1">
+									{new Intl.NumberFormat("es-MX", {
+										style: "currency",
+										currency: transaction.currency,
+									}).format(parseFloat(transaction.amount))}
+								</p>
 								<p className="text-xs text-muted-foreground mt-1">
 									{transaction.currency}
 								</p>
