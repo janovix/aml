@@ -4,14 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TransactionsTable } from "@/components/transactions/TransactionsTable";
 import { PageHero, type StatCard } from "@/components/page-hero";
-import {
-	DollarSign,
-	Package,
-	Calendar,
-	AlertCircle,
-	Receipt,
-	Plus,
-} from "lucide-react";
+import { DollarSign, Calendar, AlertCircle, Receipt, Plus } from "lucide-react";
 import { getTransactionStats } from "@/lib/api/stats";
 import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@/lib/api/http";
@@ -102,15 +95,6 @@ export function TransactionsPageContent(): React.ReactElement {
 					? formatCurrency(stats.totalVolume)
 					: "$0",
 			icon: DollarSign,
-		},
-		{
-			label: "Total Vehículos",
-			value: isLoading
-				? "..."
-				: stats?.totalVehicles
-					? formatNumber(stats.totalVehicles)
-					: "0",
-			icon: Package,
 		},
 	];
 

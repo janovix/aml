@@ -9,7 +9,7 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -29,6 +29,7 @@ import {
 import type { CatalogItem } from "@/types/catalog";
 import { useCatalogSearch } from "@/hooks/useCatalogSearch";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
+import { AddCatalogItemDialog } from "./AddCatalogItemDialog";
 
 type OptionRenderer = (
 	option: CatalogItem,
@@ -137,6 +138,7 @@ export function CatalogSelector({
 
 	const {
 		items,
+		catalog,
 		pagination,
 		loading,
 		loadingMore,
@@ -144,6 +146,7 @@ export function CatalogSelector({
 		searchTerm,
 		setSearchTerm,
 		loadMore,
+		reload,
 		hasMore,
 	} = useCatalogSearch({
 		catalogKey,
@@ -151,6 +154,10 @@ export function CatalogSelector({
 		debounceMs,
 		enabled: !disabled,
 	});
+
+	// State for "Add new item" dialog
+	const [addDialogOpen, setAddDialogOpen] = useState(false);
+	const allowNewItems = catalog?.allowNewItems ?? false;
 
 	const mappedItems = useMemo(
 		() =>
@@ -277,6 +284,29 @@ export function CatalogSelector({
 		setShowResults(next);
 	};
 
+	const handleAddNewClick = useCallback((): void => {
+		setOpen(false);
+		setAddDialogOpen(true);
+	}, []);
+
+	const handleItemCreated = useCallback(
+		(newItem: CatalogItem): void => {
+			// Reload the catalog to include the new item
+			reload();
+
+			// Select the newly created item
+			setSelectedOption(newItem);
+			setSelectedLabel(newItem.name);
+
+			const optionValue = getOptionValue
+				? getOptionValue(newItem)
+				: (newItem.id ?? newItem.name);
+			onValueChange?.(optionValue);
+			onChange?.(newItem);
+		},
+		[reload, getOptionValue, onValueChange, onChange],
+	);
+
 	// Handle infinite scroll
 	const handleScroll = useCallback(async () => {
 		const list = listRef.current;
@@ -395,7 +425,23 @@ export function CatalogSelector({
 							<>
 								<CommandList ref={listRef} className="max-h-[300px]">
 									{mappedItems.length === 0 ? (
-										<CommandEmpty>{emptyState}</CommandEmpty>
+										<CommandEmpty>
+											<div className="flex flex-col items-center gap-2 py-2">
+												<span>{emptyState}</span>
+												{allowNewItems && searchTerm.trim() && (
+													<Button
+														type="button"
+														variant="outline"
+														size="sm"
+														onClick={handleAddNewClick}
+														className="mt-2"
+													>
+														<Plus className="mr-2 h-4 w-4" />
+														Agregar &quot;{searchTerm.trim()}&quot;
+													</Button>
+												)}
+											</div>
+										</CommandEmpty>
 									) : (
 										<CommandGroup heading="Resultados">
 											{mappedItems.map(({ item, value: optionValue }) => {
@@ -416,6 +462,19 @@ export function CatalogSelector({
 													</CommandItem>
 												);
 											})}
+											{allowNewItems && searchTerm.trim() && (
+												<CommandItem
+													key="__add_new__"
+													value="__add_new__"
+													onSelect={handleAddNewClick}
+													className="text-primary"
+												>
+													<div className="flex items-center gap-2">
+														<Plus className="h-4 w-4" />
+														<span>Agregar &quot;{searchTerm.trim()}&quot;</span>
+													</div>
+												</CommandItem>
+											)}
 										</CommandGroup>
 									)}
 									{loadingMore && (
@@ -444,6 +503,15 @@ export function CatalogSelector({
 			{helperText && (
 				<p className="text-xs text-muted-foreground">{helperText}</p>
 			)}
+
+			<AddCatalogItemDialog
+				open={addDialogOpen}
+				onOpenChange={setAddDialogOpen}
+				catalogKey={catalogKey}
+				catalogName={catalog?.name}
+				initialValue={searchTerm.trim()}
+				onItemCreated={handleItemCreated}
+			/>
 		</div>
 	);
 }

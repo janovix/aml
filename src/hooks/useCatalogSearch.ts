@@ -1,7 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { CatalogItem, CatalogPagination } from "@/types/catalog";
+import type {
+	CatalogInfo,
+	CatalogItem,
+	CatalogPagination,
+} from "@/types/catalog";
 import { fetchCatalogEntries } from "@/lib/catalogs";
 
 interface UseCatalogSearchOptions {
@@ -14,6 +18,7 @@ interface UseCatalogSearchOptions {
 
 interface UseCatalogSearchResult {
 	items: CatalogItem[];
+	catalog: CatalogInfo | null;
 	pagination: CatalogPagination | null;
 	loading: boolean;
 	loadingMore: boolean;
@@ -35,6 +40,7 @@ export function useCatalogSearch({
 	const [searchTerm, setSearchTerm] = useState(initialSearch);
 	const [debouncedSearch, setDebouncedSearch] = useState(initialSearch.trim());
 	const [items, setItems] = useState<CatalogItem[]>([]);
+	const [catalog, setCatalog] = useState<CatalogInfo | null>(null);
 	const [pagination, setPagination] = useState<CatalogPagination | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [loadingMore, setLoadingMore] = useState(false);
@@ -93,6 +99,7 @@ export function useCatalogSearch({
 				}
 
 				setItems(response.data);
+				setCatalog(response.catalog);
 				setPagination(response.pagination);
 				setCurrentPage(1);
 			})
@@ -175,6 +182,7 @@ export function useCatalogSearch({
 	return useMemo(
 		() => ({
 			items,
+			catalog,
 			pagination,
 			loading,
 			loadingMore,
@@ -187,6 +195,7 @@ export function useCatalogSearch({
 		}),
 		[
 			items,
+			catalog,
 			pagination,
 			loading,
 			loadingMore,

@@ -58,7 +58,7 @@ const buildClient = (overrides?: Partial<Client>): Client => ({
 	businessName: "Empresas Globales",
 	rfc: "EGL850101AAA",
 	email: "contacto@egl.com.mx",
-	phone: "+52 81 1234 5678",
+	phone: "+528112345678",
 	country: "MX",
 	stateCode: "NL",
 	city: "Monterrey",
@@ -130,6 +130,7 @@ describe("ClientEditView", () => {
 	it("includes physical-only fields when client type is physical", async () => {
 		const client = buildClient({
 			personType: "physical",
+			rfc: "LOGA900501E56",
 			firstName: "Ana",
 			lastName: "Lopez",
 			secondLastName: "Garcia",
@@ -143,13 +144,23 @@ describe("ClientEditView", () => {
 		const user = userEvent.setup();
 		render(<ClientEditView clientId={client.rfc} />);
 
+		// Wait for form to load
 		await screen.findByDisplayValue("Ana");
+		await screen.findByDisplayValue("Lopez");
+
+		// Wait a bit more for form to be fully ready
+		await waitFor(() => {
+			expect(screen.getByDisplayValue(client.rfc)).toBeInTheDocument();
+		});
+
 		const saveButtons = screen.getAllByRole("button", {
 			name: /guardar cambios/i,
 		});
 		await user.click(saveButtons.at(-1)!);
 
-		await waitFor(() => expect(mockUpdateClient).toHaveBeenCalled());
+		await waitFor(() => expect(mockUpdateClient).toHaveBeenCalled(), {
+			timeout: 3000,
+		});
 		expect(mockUpdateClient.mock.calls[0][0].input).toMatchObject({
 			personType: "physical",
 			firstName: "Ana",

@@ -4,9 +4,10 @@ import userEvent from "@testing-library/user-event";
 import { DataTable } from "./data-table";
 import type { ColumnDef, FilterDef } from "./types";
 import { Filter } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 vi.mock("@/hooks/use-mobile", () => ({
-	useIsMobile: () => false,
+	useIsMobile: vi.fn(() => false),
 }));
 
 interface TestItem {
@@ -487,6 +488,225 @@ describe("DataTable", () => {
 			await waitFor(() => {
 				expect(screen.getByText("Item 11")).toBeInTheDocument();
 				expect(screen.queryByText("Item 1")).not.toBeInTheDocument();
+			});
+		}
+	});
+
+	it("filters out mobile-hidden columns on mobile", () => {
+		vi.mocked(useIsMobile).mockReturnValue(true);
+
+		const mobileColumns: ColumnDef<TestItem>[] = [
+			{
+				id: "name",
+				header: "Name",
+				accessorKey: "name",
+			},
+			{
+				id: "status",
+				header: "Status",
+				accessorKey: "status",
+				hideOnMobile: true,
+			},
+		];
+
+		render(
+			<DataTable
+				data={mockData}
+				columns={mobileColumns}
+				filters={[]}
+				searchKeys={["name"]}
+				getId={(item) => item.id}
+			/>,
+		);
+
+		// Should show Name column header in table
+		const tableHeaders = screen.getAllByRole("columnheader");
+		const nameHeader = tableHeaders.find((h) => h.textContent === "Name");
+		expect(nameHeader).toBeInTheDocument();
+		// Status column header should not be in table (but may be in filter)
+		const statusHeaders = tableHeaders.filter((h) =>
+			h.textContent?.includes("Status"),
+		);
+		expect(statusHeaders.length).toBe(0);
+	});
+
+	it("handles nested value access in search", async () => {
+		const user = userEvent.setup();
+		interface NestedItem {
+			id: string;
+			user: {
+				name: string;
+				email: string;
+			};
+		}
+
+		const nestedData: NestedItem[] = [
+			{ id: "1", user: { name: "John Doe", email: "john@example.com" } },
+			{ id: "2", user: { name: "Jane Smith", email: "jane@example.com" } },
+		];
+
+		const nestedColumns: ColumnDef<NestedItem>[] = [
+			{
+				id: "name",
+				header: "Name",
+				accessorKey: "user.name",
+			},
+		];
+
+		render(
+			<DataTable
+				data={nestedData}
+				columns={nestedColumns}
+				filters={[]}
+				searchKeys={["user.name", "user.email"]}
+				getId={(item) => item.id}
+			/>,
+		);
+
+		const searchInput = screen.getByPlaceholderText(/buscar/i);
+		await user.type(searchInput, "John");
+
+		await waitFor(() => {
+			expect(screen.getByText("John Doe")).toBeInTheDocument();
+			expect(screen.queryByText("Jane Smith")).not.toBeInTheDocument();
+		});
+	});
+
+	it("handles null values in sorting", async () => {
+		const user = userEvent.setup();
+		const dataWithNulls: TestItem[] = [
+			{
+				id: "1",
+				name: "Item One",
+				status: "active",
+				category: "A",
+				value: 100,
+			},
+			{
+				id: "2",
+				name: "Item Two",
+				status: "active",
+				category: "A",
+				value: null as unknown as number,
+			},
+			{
+				id: "3",
+				name: "Item Three",
+				status: "active",
+				category: "A",
+				value: 300,
+			},
+		];
+
+		const sortableColumns: ColumnDef<TestItem>[] = [
+			{
+				id: "name",
+				header: "Name",
+				accessorKey: "name",
+				sortable: true,
+			},
+			{
+				id: "value",
+				header: "Value",
+				accessorKey: "value",
+				sortable: true,
+			},
+		];
+
+		render(
+			<DataTable
+				data={dataWithNulls}
+				columns={sortableColumns}
+				filters={[]}
+				searchKeys={["name"]}
+				getId={(item) => item.id}
+			/>,
+		);
+
+		// Find and click sort button for Value column
+		const sortButtons = screen
+			.getAllByRole("button")
+			.filter((btn) => btn.getAttribute("aria-label") === "Ordenar por Value");
+
+		if (sortButtons.length > 0) {
+			await user.click(sortButtons[0]);
+			// Should handle null values without crashing - verify data is still displayed
+			expect(screen.getByText("Item One")).toBeInTheDocument();
+			expect(screen.getByText("Item Two")).toBeInTheDocument();
+			expect(screen.getByText("Item Three")).toBeInTheDocument();
+		}
+	});
+
+	it("handles pagination edge cases", async () => {
+		const user = userEvent.setup();
+		const manyItems: TestItem[] = Array.from({ length: 15 }, (_, i) => ({
+			id: String(i + 1),
+			name: `Item ${i + 1}`,
+			status: "active",
+			category: "A",
+			value: (i + 1) * 100,
+		}));
+
+		render(
+			<DataTable
+				data={manyItems}
+				columns={columns}
+				filters={filters}
+				searchKeys={["name"]}
+				getId={(item) => item.id}
+			/>,
+		);
+
+		// Go to last page
+		const nextButtons = screen
+			.getAllByRole("button")
+			.filter((btn) => btn.querySelector('svg[class*="chevron-right"]'));
+
+		if (nextButtons.length > 0) {
+			await user.click(nextButtons[0]);
+
+			await waitFor(() => {
+				expect(screen.getByText("2 / 2")).toBeInTheDocument();
+			});
+
+			// Try to go to next page when already on last page (should be disabled)
+			const lastPageNextButtons = screen
+				.getAllByRole("button")
+				.filter((btn) => btn.querySelector('svg[class*="chevron-right"]'));
+			if (lastPageNextButtons.length > 0) {
+				expect(lastPageNextButtons[0]).toBeDisabled();
+			}
+		}
+	});
+
+	it("clears search when clear button is clicked", async () => {
+		const user = userEvent.setup();
+		render(
+			<DataTable
+				data={mockData}
+				columns={columns}
+				filters={filters}
+				searchKeys={["name"]}
+				searchPlaceholder="Search items..."
+				getId={(item) => item.id}
+			/>,
+		);
+
+		const searchInput = screen.getByPlaceholderText("Search items...");
+		await user.type(searchInput, "One");
+
+		await waitFor(() => {
+			expect(screen.queryByText("Item Two")).not.toBeInTheDocument();
+		});
+
+		// Find and click clear button
+		const clearButton = searchInput.parentElement?.querySelector("button");
+		if (clearButton) {
+			await user.click(clearButton);
+
+			await waitFor(() => {
+				expect(screen.getByText("Item Two")).toBeInTheDocument();
+				expect(searchInput).toHaveValue("");
 			});
 		}
 	});

@@ -75,10 +75,14 @@ describe("TransactionsPageContent", () => {
 	it("renders KPI cards", () => {
 		render(<TransactionsPageContent />);
 
-		const totalElements = screen.getAllByText("Volumen Total");
-		const montoElements = screen.getAllByText("Total Vehículos");
-		expect(totalElements.length).toBeGreaterThan(0);
-		expect(montoElements.length).toBeGreaterThan(0);
+		const transaccionesHoy = screen.getAllByText("Transacciones Hoy");
+		const transaccionesSospechosas = screen.getAllByText(
+			"Transacciones Sospechosas",
+		);
+		const volumenTotal = screen.getAllByText("Volumen Total");
+		expect(transaccionesHoy.length).toBeGreaterThan(0);
+		expect(transaccionesSospechosas.length).toBeGreaterThan(0);
+		expect(volumenTotal.length).toBeGreaterThan(0);
 	});
 
 	it("renders transactions table with built-in search", () => {
@@ -272,18 +276,17 @@ describe("TransactionsPageContent", () => {
 		expect(volumeLabels.length).toBeGreaterThan(0);
 	});
 
-	it("handles null totalVehicles", async () => {
-		vi.mocked(statsApi.getTransactionStats).mockResolvedValue({
-			transactionsToday: 15,
-			suspiciousTransactions: 3,
-			totalVolume: "1500000.00",
-			totalVehicles: null as unknown as number,
-		});
-
+	it("renders maximum of 3 stat cards", () => {
 		render(<TransactionsPageContent />);
 
-		// Should display "0" for null vehicles
-		const vehicleLabels = screen.getAllByText("Total Vehículos");
-		expect(vehicleLabels.length).toBeGreaterThan(0);
+		// Should render exactly 3 stat cards
+		const transaccionesHoy = screen.getAllByText("Transacciones Hoy");
+		const transaccionesSospechosas = screen.getAllByText(
+			"Transacciones Sospechosas",
+		);
+		const volumenTotal = screen.getAllByText("Volumen Total");
+		expect(transaccionesHoy.length).toBeGreaterThan(0);
+		expect(transaccionesSospechosas.length).toBeGreaterThan(0);
+		expect(volumenTotal.length).toBeGreaterThan(0);
 	});
 });

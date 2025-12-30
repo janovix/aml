@@ -140,6 +140,25 @@ describe("api/http fetchJson", () => {
 		);
 	});
 
+	it("handles undefined JWT parameter", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				return new Response(JSON.stringify({ ok: true }), {
+					status: 200,
+					headers: { "content-type": "application/json" },
+				});
+			}),
+		);
+
+		const res = await fetchJson<{ ok: boolean }>("https://example.com", {
+			jwt: undefined,
+		});
+
+		expect(res.status).toBe(200);
+		expect(res.json).toEqual({ ok: true });
+	});
+
 	it("does not auto-fetch JWT in test environment when jwt is undefined", async () => {
 		const mockFetch = vi.fn(async () => {
 			return new Response(JSON.stringify({ ok: true }), {
@@ -239,5 +258,99 @@ describe("api/http fetchJson", () => {
 
 		const res = await fetchJson<string>("https://example.com");
 		expect(res.json).toBe("ok");
+	});
+
+	it("handles JWT when provided explicitly", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				return new Response(JSON.stringify({ ok: true }), {
+					status: 200,
+					headers: { "content-type": "application/json" },
+				});
+			}),
+		);
+
+		const res = await fetchJson<{ ok: boolean }>("https://example.com", {
+			jwt: "test-jwt-token",
+		});
+
+		expect(res.status).toBe(200);
+		expect(res.json).toEqual({ ok: true });
+	});
+
+	it("handles null JWT", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				return new Response(JSON.stringify({ ok: true }), {
+					status: 200,
+					headers: { "content-type": "application/json" },
+				});
+			}),
+		);
+
+		const res = await fetchJson<{ ok: boolean }>("https://example.com", {
+			jwt: null,
+		});
+
+		expect(res.status).toBe(200);
+		expect(res.json).toEqual({ ok: true });
+	});
+
+	it("handles fetch with custom headers", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				return new Response(JSON.stringify({ ok: true }), {
+					status: 200,
+					headers: { "content-type": "application/json" },
+				});
+			}),
+		);
+
+		const res = await fetchJson<{ ok: boolean }>("https://example.com", {
+			headers: { "X-Custom-Header": "custom-value" },
+		});
+
+		expect(res.status).toBe(200);
+		expect(res.json).toEqual({ ok: true });
+	});
+
+	it("handles fetch with method option", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				return new Response(JSON.stringify({ ok: true }), {
+					status: 200,
+					headers: { "content-type": "application/json" },
+				});
+			}),
+		);
+
+		const res = await fetchJson<{ ok: boolean }>("https://example.com", {
+			method: "POST",
+		});
+
+		expect(res.status).toBe(200);
+		expect(res.json).toEqual({ ok: true });
+	});
+
+	it("handles JSON parsing error gracefully", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				// Return a response that claims to be JSON but fails to parse
+				const response = new Response("invalid json {", {
+					status: 200,
+					headers: { "content-type": "application/json" },
+				});
+				return response;
+			}),
+		);
+
+		const res = await fetchJson<unknown>("https://example.com");
+		// When JSON parsing fails, it should return null
+		expect(res.json).toBeNull();
 	});
 });

@@ -34,6 +34,22 @@ import type {
 import { CatalogSelector } from "../catalogs/CatalogSelector";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
 import { getFieldDescription } from "../../lib/field-descriptions";
+import { validateVIN } from "../../lib/utils";
+
+function getVehicleBrandCatalogKey(
+	vehicleType: TransactionVehicleType,
+): string {
+	switch (vehicleType) {
+		case "land":
+			return "terrestrial-vehicle-brands";
+		case "marine":
+			return "maritime-vehicle-brands";
+		case "air":
+			return "air-vehicle-brands";
+		default:
+			return "terrestrial-vehicle-brands"; // Default fallback
+	}
+}
 
 interface TransactionEditViewProps {
 	transactionId: string;
@@ -68,6 +84,10 @@ export function TransactionEditView({
 		] as PaymentMethodInput[],
 		paymentDate: "",
 	});
+
+	const [validationErrors, setValidationErrors] = useState<{
+		vin?: string;
+	}>({});
 
 	useEffect(() => {
 		const fetchTransaction = async () => {
@@ -140,6 +160,20 @@ export function TransactionEditView({
 			const hasVIN = formData.vin && formData.vin.trim().length > 0;
 			const hasEngineNumber =
 				formData.engineNumber && formData.engineNumber.trim().length > 0;
+
+			// Validate VIN format if provided
+			if (hasVIN) {
+				const vinValidation = validateVIN(formData.vin || "");
+				if (!vinValidation.isValid) {
+					setValidationErrors({ vin: vinValidation.error });
+					toast({
+						title: "Error de validación",
+						description: vinValidation.error,
+						variant: "destructive",
+					});
+					return false;
+				}
+			}
 
 			if (!hasPlates && !hasVIN && !hasEngineNumber) {
 				toast({
@@ -221,7 +255,17 @@ export function TransactionEditView({
 	};
 
 	const handleChange = (field: string, value: string): void => {
-		setFormData((prev) => ({ ...prev, [field]: value }));
+		setFormData((prev) => {
+			// When vehicle type changes, reset the brand since catalogs are different
+			if (field === "vehicleType" && prev.vehicleType !== value) {
+				return {
+					...prev,
+					vehicleType: value as TransactionVehicleType,
+					brand: "",
+				};
+			}
+			return { ...prev, [field]: value } as typeof prev;
+		});
 	};
 
 	const handlePaymentMethodChange = (
@@ -437,22 +481,15 @@ export function TransactionEditView({
 						<Separator />
 
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<div className="space-y-2">
-								<LabelWithInfo
-									htmlFor="brand"
-									description={getFieldDescription("brand")}
-									required
-								>
-									Marca
-								</LabelWithInfo>
-								<Input
-									id="brand"
-									value={formData.brand}
-									onChange={(e) => handleChange("brand", e.target.value)}
-									placeholder="Toyota, Honda, BMW, etc."
-									required
-								/>
-							</div>
+							<CatalogSelector
+								catalogKey={getVehicleBrandCatalogKey(formData.vehicleType)}
+								label="Marca"
+								labelDescription={getFieldDescription("brand")}
+								value={formData.brand}
+								searchPlaceholder="Buscar marca..."
+								required
+								onChange={(option) => handleChange("brand", option?.id ?? "")}
+							/>
 
 							<div className="space-y-2">
 								<Label htmlFor="model">Modelo *</Label>
@@ -491,10 +528,31 @@ export function TransactionEditView({
 										<Input
 											id="vin"
 											value={formData.vin}
-											onChange={(e) => handleChange("vin", e.target.value)}
+											onChange={(e) => {
+												handleChange("vin", e.target.value);
+												// Clear error when user starts typing
+												if (validationErrors.vin) {
+													setValidationErrors((prev) => ({
+														...prev,
+														vin: undefined,
+													}));
+												}
+											}}
 											placeholder="17 caracteres"
 											maxLength={17}
+											className={
+												validationErrors.vin ? "border-destructive" : ""
+											}
 										/>
+										{validationErrors.vin ? (
+											<p className="text-xs text-destructive">
+												{validationErrors.vin}
+											</p>
+										) : (
+											<p className="text-xs text-muted-foreground">
+												17 caracteres alfanuméricos (excluyendo I, O, Q)
+											</p>
+										)}
 									</div>
 									<div className="space-y-2">
 										<LabelWithInfo

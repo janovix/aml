@@ -333,4 +333,38 @@ describe("PageHero", () => {
 		const statCards = screen.getAllByText(/Total Items|Active|Pending/);
 		expect(statCards.length).toBe(3);
 	});
+
+	it("renders maximum of 3 cards when more stats are provided", () => {
+		const manyStats = [
+			...mockStats,
+			{
+				label: "Fourth Stat",
+				value: 100,
+				icon: Users,
+			},
+			{
+				label: "Fifth Stat",
+				value: 200,
+				icon: FileText,
+			},
+		];
+
+		render(
+			<PageHero
+				title="Test Title"
+				subtitle="Test Subtitle"
+				icon={Users}
+				stats={manyStats}
+			/>,
+		);
+
+		// Should render first 3 stats
+		expect(screen.getByText("Total Items")).toBeInTheDocument();
+		expect(screen.getByText("Active")).toBeInTheDocument();
+		expect(screen.getByText("Pending")).toBeInTheDocument();
+
+		// Should not render stats beyond the first 3
+		expect(screen.queryByText("Fourth Stat")).not.toBeInTheDocument();
+		expect(screen.queryByText("Fifth Stat")).not.toBeInTheDocument();
+	});
 });

@@ -493,4 +493,21 @@ describe("ReportsTable", () => {
 		const rows = screen.getAllByRole("row");
 		expect(rows.length).toBeGreaterThan(1);
 	});
+
+	it("navigates to new report page when CTA button is clicked", async () => {
+		const user = userEvent.setup();
+		render(<ReportsTable />);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText("Reporte Mensual Diciembre 2024"),
+			).toBeInTheDocument();
+		});
+
+		// Find and click the "Nuevo Reporte" button
+		const newReportButton = screen.getByText("Nuevo Reporte");
+		await user.click(newReportButton);
+
+		expect(mockPush).toHaveBeenCalledWith("/reportes/new");
+	});
 });
