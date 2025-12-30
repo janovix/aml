@@ -34,7 +34,21 @@ type PhoneInputProps = Omit<
 const PhoneInput = React.forwardRef<
 	React.ElementRef<typeof PhoneInputWithCountry>,
 	PhoneInputProps
->(({ className, onChange, ...props }, ref) => {
+>(({ className, onChange, value, ...props }, ref) => {
+	// Normalize phone value to E.164 format (remove spaces)
+	const normalizedValue = React.useMemo(() => {
+		if (!value || typeof value !== "string") return value;
+		// Remove all spaces from the phone number to ensure E.164 format
+		return value.replace(/\s/g, "") as PhoneValue;
+	}, [value]);
+
+	const handleChange = React.useCallback(
+		(newValue: PhoneValue) => {
+			onChange?.(newValue);
+		},
+		[onChange],
+	);
+
 	return (
 		<PhoneInputWithCountry
 			ref={ref}
@@ -48,7 +62,8 @@ const PhoneInput = React.forwardRef<
 			defaultCountry="MX"
 			countrySelectComponent={CountrySelect}
 			inputComponent={NumberInput}
-			onChange={onChange}
+			value={normalizedValue}
+			onChange={handleChange}
 			{...props}
 		/>
 	);
