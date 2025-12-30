@@ -1,20 +1,20 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { fetchCatalogEntries } from "./catalogs";
-import { getAmlCoreBaseUrl } from "./api/config";
-
-vi.mock("./api/config", () => ({
-	getAmlCoreBaseUrl: vi.fn(() => "https://aml-core.example.com"),
-}));
 
 describe("catalogs", () => {
 	let fetchMock: ReturnType<typeof vi.fn>;
+	let previousAmlCoreUrl: string | undefined;
 
 	beforeEach(() => {
+		previousAmlCoreUrl = process.env.NEXT_PUBLIC_AML_CORE_URL;
+		process.env.NEXT_PUBLIC_AML_CORE_URL = "https://aml-bff.example.com/";
+
 		fetchMock = vi.fn();
 		vi.stubGlobal("fetch", fetchMock);
 	});
 
 	afterEach(() => {
+		process.env.NEXT_PUBLIC_AML_CORE_URL = previousAmlCoreUrl;
 		vi.restoreAllMocks();
 	});
 
@@ -40,20 +40,23 @@ describe("catalogs", () => {
 			},
 		};
 
-		fetchMock.mockResolvedValueOnce({
-			ok: true,
-			json: async () => mockResponse,
-		});
+		fetchMock.mockResolvedValueOnce(
+			new Response(JSON.stringify(mockResponse), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			}),
+		);
 
 		const result = await fetchCatalogEntries("test-catalog");
 
 		expect(result).toEqual(mockResponse);
 		expect(fetchMock).toHaveBeenCalledWith(
-			"https://aml-core.example.com/api/v1/catalogs/test-catalog",
+			"https://aml-bff.example.com/api/v1/catalogs/test-catalog",
 			expect.objectContaining({
-				headers: {
+				headers: expect.objectContaining({
 					"Content-Type": "application/json",
-				},
+					accept: "application/json",
+				}),
 			}),
 		);
 	});
@@ -65,10 +68,12 @@ describe("catalogs", () => {
 			pagination: { page: 1, pageSize: 10, total: 0, totalPages: 0 },
 		};
 
-		fetchMock.mockResolvedValueOnce({
-			ok: true,
-			json: async () => mockResponse,
-		});
+		fetchMock.mockResolvedValueOnce(
+			new Response(JSON.stringify(mockResponse), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			}),
+		);
 
 		await fetchCatalogEntries("test-catalog", {
 			page: 2,
@@ -77,7 +82,7 @@ describe("catalogs", () => {
 		});
 
 		expect(fetchMock).toHaveBeenCalledWith(
-			"https://aml-core.example.com/api/v1/catalogs/test-catalog?page=2&pageSize=20&search=test",
+			"https://aml-bff.example.com/api/v1/catalogs/test-catalog?page=2&pageSize=20&search=test",
 			expect.any(Object),
 		);
 	});
@@ -89,10 +94,12 @@ describe("catalogs", () => {
 			pagination: { page: 1, pageSize: 10, total: 0, totalPages: 0 },
 		};
 
-		fetchMock.mockResolvedValueOnce({
-			ok: true,
-			json: async () => mockResponse,
-		});
+		fetchMock.mockResolvedValueOnce(
+			new Response(JSON.stringify(mockResponse), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			}),
+		);
 
 		await fetchCatalogEntries("test-catalog", {
 			extra: { status: "active", type: "test" },
@@ -109,13 +116,16 @@ describe("catalogs", () => {
 	});
 
 	it("throws error when fetch fails", async () => {
-		fetchMock.mockResolvedValueOnce({
-			ok: false,
-			status: 404,
-		});
+		fetchMock.mockResolvedValueOnce(
+			new Response(JSON.stringify({ error: "Not found" }), {
+				status: 404,
+				statusText: "Not Found",
+				headers: { "content-type": "application/json" },
+			}),
+		);
 
 		await expect(fetchCatalogEntries("nonexistent-catalog")).rejects.toThrow(
-			'No se pudo consultar el catálogo "nonexistent-catalog".',
+			'No se pudo consultar el catálogo "nonexistent-catalog"',
 		);
 	});
 
@@ -126,10 +136,12 @@ describe("catalogs", () => {
 			pagination: { page: 1, pageSize: 10, total: 0, totalPages: 0 },
 		};
 
-		fetchMock.mockResolvedValueOnce({
-			ok: true,
-			json: async () => mockResponse,
-		});
+		fetchMock.mockResolvedValueOnce(
+			new Response(JSON.stringify(mockResponse), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			}),
+		);
 
 		await fetchCatalogEntries("test-catalog", undefined, {
 			method: "POST",

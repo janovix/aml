@@ -1,3 +1,138 @@
+# [1.1.0-rc.15](https://github.com/janovix/aml/compare/v1.1.0-rc.14...v1.1.0-rc.15) (2025-12-30)
+
+
+### Features
+
+* integrate phone number input component across client forms and update package dependencies ([7ab7f84](https://github.com/janovix/aml/commit/7ab7f849214f59095c3a5799828093591b2b3215))
+* introduce PageHero component for enhanced page headers and statistics display across various pages ([f48dd06](https://github.com/janovix/aml/commit/f48dd065dedb6862c66a09cc9baac4435656ec3e))
+
+# [1.1.0-rc.14](https://github.com/janovix/aml/compare/v1.1.0-rc.13...v1.1.0-rc.14) (2025-12-30)
+
+
+### Features
+
+* add payment method badge variants and improve date formatting in TransactionDetailsView ([60621fb](https://github.com/janovix/aml/commit/60621fb7d65b50082c65beaa5b1ca4e3da4d2ae0))
+* enhance client and transaction components with improved URL handling and new UI features ([b465ca9](https://github.com/janovix/aml/commit/b465ca98727007e5ebc2bb2d354618d1b54004bc))
+* implement DataTable component with filtering, sorting, and action capabilities ([1b65991](https://github.com/janovix/aml/commit/1b65991c0eb98511bef08390314194ab054956ed))
+
+# [1.1.0-rc.13](https://github.com/janovix/aml/compare/v1.1.0-rc.12...v1.1.0-rc.13) (2025-12-30)
+
+
+### Bug Fixes
+
+* update operationDate format to date-only and enhance vehicle validation in transaction forms ([ecdaeef](https://github.com/janovix/aml/commit/ecdaeefbcb5cc627c6665dba3b4e9092c4ef27a4))
+
+
+### Features
+
+* add new UI components and integrate popover functionality ([b6681d1](https://github.com/janovix/aml/commit/b6681d15e3133200523d9a17b6acf310cab856a3))
+
+# [1.1.0-rc.12](https://github.com/janovix/aml/compare/v1.1.0-rc.11...v1.1.0-rc.12) (2025-12-28)
+
+
+### Bug Fixes
+
+* ensure client edit submits validate ([2758777](https://github.com/janovix/aml/commit/275877752ee529a533c805eed39d73bf32207abc))
+
+
+### Features
+
+* enhance ClientEditView with comprehensive client data handling and improved form structure ([b0a40d7](https://github.com/janovix/aml/commit/b0a40d720a5f32f35b9f9e7b35d44c793ba6ca2e))
+
+# [1.1.0-rc.11](https://github.com/janovix/aml/compare/v1.1.0-rc.10...v1.1.0-rc.11) (2025-12-27)
+
+
+### Features
+
+* enhance KPI cards and transaction forms with new stats fetching and brand field updates ([19920c9](https://github.com/janovix/aml/commit/19920c95c5f7de38d1d425a0cf0084eb06305e3d))
+
+# [1.1.0-rc.10](https://github.com/janovix/aml/compare/v1.1.0-rc.9...v1.1.0-rc.10) (2025-12-27)
+
+
+### Features
+
+* Add LabelWithInfo component and field descriptions ([52ccc35](https://github.com/janovix/aml/commit/52ccc35b202fdcab92993291f9d61108e9245748))
+* Add settings page and refactor transaction forms ([d39b4ea](https://github.com/janovix/aml/commit/d39b4ea4990f323d450c20e4dae4f5a18ceae64b))
+* Implement Combobox positioning and portal rendering ([37c2492](https://github.com/janovix/aml/commit/37c2492986b6e28ec4cb874a59a9cec28720e040))
+* Implement infinite scroll for catalog search ([5b6ae22](https://github.com/janovix/aml/commit/5b6ae22700e6369cc0ea11bf45e6acac177ea603))
+* Improve catalog selector search and reset logic ([37383b2](https://github.com/janovix/aml/commit/37383b2aed2e1e0ab590d6a0a4545dbe150d7abd))
+
+# [1.1.0-rc.9](https://github.com/janovix/aml/compare/v1.1.0-rc.8...v1.1.0-rc.9) (2025-12-19)
+
+
+### Bug Fixes
+
+* **auth:** validate session in middleware instead of just checking cookie ([d9e47eb](https://github.com/janovix/aml/commit/d9e47eb4511f97ad819307f97059fb9aad0c659b))
+
+# [1.1.0-rc.8](https://github.com/janovix/aml/compare/v1.1.0-rc.7...v1.1.0-rc.8) (2025-12-19)
+
+
+### Features
+
+* **auth:** add JWT token support for API authentication ([e616ec6](https://github.com/janovix/aml/commit/e616ec69b25ec4c4597bf657a57af0586121d877))
+
+# [1.1.0-rc.7](https://github.com/janovix/aml/compare/v1.1.0-rc.6...v1.1.0-rc.7) (2025-12-19)
+
+
+### Bug Fixes
+
+* adjusted list for clients and transactions ([9b27ea8](https://github.com/janovix/aml/commit/9b27ea83b5e1ce749f5719a0b0c833b0ef703662))
+* dropdown spaces removed ([f6ebe5c](https://github.com/janovix/aml/commit/f6ebe5cb819b38d6ca683d6db648e6d16ecf4843))
+* smooth style for clients and transactions view ([8717ad7](https://github.com/janovix/aml/commit/8717ad75b2a40ee1cfefae1cf16b40f3ba916b22))
+* styles still looking awful ([5221a4c](https://github.com/janovix/aml/commit/5221a4c156e76f81780153219acd17b32f92894a))
+
+# [1.1.0-rc.6](https://github.com/janovix/aml/compare/v1.1.0-rc.5...v1.1.0-rc.6) (2025-12-18)
+
+
+### Bug Fixes
+
+* change incorporationDate input to date-only for moral person ([330ebd2](https://github.com/janovix/aml/commit/330ebd22a884a1ab17a6605511f2d9ffa7d0d6b5))
+* use consistent API base URL for catalog endpoints ([7fcbd88](https://github.com/janovix/aml/commit/7fcbd88358ae287034da926a4b0b6502a5c87dff))
+
+
+### Features
+
+* add validation to prevent payment methods sum exceeding transaction amount ([6ae6f8e](https://github.com/janovix/aml/commit/6ae6f8e276dbec288f5c9fd32463346deaafd831))
+* integrate transactions API and remove mock data ([377e80c](https://github.com/janovix/aml/commit/377e80cca14b5a9b4ebecc5adddda2f278c488b6))
+* replace client dropdown with ClientSelector in transaction creation ([63a6d22](https://github.com/janovix/aml/commit/63a6d22d4389b669e590ce313aa4f0c823059c2e))
+* update transactions to support multiple payment methods and remove serialNumber ([d871748](https://github.com/janovix/aml/commit/d8717480de630717f53b76efe8cea96bb2fa213c))
+
+# [1.1.0-rc.5](https://github.com/janovix/aml/compare/v1.1.0-rc.4...v1.1.0-rc.5) (2025-12-18)
+
+
+### Features
+
+* Add transaction and client document/address APIs ([6e70bd4](https://github.com/janovix/aml/commit/6e70bd49c6b7414110de49870d7214b5880084bd))
+
+# [1.1.0-rc.4](https://github.com/janovix/aml/compare/v1.1.0-rc.3...v1.1.0-rc.4) (2025-12-18)
+
+
+### Bug Fixes
+
+* **auth:** use onSuccess callback in signOut to control redirect ([6dcdc9e](https://github.com/janovix/aml/commit/6dcdc9e4a328a6925f69031215237ffc87ebee0a))
+
+# [1.1.0-rc.3](https://github.com/janovix/aml/compare/v1.1.0-rc.2...v1.1.0-rc.3) (2025-12-18)
+
+
+### Features
+
+* Add auth session and logout to navbar ([01bf8de](https://github.com/janovix/aml/commit/01bf8def33d3f56f7cb788776e410e783e8b78b7))
+* Add authentication using better-auth and nanostores ([61521fa](https://github.com/janovix/aml/commit/61521fa26aa9367a9fb9263ee17815c07a64ae62))
+
+# [1.1.0-rc.2](https://github.com/janovix/aml/compare/v1.1.0-rc.1...v1.1.0-rc.2) (2025-12-18)
+
+
+### Bug Fixes
+
+* replace hardcoded URL with example fallback URL ([a533441](https://github.com/janovix/aml/commit/a53344118494579ee528b3da941dc74503404b0e))
+
+# [1.1.0-rc.1](https://github.com/janovix/aml/compare/v1.0.0...v1.1.0-rc.1) (2025-12-17)
+
+
+### Features
+
+* Specify pnpm as package manager ([d2662aa](https://github.com/janovix/aml/commit/d2662aaf96376dfd372ec247ce35bcfeb4baef44))
+
 # 1.0.0 (2025-12-16)
 
 

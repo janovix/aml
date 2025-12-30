@@ -28,9 +28,9 @@ describe("ClientDetailPageContent", () => {
 
 	it("renders client details when client exists", () => {
 		const client = mockClients[0];
-		render(<ClientDetailPageContent clientId={client.id} />);
+		render(<ClientDetailPageContent clientId={client.rfc} />);
 
-		if (client.personType === "FISICA") {
+		if (client.personType === "physical") {
 			const nameElements = screen.getAllByText(
 				new RegExp(`${client.firstName}.*${client.lastName}`, "i"),
 			);
@@ -45,7 +45,7 @@ describe("ClientDetailPageContent", () => {
 
 	it("displays client RFC", () => {
 		const client = mockClients[0];
-		render(<ClientDetailPageContent clientId={client.id} />);
+		render(<ClientDetailPageContent clientId={client.rfc} />);
 
 		const rfcElements = screen.getAllByText(new RegExp(client.rfc));
 		expect(rfcElements.length).toBeGreaterThan(0);
@@ -53,7 +53,7 @@ describe("ClientDetailPageContent", () => {
 
 	it("displays client email and phone", () => {
 		const client = mockClients[0];
-		render(<ClientDetailPageContent clientId={client.id} />);
+		render(<ClientDetailPageContent clientId={client.rfc} />);
 
 		const emailElements = screen.getAllByText(client.email);
 		const phoneElements = screen.getAllByText(client.phone);
@@ -61,51 +61,19 @@ describe("ClientDetailPageContent", () => {
 		expect(phoneElements.length).toBeGreaterThan(0);
 	});
 
-	it("displays risk level badge", () => {
+	it("displays client dates", () => {
 		const client = mockClients[0];
-		render(<ClientDetailPageContent clientId={client.id} />);
+		render(<ClientDetailPageContent clientId={client.rfc} />);
 
-		const riskLabels = ["Bajo", "Medio", "Alto"];
-		const riskLabelsFound = riskLabels.filter((label) => {
-			const elements = screen.queryAllByText(label);
-			return elements.length > 0;
-		});
-		expect(riskLabelsFound.length).toBeGreaterThan(0);
-	});
-
-	it("displays status badge", () => {
-		const client = mockClients[0];
-		render(<ClientDetailPageContent clientId={client.id} />);
-
-		const statusLabels = ["Activo", "Inactivo", "Suspendido", "Bloqueado"];
-		const statusLabelsFound = statusLabels.filter((label) => {
-			const elements = screen.queryAllByText(label);
-			return elements.length > 0;
-		});
-		expect(statusLabelsFound.length).toBeGreaterThan(0);
-	});
-
-	it("displays review status section", () => {
-		const client = mockClients[0];
-		render(<ClientDetailPageContent clientId={client.id} />);
-
-		const reviewStatusElements = screen.getAllByText("Estado de Revisión");
-		expect(reviewStatusElements.length).toBeGreaterThan(0);
-	});
-
-	it("displays alert count", () => {
-		const client = mockClients[0];
-		render(<ClientDetailPageContent clientId={client.id} />);
-
-		const alertCountElements = screen.getAllByText(
-			client.alertCount.toString(),
+		const dateElements = screen.getAllByText(
+			/Fecha de creación|Última actualización/,
 		);
-		expect(alertCountElements.length).toBeGreaterThan(0);
+		expect(dateElements.length).toBeGreaterThan(0);
 	});
 
 	it("displays edit button", () => {
 		const client = mockClients[0];
-		render(<ClientDetailPageContent clientId={client.id} />);
+		render(<ClientDetailPageContent clientId={client.rfc} />);
 
 		const editButtons = screen.getAllByText("Editar");
 		expect(editButtons.length).toBeGreaterThan(0);

@@ -1,5 +1,6 @@
-import { getAmlCoreBaseUrl } from "./api/config";
 import type { CatalogQueryParams, CatalogResponse } from "@/types/catalog";
+import { getAmlCoreBaseUrl } from "./api/config";
+import { fetchJson } from "./api/http";
 
 const buildQueryString = (params?: CatalogQueryParams): string => {
 	const searchParams = new URLSearchParams();
@@ -43,17 +44,21 @@ export async function fetchCatalogEntries(
 	const baseUrl = getAmlCoreBaseUrl();
 	const url = `${baseUrl}/api/v1/catalogs/${catalogKey}${buildQueryString(params)}`;
 
-	const response = await fetch(url, {
-		...requestInit,
-		headers: {
-			"Content-Type": "application/json",
-			...requestInit?.headers,
-		},
-	});
-
-	if (!response.ok) {
+	try {
+		const { json } = await fetchJson<CatalogResponse>(url, {
+			...requestInit,
+			headers: {
+				"Content-Type": "application/json",
+				...requestInit?.headers,
+			},
+		});
+		return json;
+	} catch (error) {
+		if (error instanceof Error) {
+			throw new Error(
+				`No se pudo consultar el catálogo "${catalogKey}": ${error.message}`,
+			);
+		}
 		throw new Error(`No se pudo consultar el catálogo "${catalogKey}".`);
 	}
-
-	return (await response.json()) as CatalogResponse;
 }

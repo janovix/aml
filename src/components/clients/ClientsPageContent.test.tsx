@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ClientsPageContent } from "./ClientsPageContent";
 
@@ -56,147 +56,29 @@ describe("ClientsPageContent", () => {
 		expect(total.length).toBeGreaterThan(0);
 	});
 
-	it("renders filters section", () => {
+	it("renders clients table with built-in search", () => {
 		render(<ClientsPageContent />);
 
-		const searchInputs = screen.getAllByPlaceholderText(
-			"Buscar por nombre o RFC...",
-		);
+		// Check for the DataTable by looking for search placeholder
+		const searchInputs = screen.getAllByPlaceholderText(/buscar/i);
 		expect(searchInputs.length).toBeGreaterThan(0);
 	});
 
-	it("renders clients table", () => {
-		render(<ClientsPageContent />);
-
-		const tableTitles = screen.getAllByText("Lista de Clientes");
-		expect(tableTitles.length).toBeGreaterThan(0);
+	// Mobile menu button removed - sidebar is now handled by DashboardLayout
+	it.skip("renders mobile menu button", () => {
+		// This test is skipped as mobile menu is now handled by DashboardLayout
 	});
 
-	it("renders mobile menu button", () => {
-		render(<ClientsPageContent />);
-
-		const menuButtons = screen.getAllByRole("button", { name: /abrir menú/i });
-		expect(menuButtons.length).toBeGreaterThan(0);
+	it.skip("opens mobile menu when button is clicked", async () => {
+		// This test is skipped as mobile menu is now handled by DashboardLayout
 	});
 
-	it("opens mobile menu when button is clicked", async () => {
-		const user = userEvent.setup();
-		render(<ClientsPageContent />);
-
-		const menuButtons = screen.getAllByRole("button", { name: /abrir menú/i });
-		await user.click(menuButtons[0]);
-
-		// Menu should be visible - check for mobile menu container
-		await waitFor(
-			() => {
-				const mobileMenus = document.querySelectorAll(
-					'[class*="translate-x-0"]',
-				);
-				expect(mobileMenus.length).toBeGreaterThan(0);
-			},
-			{ timeout: 2000 },
-		);
+	it.skip("closes mobile menu when overlay is clicked", async () => {
+		// This test is skipped as mobile menu is now handled by DashboardLayout
 	});
 
-	it("closes mobile menu when overlay is clicked", async () => {
-		const user = userEvent.setup();
-		render(<ClientsPageContent />);
-
-		const menuButtons = screen.getAllByRole("button", { name: /abrir menú/i });
-		await user.click(menuButtons[0]);
-
-		await waitFor(() => {
-			const overlays = document.querySelectorAll('[aria-hidden="true"]');
-			if (overlays.length > 0) {
-				const overlay = overlays[0] as HTMLElement;
-				user.click(overlay);
-			}
-		});
-	});
-
-	it("applies filters when apply button is clicked", async () => {
-		const user = userEvent.setup();
-		render(<ClientsPageContent />);
-
-		const searchInputs = screen.getAllByPlaceholderText(
-			"Buscar por nombre o RFC...",
-		);
-		await user.type(searchInputs[0], "test");
-
-		const applyButtons = screen.getAllByRole("button", { name: /aplicar/i });
-		await user.click(applyButtons[0]);
-
-		// Should show active filters
-		await waitFor(() => {
-			const filterChips = screen.queryAllByText(/Búsqueda:/i);
-			expect(filterChips.length).toBeGreaterThan(0);
-		});
-	});
-
-	it("clears filters when clear button is clicked", async () => {
-		const user = userEvent.setup();
-		render(<ClientsPageContent />);
-
-		const searchInputs = screen.getAllByPlaceholderText(
-			"Buscar por nombre o RFC...",
-		);
-		await user.type(searchInputs[0], "test");
-
-		const applyButtons = screen.getAllByRole("button", { name: /aplicar/i });
-		await user.click(applyButtons[0]);
-
-		await waitFor(
-			async () => {
-				const clearButtons = screen.getAllByRole("button", {
-					name: /limpiar/i,
-				});
-				if (clearButtons.length > 0) {
-					await user.click(clearButtons[0]);
-					// Verify filters were cleared by checking search input is empty
-					const searchInputsAfter = screen.getAllByPlaceholderText(
-						"Buscar por nombre o RFC...",
-					);
-					expect(searchInputsAfter[0]).toHaveValue("");
-				}
-			},
-			{ timeout: 3000 },
-		);
-	});
-
-	it("shows active filters when applied", async () => {
-		const user = userEvent.setup();
-		render(<ClientsPageContent />);
-
-		const searchInputs = screen.getAllByPlaceholderText(
-			"Buscar por nombre o RFC...",
-		);
-		await user.type(searchInputs[0], "test");
-
-		const applyButtons = screen.getAllByRole("button", { name: /aplicar/i });
-		await user.click(applyButtons[0]);
-
-		// Wait for filters to be applied and check they appear
-		await waitFor(
-			() => {
-				const filterChips = screen.queryAllByText(/Búsqueda:/i);
-				expect(filterChips.length).toBeGreaterThan(0);
-			},
-			{ timeout: 3000 },
-		);
-	});
-
-	it("handles status filter application", () => {
-		render(<ClientsPageContent />);
-
-		// Find status filter
-		const statusSelects = screen.getAllByRole("combobox", { name: /estado/i });
-		expect(statusSelects.length).toBeGreaterThan(0);
-	});
-
-	it("toggles sidebar collapse", () => {
-		render(<ClientsPageContent />);
-		// Sidebar should be rendered
-		const sidebars = document.querySelectorAll("aside");
-		expect(sidebars.length).toBeGreaterThan(0);
+	// Sidebar is now handled by DashboardLayout, not ClientsPageContent
+	it.skip("toggles sidebar collapse", () => {
+		// This test is skipped as sidebar is now handled by DashboardLayout
 	});
 });

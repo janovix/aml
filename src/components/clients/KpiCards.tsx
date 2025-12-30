@@ -1,16 +1,17 @@
 "use client";
 
-import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import React, { useEffect, useState } from "react";
+import { Card, CardContent, cn } from "@algtools/ui";
 import {
 	Users,
 	AlertTriangle,
 	Clock,
-	ListChecks,
 	TrendingUp,
 	TrendingDown,
 } from "lucide-react";
+import { getClientStats } from "../../lib/api/stats";
+import { useToast } from "../../hooks/use-toast";
+import { ApiError } from "../../lib/api/http";
 
 interface KpiCardProps {
 	title: string;
@@ -35,16 +36,16 @@ function KpiCard({
 }: KpiCardProps): React.ReactElement {
 	const severityStyles = {
 		default: "border-border bg-card",
-		warning: "border-yellow-500/30 bg-yellow-500/10",
-		danger: "border-red-500/30 bg-red-500/10",
-		success: "border-green-500/30 bg-green-500/10",
+		warning: "border-[var(--risk-medium)]/30 bg-[var(--risk-medium-bg)]",
+		danger: "border-[var(--risk-high)]/30 bg-[var(--risk-high-bg)]",
+		success: "border-[var(--risk-low)]/30 bg-[var(--risk-low-bg)]",
 	};
 
 	const iconStyles = {
 		default: "bg-primary/10 text-primary",
-		warning: "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400",
-		danger: "bg-red-500/20 text-red-600 dark:text-red-400",
-		success: "bg-green-500/20 text-green-600 dark:text-green-400",
+		warning: "bg-[var(--risk-medium)]/20 text-[var(--risk-medium)]",
+		danger: "bg-[var(--risk-high)]/20 text-[var(--risk-high)]",
+		success: "bg-[var(--risk-low)]/20 text-[var(--risk-low)]",
 	};
 
 	return (
@@ -67,16 +68,16 @@ function KpiCard({
 						{trend && (
 							<div className="flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm">
 								{trend.direction === "up" ? (
-									<TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600 dark:text-green-400" />
+									<TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-(--risk-low)" />
 								) : (
-									<TrendingDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-600 dark:text-red-400" />
+									<TrendingDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-(--risk-high)" />
 								)}
 								<span
 									className={cn(
 										"font-medium",
 										trend.direction === "up"
-											? "text-green-600 dark:text-green-400"
-											: "text-red-600 dark:text-red-400",
+											? "text-(--risk-low)"
+											: "text-(--risk-high)",
 									)}
 								>
 									{trend.value}%
@@ -103,41 +104,90 @@ function KpiCard({
 }
 
 export function KpiCards(): React.ReactElement {
+	const { toast } = useToast();
+	const [stats, setStats] = useState<{
+		openAlerts: number;
+		urgentReviews: number;
+		totalClients: number;
+	} | null>(null);
+	const [isLoading, setIsLoading] = useState(true);
+
+	useEffect(() => {
+		const fetchStats = async () => {
+			try {
+				setIsLoading(true);
+				const data = await getClientStats();
+				setStats(data);
+			} catch (error) {
+				// Enhanced error logging for debugging API issues
+				if (error instanceof ApiError) {
+					console.error(
+						"[KpiCards] API error fetching client stats:",
+						`status=${error.status}`,
+						`message=${error.message}`,
+						"body=",
+						error.body,
+					);
+				} else {
+					console.error(
+						"[KpiCards] Error fetching client stats:",
+						error instanceof Error ? error.message : error,
+					);
+				}
+				toast({
+					title: "Error",
+					description: "No se pudieron cargar las estadísticas.",
+					variant: "destructive",
+				});
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
+		fetchStats();
+	}, [toast]);
+
+	const formatNumber = (num: number): string => {
+		return new Intl.NumberFormat("es-MX").format(num);
+	};
+
 	const kpis = [
 		{
 			title: "Avisos Abiertos",
-			value: 37,
+			value: isLoading ? "..." : (stats?.openAlerts ?? 0),
 			icon: <AlertTriangle className="h-6 w-6" />,
-			trend: { value: 8, label: "nuevos hoy", direction: "up" as const },
 			severity: "danger" as const,
 		},
 		{
 			title: "Revisiones Urgentes",
-			value: 12,
+			value: isLoading ? "..." : (stats?.urgentReviews ?? 0),
 			icon: <Clock className="h-6 w-6" />,
 			severity: "warning" as const,
 		},
 		{
-			title: "Revisiones Completadas",
-			value: 156,
-			icon: <ListChecks className="h-6 w-6" />,
-			trend: { value: 23, label: "este mes", direction: "up" as const },
-			severity: "success" as const,
-		},
-		{
 			title: "Total Clientes",
-			value: "1,248",
+			value: isLoading
+				? "..."
+				: stats?.totalClients
+					? formatNumber(stats.totalClients)
+					: "0",
 			icon: <Users className="h-6 w-6" />,
-			trend: { value: 12, label: "vs mes anterior", direction: "up" as const },
 			severity: "default" as const,
 		},
 	];
 
 	return (
 		<section aria-label="Indicadores clave de rendimiento">
-			<div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
+			<div
+				className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:overflow-x-visible sm:pb-0 scrollbar-hide"
+				style={{ WebkitOverflowScrolling: "touch" }}
+			>
 				{kpis.map((kpi) => (
-					<KpiCard key={kpi.title} {...kpi} />
+					<KpiCard
+						key={kpi.title}
+						{...kpi}
+						className="min-w-[140px] shrink-0 sm:min-w-0 sm:shrink"
+					/>
 				))}
 			</div>
 		</section>

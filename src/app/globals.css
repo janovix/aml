@@ -6,6 +6,30 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* iOS Safari viewport height fix */
+/* Use CSS variable set by ViewportHeightProvider for stable viewport height */
+/* Falls back to dvh (dynamic viewport height) for modern browsers, then 100vh */
+:root {
+	--viewport-height: 100vh;
+	--viewport-height-fallback: 100vh;
+}
+
+@supports (height: 100dvh) {
+	:root {
+		--viewport-height: 100dvh;
+	}
+}
+
+/* Override Tailwind's h-screen to use our viewport height variable */
+.h-screen {
+	height: var(--viewport-height, 100vh);
+}
+
+/* Also override min-h-screen for consistency */
+.min-h-screen {
+	min-height: var(--viewport-height, 100vh);
+}
+
 :root {
 	--background: oklch(0.9319 0.004 286.3215);
 	--foreground: oklch(0.2626 0.0057 301.1438);
@@ -39,7 +63,7 @@
 	--sidebar-accent-foreground: oklch(0.2626 0.0057 301.1438);
 	--sidebar-border: oklch(0.8452 0 0);
 	--sidebar-ring: oklch(0.5477 0.2518 292.8796);
-	--font-sans: sans-serif;
+	--font-sans: Inter, ui-sans-serif, sans-serif, system-ui;
 	--font-serif: serif;
 	--font-mono: monospace;
 	--radius: 0.5rem;
@@ -73,8 +97,8 @@
 	--card-foreground: oklch(0.9319 0.004 286.3215);
 	--popover: oklch(0.2405 0.0057 285.9664);
 	--popover-foreground: oklch(0.9319 0.004 286.3215);
-	--primary: oklch(0.5477 0.2518 292.8796);
-	--primary-foreground: oklch(1 0 0);
+	--primary: oklch(0.8285 0.1089 307.5875);
+	--primary-foreground: oklch(0.2626 0.0057 301.1438);
 	--secondary: oklch(0.3703 0.0119 285.8054);
 	--secondary-foreground: oklch(0.9319 0.004 286.3215);
 	--muted: oklch(0.3183 0.0053 286.0964);
@@ -85,21 +109,21 @@
 	--destructive-foreground: oklch(1 0 0);
 	--border: oklch(0.3703 0.0119 285.8054);
 	--input: oklch(0.4461 0.0263 256.8018);
-	--ring: oklch(0.5477 0.2518 292.8796);
-	--chart-1: oklch(0.5477 0.2518 292.8796);
-	--chart-2: oklch(0.5575 0.2525 302.3212);
-	--chart-3: oklch(0.709 0.1592 293.5412);
-	--chart-4: oklch(0.8112 0.1013 293.5712);
-	--chart-5: oklch(0.8943 0.0549 293.2829);
+	--ring: oklch(0.8285 0.1089 307.5875);
+	--chart-1: oklch(0.8285 0.1089 307.5875);
+	--chart-2: oklch(0.7141 0.1639 299.8224);
+	--chart-3: oklch(0.5987 0.206 294.869);
+	--chart-4: oklch(0.5082 0.2314 289.5909);
+	--chart-5: oklch(0.4059 0.2079 288.8127);
 	--sidebar: oklch(0.2191 0.0058 285.9113);
 	--sidebar-foreground: oklch(0.9319 0.004 286.3215);
-	--sidebar-primary: oklch(0.5477 0.2518 292.8796);
-	--sidebar-primary-foreground: oklch(1 0 0);
+	--sidebar-primary: oklch(0.8285 0.1089 307.5875);
+	--sidebar-primary-foreground: oklch(0.2626 0.0057 301.1438);
 	--sidebar-accent: oklch(0.3183 0.0053 286.0964);
 	--sidebar-accent-foreground: oklch(0.9319 0.004 286.3215);
 	--sidebar-border: oklch(0.3703 0.0119 285.8054);
-	--sidebar-ring: oklch(0.5477 0.2518 292.8796);
-	--font-sans: sans-serif;
+	--sidebar-ring: oklch(0.8285 0.1089 307.5875);
+	--font-sans: Inter, ui-sans-serif, sans-serif, system-ui;
 	--font-serif: serif;
 	--font-mono: monospace;
 	--radius: 0.5rem;
@@ -211,64 +235,31 @@ main {
 	overflow-x: hidden;
 }
 
-/* Improve card shadows and borders */
-.card {
-	@apply shadow-sm;
-}
-
-/* Better table styling */
-table {
-	@apply border-collapse;
-}
-
-/* Improve form inputs */
-input[type="text"],
-input[type="email"],
-input[type="tel"],
-input[type="number"],
-input[type="date"],
-input[type="search"],
-textarea,
-select {
-	@apply transition-colors;
-}
-
-/* Better focus states */
-input:focus,
-textarea:focus,
-select:focus {
-	@apply ring-2 ring-ring ring-offset-2 ring-offset-background;
-}
-
-/* Improve button hover states */
-button {
-	@apply transition-all duration-200;
-}
-
-/* Better spacing for cards */
-.card-content {
-	@apply space-y-4;
-}
-
-/* Improve badge styling */
-.badge {
-	@apply font-medium;
-}
-
-/* Better scrollbar styling */
-::-webkit-scrollbar {
+/* Global minimal scrollbar styles - applies to all scrollbars */
+*::-webkit-scrollbar {
 	width: 8px;
 	height: 8px;
 }
 
-::-webkit-scrollbar-track {
-	@apply bg-muted;
+*::-webkit-scrollbar-track {
+	background: transparent;
 }
 
-::-webkit-scrollbar-thumb {
-	@apply bg-muted-foreground/30 rounded-full;
+*::-webkit-scrollbar-thumb {
+	background: #cbd5e0;
+	border-radius: 4px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-	@apply bg-muted-foreground/50;
+*::-webkit-scrollbar-thumb:hover {
+	background: #a0aec0;
+}
+
+/* Hide scrollbar for horizontal scrolling cards */
+.scrollbar-hide {
+	-ms-overflow-style: none; /* IE and Edge */
+	scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+	display: none; /* Chrome, Safari and Opera */
 }

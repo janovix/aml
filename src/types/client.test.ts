@@ -1,81 +1,79 @@
-import { describe, expect, it } from "vitest";
-import { getClientDisplayName, type Client } from "./client";
+import { describe, it, expect } from "vitest";
+import { getClientDisplayName } from "./client";
+import type { Client } from "./client";
 
-describe("client types", () => {
+describe("Client Types", () => {
 	describe("getClientDisplayName", () => {
-		it("returns business name for MORAL person type", () => {
+		it("returns full name for physical person type", () => {
 			const client: Client = {
 				id: "1",
-				rfc: "ABC123456",
-				personType: "MORAL",
-				businessName: "Empresa S.A. de C.V.",
-				email: "test@example.com",
-				phone: "+52 1234567890",
-				riskLevel: "BAJO",
-				status: "ACTIVO",
-				reviewStatus: "APROBADO",
-				lastReview: "2024-01-01",
-				alertCount: 0,
-			};
-
-			expect(getClientDisplayName(client)).toBe("Empresa S.A. de C.V.");
-		});
-
-		it("returns full name for FISICA person type", () => {
-			const client: Client = {
-				id: "1",
-				rfc: "ABC123456",
-				personType: "FISICA",
+				rfc: "TEST123456789",
+				personType: "physical",
 				firstName: "Juan",
 				lastName: "Pérez",
 				secondLastName: "García",
-				email: "test@example.com",
-				phone: "+52 1234567890",
-				riskLevel: "BAJO",
-				status: "ACTIVO",
-				reviewStatus: "APROBADO",
-				lastReview: "2024-01-01",
-				alertCount: 0,
+				email: "test@test.com",
+				phone: "1234567890",
+				country: "México",
+				stateCode: "NL",
+				city: "Monterrey",
+				municipality: "Monterrey",
+				neighborhood: "Centro",
+				street: "Av. Constitución",
+				externalNumber: "123",
+				postalCode: "64000",
+				createdAt: "2024-01-01T00:00:00Z",
+				updatedAt: "2024-01-01T00:00:00Z",
 			};
 
 			expect(getClientDisplayName(client)).toBe("Juan Pérez García");
 		});
 
-		it("handles FISICA without secondLastName", () => {
+		it("returns business name for moral person type", () => {
 			const client: Client = {
 				id: "1",
-				rfc: "ABC123456",
-				personType: "FISICA",
-				firstName: "María",
-				lastName: "López",
-				email: "test@example.com",
-				phone: "+52 1234567890",
-				riskLevel: "BAJO",
-				status: "ACTIVO",
-				reviewStatus: "APROBADO",
-				lastReview: "2024-01-01",
-				alertCount: 0,
+				rfc: "TEST12345678",
+				personType: "moral",
+				businessName: "Empresa Test S.A. de C.V.",
+				email: "test@test.com",
+				phone: "1234567890",
+				country: "México",
+				stateCode: "NL",
+				city: "Monterrey",
+				municipality: "Monterrey",
+				neighborhood: "Centro",
+				street: "Av. Constitución",
+				externalNumber: "123",
+				postalCode: "64000",
+				createdAt: "2024-01-01T00:00:00Z",
+				updatedAt: "2024-01-01T00:00:00Z",
 			};
 
-			expect(getClientDisplayName(client)).toBe("María López");
+			expect(getClientDisplayName(client)).toBe("Empresa Test S.A. de C.V.");
 		});
 
-		it("handles empty businessName for MORAL", () => {
+		it("handles missing secondLastName", () => {
 			const client: Client = {
 				id: "1",
-				rfc: "ABC123456",
-				personType: "MORAL",
-				businessName: "",
-				email: "test@example.com",
-				phone: "+52 1234567890",
-				riskLevel: "BAJO",
-				status: "ACTIVO",
-				reviewStatus: "APROBADO",
-				lastReview: "2024-01-01",
-				alertCount: 0,
+				rfc: "TEST123456789",
+				personType: "physical",
+				firstName: "Juan",
+				lastName: "Pérez",
+				email: "test@test.com",
+				phone: "1234567890",
+				country: "México",
+				stateCode: "NL",
+				city: "Monterrey",
+				municipality: "Monterrey",
+				neighborhood: "Centro",
+				street: "Av. Constitución",
+				externalNumber: "123",
+				postalCode: "64000",
+				createdAt: "2024-01-01T00:00:00Z",
+				updatedAt: "2024-01-01T00:00:00Z",
 			};
 
-			expect(getClientDisplayName(client)).toBe("");
+			expect(getClientDisplayName(client)).toBe("Juan Pérez");
 		});
 	});
 });

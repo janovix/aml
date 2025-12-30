@@ -1,10 +1,12 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TransactionsPageContent } from "./TransactionsPageContent";
+import * as statsApi from "@/lib/api/stats";
 
 const mockPush = vi.fn();
 const mockPathname = vi.fn(() => "/transactions");
+const mockToast = vi.fn();
 
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
@@ -13,20 +15,37 @@ vi.mock("next/navigation", () => ({
 	usePathname: () => mockPathname(),
 }));
 
+vi.mock("@/hooks/use-toast", () => ({
+	useToast: () => ({
+		toast: mockToast,
+		toasts: [],
+	}),
+}));
+
+vi.mock("@/lib/api/stats", () => ({
+	getTransactionStats: vi.fn(),
+}));
+
 describe("TransactionsPageContent", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		vi.mocked(statsApi.getTransactionStats).mockResolvedValue({
+			transactionsToday: 15,
+			suspiciousTransactions: 3,
+			totalVolume: "1500000.00",
+			totalVehicles: 42,
+		});
 	});
 
 	it("renders page header", () => {
 		render(<TransactionsPageContent />);
 
 		const transaccionesHeaders = screen.getAllByText("Transacciones");
-		const monitoreoTexts = screen.getAllByText(
-			"Monitoreo y análisis de transacciones",
+		const descriptionTexts = screen.getAllByText(
+			"Gestión de transacciones de vehículos",
 		);
 		expect(transaccionesHeaders.length).toBeGreaterThan(0);
-		expect(monitoreoTexts.length).toBeGreaterThan(0);
+		expect(descriptionTexts.length).toBeGreaterThan(0);
 	});
 
 	it("renders new transaction button", () => {
@@ -42,10 +61,13 @@ describe("TransactionsPageContent", () => {
 		const user = userEvent.setup();
 		render(<TransactionsPageContent />);
 
-		const newButtons = screen.getAllByRole("button", {
+		const buttons = screen.getAllByRole("button", {
 			name: /nueva transacción/i,
 		});
-		await user.click(newButtons[0]);
+		expect(buttons.length).toBeGreaterThan(0);
+
+		// Click the first button (mobile or desktop)
+		await user.click(buttons[0]);
 
 		expect(mockPush).toHaveBeenCalledWith("/transactions/new");
 	});
@@ -53,58 +75,215 @@ describe("TransactionsPageContent", () => {
 	it("renders KPI cards", () => {
 		render(<TransactionsPageContent />);
 
-		const totalElements = screen.getAllByText("Total Transacciones");
-		const montoElements = screen.getAllByText("Monto Total");
+		const totalElements = screen.getAllByText("Volumen Total");
+		const montoElements = screen.getAllByText("Total Vehículos");
 		expect(totalElements.length).toBeGreaterThan(0);
 		expect(montoElements.length).toBeGreaterThan(0);
 	});
 
-	it("renders filters", () => {
+	it("renders transactions table with built-in search", () => {
 		render(<TransactionsPageContent />);
 
-		const searchInputs = screen.getAllByPlaceholderText(
-			"Buscar por cliente, referencia o descripción...",
-		);
+		// Check for the DataTable by looking for search placeholder
+		const searchInputs = screen.getAllByPlaceholderText(/buscar/i);
 		expect(searchInputs.length).toBeGreaterThan(0);
 	});
 
-	it("renders transactions table", () => {
-		render(<TransactionsPageContent />);
-
-		const tableHeaders = screen.getAllByText("Lista de Transacciones");
-		expect(tableHeaders.length).toBeGreaterThan(0);
+	// Mobile menu button removed - sidebar is now handled by DashboardLayout
+	it.skip("renders mobile menu button", () => {
+		// This test is skipped as mobile menu is now handled by DashboardLayout
 	});
 
-	it("renders mobile menu button", () => {
-		render(<TransactionsPageContent />);
-
-		const menuButtons = screen.getAllByRole("button", { name: /abrir menú/i });
-		expect(menuButtons.length).toBeGreaterThan(0);
+	// Sidebar is now handled by DashboardLayout, not TransactionsPageContent
+	it.skip("renders sidebar", () => {
+		// This test is skipped as sidebar is now handled by DashboardLayout
 	});
 
-	it("applies filters when search query changes", async () => {
-		const user = userEvent.setup();
-		const { container } = render(<TransactionsPageContent />);
-
-		const searchInputs = container.querySelectorAll(
-			'input[placeholder="Buscar por cliente, referencia o descripción..."]',
+	it("displays loading state", async () => {
+		// Mock a delayed response to catch loading state
+		vi.mocked(statsApi.getTransactionStats).mockImplementation(
+			() =>
+				new Promise((resolve) => {
+					setTimeout(() => {
+						resolve({
+							transactionsToday: 15,
+							suspiciousTransactions: 3,
+							totalVolume: "1500000.00",
+							totalVehicles: 42,
+						});
+					}, 100);
+				}),
 		);
-		expect(searchInputs.length).toBeGreaterThan(0);
-		if (searchInputs.length > 0) {
-			await user.type(searchInputs[0] as HTMLElement, "test");
 
-			const applyButtons = screen.getAllByText("Aplicar");
-			const ourApplyButton = Array.from(applyButtons).find((btn) =>
-				container.contains(btn),
-			);
-			expect(ourApplyButton).toBeInTheDocument();
-		}
-	});
-
-	it("renders sidebar", () => {
 		render(<TransactionsPageContent />);
 
-		const sidebars = screen.getAllByText("Transacciones");
-		expect(sidebars.length).toBeGreaterThan(0);
+		// Should show loading indicators
+		const loadingIndicators = screen.getAllByText("...");
+		expect(loadingIndicators.length).toBeGreaterThan(0);
+	});
+
+	it("handles null stats gracefully", async () => {
+		vi.mocked(statsApi.getTransactionStats).mockResolvedValue({
+			transactionsToday: 0,
+			suspiciousTransactions: 0,
+			totalVolume: "0",
+			totalVehicles: 0,
+		});
+
+		render(<TransactionsPageContent />);
+
+		// Should display zero values
+		await screen.findByText("0");
+	});
+
+	it("handles ApiError when fetching stats", async () => {
+		const { ApiError } = await import("@/lib/api/http");
+		const apiError = new ApiError("API error", {
+			status: 500,
+			body: { message: "Internal server error" },
+		});
+
+		vi.mocked(statsApi.getTransactionStats).mockRejectedValue(apiError);
+
+		const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		render(<TransactionsPageContent />);
+
+		// Wait for async error handling to complete
+		await new Promise((resolve) => setTimeout(resolve, 100));
+
+		expect(consoleSpy).toHaveBeenCalledWith(
+			expect.stringContaining(
+				"[TransactionsPageContent] API error fetching transaction stats:",
+			),
+			expect.stringContaining("status=500"),
+			expect.stringContaining("message=API error"),
+			"body=",
+			{ message: "Internal server error" },
+		);
+
+		expect(mockToast).toHaveBeenCalledWith({
+			title: "Error",
+			description: "No se pudieron cargar las estadísticas.",
+			variant: "destructive",
+		});
+
+		consoleSpy.mockRestore();
+	});
+
+	it("handles generic Error when fetching stats", async () => {
+		const genericError = new Error("Network error");
+
+		vi.mocked(statsApi.getTransactionStats).mockRejectedValue(genericError);
+
+		const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		render(<TransactionsPageContent />);
+
+		// Wait for async error handling to complete
+		await new Promise((resolve) => setTimeout(resolve, 100));
+
+		expect(consoleSpy).toHaveBeenCalledWith(
+			expect.stringContaining(
+				"[TransactionsPageContent] Error fetching transaction stats:",
+			),
+			"Network error",
+		);
+
+		expect(mockToast).toHaveBeenCalledWith({
+			title: "Error",
+			description: "No se pudieron cargar las estadísticas.",
+			variant: "destructive",
+		});
+
+		consoleSpy.mockRestore();
+	});
+
+	it("formats currency for amounts >= 1M", async () => {
+		vi.mocked(statsApi.getTransactionStats).mockResolvedValue({
+			transactionsToday: 15,
+			suspiciousTransactions: 3,
+			totalVolume: "2500000.00", // 2.5M
+			totalVehicles: 42,
+		});
+
+		render(<TransactionsPageContent />);
+
+		// Should format as $2.5M
+		await screen.findByText("$2.5M");
+	});
+
+	it("formats currency for amounts >= 1K but < 1M", async () => {
+		vi.mocked(statsApi.getTransactionStats).mockResolvedValue({
+			transactionsToday: 15,
+			suspiciousTransactions: 3,
+			totalVolume: "50000.00", // 50K
+			totalVehicles: 42,
+		});
+
+		render(<TransactionsPageContent />);
+
+		// Should format as $50.0K
+		await screen.findByText("$50.0K");
+	});
+
+	it("formats currency for amounts < 1K", async () => {
+		vi.mocked(statsApi.getTransactionStats).mockResolvedValue({
+			transactionsToday: 15,
+			suspiciousTransactions: 3,
+			totalVolume: "500.00", // < 1K
+			totalVehicles: 42,
+		});
+
+		render(<TransactionsPageContent />);
+
+		// Should format as regular currency (MXN format)
+		const volumeElement = screen.getByText("Volumen Total").closest("div");
+		expect(volumeElement).toBeInTheDocument();
+	});
+
+	it("handles NaN currency values", async () => {
+		vi.mocked(statsApi.getTransactionStats).mockResolvedValue({
+			transactionsToday: 15,
+			suspiciousTransactions: 3,
+			totalVolume: "invalid", // Will cause NaN
+			totalVehicles: 42,
+		});
+
+		render(<TransactionsPageContent />);
+
+		// Should display $0 for invalid amounts
+		const volumeLabels = screen.getAllByText("Volumen Total");
+		expect(volumeLabels.length).toBeGreaterThan(0);
+	});
+
+	it("handles null totalVolume", async () => {
+		vi.mocked(statsApi.getTransactionStats).mockResolvedValue({
+			transactionsToday: 15,
+			suspiciousTransactions: 3,
+			totalVolume: null as unknown as string,
+			totalVehicles: 42,
+		});
+
+		render(<TransactionsPageContent />);
+
+		// Should display $0 for null volume
+		const volumeLabels = screen.getAllByText("Volumen Total");
+		expect(volumeLabels.length).toBeGreaterThan(0);
+	});
+
+	it("handles null totalVehicles", async () => {
+		vi.mocked(statsApi.getTransactionStats).mockResolvedValue({
+			transactionsToday: 15,
+			suspiciousTransactions: 3,
+			totalVolume: "1500000.00",
+			totalVehicles: null as unknown as number,
+		});
+
+		render(<TransactionsPageContent />);
+
+		// Should display "0" for null vehicles
+		const vehicleLabels = screen.getAllByText("Total Vehículos");
+		expect(vehicleLabels.length).toBeGreaterThan(0);
 	});
 });

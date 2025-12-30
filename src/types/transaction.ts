@@ -1,90 +1,96 @@
-export type TransactionType =
-	| "DEPOSITO"
-	| "RETIRO"
-	| "TRANSFERENCIA"
-	| "PAGO"
-	| "COBRANZA"
-	| "OTRO";
+export type TransactionOperationType = "purchase" | "sale";
+export type TransactionVehicleType = "land" | "marine" | "air";
 
-export type TransactionStatus =
-	| "PENDIENTE"
-	| "COMPLETADA"
-	| "RECHAZADA"
-	| "CANCELADA"
-	| "EN_REVISION";
+export interface PaymentMethod {
+	id: string;
+	method: string;
+	amount: string;
+	createdAt: string; // date-time format
+	updatedAt: string; // date-time format
+}
 
-export type TransactionChannel =
-	| "BANCA_EN_LINEA"
-	| "CAJERO_AUTOMATICO"
-	| "SUCURSAL"
-	| "MOVIL"
-	| "TRANSFERENCIA_ELECTRONICA"
-	| "OTRO";
+export interface PaymentMethodInput {
+	method: string;
+	amount: string;
+}
 
 export interface Transaction {
 	id: string;
 	clientId: string;
-	clientName: string;
-	clientRfc: string;
-	amount: number;
+	operationDate: string; // date-time format
+	operationType: TransactionOperationType;
+	branchPostalCode: string;
+	vehicleType: TransactionVehicleType;
+	brand: string;
+	model: string;
+	year: number;
+	vin?: string | null;
+	repuve?: string | null;
+	armorLevel?: string | null;
+	engineNumber?: string | null;
+	plates?: string | null;
+	registrationNumber?: string | null;
+	flagCountryId?: string | null;
+	amount: string;
 	currency: string;
-	type: TransactionType;
-	status: TransactionStatus;
-	channel: TransactionChannel;
-	date: string;
-	description?: string;
-	reference?: string;
-	riskScore?: number;
-	alertCount: number;
-	originAccount?: string;
-	destinationAccount?: string;
-	createdAt: string;
-	updatedAt: string;
+	paymentDate: string; // date-time format
+	paymentMethods: PaymentMethod[];
+	createdAt: string; // date-time format
+	updatedAt: string; // date-time format
+	deletedAt?: string | null; // date-time format
 }
 
-export function getTransactionTypeLabel(type: TransactionType): string {
-	const labels: Record<TransactionType, string> = {
-		DEPOSITO: "Depósito",
-		RETIRO: "Retiro",
-		TRANSFERENCIA: "Transferencia",
-		PAGO: "Pago",
-		COBRANZA: "Cobranza",
-		OTRO: "Otro",
-	};
-	return labels[type];
+export interface TransactionCreateRequest {
+	clientId: string;
+	operationDate: string; // date format (YYYY-MM-DD)
+	operationType: TransactionOperationType;
+	branchPostalCode: string;
+	vehicleType: TransactionVehicleType;
+	brand: string;
+	model: string;
+	year: number;
+	vin?: string | null;
+	repuve?: string | null;
+	armorLevel?: string | null;
+	engineNumber?: string | null;
+	plates?: string | null;
+	registrationNumber?: string | null;
+	flagCountryId?: string | null;
+	amount: string;
+	currency: string;
+	paymentMethods: PaymentMethodInput[];
+	paymentDate?: string; // date-time format (optional)
 }
 
-export function getTransactionStatusLabel(status: TransactionStatus): string {
-	const labels: Record<TransactionStatus, string> = {
-		PENDIENTE: "Pendiente",
-		COMPLETADA: "Completada",
-		RECHAZADA: "Rechazada",
-		CANCELADA: "Cancelada",
-		EN_REVISION: "En Revisión",
-	};
-	return labels[status];
+export interface TransactionUpdateRequest {
+	operationDate: string; // date format (YYYY-MM-DD)
+	operationType: TransactionOperationType;
+	branchPostalCode: string;
+	vehicleType: TransactionVehicleType;
+	brand: string;
+	model: string;
+	year: number;
+	vin?: string | null;
+	repuve?: string | null;
+	armorLevel?: string | null;
+	engineNumber?: string | null;
+	plates?: string | null;
+	registrationNumber?: string | null;
+	flagCountryId?: string | null;
+	amount: string;
+	currency: string;
+	paymentMethods: PaymentMethodInput[];
+	paymentDate: string; // date-time format
 }
 
-export function getTransactionChannelLabel(
-	channel: TransactionChannel,
-): string {
-	const labels: Record<TransactionChannel, string> = {
-		BANCA_EN_LINEA: "Banca en Línea",
-		CAJERO_AUTOMATICO: "Cajero Automático",
-		SUCURSAL: "Sucursal",
-		MOVIL: "Móvil",
-		TRANSFERENCIA_ELECTRONICA: "Transferencia Electrónica",
-		OTRO: "Otro",
-	};
-	return labels[channel];
+export interface TransactionPagination {
+	page: number;
+	limit: number;
+	total: number;
+	totalPages: number;
 }
 
-export function formatCurrency(
-	amount: number,
-	currency: string = "MXN",
-): string {
-	return new Intl.NumberFormat("es-MX", {
-		style: "currency",
-		currency,
-	}).format(amount);
+export interface TransactionListResponse {
+	data: Transaction[];
+	pagination: TransactionPagination;
 }

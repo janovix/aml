@@ -1,6 +1,8 @@
 "use client";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { ViewportHeightProvider } from "@/components/ViewportHeightProvider";
+import { Toaster } from "@/components/ui/sonner";
 
 export default function ClientLayout({
 	children,
@@ -9,10 +11,10 @@ export default function ClientLayout({
 }) {
 	return (
 		<ThemeProvider>
-			<div className="fixed bottom-4 right-4">
-				<ThemeSwitcher />
-			</div>
-			{children}
+			<ViewportHeightProvider>
+				<DashboardLayout>{children}</DashboardLayout>
+				<Toaster />
+			</ViewportHeightProvider>
 		</ThemeProvider>
 	);
 }

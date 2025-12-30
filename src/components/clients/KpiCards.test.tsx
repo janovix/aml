@@ -1,53 +1,108 @@
-import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
 import { KpiCards } from "./KpiCards";
+import * as statsApi from "@/lib/api/stats";
+import { ApiError } from "@/lib/api/http";
+
+const mockToast = vi.fn();
+
+vi.mock("@/hooks/use-toast", () => ({
+	useToast: () => ({
+		toast: mockToast,
+		toasts: [],
+	}),
+}));
+
+vi.mock("@/lib/api/stats", () => ({
+	getClientStats: vi.fn(),
+}));
 
 describe("KpiCards", () => {
-	it("renders all KPI cards", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		vi.mocked(statsApi.getClientStats).mockResolvedValue({
+			openAlerts: 37,
+			urgentReviews: 12,
+			totalClients: 1248,
+		});
+	});
+
+	it("renders all KPI cards", async () => {
 		render(<KpiCards />);
 
 		expect(screen.getByText("Avisos Abiertos")).toBeInTheDocument();
 		expect(screen.getByText("Revisiones Urgentes")).toBeInTheDocument();
-		expect(screen.getByText("Revisiones Completadas")).toBeInTheDocument();
 		expect(screen.getByText("Total Clientes")).toBeInTheDocument();
 	});
 
-	it("displays correct values", () => {
+	it("displays correct values", async () => {
 		render(<KpiCards />);
 
-		const values37 = screen.getAllByText("37");
-		const values12 = screen.getAllByText("12");
-		const values156 = screen.getAllByText("156");
-		const values1248 = screen.getAllByText("1,248");
-		expect(values37.length).toBeGreaterThan(0);
-		expect(values12.length).toBeGreaterThan(0);
-		expect(values156.length).toBeGreaterThan(0);
-		expect(values1248.length).toBeGreaterThan(0);
+		await waitFor(() => {
+			expect(screen.getByText("37")).toBeInTheDocument();
+		});
+
+		expect(screen.getByText("12")).toBeInTheDocument();
+		expect(screen.getByText("1,248")).toBeInTheDocument();
 	});
 
-	it("displays trend information", () => {
+	it("handles ApiError with enhanced logging", async () => {
+		const consoleErrorSpy = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => {});
+		const apiError = new ApiError("API error", {
+			status: 500,
+			body: { message: "Internal server error" },
+		});
+		vi.mocked(statsApi.getClientStats).mockRejectedValue(apiError);
+
 		render(<KpiCards />);
 
-		const trend8 = screen.getAllByText("8%");
-		const trend23 = screen.getAllByText("23%");
-		const trend12 = screen.getAllByText("12%");
-		const nuevosHoy = screen.getAllByText("nuevos hoy");
-		const esteMes = screen.getAllByText("este mes");
-		const vsMes = screen.getAllByText("vs mes anterior");
-		expect(trend8.length).toBeGreaterThan(0);
-		expect(nuevosHoy.length).toBeGreaterThan(0);
-		expect(trend23.length).toBeGreaterThan(0);
-		expect(esteMes.length).toBeGreaterThan(0);
-		expect(trend12.length).toBeGreaterThan(0);
-		expect(vsMes.length).toBeGreaterThan(0);
-	});
+		await waitFor(() => {
+			expect(mockToast).toHaveBeenCalledWith(
+				expect.objectContaining({
+					title: "Error",
+					description: "No se pudieron cargar las estadísticas.",
+					variant: "destructive",
+				}),
+			);
+		});
 
-	it("has proper accessibility label", () => {
-		render(<KpiCards />);
-
-		const sections = screen.getAllByLabelText(
-			"Indicadores clave de rendimiento",
+		expect(consoleErrorSpy).toHaveBeenCalledWith(
+			"[KpiCards] API error fetching client stats:",
+			"status=500",
+			"message=API error",
+			"body=",
+			{ message: "Internal server error" },
 		);
-		expect(sections.length).toBeGreaterThan(0);
+
+		consoleErrorSpy.mockRestore();
+	});
+
+	it("handles non-ApiError gracefully", async () => {
+		const consoleErrorSpy = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => {});
+		const genericError = new Error("Network error");
+		vi.mocked(statsApi.getClientStats).mockRejectedValue(genericError);
+
+		render(<KpiCards />);
+
+		await waitFor(() => {
+			expect(mockToast).toHaveBeenCalledWith(
+				expect.objectContaining({
+					title: "Error",
+					description: "No se pudieron cargar las estadísticas.",
+					variant: "destructive",
+				}),
+			);
+		});
+
+		expect(consoleErrorSpy).toHaveBeenCalledWith(
+			"[KpiCards] Error fetching client stats:",
+			"Network error",
+		);
+
+		consoleErrorSpy.mockRestore();
 	});
 });

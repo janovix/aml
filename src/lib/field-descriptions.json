@@ -1,0 +1,371 @@
+{
+	"descriptions": {
+		"archivo": {
+			"name": "Archivo XML",
+			"description": "La etiqueta es obligatoria. La etiqueta es el padre del documento XML."
+		},
+		"informe": {
+			"name": "Informe",
+			"description": "La etiqueta es obligatoria. En caso de Entidad Colegiada debe incluirse una etiqueta <informe> por cada Sujeto Obligado, en caso contrario incluir solo una etiqueta."
+		},
+		"mes_reportado": {
+			"name": "Mes reportado",
+			"description": "El campo es obligatorio. La longitud es de 6 dígitos.\n\nLongitud: 6\nFormato: AAAAMM"
+		},
+		"sujeto_obligado": {
+			"name": "Datos de identificación de quien realiza la Actividad Vulnerable",
+			"description": "La etiqueta es obligatoria. Se debe encontrar el cierre de etiqueta </sujeto_obligado>"
+		},
+		"clave_entidad_colegiada": {
+			"name": "Clave de la Entidad Colegiada por medio de la cual se remiten los avisos",
+			"description": "El campo es opcional si el sujeto obligado no se encuentra registrado con una entidad colegiada. La longitud es de 12 caracteres.\n\nLongitud: 12\nFormato: Patrón:\nLLLAAMMDDXXX;\nen donde, L=(A-Z) letra o caracteres & o Ñ, AA=año, MM=mes, DD=día, X=alfanumérico"
+		},
+		"clave_sujeto_obligado": {
+			"name": "Clave de quien realiza la Actividad Vulnerable que genera el aviso",
+			"description": "El campo es obligatorio. La longitud mínima es de 12 dígitos y máxima de 13.\n\nLongitud: 12-13\nFormato: Patrón:\nLLLLAAMMDDXXX/LLLAAMMDDXXX;\nen donde, L=(A-Z) letra o caracteres &o Ñ, AA=año, MM=mes, DD=día, X=alfanumérico"
+		},
+		"clave_actividad": {
+			"name": "Clave de la actividad vulnerable",
+			"description": "El campo es obligatorio. La longitud es de 3 caracteres\n\nLongitud: 3\nFormato: Patrón: AAA"
+		},
+		"exento": {
+			"name": "¿El envío del informe corresponde a la realización de actos u operaciones previstos en el artículo 27 Bis de las Reglas de Carácter General de la LFPIORPI?",
+			"description": "El campo es obligatorio en caso de que el sujeto obligado realice el envío del informe correspondiente a la realización de actos u operaciones previstos en el artículo 27 Bis de las Reglas de Carácter General de la LFPIORPI, en caso contrario no debe colocarse. La longitud es de 1 dígito.\n\nLongitud: 1"
+		},
+		"aviso": {
+			"name": "Datos del Aviso",
+			"description": "Si existe la etiqueta, se debe encontrar el cierre de etiqueta </aviso>"
+		},
+		"referencia_aviso": {
+			"name": "Referencia del Aviso",
+			"description": "El campo es obligatorio para cada aviso. La longitud mínima es de 1 carácter y la máxima es de 14.\n\nLongitud: 1 -14"
+		},
+		"modificatorio": {
+			"name": "Datos si el aviso es modificatorio",
+			"description": "Si existe la etiqueta, se debe encontrar el cierre de la misma </modificatorio>"
+		},
+		"folio_modificacion": {
+			"name": "Folio del Aviso previo que se modifica",
+			"description": "El campo es obligatorio si existe la etiqueta <modificatorio>. La longitud mínima es de 6 caracteres y la máxima es de 14.\n\nLongitud: 6 - 14\nFormato: Patrón: AAAA-999999999 (sin ceros a la izquierda)"
+		},
+		"descripcion_modificacion": {
+			"name": "Descripción de la modificación",
+			"description": "El campo es obligatorio si existe la etiqueta <modificatorio>. La longitud mínima es de 1 caracteres y la máxima es de 3000.\n\nLongitud: 1-3000"
+		},
+		"prioridad": {
+			"name": "Prioridad de aviso",
+			"description": "El campo es obligatorio para cada aviso. Se debe especificar la prioridad del aviso con la clave numérica que le corresponda de acuerdo al siguiente listado:\n     1 - Normal.\n     2 - 24 hrs. con operaciones\n\nLongitud: 1\nFormato: Patrón: 9"
+		},
+		"alerta": {
+			"name": "Alertas",
+			"description": "La etiqueta es obligatoria. Se debe encontrar el cierre de etiqueta </alerta>"
+		},
+		"tipo_alerta": {
+			"name": "Tipo de alerta",
+			"description": "El campo es obligatorio. La longitud mínima es de 3 caracteres y máxima de 4.\n\nLongitud: 3-4\nFormato: Patrón: 9999"
+		},
+		"descripcion_alerta": {
+			"name": "Descripción de alerta",
+			"description": "La longitud mínima es de 1 caracteres y la máxima es de 3000. El campo es alfanumérico.\n\nLongitud: 1-3000"
+		},
+		"persona_aviso": {
+			"name": "Datos de identificación de la persona objeto del aviso",
+			"description": "La etiqueta es obligatoria. Se debe encontrar el cierre de etiqueta </persona_aviso>"
+		},
+		"tipo_persona": {
+			"name": "Datos de tipo de persona del beneficiario controlador o dueño beneficiario",
+			"description": "Si existe la etiqueta <dueno_beneficiario>, entonces la etiqueta es obligatoria. Se debe encontrar el cierre de etiqueta </tipo_persona>"
+		},
+		"persona_fisica": {
+			"name": "Datos de la persona cuando se trata de persona física",
+			"description": "Si no existe la etiqueta <persona_moral> o <fideicomiso>, entonces es obligatoria la etiqueta <persona_fisica>. No puede existir más de una. Se debe encontrar el cierre de etiqueta </persona_fisica>"
+		},
+		"nombre": {
+			"name": "Nombre(s)",
+			"description": "Ingresa el nombre o nombres de la persona física. Puede contener hasta 200 caracteres."
+		},
+		"apellido_paterno": {
+			"name": "Apellido Paterno",
+			"description": "Ingresa el apellido paterno de la persona física. Puede contener hasta 200 caracteres."
+		},
+		"apellido_materno": {
+			"name": "Apellido Materno",
+			"description": "Ingresa el apellido materno de la persona física. Este campo es opcional. Puede contener hasta 200 caracteres."
+		},
+		"fecha_nacimiento": {
+			"name": "Fecha de Nacimiento",
+			"description": "Selecciona la fecha de nacimiento de la persona física. El formato debe ser año, mes y día (AAAA-MM-DD)."
+		},
+		"rfc": {
+			"name": "Registro Federal de Contribuyentes (RFC)",
+			"description": "Ingresa el RFC de la persona o empresa. Para persona física debe tener 13 caracteres, para persona moral o fideicomiso debe tener 12 caracteres. El formato incluye letras mayúsculas (sin acentos), números y los caracteres & o Ñ."
+		},
+		"curp": {
+			"name": "Clave Única de Registro de Población",
+			"description": "Ingresa la CURP de la persona física. Debe tener exactamente 18 caracteres alfanuméricos. La CURP incluye información sobre nombre, fecha de nacimiento, género y entidad federativa."
+		},
+		"pais_nacionalidad": {
+			"name": "País de nacionalidad",
+			"description": "Selecciona el país de nacionalidad de la persona física. Este campo se utiliza para identificar la nacionalidad del cliente según los requerimientos de la UIF."
+		},
+		"actividad_economica": {
+			"name": "Actividad económica u ocupación",
+			"description": "El campo es obligatorio si existe la etiqueta <persona_fisica>. La longitud es de 7 dígitos.\n\nLongitud: 7\nFormato: Patrón: 9999999"
+		},
+		"persona_moral": {
+			"name": "Datos de la persona cuando se trata de persona moral",
+			"description": "Si no existe la etiqueta <persona_fisica> o <fideicomiso>, entonces es obligatoria la etiqueta <persona_moral>. No puede existir más de una. Se debe encontrar el cierre de etiqueta </persona_moral>"
+		},
+		"denominacion_razon": {
+			"name": "Razón Social",
+			"description": "Ingresa la razón social o denominación completa de la empresa o fideicomiso. Este es el nombre oficial registrado ante las autoridades. Puede contener hasta 254 caracteres."
+		},
+		"fecha_constitucion": {
+			"name": "Fecha de Constitución",
+			"description": "Selecciona la fecha en que se constituyó la empresa o fideicomiso. El formato debe ser año, mes y día (AAAA-MM-DD)."
+		},
+		"giro_mercantil": {
+			"name": "Actividad económica o giro mercantil u objeto social",
+			"description": "El campo es obligatorio si existe la etiqueta <persona_moral>. La longitud es de 7 dígitos.\n\nLongitud: 7\nFormato: Formato: 9999999"
+		},
+		"representante_apoderado": {
+			"name": "Representante o apoderado legal o persona que realice el acto u operación a nombre de la persona moral",
+			"description": "La etiqueta es obligatoria si existe la etiqueta <persona_moral>. Se debe encontrar el cierre de etiqueta <\\representante_apoderado>"
+		},
+		"fideicomiso": {
+			"name": "Datos de la persona cuando se trata de fideicomiso",
+			"description": "Si no existe la etiqueta <persona_fisica> o <persona_moral>, entonces es obligatoria la etiqueta <fideicomiso>. No puede existir más de una. Se debe encontrar el cierre de etiqueta </fideicomiso>"
+		},
+		"identificador_fideicomiso": {
+			"name": "Número, referencia o identificador del fideicomiso",
+			"description": "La longitud mínima es de 1 carácter y máxima de 40. El campo es alfanumérico.\n\nLongitud: 1-40"
+		},
+		"apoderado_delegado": {
+			"name": "Apoderado legal o delegado fiduciario que realice el acto u operación a nombre del fideicomiso",
+			"description": "La etiqueta es obligatoria si existe la etiqueta <fideicomiso>. Se debe encontrar el cierre de etiqueta <\\apoderado_delegado>"
+		},
+		"tipo_domicilio": {
+			"name": "Datos de tipo de domicilio de la persona objeto del aviso",
+			"description": "Se debe encontrar el cierre de etiqueta </tipo_domicilio>"
+		},
+		"nacional": {
+			"name": "Datos del domicilio si es nacional",
+			"description": "Si no existe la etiqueta <extranjero>, entonces es obligatoria la etiqueta <nacional>. No pueden existir las dos. Se debe encontrar el cierre de etiqueta </nacional>"
+		},
+		"colonia": {
+			"name": "Colonia",
+			"description": "Ingresa el nombre de la colonia, fraccionamiento o asentamiento donde se encuentra el domicilio. Puede contener hasta 50 caracteres."
+		},
+		"calle": {
+			"name": "Calle",
+			"description": "Ingresa el nombre de la calle, avenida o vía donde se encuentra el domicilio. Puede contener hasta 100 caracteres."
+		},
+		"numero_exterior": {
+			"name": "Número exterior",
+			"description": "Ingresa el número exterior del domicilio. Puede contener hasta 56 caracteres."
+		},
+		"numero_interior": {
+			"name": "Número interior",
+			"description": "Ingresa el número interior, departamento, oficina o local si aplica. Este campo es opcional. Puede contener letras, números, espacios y los caracteres: coma, punto, dos puntos, diagonal y guión medio. Máximo 40 caracteres."
+		},
+		"codigo_postal": {
+			"name": "Código Postal",
+			"description": "Ingresa el código postal del domicilio o de la sucursal donde se realizó la operación. Debe tener exactamente 5 dígitos."
+		},
+		"extranjero": {
+			"name": "Datos del domicilio si es extranjero",
+			"description": "Si no existe la etiqueta <nacional>, entonces es obligatoria la etiqueta <extranjero>. No pueden existir las dos. Se debe encontrar el cierre de etiqueta </extranjero>"
+		},
+		"pais": {
+			"name": "Clave del país donde se encuentra el domicilio",
+			"description": "El campo es obligatorio si existe la etiqueta <extranjero>. La longitud es de 2 caracteres.\n\nLongitud: 2\nFormato: Formato: AA"
+		},
+		"estado_provincia": {
+			"name": "Estado, provincia, departamento o demarcación política similar que corresponda",
+			"description": "El campo es obligatorio si existe la etiqueta <extranjero>. La longitud mínima es de 1 carácter y máxima de 100.\n\nLongitud: 1-100"
+		},
+		"ciudad_poblacion": {
+			"name": "Ciudad o población",
+			"description": "Ingresa el nombre de la ciudad o población donde se encuentra el domicilio. Puede contener hasta 100 caracteres."
+		},
+		"municipio": {
+			"name": "Municipio",
+			"description": "Ingresa el nombre del municipio o delegación donde se encuentra el domicilio. Este campo es requerido para domicilios en México."
+		},
+		"entidad_federativa": {
+			"name": "Entidad Federativa",
+			"description": "Selecciona el estado o entidad federativa donde se encuentra el domicilio. Este campo es requerido para cumplir con los reportes de la UIF."
+		},
+		"telefono": {
+			"name": "Teléfono",
+			"description": "Ingresa el número de teléfono de contacto del cliente. Debe incluir la clave de región (lada) seguida del número telefónico. Debe tener entre 10 y 12 dígitos."
+		},
+		"clave_pais": {
+			"name": "Clave del país",
+			"description": "Selecciona el código del país para el número telefónico. Debe ser un código de 2 letras según el estándar internacional."
+		},
+		"numero_telefono": {
+			"name": "Número de teléfono",
+			"description": "Ingresa el número de teléfono completo incluyendo la clave de región (lada). Debe tener entre 10 y 12 dígitos."
+		},
+		"correo_electronico": {
+			"name": "Correo electrónico",
+			"description": "Ingresa la dirección de correo electrónico del cliente. Debe ser una dirección válida con el formato estándar (ejemplo: nombre@dominio.com). Puede contener letras, números, guiones, puntos y guiones bajos. Máximo 60 caracteres."
+		},
+		"dueno_beneficiario": {
+			"name": "Datos de identificación del beneficiario controlador o dueño beneficiario",
+			"description": "Se debe encontrar el cierre de etiqueta </dueno_beneficiario>. En caso de no contar con la información, no necesita incluirse la sección en el reporte."
+		},
+		"detalle_operaciones": {
+			"name": "Detalle de la(s) operación(es) o acto(s)",
+			"description": "La etiqueta es obligatoria. Se debe encontrar el cierre de etiqueta </detalle_operaciones>."
+		},
+		"datos_operacion": {
+			"name": "Datos de la Operación",
+			"description": "La etiqueta es obligatoria si existe la etiqueta <detalle_operaciones> (por lo menos deberá incluirse una operación). Se debe encontrar el cierre de etiqueta </datos_operacion>."
+		},
+		"fecha_operacion": {
+			"name": "Fecha de la operación",
+			"description": "Selecciona la fecha en que se realizó la operación o transacción con el vehículo. Esta fecha es importante para el reporte a la UIF."
+		},
+		"tipo_operacion": {
+			"name": "Tipo de Operación",
+			"description": "Selecciona el tipo de operación realizada. Puede ser compra, venta u otro tipo de transacción relacionada con el vehículo."
+		},
+		"tipo_vehiculo": {
+			"name": "Tipo de Vehículo",
+			"description": "Selecciona el tipo de vehículo involucrado en la operación: Terrestre (automóviles, motocicletas), Marítimo (barcos, yates) o Aéreo (aviones, helicópteros)."
+		},
+		"datos_vehiculo_terrestre": {
+			"name": "Datos del vehículo terrestre",
+			"description": "Información específica del vehículo cuando es de tipo terrestre (automóvil, motocicleta, etc.)."
+		},
+		"marca_fabricante": {
+			"name": "Marca/Fabricante",
+			"description": "Selecciona la marca o fabricante del vehículo (ejemplo: Toyota, Nissan, Honda). Este campo es obligatorio para identificar correctamente el vehículo en el reporte."
+		},
+		"modelo": {
+			"name": "Modelo",
+			"description": "Ingresa el modelo del vehículo (ejemplo: Corolla, Sentra, Civic). Puede contener hasta 40 caracteres."
+		},
+		"anio": {
+			"name": "Año",
+			"description": "Ingresa el año de fabricación del vehículo. Debe ser un año válido de 4 dígitos (ejemplo: 2024)."
+		},
+		"vin": {
+			"name": "Número de Identificación Vehicular (VIN)",
+			"description": "Ingresa el VIN del vehículo si está disponible. El VIN es un número único de 17 caracteres que identifica al vehículo. Este campo es opcional, pero se requiere al menos uno de: VIN, REPUVE o Placas."
+		},
+		"repuve": {
+			"name": "REPUVE (Registro Público Vehicular)",
+			"description": "Ingresa el número de inscripción en el REPUVE si está disponible. Debe tener 8 caracteres alfanuméricos. Este campo es opcional, pero se requiere al menos uno de: VIN, REPUVE o Placas."
+		},
+		"placas": {
+			"name": "Placas",
+			"description": "Ingresa el número de placas del vehículo si está disponible. Puede contener hasta 12 caracteres alfanuméricos. Este campo es opcional, pero se requiere al menos uno de: VIN, REPUVE o Placas."
+		},
+		"nivel_blindaje": {
+			"name": "Nivel de blindaje",
+			"description": "Selecciona el nivel de blindaje del vehículo si aplica. Este campo es opcional y solo se utiliza cuando el vehículo tiene blindaje certificado."
+		},
+		"numero_motor": {
+			"name": "Número de motor",
+			"description": "Ingresa el número de motor del vehículo si está disponible. Este campo es opcional y se utiliza para identificar vehículos terrestres."
+		},
+		"numero_registro": {
+			"name": "Número de registro",
+			"description": "Ingresa el número de registro o matrícula del vehículo marítimo o aéreo. Este campo es requerido para vehículos marítimos y aéreos."
+		},
+		"pais_bandera": {
+			"name": "País de bandera",
+			"description": "Selecciona el país de la bandera bajo la cual está registrado el vehículo marítimo o aéreo. Este campo es requerido para vehículos marítimos y aéreos."
+		},
+		"datos_vehiculo_maritimo": {
+			"name": "Datos del vehículo marítimo",
+			"description": "Información específica del vehículo cuando es de tipo marítimo (barco, yate, etc.)."
+		},
+		"numero_serie": {
+			"name": "Número de serie",
+			"description": "Ingresa el número de serie del vehículo aéreo. Este campo es requerido para identificar vehículos aéreos. Puede contener hasta 20 caracteres."
+		},
+		"bandera": {
+			"name": "Bandera",
+			"description": "Selecciona el país de la bandera bajo la cual está registrado el vehículo marítimo. Debe ser un código de país de 2 letras."
+		},
+		"matricula": {
+			"name": "Matrícula",
+			"description": "Ingresa el número de matrícula del vehículo marítimo o aéreo. Puede contener hasta 12 caracteres alfanuméricos."
+		},
+		"datos_vehiculo_aereo": {
+			"name": "Datos del vehículo cuando es un Vehículo Aéreo",
+			"description": "La etiqueta es obligatoria, si el Tipo de Vehículo es Aéreo y no existen las etiquetas <datos_vehiculo_terrestre> o <datos_vehiculo_maritimo>. Solo debe existir una de ellas. Se debe encontrar el cierre de etiqueta </datos_vehiculo_aereo>."
+		},
+		"datos_liquidacion": {
+			"name": "Datos de liquidación de la operación o acto",
+			"description": "La etiqueta es obligatoria si existe la etiqueta <datos_operacion> y el Tipo de operación es diferente a \"Intercambio\". Se debe encontrar el cierre de etiqueta </datos_liquidacion>"
+		},
+		"fecha_pago": {
+			"name": "Fecha de pago",
+			"description": "Selecciona la fecha en que se realizó el pago de la operación. Esta fecha puede ser diferente a la fecha de la operación y es importante para el reporte a la UIF."
+		},
+		"forma_pago": {
+			"name": "Forma de pago",
+			"description": "Selecciona la forma en que se realizó el pago de la operación (efectivo, transferencia, cheque, etc.). Este campo es requerido para el reporte."
+		},
+		"instrumento_monetario": {
+			"name": "Instrumento monetario",
+			"description": "Selecciona el tipo de instrumento monetario utilizado para el pago (efectivo, cheque, transferencia, etc.). Este campo es requerido cuando la forma de pago es contado, diferido o permuta."
+		},
+		"moneda": {
+			"name": "Moneda",
+			"description": "Selecciona la moneda en que se realizó la operación (MXN, USD, EUR, etc.). Este campo es requerido y debe coincidir con la moneda del monto ingresado."
+		},
+		"monto_operacion": {
+			"name": "Monto de la operación",
+			"description": "Ingresa el monto total de la operación. El formato debe incluir 2 decimales (ejemplo: 1500000.50). El monto debe corresponder a la moneda seleccionada y la suma de los métodos de pago debe igualar este monto."
+		},
+		"clave_actividad": {
+			"name": "Clave de actividad vulnerable",
+			"description": "Código que identifica el tipo de actividad vulnerable que realiza la organización. Actualmente solo se soporta VEH (Vehículos)."
+		}
+	},
+	"uiMapping": {
+		"firstName": "nombre",
+		"lastName": "apellido_paterno",
+		"secondLastName": "apellido_materno",
+		"birthDate": "fecha_nacimiento",
+		"curp": "curp",
+		"rfc": "rfc",
+		"businessName": "denominacion_razon",
+		"incorporationDate": "fecha_constitucion",
+		"nationality": "pais_nacionalidad",
+		"email": "correo_electronico",
+		"phone": "telefono",
+		"street": "calle",
+		"externalNumber": "numero_exterior",
+		"internalNumber": "numero_interior",
+		"neighborhood": "colonia",
+		"postalCode": "codigo_postal",
+		"city": "municipio",
+		"municipality": "municipio",
+		"stateCode": "entidad_federativa",
+		"operationDate": "fecha_operacion",
+		"operationType": "tipo_operacion",
+		"branchPostalCode": "codigo_postal",
+		"vehicleType": "tipo_vehiculo",
+		"brand": "marca_fabricante",
+		"model": "modelo",
+		"year": "anio",
+		"plates": "placas",
+		"engineNumber": "numero_motor",
+		"registrationNumber": "numero_registro",
+		"flagCountryId": "pais_bandera",
+		"armorLevel": "nivel_blindaje",
+		"amount": "monto_operacion",
+		"currency": "moneda",
+		"paymentDate": "fecha_pago",
+		"paymentMethods": "forma_pago",
+		"vin": "vin",
+		"repuve": "repuve"
+	}
+}
