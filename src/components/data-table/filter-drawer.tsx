@@ -12,6 +12,13 @@ interface FilterDrawerProps {
 	activeFilters: Record<string, string[]>;
 	onToggleFilter: (filterId: string, value: string) => void;
 	onClearAll: () => void;
+	filtersTitleText?: string;
+	clearText?: string;
+	applyFiltersText?: string;
+	filterText?: string;
+	filtersText?: string;
+	activeText?: string;
+	activePluralText?: string;
 }
 
 export function FilterDrawer({
@@ -21,6 +28,13 @@ export function FilterDrawer({
 	activeFilters,
 	onToggleFilter,
 	onClearAll,
+	filtersTitleText = "Filtros",
+	clearText = "Limpiar",
+	applyFiltersText = "Aplicar Filtros",
+	filterText = "filtro",
+	filtersText = "filtros",
+	activeText = "activo",
+	activePluralText = "activos",
 }: FilterDrawerProps) {
 	const activeCount = Object.values(activeFilters).reduce(
 		(acc, arr) => acc + arr.length,
@@ -54,11 +68,13 @@ export function FilterDrawer({
 				{/* Header */}
 				<div className="flex items-center justify-between px-4 pb-3 border-b border-border">
 					<div>
-						<h3 className="font-semibold text-foreground">Filtros</h3>
+						<h3 className="font-semibold text-foreground">
+							{filtersTitleText}
+						</h3>
 						{activeCount > 0 && (
 							<p className="text-xs text-muted-foreground">
-								{activeCount} filtro{activeCount !== 1 ? "s" : ""} activo
-								{activeCount !== 1 ? "s" : ""}
+								{activeCount} {activeCount !== 1 ? filtersText : filterText}{" "}
+								{activeCount !== 1 ? activePluralText : activeText}
 							</p>
 						)}
 					</div>
@@ -70,7 +86,7 @@ export function FilterDrawer({
 								onClick={onClearAll}
 								className="text-muted-foreground h-8"
 							>
-								Limpiar
+								{clearText}
 							</Button>
 						)}
 						<Button
@@ -132,7 +148,7 @@ export function FilterDrawer({
 				{/* Footer */}
 				<div className="p-4 border-t border-border bg-card">
 					<Button onClick={onClose} className="w-full">
-						Aplicar Filtros
+						{applyFiltersText}
 					</Button>
 				</div>
 			</div>

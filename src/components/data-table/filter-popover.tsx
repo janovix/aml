@@ -16,6 +16,7 @@ interface FilterPopoverProps {
 	activeValues: string[];
 	onToggleFilter: (value: string) => void;
 	onClear: () => void;
+	clearText?: string;
 }
 
 export function FilterPopover({
@@ -23,6 +24,7 @@ export function FilterPopover({
 	activeValues,
 	onToggleFilter,
 	onClear,
+	clearText = "Limpiar",
 }: FilterPopoverProps) {
 	const Icon = filter.icon;
 	const activeCount = activeValues.length;
@@ -62,7 +64,7 @@ export function FilterPopover({
 								onClick={onClear}
 								className="h-6 px-2 text-xs text-muted-foreground"
 							>
-								Limpiar
+								{clearText}
 							</Button>
 						)}
 					</div>
