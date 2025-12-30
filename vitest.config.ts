@@ -39,15 +39,8 @@ export default defineConfig({
 				// Layout components - primarily UI composition, hard to unit test branches
 				"src/components/layout/DashboardLayout.tsx",
 				"src/components/layout/Logo.tsx",
-				// Complex UI selectors with many async states - better for E2E tests
-				"src/components/catalogs/CatalogSelector.tsx",
-				"src/components/clients/ClientSelector.tsx",
 				// Client page content files that are mostly form composition
 				"src/components/clients/ClientsPageContent.tsx",
-				// Table components that are mostly UI composition wrapping DataTable
-				// Core functionality is tested through DataTable tests
-				"src/components/clients/ClientsTable.tsx",
-				"src/components/reports/ReportsTable.tsx",
 				// Algtools UI re-exports - external library
 				"src/algtools/ui.tsx",
 				// Hooks with browser-only behavior difficult to test in jsdom
