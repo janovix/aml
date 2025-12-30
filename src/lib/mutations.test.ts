@@ -334,5 +334,129 @@ describe("mutations", () => {
 			const errorMessage = toastConfig.error(apiError);
 			expect(errorMessage).toBe("Request failed");
 		});
+
+		it("extracts validation messages from Zod error format in details", async () => {
+			const mutation = vi.fn().mockResolvedValue({});
+
+			await executeMutation({
+				mutation,
+				loading: "Loading...",
+				success: "Success!",
+			});
+
+			// Simulate Zod validation error format from aml-svc
+			const apiError = new ApiError("Request failed", {
+				status: 400,
+				body: {
+					error: "APIError",
+					message: "Validation failed",
+					details: {
+						rfc: {
+							_errors: ["RFC es requerido"],
+						},
+						email: {
+							_errors: ["Email inválido"],
+						},
+					},
+				},
+			});
+
+			const toastConfig = (toast.promise as ReturnType<typeof vi.fn>).mock
+				.calls[0][1];
+			const errorMessage = toastConfig.error(apiError);
+			expect(errorMessage).toBe(
+				"rfc: RFC es requerido y email: Email inválido",
+			);
+		});
+
+		it("extracts single validation message from Zod error format", async () => {
+			const mutation = vi.fn().mockResolvedValue({});
+
+			await executeMutation({
+				mutation,
+				loading: "Loading...",
+				success: "Success!",
+			});
+
+			const apiError = new ApiError("Request failed", {
+				status: 400,
+				body: {
+					error: "APIError",
+					message: "Validation failed",
+					details: {
+						rfc: {
+							_errors: ["RFC es requerido"],
+						},
+					},
+				},
+			});
+
+			const toastConfig = (toast.promise as ReturnType<typeof vi.fn>).mock
+				.calls[0][1];
+			const errorMessage = toastConfig.error(apiError);
+			expect(errorMessage).toBe("rfc: RFC es requerido");
+		});
+
+		it("handles nested validation errors in Zod format", async () => {
+			const mutation = vi.fn().mockResolvedValue({});
+
+			await executeMutation({
+				mutation,
+				loading: "Loading...",
+				success: "Success!",
+			});
+
+			const apiError = new ApiError("Request failed", {
+				status: 400,
+				body: {
+					error: "APIError",
+					message: "Validation failed",
+					details: {
+						paymentMethods: {
+							_errors: ["At least one payment method is required"],
+							"0": {
+								amount: {
+									_errors: ["Invalid amount format"],
+								},
+							},
+						},
+					},
+				},
+			});
+
+			const toastConfig = (toast.promise as ReturnType<typeof vi.fn>).mock
+				.calls[0][1];
+			const errorMessage = toastConfig.error(apiError);
+			expect(errorMessage).toContain(
+				"paymentMethods: At least one payment method is required",
+			);
+			expect(errorMessage).toContain(
+				"paymentMethods.0.amount: Invalid amount format",
+			);
+		});
+
+		it("falls back to message when details has no validation errors", async () => {
+			const mutation = vi.fn().mockResolvedValue({});
+
+			await executeMutation({
+				mutation,
+				loading: "Loading...",
+				success: "Success!",
+			});
+
+			const apiError = new ApiError("Request failed", {
+				status: 400,
+				body: {
+					error: "APIError",
+					message: "Validation failed",
+					details: {},
+				},
+			});
+
+			const toastConfig = (toast.promise as ReturnType<typeof vi.fn>).mock
+				.calls[0][1];
+			const errorMessage = toastConfig.error(apiError);
+			expect(errorMessage).toBe("Validation failed");
+		});
 	});
 });

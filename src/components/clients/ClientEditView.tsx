@@ -28,6 +28,7 @@ import { getPersonTypeDisplay } from "../../lib/person-type";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
 import { getFieldDescription } from "../../lib/field-descriptions";
 import { CatalogSelector } from "../catalogs/CatalogSelector";
+import { PhoneInput } from "../ui/phone-input";
 
 interface ClientFormData {
 	personType: PersonType;
@@ -593,11 +594,12 @@ export function ClientEditView({
 								>
 									Teléfono
 								</LabelWithInfo>
-								<Input
+								<PhoneInput
 									id="phone"
-									type="tel"
-									value={formData.phone}
-									onChange={(e) => handleInputChange("phone", e.target.value)}
+									value={formData.phone || undefined}
+									onChange={(value: string | undefined) =>
+										handleInputChange("phone", value || "")
+									}
 									placeholder="+52 55 1234 5678"
 									required
 								/>

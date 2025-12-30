@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Save } from "lucide-react";
@@ -232,11 +233,12 @@ export function ClientEditPageContent({
 									</div>
 									<div className="space-y-2">
 										<Label htmlFor="phone">Teléfono *</Label>
-										<Input
+										<PhoneInput
 											id="phone"
-											type="tel"
-											value={formData.phone || ""}
-											onChange={(e) => handleChange("phone", e.target.value)}
+											value={formData.phone || undefined}
+											onChange={(value: string | undefined) =>
+												handleChange("phone", value || "")
+											}
 											required
 										/>
 									</div>
