@@ -114,7 +114,8 @@ describe("ClientNewPageContent", () => {
 		const phoneInput = screen.getByLabelText("Teléfono *");
 		await user.type(phoneInput, "1234567890");
 
-		expect(phoneInput).toHaveValue("1234567890");
+		// Phone input component adds country code prefix
+		expect((phoneInput as HTMLInputElement).value).toContain("1234567890");
 	});
 
 	it("shows physical person name fields when physical person type is selected", async () => {

@@ -1,36 +1,96 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { KpiCards } from "@/components/clients/KpiCards";
+import { useEffect, useState } from "react";
 import { ClientsTable } from "@/components/clients/ClientsTable";
-import { Button } from "@algtools/ui";
-import { Plus } from "lucide-react";
+import { PageHero, type StatCard } from "@/components/page-hero";
+import { Users, AlertTriangle, Clock, Plus } from "lucide-react";
+import { getClientStats } from "@/lib/api/stats";
+import { useToast } from "@/hooks/use-toast";
+import { ApiError } from "@/lib/api/http";
 
 export function ClientsPageContent(): React.ReactElement {
 	const router = useRouter();
+	const { toast } = useToast();
+	const [stats, setStats] = useState<{
+		openAlerts: number;
+		urgentReviews: number;
+		totalClients: number;
+	} | null>(null);
+	const [isLoading, setIsLoading] = useState(true);
+
+	useEffect(() => {
+		const fetchStats = async () => {
+			try {
+				setIsLoading(true);
+				const data = await getClientStats();
+				setStats(data);
+			} catch (error) {
+				if (error instanceof ApiError) {
+					console.error(
+						"[ClientsPageContent] API error fetching client stats:",
+						`status=${error.status}`,
+						`message=${error.message}`,
+						"body=",
+						error.body,
+					);
+				} else {
+					console.error(
+						"[ClientsPageContent] Error fetching client stats:",
+						error instanceof Error ? error.message : error,
+					);
+				}
+				toast({
+					title: "Error",
+					description: "No se pudieron cargar las estadísticas.",
+					variant: "destructive",
+				});
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
+		fetchStats();
+	}, [toast]);
+
+	const formatNumber = (num: number): string => {
+		return new Intl.NumberFormat("es-MX").format(num);
+	};
+
+	const heroStats: StatCard[] = [
+		{
+			label: "Avisos Abiertos",
+			value: isLoading ? "..." : (stats?.openAlerts ?? 0),
+			icon: AlertTriangle,
+			variant: "primary",
+		},
+		{
+			label: "Revisiones Urgentes",
+			value: isLoading ? "..." : (stats?.urgentReviews ?? 0),
+			icon: Clock,
+		},
+		{
+			label: "Total Clientes",
+			value: isLoading
+				? "..."
+				: stats?.totalClients
+					? formatNumber(stats.totalClients)
+					: "0",
+			icon: Users,
+		},
+	];
 
 	return (
 		<div className="space-y-6">
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-3xl font-bold tracking-tight">Clientes</h1>
-					<p className="text-muted-foreground">
-						Gestión y monitoreo de clientes
-					</p>
-				</div>
-				<Button
-					className="h-10 w-10 sm:h-10 sm:w-auto sm:px-4 sm:gap-2 rounded-lg p-0 bg-primary hover:bg-primary/90"
-					onClick={() => router.push("/clients/new")}
-					aria-label="Nuevo Cliente"
-				>
-					<Plus className="h-4 w-4 text-primary-foreground" />
-					<span className="hidden sm:inline text-primary-foreground">
-						Nuevo Cliente
-					</span>
-				</Button>
-			</div>
-
-			<KpiCards />
+			<PageHero
+				title="Clientes"
+				subtitle="Gestión y monitoreo de clientes"
+				icon={Users}
+				stats={heroStats}
+				ctaLabel="Nuevo Cliente"
+				ctaIcon={Plus}
+				onCtaClick={() => router.push("/clients/new")}
+			/>
 
 			<ClientsTable />
 		</div>

@@ -13,6 +13,7 @@ import {
 	Eye,
 	FileText,
 	User,
+	Plus,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -46,6 +47,7 @@ import {
 	type ColumnDef,
 	type FilterDef,
 } from "@/components/data-table";
+import { PageHero, type StatCard } from "@/components/page-hero";
 
 /**
  * Extended alert row with resolved client and rule names
@@ -477,19 +479,66 @@ export function AlertsTable({
 		}));
 	}, [alertsData]);
 
+	// Compute stats from alerts data
+	const stats: StatCard[] = useMemo(() => {
+		const totalAlerts = alertsData.length;
+		const detectedAlerts = alertsData.filter(
+			(a) => a.status === "DETECTED",
+		).length;
+		const overdueAlerts = alertsData.filter((a) => a.isOverdue).length;
+		const submittedAlerts = alertsData.filter(
+			(a) => a.status === "SUBMITTED",
+		).length;
+
+		return [
+			{
+				label: "Total Alertas",
+				value: totalAlerts,
+				icon: Bell,
+			},
+			{
+				label: "Detectadas",
+				value: detectedAlerts,
+				icon: AlertTriangle,
+				variant: "primary",
+			},
+			{
+				label: "Vencidas",
+				value: overdueAlerts,
+				icon: Clock,
+			},
+			{
+				label: "Enviadas",
+				value: submittedAlerts,
+				icon: Send,
+			},
+		];
+	}, [alertsData]);
+
 	return (
-		<DataTable
-			data={alertsWithStringOverdue as unknown as AlertRow[]}
-			columns={columns}
-			filters={filterDefs}
-			searchKeys={["ruleName", "clientName", "clientId", "notes"]}
-			searchPlaceholder="Buscar por regla, cliente..."
-			emptyMessage="No se encontraron alertas"
-			loadingMessage="Cargando alertas..."
-			isLoading={isLoading}
-			selectable
-			getId={(item) => item.id}
-			actions={renderActions}
-		/>
+		<div className="space-y-6">
+			<PageHero
+				title="Alertas"
+				subtitle="Monitoreo y gestión de alertas AML"
+				icon={Bell}
+				stats={stats}
+				ctaLabel="Nueva Alerta"
+				ctaIcon={Plus}
+				onCtaClick={() => router.push("/alertas/new")}
+			/>
+			<DataTable
+				data={alertsWithStringOverdue as unknown as AlertRow[]}
+				columns={columns}
+				filters={filterDefs}
+				searchKeys={["ruleName", "clientName", "clientId", "notes"]}
+				searchPlaceholder="Buscar por regla, cliente..."
+				emptyMessage="No se encontraron alertas"
+				loadingMessage="Cargando alertas..."
+				isLoading={isLoading}
+				selectable
+				getId={(item) => item.id}
+				actions={renderActions}
+			/>
+		</div>
 	);
 }

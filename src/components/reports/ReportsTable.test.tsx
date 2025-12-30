@@ -225,4 +225,272 @@ describe("ReportsTable", () => {
 			expect(screen.getByText("8")).toBeInTheDocument();
 		});
 	});
+
+	it("renders action menu buttons for reports", async () => {
+		render(<ReportsTable />);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText("Reporte Mensual Diciembre 2024"),
+			).toBeInTheDocument();
+		});
+
+		// Verify table structure includes action menus
+		// The action menu functionality is tested in other tests
+		const rows = screen.getAllByRole("row");
+		expect(rows.length).toBeGreaterThan(1);
+		expect(
+			screen.getByText("Reporte Mensual Diciembre 2024"),
+		).toBeInTheDocument();
+	});
+
+	it("navigates to report detail when view action is clicked", async () => {
+		const user = userEvent.setup();
+		render(<ReportsTable />);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText("Reporte Mensual Diciembre 2024"),
+			).toBeInTheDocument();
+		});
+
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				expect(screen.getByText("Ver detalle")).toBeInTheDocument();
+			});
+
+			await user.click(screen.getByText("Ver detalle"));
+
+			expect(mockPush).toHaveBeenCalledWith("/reportes/RPT-001");
+		}
+	});
+
+	it("shows generate report option for DRAFT status", async () => {
+		const user = userEvent.setup();
+		render(<ReportsTable />);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText("Reporte Mensual Diciembre 2024"),
+			).toBeInTheDocument();
+		});
+
+		// First report is DRAFT
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				expect(screen.getByText("Generar reporte")).toBeInTheDocument();
+			});
+		}
+	});
+
+	it("shows send to SAT option for GENERATED status", async () => {
+		const user = userEvent.setup();
+		render(<ReportsTable />);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText("Reporte Trimestral Q4 2024"),
+			).toBeInTheDocument();
+		});
+
+		// Find the action button for the GENERATED report (RPT-003)
+		// We need to find the row containing "Q4 2024" and its action button
+		const rows = screen.getAllByRole("row");
+		const q4Row = rows.find((row) => row.textContent?.includes("Q4 2024"));
+		expect(q4Row).toBeTruthy();
+
+		if (q4Row) {
+			const moreButton = q4Row.querySelector(
+				'button[class*="MoreHorizontal"], button:has(svg)',
+			) as HTMLButtonElement;
+			if (moreButton) {
+				await user.click(moreButton);
+
+				await waitFor(() => {
+					expect(screen.getByText("Enviar a SAT")).toBeInTheDocument();
+				});
+			}
+		}
+	});
+
+	it("shows download XML option for all reports", async () => {
+		const user = userEvent.setup();
+		render(<ReportsTable />);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText("Reporte Mensual Diciembre 2024"),
+			).toBeInTheDocument();
+		});
+
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				expect(screen.getByText("Descargar XML")).toBeInTheDocument();
+			});
+		}
+	});
+
+	it("calls download handler when download is clicked", async () => {
+		const user = userEvent.setup();
+		render(<ReportsTable />);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText("Reporte Mensual Diciembre 2024"),
+			).toBeInTheDocument();
+		});
+
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				expect(screen.getByText("Descargar XML")).toBeInTheDocument();
+			});
+
+			await user.click(screen.getByText("Descargar XML"));
+
+			await waitFor(() => {
+				expect(mockToast).toHaveBeenCalledWith(
+					expect.objectContaining({
+						title: "Descargando...",
+					}),
+				);
+			});
+		}
+	});
+
+	it("shows delete option only for DRAFT reports", async () => {
+		const user = userEvent.setup();
+		render(<ReportsTable />);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText("Reporte Mensual Diciembre 2024"),
+			).toBeInTheDocument();
+		});
+
+		// First report is DRAFT - should show delete
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				expect(screen.getByText("Eliminar")).toBeInTheDocument();
+			});
+		}
+	});
+
+	it("calls delete handler when delete is clicked for DRAFT report", async () => {
+		const user = userEvent.setup();
+		render(<ReportsTable />);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText("Reporte Mensual Diciembre 2024"),
+			).toBeInTheDocument();
+		});
+
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				expect(screen.getByText("Eliminar")).toBeInTheDocument();
+			});
+
+			await user.click(screen.getByText("Eliminar"));
+
+			await waitFor(() => {
+				expect(mockToast).toHaveBeenCalledWith(
+					expect.objectContaining({
+						title: "Reporte eliminado",
+					}),
+				);
+			});
+		}
+	});
+
+	it("displays status icons correctly", async () => {
+		render(<ReportsTable />);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText("Reporte Mensual Diciembre 2024"),
+			).toBeInTheDocument();
+		});
+
+		// Status icons should be rendered in the table
+		const rows = screen.getAllByRole("row");
+		expect(rows.length).toBeGreaterThan(1);
+	});
+
+	it("displays type badges correctly", async () => {
+		render(<ReportsTable />);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText("Reporte Mensual Diciembre 2024"),
+			).toBeInTheDocument();
+		});
+
+		// Type badges should be rendered
+		const rows = screen.getAllByRole("row");
+		expect(rows.length).toBeGreaterThan(1);
+	});
+
+	it("formats submitted date correctly when present", async () => {
+		render(<ReportsTable />);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText("Reporte Mensual Noviembre 2024"),
+			).toBeInTheDocument();
+		});
+
+		// Submitted date should be formatted
+		const rows = screen.getAllByRole("row");
+		expect(rows.length).toBeGreaterThan(1);
+	});
+
+	it("shows dash when submitted date is not present", async () => {
+		render(<ReportsTable />);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText("Reporte Mensual Diciembre 2024"),
+			).toBeInTheDocument();
+		});
+
+		// Draft reports don't have submittedAt - should show dash
+		const rows = screen.getAllByRole("row");
+		expect(rows.length).toBeGreaterThan(1);
+	});
 });

@@ -96,7 +96,11 @@ describe("ClientEditPageContent", () => {
 				"Este valor se define al dar de alta al cliente y no se puede modificar desde esta vista.",
 			),
 		).toBeInTheDocument();
-		expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+		// Note: We can't check for no combobox because phone input has a country selector combobox
+		// Instead, verify person type is displayed as text, not as a select/combobox for person type
+		expect(
+			screen.queryByRole("combobox", { name: /tipo de persona/i }),
+		).not.toBeInTheDocument();
 	});
 
 	it("renders cancel and save buttons", () => {
@@ -184,7 +188,8 @@ describe("ClientEditPageContent", () => {
 		await user.clear(phoneInput);
 		await user.type(phoneInput, "9999999999");
 
-		expect(phoneInput).toHaveValue("9999999999");
+		// Phone input component adds country code prefix
+		expect((phoneInput as HTMLInputElement).value).toContain("9999999999");
 	});
 
 	it("allows updating business name for moral person", async () => {
