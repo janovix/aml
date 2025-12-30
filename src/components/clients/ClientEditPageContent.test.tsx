@@ -188,8 +188,13 @@ describe("ClientEditPageContent", () => {
 		await user.clear(phoneInput);
 		await user.type(phoneInput, "9999999999");
 
-		// Phone input component adds country code prefix
-		expect((phoneInput as HTMLInputElement).value).toContain("9999999999");
+		// Phone input component formats the value with spaces and country code
+		// Check that the typed digits are present (ignoring spaces)
+		const inputValue = (phoneInput as HTMLInputElement).value.replace(
+			/\s/g,
+			"",
+		);
+		expect(inputValue).toContain("9999999999");
 	});
 
 	it("allows updating business name for moral person", async () => {
