@@ -14,8 +14,8 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const handleFiltersChange = (filters: ListTransactionsOptions): void => {
-	console.log("Filters changed:", filters);
+const handleFiltersChange = (_filters: ListTransactionsOptions): void => {
+	// Storybook handler - filters would be used in real implementation
 };
 
 export const Default: Story = {

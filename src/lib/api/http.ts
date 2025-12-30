@@ -93,7 +93,38 @@ export async function fetchJson<T>(
 
 	const contentType = res.headers.get("content-type") ?? "";
 	const isJson = contentType.includes("application/json");
-	const body = isJson ? await res.json().catch(() => null) : await res.text();
+	let body: unknown;
+
+	if (isJson) {
+		// Clone the response so we can read it as text if JSON parsing fails
+		const clonedRes = res.clone();
+		try {
+			body = await res.json();
+		} catch (parseError) {
+			// If JSON parsing fails, read as text for better error reporting
+			const textBody = await clonedRes.text();
+			// If response is not OK, include the text body in the error
+			if (!res.ok) {
+				throw new ApiError(
+					`Request failed: ${res.status} ${res.statusText}. Invalid JSON response.`,
+					{
+						status: res.status,
+						body: textBody,
+					},
+				);
+			}
+			// If response is OK but JSON is invalid, throw a more descriptive error
+			throw new ApiError(
+				`Invalid JSON response from server: ${parseError instanceof Error ? parseError.message : "Unknown parsing error"}`,
+				{
+					status: res.status,
+					body: textBody,
+				},
+			);
+		}
+	} else {
+		body = await res.text();
+	}
 
 	if (!res.ok) {
 		throw new ApiError(`Request failed: ${res.status} ${res.statusText}`, {

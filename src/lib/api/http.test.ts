@@ -21,7 +21,7 @@ describe("api/http fetchJson", () => {
 		expect(res.json).toEqual({ ok: true });
 	});
 
-	it("returns null when JSON parsing fails but response is ok", async () => {
+	it("throws ApiError when JSON parsing fails but response is ok", async () => {
 		vi.stubGlobal(
 			"fetch",
 			vi.fn(async () => {
@@ -32,8 +32,18 @@ describe("api/http fetchJson", () => {
 			}),
 		);
 
-		const res = await fetchJson<unknown>("https://example.com");
-		expect(res.json).toBeNull();
+		await expect(
+			fetchJson<unknown>("https://example.com"),
+		).rejects.toBeInstanceOf(ApiError);
+
+		try {
+			await fetchJson<unknown>("https://example.com");
+		} catch (e) {
+			const err = e as ApiError;
+			expect(err.status).toBe(200);
+			expect(err.body).toBe("not json");
+			expect(err.message).toContain("Invalid JSON response");
+		}
 	});
 
 	it("returns text when content-type is not JSON", async () => {
