@@ -57,6 +57,7 @@ const PhoneInput = React.forwardRef<
 			countrySelectComponent={CountrySelect}
 			inputComponent={InputComponent}
 			smartCaret={false}
+			defaultCountry="MX"
 			value={normalizedValue}
 			/**
 			 * Handles the onChange event.
