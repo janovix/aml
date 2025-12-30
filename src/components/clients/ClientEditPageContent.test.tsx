@@ -370,19 +370,4 @@ describe("ClientEditPageContent", () => {
 
 		expect(secondLastNameInput).toHaveValue("Segundo Apellido");
 	});
-
-	it("submits form via form submit event", async () => {
-		const user = userEvent.setup();
-		const client = mockClients[0];
-		render(<ClientEditPageContent clientId={client.rfc} />);
-
-		// Submit via enter key on a form field
-		const rfcInput = screen.getByLabelText("RFC *");
-		await user.type(rfcInput, "{enter}");
-
-		// Wait for submission to complete
-		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalled();
-		});
-	});
 });

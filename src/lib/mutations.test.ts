@@ -77,7 +77,8 @@ describe("mutations", () => {
 			await executeMutation({
 				mutation,
 				loading: "Loading...",
-				success: (data) => `Created item: ${data.name}`,
+				success: (data: { id: number; name: string }) =>
+					`Created item: ${data.name}`,
 			});
 
 			const toastConfig = (toast.promise as ReturnType<typeof vi.fn>).mock

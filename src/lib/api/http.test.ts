@@ -139,4 +139,77 @@ describe("api/http fetchJson", () => {
 			}),
 		);
 	});
+
+	it("does not auto-fetch JWT in test environment when jwt is undefined", async () => {
+		const mockFetch = vi.fn(async () => {
+			return new Response(JSON.stringify({ ok: true }), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			});
+		});
+		vi.stubGlobal("fetch", mockFetch);
+
+		// In test environment, JWT should not be auto-fetched
+		await fetchJson("https://example.com");
+
+		// Authorization header should not be present
+		expect(mockFetch).toHaveBeenCalledWith(
+			"https://example.com",
+			expect.objectContaining({
+				headers: expect.not.objectContaining({
+					Authorization: expect.any(String),
+				}),
+			}),
+		);
+	});
+
+	it("passes request options through to fetch", async () => {
+		const mockFetch = vi.fn(async () => {
+			return new Response(JSON.stringify({ ok: true }), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			});
+		});
+		vi.stubGlobal("fetch", mockFetch);
+
+		const controller = new AbortController();
+		await fetchJson("https://example.com", {
+			method: "POST",
+			body: JSON.stringify({ test: true }),
+			signal: controller.signal,
+		});
+
+		expect(mockFetch).toHaveBeenCalledWith(
+			"https://example.com",
+			expect.objectContaining({
+				method: "POST",
+				body: JSON.stringify({ test: true }),
+				signal: controller.signal,
+			}),
+		);
+	});
+
+	it("merges custom headers with accept header", async () => {
+		const mockFetch = vi.fn(async () => {
+			return new Response(JSON.stringify({ ok: true }), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			});
+		});
+		vi.stubGlobal("fetch", mockFetch);
+
+		await fetchJson("https://example.com", {
+			headers: { "content-type": "application/json" },
+		});
+
+		expect(mockFetch).toHaveBeenCalledWith(
+			"https://example.com",
+			expect.objectContaining({
+				headers: expect.objectContaining({
+					accept: "application/json",
+					"content-type": "application/json",
+				}),
+			}),
+		);
+	});
 });
