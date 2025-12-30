@@ -12,6 +12,7 @@ import {
 	Download,
 	Eye,
 	Trash2,
+	Plus,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -32,6 +33,7 @@ import {
 	type ColumnDef,
 	type FilterDef,
 } from "@/components/data-table";
+import { PageHero, type StatCard } from "@/components/page-hero";
 
 /**
  * Report type
@@ -432,19 +434,64 @@ export function ReportsTable(): React.ReactElement {
 		</DropdownMenu>
 	);
 
+	// Compute stats from reports data
+	const stats: StatCard[] = useMemo(() => {
+		const totalReports = reports.length;
+		const draftReports = reports.filter((r) => r.status === "DRAFT").length;
+		const submittedReports = reports.filter(
+			(r) => r.status === "SUBMITTED" || r.status === "ACKNOWLEDGED",
+		).length;
+		const totalRecords = reports.reduce((sum, r) => sum + r.recordCount, 0);
+
+		return [
+			{
+				label: "Total Reportes",
+				value: totalReports,
+				icon: FileText,
+			},
+			{
+				label: "Borradores",
+				value: draftReports,
+				icon: Clock,
+				variant: "primary",
+			},
+			{
+				label: "Enviados",
+				value: submittedReports,
+				icon: Send,
+			},
+			{
+				label: "Total Registros",
+				value: totalRecords,
+				icon: FileCheck2,
+			},
+		];
+	}, [reports]);
+
 	return (
-		<DataTable
-			data={reports}
-			columns={columns}
-			filters={filterDefs}
-			searchKeys={["id", "name", "period", "createdBy"]}
-			searchPlaceholder="Buscar por nombre, período..."
-			emptyMessage="No se encontraron reportes"
-			loadingMessage="Cargando reportes..."
-			isLoading={isLoading}
-			selectable
-			getId={(item) => item.id}
-			actions={renderActions}
-		/>
+		<div className="space-y-6">
+			<PageHero
+				title="Reportes"
+				subtitle="Gestión y seguimiento de reportes AML"
+				icon={FileText}
+				stats={stats}
+				ctaLabel="Nuevo Reporte"
+				ctaIcon={Plus}
+				onCtaClick={() => router.push("/reportes/new")}
+			/>
+			<DataTable
+				data={reports}
+				columns={columns}
+				filters={filterDefs}
+				searchKeys={["id", "name", "period", "createdBy"]}
+				searchPlaceholder="Buscar por nombre, período..."
+				emptyMessage="No se encontraron reportes"
+				loadingMessage="Cargando reportes..."
+				isLoading={isLoading}
+				selectable
+				getId={(item) => item.id}
+				actions={renderActions}
+			/>
+		</div>
 	);
 }
