@@ -1,0 +1,460 @@
+"use client";
+
+import { useState, useMemo, useCallback } from "react";
+import {
+	Search,
+	X,
+	ArrowUpDown,
+	ChevronLeft,
+	ChevronRight,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useIsMobile } from "@/hooks/use-mobile";
+import type { DataTableProps, SortState, ActiveFilter } from "./types";
+import { FilterDrawer } from "./filter-drawer";
+import { FilterPopover } from "./filter-popover";
+import { InlineFilterSummary } from "./inline-filter-summary";
+
+const ITEMS_PER_PAGE = 10;
+
+export function DataTable<T extends object>({
+	data,
+	columns,
+	filters,
+	searchKeys,
+	searchPlaceholder = "Buscar...",
+	emptyMessage = "No se encontraron resultados",
+	onRowClick,
+	actions,
+	selectable = false,
+	getId,
+	isLoading = false,
+	loadingMessage = "Cargando...",
+}: DataTableProps<T>) {
+	const isMobile = useIsMobile();
+	const [searchQuery, setSearchQuery] = useState("");
+	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+	const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>(
+		{},
+	);
+	const [sortState, setSortState] = useState<SortState>({
+		field: null,
+		direction: "desc",
+	});
+	const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+	const [currentPage, setCurrentPage] = useState(1);
+
+	// Calculate active filter count
+	const activeFilterCount = useMemo(
+		() =>
+			Object.values(activeFilters).reduce((acc, arr) => acc + arr.length, 0),
+		[activeFilters],
+	);
+
+	// Get active filters for inline display
+	const activeFiltersList = useMemo<ActiveFilter[]>(() => {
+		return filters
+			.map((filter) => {
+				const values = activeFilters[filter.id] || [];
+				return {
+					filterId: filter.id,
+					filterLabel: filter.label,
+					values: values.map((v) => {
+						const option = filter.options.find((o) => o.value === v);
+						return { value: v, label: option?.label || v, icon: option?.icon };
+					}),
+				};
+			})
+			.filter((f) => f.values.length > 0);
+	}, [filters, activeFilters]);
+
+	// Toggle filter value
+	const toggleFilter = useCallback((filterId: string, value: string) => {
+		setActiveFilters((prev) => {
+			const current = prev[filterId] || [];
+			const updated = current.includes(value)
+				? current.filter((v) => v !== value)
+				: [...current, value];
+			return { ...prev, [filterId]: updated };
+		});
+		setCurrentPage(1);
+	}, []);
+
+	// Clear all filters
+	const clearAllFilters = useCallback(() => {
+		setActiveFilters({});
+		setSearchQuery("");
+		setCurrentPage(1);
+	}, []);
+
+	// Clear single filter group
+	const clearFilterGroup = useCallback((filterId: string) => {
+		setActiveFilters((prev) => ({ ...prev, [filterId]: [] }));
+		setCurrentPage(1);
+	}, []);
+
+	// Remove single filter
+	const removeFilter = useCallback((filterId: string, value: string) => {
+		setActiveFilters((prev) => ({
+			...prev,
+			[filterId]: (prev[filterId] || []).filter((v) => v !== value),
+		}));
+		setCurrentPage(1);
+	}, []);
+
+	// Toggle sort
+	const toggleSort = useCallback((field: string) => {
+		setSortState((prev) => ({
+			field,
+			direction:
+				prev.field === field && prev.direction === "asc" ? "desc" : "asc",
+		}));
+	}, []);
+
+	// Toggle row selection
+	const toggleRowSelection = useCallback((id: string) => {
+		setSelectedRows((prev) => {
+			const next = new Set(prev);
+			if (next.has(id)) {
+				next.delete(id);
+			} else {
+				next.add(id);
+			}
+			return next;
+		});
+	}, []);
+
+	// Toggle all rows selection
+	const toggleAllRows = useCallback(
+		(items: T[]) => {
+			setSelectedRows((prev) => {
+				if (prev.size === items.length) {
+					return new Set();
+				}
+				return new Set(items.map(getId));
+			});
+		},
+		[getId],
+	);
+
+	// Get nested value from object
+	const getNestedValue = (obj: T, path: string): unknown => {
+		return path.split(".").reduce((acc: unknown, part: string) => {
+			if (acc && typeof acc === "object" && part in acc) {
+				return (acc as Record<string, unknown>)[part];
+			}
+			return undefined;
+		}, obj);
+	};
+
+	// Filter and sort data
+	const filteredData = useMemo(() => {
+		let result = data.filter((item) => {
+			// Search filter
+			const matchesSearch =
+				searchQuery === "" ||
+				searchKeys.some((key) => {
+					const value = getNestedValue(item, key as string);
+					return String(value)
+						.toLowerCase()
+						.includes(searchQuery.toLowerCase());
+				});
+
+			// Active filters
+			const matchesFilters = Object.entries(activeFilters).every(
+				([filterId, values]) => {
+					if (values.length === 0) return true;
+					const itemValue = getNestedValue(item, filterId);
+					return values.includes(String(itemValue));
+				},
+			);
+
+			return matchesSearch && matchesFilters;
+		});
+
+		// Sort
+		if (sortState.field) {
+			result = [...result].sort((a, b) => {
+				const aVal = getNestedValue(a, sortState.field!);
+				const bVal = getNestedValue(b, sortState.field!);
+				const direction = sortState.direction === "asc" ? 1 : -1;
+
+				if (aVal == null) return 1;
+				if (bVal == null) return -1;
+
+				if (typeof aVal === "number" && typeof bVal === "number") {
+					return (aVal - bVal) * direction;
+				}
+				return String(aVal).localeCompare(String(bVal)) * direction;
+			});
+		}
+
+		return result;
+	}, [data, searchQuery, searchKeys, activeFilters, sortState]);
+
+	// Pagination
+	const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+	const paginatedData = useMemo(() => {
+		const start = (currentPage - 1) * ITEMS_PER_PAGE;
+		return filteredData.slice(start, start + ITEMS_PER_PAGE);
+	}, [filteredData, currentPage]);
+
+	// Filter visible columns for mobile
+	const visibleColumns = useMemo(() => {
+		if (isMobile) {
+			return columns.filter((col) => !col.hideOnMobile);
+		}
+		return columns;
+	}, [columns, isMobile]);
+
+	return (
+		<>
+			<div className="rounded-lg border border-border bg-card overflow-hidden">
+				{/* Header with Search and Filters */}
+				<div className="border-b border-border bg-muted/20">
+					<div className="flex items-center gap-2 p-3">
+						{/* Search Input */}
+						<div className="relative flex-1 max-w-sm">
+							<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+							<Input
+								placeholder={searchPlaceholder}
+								value={searchQuery}
+								onChange={(e) => {
+									setSearchQuery(e.target.value);
+									setCurrentPage(1);
+								}}
+								className="pl-9 h-9 bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-primary"
+							/>
+							{searchQuery && (
+								<button
+									onClick={() => setSearchQuery("")}
+									className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+								>
+									<X className="h-4 w-4" />
+								</button>
+							)}
+						</div>
+
+						{/* Desktop: Inline Filter Popovers */}
+						<div className="hidden md:flex items-center gap-1.5">
+							{filters.map((filter) => (
+								<FilterPopover
+									key={filter.id}
+									filter={filter}
+									activeValues={activeFilters[filter.id] || []}
+									onToggleFilter={(value) => toggleFilter(filter.id, value)}
+									onClear={() => clearFilterGroup(filter.id)}
+								/>
+							))}
+						</div>
+
+						{/* Mobile: Filter Summary Button */}
+						<div className="md:hidden">
+							<InlineFilterSummary
+								activeFilters={activeFiltersList}
+								onRemoveFilter={removeFilter}
+								onClearAll={clearAllFilters}
+								onOpenFilters={() => setIsDrawerOpen(true)}
+								compact
+							/>
+						</div>
+					</div>
+
+					{/* Desktop: Active Filter Tags */}
+					{!isMobile && activeFilterCount > 0 && (
+						<div className="px-3 pb-3">
+							<InlineFilterSummary
+								activeFilters={activeFiltersList}
+								onRemoveFilter={removeFilter}
+								onClearAll={clearAllFilters}
+								onOpenFilters={() => {}}
+							/>
+						</div>
+					)}
+				</div>
+
+				{/* Table */}
+				<div className="overflow-x-auto">
+					<table className="w-full">
+						<thead>
+							<tr className="border-b border-border bg-muted/30">
+								{selectable && (
+									<th className="w-10 p-3 text-left">
+										<Checkbox
+											checked={
+												selectedRows.size === paginatedData.length &&
+												paginatedData.length > 0
+											}
+											onCheckedChange={() => toggleAllRows(paginatedData)}
+										/>
+									</th>
+								)}
+								{visibleColumns.map((column) => (
+									<th
+										key={column.id}
+										className={cn(
+											"p-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider",
+											column.className,
+										)}
+									>
+										{column.sortable ? (
+											<button
+												onClick={() => toggleSort(column.accessorKey as string)}
+												className="flex items-center gap-1 hover:text-foreground transition-colors"
+											>
+												{column.header}
+												<ArrowUpDown
+													className={cn(
+														"h-3 w-3",
+														sortState.field === column.accessorKey &&
+															"text-primary",
+													)}
+												/>
+											</button>
+										) : (
+											column.header
+										)}
+									</th>
+								))}
+								{actions && <th className="w-10 p-3" />}
+							</tr>
+						</thead>
+						<tbody>
+							{isLoading ? (
+								<tr>
+									<td
+										colSpan={
+											visibleColumns.length +
+											(selectable ? 1 : 0) +
+											(actions ? 1 : 0)
+										}
+										className="p-8 text-center text-muted-foreground"
+									>
+										{loadingMessage}
+									</td>
+								</tr>
+							) : paginatedData.length === 0 ? (
+								<tr>
+									<td
+										colSpan={
+											visibleColumns.length +
+											(selectable ? 1 : 0) +
+											(actions ? 1 : 0)
+										}
+										className="p-8 text-center text-muted-foreground"
+									>
+										{emptyMessage}
+									</td>
+								</tr>
+							) : (
+								paginatedData.map((item) => {
+									const id = getId(item);
+									return (
+										<tr
+											key={id}
+											onClick={() => onRowClick?.(item)}
+											className={cn(
+												"border-b border-border transition-colors",
+												onRowClick && "cursor-pointer hover:bg-muted/50",
+												selectedRows.has(id) && "bg-primary/5",
+											)}
+										>
+											{selectable && (
+												<td
+													className="p-3"
+													onClick={(e) => e.stopPropagation()}
+												>
+													<Checkbox
+														checked={selectedRows.has(id)}
+														onCheckedChange={() => toggleRowSelection(id)}
+													/>
+												</td>
+											)}
+											{visibleColumns.map((column) => (
+												<td
+													key={column.id}
+													className={cn("p-3 text-sm", column.className)}
+												>
+													{column.cell
+														? column.cell(item)
+														: String(
+																getNestedValue(
+																	item,
+																	column.accessorKey as string,
+																) ?? "",
+															)}
+												</td>
+											))}
+											{actions && (
+												<td
+													className="p-3"
+													onClick={(e) => e.stopPropagation()}
+												>
+													{actions(item)}
+												</td>
+											)}
+										</tr>
+									);
+								})
+							)}
+						</tbody>
+					</table>
+				</div>
+
+				{/* Footer with Pagination */}
+				<div className="border-t border-border px-3 py-2 flex items-center justify-between text-sm text-muted-foreground bg-muted/20">
+					<div className="flex items-center gap-2">
+						<span className="tabular-nums">{filteredData.length}</span>
+						<span>resultado{filteredData.length !== 1 ? "s" : ""}</span>
+						{selectedRows.size > 0 && (
+							<span className="text-primary">
+								• {selectedRows.size} seleccionado
+								{selectedRows.size !== 1 ? "s" : ""}
+							</span>
+						)}
+					</div>
+					{totalPages > 1 && (
+						<div className="flex items-center gap-1">
+							<Button
+								variant="ghost"
+								size="sm"
+								onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+								disabled={currentPage === 1}
+								className="h-7 w-7 p-0"
+							>
+								<ChevronLeft className="h-4 w-4" />
+							</Button>
+							<span className="px-2 tabular-nums text-xs">
+								{currentPage} / {totalPages}
+							</span>
+							<Button
+								variant="ghost"
+								size="sm"
+								onClick={() =>
+									setCurrentPage((p) => Math.min(totalPages, p + 1))
+								}
+								disabled={currentPage === totalPages}
+								className="h-7 w-7 p-0"
+							>
+								<ChevronRight className="h-4 w-4" />
+							</Button>
+						</div>
+					)}
+				</div>
+			</div>
+
+			{/* Mobile Filter Drawer */}
+			<FilterDrawer
+				isOpen={isDrawerOpen}
+				onClose={() => setIsDrawerOpen(false)}
+				filters={filters}
+				activeFilters={activeFilters}
+				onToggleFilter={toggleFilter}
+				onClearAll={clearAllFilters}
+			/>
+		</>
+	);
+}

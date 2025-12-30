@@ -2,59 +2,85 @@
 
 import { useState, useEffect, useMemo } from "react";
 import {
-	Card,
-	CardContent,
-	CardHeader,
-	CardTitle,
+	ArrowDownCircle,
+	ArrowUpCircle,
+	Car,
+	Ship,
+	Plane,
+	DollarSign,
+	MoreHorizontal,
+	Eye,
+	Edit,
+	FileText,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
 	Button,
-	Checkbox,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-	Badge,
-	cn,
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
 } from "@algtools/ui";
-import { MoreHorizontal, Eye, Edit, FileText, Download } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import {
 	listTransactions,
 	type ListTransactionsOptions,
 } from "@/lib/api/transactions";
 import { getClientByRfc } from "@/lib/api/clients";
-import type { Transaction } from "@/types/transaction";
+import type { Transaction, TransactionVehicleType } from "@/types/transaction";
 import type { Client } from "@/types/client";
 import { getClientDisplayName } from "@/types/client";
-import { getPersonTypeIcon } from "@/lib/person-type-icon";
 import { generateShortTransactionId } from "@/lib/transaction-id";
+import {
+	DataTable,
+	type ColumnDef,
+	type FilterDef,
+} from "@/components/data-table";
 
+/**
+ * Extended transaction row with resolved client data
+ */
 interface TransactionRow {
 	id: string;
 	shortId: string;
-	type: "purchase" | "sale";
+	operationType: "purchase" | "sale";
+	vehicleType: TransactionVehicleType;
 	brand: string;
 	model: string;
 	year: number;
 	amount: number;
 	currency: string;
 	clientId: string;
-	client?: Client;
+	clientName: string;
 	operationDate: string;
-	paymentMethods: string; // Display string for payment methods
+	paymentMethods: string;
 }
 
-const operationTypeLabels: Record<"purchase" | "sale", string> = {
-	purchase: "Compra",
-	sale: "Venta",
+const vehicleTypeConfig: Record<
+	TransactionVehicleType,
+	{ label: string; icon: React.ReactNode; bgColor: string }
+> = {
+	land: {
+		label: "Terrestre",
+		icon: <Car className="h-4 w-4" />,
+		bgColor: "bg-sky-500/20 text-sky-400",
+	},
+	marine: {
+		label: "Marítimo",
+		icon: <Ship className="h-4 w-4" />,
+		bgColor: "bg-teal-500/20 text-teal-400",
+	},
+	air: {
+		label: "Aéreo",
+		icon: <Plane className="h-4 w-4" />,
+		bgColor: "bg-amber-500/20 text-amber-400",
+	},
 };
 
 const paymentMethodLabels: Record<string, string> = {
@@ -76,7 +102,6 @@ export function TransactionsTable({
 	const [transactions, setTransactions] = useState<Transaction[]>([]);
 	const [clients, setClients] = useState<Map<string, Client>>(new Map());
 	const [isLoading, setIsLoading] = useState(true);
-	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
 	useEffect(() => {
 		const fetchTransactions = async () => {
@@ -102,7 +127,6 @@ export function TransactionsTable({
 							clientsMap.set(clientId, client);
 						} catch (error) {
 							console.error(`Error fetching client ${clientId}:`, error);
-							// Continue even if one client fails to load
 						}
 					}),
 				);
@@ -124,313 +148,290 @@ export function TransactionsTable({
 
 	// Transform Transaction to TransactionRow format
 	const transactionsData: TransactionRow[] = useMemo(() => {
-		return transactions.map((tx) => ({
-			id: tx.id,
-			shortId: generateShortTransactionId(tx.id),
-			type: tx.operationType,
-			brand: tx.brand,
-			model: tx.model,
-			year: tx.year,
-			amount: parseFloat(tx.amount),
-			currency: tx.currency,
-			clientId: tx.clientId,
-			client: clients.get(tx.clientId),
-			operationDate: tx.operationDate,
-			paymentMethods: tx.paymentMethods
-				.map((pm) => paymentMethodLabels[pm.method] || pm.method)
-				.join(", "),
-		}));
+		return transactions.map((tx) => {
+			const client = clients.get(tx.clientId);
+			return {
+				id: tx.id,
+				shortId: generateShortTransactionId(tx.id),
+				operationType: tx.operationType,
+				vehicleType: tx.vehicleType,
+				brand: tx.brand,
+				model: tx.model,
+				year: tx.year,
+				amount: parseFloat(tx.amount),
+				currency: tx.currency,
+				clientId: tx.clientId,
+				clientName: client ? getClientDisplayName(client) : tx.clientId,
+				operationDate: tx.operationDate,
+				paymentMethods: tx.paymentMethods
+					.map((pm) => paymentMethodLabels[pm.method] || pm.method)
+					.join(", "),
+			};
+		});
 	}, [transactions, clients]);
 
-	const allSelected =
-		selectedIds.size === transactionsData.length && transactionsData.length > 0;
-	const someSelected = selectedIds.size > 0 && !allSelected;
+	// Column definitions
+	const columns: ColumnDef<TransactionRow>[] = useMemo(
+		() => [
+			{
+				id: "client",
+				header: "Cliente",
+				accessorKey: "clientName",
+				sortable: true,
+				cell: (item) => (
+					<div className="flex items-center gap-3">
+						{/* Operation type icon */}
+						<TooltipProvider>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<span
+										className={`flex items-center justify-center h-8 w-8 rounded-lg ${
+											item.operationType === "purchase"
+												? "bg-emerald-500/20 text-emerald-400"
+												: "bg-sky-500/20 text-sky-400"
+										}`}
+									>
+										{item.operationType === "purchase" ? (
+											<ArrowDownCircle className="h-4 w-4" />
+										) : (
+											<ArrowUpCircle className="h-4 w-4" />
+										)}
+									</span>
+								</TooltipTrigger>
+								<TooltipContent side="right">
+									<p>
+										{item.operationType === "purchase" ? "Compra" : "Venta"}
+									</p>
+								</TooltipContent>
+							</Tooltip>
+						</TooltipProvider>
+						<div className="flex flex-col min-w-0">
+							<Link
+								href={`/transactions/${item.id}`}
+								className="font-medium text-foreground hover:text-primary truncate"
+								onClick={(e) => e.stopPropagation()}
+							>
+								{item.clientName}
+							</Link>
+							<span className="text-xs text-muted-foreground font-mono">
+								{item.shortId}
+							</span>
+						</div>
+					</div>
+				),
+			},
+			{
+				id: "vehicle",
+				header: "Vehículo",
+				accessorKey: "brand",
+				hideOnMobile: true,
+				cell: (item) => {
+					const config = vehicleTypeConfig[item.vehicleType];
+					return (
+						<div className="flex items-center gap-2.5">
+							<TooltipProvider>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<span
+											className={`flex items-center justify-center h-7 w-7 rounded ${config.bgColor}`}
+										>
+											{config.icon}
+										</span>
+									</TooltipTrigger>
+									<TooltipContent>
+										<p>{config.label}</p>
+									</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
+							<div className="flex flex-col min-w-0">
+								<span className="text-sm font-medium truncate">
+									{item.brand} {item.model}
+								</span>
+								<span className="text-xs text-muted-foreground">
+									{item.year}
+								</span>
+							</div>
+						</div>
+					);
+				},
+			},
+			{
+				id: "amount",
+				header: "Monto",
+				accessorKey: "amount",
+				sortable: true,
+				className: "text-right",
+				cell: (item) => (
+					<div className="flex flex-col items-end">
+						<span className="font-semibold tabular-nums text-foreground">
+							{new Intl.NumberFormat("es-MX", {
+								style: "currency",
+								currency: item.currency,
+								minimumFractionDigits: 0,
+								maximumFractionDigits: 0,
+							}).format(item.amount)}
+						</span>
+						<span className="text-[10px] text-muted-foreground font-medium">
+							{item.currency}
+						</span>
+					</div>
+				),
+			},
+			{
+				id: "operationDate",
+				header: "Fecha",
+				accessorKey: "operationDate",
+				sortable: true,
+				cell: (item) => {
+					const date = new Date(item.operationDate);
+					return (
+						<div className="flex flex-col">
+							<span className="text-sm text-foreground tabular-nums">
+								{date.toLocaleDateString("es-MX", {
+									day: "2-digit",
+									month: "short",
+								})}
+							</span>
+							<span className="text-xs text-muted-foreground tabular-nums">
+								{date.toLocaleTimeString("es-MX", {
+									hour: "2-digit",
+									minute: "2-digit",
+								})}
+							</span>
+						</div>
+					);
+				},
+			},
+		],
+		[],
+	);
 
-	const handleSelectAll = (): void => {
-		if (allSelected) {
-			setSelectedIds(new Set());
-		} else {
-			setSelectedIds(
-				new Set(transactionsData.map((transaction) => transaction.id)),
-			);
-		}
-	};
+	// Filter definitions
+	const filterDefs: FilterDef[] = useMemo(
+		() => [
+			{
+				id: "operationType",
+				label: "Operación",
+				icon: DollarSign,
+				options: [
+					{
+						value: "purchase",
+						label: "Compra",
+						icon: (
+							<span className="flex items-center justify-center h-5 w-5 rounded bg-emerald-500/20 text-emerald-400">
+								<ArrowDownCircle className="h-3 w-3" />
+							</span>
+						),
+					},
+					{
+						value: "sale",
+						label: "Venta",
+						icon: (
+							<span className="flex items-center justify-center h-5 w-5 rounded bg-sky-500/20 text-sky-400">
+								<ArrowUpCircle className="h-3 w-3" />
+							</span>
+						),
+					},
+				],
+			},
+			{
+				id: "vehicleType",
+				label: "Vehículo",
+				icon: Car,
+				options: [
+					{
+						value: "land",
+						label: "Terrestre",
+						icon: (
+							<span className="flex items-center justify-center h-5 w-5 rounded bg-sky-500/20 text-sky-400">
+								<Car className="h-3 w-3" />
+							</span>
+						),
+					},
+					{
+						value: "marine",
+						label: "Marítimo",
+						icon: (
+							<span className="flex items-center justify-center h-5 w-5 rounded bg-teal-500/20 text-teal-400">
+								<Ship className="h-3 w-3" />
+							</span>
+						),
+					},
+					{
+						value: "air",
+						label: "Aéreo",
+						icon: (
+							<span className="flex items-center justify-center h-5 w-5 rounded bg-amber-500/20 text-amber-400">
+								<Plane className="h-3 w-3" />
+							</span>
+						),
+					},
+				],
+			},
+			{
+				id: "currency",
+				label: "Moneda",
+				icon: DollarSign,
+				options: [
+					{ value: "MXN", label: "MXN" },
+					{ value: "USD", label: "USD" },
+				],
+			},
+		],
+		[],
+	);
 
-	const handleSelectOne = (id: string): void => {
-		const newSelected = new Set(selectedIds);
-		if (newSelected.has(id)) {
-			newSelected.delete(id);
-		} else {
-			newSelected.add(id);
-		}
-		setSelectedIds(newSelected);
-	};
-
-	const formatCurrency = (amount: number, currency: string): string => {
-		return new Intl.NumberFormat("es-MX", {
-			style: "currency",
-			currency: currency,
-		}).format(amount);
-	};
-
-	const formatDate = (dateString: string): string => {
-		const date = new Date(dateString);
-		const now = new Date();
-		const diffTime = Math.abs(now.getTime() - date.getTime());
-		const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-		if (diffDays === 0) {
-			return "Hoy";
-		} else if (diffDays === 1) {
-			return "Ayer";
-		} else if (diffDays < 7) {
-			return `Hace ${diffDays} días`;
-		} else if (diffDays < 30) {
-			const weeks = Math.floor(diffDays / 7);
-			return weeks === 1 ? "Hace 1 semana" : `Hace ${weeks} semanas`;
-		} else if (diffDays < 365) {
-			const months = Math.floor(diffDays / 30);
-			return months === 1 ? "Hace 1 mes" : `Hace ${months} meses`;
-		} else {
-			return date.toLocaleDateString("es-MX", {
-				day: "2-digit",
-				month: "short",
-				year: "numeric",
-			});
-		}
-	};
+	// Row actions
+	const renderActions = (item: TransactionRow) => (
+		<DropdownMenu>
+			<DropdownMenuTrigger asChild>
+				<Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+					<MoreHorizontal className="h-4 w-4" />
+				</Button>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align="end" className="w-48">
+				<DropdownMenuItem
+					className="gap-2"
+					onClick={() => router.push(`/transactions/${item.id}`)}
+				>
+					<Eye className="h-4 w-4" />
+					Ver detalle
+				</DropdownMenuItem>
+				<DropdownMenuItem
+					className="gap-2"
+					onClick={() => router.push(`/transactions/${item.id}/edit`)}
+				>
+					<Edit className="h-4 w-4" />
+					Editar transacción
+				</DropdownMenuItem>
+				<DropdownMenuSeparator />
+				<DropdownMenuItem
+					className="gap-2"
+					onClick={() => router.push(`/clients/${item.clientId}`)}
+				>
+					Ver cliente
+				</DropdownMenuItem>
+				<DropdownMenuItem className="gap-2">
+					<FileText className="h-4 w-4" />
+					Generar recibo
+				</DropdownMenuItem>
+			</DropdownMenuContent>
+		</DropdownMenu>
+	);
 
 	return (
-		<Card>
-			<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-				<div>
-					<CardTitle className="text-lg font-semibold">
-						Lista de Transacciones
-					</CardTitle>
-					<p className="text-sm text-muted-foreground mt-1">
-						{isLoading
-							? "Cargando..."
-							: `${transactionsData.length} transacciones en total`}
-						{selectedIds.size > 0 && ` · ${selectedIds.size} seleccionadas`}
-					</p>
-				</div>
-				{selectedIds.size > 0 && (
-					<div className="flex items-center gap-2">
-						<Button
-							variant="outline"
-							size="sm"
-							className="gap-2 bg-transparent"
-						>
-							<Download className="h-4 w-4" />
-							Exportar
-						</Button>
-					</div>
-				)}
-			</CardHeader>
-			<CardContent className="p-0">
-				<div className="overflow-x-auto">
-					<Table>
-						<TableHeader>
-							<TableRow className="hover:bg-transparent">
-								<TableHead className="w-12 pl-6">
-									<Checkbox
-										checked={allSelected}
-										ref={(el) => {
-											if (el)
-												(
-													el as HTMLButtonElement & { indeterminate: boolean }
-												).indeterminate = someSelected;
-										}}
-										onCheckedChange={handleSelectAll}
-										aria-label="Seleccionar todas las transacciones"
-									/>
-								</TableHead>
-								<TableHead className="min-w-[250px]">Cliente</TableHead>
-								<TableHead className="text-right min-w-[140px]">
-									Monto
-								</TableHead>
-								<TableHead className="min-w-[120px]">Fecha</TableHead>
-								<TableHead className="hidden md:table-cell">Tipo</TableHead>
-								<TableHead className="hidden lg:table-cell min-w-[150px]">
-									Vehículo
-								</TableHead>
-								<TableHead className="hidden xl:table-cell">
-									Métodos de pago
-								</TableHead>
-								<TableHead className="w-12 pr-6">
-									<span className="sr-only">Acciones</span>
-								</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{isLoading ? (
-								<TableRow>
-									<TableCell
-										colSpan={8}
-										className="text-center py-8 text-muted-foreground"
-									>
-										Cargando transacciones...
-									</TableCell>
-								</TableRow>
-							) : transactionsData.length === 0 ? (
-								<TableRow>
-									<TableCell
-										colSpan={8}
-										className="text-center py-8 text-muted-foreground"
-									>
-										No hay transacciones registradas
-									</TableCell>
-								</TableRow>
-							) : (
-								transactionsData.map((transaction) => {
-									const PersonIcon = transaction.client
-										? getPersonTypeIcon(transaction.client.personType)
-										: null;
-									const clientName = transaction.client
-										? getClientDisplayName(transaction.client)
-										: transaction.clientId;
-
-									return (
-										<TableRow
-											key={transaction.id}
-											className={cn(
-												"cursor-pointer transition-colors",
-												selectedIds.has(transaction.id) && "bg-muted/50",
-											)}
-											onClick={() => handleSelectOne(transaction.id)}
-										>
-											<TableCell
-												className="pl-6"
-												onClick={(e) => e.stopPropagation()}
-											>
-												<Checkbox
-													checked={selectedIds.has(transaction.id)}
-													onCheckedChange={() =>
-														handleSelectOne(transaction.id)
-													}
-													aria-label={`Seleccionar ${transaction.shortId}`}
-												/>
-											</TableCell>
-											<TableCell>
-												<div className="flex items-center gap-3">
-													{PersonIcon && (
-														<PersonIcon className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-													)}
-													<div className="flex flex-col min-w-0">
-														<Link
-															href={`/transactions/${transaction.id}`}
-															className="font-semibold text-foreground hover:text-primary hover:underline underline-offset-2 transition-colors truncate"
-															onClick={(e) => e.stopPropagation()}
-														>
-															{clientName || transaction.clientId}
-														</Link>
-														<span className="text-xs text-muted-foreground font-mono">
-															{transaction.shortId}
-														</span>
-													</div>
-												</div>
-											</TableCell>
-											<TableCell className="text-right">
-												<div className="flex flex-col items-end">
-													<span className="font-bold text-lg">
-														{formatCurrency(
-															transaction.amount,
-															transaction.currency,
-														)}
-													</span>
-													<span className="text-xs text-muted-foreground">
-														{transaction.paymentMethods}
-													</span>
-												</div>
-											</TableCell>
-											<TableCell>
-												<div className="flex flex-col">
-													<span className="font-medium">
-														{formatDate(transaction.operationDate)}
-													</span>
-													<span className="text-xs text-muted-foreground">
-														{new Date(
-															transaction.operationDate,
-														).toLocaleDateString("es-MX", {
-															day: "2-digit",
-															month: "short",
-															year: "numeric",
-														})}
-													</span>
-												</div>
-											</TableCell>
-											<TableCell className="hidden md:table-cell">
-												<Badge variant="outline" className="font-medium">
-													{operationTypeLabels[transaction.type]}
-												</Badge>
-											</TableCell>
-											<TableCell className="hidden lg:table-cell">
-												<div className="flex flex-col">
-													<span className="font-medium">
-														{transaction.brand} {transaction.model}
-													</span>
-													<span className="text-xs text-muted-foreground">
-														{transaction.year}
-													</span>
-												</div>
-											</TableCell>
-											<TableCell className="hidden xl:table-cell">
-												<span className="text-sm text-muted-foreground">
-													{transaction.paymentMethods}
-												</span>
-											</TableCell>
-											<TableCell
-												className="pr-6"
-												onClick={(e) => e.stopPropagation()}
-											>
-												<DropdownMenu>
-													<DropdownMenuTrigger asChild>
-														<Button
-															variant="ghost"
-															size="icon"
-															className="h-8 w-8"
-															aria-label={`Acciones para ${transaction.shortId}`}
-														>
-															<MoreHorizontal className="h-4 w-4" />
-														</Button>
-													</DropdownMenuTrigger>
-													<DropdownMenuContent align="end" className="w-48">
-														<DropdownMenuItem
-															className="gap-2"
-															onClick={() =>
-																router.push(`/transactions/${transaction.id}`)
-															}
-														>
-															<Eye className="h-4 w-4" />
-															Ver Detalles
-														</DropdownMenuItem>
-														<DropdownMenuItem
-															className="gap-2"
-															onClick={() =>
-																router.push(
-																	`/transactions/${transaction.id}/edit`,
-																)
-															}
-														>
-															<Edit className="h-4 w-4" />
-															Editar
-														</DropdownMenuItem>
-														<DropdownMenuSeparator />
-														<DropdownMenuItem className="gap-2">
-															<FileText className="h-4 w-4" />
-															Generar Reporte
-														</DropdownMenuItem>
-													</DropdownMenuContent>
-												</DropdownMenu>
-											</TableCell>
-										</TableRow>
-									);
-								})
-							)}
-						</TableBody>
-					</Table>
-				</div>
-			</CardContent>
-		</Card>
+		<DataTable
+			data={transactionsData}
+			columns={columns}
+			filters={filterDefs}
+			searchKeys={["clientName", "clientId", "shortId", "brand", "model"]}
+			searchPlaceholder="Buscar por cliente, marca, modelo..."
+			emptyMessage="No se encontraron transacciones"
+			loadingMessage="Cargando transacciones..."
+			isLoading={isLoading}
+			selectable
+			getId={(item) => item.id}
+			actions={renderActions}
+		/>
 	);
 }

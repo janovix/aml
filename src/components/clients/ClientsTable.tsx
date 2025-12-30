@@ -1,25 +1,32 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
-	Card,
-	CardContent,
-	CardHeader,
-	CardTitle,
+	Users,
+	Building2,
+	User,
+	Landmark,
+	MapPin,
+	MoreHorizontal,
+	Eye,
+	Edit,
+	Flag,
+	FileText,
+	Trash2,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
 	Button,
-	Checkbox,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-	Badge,
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
 	AlertDialog,
 	AlertDialogAction,
 	AlertDialogCancel,
@@ -28,25 +35,45 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-	cn,
 } from "@algtools/ui";
 import { useToast } from "@/hooks/use-toast";
 import { useJwt } from "@/hooks/useJwt";
-import {
-	MoreHorizontal,
-	Eye,
-	Edit,
-	Flag,
-	FileText,
-	Download,
-	ArrowUpDown,
-	Trash2,
-} from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import type { Client } from "@/types/client";
+import type { Client, PersonType } from "@/types/client";
 import { getClientDisplayName } from "@/types/client";
 import { listClients, deleteClient } from "@/lib/api/clients";
+import {
+	DataTable,
+	type ColumnDef,
+	type FilterDef,
+} from "@/components/data-table";
+
+/**
+ * Client row with computed display name
+ */
+interface ClientRow extends Client {
+	displayName: string;
+}
+
+const personTypeConfig: Record<
+	PersonType,
+	{ label: string; icon: React.ReactNode; bgColor: string }
+> = {
+	physical: {
+		label: "Persona Física",
+		icon: <User className="h-4 w-4" />,
+		bgColor: "bg-sky-500/20 text-sky-400",
+	},
+	moral: {
+		label: "Persona Moral",
+		icon: <Building2 className="h-4 w-4" />,
+		bgColor: "bg-violet-500/20 text-violet-400",
+	},
+	trust: {
+		label: "Fideicomiso",
+		icon: <Landmark className="h-4 w-4" />,
+		bgColor: "bg-amber-500/20 text-amber-400",
+	},
+};
 
 export function ClientsTable(): React.ReactElement {
 	const router = useRouter();
@@ -54,9 +81,6 @@ export function ClientsTable(): React.ReactElement {
 	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const [clients, setClients] = useState<Client[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
-	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-	const [sortColumn, setSortColumn] = useState<string | null>(null);
-	const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
 
@@ -87,51 +111,13 @@ export function ClientsTable(): React.ReactElement {
 		fetchClients();
 	}, [toast, jwt, isJwtLoading]);
 
-	const allSelected = selectedIds.size === clients.length && clients.length > 0;
-	const someSelected = selectedIds.size > 0 && !allSelected;
-
-	const handleSelectAll = (): void => {
-		if (allSelected) {
-			setSelectedIds(new Set());
-		} else {
-			setSelectedIds(new Set(clients.map((c) => c.rfc)));
-		}
-	};
-
-	const handleSelectOne = (rfc: string): void => {
-		const newSelected = new Set(selectedIds);
-		if (newSelected.has(rfc)) {
-			newSelected.delete(rfc);
-		} else {
-			newSelected.add(rfc);
-		}
-		setSelectedIds(newSelected);
-	};
-
-	const handleSort = (column: string): void => {
-		if (sortColumn === column) {
-			setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-		} else {
-			setSortColumn(column);
-			setSortDirection("asc");
-		}
-	};
-
-	const formatDate = (dateString: string): string => {
-		return new Date(dateString).toLocaleDateString("es-MX", {
-			day: "2-digit",
-			month: "short",
-			year: "numeric",
-		});
-	};
-
-	const handleViewDetails = (client: Client): void => {
-		router.push(`/clients/${client.rfc}`);
-	};
-
-	const handleEdit = (client: Client): void => {
-		router.push(`/clients/${client.rfc}/edit`);
-	};
+	// Transform clients to include display name
+	const clientsData: ClientRow[] = useMemo(() => {
+		return clients.map((client) => ({
+			...client,
+			displayName: getClientDisplayName(client),
+		}));
+	}, [clients]);
 
 	const handleGenerateReport = (client: Client): void => {
 		const reportData = JSON.stringify(client, null, 2);
@@ -186,275 +172,240 @@ export function ClientsTable(): React.ReactElement {
 		}
 	};
 
-	const handleBulkExport = (): void => {
-		const selectedClients = clients.filter((c) => selectedIds.has(c.rfc));
-		const exportData = JSON.stringify(selectedClients, null, 2);
-		const blob = new Blob([exportData], { type: "application/json" });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement("a");
-		a.href = url;
-		a.download = `clientes-export-${new Date().toISOString().split("T")[0]}.json`;
-		document.body.appendChild(a);
-		a.click();
-		document.body.removeChild(a);
-		URL.revokeObjectURL(url);
+	// Column definitions
+	const columns: ColumnDef<ClientRow>[] = useMemo(
+		() => [
+			{
+				id: "client",
+				header: "Cliente",
+				accessorKey: "displayName",
+				sortable: true,
+				cell: (item) => {
+					const config = personTypeConfig[item.personType];
+					return (
+						<div className="flex items-center gap-3">
+							{/* Color-coded icon for person type */}
+							<TooltipProvider>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<span
+											className={`flex items-center justify-center h-8 w-8 rounded-lg ${config.bgColor}`}
+										>
+											{config.icon}
+										</span>
+									</TooltipTrigger>
+									<TooltipContent side="right">
+										<p>{config.label}</p>
+									</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
+							<div className="flex flex-col min-w-0">
+								<Link
+									href={`/clients/${item.rfc}`}
+									className="font-medium text-foreground hover:text-primary truncate"
+									onClick={(e) => e.stopPropagation()}
+								>
+									{item.displayName}
+								</Link>
+								<span className="text-xs text-muted-foreground font-mono">
+									{item.rfc}
+								</span>
+							</div>
+						</div>
+					);
+				},
+			},
+			{
+				id: "contact",
+				header: "Contacto",
+				accessorKey: "email",
+				hideOnMobile: true,
+				cell: (item) => (
+					<div className="flex flex-col">
+						<span className="text-sm text-foreground truncate max-w-[180px]">
+							{item.email}
+						</span>
+						<span className="text-xs text-muted-foreground">{item.phone}</span>
+					</div>
+				),
+			},
+			{
+				id: "location",
+				header: "Ubicación",
+				accessorKey: "city",
+				sortable: true,
+				hideOnMobile: true,
+				cell: (item) => (
+					<div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+						<MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+						<span className="truncate">
+							{item.city}, {item.stateCode}
+						</span>
+					</div>
+				),
+			},
+			{
+				id: "createdAt",
+				header: "Registro",
+				accessorKey: "createdAt",
+				sortable: true,
+				cell: (item) => {
+					const date = new Date(item.createdAt);
+					return (
+						<div className="flex flex-col">
+							<span className="text-sm text-foreground tabular-nums">
+								{date.toLocaleDateString("es-MX", {
+									day: "2-digit",
+									month: "short",
+								})}
+							</span>
+							<span className="text-xs text-muted-foreground tabular-nums">
+								{date.getFullYear()}
+							</span>
+						</div>
+					);
+				},
+			},
+		],
+		[],
+	);
 
-		toast({
-			title: "Exportación completa",
-			description: `${selectedIds.size} clientes exportados exitosamente.`,
-		});
-	};
+	// Filter definitions
+	const filterDefs: FilterDef[] = useMemo(
+		() => [
+			{
+				id: "personType",
+				label: "Tipo",
+				icon: Users,
+				options: [
+					{
+						value: "physical",
+						label: "Persona Física",
+						icon: (
+							<span className="flex items-center justify-center h-5 w-5 rounded bg-sky-500/20 text-sky-400">
+								<User className="h-3 w-3" />
+							</span>
+						),
+					},
+					{
+						value: "moral",
+						label: "Persona Moral",
+						icon: (
+							<span className="flex items-center justify-center h-5 w-5 rounded bg-violet-500/20 text-violet-400">
+								<Building2 className="h-3 w-3" />
+							</span>
+						),
+					},
+					{
+						value: "trust",
+						label: "Fideicomiso",
+						icon: (
+							<span className="flex items-center justify-center h-5 w-5 rounded bg-amber-500/20 text-amber-400">
+								<Landmark className="h-3 w-3" />
+							</span>
+						),
+					},
+				],
+			},
+			{
+				id: "stateCode",
+				label: "Estado",
+				icon: MapPin,
+				options: [
+					{ value: "CDMX", label: "Ciudad de México" },
+					{ value: "JAL", label: "Jalisco" },
+					{ value: "NLE", label: "Nuevo León" },
+					{ value: "QRO", label: "Querétaro" },
+					{ value: "MEX", label: "Estado de México" },
+				],
+			},
+		],
+		[],
+	);
 
-	const handleBulkFlag = (): void => {
-		toast({
-			title: "Clientes marcados",
-			description: `${selectedIds.size} clientes marcados como sospechosos.`,
-		});
-		setSelectedIds(new Set());
-	};
+	// Row actions
+	const renderActions = (item: ClientRow) => (
+		<DropdownMenu>
+			<DropdownMenuTrigger asChild>
+				<Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+					<MoreHorizontal className="h-4 w-4" />
+				</Button>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align="end" className="w-48">
+				<DropdownMenuItem
+					className="gap-2"
+					onClick={() => router.push(`/clients/${item.rfc}`)}
+				>
+					<Eye className="h-4 w-4" />
+					Ver detalle
+				</DropdownMenuItem>
+				<DropdownMenuItem
+					className="gap-2"
+					onClick={() => router.push(`/clients/${item.rfc}/edit`)}
+				>
+					<Edit className="h-4 w-4" />
+					Editar cliente
+				</DropdownMenuItem>
+				<DropdownMenuItem
+					className="gap-2"
+					onClick={() => handleGenerateReport(item)}
+				>
+					<FileText className="h-4 w-4" />
+					Generar Reporte
+				</DropdownMenuItem>
+				<DropdownMenuSeparator />
+				<DropdownMenuItem
+					onClick={() => router.push(`/transactions?clientId=${item.rfc}`)}
+				>
+					Ver transacciones
+				</DropdownMenuItem>
+				<DropdownMenuItem
+					onClick={() => router.push(`/alertas?clientId=${item.rfc}`)}
+				>
+					Ver alertas
+				</DropdownMenuItem>
+				<DropdownMenuSeparator />
+				<DropdownMenuItem
+					className="gap-2 text-[rgb(var(--risk-high))]"
+					onClick={() => handleFlagSuspicious(item)}
+				>
+					<Flag className="h-4 w-4" />
+					Marcar como Sospechoso
+				</DropdownMenuItem>
+				<DropdownMenuItem
+					className="gap-2 text-destructive"
+					onClick={() => handleDeleteClick(item)}
+				>
+					<Trash2 className="h-4 w-4" />
+					Eliminar
+				</DropdownMenuItem>
+			</DropdownMenuContent>
+		</DropdownMenu>
+	);
 
 	return (
 		<>
-			<Card>
-				<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-					<div>
-						<CardTitle className="text-lg font-semibold">
-							Lista de Clientes
-						</CardTitle>
-						<p className="text-sm text-muted-foreground mt-1">
-							{isLoading
-								? "Cargando..."
-								: `${clients.length} clientes en total`}
-							{selectedIds.size > 0 && ` · ${selectedIds.size} seleccionados`}
-						</p>
-					</div>
-					{selectedIds.size > 0 && (
-						<div className="flex items-center gap-2">
-							<Button
-								variant="outline"
-								size="sm"
-								className="gap-2 bg-transparent"
-								onClick={handleBulkExport}
-							>
-								<Download className="h-4 w-4" />
-								Exportar
-							</Button>
-							<Button
-								variant="outline"
-								size="sm"
-								className="gap-2 bg-transparent"
-								onClick={handleBulkFlag}
-							>
-								<Flag className="h-4 w-4" />
-								Marcar
-							</Button>
-						</div>
-					)}
-				</CardHeader>
-				<CardContent className="p-0">
-					<div className="overflow-x-auto">
-						<Table>
-							<TableHeader>
-								<TableRow className="hover:bg-transparent">
-									<TableHead className="w-12 pl-6">
-										<Checkbox
-											checked={allSelected}
-											ref={(el) => {
-												if (el)
-													(
-														el as HTMLButtonElement & { indeterminate: boolean }
-													).indeterminate = someSelected;
-											}}
-											onCheckedChange={handleSelectAll}
-											aria-label="Seleccionar todos los clientes"
-										/>
-									</TableHead>
-									<TableHead className="min-w-[200px]">
-										<Button
-											variant="ghost"
-											size="sm"
-											className="-ml-3 h-8 gap-1 font-medium"
-											onClick={() => handleSort("name")}
-										>
-											Cliente
-											<ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
-										</Button>
-									</TableHead>
-									<TableHead className="hidden md:table-cell">RFC</TableHead>
-									<TableHead className="hidden lg:table-cell">Tipo</TableHead>
-									<TableHead>
-										<Button
-											variant="ghost"
-											size="sm"
-											className="-ml-3 h-8 gap-1 font-medium"
-											onClick={() => handleSort("riskLevel")}
-										>
-											Nivel de Riesgo
-											<ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
-										</Button>
-									</TableHead>
-									<TableHead className="hidden sm:table-cell">Estado</TableHead>
-									<TableHead className="hidden xl:table-cell">
-										Estado de Revisión
-									</TableHead>
-									<TableHead className="hidden lg:table-cell">
-										Última Revisión
-									</TableHead>
-									<TableHead className="hidden md:table-cell text-center">
-										Avisos
-									</TableHead>
-									<TableHead className="w-12 pr-6">
-										<span className="sr-only">Acciones</span>
-									</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{isLoading ? (
-									<TableRow>
-										<TableCell
-											colSpan={10}
-											className="text-center py-8 text-muted-foreground"
-										>
-											Cargando clientes...
-										</TableCell>
-									</TableRow>
-								) : clients.length === 0 ? (
-									<TableRow>
-										<TableCell
-											colSpan={10}
-											className="text-center py-8 text-muted-foreground"
-										>
-											No hay clientes registrados
-										</TableCell>
-									</TableRow>
-								) : (
-									clients.map((client) => (
-										<TableRow
-											key={client.rfc}
-											className={cn(
-												"cursor-pointer transition-colors",
-												selectedIds.has(client.rfc) && "bg-muted/50",
-											)}
-											onClick={() => handleSelectOne(client.rfc)}
-										>
-											<TableCell
-												className="pl-6"
-												onClick={(e) => e.stopPropagation()}
-											>
-												<Checkbox
-													checked={selectedIds.has(client.rfc)}
-													onCheckedChange={() => handleSelectOne(client.rfc)}
-													aria-label={`Seleccionar ${getClientDisplayName(client)}`}
-												/>
-											</TableCell>
-											<TableCell>
-												<Link
-													href={`/clients/${client.rfc}`}
-													className="font-medium text-foreground hover:text-primary hover:underline underline-offset-2 transition-colors"
-													onClick={(e) => e.stopPropagation()}
-												>
-													{getClientDisplayName(client)}
-												</Link>
-											</TableCell>
-											<TableCell className="hidden md:table-cell font-mono text-sm text-muted-foreground">
-												{client.rfc}
-											</TableCell>
-											<TableCell className="hidden lg:table-cell">
-												<Badge variant="outline" className="font-medium">
-													{client.personType === "physical"
-														? "Física"
-														: client.personType === "moral"
-															? "Moral"
-															: "Fideicomiso"}
-												</Badge>
-											</TableCell>
-											<TableCell>
-												<Badge
-													variant="outline"
-													className="min-w-[60px] justify-center font-medium"
-												>
-													—
-												</Badge>
-											</TableCell>
-											<TableCell className="hidden sm:table-cell">
-												<Badge variant="outline" className="font-medium">
-													—
-												</Badge>
-											</TableCell>
-											<TableCell className="hidden xl:table-cell">
-												<Badge variant="outline" className="font-medium">
-													—
-												</Badge>
-											</TableCell>
-											<TableCell className="hidden lg:table-cell text-muted-foreground">
-												{formatDate(client.createdAt)}
-											</TableCell>
-											<TableCell className="hidden md:table-cell text-center">
-												<span className="text-muted-foreground">—</span>
-											</TableCell>
-											<TableCell
-												className="pr-6"
-												onClick={(e) => e.stopPropagation()}
-											>
-												<DropdownMenu>
-													<DropdownMenuTrigger asChild>
-														<Button
-															variant="ghost"
-															size="icon"
-															className="h-8 w-8"
-															aria-label={`Acciones para ${getClientDisplayName(client)}`}
-														>
-															<MoreHorizontal className="h-4 w-4" />
-														</Button>
-													</DropdownMenuTrigger>
-													<DropdownMenuContent align="end" className="w-48">
-														<DropdownMenuItem
-															className="gap-2"
-															onClick={() => handleViewDetails(client)}
-														>
-															<Eye className="h-4 w-4" />
-															Ver Detalles
-														</DropdownMenuItem>
-														<DropdownMenuItem
-															className="gap-2"
-															onClick={() => handleEdit(client)}
-														>
-															<Edit className="h-4 w-4" />
-															Editar
-														</DropdownMenuItem>
-														<DropdownMenuItem
-															className="gap-2"
-															onClick={() => handleGenerateReport(client)}
-														>
-															<FileText className="h-4 w-4" />
-															Generar Reporte
-														</DropdownMenuItem>
-														<DropdownMenuSeparator />
-														<DropdownMenuItem
-															className="gap-2 text-[rgb(var(--risk-high))]"
-															onClick={() => handleFlagSuspicious(client)}
-														>
-															<Flag className="h-4 w-4" />
-															Marcar como Sospechoso
-														</DropdownMenuItem>
-														<DropdownMenuItem
-															className="gap-2 text-destructive"
-															onClick={() => handleDeleteClick(client)}
-														>
-															<Trash2 className="h-4 w-4" />
-															Eliminar
-														</DropdownMenuItem>
-													</DropdownMenuContent>
-												</DropdownMenu>
-											</TableCell>
-										</TableRow>
-									))
-								)}
-							</TableBody>
-						</Table>
-					</div>
-				</CardContent>
-			</Card>
+			<DataTable
+				data={clientsData}
+				columns={columns}
+				filters={filterDefs}
+				searchKeys={[
+					"displayName",
+					"rfc",
+					"email",
+					"city",
+					"businessName",
+					"firstName",
+					"lastName",
+				]}
+				searchPlaceholder="Buscar por nombre, RFC, email..."
+				emptyMessage="No se encontraron clientes"
+				loadingMessage="Cargando clientes..."
+				isLoading={isLoading}
+				selectable
+				getId={(item) => item.rfc}
+				actions={renderActions}
+			/>
 
 			<AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
 				<AlertDialogContent>

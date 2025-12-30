@@ -68,8 +68,9 @@ describe("ClientsPageContent", () => {
 	it("renders clients table", () => {
 		render(<ClientsPageContent />);
 
-		const tableTitles = screen.getAllByText("Lista de Clientes");
-		expect(tableTitles.length).toBeGreaterThan(0);
+		// Check for the DataTable by looking for search placeholder
+		const searchInputs = screen.getAllByPlaceholderText(/buscar/i);
+		expect(searchInputs.length).toBeGreaterThan(0);
 	});
 
 	// Mobile menu button removed - sidebar is now handled by DashboardLayout
