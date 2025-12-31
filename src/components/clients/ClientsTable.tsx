@@ -36,8 +36,9 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@algtools/ui";
-import { useToast } from "@/hooks/use-toast";
 import { useJwt } from "@/hooks/useJwt";
+import { executeMutation } from "@/lib/mutations";
+import { toast } from "sonner";
 import { useOrgStore } from "@/lib/org-store";
 import type { Client, PersonType } from "@/types/client";
 import { getClientDisplayName } from "@/types/client";
@@ -78,7 +79,6 @@ const personTypeConfig: Record<
 
 export function ClientsTable(): React.ReactElement {
 	const router = useRouter();
-	const { toast } = useToast();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const { currentOrg } = useOrgStore();
 	const [clients, setClients] = useState<Client[]>([]);
@@ -118,17 +118,13 @@ export function ClientsTable(): React.ReactElement {
 				setHasMore(response.pagination.page < response.pagination.totalPages);
 			} catch (error) {
 				console.error("Error fetching clients:", error);
-				toast({
-					title: "Error",
-					description: "No se pudieron cargar los clientes.",
-					variant: "destructive",
-				});
+				toast.error("No se pudieron cargar los clientes.");
 			} finally {
 				setIsLoading(false);
 			}
 		};
 		fetchClients();
-	}, [toast, jwt, isJwtLoading, currentOrg?.id]);
+	}, [jwt, isJwtLoading, currentOrg?.id]);
 
 	// Load more clients for infinite scroll
 	const handleLoadMore = useCallback(async () => {
@@ -149,23 +145,11 @@ export function ClientsTable(): React.ReactElement {
 			setHasMore(response.pagination.page < response.pagination.totalPages);
 		} catch (error) {
 			console.error("Error loading more clients:", error);
-			toast({
-				title: "Error",
-				description: "No se pudieron cargar más clientes.",
-				variant: "destructive",
-			});
+			toast.error("No se pudieron cargar más clientes.");
 		} finally {
 			setIsLoadingMore(false);
 		}
-	}, [
-		currentPage,
-		hasMore,
-		isLoadingMore,
-		isJwtLoading,
-		jwt,
-		toast,
-		currentOrg?.id,
-	]);
+	}, [currentPage, hasMore, isLoadingMore, isJwtLoading, jwt, currentOrg?.id]);
 
 	// Transform clients to include display name
 	const clientsData: ClientRow[] = useMemo(() => {
@@ -187,17 +171,15 @@ export function ClientsTable(): React.ReactElement {
 		document.body.removeChild(a);
 		URL.revokeObjectURL(url);
 
-		toast({
-			title: "Reporte generado",
-			description: `Reporte para ${getClientDisplayName(client)} descargado exitosamente.`,
-		});
+		toast.success(
+			`Reporte para ${getClientDisplayName(client)} descargado exitosamente.`,
+		);
 	};
 
 	const handleFlagSuspicious = (client: Client): void => {
-		toast({
-			title: "Cliente marcado",
-			description: `${getClientDisplayName(client)} ha sido marcado como sospechoso.`,
-		});
+		toast.success(
+			`${getClientDisplayName(client)} ha sido marcado como sospechoso.`,
+		);
 	};
 
 	const handleDeleteClick = (client: Client): void => {
@@ -206,25 +188,25 @@ export function ClientsTable(): React.ReactElement {
 	};
 
 	const handleDeleteConfirm = async (): Promise<void> => {
-		if (clientToDelete) {
-			try {
-				await deleteClient({ rfc: clientToDelete.rfc, jwt: jwt ?? undefined });
-				setClients(clients.filter((c) => c.rfc !== clientToDelete.rfc));
-				toast({
-					title: "Cliente eliminado",
-					description: `${getClientDisplayName(clientToDelete)} ha sido eliminado del sistema.`,
-				});
-			} catch (error) {
-				console.error("Error deleting client:", error);
-				toast({
-					title: "Error",
-					description: "No se pudo eliminar el cliente.",
-					variant: "destructive",
-				});
-			} finally {
-				setDeleteDialogOpen(false);
-				setClientToDelete(null);
-			}
+		if (!clientToDelete) return;
+
+		const clientName = getClientDisplayName(clientToDelete);
+		const clientRfc = clientToDelete.rfc;
+
+		try {
+			await executeMutation({
+				mutation: () => deleteClient({ rfc: clientRfc, jwt: jwt ?? undefined }),
+				loading: "Eliminando cliente...",
+				success: `${clientName} ha sido eliminado del sistema.`,
+				onSuccess: () => {
+					setClients(clients.filter((c) => c.rfc !== clientRfc));
+				},
+			});
+		} catch {
+			// Error is already handled by executeMutation via Sonner
+		} finally {
+			setDeleteDialogOpen(false);
+			setClientToDelete(null);
 		}
 	};
 

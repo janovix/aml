@@ -25,8 +25,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { SidebarMenuButton } from "@/components/ui/sidebar";
-import { useToast } from "@/hooks/use-toast";
 import { useOrgStore } from "@/lib/org-store";
+import { executeMutation } from "@/lib/mutations";
 import { formatProperNoun } from "@/lib/utils";
 import {
 	createOrganization,
@@ -60,13 +60,11 @@ function CreateOrganizationDialog({
 		org: Awaited<ReturnType<typeof createOrganization>>["data"],
 	) => void;
 }) {
-	const { toast } = useToast();
 	const [open, setOpen] = useState(false);
 	const [name, setName] = useState("");
 	const [slug, setSlug] = useState("");
 	const [logo, setLogo] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [error, setError] = useState<string | null>(null);
 
 	const derivedSlug = useMemo(
 		() => (slug ? slugify(slug) : slugify(name)),
@@ -77,34 +75,41 @@ function CreateOrganizationDialog({
 		setName("");
 		setSlug("");
 		setLogo("");
-		setError(null);
 	};
 
 	const handleSubmit = async (event: React.FormEvent) => {
 		event.preventDefault();
 		if (isSubmitting) return;
 		setIsSubmitting(true);
-		setError(null);
 
-		const result = await createOrganization({
-			name,
-			slug: derivedSlug,
-			logo: logo || undefined,
-		});
+		try {
+			await executeMutation({
+				mutation: async () => {
+					const result = await createOrganization({
+						name,
+						slug: derivedSlug,
+						logo: logo || undefined,
+					});
 
-		if (result.error || !result.data) {
-			setError(result.error || "Please try again later.");
-		} else {
-			onCreated(result.data);
-			toast({
-				title: "Organization created",
-				description: `${result.data.name} has been created.`,
+					if (result.error || !result.data) {
+						throw new Error(result.error || "Failed to create organization");
+					}
+
+					return result.data;
+				},
+				loading: "Creating organization...",
+				success: (org) => `${org.name} has been created.`,
+				onSuccess: (org) => {
+					onCreated(org);
+					setOpen(false);
+					resetForm();
+				},
 			});
-			setOpen(false);
-			resetForm();
+		} catch {
+			// Error is already handled by executeMutation via Sonner
+		} finally {
+			setIsSubmitting(false);
 		}
-
-		setIsSubmitting(false);
 	};
 
 	const handleOpenChange = (isOpen: boolean) => {
@@ -125,11 +130,6 @@ function CreateOrganizationDialog({
 					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={handleSubmit} className="space-y-4">
-					{error && (
-						<div className="rounded-md bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
-							{error}
-						</div>
-					)}
 					<div className="space-y-2">
 						<Label htmlFor="org-name">Name</Label>
 						<Input
@@ -137,7 +137,6 @@ function CreateOrganizationDialog({
 							value={name}
 							onChange={(e) => {
 								setName(e.target.value);
-								setError(null);
 							}}
 							required
 							placeholder="My organization"
@@ -155,7 +154,6 @@ function CreateOrganizationDialog({
 							value={slug}
 							onChange={(e) => {
 								setSlug(e.target.value);
-								setError(null);
 							}}
 							placeholder="my-organization"
 						/>
@@ -193,7 +191,6 @@ function CreateOrganizationDialog({
 }
 
 export function OrgSwitcher() {
-	const { toast } = useToast();
 	const { currentOrg, organizations, setCurrentOrg, addOrganization } =
 		useOrgStore();
 	const [isSwitching, setIsSwitching] = useState(false);
@@ -203,22 +200,29 @@ export function OrgSwitcher() {
 		if (isSwitching) return;
 		setIsSwitching(true);
 		const org = organizations.find((o) => o.id === orgId);
-		const result = await setActiveOrganization(orgId);
 
-		if (result.error || !org) {
-			toast({
-				variant: "destructive",
-				title: "Failed to switch organization",
-				description: result.error ?? "Please try again.",
+		try {
+			await executeMutation({
+				mutation: async () => {
+					const result = await setActiveOrganization(orgId);
+					if (result.error || !org) {
+						throw new Error(result.error ?? "Failed to switch organization");
+					}
+					return result.data;
+				},
+				loading: "Switching organization...",
+				success: () => `${org?.name} is now your active organization.`,
+				onSuccess: () => {
+					if (org) {
+						setCurrentOrg(org);
+					}
+				},
 			});
-		} else {
-			setCurrentOrg(org);
-			toast({
-				title: "Active organization updated",
-				description: `${org.name} is now your active organization.`,
-			});
+		} catch {
+			// Error is already handled by executeMutation via Sonner
+		} finally {
+			setIsSwitching(false);
 		}
-		setIsSwitching(false);
 	};
 
 	return (

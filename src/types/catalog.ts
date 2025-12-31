@@ -20,6 +20,15 @@ export interface CatalogItem {
 	updatedAt: string;
 }
 
+/**
+ * Extended catalog item that includes the catalog key,
+ * used when catalog items are embedded in other entities (enrichment)
+ */
+export interface EnrichedCatalogItem extends CatalogItem {
+	/** The key of the catalog this item belongs to */
+	catalogKey: string;
+}
+
 export interface CatalogInfo {
 	id: string;
 	key: string;

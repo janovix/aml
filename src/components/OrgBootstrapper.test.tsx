@@ -38,20 +38,46 @@ vi.mock("@/lib/auth/useAuthSession", () => ({
 const mockListOrganizations = vi.fn();
 const mockListMembers = vi.fn();
 const mockCreateOrganization = vi.fn();
+const mockSetActiveOrganization = vi.fn();
 
 vi.mock("@/lib/auth/organizations", () => ({
 	listOrganizations: () => mockListOrganizations(),
 	listMembers: (orgId: string) => mockListMembers(orgId),
 	createOrganization: (data: { name: string; slug: string }) =>
 		mockCreateOrganization(data),
+	setActiveOrganization: (orgId: string) => mockSetActiveOrganization(orgId),
 }));
 
-// Mock toast
-const mockToast = vi.fn();
-vi.mock("@/hooks/use-toast", () => ({
-	useToast: () => ({
-		toast: mockToast,
-		toasts: [],
+// Mock tokenCache
+const mockTokenCacheClear = vi.fn();
+vi.mock("@/lib/auth/tokenCache", () => ({
+	tokenCache: {
+		clear: () => mockTokenCacheClear(),
+		getToken: vi.fn().mockResolvedValue("mock-jwt-token"),
+		isValid: vi.fn().mockReturnValue(false),
+	},
+}));
+
+// Mock sonner toast
+const mockToastError = vi.fn();
+const mockToastSuccess = vi.fn();
+const mockToastPromise = vi.fn();
+vi.mock("sonner", () => ({
+	toast: Object.assign(vi.fn(), {
+		error: (...args: unknown[]) => mockToastError(...args),
+		success: (...args: unknown[]) => mockToastSuccess(...args),
+		promise: (...args: unknown[]) => mockToastPromise(...args),
+	}),
+}));
+
+// Mock executeMutation to call the actual mutation and invoke onSuccess
+vi.mock("@/lib/mutations", () => ({
+	executeMutation: vi.fn(async ({ mutation, onSuccess }) => {
+		const result = await mutation();
+		if (onSuccess) {
+			await onSuccess(result);
+		}
+		return result;
 	}),
 }));
 
@@ -90,6 +116,11 @@ describe("OrgBootstrapper", () => {
 		resetOrgStore();
 		// Default mock implementations
 		mockListMembers.mockResolvedValue({ data: [], error: null });
+		// setActiveOrganization succeeds by default
+		mockSetActiveOrganization.mockResolvedValue({
+			data: { activeOrganizationId: "org-1" },
+			error: null,
+		});
 	});
 
 	it("shows loading state initially", async () => {
@@ -105,8 +136,9 @@ describe("OrgBootstrapper", () => {
 			</OrgBootstrapper>,
 		);
 
-		// Loading state should be shown initially
-		expect(screen.getByText("Loading organizations...")).toBeInTheDocument();
+		// Loading state should show the app skeleton (skeleton elements are rendered)
+		// The AppSkeleton renders multiple skeleton elements with data-testid="skeleton"
+		expect(screen.getAllByTestId("skeleton").length).toBeGreaterThan(0);
 
 		// Resolve to avoid hanging test
 		resolveOrgs!({
@@ -183,12 +215,11 @@ describe("OrgBootstrapper", () => {
 			</OrgBootstrapper>,
 		);
 
-		// Wait for the error toast to be shown
+		// Wait for the error toast to be shown via Sonner
 		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
+			expect(mockToastError).toHaveBeenCalledWith(
+				"Error loading organizations",
 				expect.objectContaining({
-					variant: "destructive",
-					title: "Error loading organizations",
 					description: "Failed to load organizations",
 				}),
 			);
@@ -303,15 +334,7 @@ describe("OrgBootstrapper", () => {
 			});
 		});
 
-		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
-				expect.objectContaining({
-					title: "Organization created",
-				}),
-			);
-		});
-
-		// Should render children after successful creation
+		// Should render children after successful creation (toast is handled by executeMutation)
 		await waitFor(() => {
 			expect(screen.getByText("Children Content")).toBeInTheDocument();
 		});
@@ -352,14 +375,12 @@ describe("OrgBootstrapper", () => {
 		});
 		await user.click(createButton);
 
+		// Verify createOrganization was called (error is handled by executeMutation via Sonner toast)
 		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
-				expect.objectContaining({
-					variant: "destructive",
-					title: "Failed to create organization",
-					description: "Organization already exists",
-				}),
-			);
+			expect(mockCreateOrganization).toHaveBeenCalledWith({
+				name: "Existing Org",
+				slug: "existing-org",
+			});
 		});
 	});
 
@@ -487,11 +508,11 @@ describe("OrgBootstrapper", () => {
 			</OrgBootstrapper>,
 		);
 
+		// Verify toast.error was called via Sonner
 		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
+			expect(mockToastError).toHaveBeenCalledWith(
+				"Failed to load members",
 				expect.objectContaining({
-					variant: "destructive",
-					title: "Failed to load members",
 					description: "Failed to load members",
 				}),
 			);
@@ -707,11 +728,11 @@ describe("OrgBootstrapper", () => {
 			</OrgBootstrapper>,
 		);
 
+		// Verify toast.error was called via Sonner
 		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
+			expect(mockToastError).toHaveBeenCalledWith(
+				"Error loading organizations",
 				expect.objectContaining({
-					variant: "destructive",
-					title: "Error loading organizations",
 					description: "Please try again later.",
 				}),
 			);
@@ -813,12 +834,11 @@ describe("OrgBootstrapper", () => {
 			</OrgBootstrapper>,
 		);
 
-		// The error toast should be shown with the error message
+		// The error toast should be shown via Sonner with the error message
 		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
+			expect(mockToastError).toHaveBeenCalledWith(
+				"Error loading organizations",
 				expect.objectContaining({
-					variant: "destructive",
-					title: "Error loading organizations",
 					description: "Network error",
 				}),
 			);
@@ -881,14 +901,12 @@ describe("OrgBootstrapper", () => {
 		});
 		await user.click(createButton);
 
+		// Verify createOrganization was called (error is handled by executeMutation via Sonner toast)
 		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
-				expect.objectContaining({
-					variant: "destructive",
-					title: "Failed to create organization",
-					description: "Please try again.",
-				}),
-			);
+			expect(mockCreateOrganization).toHaveBeenCalledWith({
+				name: "New Org",
+				slug: "new-org",
+			});
 		});
 	});
 
@@ -979,5 +997,126 @@ describe("OrgBootstrapper", () => {
 		await waitFor(() => {
 			expect(screen.getByText("my-custom-slug")).toBeInTheDocument();
 		});
+	});
+
+	it("syncs session with auth service when organization is selected", async () => {
+		mockListOrganizations.mockResolvedValue({
+			data: {
+				organizations: [mockOrganization],
+				activeOrganizationId: mockOrganization.id,
+			},
+		});
+		mockListMembers.mockResolvedValue({
+			data: [mockMember],
+		});
+		mockSetActiveOrganization.mockResolvedValue({
+			data: { activeOrganizationId: mockOrganization.id },
+			error: null,
+		});
+
+		render(
+			<OrgBootstrapper>
+				<div>Children Content</div>
+			</OrgBootstrapper>,
+		);
+
+		// Wait for children to be rendered (session sync should complete)
+		await waitFor(() => {
+			expect(screen.getByText("Children Content")).toBeInTheDocument();
+		});
+
+		// Verify setActiveOrganization was called to sync the session
+		await waitFor(() => {
+			expect(mockSetActiveOrganization).toHaveBeenCalledWith(
+				mockOrganization.id,
+			);
+		});
+
+		// Verify token cache was cleared before sync
+		expect(mockTokenCacheClear).toHaveBeenCalled();
+	});
+
+	it("logs warning when persisted organization is no longer accessible", async () => {
+		const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+		const persistedOrg: Organization = {
+			id: "deleted-org",
+			name: "Deleted Organization",
+			slug: "deleted-org",
+			status: "active",
+		};
+
+		// Set up persisted organization in store
+		const { result } = renderHook(() => useOrgStore());
+		act(() => {
+			result.current.setCurrentOrg(persistedOrg);
+		});
+
+		mockListOrganizations.mockResolvedValue({
+			data: {
+				organizations: [mockOrganization], // Persisted org not in list
+				activeOrganizationId: mockOrganization.id,
+			},
+		});
+		mockListMembers.mockResolvedValue({
+			data: [mockMember],
+		});
+
+		render(
+			<OrgBootstrapper>
+				<div>Children Content</div>
+			</OrgBootstrapper>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByText("Children Content")).toBeInTheDocument();
+		});
+
+		// Verify warning was logged
+		expect(consoleSpy).toHaveBeenCalledWith(
+			expect.stringContaining(
+				'Persisted organization "deleted-org" is no longer accessible',
+			),
+		);
+
+		consoleSpy.mockRestore();
+	});
+
+	it("handles session sync error gracefully", async () => {
+		const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		mockListOrganizations.mockResolvedValue({
+			data: {
+				organizations: [mockOrganization],
+				activeOrganizationId: mockOrganization.id,
+			},
+		});
+		mockListMembers.mockResolvedValue({
+			data: [mockMember],
+		});
+		// Simulate session sync failure
+		mockSetActiveOrganization.mockResolvedValue({
+			data: null,
+			error: "Session sync failed",
+		});
+
+		render(
+			<OrgBootstrapper>
+				<div>Children Content</div>
+			</OrgBootstrapper>,
+		);
+
+		// Should still render children even if sync fails
+		await waitFor(() => {
+			expect(screen.getByText("Children Content")).toBeInTheDocument();
+		});
+
+		// Verify error was logged
+		expect(consoleSpy).toHaveBeenCalledWith(
+			expect.stringContaining("[OrgBootstrapper] Failed to sync organization:"),
+			expect.any(String),
+		);
+
+		consoleSpy.mockRestore();
 	});
 });

@@ -20,11 +20,12 @@ import {
 	Separator,
 } from "@algtools/ui";
 import { ArrowLeft, Save, Plus, Trash2 } from "lucide-react";
-import { useToast } from "../../hooks/use-toast";
 import {
 	getTransactionById,
 	updateTransaction,
 } from "../../lib/api/transactions";
+import { executeMutation } from "../../lib/mutations";
+import { toast } from "sonner";
 import type {
 	TransactionOperationType,
 	TransactionVehicleType,
@@ -45,7 +46,6 @@ export function TransactionEditView({
 	transactionId,
 }: TransactionEditViewProps): React.JSX.Element {
 	const router = useRouter();
-	const { toast } = useToast();
 	const [isLoading, setIsLoading] = useState(true);
 	const [isSaving, setIsSaving] = useState(false);
 	const [formData, setFormData] = useState({
@@ -108,11 +108,7 @@ export function TransactionEditView({
 				});
 			} catch (error) {
 				console.error("Error fetching transaction:", error);
-				toast({
-					title: "Error",
-					description: "No se pudo cargar la transacción.",
-					variant: "destructive",
-				});
+				toast.error("No se pudo cargar la transacción.");
 				router.push("/transactions");
 			} finally {
 				setIsLoading(false);
@@ -130,11 +126,9 @@ export function TransactionEditView({
 		);
 
 		if (paymentMethodsSum > totalAmount) {
-			toast({
-				title: "Error de validación",
-				description: `La suma de los métodos de pago (${paymentMethodsSum.toFixed(2)}) excede el monto total de la transacción (${totalAmount.toFixed(2)}).`,
-				variant: "destructive",
-			});
+			toast.error(
+				`La suma de los métodos de pago (${paymentMethodsSum.toFixed(2)}) excede el monto total de la transacción (${totalAmount.toFixed(2)}).`,
+			);
 			return false;
 		}
 		return true;
@@ -152,22 +146,15 @@ export function TransactionEditView({
 				const vinValidation = validateVIN(formData.vin || "");
 				if (!vinValidation.isValid) {
 					setValidationErrors({ vin: vinValidation.error });
-					toast({
-						title: "Error de validación",
-						description: vinValidation.error,
-						variant: "destructive",
-					});
+					toast.error(vinValidation.error);
 					return false;
 				}
 			}
 
 			if (!hasPlates && !hasVIN && !hasEngineNumber) {
-				toast({
-					title: "Error de validación",
-					description:
-						"Para vehículos terrestres, debe proporcionar al menos uno de: Placas, VIN o Número de motor.",
-					variant: "destructive",
-				});
+				toast.error(
+					"Para vehículos terrestres, debe proporcionar al menos uno de: Placas, VIN o Número de motor.",
+				);
 				return false;
 			}
 		}
@@ -185,52 +172,50 @@ export function TransactionEditView({
 			return;
 		}
 
+		setIsSaving(true);
+		// Format operationDate as date-only (YYYY-MM-DD) - API expects this format, not ISO date-time
+		const operationDateFormatted =
+			formData.operationDate || new Date().toISOString().slice(0, 10);
+		const updateData: TransactionUpdateRequest = {
+			operationDate: operationDateFormatted,
+			operationType: formData.operationType,
+			branchPostalCode: formData.branchPostalCode,
+			vehicleType: formData.vehicleType,
+			brand: formData.brand,
+			model: formData.model,
+			year: parseInt(formData.year, 10),
+			amount: formData.amount,
+			currency: formData.currency,
+			paymentMethods: formData.paymentMethods,
+			paymentDate: new Date(formData.paymentDate).toISOString(),
+		};
+
+		if (formData.vehicleType === "land") {
+			// At least one of plates, VIN, or engineNumber must be provided
+			if (formData.vin) updateData.vin = formData.vin;
+			if (formData.repuve) updateData.repuve = formData.repuve;
+			if (formData.plates) updateData.plates = formData.plates;
+			if (formData.engineNumber)
+				updateData.engineNumber = formData.engineNumber;
+		} else {
+			if (formData.registrationNumber)
+				updateData.registrationNumber = formData.registrationNumber;
+			if (formData.flagCountryId)
+				updateData.flagCountryId = formData.flagCountryId;
+		}
+
 		try {
-			setIsSaving(true);
-			// Format operationDate as date-only (YYYY-MM-DD) - API expects this format, not ISO date-time
-			const operationDateFormatted =
-				formData.operationDate || new Date().toISOString().slice(0, 10);
-			const updateData: TransactionUpdateRequest = {
-				operationDate: operationDateFormatted,
-				operationType: formData.operationType,
-				branchPostalCode: formData.branchPostalCode,
-				vehicleType: formData.vehicleType,
-				brand: formData.brand,
-				model: formData.model,
-				year: parseInt(formData.year, 10),
-				amount: formData.amount,
-				currency: formData.currency,
-				paymentMethods: formData.paymentMethods,
-				paymentDate: new Date(formData.paymentDate).toISOString(),
-			};
-
-			if (formData.vehicleType === "land") {
-				// At least one of plates, VIN, or engineNumber must be provided
-				if (formData.vin) updateData.vin = formData.vin;
-				if (formData.repuve) updateData.repuve = formData.repuve;
-				if (formData.plates) updateData.plates = formData.plates;
-				if (formData.engineNumber)
-					updateData.engineNumber = formData.engineNumber;
-			} else {
-				if (formData.registrationNumber)
-					updateData.registrationNumber = formData.registrationNumber;
-				if (formData.flagCountryId)
-					updateData.flagCountryId = formData.flagCountryId;
-			}
-
-			await updateTransaction({ id: transactionId, input: updateData });
-			toast({
-				title: "Transacción actualizada",
-				description: "Los cambios han sido guardados exitosamente.",
+			await executeMutation({
+				mutation: () =>
+					updateTransaction({ id: transactionId, input: updateData }),
+				loading: "Actualizando transacción...",
+				success: "Transacción actualizada exitosamente",
+				onSuccess: () => {
+					router.push(`/transactions/${transactionId}`);
+				},
 			});
-			router.push(`/transactions/${transactionId}`);
-		} catch (error) {
-			console.error("Error updating transaction:", error);
-			toast({
-				title: "Error",
-				description: "No se pudo actualizar la transacción.",
-				variant: "destructive",
-			});
+		} catch {
+			// Error is already handled by executeMutation via Sonner
 		} finally {
 			setIsSaving(false);
 		}

@@ -16,17 +16,18 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@algtools/ui";
-import { Save, Building2, AlertCircle } from "lucide-react";
-import { useToast } from "../../hooks/use-toast";
+import { Save, Building2, AlertCircle, Settings } from "lucide-react";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
 import {
 	getFieldDescription,
 	getFieldDescriptionByXmlTag,
 } from "../../lib/field-descriptions";
-import { fetchJson } from "@/lib/api/http";
+import { fetchJson, isOrganizationRequiredError } from "@/lib/api/http";
 import { getAmlCoreBaseUrl } from "@/lib/api/config";
 import { validateRFC } from "../../lib/utils";
-import { toast as sonnerToast } from "sonner";
+import { executeMutation } from "@/lib/mutations";
+import { toast } from "sonner";
+import { useJwt } from "@/hooks/useJwt";
 
 interface OrganizationSettingsData {
 	obligatedSubjectKey: string;
@@ -34,7 +35,7 @@ interface OrganizationSettingsData {
 }
 
 export function SettingsPageContent(): React.JSX.Element {
-	const { toast } = useToast();
+	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const [isLoading, setIsLoading] = useState(true);
 	const [isSaving, setIsSaving] = useState(false);
 	const [hasNoOrganization, setHasNoOrganization] = useState(false);
@@ -47,28 +48,50 @@ export function SettingsPageContent(): React.JSX.Element {
 		rfc?: string;
 	}>({});
 
-	// Fetch existing organization settings on mount
+	// Fetch existing organization settings on mount and when organization changes
+	// jwt changes when organization changes, so we use it as a dependency
 	useEffect(() => {
+		// Wait for JWT to be ready
+		if (isJwtLoading) {
+			return;
+		}
+
+		// No JWT means no organization selected
+		if (!jwt) {
+			setHasNoOrganization(true);
+			setIsLoading(false);
+			return;
+		}
+
 		const fetchSettings = async () => {
+			setIsLoading(true);
+			setHasNoOrganization(false);
+
 			try {
 				const baseUrl = getAmlCoreBaseUrl();
 				const { json: data } = await fetchJson<{
 					obligatedSubjectKey?: string;
 					activityKey?: string;
-				}>(`${baseUrl}/api/v1/organization-settings`);
+				}>(`${baseUrl}/api/v1/organization-settings`, { jwt });
 
 				setFormData({
 					obligatedSubjectKey: data.obligatedSubjectKey || "",
 					activityKey: data.activityKey || "VEH",
 				});
 			} catch (error: unknown) {
+				// Check for organization required error (409)
+				if (isOrganizationRequiredError(error)) {
+					setHasNoOrganization(true);
+					return;
+				}
+
 				// Check error status for specific handling
 				const apiError = error as { status?: number };
 				if (apiError.status === 404) {
 					// No settings found, that's okay for first-time setup
 					console.log("No organization settings found, using defaults");
 				} else if (apiError.status === 403) {
-					// No active organization selected
+					// Legacy check for organization required (now 409)
 					setHasNoOrganization(true);
 				} else {
 					console.error("Error fetching organization settings:", error);
@@ -79,7 +102,7 @@ export function SettingsPageContent(): React.JSX.Element {
 		};
 
 		fetchSettings();
-	}, []);
+	}, [jwt, isJwtLoading]);
 
 	const handleInputChange = (
 		field: keyof OrganizationSettingsData,
@@ -95,7 +118,7 @@ export function SettingsPageContent(): React.JSX.Element {
 		const rfcValidation = validateRFC(formData.obligatedSubjectKey, "moral");
 		if (!rfcValidation.isValid) {
 			setValidationErrors({ rfc: rfcValidation.error });
-			sonnerToast.error("Por favor, corrija los errores en el formulario");
+			toast.error("Por favor, corrija los errores en el formulario");
 			return;
 		}
 
@@ -103,51 +126,51 @@ export function SettingsPageContent(): React.JSX.Element {
 		setIsSaving(true);
 
 		try {
-			const baseUrl = getAmlCoreBaseUrl();
-			await fetchJson(`${baseUrl}/api/v1/organization-settings`, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
+			await executeMutation({
+				mutation: async () => {
+					const baseUrl = getAmlCoreBaseUrl();
+					return fetchJson(`${baseUrl}/api/v1/organization-settings`, {
+						method: "PUT",
+						headers: {
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({
+							obligatedSubjectKey: formData.obligatedSubjectKey.toUpperCase(),
+							activityKey: formData.activityKey,
+						}),
+					});
 				},
-				body: JSON.stringify({
-					obligatedSubjectKey: formData.obligatedSubjectKey.toUpperCase(),
-					activityKey: formData.activityKey,
-				}),
+				loading: "Guardando configuración...",
+				success: "Los datos de la organización se han guardado exitosamente.",
 			});
-
-			toast({
-				title: "Configuración guardada",
-				description:
-					"Los datos de la organización se han guardado exitosamente.",
-			});
-		} catch (error) {
-			console.error("Error saving organization settings:", error);
-			toast({
-				title: "Error",
-				description:
-					error instanceof Error
-						? error.message
-						: "No se pudo guardar la configuración.",
-				variant: "destructive",
-			});
+		} catch {
+			// Error is already handled by executeMutation via Sonner
 		} finally {
 			setIsSaving(false);
 		}
 	};
 
+	// Consistent page header component
+	const PageHeader = () => (
+		<div className="flex items-start gap-3 min-w-0">
+			<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+				<Settings className="h-5 w-5" />
+			</div>
+			<div className="min-w-0">
+				<h1 className="text-2xl font-semibold text-foreground tracking-tight">
+					Configuración
+				</h1>
+				<p className="text-sm text-muted-foreground mt-0.5">
+					Gestión de datos de la organización
+				</p>
+			</div>
+		</div>
+	);
+
 	if (isLoading) {
 		return (
 			<div className="space-y-6">
-				<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							Configuración
-						</h1>
-						<p className="text-sm text-muted-foreground">
-							Gestión de datos de la organización
-						</p>
-					</div>
-				</div>
+				<PageHeader />
 				<Card>
 					<CardContent className="p-6">
 						<div className="animate-pulse space-y-4">
@@ -165,16 +188,7 @@ export function SettingsPageContent(): React.JSX.Element {
 	if (hasNoOrganization) {
 		return (
 			<div className="space-y-6">
-				<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							Configuración
-						</h1>
-						<p className="text-sm text-muted-foreground">
-							Gestión de datos de la organización
-						</p>
-					</div>
-				</div>
+				<PageHeader />
 				<Card>
 					<CardContent className="p-8">
 						<div className="flex flex-col items-center justify-center text-center space-y-4">
@@ -205,16 +219,7 @@ export function SettingsPageContent(): React.JSX.Element {
 
 	return (
 		<div className="space-y-6">
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div>
-					<h1 className="text-xl font-semibold text-foreground">
-						Configuración
-					</h1>
-					<p className="text-sm text-muted-foreground">
-						Gestión de datos de la organización
-					</p>
-				</div>
-			</div>
+			<PageHeader />
 
 			<form onSubmit={handleSubmit} className="space-y-6">
 				<Card>

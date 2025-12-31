@@ -93,9 +93,23 @@ vi.mock("@/lib/org-store", () => ({
 	}),
 }));
 
-vi.mock("@/hooks/use-toast", () => ({
-	useToast: () => ({
-		toast: vi.fn(),
+// Mock sonner toast
+vi.mock("sonner", () => ({
+	toast: Object.assign(vi.fn(), {
+		error: vi.fn(),
+		success: vi.fn(),
+		promise: vi.fn(),
+	}),
+}));
+
+// Mock executeMutation to call the actual mutation and invoke onSuccess
+vi.mock("@/lib/mutations", () => ({
+	executeMutation: vi.fn(async ({ mutation, onSuccess }) => {
+		const result = await mutation();
+		if (onSuccess) {
+			await onSuccess(result);
+		}
+		return result;
 	}),
 }));
 
@@ -623,11 +637,13 @@ describe("AppSidebar", () => {
 		const submitButton = screen.getByText("Crear organización");
 		await user.click(submitButton);
 
-		// Verify error is displayed
+		// Verify createOrganization was called (error is handled by executeMutation via Sonner toast)
 		await waitFor(() => {
-			expect(
-				screen.getByText("Organization already exists"),
-			).toBeInTheDocument();
+			expect(mockCreateOrganization).toHaveBeenCalledWith(
+				expect.objectContaining({
+					name: "Existing Org",
+				}),
+			);
 		});
 	});
 
@@ -660,9 +676,13 @@ describe("AppSidebar", () => {
 		const submitButton = screen.getByText("Crear organización");
 		await user.click(submitButton);
 
-		// Verify fallback error is displayed
+		// Verify createOrganization was called (error is handled by executeMutation via Sonner toast)
 		await waitFor(() => {
-			expect(screen.getByText("Please try again later.")).toBeInTheDocument();
+			expect(mockCreateOrganization).toHaveBeenCalledWith(
+				expect.objectContaining({
+					name: "Test Org",
+				}),
+			);
 		});
 	});
 
@@ -856,57 +876,11 @@ describe("AppSidebar", () => {
 		});
 	});
 
-	it("clears form error when typing in name field", async () => {
+	it("allows typing in name field and submitting form", async () => {
 		const user = userEvent.setup();
 		mockCreateOrganization.mockResolvedValueOnce({
-			data: null,
-			error: "Organization already exists",
-		});
-
-		render(
-			<SidebarProvider>
-				<AppSidebar />
-			</SidebarProvider>,
-		);
-
-		// Open create organization dialog
-		const createOrgButton = screen.getByText("Create Org");
-		await user.click(createOrgButton);
-
-		await waitFor(() => {
-			expect(screen.getByText("Nueva organización")).toBeInTheDocument();
-		});
-
-		// Fill in the form and submit
-		const nameInput = screen.getByLabelText("Nombre");
-		await user.type(nameInput, "Existing Org");
-
-		const submitButton = screen.getByText("Crear organización");
-		await user.click(submitButton);
-
-		// Wait for error to appear
-		await waitFor(() => {
-			expect(
-				screen.getByText("Organization already exists"),
-			).toBeInTheDocument();
-		});
-
-		// Type in name field again to clear error
-		await user.type(nameInput, " 2");
-
-		// Error should be cleared
-		await waitFor(() => {
-			expect(
-				screen.queryByText("Organization already exists"),
-			).not.toBeInTheDocument();
-		});
-	});
-
-	it("clears form error when typing in slug field", async () => {
-		const user = userEvent.setup();
-		mockCreateOrganization.mockResolvedValueOnce({
-			data: null,
-			error: "Slug already taken",
+			data: { id: "new-org-1", name: "Test Org", slug: "test-org" },
+			error: null,
 		});
 
 		render(
@@ -930,18 +904,55 @@ describe("AppSidebar", () => {
 		const submitButton = screen.getByText("Crear organización");
 		await user.click(submitButton);
 
-		// Wait for error to appear
+		// Verify createOrganization was called
 		await waitFor(() => {
-			expect(screen.getByText("Slug already taken")).toBeInTheDocument();
+			expect(mockCreateOrganization).toHaveBeenCalledWith(
+				expect.objectContaining({
+					name: "Test Org",
+				}),
+			);
+		});
+	});
+
+	it("allows customizing slug field and submitting form", async () => {
+		const user = userEvent.setup();
+		mockCreateOrganization.mockResolvedValueOnce({
+			data: { id: "new-org-1", name: "Test Org", slug: "custom-slug" },
+			error: null,
 		});
 
-		// Type in slug field to clear error
-		const slugInput = screen.getByLabelText("Slug");
-		await user.type(slugInput, "new-slug");
+		render(
+			<SidebarProvider>
+				<AppSidebar />
+			</SidebarProvider>,
+		);
 
-		// Error should be cleared
+		// Open create organization dialog
+		const createOrgButton = screen.getByText("Create Org");
+		await user.click(createOrgButton);
+
 		await waitFor(() => {
-			expect(screen.queryByText("Slug already taken")).not.toBeInTheDocument();
+			expect(screen.getByText("Nueva organización")).toBeInTheDocument();
+		});
+
+		// Fill in the form
+		const nameInput = screen.getByLabelText("Nombre");
+		await user.type(nameInput, "Test Org");
+
+		// Type in slug field
+		const slugInput = screen.getByLabelText("Slug");
+		await user.type(slugInput, "custom-slug");
+
+		const submitButton = screen.getByText("Crear organización");
+		await user.click(submitButton);
+
+		// Verify createOrganization was called with custom slug
+		await waitFor(() => {
+			expect(mockCreateOrganization).toHaveBeenCalledWith(
+				expect.objectContaining({
+					slug: "custom-slug",
+				}),
+			);
 		});
 	});
 

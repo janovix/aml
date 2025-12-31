@@ -2,12 +2,40 @@ export class ApiError extends Error {
 	name = "ApiError" as const;
 	status: number;
 	body: unknown;
+	/**
+	 * Error code from the API response (e.g., "ORGANIZATION_REQUIRED")
+	 * Used for more specific error handling in the frontend
+	 */
+	code?: string;
 
-	constructor(message: string, opts: { status: number; body: unknown }) {
+	constructor(
+		message: string,
+		opts: { status: number; body: unknown; code?: string },
+	) {
 		super(message);
 		this.status = opts.status;
 		this.body = opts.body;
+		this.code = opts.code;
 	}
+}
+
+/**
+ * Check if an error is an organization required error (409)
+ * This happens when the JWT doesn't have an organizationId
+ */
+export function isOrganizationRequiredError(error: unknown): boolean {
+	if (error instanceof ApiError) {
+		return (
+			error.status === 409 ||
+			error.code === "ORGANIZATION_REQUIRED" ||
+			(typeof error.body === "object" &&
+				error.body !== null &&
+				"code" in error.body &&
+				(error.body as Record<string, unknown>).code ===
+					"ORGANIZATION_REQUIRED")
+		);
+	}
+	return false;
 }
 
 export interface FetchJsonOptions extends RequestInit {
@@ -96,9 +124,19 @@ export async function fetchJson<T>(
 	const body = isJson ? await res.json().catch(() => null) : await res.text();
 
 	if (!res.ok) {
+		// Extract error code from response body if available
+		const errorCode =
+			typeof body === "object" &&
+			body !== null &&
+			"code" in body &&
+			typeof (body as Record<string, unknown>).code === "string"
+				? ((body as Record<string, unknown>).code as string)
+				: undefined;
+
 		throw new ApiError(`Request failed: ${res.status} ${res.statusText}`, {
 			status: res.status,
 			body,
+			code: errorCode,
 		});
 	}
 

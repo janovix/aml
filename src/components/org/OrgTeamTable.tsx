@@ -72,7 +72,8 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { executeMutation } from "@/lib/mutations";
+import { toast } from "sonner";
 import {
 	Collapsible,
 	CollapsibleContent,
@@ -98,7 +99,6 @@ const roleColors: Record<OrganizationRole, string> = {
 };
 
 export function OrgTeamTable() {
-	const { toast } = useToast();
 	const { currentOrg, members, setMembers } = useOrgStore();
 	const [searchQuery, setSearchQuery] = useState("");
 	const [roleFilter, setRoleFilter] = useState<string>("all");
@@ -126,9 +126,7 @@ export function OrgTeamTable() {
 			if (result.data) {
 				setMembers(result.data);
 			} else if (result.error) {
-				toast({
-					variant: "destructive",
-					title: "Failed to load members",
+				toast.error("Failed to load members", {
 					description: result.error,
 				});
 			}
@@ -138,7 +136,7 @@ export function OrgTeamTable() {
 		return () => {
 			cancelled = true;
 		};
-	}, [currentOrg?.id, setMembers, toast]);
+	}, [currentOrg?.id, setMembers]);
 
 	// Load pending invitations
 	useEffect(() => {
@@ -199,84 +197,113 @@ export function OrgTeamTable() {
 	const handleInvite = async () => {
 		if (!currentOrg || !inviteEmail) return;
 		setIsInviting(true);
-		const result = await inviteMember({
-			email: inviteEmail,
-			role: inviteRole,
-			organizationId: currentOrg.id,
-		});
 
-		if (result.error) {
-			toast({
-				variant: "destructive",
-				title: "Failed to send invitation",
-				description: result.error,
+		const emailToInvite = inviteEmail;
+		const roleToInvite = inviteRole;
+		const orgId = currentOrg.id;
+
+		try {
+			await executeMutation({
+				mutation: async () => {
+					const result = await inviteMember({
+						email: emailToInvite,
+						role: roleToInvite,
+						organizationId: orgId,
+					});
+
+					if (result.error) {
+						throw new Error(result.error);
+					}
+
+					return result.data;
+				},
+				loading: "Sending invitation...",
+				success: `${emailToInvite} was invited as ${roleLabels[roleToInvite]}.`,
+				onSuccess: async () => {
+					// Refresh invitations list
+					const invResult = await listInvitations(orgId, "pending");
+					if (invResult.data) {
+						setInvitations(invResult.data);
+					}
+					setInviteEmail("");
+					setInviteRole("member");
+					setOpenInvite(false);
+				},
 			});
-		} else {
-			toast({
-				title: "Invitation sent",
-				description: `${inviteEmail} was invited as ${roleLabels[inviteRole]}.`,
-			});
-			// Refresh invitations list
-			const invResult = await listInvitations(currentOrg.id, "pending");
-			if (invResult.data) {
-				setInvitations(invResult.data);
-			}
-			setInviteEmail("");
-			setInviteRole("member");
-			setOpenInvite(false);
+		} catch {
+			// Error is already handled by executeMutation via Sonner
+		} finally {
+			setIsInviting(false);
 		}
-		setIsInviting(false);
 	};
 
 	const handleCancelInvitation = async (invitation: OrganizationInvitation) => {
 		if (!currentOrg) return;
 		setProcessingInvitationId(invitation.id);
 
-		const result = await cancelInvitation(invitation.id);
-		if (result.error) {
-			toast({
-				variant: "destructive",
-				title: "Failed to cancel invitation",
-				description: result.error,
+		const invitationId = invitation.id;
+		const invitationEmail = invitation.email;
+
+		try {
+			await executeMutation({
+				mutation: async () => {
+					const result = await cancelInvitation(invitationId);
+					if (result.error) {
+						throw new Error(result.error);
+					}
+					return result.data;
+				},
+				loading: "Canceling invitation...",
+				success: `The invitation to ${invitationEmail} has been canceled.`,
+				onSuccess: () => {
+					setInvitations((prev) => prev.filter((i) => i.id !== invitationId));
+				},
 			});
-		} else {
-			toast({
-				title: "Invitation canceled",
-				description: `The invitation to ${invitation.email} has been canceled.`,
-			});
-			setInvitations((prev) => prev.filter((i) => i.id !== invitation.id));
+		} catch {
+			// Error is already handled by executeMutation via Sonner
+		} finally {
+			setProcessingInvitationId(null);
 		}
-		setProcessingInvitationId(null);
 	};
 
 	const handleResendInvitation = async (invitation: OrganizationInvitation) => {
 		if (!currentOrg) return;
 		setProcessingInvitationId(invitation.id);
 
-		const result = await resendInvitation({
-			email: invitation.email,
-			role: invitation.role,
-			organizationId: currentOrg.id,
-		});
+		const invitationEmail = invitation.email;
+		const invitationRole = invitation.role;
+		const orgId = currentOrg.id;
 
-		if (result.error) {
-			toast({
-				variant: "destructive",
-				title: "Failed to resend invitation",
-				description: result.error,
+		try {
+			await executeMutation({
+				mutation: async () => {
+					const result = await resendInvitation({
+						email: invitationEmail,
+						role: invitationRole,
+						organizationId: orgId,
+					});
+
+					if (result.error) {
+						throw new Error(result.error);
+					}
+
+					return result.data;
+				},
+				loading: "Resending invitation...",
+				success: `The invitation was resent to ${invitationEmail}.`,
+				onSuccess: async () => {
+					// Refresh invitations to get updated expiration
+					const invResult = await listInvitations(orgId, "pending");
+					if (invResult.data) {
+						setInvitations(invResult.data);
+					}
+				},
 			});
-		} else {
-			toast({
-				title: "Invitation resent",
-				description: `The invitation was resent to ${invitation.email}.`,
-			});
-			// Refresh invitations to get updated expiration
-			const invResult = await listInvitations(currentOrg.id, "pending");
-			if (invResult.data) {
-				setInvitations(invResult.data);
-			}
+		} catch {
+			// Error is already handled by executeMutation via Sonner
+		} finally {
+			setProcessingInvitationId(null);
 		}
-		setProcessingInvitationId(null);
 	};
 
 	if (!currentOrg) {
