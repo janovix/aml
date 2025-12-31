@@ -276,11 +276,13 @@ function OrgPicker({
 /**
  * Index page - Org selection hub
  *
- * Handles:
- * - 0 orgs: Show create org form
- * - 1 org: Auto-redirect to that org
- * - 2+ orgs: Show org picker
- * - Error query params: Show toast notifications
+ * Redirect priority:
+ * 1. If activeOrganizationId exists (previously selected org) → redirect to that org
+ * 2. If only 1 org → auto-redirect to that org
+ * 3. If 2+ orgs with no activeOrganizationId → show org picker
+ * 4. If 0 orgs → show create org form
+ *
+ * Also handles error query params with toast notifications (kicked, deleted, etc.)
  */
 export default function IndexPage() {
 	const router = useRouter();
@@ -322,16 +324,13 @@ export default function IndexPage() {
 			setOrganizations(orgs);
 			setActiveOrgId(result.data.activeOrganizationId);
 
-			// Auto-redirect if only 1 org
-			if (orgs.length === 1) {
-				const org = orgs[0];
-				// Set as active and redirect
-				await setActiveOrganization(org.id);
-				router.replace(`/${org.slug}/${DEFAULT_PAGE}`);
+			// No orgs - will show create form
+			if (orgs.length === 0) {
+				setIsLoading(false);
 				return;
 			}
 
-			// If user has activeOrgId that matches an org, redirect to that
+			// Priority 1: If user has a previously selected org (activeOrganizationId), use that
 			if (result.data.activeOrganizationId) {
 				const activeOrg = orgs.find(
 					(o) => o.id === result.data?.activeOrganizationId,
@@ -342,6 +341,15 @@ export default function IndexPage() {
 				}
 			}
 
+			// Priority 2: If only 1 org, auto-redirect to it
+			if (orgs.length === 1) {
+				const org = orgs[0];
+				await setActiveOrganization(org.id);
+				router.replace(`/${org.slug}/${DEFAULT_PAGE}`);
+				return;
+			}
+
+			// Multiple orgs with no activeOrganizationId - show picker
 			setIsLoading(false);
 		}
 

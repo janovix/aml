@@ -5,7 +5,6 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import {
-	Button,
 	Card,
 	CardContent,
 	CardHeader,
@@ -17,10 +16,10 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-	Separator,
 	Textarea,
 } from "@algtools/ui";
-import { ArrowLeft, Save } from "lucide-react";
+import { Save, UserPlus } from "lucide-react";
+import { PageHero } from "@/components/page-hero";
 import type { PersonType, ClientCreateRequest } from "../../types/client";
 import { createClient } from "../../lib/api/clients";
 import { executeMutation } from "../../lib/mutations";
@@ -214,44 +213,32 @@ export function ClientCreateView(): React.JSX.Element {
 
 	return (
 		<div className="space-y-6">
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="sm"
-						className="gap-2"
-						onClick={handleCancel}
-					>
-						<ArrowLeft className="h-4 w-4" />
-						<span className="hidden sm:inline">Volver</span>
-					</Button>
-					<Separator orientation="vertical" className="hidden h-6 sm:block" />
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							Nuevo Cliente
-						</h1>
-						<p className="text-sm text-muted-foreground">
-							Registrar un nuevo cliente en el sistema
-						</p>
-					</div>
-				</div>
-				<div className="flex items-center gap-2">
-					<Button variant="outline" size="sm" onClick={handleCancel}>
-						Cancelar
-					</Button>
-					<Button
-						size="sm"
-						className="gap-2"
-						onClick={handleSubmit}
-						disabled={isSubmitting}
-					>
-						<Save className="h-4 w-4" />
-						<span className="hidden sm:inline">
-							{isSubmitting ? "Creando..." : "Crear Cliente"}
-						</span>
-					</Button>
-				</div>
-			</div>
+			<PageHero
+				title="Nuevo Cliente"
+				subtitle="Registrar un nuevo cliente en el sistema"
+				icon={UserPlus}
+				backButton={{
+					label: "Volver",
+					onClick: handleCancel,
+				}}
+				actions={[
+					{
+						label: isSubmitting ? "Creando..." : "Crear Cliente",
+						icon: Save,
+						onClick: () => {
+							void handleSubmit({
+								preventDefault: () => {},
+							} as React.FormEvent);
+						},
+						disabled: isSubmitting,
+					},
+					{
+						label: "Cancelar",
+						onClick: handleCancel,
+						variant: "outline",
+					},
+				]}
+			/>
 
 			<form onSubmit={handleSubmit} className="max-w-4xl space-y-6">
 				<Card>

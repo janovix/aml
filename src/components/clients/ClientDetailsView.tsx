@@ -2,17 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
+import { Card, CardContent, CardHeader, CardTitle, Badge } from "@algtools/ui";
 import {
-	Button,
-	Card,
-	CardContent,
-	CardHeader,
-	CardTitle,
-	Badge,
-	Separator,
-} from "@algtools/ui";
-import {
-	ArrowLeft,
 	Edit,
 	Flag,
 	FileText,
@@ -27,6 +18,8 @@ import type { Client } from "../../types/client";
 import { getClientDisplayName } from "../../types/client";
 import { getClientByRfc } from "../../lib/api/clients";
 import { useToast } from "../../hooks/use-toast";
+import { PageHero } from "@/components/page-hero";
+import { PageHeroSkeleton } from "@/components/skeletons";
 
 interface ClientDetailsViewProps {
 	clientId: string; // RFC is passed as clientId
@@ -65,21 +58,30 @@ export function ClientDetailsView({
 	if (isLoading) {
 		return (
 			<div className="space-y-6">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="sm"
-						className="gap-2"
-						onClick={() => navigateTo("/clients")}
-					>
-						<ArrowLeft className="h-4 w-4" />
-						Volver
-					</Button>
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							Cargando cliente...
-						</h1>
-					</div>
+				<PageHeroSkeleton
+					showStats={false}
+					showBackButton={true}
+					actionCount={3}
+				/>
+				{/* Content skeleton */}
+				<div className="space-y-6">
+					{[1, 2, 3, 4].map((i) => (
+						<Card key={i}>
+							<CardHeader>
+								<div className="h-6 w-48 bg-accent animate-pulse rounded" />
+							</CardHeader>
+							<CardContent>
+								<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+									{[1, 2].map((j) => (
+										<div key={j} className="space-y-2">
+											<div className="h-4 w-24 bg-accent animate-pulse rounded" />
+											<div className="h-5 w-40 bg-accent animate-pulse rounded" />
+										</div>
+									))}
+								</div>
+							</CardContent>
+						</Card>
+					))}
 				</div>
 			</div>
 		);
@@ -88,22 +90,15 @@ export function ClientDetailsView({
 	if (!client) {
 		return (
 			<div className="space-y-6">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="sm"
-						className="gap-2"
-						onClick={() => navigateTo("/clients")}
-					>
-						<ArrowLeft className="h-4 w-4" />
-						Volver
-					</Button>
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							Cliente no encontrado
-						</h1>
-					</div>
-				</div>
+				<PageHero
+					title="Cliente no encontrado"
+					subtitle={`El cliente con RFC ${clientId} no existe`}
+					icon={User}
+					backButton={{
+						label: "Volver a Clientes",
+						onClick: () => navigateTo("/clients"),
+					}}
+				/>
 			</div>
 		);
 	}
@@ -118,46 +113,44 @@ export function ClientDetailsView({
 
 	return (
 		<div className="space-y-6">
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="sm"
-						className="gap-2"
-						onClick={() => navigateTo("/clients")}
-					>
-						<ArrowLeft className="h-4 w-4" />
-						<span className="hidden sm:inline">Volver</span>
-					</Button>
-					<Separator orientation="vertical" className="hidden h-6 sm:block" />
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							Detalles del Cliente
-						</h1>
-						<p className="text-sm text-muted-foreground">
-							{getClientDisplayName(client)}
-						</p>
-					</div>
-				</div>
-				<div className="flex items-center gap-2">
-					<Button variant="outline" size="sm" className="gap-2 hidden sm:flex">
-						<FileText className="h-4 w-4" />
-						Generar Reporte
-					</Button>
-					<Button variant="outline" size="sm" className="gap-2 hidden sm:flex">
-						<Flag className="h-4 w-4" />
-						Marcar Sospechoso
-					</Button>
-					<Button
-						size="sm"
-						className="gap-2"
-						onClick={() => navigateTo(`/clients/${clientId}/edit`)}
-					>
-						<Edit className="h-4 w-4" />
-						<span className="hidden sm:inline">Editar</span>
-					</Button>
-				</div>
-			</div>
+			<PageHero
+				title="Detalles del Cliente"
+				subtitle={getClientDisplayName(client)}
+				icon={client.personType === "physical" ? User : Building2}
+				backButton={{
+					label: "Volver a Clientes",
+					onClick: () => navigateTo("/clients"),
+				}}
+				actions={[
+					{
+						label: "Editar",
+						icon: Edit,
+						onClick: () => navigateTo(`/clients/${clientId}/edit`),
+					},
+					{
+						label: "Generar Reporte",
+						icon: FileText,
+						onClick: () => {
+							toast({
+								title: "Próximamente",
+								description: "Función en desarrollo",
+							});
+						},
+						variant: "outline",
+					},
+					{
+						label: "Marcar Sospechoso",
+						icon: Flag,
+						onClick: () => {
+							toast({
+								title: "Próximamente",
+								description: "Función en desarrollo",
+							});
+						},
+						variant: "outline",
+					},
+				]}
+			/>
 
 			<div className="space-y-6">
 				<Card>

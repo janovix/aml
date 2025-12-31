@@ -20,7 +20,8 @@ import {
 	SelectValue,
 	Separator,
 } from "@algtools/ui";
-import { ArrowLeft, Save, Plus, Trash2 } from "lucide-react";
+import { Save, Plus, Trash2, ReceiptText } from "lucide-react";
+import { PageHero } from "@/components/page-hero";
 import { toast } from "sonner";
 import { createTransaction } from "../../lib/api/transactions";
 import { executeMutation } from "../../lib/mutations";
@@ -276,44 +277,32 @@ export function TransactionCreateView(): React.JSX.Element {
 
 	return (
 		<div className="space-y-6">
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="sm"
-						className="gap-2"
-						onClick={handleCancel}
-					>
-						<ArrowLeft className="h-4 w-4" />
-						<span className="hidden sm:inline">Volver</span>
-					</Button>
-					<Separator orientation="vertical" className="hidden h-6 sm:block" />
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							Nueva Transacción
-						</h1>
-						<p className="text-sm text-muted-foreground">
-							Registrar una nueva transacción
-						</p>
-					</div>
-				</div>
-				<div className="flex items-center gap-2">
-					<Button variant="outline" size="sm" onClick={handleCancel}>
-						Cancelar
-					</Button>
-					<Button
-						size="sm"
-						className="gap-2"
-						onClick={handleSubmit}
-						disabled={isSaving}
-					>
-						<Save className="h-4 w-4" />
-						<span className="hidden sm:inline">
-							{isSaving ? "Creando..." : "Crear Transacción"}
-						</span>
-					</Button>
-				</div>
-			</div>
+			<PageHero
+				title="Nueva Transacción"
+				subtitle="Registrar una nueva transacción"
+				icon={ReceiptText}
+				backButton={{
+					label: "Volver",
+					onClick: handleCancel,
+				}}
+				actions={[
+					{
+						label: isSaving ? "Creando..." : "Crear Transacción",
+						icon: Save,
+						onClick: () => {
+							void handleSubmit({
+								preventDefault: () => {},
+							} as React.FormEvent);
+						},
+						disabled: isSaving,
+					},
+					{
+						label: "Cancelar",
+						onClick: handleCancel,
+						variant: "outline",
+					},
+				]}
+			/>
 
 			<form onSubmit={handleSubmit} className="space-y-6">
 				<Card>

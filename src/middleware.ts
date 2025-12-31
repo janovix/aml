@@ -63,9 +63,10 @@ const KNOWN_ROUTES = [
 
 /**
  * Check if a path segment looks like a valid org slug (alphanumeric + hyphens)
+ * Case-insensitive to handle URLs that might have mixed case
  */
 function isValidOrgSlug(segment: string): boolean {
-	return /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/.test(segment);
+	return /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/i.test(segment);
 }
 
 /**
@@ -157,19 +158,23 @@ async function fetchUserOrganizations(
 
 /**
  * Check if user has access to a specific organization
+ * Case-insensitive comparison to handle URL case variations
  */
 function hasAccessToOrg(orgs: Organization[], orgSlug: string): boolean {
-	return orgs.some((org) => org.slug === orgSlug);
+	const normalizedSlug = orgSlug.toLowerCase();
+	return orgs.some((org) => org.slug.toLowerCase() === normalizedSlug);
 }
 
 /**
  * Find org by slug
+ * Case-insensitive comparison to handle URL case variations
  */
 function findOrgBySlug(
 	orgs: Organization[],
 	orgSlug: string,
 ): Organization | undefined {
-	return orgs.find((org) => org.slug === orgSlug);
+	const normalizedSlug = orgSlug.toLowerCase();
+	return orgs.find((org) => org.slug.toLowerCase() === normalizedSlug);
 }
 
 /**

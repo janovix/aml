@@ -13,10 +13,13 @@ import { tokenCache } from "@/lib/auth/tokenCache";
 import type { Organization } from "@/lib/org-store";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeroSkeleton } from "@/components/skeletons/page-hero-skeleton";
+import { TableSkeleton } from "@/components/skeletons/table-skeleton";
 
 /**
  * App skeleton that mimics the dashboard layout structure
  * Shows while loading organization data
+ * Uses standardized skeleton components to prevent layout jumping
  */
 function AppSkeleton() {
 	return (
@@ -66,44 +69,18 @@ function AppSkeleton() {
 					</div>
 				</header>
 
-				{/* Content skeleton */}
+				{/* Content skeleton - uses standardized components */}
 				<main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
-					{/* Page header */}
-					<div className="mb-6 space-y-2">
-						<Skeleton className="h-8 w-48" />
-						<Skeleton className="h-4 w-72" />
-					</div>
+					<div className="space-y-6">
+						{/* PageHero skeleton with stats */}
+						<PageHeroSkeleton
+							showStats={true}
+							showActions={true}
+							actionCount={1}
+						/>
 
-					{/* Stats cards */}
-					<div className="mb-8 grid gap-4 md:grid-cols-3">
-						{[1, 2, 3].map((i) => (
-							<div key={i} className="rounded-xl border bg-card p-6">
-								<Skeleton className="mb-2 h-4 w-20" />
-								<Skeleton className="h-8 w-16" />
-							</div>
-						))}
-					</div>
-
-					{/* Table skeleton */}
-					<div className="rounded-xl border bg-card">
-						{/* Table header */}
-						<div className="flex items-center justify-between border-b p-4">
-							<Skeleton className="h-9 w-64 rounded-md" />
-							<Skeleton className="h-9 w-24 rounded-md" />
-						</div>
-
-						{/* Table rows */}
-						<div className="divide-y">
-							{[1, 2, 3, 4, 5].map((i) => (
-								<div key={i} className="flex items-center gap-4 p-4">
-									<Skeleton className="h-5 w-24" />
-									<Skeleton className="h-5 w-32 flex-1" />
-									<Skeleton className="h-5 w-20" />
-									<Skeleton className="h-5 w-16" />
-									<Skeleton className="h-8 w-8 rounded-md" />
-								</div>
-							))}
-						</div>
+						{/* Table skeleton */}
+						<TableSkeleton rows={10} columns={5} />
 					</div>
 				</main>
 			</div>

@@ -96,11 +96,11 @@ describe("ClientEditView", () => {
 		mockPush.mockReset();
 	});
 
-	it("renders edit client header", () => {
+	it("renders edit client header", async () => {
 		mockGetClientByRfc.mockResolvedValue(buildClient());
 		mockUpdateClient.mockResolvedValue(buildClient());
 		render(<ClientEditView clientId="1" />);
-		expect(screen.getByText("Editar Cliente")).toBeInTheDocument();
+		expect(await screen.findByText("Editar Cliente")).toBeInTheDocument();
 	});
 
 	it("submits updates keeping the loaded person type for moral clients", async () => {

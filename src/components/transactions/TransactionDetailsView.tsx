@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import {
-	Button,
 	Card,
 	CardContent,
 	CardHeader,
@@ -19,13 +18,15 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@algtools/ui";
-import { ArrowLeft, Edit, Download, Trash2 } from "lucide-react";
+import { Edit, Download, Trash2, Receipt } from "lucide-react";
 import { useToast } from "../../hooks/use-toast";
 import {
 	getTransactionById,
 	deleteTransaction,
 } from "../../lib/api/transactions";
 import type { Transaction } from "../../types/transaction";
+import { PageHero } from "@/components/page-hero";
+import { PageHeroSkeleton } from "@/components/skeletons";
 
 const operationTypeLabels: Record<Transaction["operationType"], string> = {
 	purchase: "Compra",
@@ -100,22 +101,28 @@ export function TransactionDetailsView({
 	if (isLoading) {
 		return (
 			<div className="space-y-6">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="sm"
-						className="gap-2"
-						onClick={() => navigateTo("/transactions")}
-					>
-						<ArrowLeft className="h-4 w-4" />
-						Volver
-					</Button>
-					<Separator orientation="vertical" className="h-6" />
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							Cargando...
-						</h1>
-					</div>
+				<PageHeroSkeleton
+					showStats={false}
+					showBackButton={true}
+					actionCount={3}
+				/>
+				{/* Content skeleton */}
+				<div className="grid gap-6 md:grid-cols-2">
+					{[1, 2].map((i) => (
+						<Card key={i}>
+							<CardHeader>
+								<div className="h-6 w-48 bg-accent animate-pulse rounded" />
+							</CardHeader>
+							<CardContent className="space-y-4">
+								{[1, 2, 3].map((j) => (
+									<div key={j} className="space-y-2">
+										<div className="h-4 w-24 bg-accent animate-pulse rounded" />
+										<div className="h-5 w-40 bg-accent animate-pulse rounded" />
+									</div>
+								))}
+							</CardContent>
+						</Card>
+					))}
 				</div>
 			</div>
 		);
@@ -124,34 +131,18 @@ export function TransactionDetailsView({
 	if (!transaction) {
 		return (
 			<div className="space-y-6">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="sm"
-						className="gap-2"
-						onClick={() => navigateTo("/transactions")}
-					>
-						<ArrowLeft className="h-4 w-4" />
-						Volver
-					</Button>
-					<Separator orientation="vertical" className="h-6" />
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							Transacción no encontrada
-						</h1>
-					</div>
-				</div>
+				<PageHero
+					title="Transacción no encontrada"
+					subtitle={`La transacción ${transactionId} no existe`}
+					icon={Receipt}
+					backButton={{
+						label: "Volver a Transacciones",
+						onClick: () => navigateTo("/transactions"),
+					}}
+				/>
 			</div>
 		);
 	}
-
-	const formatDate = (dateString: string): string => {
-		return new Date(dateString).toLocaleDateString("es-MX", {
-			day: "2-digit",
-			month: "long",
-			year: "numeric",
-		});
-	};
 
 	const formatDateTime = (dateString: string | null | undefined): string => {
 		if (!dateString) {
@@ -198,57 +189,34 @@ export function TransactionDetailsView({
 
 	return (
 		<div className="space-y-6">
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="sm"
-						className="gap-2"
-						onClick={() => navigateTo("/transactions")}
-					>
-						<ArrowLeft className="h-4 w-4" />
-						Volver
-					</Button>
-					<Separator orientation="vertical" className="h-6" />
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							{transaction.id}
-						</h1>
-						<p className="text-sm text-muted-foreground">
-							Detalles de la transacción
-						</p>
-					</div>
-				</div>
-				<div className="flex items-center gap-2">
-					<Button
-						variant="outline"
-						size="sm"
-						className="gap-2 hidden sm:flex"
-						onClick={() => navigateTo(`/transactions/${transaction.id}/edit`)}
-					>
-						<Edit className="h-4 w-4" />
-						Editar
-					</Button>
-					<Button
-						variant="outline"
-						size="sm"
-						className="gap-2 hidden sm:flex"
-						onClick={handleExport}
-					>
-						<Download className="h-4 w-4" />
-						Exportar
-					</Button>
-					<Button
-						variant="outline"
-						size="sm"
-						className="gap-2 text-destructive hover:text-destructive"
-						onClick={() => setDeleteDialogOpen(true)}
-					>
-						<Trash2 className="h-4 w-4" />
-						<span className="hidden sm:inline">Eliminar</span>
-					</Button>
-				</div>
-			</div>
+			<PageHero
+				title={transaction.id}
+				subtitle="Detalles de la transacción"
+				icon={Receipt}
+				backButton={{
+					label: "Volver a Transacciones",
+					onClick: () => navigateTo("/transactions"),
+				}}
+				actions={[
+					{
+						label: "Editar",
+						icon: Edit,
+						onClick: () => navigateTo(`/transactions/${transaction.id}/edit`),
+					},
+					{
+						label: "Exportar",
+						icon: Download,
+						onClick: handleExport,
+						variant: "outline",
+					},
+					{
+						label: "Eliminar",
+						icon: Trash2,
+						onClick: () => setDeleteDialogOpen(true),
+						variant: "destructive",
+					},
+				]}
+			/>
 
 			<div className="space-y-6">
 				<div className="grid gap-6 md:grid-cols-2">

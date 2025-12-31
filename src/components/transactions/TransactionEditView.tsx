@@ -19,7 +19,9 @@ import {
 	SelectValue,
 	Separator,
 } from "@algtools/ui";
-import { ArrowLeft, Save, Plus, Trash2 } from "lucide-react";
+import { Save, Plus, Trash2, Receipt } from "lucide-react";
+import { PageHero } from "@/components/page-hero";
+import { PageHeroSkeleton } from "@/components/skeletons";
 import {
 	getTransactionById,
 	updateTransaction,
@@ -271,25 +273,41 @@ export function TransactionEditView({
 		}));
 	};
 
+	const isSaveDisabled =
+		isLoading ||
+		isSaving ||
+		formData.paymentMethods.reduce(
+			(sum, pm) => sum + (parseFloat(pm.amount) || 0),
+			0,
+		) > (parseFloat(formData.amount) || 0);
+
 	if (isLoading) {
 		return (
 			<div className="space-y-6">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="sm"
-						className="gap-2"
-						onClick={handleCancel}
-					>
-						<ArrowLeft className="h-4 w-4" />
-						Volver
-					</Button>
-					<Separator orientation="vertical" className="h-6" />
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							Cargando...
-						</h1>
-					</div>
+				<PageHeroSkeleton
+					showStats={false}
+					showBackButton={true}
+					actionCount={2}
+				/>
+				{/* Form skeleton */}
+				<div className="space-y-6">
+					{[1, 2, 3].map((i) => (
+						<Card key={i}>
+							<CardHeader>
+								<div className="h-6 w-48 bg-accent animate-pulse rounded" />
+							</CardHeader>
+							<CardContent>
+								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+									{[1, 2, 3, 4].map((j) => (
+										<div key={j} className="space-y-2">
+											<div className="h-4 w-24 bg-accent animate-pulse rounded" />
+											<div className="h-10 w-full bg-accent animate-pulse rounded" />
+										</div>
+									))}
+								</div>
+							</CardContent>
+						</Card>
+					))}
 				</div>
 			</div>
 		);
@@ -297,49 +315,32 @@ export function TransactionEditView({
 
 	return (
 		<div className="space-y-6">
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="sm"
-						className="gap-2"
-						onClick={handleCancel}
-					>
-						<ArrowLeft className="h-4 w-4" />
-						<span className="hidden sm:inline">Volver</span>
-					</Button>
-					<Separator orientation="vertical" className="hidden h-6 sm:block" />
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							Editar Transacción
-						</h1>
-						<p className="text-sm text-muted-foreground">{transactionId}</p>
-					</div>
-				</div>
-				<div className="flex items-center gap-2">
-					<Button variant="outline" size="sm" onClick={handleCancel}>
-						Cancelar
-					</Button>
-					<Button
-						size="sm"
-						className="gap-2"
-						onClick={handleSubmit}
-						disabled={
-							isLoading ||
-							isSaving ||
-							formData.paymentMethods.reduce(
-								(sum, pm) => sum + (parseFloat(pm.amount) || 0),
-								0,
-							) > (parseFloat(formData.amount) || 0)
-						}
-					>
-						<Save className="h-4 w-4" />
-						<span className="hidden sm:inline">
-							{isSaving ? "Guardando..." : "Guardar Cambios"}
-						</span>
-					</Button>
-				</div>
-			</div>
+			<PageHero
+				title="Editar Transacción"
+				subtitle={transactionId}
+				icon={Receipt}
+				backButton={{
+					label: "Volver",
+					onClick: handleCancel,
+				}}
+				actions={[
+					{
+						label: isSaving ? "Guardando..." : "Guardar Cambios",
+						icon: Save,
+						onClick: () => {
+							void handleSubmit({
+								preventDefault: () => {},
+							} as React.FormEvent);
+						},
+						disabled: isSaveDisabled,
+					},
+					{
+						label: "Cancelar",
+						onClick: handleCancel,
+						variant: "outline",
+					},
+				]}
+			/>
 
 			<form onSubmit={handleSubmit} className="space-y-6">
 				<Card>

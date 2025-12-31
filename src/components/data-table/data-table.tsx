@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { SKELETON_HEIGHTS } from "@/lib/constants/skeleton-heights";
 import type { DataTableProps, SortState, ActiveFilter } from "./types";
 import { FilterDrawer } from "./filter-drawer";
 import { FilterPopover } from "./filter-popover";
@@ -393,7 +394,12 @@ export function DataTable<T extends object>({
 				</div>
 
 				{/* Table */}
-				<div className="overflow-x-auto">
+				<div
+					className={cn(
+						"overflow-x-auto",
+						isLoading && SKELETON_HEIGHTS.TABLE_MIN,
+					)}
+				>
 					<table className="w-full">
 						<thead>
 							<tr className="border-b border-border bg-muted/30">

@@ -191,6 +191,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 					const fullOrg = organizations.find((o) => o.id === org.id);
 					if (fullOrg) {
 						setCurrentOrg(fullOrg);
+
+						// Update URL to reflect new org slug
+						if (urlOrgSlug && pathname) {
+							const pathSegments = pathname.split("/").filter(Boolean);
+							if (pathSegments.length > 0 && pathSegments[0] === urlOrgSlug) {
+								// Replace old org slug with new one
+								const newPath = `/${fullOrg.slug}/${pathSegments.slice(1).join("/")}`;
+								router.replace(newPath);
+							} else if (pathSegments.length === 0) {
+								// Navigate to default page for new org
+								router.replace(`/${fullOrg.slug}/clients`);
+							}
+						} else {
+							// No org in URL, navigate to new org's default page
+							router.replace(`/${fullOrg.slug}/clients`);
+						}
 					}
 				},
 			});

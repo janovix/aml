@@ -12,10 +12,11 @@ import {
 	CardTitle,
 	Input,
 	Label,
-	Separator,
 	Textarea,
 } from "@algtools/ui";
-import { ArrowLeft, Save } from "lucide-react";
+import { Save, User } from "lucide-react";
+import { PageHero } from "@/components/page-hero";
+import { PageHeroSkeleton } from "@/components/skeletons";
 import type {
 	PersonType,
 	ClientCreateRequest,
@@ -288,18 +289,30 @@ export function ClientEditView({
 	if (isLoading) {
 		return (
 			<div className="space-y-6">
-				<div className="flex items-center gap-4">
-					<Button variant="ghost" size="icon" onClick={handleCancel}>
-						<ArrowLeft className="h-5 w-5" />
-					</Button>
-					<div>
-						<h1 className="text-3xl font-bold tracking-tight">
-							Editar Cliente
-						</h1>
-						<p className="text-muted-foreground">
-							Cargando información del cliente...
-						</p>
-					</div>
+				<PageHeroSkeleton
+					showStats={false}
+					showBackButton={true}
+					actionCount={2}
+				/>
+				{/* Form skeleton */}
+				<div className="max-w-4xl space-y-6">
+					{[1, 2, 3].map((i) => (
+						<Card key={i}>
+							<CardHeader>
+								<div className="h-6 w-48 bg-accent animate-pulse rounded" />
+							</CardHeader>
+							<CardContent>
+								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+									{[1, 2, 3, 4].map((j) => (
+										<div key={j} className="space-y-2">
+											<div className="h-4 w-24 bg-accent animate-pulse rounded" />
+											<div className="h-10 w-full bg-accent animate-pulse rounded" />
+										</div>
+									))}
+								</div>
+							</CardContent>
+						</Card>
+					))}
 				</div>
 			</div>
 		);
@@ -308,23 +321,15 @@ export function ClientEditView({
 	if (!client) {
 		return (
 			<div className="space-y-6">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="icon"
-						onClick={() => navigateTo("/clients")}
-					>
-						<ArrowLeft className="h-5 w-5" />
-					</Button>
-					<div>
-						<h1 className="text-3xl font-bold tracking-tight">
-							Cliente no encontrado
-						</h1>
-						<p className="text-muted-foreground">
-							El cliente con ID {clientId} no existe.
-						</p>
-					</div>
-				</div>
+				<PageHero
+					title="Cliente no encontrado"
+					subtitle={`El cliente con RFC ${clientId} no existe`}
+					icon={User}
+					backButton={{
+						label: "Volver a Clientes",
+						onClick: () => navigateTo("/clients"),
+					}}
+				/>
 			</div>
 		);
 	}
@@ -335,45 +340,28 @@ export function ClientEditView({
 
 	return (
 		<div className="space-y-6">
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="sm"
-						className="gap-2"
-						onClick={handleCancel}
-					>
-						<ArrowLeft className="h-4 w-4" />
-						<span className="hidden sm:inline">Volver</span>
-					</Button>
-					<Separator orientation="vertical" className="hidden h-6 sm:block" />
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							Editar Cliente
-						</h1>
-						<p className="text-sm text-muted-foreground">
-							Modificar información del cliente
-						</p>
-					</div>
-				</div>
-				<div className="flex items-center gap-2">
-					<Button variant="outline" size="sm" onClick={handleCancel}>
-						Cancelar
-					</Button>
-					<Button
-						size="sm"
-						className="gap-2"
-						type="button"
-						onClick={handleToolbarSubmit}
-						disabled={isSubmitting}
-					>
-						<Save className="h-4 w-4" />
-						<span className="hidden sm:inline">
-							{isSubmitting ? "Guardando..." : "Guardar Cambios"}
-						</span>
-					</Button>
-				</div>
-			</div>
+			<PageHero
+				title="Editar Cliente"
+				subtitle="Modificar información del cliente"
+				icon={User}
+				backButton={{
+					label: "Volver",
+					onClick: handleCancel,
+				}}
+				actions={[
+					{
+						label: isSubmitting ? "Guardando..." : "Guardar Cambios",
+						icon: Save,
+						onClick: handleToolbarSubmit,
+						disabled: isSubmitting,
+					},
+					{
+						label: "Cancelar",
+						onClick: handleCancel,
+						variant: "outline",
+					},
+				]}
+			/>
 
 			<form
 				id="client-edit-form"
