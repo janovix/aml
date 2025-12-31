@@ -26,10 +26,18 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+	Sheet,
+	SheetContent,
+	SheetHeader,
+	SheetTitle,
+	SheetTrigger,
+} from "@/components/ui/sheet";
 import type { CatalogItem } from "@/types/catalog";
 import { useCatalogSearch } from "@/hooks/useCatalogSearch";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
 import { AddCatalogItemDialog } from "./AddCatalogItemDialog";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type OptionRenderer = (
 	option: CatalogItem,
@@ -94,6 +102,156 @@ const defaultRenderOption: OptionRenderer = (option, isSelected) => (
 	</div>
 );
 
+interface CatalogSelectorCommandContentProps {
+	searchTerm: string;
+	onSearchChange: (value: string) => void;
+	searchPlaceholder: string;
+	autoFocusSearch: boolean;
+	loading: boolean;
+	error: string | null;
+	mappedItems: Array<{ item: CatalogItem; value: string; label: string }>;
+	emptyState: string;
+	allowNewItems: boolean;
+	onAddNewClick: () => void;
+	selectedOption: CatalogItem | null;
+	getOptionValue?: (option: CatalogItem) => string;
+	renderOption: OptionRenderer;
+	onSelect: (value: string) => void;
+	listRef: React.RefObject<HTMLDivElement | null>;
+	loadingMore: boolean;
+	shouldShowSummary: boolean;
+	resultSummary: string;
+	isMobile?: boolean;
+}
+
+function CatalogSelectorCommandContent({
+	searchTerm,
+	onSearchChange,
+	searchPlaceholder,
+	autoFocusSearch,
+	loading,
+	error,
+	mappedItems,
+	emptyState,
+	allowNewItems,
+	onAddNewClick,
+	selectedOption,
+	getOptionValue,
+	renderOption,
+	onSelect,
+	listRef,
+	loadingMore,
+	shouldShowSummary,
+	resultSummary,
+	isMobile = false,
+}: CatalogSelectorCommandContentProps): React.ReactElement {
+	return (
+		<Command shouldFilter={false}>
+			<CommandInput
+				value={searchTerm}
+				onValueChange={onSearchChange}
+				placeholder={searchPlaceholder}
+				autoFocus={autoFocusSearch}
+			/>
+
+			{loading && (
+				<div className="flex items-center gap-2 px-3 py-4 text-sm text-muted-foreground">
+					<Spinner size="sm" />
+					Buscando resultados…
+				</div>
+			)}
+
+			{!loading && error && (
+				<div className="px-3 py-4 text-sm text-destructive">{error}</div>
+			)}
+
+			{!loading && !error && (
+				<>
+					<CommandList
+						ref={listRef}
+						className={cn(isMobile ? "max-h-[60vh]" : "max-h-[300px]")}
+					>
+						{mappedItems.length === 0 ? (
+							<CommandEmpty>
+								<div className="flex flex-col items-center gap-2 py-2">
+									<span>{emptyState}</span>
+									{allowNewItems && searchTerm.trim() && (
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											onClick={onAddNewClick}
+											className="mt-2"
+										>
+											<Plus className="mr-2 h-4 w-4" />
+											Agregar &quot;{searchTerm.trim()}&quot;
+										</Button>
+									)}
+								</div>
+							</CommandEmpty>
+						) : (
+							<CommandGroup heading="Resultados">
+								{mappedItems.map(({ item, value: optionValue }) => {
+									const isSelected = selectedOption
+										? (getOptionValue
+												? getOptionValue(selectedOption)
+												: (selectedOption.id ?? selectedOption.name)) ===
+											optionValue
+										: false;
+
+									return (
+										<CommandItem
+											key={optionValue}
+											value={optionValue}
+											onSelect={() => onSelect(optionValue)}
+										>
+											{renderOption(item, isSelected)}
+										</CommandItem>
+									);
+								})}
+								{allowNewItems && searchTerm.trim() && (
+									<CommandItem
+										key="__add_new__"
+										value="__add_new__"
+										onSelect={onAddNewClick}
+										className="text-primary"
+									>
+										<div className="flex items-center gap-2">
+											<Plus className="h-4 w-4" />
+											<span>Agregar &quot;{searchTerm.trim()}&quot;</span>
+										</div>
+									</CommandItem>
+								)}
+							</CommandGroup>
+						)}
+						{loadingMore && (
+							<div className="flex items-center justify-center gap-2 px-3 py-4 text-sm text-muted-foreground">
+								<Spinner size="sm" />
+								Cargando más resultados...
+							</div>
+						)}
+					</CommandList>
+					{shouldShowSummary && (
+						<div
+							className={cn(
+								"sticky bottom-0 border-t px-3 py-2",
+								isMobile ? "bg-background" : "bg-popover",
+							)}
+						>
+							<p
+								className="text-[11px] text-muted-foreground"
+								aria-live="polite"
+							>
+								{resultSummary}
+							</p>
+						</div>
+					)}
+				</>
+			)}
+		</Command>
+	);
+}
+
 export function CatalogSelector({
 	catalogKey,
 	label,
@@ -117,6 +275,7 @@ export function CatalogSelector({
 }: CatalogSelectorProps): React.ReactElement {
 	const labelId = useId();
 	const listRef = useRef<HTMLDivElement>(null);
+	const isMobile = useIsMobile();
 	const resolvedPlaceholder =
 		placeholder ??
 		(label ? `Seleccionar ${label.toLowerCase()}` : "Seleccionar opción");
@@ -457,6 +616,48 @@ export function CatalogSelector({
 
 	const shouldShowSummary = open && showResults && Boolean(resultSummary);
 
+	const triggerButton = (
+		<Button
+			variant="outline"
+			role="combobox"
+			aria-expanded={open}
+			aria-labelledby={label ? labelId : undefined}
+			disabled={disabled}
+			className="w-full justify-between text-left font-normal"
+		>
+			<span className="truncate">{selectedLabel || resolvedPlaceholder}</span>
+			<span className="ml-2 flex items-center gap-1 text-xs text-muted-foreground">
+				<span className="hidden sm:inline">{resolvedType}</span>
+				<ChevronsUpDown
+					className="h-4 w-4 shrink-0 opacity-50"
+					aria-hidden="true"
+				/>
+			</span>
+		</Button>
+	);
+
+	const commandContentProps: CatalogSelectorCommandContentProps = {
+		searchTerm,
+		onSearchChange: handleSearchChange,
+		searchPlaceholder,
+		autoFocusSearch,
+		loading,
+		error,
+		mappedItems,
+		emptyState,
+		allowNewItems,
+		onAddNewClick: handleAddNewClick,
+		selectedOption,
+		getOptionValue,
+		renderOption,
+		onSelect: handleSelect,
+		listRef,
+		loadingMore,
+		shouldShowSummary,
+		resultSummary,
+		isMobile,
+	};
+
 	return (
 		<div className={cn("space-y-2", className)}>
 			{label &&
@@ -475,130 +676,35 @@ export function CatalogSelector({
 					</Label>
 				))}
 
-			<Popover open={open} onOpenChange={handleOpenChange}>
-				<PopoverTrigger asChild>
-					<Button
-						variant="outline"
-						role="combobox"
-						aria-expanded={open}
-						aria-labelledby={label ? labelId : undefined}
-						disabled={disabled}
-						className="w-full justify-between text-left font-normal"
+			{isMobile ? (
+				<Sheet open={open} onOpenChange={handleOpenChange}>
+					<SheetTrigger asChild>{triggerButton}</SheetTrigger>
+					<SheetContent
+						side="bottom"
+						className="h-[85vh] flex flex-col p-0 [&>button]:hidden"
 					>
-						<span className="truncate">
-							{selectedLabel || resolvedPlaceholder}
-						</span>
-						<span className="ml-2 flex items-center gap-1 text-xs text-muted-foreground">
-							<span className="hidden sm:inline">{resolvedType}</span>
-							<ChevronsUpDown
-								className="h-4 w-4 shrink-0 opacity-50"
-								aria-hidden="true"
-							/>
-						</span>
-					</Button>
-				</PopoverTrigger>
-
-				<PopoverContent
-					className="w-[--radix-popover-trigger-width] p-0"
-					align="start"
-				>
-					<Command shouldFilter={false}>
-						<CommandInput
-							value={searchTerm}
-							onValueChange={handleSearchChange}
-							placeholder={searchPlaceholder}
-							autoFocus={autoFocusSearch}
-						/>
-
-						{loading && (
-							<div className="flex items-center gap-2 px-3 py-4 text-sm text-muted-foreground">
-								<Spinner size="sm" />
-								Buscando resultados…
-							</div>
-						)}
-
-						{!loading && error && (
-							<div className="px-3 py-4 text-sm text-destructive">{error}</div>
-						)}
-
-						{!loading && !error && (
-							<>
-								<CommandList ref={listRef} className="max-h-[300px]">
-									{mappedItems.length === 0 ? (
-										<CommandEmpty>
-											<div className="flex flex-col items-center gap-2 py-2">
-												<span>{emptyState}</span>
-												{allowNewItems && searchTerm.trim() && (
-													<Button
-														type="button"
-														variant="outline"
-														size="sm"
-														onClick={handleAddNewClick}
-														className="mt-2"
-													>
-														<Plus className="mr-2 h-4 w-4" />
-														Agregar &quot;{searchTerm.trim()}&quot;
-													</Button>
-												)}
-											</div>
-										</CommandEmpty>
-									) : (
-										<CommandGroup heading="Resultados">
-											{mappedItems.map(({ item, value: optionValue }) => {
-												const isSelected = selectedOption
-													? (getOptionValue
-															? getOptionValue(selectedOption)
-															: (selectedOption.id ?? selectedOption.name)) ===
-														optionValue
-													: false;
-
-												return (
-													<CommandItem
-														key={optionValue}
-														value={optionValue}
-														onSelect={() => handleSelect(optionValue)}
-													>
-														{renderOption(item, isSelected)}
-													</CommandItem>
-												);
-											})}
-											{allowNewItems && searchTerm.trim() && (
-												<CommandItem
-													key="__add_new__"
-													value="__add_new__"
-													onSelect={handleAddNewClick}
-													className="text-primary"
-												>
-													<div className="flex items-center gap-2">
-														<Plus className="h-4 w-4" />
-														<span>Agregar &quot;{searchTerm.trim()}&quot;</span>
-													</div>
-												</CommandItem>
-											)}
-										</CommandGroup>
-									)}
-									{loadingMore && (
-										<div className="flex items-center justify-center gap-2 px-3 py-4 text-sm text-muted-foreground">
-											<Spinner size="sm" />
-											Cargando más resultados...
-										</div>
-									)}
-								</CommandList>
-								{shouldShowSummary && (
-									<div className="sticky bottom-0 border-t bg-popover px-3 py-2">
-										<p
-											className="text-[11px] text-muted-foreground"
-											aria-live="polite"
-										>
-											{resultSummary}
-										</p>
-									</div>
-								)}
-							</>
-						)}
-					</Command>
-				</PopoverContent>
-			</Popover>
+						<SheetHeader className="px-4 pt-4 pb-2 border-b">
+							<SheetTitle>
+								{label || "Seleccionar opción"}
+								{required && <span className="ml-1 text-destructive">*</span>}
+							</SheetTitle>
+						</SheetHeader>
+						<div className="flex-1 overflow-hidden">
+							<CatalogSelectorCommandContent {...commandContentProps} />
+						</div>
+					</SheetContent>
+				</Sheet>
+			) : (
+				<Popover open={open} onOpenChange={handleOpenChange}>
+					<PopoverTrigger asChild>{triggerButton}</PopoverTrigger>
+					<PopoverContent
+						className="w-[--radix-popover-trigger-width] p-0"
+						align="start"
+					>
+						<CatalogSelectorCommandContent {...commandContentProps} />
+					</PopoverContent>
+				</Popover>
+			)}
 
 			{helperText && (
 				<p className="text-xs text-muted-foreground">{helperText}</p>

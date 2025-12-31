@@ -165,3 +165,48 @@ export const WithAddNewItem: Story = {
 		// that doesn't match any existing items (e.g., "Honda", "BMW", "Tesla")
 	},
 };
+
+/**
+ * On mobile devices (viewport < 768px), the selector opens as a bottom drawer
+ * instead of a popover for better touch interaction.
+ */
+export const Mobile: Story = {
+	args: {
+		catalogKey: "vehicle-brands",
+		label: "Marca",
+		searchPlaceholder: "Buscar marca...",
+	},
+	parameters: {
+		viewport: {
+			defaultViewport: "mobile1",
+		},
+	},
+};
+
+export const MobileWithSelectedValue: Story = {
+	args: {
+		catalogKey: "vehicle-brands",
+		label: "Marca",
+		value: "01JCXAVB0001ABCDEFGHJ1",
+		searchPlaceholder: "Buscar marca...",
+	},
+	parameters: {
+		viewport: {
+			defaultViewport: "mobile1",
+		},
+	},
+};
+
+export const MobileWithAddNewItem: Story = {
+	args: {
+		catalogKey: "vehicle-brands",
+		label: "Marca",
+		searchPlaceholder: "Buscar marca...",
+		emptyState: "No se encontraron resultados para tu búsqueda.",
+	},
+	parameters: {
+		viewport: {
+			defaultViewport: "mobile1",
+		},
+	},
+};

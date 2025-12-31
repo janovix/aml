@@ -20,9 +20,17 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+	Sheet,
+	SheetContent,
+	SheetHeader,
+	SheetTitle,
+	SheetTrigger,
+} from "@/components/ui/sheet";
 import type { Client } from "@/types/client";
 import { useClientSearch } from "@/hooks/useClientSearch";
 import { getClientDisplayName } from "@/types/client";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type OptionRenderer = (option: Client, isSelected: boolean) => React.ReactNode;
 
@@ -91,6 +99,151 @@ const defaultRenderOption: OptionRenderer = (client, isSelected) => {
 	);
 };
 
+interface ClientSelectorCommandContentProps {
+	searchTerm: string;
+	onSearchChange: (value: string) => void;
+	searchPlaceholder: string;
+	autoFocusSearch: boolean;
+	onCreateNew?: () => void;
+	loading: boolean;
+	error: string | null;
+	mappedItems: Array<{ client: Client; value: string; label: string }>;
+	emptyState: string;
+	selectedClient: Client | null;
+	getOptionValue?: (client: Client) => string;
+	renderOption: OptionRenderer;
+	onSelect: (value: string) => void;
+	listRef: React.RefObject<HTMLDivElement | null>;
+	shouldShowSummary: boolean;
+	resultSummary: string;
+	isMobile?: boolean;
+}
+
+function ClientSelectorCommandContent({
+	searchTerm,
+	onSearchChange,
+	searchPlaceholder,
+	autoFocusSearch,
+	onCreateNew,
+	loading,
+	error,
+	mappedItems,
+	emptyState,
+	selectedClient,
+	getOptionValue,
+	renderOption,
+	onSelect,
+	listRef,
+	shouldShowSummary,
+	resultSummary,
+	isMobile = false,
+}: ClientSelectorCommandContentProps): React.ReactElement {
+	return (
+		<Command shouldFilter={false}>
+			<CommandInput
+				value={searchTerm}
+				onValueChange={onSearchChange}
+				placeholder={searchPlaceholder}
+				autoFocus={autoFocusSearch}
+			/>
+
+			{/* Create New Client button - always visible at top */}
+			{onCreateNew && (
+				<>
+					<div className="px-2 py-2">
+						<Button
+							type="button"
+							variant="ghost"
+							size="sm"
+							className="w-full justify-start gap-2 text-primary hover:text-primary"
+							onClick={onCreateNew}
+						>
+							<Plus className="h-4 w-4" />
+							Crear nuevo cliente
+						</Button>
+					</div>
+					<CommandSeparator />
+				</>
+			)}
+
+			{loading && (
+				<div className="flex items-center gap-2 px-3 py-4 text-sm text-muted-foreground">
+					<Spinner size="sm" />
+					Buscando clientes…
+				</div>
+			)}
+
+			{!loading && error && (
+				<div className="px-3 py-4 text-sm text-destructive">{error}</div>
+			)}
+
+			{!loading && !error && (
+				<>
+					<CommandList
+						ref={listRef}
+						className={cn(isMobile ? "max-h-[60vh]" : "max-h-[300px]")}
+					>
+						{mappedItems.length === 0 ? (
+							<CommandEmpty>
+								<div className="flex flex-col items-center gap-3 py-2">
+									<span>{emptyState}</span>
+									{onCreateNew && (
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											className="gap-2"
+											onClick={onCreateNew}
+										>
+											<Plus className="h-4 w-4" />
+											Crear nuevo cliente
+										</Button>
+									)}
+								</div>
+							</CommandEmpty>
+						) : (
+							<CommandGroup heading="Clientes">
+								{mappedItems.map(({ client, value: optionValue }) => {
+									const isSelected = selectedClient
+										? (getOptionValue
+												? getOptionValue(selectedClient)
+												: selectedClient.id) === optionValue
+										: false;
+
+									return (
+										<CommandItem
+											key={optionValue}
+											value={optionValue}
+											onSelect={() => onSelect(optionValue)}
+										>
+											{renderOption(client, isSelected)}
+										</CommandItem>
+									);
+								})}
+							</CommandGroup>
+						)}
+					</CommandList>
+					{shouldShowSummary && (
+						<div
+							className={cn(
+								"sticky bottom-0 border-t px-3 py-2",
+								isMobile ? "bg-background" : "bg-popover",
+							)}
+						>
+							<p
+								className="text-[11px] text-muted-foreground"
+								aria-live="polite"
+							>
+								{resultSummary}
+							</p>
+						</div>
+					)}
+				</>
+			)}
+		</Command>
+	);
+}
+
 export function ClientSelector({
 	label,
 	value,
@@ -112,6 +265,7 @@ export function ClientSelector({
 }: ClientSelectorProps): React.ReactElement {
 	const labelId = useId();
 	const listRef = useRef<HTMLDivElement>(null);
+	const isMobile = useIsMobile();
 	const resolvedPlaceholder =
 		placeholder ??
 		(label ? `Seleccionar ${label.toLowerCase()}` : "Seleccionar cliente");
@@ -212,6 +366,46 @@ export function ClientSelector({
 
 	const shouldShowSummary = open && showResults && Boolean(resultSummary);
 
+	const triggerButton = (
+		<Button
+			variant="outline"
+			role="combobox"
+			aria-expanded={open}
+			aria-labelledby={label ? labelId : undefined}
+			disabled={disabled}
+			className="w-full justify-between text-left font-normal"
+		>
+			<span className="truncate">{selectedLabel || resolvedPlaceholder}</span>
+			<span className="ml-2 flex items-center gap-1 text-xs text-muted-foreground">
+				<span className="hidden sm:inline">cliente</span>
+				<ChevronsUpDown
+					className="h-4 w-4 shrink-0 opacity-50"
+					aria-hidden="true"
+				/>
+			</span>
+		</Button>
+	);
+
+	const commandContentProps: ClientSelectorCommandContentProps = {
+		searchTerm,
+		onSearchChange: handleSearchChange,
+		searchPlaceholder,
+		autoFocusSearch,
+		onCreateNew: onCreateNew ? handleCreateNew : undefined,
+		loading,
+		error,
+		mappedItems,
+		emptyState,
+		selectedClient,
+		getOptionValue,
+		renderOption,
+		onSelect: handleSelect,
+		listRef,
+		shouldShowSummary,
+		resultSummary,
+		isMobile,
+	};
+
 	return (
 		<div className={cn("space-y-2", className)}>
 			{label && (
@@ -221,129 +415,35 @@ export function ClientSelector({
 				</Label>
 			)}
 
-			<Popover open={open} onOpenChange={handleOpenChange}>
-				<PopoverTrigger asChild>
-					<Button
-						variant="outline"
-						role="combobox"
-						aria-expanded={open}
-						aria-labelledby={label ? labelId : undefined}
-						disabled={disabled}
-						className="w-full justify-between text-left font-normal"
+			{isMobile ? (
+				<Sheet open={open} onOpenChange={handleOpenChange}>
+					<SheetTrigger asChild>{triggerButton}</SheetTrigger>
+					<SheetContent
+						side="bottom"
+						className="h-[85vh] flex flex-col p-0 [&>button]:hidden"
 					>
-						<span className="truncate">
-							{selectedLabel || resolvedPlaceholder}
-						</span>
-						<span className="ml-2 flex items-center gap-1 text-xs text-muted-foreground">
-							<span className="hidden sm:inline">cliente</span>
-							<ChevronsUpDown
-								className="h-4 w-4 shrink-0 opacity-50"
-								aria-hidden="true"
-							/>
-						</span>
-					</Button>
-				</PopoverTrigger>
-
-				<PopoverContent
-					className="w-[--radix-popover-trigger-width] p-0"
-					align="start"
-				>
-					<Command shouldFilter={false}>
-						<CommandInput
-							value={searchTerm}
-							onValueChange={handleSearchChange}
-							placeholder={searchPlaceholder}
-							autoFocus={autoFocusSearch}
-						/>
-
-						{/* Create New Client button - always visible at top */}
-						{onCreateNew && (
-							<>
-								<div className="px-2 py-2">
-									<Button
-										type="button"
-										variant="ghost"
-										size="sm"
-										className="w-full justify-start gap-2 text-primary hover:text-primary"
-										onClick={handleCreateNew}
-									>
-										<Plus className="h-4 w-4" />
-										Crear nuevo cliente
-									</Button>
-								</div>
-								<CommandSeparator />
-							</>
-						)}
-
-						{loading && (
-							<div className="flex items-center gap-2 px-3 py-4 text-sm text-muted-foreground">
-								<Spinner size="sm" />
-								Buscando clientes…
-							</div>
-						)}
-
-						{!loading && error && (
-							<div className="px-3 py-4 text-sm text-destructive">{error}</div>
-						)}
-
-						{!loading && !error && (
-							<>
-								<CommandList ref={listRef} className="max-h-[300px]">
-									{mappedItems.length === 0 ? (
-										<CommandEmpty>
-											<div className="flex flex-col items-center gap-3 py-2">
-												<span>{emptyState}</span>
-												{onCreateNew && (
-													<Button
-														type="button"
-														variant="outline"
-														size="sm"
-														className="gap-2"
-														onClick={handleCreateNew}
-													>
-														<Plus className="h-4 w-4" />
-														Crear nuevo cliente
-													</Button>
-												)}
-											</div>
-										</CommandEmpty>
-									) : (
-										<CommandGroup heading="Clientes">
-											{mappedItems.map(({ client, value: optionValue }) => {
-												const isSelected = selectedClient
-													? (getOptionValue
-															? getOptionValue(selectedClient)
-															: selectedClient.id) === optionValue
-													: false;
-
-												return (
-													<CommandItem
-														key={optionValue}
-														value={optionValue}
-														onSelect={() => handleSelect(optionValue)}
-													>
-														{renderOption(client, isSelected)}
-													</CommandItem>
-												);
-											})}
-										</CommandGroup>
-									)}
-								</CommandList>
-								{shouldShowSummary && (
-									<div className="sticky bottom-0 border-t bg-popover px-3 py-2">
-										<p
-											className="text-[11px] text-muted-foreground"
-											aria-live="polite"
-										>
-											{resultSummary}
-										</p>
-									</div>
-								)}
-							</>
-						)}
-					</Command>
-				</PopoverContent>
-			</Popover>
+						<SheetHeader className="px-4 pt-4 pb-2 border-b">
+							<SheetTitle>
+								{label || "Seleccionar cliente"}
+								{required && <span className="ml-1 text-destructive">*</span>}
+							</SheetTitle>
+						</SheetHeader>
+						<div className="flex-1 overflow-hidden">
+							<ClientSelectorCommandContent {...commandContentProps} />
+						</div>
+					</SheetContent>
+				</Sheet>
+			) : (
+				<Popover open={open} onOpenChange={handleOpenChange}>
+					<PopoverTrigger asChild>{triggerButton}</PopoverTrigger>
+					<PopoverContent
+						className="w-[--radix-popover-trigger-width] p-0"
+						align="start"
+					>
+						<ClientSelectorCommandContent {...commandContentProps} />
+					</PopoverContent>
+				</Popover>
+			)}
 
 			{helperText && (
 				<p className="text-xs text-muted-foreground">{helperText}</p>

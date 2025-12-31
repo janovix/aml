@@ -4,8 +4,12 @@ import userEvent from "@testing-library/user-event";
 import { CatalogSelector } from "./CatalogSelector";
 import type { CatalogItem } from "@/types/catalog";
 import { useCatalogSearch } from "@/hooks/useCatalogSearch";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 vi.mock("@/hooks/useCatalogSearch");
+vi.mock("@/hooks/use-mobile");
+
+const mockUseIsMobile = vi.mocked(useIsMobile);
 
 const mockedUseCatalogSearch = vi.mocked(useCatalogSearch);
 type CatalogSearchResult = ReturnType<typeof useCatalogSearch>;
@@ -49,6 +53,7 @@ const createHookResult = (
 
 beforeEach(() => {
 	mockedUseCatalogSearch.mockReturnValue(createHookResult());
+	mockUseIsMobile.mockReturnValue(false); // Default to desktop
 });
 
 describe("CatalogSelector", () => {
@@ -965,5 +970,144 @@ describe("CatalogSelector", () => {
 			// Should not call loadMore when hasMore is false
 			expect(mockLoadMore).not.toHaveBeenCalled();
 		}
+	});
+
+	describe("mobile drawer behavior", () => {
+		beforeEach(() => {
+			mockUseIsMobile.mockReturnValue(true);
+		});
+
+		it("should open drawer on mobile when trigger is clicked", async () => {
+			const user = userEvent.setup();
+
+			render(<CatalogSelector catalogKey="vehicle-brands" label="Marca" />);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			// On mobile, Sheet should render with dialog role
+			await waitFor(() => {
+				expect(screen.getByRole("dialog")).toBeInTheDocument();
+			});
+
+			// Should show the title in the sheet header (h2 element)
+			const dialog = screen.getByRole("dialog");
+			expect(dialog.querySelector("h2")).toHaveTextContent("Marca");
+		});
+
+		it("should show search input in mobile drawer", async () => {
+			const user = userEvent.setup();
+
+			render(<CatalogSelector catalogKey="vehicle-brands" label="Marca" />);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			await waitFor(() => {
+				expect(
+					screen.getByPlaceholderText("Buscar en el catálogo..."),
+				).toBeInTheDocument();
+			});
+		});
+
+		it("should allow selecting option in mobile drawer", async () => {
+			const user = userEvent.setup();
+			const handleChange = vi.fn();
+
+			render(
+				<CatalogSelector
+					catalogKey="vehicle-brands"
+					label="Marca"
+					onChange={handleChange}
+				/>,
+			);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			await waitFor(() => {
+				expect(screen.getByText("Toyota")).toBeInTheDocument();
+			});
+
+			const option = screen.getByText("Toyota");
+			await user.click(option);
+
+			expect(handleChange).toHaveBeenCalledWith(sampleItems[0]);
+		});
+
+		it("should close drawer after selection on mobile", async () => {
+			const user = userEvent.setup();
+
+			render(<CatalogSelector catalogKey="vehicle-brands" label="Marca" />);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			await waitFor(() => {
+				expect(screen.getByText("Toyota")).toBeInTheDocument();
+			});
+
+			const option = screen.getByText("Toyota");
+			await user.click(option);
+
+			await waitFor(() => {
+				expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+			});
+		});
+
+		it("should show required indicator in mobile drawer title", async () => {
+			const user = userEvent.setup();
+
+			render(
+				<CatalogSelector catalogKey="vehicle-brands" label="Marca" required />,
+			);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			await waitFor(() => {
+				const dialog = screen.getByRole("dialog");
+				expect(dialog.querySelector(".text-destructive")).toBeInTheDocument();
+			});
+		});
+
+		it("should show default title when no label provided", async () => {
+			const user = userEvent.setup();
+
+			render(<CatalogSelector catalogKey="vehicle-brands" />);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			await waitFor(() => {
+				expect(screen.getByRole("dialog")).toBeInTheDocument();
+			});
+
+			// Check the h2 title in the sheet header
+			const dialog = screen.getByRole("dialog");
+			expect(dialog.querySelector("h2")).toHaveTextContent(
+				"Seleccionar opción",
+			);
+		});
+
+		it("should show loading state in mobile drawer", async () => {
+			const user = userEvent.setup();
+			mockedUseCatalogSearch.mockReturnValue(
+				createHookResult({
+					loading: true,
+					items: [],
+					pagination: null,
+				}),
+			);
+
+			render(<CatalogSelector catalogKey="vehicle-brands" label="Marca" />);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			await waitFor(() => {
+				expect(screen.getByText("Buscando resultados…")).toBeInTheDocument();
+			});
+		});
 	});
 });
