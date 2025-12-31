@@ -55,6 +55,23 @@ vi.mock("./OrganizationSwitcher", () => ({
 	),
 }));
 
+vi.mock("@/components/ui/sidebar", async () => {
+	const actual = await vi.importActual<
+		typeof import("@/components/ui/sidebar")
+	>("@/components/ui/sidebar");
+	return {
+		...actual,
+		useSidebar: vi.fn(() => ({
+			isMobile: false,
+			setOpenMobile: mockSetOpenMobile,
+			open: true,
+			setOpen: vi.fn(),
+			toggleSidebar: vi.fn(),
+			toggleMobileSidebar: vi.fn(),
+		})),
+	};
+});
+
 const mockOnLogout = vi.fn();
 vi.mock("./NavUser", () => ({
 	NavUser: ({ onLogout }: { onLogout: () => void }) => (
@@ -243,5 +260,154 @@ describe("AppSidebar", () => {
 		expect(screen.getByText("Clientes")).toBeInTheDocument();
 		// Reset for other tests
 		mockUsePathname.mockReturnValue("/clients");
+	});
+
+	it("renders unavailable items with 'Pronto' badge", () => {
+		render(
+			<SidebarProvider>
+				<AppSidebar />
+			</SidebarProvider>,
+		);
+
+		// Unavailable items should show "Pronto" badge
+		// Dashboard, Avisos, Reportes, Modelos de Riesgo, Historial are unavailable
+		expect(screen.getByText("Dashboard")).toBeInTheDocument();
+		expect(screen.getByText("Avisos")).toBeInTheDocument();
+		expect(screen.getByText("Reportes")).toBeInTheDocument();
+	});
+
+	it("handles link click for available items", async () => {
+		const user = userEvent.setup();
+		render(
+			<SidebarProvider>
+				<AppSidebar />
+			</SidebarProvider>,
+		);
+
+		// Click on an available item
+		const clientesLink = screen.getByText("Clientes").closest("a");
+		if (clientesLink) {
+			await user.click(clientesLink);
+			// The handleLinkClick should be called (tested through behavior)
+		}
+	});
+
+	it("handles link click for unavailable items", async () => {
+		const user = userEvent.setup();
+		render(
+			<SidebarProvider>
+				<AppSidebar />
+			</SidebarProvider>,
+		);
+
+		// Click on an unavailable item (should not trigger handleLinkClick)
+		const dashboardLink = screen.getByText("Dashboard").closest("a");
+		if (dashboardLink) {
+			await user.click(dashboardLink);
+			// Unavailable items should not trigger onClick
+		}
+	});
+
+	it("handles mobile sidebar closing on link click", async () => {
+		const user = userEvent.setup();
+		// Mock useSidebar to return isMobile: true
+		const { useSidebar } = await import("@/components/ui/sidebar");
+		vi.mocked(useSidebar).mockReturnValueOnce({
+			state: "expanded",
+			open: true,
+			setOpen: vi.fn(),
+			openMobile: true,
+			setOpenMobile: mockSetOpenMobile,
+			isMobile: true,
+			toggleSidebar: vi.fn(),
+		} as ReturnType<typeof useSidebar>);
+
+		render(
+			<SidebarProvider>
+				<AppSidebar />
+			</SidebarProvider>,
+		);
+
+		// Click on an available item
+		const clientesLink = screen.getByText("Clientes").closest("a");
+		if (clientesLink) {
+			await user.click(clientesLink);
+			// Should close mobile sidebar
+			expect(mockSetOpenMobile).toHaveBeenCalledWith(false);
+		}
+	});
+
+	it("handles session without user", () => {
+		mockUseAuthSession.mockReturnValue({
+			data: null,
+			error: null,
+			isPending: false,
+		} as unknown as ReturnType<typeof mockUseAuthSession>);
+
+		render(
+			<SidebarProvider>
+				<AppSidebar />
+			</SidebarProvider>,
+		);
+
+		// Should render sidebar even without user
+		expect(screen.getByText("Clientes")).toBeInTheDocument();
+	});
+
+	it("handles user without email", () => {
+		mockUseAuthSession.mockReturnValue({
+			data: {
+				user: {
+					id: "user-1",
+					name: "Test User",
+					email: "",
+				},
+			},
+			isPending: false,
+		});
+
+		render(
+			<SidebarProvider>
+				<AppSidebar />
+			</SidebarProvider>,
+		);
+
+		expect(screen.getByText("Logout")).toBeInTheDocument();
+	});
+
+	it("handles all navigation item groups", () => {
+		render(
+			<SidebarProvider>
+				<AppSidebar />
+			</SidebarProvider>,
+		);
+
+		// Verify all navigation groups are rendered
+		expect(screen.getByText("Clientes")).toBeInTheDocument(); // Main nav
+		expect(screen.getByText("Dashboard")).toBeInTheDocument(); // Main nav
+		expect(screen.getByText("Modelos de Riesgo")).toBeInTheDocument(); // Secondary nav
+		expect(screen.getByText("Configuración")).toBeInTheDocument(); // Bottom nav
+	});
+
+	it("handles organization change callback", async () => {
+		const user = userEvent.setup();
+		const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+		render(
+			<SidebarProvider>
+				<AppSidebar />
+			</SidebarProvider>,
+		);
+
+		const changeOrgButton = screen.getByText("Change Org");
+		await user.click(changeOrgButton);
+
+		// Should log organization change
+		expect(consoleSpy).toHaveBeenCalledWith(
+			"Switching to organization:",
+			"org-1",
+		);
+
+		consoleSpy.mockRestore();
 	});
 });

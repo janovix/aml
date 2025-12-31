@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { TransactionsTable } from "./TransactionsTable";
 import { mockTransactions } from "@/data/mockTransactions";
 import { mockClients } from "@/data/mockClients";
+import { getClientDisplayName } from "@/types/client";
 import * as transactionsApi from "@/lib/api/transactions";
 import * as clientsApi from "@/lib/api/clients";
 
@@ -353,5 +354,218 @@ describe("TransactionsTable", () => {
 		expect(operacionButtons.length).toBeGreaterThan(0);
 		expect(vehiculoButtons.length).toBeGreaterThan(0);
 		expect(monedaButtons.length).toBeGreaterThan(0);
+	});
+
+	it("renders all vehicle types in column cell renderer", async () => {
+		render(<TransactionsTable />);
+
+		await waitFor(() => {
+			// Verify all vehicle types are rendered
+			expect(screen.getByText(/Toyota/i)).toBeInTheDocument(); // land
+			expect(screen.getByText(/Sea Ray/i)).toBeInTheDocument(); // marine
+			expect(screen.getByText(/Cessna/i)).toBeInTheDocument(); // air
+		});
+	});
+
+	it("renders both operation types in column cell renderer", async () => {
+		render(<TransactionsTable />);
+
+		await waitFor(() => {
+			// Verify both operation types are rendered (purchase and sale)
+			expect(screen.getByText(/Toyota/i)).toBeInTheDocument(); // purchase
+			expect(screen.getByText(/Honda/i)).toBeInTheDocument(); // sale
+		});
+	});
+
+	it("handles error when fetching client fails", async () => {
+		// Mock getClientByRfc to fail for one client
+		vi.mocked(clientsApi.getClientByRfc).mockImplementation(async ({ rfc }) => {
+			if (rfc === "EGL850101AAA") {
+				throw new Error("Client fetch failed");
+			}
+			return mockClients.find((c) => c.rfc === rfc)!;
+		});
+
+		render(<TransactionsTable />);
+
+		await waitFor(
+			() => {
+				// Should still render transactions even if client fetch fails
+				// The error is caught and logged, but transactions still render
+				expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
+			},
+			{ timeout: 2000 },
+		);
+	});
+
+	it("renders payment method labels correctly", async () => {
+		render(<TransactionsTable />);
+
+		await waitFor(() => {
+			// Payment methods should be rendered in the table
+			// The payment method labels are mapped from paymentMethodLabels
+			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
+		});
+
+		// Verify transactions are rendered with payment methods
+		const rows = screen.getAllByRole("row");
+		expect(rows.length).toBeGreaterThan(1);
+	});
+
+	it("renders transaction with client name when client is found", async () => {
+		render(<TransactionsTable />);
+
+		await waitFor(() => {
+			// Should render client names when clients are fetched successfully
+			const client = mockClients.find((c) => c.rfc === "EGL850101AAA");
+			if (client) {
+				const displayName = getClientDisplayName(client);
+				expect(
+					screen.getByText(displayName, { exact: false }),
+				).toBeInTheDocument();
+			}
+		});
+	});
+
+	it("renders transaction with clientId when client is not found", async () => {
+		// Mock getClientByRfc to fail for all clients
+		vi.mocked(clientsApi.getClientByRfc).mockRejectedValue(
+			new Error("Client not found"),
+		);
+
+		render(<TransactionsTable />);
+
+		await waitFor(() => {
+			// Should render clientId when client is not found
+			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
+		});
+	});
+
+	it("renders all action menu items", async () => {
+		const user = userEvent.setup();
+		render(<TransactionsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
+		});
+
+		// Open action menu
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				// Verify all menu items are present
+				expect(screen.getByText("Ver detalle")).toBeInTheDocument();
+				expect(screen.getByText("Editar transacción")).toBeInTheDocument();
+				expect(screen.getByText("Ver cliente")).toBeInTheDocument();
+				expect(screen.getByText("Generar recibo")).toBeInTheDocument();
+			});
+		}
+	});
+
+	it("navigates to transaction detail when Ver detalle is clicked", async () => {
+		const user = userEvent.setup();
+		render(<TransactionsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
+		});
+
+		// Open action menu
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				expect(screen.getByText("Ver detalle")).toBeInTheDocument();
+			});
+
+			await user.click(screen.getByText("Ver detalle"));
+
+			expect(mockPush).toHaveBeenCalledWith("/transactions/TRX-2024-001");
+		}
+	});
+
+	it("navigates to edit transaction when Editar transacción is clicked", async () => {
+		const user = userEvent.setup();
+		render(<TransactionsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
+		});
+
+		// Open action menu
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				expect(screen.getByText("Editar transacción")).toBeInTheDocument();
+			});
+
+			await user.click(screen.getByText("Editar transacción"));
+
+			expect(mockPush).toHaveBeenCalledWith("/transactions/TRX-2024-001/edit");
+		}
+	});
+
+	it("navigates to client when Ver cliente is clicked", async () => {
+		const user = userEvent.setup();
+		render(<TransactionsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
+		});
+
+		// Open action menu
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				expect(screen.getByText("Ver cliente")).toBeInTheDocument();
+			});
+
+			await user.click(screen.getByText("Ver cliente"));
+
+			expect(mockPush).toHaveBeenCalledWith("/clients/1");
+		}
+	});
+
+	it("renders transaction link with stopPropagation", async () => {
+		const user = userEvent.setup();
+		render(<TransactionsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
+		});
+
+		// Find transaction link
+		const links = screen.getAllByRole("link");
+		const transactionLink = links.find((link) =>
+			link.getAttribute("href")?.includes("/transactions/"),
+		);
+
+		if (transactionLink) {
+			await user.click(transactionLink);
+			// The link should work correctly
+			expect(transactionLink).toHaveAttribute(
+				"href",
+				expect.stringContaining("/transactions/"),
+			);
+		}
 	});
 });

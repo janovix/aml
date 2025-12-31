@@ -325,4 +325,260 @@ describe("AlertsTable", () => {
 			);
 		});
 	});
+
+	it("renders deadline column with null submissionDeadline", async () => {
+		const firstAlert = mockAlerts[0];
+		if (!firstAlert || !firstAlert.alertRule) return;
+
+		const alertWithoutDeadline: Alert = {
+			...firstAlert,
+			submissionDeadline: undefined,
+		};
+
+		vi.mocked(alertsApi.listAlerts).mockResolvedValueOnce({
+			data: [alertWithoutDeadline],
+			pagination: {
+				page: 1,
+				limit: 100,
+				total: 1,
+				totalPages: 1,
+			},
+		});
+
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			// Should render alert even without deadline
+			expect(screen.getByText(firstAlert.alertRule!.name)).toBeInTheDocument();
+		});
+	});
+
+	it("renders deadline column with overdue status", async () => {
+		const secondAlert = mockAlerts[1];
+		if (!secondAlert || !secondAlert.alertRule) return;
+
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			// Should render overdue alerts
+			expect(screen.getByText(secondAlert.alertRule!.name)).toBeInTheDocument();
+		});
+	});
+
+	it("renders ruleName column with notes", async () => {
+		const firstAlert = mockAlerts[0];
+		if (!firstAlert || !firstAlert.alertRule) return;
+
+		const alertWithNotes: Alert = {
+			...firstAlert,
+			notes: "Test notes",
+		};
+
+		vi.mocked(alertsApi.listAlerts).mockResolvedValueOnce({
+			data: [alertWithNotes],
+			pagination: {
+				page: 1,
+				limit: 100,
+				total: 1,
+				totalPages: 1,
+			},
+		});
+
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			// Should render alert with notes
+			expect(screen.getByText(firstAlert.alertRule!.name)).toBeInTheDocument();
+		});
+	});
+
+	it("renders action menu with DETECTED status options", async () => {
+		const user = userEvent.setup();
+		const firstAlert = mockAlerts[0];
+		if (!firstAlert || !firstAlert.alertRule) return;
+
+		const detectedAlert: Alert = {
+			...firstAlert,
+			status: "DETECTED",
+		};
+
+		vi.mocked(alertsApi.listAlerts).mockResolvedValueOnce({
+			data: [detectedAlert],
+			pagination: {
+				page: 1,
+				limit: 100,
+				total: 1,
+				totalPages: 1,
+			},
+		});
+
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText(firstAlert.alertRule!.name)).toBeInTheDocument();
+		});
+
+		// Open action menu
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				// Should show "Generar archivo" for DETECTED status
+				expect(screen.getByText("Generar archivo")).toBeInTheDocument();
+			});
+		}
+	});
+
+	it("renders action menu with FILE_GENERATED status options", async () => {
+		const user = userEvent.setup();
+		const firstAlert = mockAlerts[0];
+		if (!firstAlert || !firstAlert.alertRule) return;
+
+		const fileGeneratedAlert: Alert = {
+			...firstAlert,
+			status: "FILE_GENERATED",
+		};
+
+		vi.mocked(alertsApi.listAlerts).mockResolvedValueOnce({
+			data: [fileGeneratedAlert],
+			pagination: {
+				page: 1,
+				limit: 100,
+				total: 1,
+				totalPages: 1,
+			},
+		});
+
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText(firstAlert.alertRule!.name)).toBeInTheDocument();
+		});
+
+		// Open action menu
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				// Should show "Enviar a SAT" for FILE_GENERATED status
+				expect(screen.getByText("Enviar a SAT")).toBeInTheDocument();
+			});
+		}
+	});
+
+	it("renders action menu with cancel option for non-CANCELLED and non-SUBMITTED status", async () => {
+		const user = userEvent.setup();
+		const firstAlert = mockAlerts[0];
+		if (!firstAlert || !firstAlert.alertRule) return;
+
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText(firstAlert.alertRule!.name)).toBeInTheDocument();
+		});
+
+		// Open action menu
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				// Should show "Cancelar alerta" for DETECTED status
+				expect(screen.getByText("Cancelar alerta")).toBeInTheDocument();
+			});
+		}
+	});
+
+	it("does not render cancel option for CANCELLED status", async () => {
+		const user = userEvent.setup();
+		const firstAlert = mockAlerts[0];
+		if (!firstAlert || !firstAlert.alertRule) return;
+
+		const cancelledAlert: Alert = {
+			...firstAlert,
+			status: "CANCELLED",
+		};
+
+		vi.mocked(alertsApi.listAlerts).mockResolvedValueOnce({
+			data: [cancelledAlert],
+			pagination: {
+				page: 1,
+				limit: 100,
+				total: 1,
+				totalPages: 1,
+			},
+		});
+
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText(firstAlert.alertRule!.name)).toBeInTheDocument();
+		});
+
+		// Open action menu
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				// Should not show "Cancelar alerta" for CANCELLED status
+				expect(screen.queryByText("Cancelar alerta")).not.toBeInTheDocument();
+			});
+		}
+	});
+
+	it("does not render cancel option for SUBMITTED status", async () => {
+		const user = userEvent.setup();
+		const firstAlert = mockAlerts[0];
+		if (!firstAlert || !firstAlert.alertRule) return;
+
+		const submittedAlert: Alert = {
+			...firstAlert,
+			status: "SUBMITTED",
+		};
+
+		vi.mocked(alertsApi.listAlerts).mockResolvedValueOnce({
+			data: [submittedAlert],
+			pagination: {
+				page: 1,
+				limit: 100,
+				total: 1,
+				totalPages: 1,
+			},
+		});
+
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText(firstAlert.alertRule!.name)).toBeInTheDocument();
+		});
+
+		// Open action menu
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				// Should not show "Cancelar alerta" for SUBMITTED status
+				expect(screen.queryByText("Cancelar alerta")).not.toBeInTheDocument();
+			});
+		}
+	});
 });

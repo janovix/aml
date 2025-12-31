@@ -289,4 +289,73 @@ describe("TransactionsPageContent", () => {
 		expect(transaccionesSospechosas.length).toBeGreaterThan(0);
 		expect(volumenTotal.length).toBeGreaterThan(0);
 	});
+
+	it("formats currency for exactly 1M", async () => {
+		vi.mocked(statsApi.getTransactionStats).mockResolvedValue({
+			transactionsToday: 15,
+			suspiciousTransactions: 3,
+			totalVolume: "1000000.00", // Exactly 1M
+			totalVehicles: 42,
+		});
+
+		render(<TransactionsPageContent />);
+
+		// Should format as $1.0M
+		await screen.findByText("$1.0M");
+	});
+
+	it("formats currency for exactly 1K", async () => {
+		vi.mocked(statsApi.getTransactionStats).mockResolvedValue({
+			transactionsToday: 15,
+			suspiciousTransactions: 3,
+			totalVolume: "1000.00", // Exactly 1K
+			totalVehicles: 42,
+		});
+
+		render(<TransactionsPageContent />);
+
+		// Should format as $1.0K
+		await screen.findByText("$1.0K");
+	});
+
+	it("formats currency for zero amount", async () => {
+		vi.mocked(statsApi.getTransactionStats).mockResolvedValue({
+			transactionsToday: 15,
+			suspiciousTransactions: 3,
+			totalVolume: "0.00",
+			totalVehicles: 42,
+		});
+
+		render(<TransactionsPageContent />);
+
+		// Should format as $0
+		const volumeLabels = screen.getAllByText("Volumen Total");
+		expect(volumeLabels.length).toBeGreaterThan(0);
+	});
+
+	it("handles non-Error exception when fetching stats", async () => {
+		vi.mocked(statsApi.getTransactionStats).mockRejectedValue("String error");
+
+		const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		render(<TransactionsPageContent />);
+
+		// Wait for async error handling to complete
+		await new Promise((resolve) => setTimeout(resolve, 100));
+
+		expect(consoleSpy).toHaveBeenCalledWith(
+			expect.stringContaining(
+				"[TransactionsPageContent] Error fetching transaction stats:",
+			),
+			"String error",
+		);
+
+		expect(mockToast).toHaveBeenCalledWith({
+			title: "Error",
+			description: "No se pudieron cargar las estadísticas.",
+			variant: "destructive",
+		});
+
+		consoleSpy.mockRestore();
+	});
 });

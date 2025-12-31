@@ -2,6 +2,7 @@
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ViewportHeightProvider } from "@/components/ViewportHeightProvider";
+import { OrgBootstrapper } from "@/components/OrgBootstrapper";
 import { Toaster } from "@/components/ui/sonner";
 
 export default function ClientLayout({
@@ -12,7 +13,9 @@ export default function ClientLayout({
 	return (
 		<ThemeProvider>
 			<ViewportHeightProvider>
-				<DashboardLayout>{children}</DashboardLayout>
+				<OrgBootstrapper>
+					<DashboardLayout>{children}</DashboardLayout>
+				</OrgBootstrapper>
 				<Toaster />
 			</ViewportHeightProvider>
 		</ThemeProvider>

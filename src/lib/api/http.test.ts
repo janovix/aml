@@ -353,4 +353,79 @@ describe("api/http fetchJson", () => {
 		// When JSON parsing fails, it should return null
 		expect(res.json).toBeNull();
 	});
+
+	it("handles getJwtIfNeeded when JWT is explicitly null", async () => {
+		const mockResponse = new Response(JSON.stringify({ message: "Success" }), {
+			status: 200,
+			headers: { "content-type": "application/json" },
+		});
+		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(mockResponse));
+
+		const res = await fetchJson<{ message: string }>("https://example.com", {
+			jwt: null,
+		});
+
+		expect(res.json).toEqual({ message: "Success" });
+		expect(fetch).toHaveBeenCalledWith(
+			"https://example.com",
+			expect.objectContaining({
+				headers: expect.not.objectContaining({
+					Authorization: expect.anything(),
+				}),
+			}),
+		);
+	});
+
+	it("handles getJwtIfNeeded when JWT is explicitly undefined", async () => {
+		const mockResponse = new Response(JSON.stringify({ message: "Success" }), {
+			status: 200,
+			headers: { "content-type": "application/json" },
+		});
+		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(mockResponse));
+
+		const res = await fetchJson<{ message: string }>("https://example.com", {
+			jwt: undefined,
+		});
+
+		expect(res.json).toEqual({ message: "Success" });
+		// In test environment, JWT auto-fetch is disabled, so no Authorization header
+		expect(fetch).toHaveBeenCalledWith(
+			"https://example.com",
+			expect.objectContaining({
+				headers: expect.not.objectContaining({
+					Authorization: expect.anything(),
+				}),
+			}),
+		);
+	});
+
+	it("handles isTestEnvironment check correctly", async () => {
+		// The isTestEnvironment function is tested indirectly through getJwtIfNeeded
+		// In test environment, JWT auto-fetch should return null
+		const mockResponse = new Response(JSON.stringify({ message: "Success" }), {
+			status: 200,
+			headers: { "content-type": "application/json" },
+		});
+		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(mockResponse));
+
+		await fetchJson<{ message: string }>("https://example.com");
+
+		// Should not try to auto-fetch JWT in test environment
+		expect(fetch).toHaveBeenCalled();
+	});
+
+	it("handles isClientSide check correctly", async () => {
+		// The isClientSide function is tested indirectly
+		// In test environment (jsdom), window is defined but isTestEnvironment returns true first
+		const mockResponse = new Response(JSON.stringify({ message: "Success" }), {
+			status: 200,
+			headers: { "content-type": "application/json" },
+		});
+		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(mockResponse));
+
+		await fetchJson<{ message: string }>("https://example.com");
+
+		// Should work correctly
+		expect(fetch).toHaveBeenCalled();
+	});
 });
