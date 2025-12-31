@@ -1,3 +1,19 @@
+# [1.1.0-rc.19](https://github.com/janovix/aml/compare/v1.1.0-rc.18...v1.1.0-rc.19) (2025-12-31)
+
+
+### Features
+
+* add global 404 Not Found page with user-friendly navigation options ([b124c9a](https://github.com/janovix/aml/commit/b124c9a07a617f323c356776bf761f1d7b40da15))
+* add unit tests for NotFound component and enhance empty state handling in DataTable and various tables with action options ([35c47b2](https://github.com/janovix/aml/commit/35c47b2cd2ddabfa34e15065bcc5a15d130ac71d))
+* enhance empty state presentation in DataTable with improved layout and action options ([fe639d6](https://github.com/janovix/aml/commit/fe639d6cd9c56abf183cb40e4847c449f5731876))
+* enhance UI components with PageHero for consistent navigation and loading states across various views ([92d03af](https://github.com/janovix/aml/commit/92d03aff03a27d5d1a42aa9163d0d10727be82d6))
+* implement mobile drawer behavior for CatalogSelector and ClientSelector components with corresponding unit tests ([29fe121](https://github.com/janovix/aml/commit/29fe12196c9d47d7f651883e89acece6d96deb9d))
+* implement organization URL utilities for enhanced routing and URL generation across components ([db99b15](https://github.com/janovix/aml/commit/db99b15f0ca3665210f2e4627f2a20aca5b4c4e5))
+* implement organization-aware routing and navigation utilities for improved URL handling across components ([1d28264](https://github.com/janovix/aml/commit/1d282648eef7f6f00fd10102aac12b83b448b887))
+* implement ScrollRestoration component for improved navigation experience and add unit tests for its functionality ([12d9ab4](https://github.com/janovix/aml/commit/12d9ab44531c340c7aeaef97c3426ac19409f2a2))
+* optimize organization fetching and redirection logic to prevent duplicate requests and improve user experience ([3f8709a](https://github.com/janovix/aml/commit/3f8709a0df438f95336c1f722d71f655af0efead))
+* update README and enhance organization switcher UI with improved logo handling and loading states ([49c5226](https://github.com/janovix/aml/commit/49c52267782ddda7c1899c2f0878e6c206b43db8))
+
 # [1.1.0-rc.18](https://github.com/janovix/aml/compare/v1.1.0-rc.17...v1.1.0-rc.18) (2025-12-31)
 
 
