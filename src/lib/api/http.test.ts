@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
-import { ApiError, fetchJson } from "./http";
+import { ApiError, fetchJson, isOrganizationRequiredError } from "./http";
 
 describe("api/http fetchJson", () => {
 	afterEach(() => {
@@ -427,5 +427,82 @@ describe("api/http fetchJson", () => {
 
 		// Should work correctly
 		expect(fetch).toHaveBeenCalled();
+	});
+
+	it("extracts error code from response body on error", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				return new Response(
+					JSON.stringify({
+						success: false,
+						error: "Organization Required",
+						code: "ORGANIZATION_REQUIRED",
+						message: "An active organization must be selected.",
+					}),
+					{
+						status: 409,
+						headers: { "content-type": "application/json" },
+					},
+				);
+			}),
+		);
+
+		try {
+			await fetchJson<unknown>("https://example.com");
+			expect.fail("Should have thrown an error");
+		} catch (error) {
+			expect(error).toBeInstanceOf(ApiError);
+			const apiError = error as ApiError;
+			expect(apiError.status).toBe(409);
+			expect(apiError.code).toBe("ORGANIZATION_REQUIRED");
+		}
+	});
+});
+
+describe("isOrganizationRequiredError", () => {
+	it("returns true for ApiError with status 409", () => {
+		const error = new ApiError("Request failed", { status: 409, body: {} });
+		expect(isOrganizationRequiredError(error)).toBe(true);
+	});
+
+	it("returns true for ApiError with ORGANIZATION_REQUIRED code", () => {
+		const error = new ApiError("Request failed", {
+			status: 403,
+			body: {},
+			code: "ORGANIZATION_REQUIRED",
+		});
+		expect(isOrganizationRequiredError(error)).toBe(true);
+	});
+
+	it("returns true for ApiError with ORGANIZATION_REQUIRED in body", () => {
+		const error = new ApiError("Request failed", {
+			status: 403,
+			body: { code: "ORGANIZATION_REQUIRED" },
+		});
+		expect(isOrganizationRequiredError(error)).toBe(true);
+	});
+
+	it("returns false for ApiError with different status and no code", () => {
+		const error = new ApiError("Request failed", {
+			status: 401,
+			body: { message: "Unauthorized" },
+		});
+		expect(isOrganizationRequiredError(error)).toBe(false);
+	});
+
+	it("returns false for non-ApiError errors", () => {
+		expect(isOrganizationRequiredError(new Error("Generic error"))).toBe(false);
+		expect(isOrganizationRequiredError("string error")).toBe(false);
+		expect(isOrganizationRequiredError(null)).toBe(false);
+		expect(isOrganizationRequiredError(undefined)).toBe(false);
+	});
+
+	it("returns false for ApiError with non-object body", () => {
+		const error = new ApiError("Request failed", {
+			status: 403,
+			body: "Not found",
+		});
+		expect(isOrganizationRequiredError(error)).toBe(false);
 	});
 });

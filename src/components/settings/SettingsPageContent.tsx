@@ -22,11 +22,12 @@ import {
 	getFieldDescription,
 	getFieldDescriptionByXmlTag,
 } from "../../lib/field-descriptions";
-import { fetchJson } from "@/lib/api/http";
+import { fetchJson, isOrganizationRequiredError } from "@/lib/api/http";
 import { getAmlCoreBaseUrl } from "@/lib/api/config";
 import { validateRFC } from "../../lib/utils";
 import { executeMutation } from "@/lib/mutations";
 import { toast } from "sonner";
+import { useJwt } from "@/hooks/useJwt";
 
 interface OrganizationSettingsData {
 	obligatedSubjectKey: string;
@@ -34,6 +35,7 @@ interface OrganizationSettingsData {
 }
 
 export function SettingsPageContent(): React.JSX.Element {
+	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const [isLoading, setIsLoading] = useState(true);
 	const [isSaving, setIsSaving] = useState(false);
 	const [hasNoOrganization, setHasNoOrganization] = useState(false);
@@ -46,28 +48,50 @@ export function SettingsPageContent(): React.JSX.Element {
 		rfc?: string;
 	}>({});
 
-	// Fetch existing organization settings on mount
+	// Fetch existing organization settings on mount and when organization changes
+	// jwt changes when organization changes, so we use it as a dependency
 	useEffect(() => {
+		// Wait for JWT to be ready
+		if (isJwtLoading) {
+			return;
+		}
+
+		// No JWT means no organization selected
+		if (!jwt) {
+			setHasNoOrganization(true);
+			setIsLoading(false);
+			return;
+		}
+
 		const fetchSettings = async () => {
+			setIsLoading(true);
+			setHasNoOrganization(false);
+
 			try {
 				const baseUrl = getAmlCoreBaseUrl();
 				const { json: data } = await fetchJson<{
 					obligatedSubjectKey?: string;
 					activityKey?: string;
-				}>(`${baseUrl}/api/v1/organization-settings`);
+				}>(`${baseUrl}/api/v1/organization-settings`, { jwt });
 
 				setFormData({
 					obligatedSubjectKey: data.obligatedSubjectKey || "",
 					activityKey: data.activityKey || "VEH",
 				});
 			} catch (error: unknown) {
+				// Check for organization required error (409)
+				if (isOrganizationRequiredError(error)) {
+					setHasNoOrganization(true);
+					return;
+				}
+
 				// Check error status for specific handling
 				const apiError = error as { status?: number };
 				if (apiError.status === 404) {
 					// No settings found, that's okay for first-time setup
 					console.log("No organization settings found, using defaults");
 				} else if (apiError.status === 403) {
-					// No active organization selected
+					// Legacy check for organization required (now 409)
 					setHasNoOrganization(true);
 				} else {
 					console.error("Error fetching organization settings:", error);
@@ -78,7 +102,7 @@ export function SettingsPageContent(): React.JSX.Element {
 		};
 
 		fetchSettings();
-	}, []);
+	}, [jwt, isJwtLoading]);
 
 	const handleInputChange = (
 		field: keyof OrganizationSettingsData,

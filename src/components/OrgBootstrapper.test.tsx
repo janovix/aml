@@ -38,12 +38,24 @@ vi.mock("@/lib/auth/useAuthSession", () => ({
 const mockListOrganizations = vi.fn();
 const mockListMembers = vi.fn();
 const mockCreateOrganization = vi.fn();
+const mockSetActiveOrganization = vi.fn();
 
 vi.mock("@/lib/auth/organizations", () => ({
 	listOrganizations: () => mockListOrganizations(),
 	listMembers: (orgId: string) => mockListMembers(orgId),
 	createOrganization: (data: { name: string; slug: string }) =>
 		mockCreateOrganization(data),
+	setActiveOrganization: (orgId: string) => mockSetActiveOrganization(orgId),
+}));
+
+// Mock tokenCache
+const mockTokenCacheClear = vi.fn();
+vi.mock("@/lib/auth/tokenCache", () => ({
+	tokenCache: {
+		clear: () => mockTokenCacheClear(),
+		getToken: vi.fn().mockResolvedValue("mock-jwt-token"),
+		isValid: vi.fn().mockReturnValue(false),
+	},
 }));
 
 // Mock sonner toast
@@ -104,6 +116,11 @@ describe("OrgBootstrapper", () => {
 		resetOrgStore();
 		// Default mock implementations
 		mockListMembers.mockResolvedValue({ data: [], error: null });
+		// setActiveOrganization succeeds by default
+		mockSetActiveOrganization.mockResolvedValue({
+			data: { activeOrganizationId: "org-1" },
+			error: null,
+		});
 	});
 
 	it("shows loading state initially", async () => {
@@ -979,5 +996,126 @@ describe("OrgBootstrapper", () => {
 		await waitFor(() => {
 			expect(screen.getByText("my-custom-slug")).toBeInTheDocument();
 		});
+	});
+
+	it("syncs session with auth service when organization is selected", async () => {
+		mockListOrganizations.mockResolvedValue({
+			data: {
+				organizations: [mockOrganization],
+				activeOrganizationId: mockOrganization.id,
+			},
+		});
+		mockListMembers.mockResolvedValue({
+			data: [mockMember],
+		});
+		mockSetActiveOrganization.mockResolvedValue({
+			data: { activeOrganizationId: mockOrganization.id },
+			error: null,
+		});
+
+		render(
+			<OrgBootstrapper>
+				<div>Children Content</div>
+			</OrgBootstrapper>,
+		);
+
+		// Wait for children to be rendered (session sync should complete)
+		await waitFor(() => {
+			expect(screen.getByText("Children Content")).toBeInTheDocument();
+		});
+
+		// Verify setActiveOrganization was called to sync the session
+		await waitFor(() => {
+			expect(mockSetActiveOrganization).toHaveBeenCalledWith(
+				mockOrganization.id,
+			);
+		});
+
+		// Verify token cache was cleared before sync
+		expect(mockTokenCacheClear).toHaveBeenCalled();
+	});
+
+	it("logs warning when persisted organization is no longer accessible", async () => {
+		const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+		const persistedOrg: Organization = {
+			id: "deleted-org",
+			name: "Deleted Organization",
+			slug: "deleted-org",
+			status: "active",
+		};
+
+		// Set up persisted organization in store
+		const { result } = renderHook(() => useOrgStore());
+		act(() => {
+			result.current.setCurrentOrg(persistedOrg);
+		});
+
+		mockListOrganizations.mockResolvedValue({
+			data: {
+				organizations: [mockOrganization], // Persisted org not in list
+				activeOrganizationId: mockOrganization.id,
+			},
+		});
+		mockListMembers.mockResolvedValue({
+			data: [mockMember],
+		});
+
+		render(
+			<OrgBootstrapper>
+				<div>Children Content</div>
+			</OrgBootstrapper>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByText("Children Content")).toBeInTheDocument();
+		});
+
+		// Verify warning was logged
+		expect(consoleSpy).toHaveBeenCalledWith(
+			expect.stringContaining(
+				'Persisted organization "deleted-org" is no longer accessible',
+			),
+		);
+
+		consoleSpy.mockRestore();
+	});
+
+	it("handles session sync error gracefully", async () => {
+		const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		mockListOrganizations.mockResolvedValue({
+			data: {
+				organizations: [mockOrganization],
+				activeOrganizationId: mockOrganization.id,
+			},
+		});
+		mockListMembers.mockResolvedValue({
+			data: [mockMember],
+		});
+		// Simulate session sync failure
+		mockSetActiveOrganization.mockResolvedValue({
+			data: null,
+			error: "Session sync failed",
+		});
+
+		render(
+			<OrgBootstrapper>
+				<div>Children Content</div>
+			</OrgBootstrapper>,
+		);
+
+		// Should still render children even if sync fails
+		await waitFor(() => {
+			expect(screen.getByText("Children Content")).toBeInTheDocument();
+		});
+
+		// Verify error was logged
+		expect(consoleSpy).toHaveBeenCalledWith(
+			expect.stringContaining("[OrgBootstrapper] Failed to sync organization:"),
+			expect.any(String),
+		);
+
+		consoleSpy.mockRestore();
 	});
 });

@@ -7,7 +7,9 @@ import {
 	createOrganization,
 	listMembers,
 	listOrganizations,
+	setActiveOrganization,
 } from "@/lib/auth/organizations";
+import { tokenCache } from "@/lib/auth/tokenCache";
 import type { Organization } from "@/lib/org-store";
 import { executeMutation } from "@/lib/mutations";
 import { toast } from "sonner";
@@ -61,6 +63,9 @@ export function OrgBootstrapper({
 	const [isBootstrapped, setIsBootstrapped] = useState(
 		() => !!initialOrganizations,
 	);
+	// Track if the auth session has been synchronized with the selected organization
+	// This ensures the JWT will include the correct organizationId
+	const [isSessionSynced, setIsSessionSynced] = useState(false);
 	const [nameInput, setNameInput] = useState("");
 	const [slugInput, setSlugInput] = useState("");
 	const derivedSlug = useMemo(
@@ -69,12 +74,73 @@ export function OrgBootstrapper({
 	);
 	const [isCreating, setIsCreating] = useState(false);
 	const initializedRef = useRef(false);
+	const sessionSyncRef = useRef(false);
 
 	useEffect(() => {
 		if (session?.user?.id) {
 			setCurrentUserId(session.user.id);
 		}
 	}, [session?.user?.id, setCurrentUserId]);
+
+	// Track the last synced organization to detect changes
+	const lastSyncedOrgRef = useRef<string | null>(null);
+
+	// Synchronize the auth session with the selected organization
+	// This ensures the JWT will include the correct organizationId
+	useEffect(() => {
+		// Skip if no organization is selected
+		if (!currentOrg?.id) {
+			return;
+		}
+
+		// Skip if already synced with this organization
+		if (lastSyncedOrgRef.current === currentOrg.id && isSessionSynced) {
+			return;
+		}
+
+		// Organization changed - need to re-sync
+		if (lastSyncedOrgRef.current !== currentOrg.id) {
+			setIsSessionSynced(false);
+		}
+
+		// Prevent concurrent syncs for the same org
+		if (sessionSyncRef.current) {
+			return;
+		}
+
+		sessionSyncRef.current = true;
+
+		async function syncSession() {
+			try {
+				// Clear token cache to ensure we get a fresh JWT after sync
+				tokenCache.clear();
+
+				// Update the auth session with the selected organization
+				const result = await setActiveOrganization(currentOrg!.id);
+
+				if (result.error) {
+					console.error(
+						"[OrgBootstrapper] Failed to sync organization:",
+						result.error,
+					);
+					// Don't block the app on sync failure - the user can still use the app
+					// and retry organization selection manually
+				}
+
+				lastSyncedOrgRef.current = currentOrg!.id;
+				setIsSessionSynced(true);
+			} catch (error) {
+				console.error("[OrgBootstrapper] Error syncing organization:", error);
+				// Still mark as synced to unblock the UI - errors will surface in API calls
+				lastSyncedOrgRef.current = currentOrg!.id;
+				setIsSessionSynced(true);
+			} finally {
+				sessionSyncRef.current = false;
+			}
+		}
+
+		syncSession();
+	}, [currentOrg?.id, isSessionSynced]);
 
 	// Synchronously initialize store with server-side data before paint
 	useLayoutEffect(() => {
@@ -83,11 +149,19 @@ export function OrgBootstrapper({
 			const nextOrgs = initialOrganizations.organizations;
 			setOrganizations(nextOrgs);
 
-			// Check if there's a persisted organization that's still available
+			// Validate persisted organization: check if it exists in the list from server
+			// This handles cases where: persisted org was deleted, user lost access, org disappeared
 			const persistedOrg = currentOrg;
 			const persistedOrgFromList = persistedOrg
 				? nextOrgs.find((org) => org.id === persistedOrg.id)
 				: null;
+
+			// Log if persisted org is no longer valid
+			if (persistedOrg && !persistedOrgFromList) {
+				console.warn(
+					`[OrgBootstrapper] Persisted organization "${persistedOrg.id}" is no longer accessible. Falling back to available organization.`,
+				);
+			}
 
 			// Use persisted org if available, otherwise fall back to server's active org
 			const active =
@@ -148,11 +222,19 @@ export function OrgBootstrapper({
 			const nextOrgs = result.data.organizations;
 			setOrganizations(nextOrgs);
 
-			// Check if there's a persisted organization that's still available
+			// Validate persisted organization: check if it exists in the list from server
+			// This handles cases where: persisted org was deleted, user lost access, org disappeared
 			const persistedOrg = useOrgStore.getState().currentOrg;
 			const persistedOrgFromList = persistedOrg
 				? nextOrgs.find((org) => org.id === persistedOrg.id)
 				: null;
+
+			// Log if persisted org is no longer valid
+			if (persistedOrg && !persistedOrgFromList) {
+				console.warn(
+					`[OrgBootstrapper] Persisted organization "${persistedOrg.id}" is no longer accessible. Falling back to available organization.`,
+				);
+			}
 
 			// Use persisted org if available, otherwise fall back to server's active org
 			const active =
@@ -193,8 +275,19 @@ export function OrgBootstrapper({
 	]);
 
 	const showLoading = useMemo(
-		() => isLoading || (!isBootstrapped && organizations.length === 0),
-		[isBootstrapped, isLoading, organizations.length],
+		() =>
+			isLoading ||
+			(!isBootstrapped && organizations.length === 0) ||
+			// Wait for session to be synced before rendering children
+			// This ensures the JWT will have the correct organizationId
+			(currentOrg?.id && !isSessionSynced),
+		[
+			isBootstrapped,
+			isLoading,
+			organizations.length,
+			currentOrg?.id,
+			isSessionSynced,
+		],
 	);
 
 	if (showLoading) {
