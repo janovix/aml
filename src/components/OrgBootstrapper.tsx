@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useOrgStore } from "@/lib/org-store";
 import { useAuthSession } from "@/lib/auth/useAuthSession";
 import {
@@ -57,7 +57,10 @@ export function OrgBootstrapper({
 		setCurrentUserId,
 		addOrganization,
 	} = useOrgStore();
-	const [isBootstrapped, setIsBootstrapped] = useState(false);
+	// Initialize isBootstrapped to true if we have server-side data
+	const [isBootstrapped, setIsBootstrapped] = useState(
+		() => !!initialOrganizations,
+	);
 	const [nameInput, setNameInput] = useState("");
 	const [slugInput, setSlugInput] = useState("");
 	const derivedSlug = useMemo(
@@ -65,6 +68,7 @@ export function OrgBootstrapper({
 		[nameInput, slugInput],
 	);
 	const [isCreating, setIsCreating] = useState(false);
+	const initializedRef = useRef(false);
 
 	useEffect(() => {
 		if (session?.user?.id) {
@@ -72,44 +76,55 @@ export function OrgBootstrapper({
 		}
 	}, [session?.user?.id, setCurrentUserId]);
 
-	// Bootstrap organizations from auth-svc or use initial data
+	// Synchronously initialize store with server-side data before paint
+	useLayoutEffect(() => {
+		if (initialOrganizations && !initializedRef.current) {
+			initializedRef.current = true;
+			const nextOrgs = initialOrganizations.organizations;
+			setOrganizations(nextOrgs);
+
+			const active =
+				nextOrgs.find(
+					(org) => org.id === initialOrganizations.activeOrganizationId,
+				) ??
+				nextOrgs[0] ??
+				null;
+			setCurrentOrg(active ?? null);
+			setLoading(false);
+
+			// Fetch members asynchronously without blocking render
+			if (active) {
+				listMembers(active.id).then((membersResult) => {
+					if (membersResult.data) {
+						setMembers(membersResult.data);
+					} else if (membersResult.error) {
+						toast({
+							variant: "destructive",
+							title: "Failed to load members",
+							description: membersResult.error,
+						});
+					}
+				});
+			}
+		}
+	}, [
+		initialOrganizations,
+		setCurrentOrg,
+		setOrganizations,
+		setLoading,
+		setMembers,
+		toast,
+	]);
+
+	// Client-side fetch only when no initial data is provided
 	useEffect(() => {
+		// Skip if we have initial organizations (already handled by useLayoutEffect)
+		if (initialOrganizations) {
+			return;
+		}
+
 		let cancelled = false;
 		async function bootstrap() {
-			// If initial organizations are provided, use them and skip client-side fetch
-			if (initialOrganizations) {
-				const nextOrgs = initialOrganizations.organizations;
-				setOrganizations(nextOrgs);
-
-				const active =
-					nextOrgs.find(
-						(org) => org.id === initialOrganizations.activeOrganizationId,
-					) ??
-					nextOrgs[0] ??
-					null;
-				setCurrentOrg(active ?? null);
-
-				if (active) {
-					const membersResult = await listMembers(active.id);
-					if (!cancelled) {
-						if (membersResult.data) {
-							setMembers(membersResult.data);
-						} else if (membersResult.error) {
-							toast({
-								variant: "destructive",
-								title: "Failed to load members",
-								description: membersResult.error,
-							});
-						}
-					}
-				}
-
-				setIsBootstrapped(true);
-				setLoading(false);
-				return;
-			}
-
-			// Otherwise, fetch from client
 			setLoading(true);
 			setError(null);
 
