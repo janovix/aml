@@ -21,18 +21,20 @@ import { useDataTableUrlFilters } from "@/hooks/useDataTableUrlFilters";
 
 // Filter IDs for URL persistence
 const ALERT_FILTER_IDS = ["status", "severity", "isOverdue"];
+import { Button } from "@/components/ui/button";
 import {
-	Button,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "@algtools/ui";
+} from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useJwt } from "@/hooks/useJwt";
 import { useOrgStore } from "@/lib/org-store";

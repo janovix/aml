@@ -19,8 +19,7 @@
 			}
 		],
 		"paths": {
-			"@/*": ["./src/*"],
-			"@algtools/ui": ["./src/algtools/ui"]
+			"@/*": ["./src/*"]
 		},
 		"types": ["./env.d.ts", "node"]
 	},

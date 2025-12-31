@@ -19,18 +19,20 @@ import { useDataTableUrlFilters } from "@/hooks/useDataTableUrlFilters";
 
 // Filter IDs for URL persistence
 const TRANSACTION_FILTER_IDS = ["operationType", "vehicleType", "currency"];
+import { Button } from "@/components/ui/button";
 import {
-	Button,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "@algtools/ui";
+} from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useOrgStore } from "@/lib/org-store";
 import {

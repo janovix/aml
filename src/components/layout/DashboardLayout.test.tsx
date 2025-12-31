@@ -28,7 +28,7 @@ vi.mock("next-themes", () => ({
 	}),
 }));
 
-vi.mock("@algtools/ui", () => ({
+vi.mock("@/components/ThemeSwitcher", () => ({
 	ThemeSwitcher: () => <div data-testid="theme-switcher">Theme Switcher</div>,
 }));
 

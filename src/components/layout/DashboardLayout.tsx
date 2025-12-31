@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ThemeSwitcher } from "@algtools/ui";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import {
 	SidebarInset,
 	SidebarProvider,

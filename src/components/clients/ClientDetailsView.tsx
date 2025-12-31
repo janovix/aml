@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
-import { Card, CardContent, CardHeader, CardTitle, Badge } from "@algtools/ui";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
 	Edit,
 	Flag,

@@ -2,20 +2,22 @@
 
 import type React from "react";
 import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import {
-	Button,
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-	Input,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@algtools/ui";
+} from "@/components/ui/select";
 import { Save, Building2, AlertCircle, Settings } from "lucide-react";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
 import {

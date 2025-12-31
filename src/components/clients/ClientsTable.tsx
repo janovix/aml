@@ -15,17 +15,21 @@ import {
 	Trash2,
 } from "lucide-react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import {
-	Button,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
 	AlertDialog,
 	AlertDialogAction,
 	AlertDialogCancel,
@@ -34,7 +38,7 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-} from "@algtools/ui";
+} from "@/components/ui/alert-dialog";
 import { useJwt } from "@/hooks/useJwt";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { useDataTableUrlFilters } from "@/hooks/useDataTableUrlFilters";
