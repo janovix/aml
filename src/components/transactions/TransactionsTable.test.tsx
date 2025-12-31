@@ -7,6 +7,8 @@ import { mockClients } from "@/data/mockClients";
 import { getClientDisplayName } from "@/types/client";
 import * as transactionsApi from "@/lib/api/transactions";
 import * as clientsApi from "@/lib/api/clients";
+import * as catalogsApi from "@/lib/catalogs";
+import type { CatalogItem } from "@/types/catalog";
 
 const mockToast = vi.fn();
 
@@ -47,6 +49,10 @@ vi.mock("@/lib/api/clients", () => ({
 	getClientByRfc: vi.fn(),
 }));
 
+vi.mock("@/lib/catalogs", () => ({
+	fetchCatalogEntries: vi.fn(),
+}));
+
 describe("TransactionsTable", { timeout: 30000 }, () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -79,6 +85,91 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 			}
 			throw new Error("Client not found");
 		});
+
+		// Mock brand catalog fetching - return mock catalog items for all vehicle types
+		// Since mock transactions use brand names directly, we'll create a catalog
+		// that maps those names to themselves (for backward compatibility)
+		const mockBrandCatalogItems: CatalogItem[] = [
+			{
+				id: "Toyota",
+				catalogId: "catalog-1",
+				name: "Toyota",
+				normalizedName: "toyota",
+				active: true,
+				createdAt: "2024-01-01T00:00:00Z",
+				updatedAt: "2024-01-01T00:00:00Z",
+			},
+			{
+				id: "Honda",
+				catalogId: "catalog-1",
+				name: "Honda",
+				normalizedName: "honda",
+				active: true,
+				createdAt: "2024-01-01T00:00:00Z",
+				updatedAt: "2024-01-01T00:00:00Z",
+			},
+			{
+				id: "Sea Ray",
+				catalogId: "catalog-2",
+				name: "Sea Ray",
+				normalizedName: "sea ray",
+				active: true,
+				createdAt: "2024-01-01T00:00:00Z",
+				updatedAt: "2024-01-01T00:00:00Z",
+			},
+			{
+				id: "BMW",
+				catalogId: "catalog-1",
+				name: "BMW",
+				normalizedName: "bmw",
+				active: true,
+				createdAt: "2024-01-01T00:00:00Z",
+				updatedAt: "2024-01-01T00:00:00Z",
+			},
+			{
+				id: "Cessna",
+				catalogId: "catalog-3",
+				name: "Cessna",
+				normalizedName: "cessna",
+				active: true,
+				createdAt: "2024-01-01T00:00:00Z",
+				updatedAt: "2024-01-01T00:00:00Z",
+			},
+		];
+
+		vi.mocked(catalogsApi.fetchCatalogEntries).mockImplementation(
+			async (catalogKey: string) => {
+				// Return appropriate items based on catalog key
+				const items = mockBrandCatalogItems.filter((item) => {
+					if (catalogKey === "terrestrial-vehicle-brands") {
+						return ["Toyota", "Honda", "BMW"].includes(item.id);
+					}
+					if (catalogKey === "maritime-vehicle-brands") {
+						return item.id === "Sea Ray";
+					}
+					if (catalogKey === "air-vehicle-brands") {
+						return item.id === "Cessna";
+					}
+					return false;
+				});
+
+				return {
+					catalog: {
+						id: `catalog-${catalogKey}`,
+						key: catalogKey,
+						name: catalogKey,
+						allowNewItems: true,
+					},
+					data: items,
+					pagination: {
+						page: 1,
+						pageSize: 1000,
+						total: items.length,
+						totalPages: 1,
+					},
+				};
+			},
+		);
 	});
 
 	it("renders table with transaction data", async () => {
