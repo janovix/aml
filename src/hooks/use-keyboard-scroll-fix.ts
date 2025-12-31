@@ -16,6 +16,8 @@ export function useKeyboardScrollFix(): void {
 	const lastFocusedElement = useRef<
 		HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null
 	>(null);
+	const keyboardOpenRef = useRef<boolean>(false);
+	const initialViewportHeightRef = useRef<number | null>(null);
 
 	useEffect(() => {
 		if (typeof window === "undefined") {
@@ -31,6 +33,9 @@ export function useKeyboardScrollFix(): void {
 			return;
 		}
 
+		// Store initial viewport height to detect keyboard
+		initialViewportHeightRef.current = window.innerHeight;
+
 		const handleFocus = (event: FocusEvent): void => {
 			const target = event.target as Element;
 
@@ -45,23 +50,44 @@ export function useKeyboardScrollFix(): void {
 
 			lastFocusedElement.current = target;
 
-			// Use a timeout to let the keyboard open first
-			// The keyboard animation takes about 300ms on iOS
+			// If keyboard is already open, use shorter delay (just for layout settle)
+			// Otherwise wait for keyboard animation (~300ms on iOS)
+			const delay = keyboardOpenRef.current ? 50 : 350;
+
 			setTimeout(() => {
 				if (document.activeElement === target) {
 					scrollElementIntoView(target);
 				}
-			}, 350);
+			}, delay);
 		};
 
 		const handleVisualViewportResize = (): void => {
+			if (!window.visualViewport || !initialViewportHeightRef.current) {
+				return;
+			}
+
+			// Detect if keyboard is open based on viewport height reduction
+			const heightReduction =
+				initialViewportHeightRef.current - window.visualViewport.height;
+			const keyboardThreshold = 150; // Keyboard is typically 250-350px on iPhone
+
+			keyboardOpenRef.current = heightReduction > keyboardThreshold;
+
 			// When visualViewport resizes (keyboard opening/closing),
 			// re-scroll the focused element into view
 			if (
 				lastFocusedElement.current &&
 				document.activeElement === lastFocusedElement.current
 			) {
-				scrollElementIntoView(lastFocusedElement.current);
+				// Small delay to let the viewport settle
+				setTimeout(() => {
+					if (
+						lastFocusedElement.current &&
+						document.activeElement === lastFocusedElement.current
+					) {
+						scrollElementIntoView(lastFocusedElement.current);
+					}
+				}, 50);
 			}
 		};
 
@@ -111,21 +137,31 @@ function scrollElementIntoView(element: Element): void {
 	const viewportOffsetTop = window.visualViewport.offsetTop;
 
 	// Calculate where the element is relative to the visual viewport
-	const elementTop = rect.top - viewportOffsetTop;
-	const elementBottom = rect.bottom - viewportOffsetTop;
+	// The visual viewport is the area visible above the keyboard
+	const elementTopInViewport = rect.top - viewportOffsetTop;
+	const elementBottomInViewport = rect.bottom - viewportOffsetTop;
 
-	// Add some padding from the top of the viewport
-	const topPadding = 20;
+	// Padding from edges of the visible viewport
+	const topPadding = 60; // Space from top of visible area
+	const bottomPadding = 80; // Extra space from bottom (just above keyboard)
 
-	// Check if element is visible in the visual viewport
-	const isAboveViewport = elementTop < topPadding;
-	const isBelowViewport = elementBottom > viewportHeight - 20;
+	// The safe zone is the area where the element should be visible
+	const safeZoneTop = topPadding;
+	const safeZoneBottom = viewportHeight - bottomPadding;
 
-	if (isAboveViewport || isBelowViewport) {
-		// Calculate how much we need to scroll
-		// Position the element in the upper third of the visible area
-		const targetPosition = viewportHeight * 0.3;
-		const scrollAmount = elementTop - targetPosition;
+	// Check if element is outside the safe zone
+	const isAboveSafeZone = elementTopInViewport < safeZoneTop;
+	const isBelowSafeZone = elementBottomInViewport > safeZoneBottom;
+
+	if (isAboveSafeZone || isBelowSafeZone) {
+		// Calculate target position - aim for the element to be in upper-middle of safe zone
+		// This ensures it's well above the keyboard with room for the input label
+		const targetPositionFromTop = Math.min(
+			safeZoneTop + 20, // Near the top of safe zone
+			viewportHeight * 0.25, // Or 25% from top, whichever is smaller
+		);
+
+		const scrollAmount = elementTopInViewport - targetPositionFromTop;
 
 		// Find the scrollable container
 		const scrollContainer = findScrollableParent(element);
