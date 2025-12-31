@@ -182,6 +182,10 @@ export function OrgBootstrapper({
 	const initializedRef = useRef(false);
 	const sessionSyncRef = useRef(false);
 	const urlSyncRef = useRef(false);
+	// Track when user is switching orgs via picker (to avoid URL sync fighting back)
+	const isUserSwitchingRef = useRef(false);
+	// Track the last URL org slug we synced to avoid re-processing
+	const lastUrlOrgSlugRef = useRef<string | null>(null);
 
 	useEffect(() => {
 		if (session?.user?.id) {
@@ -269,6 +273,18 @@ export function OrgBootstrapper({
 			return;
 		}
 
+		// Skip if user is currently switching orgs via the picker
+		// (wait for URL to update before processing)
+		if (isUserSwitchingRef.current) {
+			return;
+		}
+
+		// Skip if we already processed this URL slug
+		if (lastUrlOrgSlugRef.current === urlOrgSlug) {
+			setIsUrlOrgSynced(true);
+			return;
+		}
+
 		// Skip if already processing
 		if (urlSyncRef.current) {
 			return;
@@ -284,12 +300,14 @@ export function OrgBootstrapper({
 			);
 			// Redirect to forbidden page
 			router.replace(`/${urlOrgSlug}/forbidden`);
+			lastUrlOrgSlugRef.current = urlOrgSlug;
 			setIsUrlOrgSynced(true);
 			return;
 		}
 
-		// If current org already matches URL, we're done
+		// If current org already matches URL, just mark as synced
 		if (currentOrg?.slug === urlOrgSlug) {
+			lastUrlOrgSlugRef.current = urlOrgSlug;
 			setIsUrlOrgSynced(true);
 			return;
 		}
@@ -300,6 +318,7 @@ export function OrgBootstrapper({
 			`[OrgBootstrapper] Switching to organization "${urlOrgSlug}" from URL`,
 		);
 
+		lastUrlOrgSlugRef.current = urlOrgSlug;
 		setCurrentOrg(urlOrg);
 		setIsSessionSynced(false); // Force re-sync of session
 		setIsUrlOrgSynced(true);
@@ -330,6 +349,8 @@ export function OrgBootstrapper({
 
 		// Skip if URL already matches
 		if (currentOrg.slug === urlOrgSlug) {
+			// URL is in sync, clear the switching flag
+			isUserSwitchingRef.current = false;
 			return;
 		}
 
@@ -340,6 +361,9 @@ export function OrgBootstrapper({
 		) {
 			return;
 		}
+
+		// Mark that user is switching orgs to prevent URL sync from fighting back
+		isUserSwitchingRef.current = true;
 
 		// Extract the path after the org slug
 		const pathSegments = pathname?.split("/").filter(Boolean) ?? [];
@@ -356,7 +380,15 @@ export function OrgBootstrapper({
 			newPath = `/${currentOrg.slug}/clients`;
 		}
 
+		// Update the last URL org slug ref to prevent URL sync from re-processing
+		lastUrlOrgSlugRef.current = currentOrg.slug;
+
 		router.replace(newPath);
+
+		// Clear the switching flag after a short delay to let the URL update propagate
+		setTimeout(() => {
+			isUserSwitchingRef.current = false;
+		}, 100);
 	}, [
 		currentOrg?.slug,
 		urlOrgSlug,
