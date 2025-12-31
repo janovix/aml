@@ -201,15 +201,15 @@ export function ClientsTable(): React.ReactElement {
 		if (!clientToDelete) return;
 
 		const clientName = getClientDisplayName(clientToDelete);
-		const clientRfc = clientToDelete.rfc;
+		const clientId = clientToDelete.id;
 
 		try {
 			await executeMutation({
-				mutation: () => deleteClient({ rfc: clientRfc, jwt: jwt ?? undefined }),
+				mutation: () => deleteClient({ id: clientId, jwt: jwt ?? undefined }),
 				loading: "Eliminando cliente...",
 				success: `${clientName} ha sido eliminado del sistema.`,
 				onSuccess: () => {
-					setClients(clients.filter((c) => c.rfc !== clientRfc));
+					setClients(clients.filter((c) => c.id !== clientId));
 				},
 			});
 		} catch {
@@ -249,7 +249,7 @@ export function ClientsTable(): React.ReactElement {
 							</TooltipProvider>
 							<div className="flex flex-col min-w-0">
 								<Link
-									href={orgPath(`/clients/${item.rfc}`)}
+									href={orgPath(`/clients/${item.id}`)}
 									className="font-medium text-foreground hover:text-primary truncate"
 									onClick={(e) => e.stopPropagation()}
 								>
@@ -382,14 +382,14 @@ export function ClientsTable(): React.ReactElement {
 			<DropdownMenuContent align="end" className="w-48">
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => navigateTo(`/clients/${item.rfc}`)}
+					onClick={() => navigateTo(`/clients/${item.id}`)}
 				>
 					<Eye className="h-4 w-4" />
 					Ver detalle
 				</DropdownMenuItem>
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => navigateTo(`/clients/${item.rfc}/edit`)}
+					onClick={() => navigateTo(`/clients/${item.id}/edit`)}
 				>
 					<Edit className="h-4 w-4" />
 					Editar cliente
@@ -403,12 +403,12 @@ export function ClientsTable(): React.ReactElement {
 				</DropdownMenuItem>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem
-					onClick={() => navigateTo(`/transactions?clientId=${item.rfc}`)}
+					onClick={() => navigateTo(`/transactions?clientId=${item.id}`)}
 				>
 					Ver transacciones
 				</DropdownMenuItem>
 				<DropdownMenuItem
-					onClick={() => navigateTo(`/alerts?clientId=${item.rfc}`)}
+					onClick={() => navigateTo(`/alerts?clientId=${item.id}`)}
 				>
 					Ver alertas
 				</DropdownMenuItem>

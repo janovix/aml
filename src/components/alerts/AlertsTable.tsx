@@ -46,7 +46,7 @@ import {
 	type AlertSeverity,
 	type ListAlertsOptions,
 } from "@/lib/api/alerts";
-import { getClientByRfc } from "@/lib/api/clients";
+import { getClientById } from "@/lib/api/clients";
 import type { Client } from "@/types/client";
 import { getClientDisplayName } from "@/types/client";
 import {
@@ -155,8 +155,8 @@ export function AlertsTable({
 			// Fetch only missing clients in parallel
 			const clientPromises = missingClientIds.map(async (clientId) => {
 				try {
-					const client = await getClientByRfc({
-						rfc: clientId,
+					const client = await getClientById({
+						id: clientId,
 						jwt: jwt ?? undefined,
 					});
 					return { clientId, client };

@@ -4,7 +4,7 @@ import { ClientDetailsView } from "./ClientDetailsView";
 import { mockClients } from "@/data/mockClients";
 
 const mockNavigateTo = vi.fn();
-const mockGetClientByRfc = vi.fn();
+const mockGetClientById = vi.fn();
 
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
@@ -40,7 +40,7 @@ vi.mock("@/hooks/useJwt", () => ({
 }));
 
 vi.mock("@/lib/api/clients", () => ({
-	getClientByRfc: (...args: unknown[]) => mockGetClientByRfc(...args),
+	getClientById: (...args: unknown[]) => mockGetClientById(...args),
 }));
 
 vi.mock("@/hooks/use-mobile", () => ({
@@ -57,28 +57,28 @@ vi.mock("@/components/skeletons", () => ({
 describe("ClientDetailsView", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockGetClientByRfc.mockReset();
+		mockGetClientById.mockReset();
 	});
 
 	it("renders loading skeleton initially", () => {
 		const client = mockClients[0];
-		mockGetClientByRfc.mockResolvedValue(client);
+		mockGetClientById.mockResolvedValue(client);
 
-		render(<ClientDetailsView clientId={client.rfc} />);
+		render(<ClientDetailsView clientId={client.id} />);
 
 		// Should show skeleton while loading
 		expect(screen.getByTestId("page-hero-skeleton")).toBeInTheDocument();
 	});
 
-	it("calls getClientByRfc with correct params", async () => {
+	it("calls getClientById with correct params", async () => {
 		const client = mockClients[0];
-		mockGetClientByRfc.mockResolvedValue(client);
+		mockGetClientById.mockResolvedValue(client);
 
-		render(<ClientDetailsView clientId={client.rfc} />);
+		render(<ClientDetailsView clientId={client.id} />);
 
 		await waitFor(() => {
-			expect(mockGetClientByRfc).toHaveBeenCalledWith({
-				rfc: client.rfc,
+			expect(mockGetClientById).toHaveBeenCalledWith({
+				id: client.id,
 			});
 		});
 	});

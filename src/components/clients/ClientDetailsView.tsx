@@ -14,16 +14,18 @@ import {
 	Mail,
 	Calendar,
 	User,
+	Hash,
 } from "lucide-react";
 import type { Client } from "../../types/client";
 import { getClientDisplayName } from "../../types/client";
-import { getClientByRfc } from "../../lib/api/clients";
+import { getClientById } from "../../lib/api/clients";
 import { useToast } from "../../hooks/use-toast";
 import { PageHero } from "@/components/page-hero";
 import { PageHeroSkeleton } from "@/components/skeletons";
+import { getPersonTypeStyle } from "../../lib/person-type-icon";
 
 interface ClientDetailsViewProps {
-	clientId: string; // RFC is passed as clientId
+	clientId: string; // Client ID
 }
 
 export function ClientDetailsView({
@@ -38,8 +40,8 @@ export function ClientDetailsView({
 		const fetchClient = async () => {
 			try {
 				setIsLoading(true);
-				const data = await getClientByRfc({
-					rfc: clientId,
+				const data = await getClientById({
+					id: clientId,
 				});
 				setClient(data);
 			} catch (error) {
@@ -93,7 +95,7 @@ export function ClientDetailsView({
 			<div className="space-y-6">
 				<PageHero
 					title="Cliente no encontrado"
-					subtitle={`El cliente con RFC ${clientId} no existe`}
+					subtitle={`El cliente con ID ${clientId} no existe`}
 					icon={User}
 					backButton={{
 						label: "Volver a Clientes",
@@ -154,24 +156,56 @@ export function ClientDetailsView({
 			/>
 
 			<div className="space-y-6">
-				<Card>
-					<CardHeader>
-						<CardTitle className="text-lg">Información General</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-6">
-						<div className="flex flex-wrap gap-4">
-							<div className="flex items-center gap-2">
-								<span className="text-sm text-muted-foreground">RFC:</span>
-								<Badge
-									variant="outline"
-									className="font-medium text-sm font-mono"
-								>
-									{client.rfc}
-								</Badge>
-							</div>
-						</div>
-					</CardContent>
-				</Card>
+				{/* Información General Card - Enhanced with Person Type */}
+				{(() => {
+					const personTypeStyle = getPersonTypeStyle(client.personType);
+					const PersonTypeIcon = personTypeStyle.icon;
+					return (
+						<Card>
+							<CardContent className="p-6">
+								<div className="flex flex-col sm:flex-row sm:items-center gap-6">
+									{/* Person Type Section */}
+									<div
+										className={`flex items-center gap-4 rounded-xl border ${personTypeStyle.borderColor} ${personTypeStyle.bgColor} p-4 sm:min-w-[200px]`}
+									>
+										<div
+											className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg ${personTypeStyle.bgColor}`}
+										>
+											<PersonTypeIcon
+												className={`h-6 w-6 ${personTypeStyle.iconColor}`}
+											/>
+										</div>
+										<div className="min-w-0">
+											<p
+												className={`font-semibold ${personTypeStyle.iconColor}`}
+											>
+												{personTypeStyle.label}
+											</p>
+											<p className="text-xs text-muted-foreground">
+												{personTypeStyle.description}
+											</p>
+										</div>
+									</div>
+
+									{/* RFC Section */}
+									<div className="flex items-center gap-4 rounded-xl border border-border bg-muted/30 p-4 flex-1">
+										<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-muted">
+											<Hash className="h-6 w-6 text-muted-foreground" />
+										</div>
+										<div className="min-w-0">
+											<p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+												RFC
+											</p>
+											<p className="font-mono text-lg font-semibold tracking-wide">
+												{client.rfc}
+											</p>
+										</div>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+					);
+				})()}
 
 				<Card>
 					<CardHeader>

@@ -1056,7 +1056,7 @@ describe("ClientsTable", () => {
 		// The actual stopPropagation behavior is tested implicitly through the component's behavior
 		expect(clientLink).toHaveAttribute(
 			"href",
-			`/test-org/clients/${mockClients[0].rfc}`,
+			`/test-org/clients/${mockClients[0].id}`,
 		);
 
 		// Test that stopPropagation is called when link is clicked

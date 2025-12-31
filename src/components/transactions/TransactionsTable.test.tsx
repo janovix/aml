@@ -48,7 +48,7 @@ vi.mock("@/lib/api/transactions", () => ({
 }));
 
 vi.mock("@/lib/api/clients", () => ({
-	getClientByRfc: vi.fn(),
+	getClientById: vi.fn(),
 }));
 
 describe("TransactionsTable", { timeout: 30000 }, () => {
@@ -65,19 +65,8 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 		});
 
 		// Mock client fetching - return clients based on clientId
-		const clientIdToRfc: Record<string, string> = {
-			"1": "EGL850101AAA",
-			"2": "CNO920315BBB",
-			"3": "SFM880520CCC",
-			"4": "IDP950712DDD",
-			"5": "PECJ850615E56",
-		};
-
-		vi.mocked(clientsApi.getClientByRfc).mockImplementation(async ({ rfc }) => {
-			let client = mockClients.find((c) => c.rfc === rfc);
-			if (!client && clientIdToRfc[rfc]) {
-				client = mockClients.find((c) => c.rfc === clientIdToRfc[rfc]);
-			}
+		vi.mocked(clientsApi.getClientById).mockImplementation(async ({ id }) => {
+			const client = mockClients.find((c) => c.id === id);
 			if (client) {
 				return client;
 			}
@@ -395,12 +384,12 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 	});
 
 	it("handles error when fetching client fails", async () => {
-		// Mock getClientByRfc to fail for one client
-		vi.mocked(clientsApi.getClientByRfc).mockImplementation(async ({ rfc }) => {
-			if (rfc === "EGL850101AAA") {
+		// Mock getClientById to fail for one client
+		vi.mocked(clientsApi.getClientById).mockImplementation(async ({ id }) => {
+			if (id === mockClients[0].id) {
 				throw new Error("Client fetch failed");
 			}
-			return mockClients.find((c) => c.rfc === rfc)!;
+			return mockClients.find((c) => c.id === id)!;
 		});
 
 		render(<TransactionsTable />);
@@ -445,8 +434,8 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 	});
 
 	it("renders transaction with clientId when client is not found", async () => {
-		// Mock getClientByRfc to fail for all clients
-		vi.mocked(clientsApi.getClientByRfc).mockRejectedValue(
+		// Mock getClientById to fail for all clients
+		vi.mocked(clientsApi.getClientById).mockRejectedValue(
 			new Error("Client not found"),
 		);
 
@@ -650,7 +639,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 		});
 
 		// Verify clients were fetched
-		expect(clientsApi.getClientByRfc).toHaveBeenCalled();
+		expect(clientsApi.getClientById).toHaveBeenCalled();
 	});
 
 	it("handles all clients already fetched scenario", async () => {

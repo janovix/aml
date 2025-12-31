@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useOrgStore } from "@/lib/org-store";
 import { useAuthSession } from "@/lib/auth/useAuthSession";
@@ -16,45 +16,88 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeroSkeleton } from "@/components/skeletons/page-hero-skeleton";
 import { TableSkeleton } from "@/components/skeletons/table-skeleton";
 
+// Must match the cookie name in sidebar.tsx
+const SIDEBAR_COOKIE_NAME = "sidebar_state";
+
+/**
+ * Read the sidebar state from the cookie (client-side only)
+ * Returns true if expanded, false if collapsed
+ */
+function getSidebarStateFromCookie(): boolean {
+	if (typeof document === "undefined") return true; // Default to expanded on SSR
+	const cookies = document.cookie.split(";");
+	for (const cookie of cookies) {
+		const [name, value] = cookie.trim().split("=");
+		if (name === SIDEBAR_COOKIE_NAME) {
+			return value !== "false";
+		}
+	}
+	return true; // Default to expanded if no cookie
+}
+
 /**
  * App skeleton that mimics the dashboard layout structure
  * Shows while loading organization data
  * Uses standardized skeleton components to prevent layout jumping
+ * Respects the persisted sidebar state to prevent layout jumps
  */
 function AppSkeleton() {
+	// Read sidebar state from cookie to match the actual sidebar
+	const isSidebarExpanded = useMemo(() => getSidebarStateFromCookie(), []);
+
 	return (
 		<div className="flex h-screen w-full bg-background">
-			{/* Sidebar skeleton */}
-			<div className="hidden w-64 shrink-0 border-r bg-sidebar md:block">
+			{/* Sidebar skeleton - respects persisted collapsed/expanded state */}
+			<div
+				className="hidden shrink-0 border-r bg-sidebar md:block transition-[width] duration-200"
+				style={{ width: isSidebarExpanded ? "16rem" : "3rem" }}
+			>
 				<div className="flex h-full flex-col">
 					{/* Sidebar header */}
-					<div className="flex h-16 items-center gap-3 border-b px-4">
-						<Skeleton className="h-8 w-8 rounded-lg" />
-						<Skeleton className="h-5 w-28" />
+					<div className="flex h-16 items-center justify-center gap-3 border-b px-2">
+						<Skeleton className="h-8 w-8 shrink-0 rounded-lg" />
+						{isSidebarExpanded && <Skeleton className="h-5 w-28" />}
 					</div>
 
 					{/* Sidebar nav items */}
-					<div className="flex-1 space-y-2 p-4">
-						<Skeleton className="h-9 w-full rounded-lg" />
-						<Skeleton className="h-9 w-full rounded-lg" />
-						<Skeleton className="h-9 w-full rounded-lg" />
-						<Skeleton className="h-9 w-3/4 rounded-lg" />
-						<div className="pt-4">
-							<Skeleton className="mb-2 h-4 w-20" />
-							<Skeleton className="h-9 w-full rounded-lg" />
-							<Skeleton className="mt-2 h-9 w-full rounded-lg" />
-						</div>
+					<div className="flex-1 space-y-2 p-2">
+						{isSidebarExpanded ? (
+							<>
+								<Skeleton className="h-9 w-full rounded-lg" />
+								<Skeleton className="h-9 w-full rounded-lg" />
+								<Skeleton className="h-9 w-full rounded-lg" />
+								<Skeleton className="h-9 w-3/4 rounded-lg" />
+								<div className="pt-4">
+									<Skeleton className="mb-2 h-4 w-20" />
+									<Skeleton className="h-9 w-full rounded-lg" />
+									<Skeleton className="mt-2 h-9 w-full rounded-lg" />
+								</div>
+							</>
+						) : (
+							<>
+								<Skeleton className="mx-auto h-9 w-9 rounded-lg" />
+								<Skeleton className="mx-auto h-9 w-9 rounded-lg" />
+								<Skeleton className="mx-auto h-9 w-9 rounded-lg" />
+								<Skeleton className="mx-auto h-9 w-9 rounded-lg" />
+							</>
+						)}
 					</div>
 
 					{/* Sidebar footer / user */}
-					<div className="border-t p-4">
-						<div className="flex items-center gap-3">
-							<Skeleton className="h-10 w-10 rounded-full" />
-							<div className="flex-1 space-y-1.5">
-								<Skeleton className="h-4 w-24" />
-								<Skeleton className="h-3 w-32" />
+					<div className="border-t p-2">
+						{isSidebarExpanded ? (
+							<div className="flex items-center gap-3 px-2">
+								<Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+								<div className="flex-1 space-y-1.5">
+									<Skeleton className="h-4 w-24" />
+									<Skeleton className="h-3 w-32" />
+								</div>
 							</div>
-						</div>
+						) : (
+							<div className="flex justify-center">
+								<Skeleton className="h-8 w-8 rounded-full" />
+							</div>
+						)}
 					</div>
 				</div>
 			</div>

@@ -39,15 +39,15 @@ export async function listClients(
 	return json;
 }
 
-export async function getClientByRfc(opts: {
-	rfc: string;
+export async function getClientById(opts: {
+	id: string;
 	baseUrl?: string;
 	signal?: AbortSignal;
 	/** JWT token for authentication */
 	jwt?: string;
 }): Promise<Client> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
-	const url = new URL(`/api/v1/clients/${opts.rfc}`, baseUrl);
+	const url = new URL(`/api/v1/clients/${opts.id}`, baseUrl);
 
 	const { json } = await fetchJson<Client>(url.toString(), {
 		method: "GET",
@@ -56,6 +56,36 @@ export async function getClientByRfc(opts: {
 		jwt: opts.jwt,
 	});
 	return json;
+}
+
+/**
+ * @deprecated Use getClientById instead. This function is kept for backward compatibility.
+ */
+export async function getClientByRfc(opts: {
+	rfc: string;
+	baseUrl?: string;
+	signal?: AbortSignal;
+	/** JWT token for authentication */
+	jwt?: string;
+}): Promise<Client> {
+	// RFC is no longer the primary key, so we need to search by RFC
+	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
+	const url = new URL("/api/v1/clients", baseUrl);
+	url.searchParams.set("rfc", opts.rfc);
+	url.searchParams.set("limit", "1");
+
+	const { json } = await fetchJson<ClientsListResponse>(url.toString(), {
+		method: "GET",
+		cache: "no-store",
+		signal: opts.signal,
+		jwt: opts.jwt,
+	});
+
+	if (json.data.length === 0) {
+		throw new Error("Client not found");
+	}
+
+	return json.data[0];
 }
 
 export async function createClient(opts: {
@@ -80,7 +110,7 @@ export async function createClient(opts: {
 }
 
 export async function updateClient(opts: {
-	rfc: string;
+	id: string;
 	input: ClientCreateRequest;
 	baseUrl?: string;
 	signal?: AbortSignal;
@@ -88,7 +118,7 @@ export async function updateClient(opts: {
 	jwt?: string;
 }): Promise<Client> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
-	const url = new URL(`/api/v1/clients/${opts.rfc}`, baseUrl);
+	const url = new URL(`/api/v1/clients/${opts.id}`, baseUrl);
 
 	const { json } = await fetchJson<Client>(url.toString(), {
 		method: "PUT",
@@ -102,7 +132,7 @@ export async function updateClient(opts: {
 }
 
 export async function patchClient(opts: {
-	rfc: string;
+	id: string;
 	input: Partial<ClientCreateRequest>;
 	baseUrl?: string;
 	signal?: AbortSignal;
@@ -110,7 +140,7 @@ export async function patchClient(opts: {
 	jwt?: string;
 }): Promise<Client> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
-	const url = new URL(`/api/v1/clients/${opts.rfc}`, baseUrl);
+	const url = new URL(`/api/v1/clients/${opts.id}`, baseUrl);
 
 	const { json } = await fetchJson<Client>(url.toString(), {
 		method: "PATCH",
@@ -124,14 +154,14 @@ export async function patchClient(opts: {
 }
 
 export async function deleteClient(opts: {
-	rfc: string;
+	id: string;
 	baseUrl?: string;
 	signal?: AbortSignal;
 	/** JWT token for authentication */
 	jwt?: string;
 }): Promise<void> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
-	const url = new URL(`/api/v1/clients/${opts.rfc}`, baseUrl);
+	const url = new URL(`/api/v1/clients/${opts.id}`, baseUrl);
 
 	await fetchJson(url.toString(), {
 		method: "DELETE",

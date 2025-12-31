@@ -76,7 +76,7 @@ describe("api/clients", () => {
 		expect(res.pagination.limit).toBe(20);
 	});
 
-	it("getClientByRfc requests /api/v1/clients/:rfc", async () => {
+	it("getClientByRfc searches /api/v1/clients with rfc query param", async () => {
 		const mockClient: Client = {
 			id: "test-id",
 			rfc: "ABC123456789",
@@ -101,9 +101,10 @@ describe("api/clients", () => {
 			async (url: RequestInfo | URL, init?: RequestInit) => {
 				expect((init?.method ?? "GET").toUpperCase()).toBe("GET");
 				expect(typeof url === "string" ? url : url.toString()).toBe(
-					"https://example.com/api/v1/clients/ABC123456789",
+					"https://example.com/api/v1/clients?rfc=ABC123456789&limit=1",
 				);
-				return new Response(JSON.stringify(mockClient), {
+				// Returns a list response with the matching client
+				return new Response(JSON.stringify({ data: [mockClient], total: 1 }), {
 					status: 200,
 					headers: { "content-type": "application/json" },
 				});
@@ -213,7 +214,7 @@ describe("api/clients", () => {
 
 		const res = await updateClient({
 			baseUrl: "https://example.com",
-			rfc: "EMP850101AAA",
+			id: "EMP850101AAA",
 			input,
 		});
 		expect(res.rfc).toBe("EMP850101AAA");
@@ -265,7 +266,7 @@ describe("api/clients", () => {
 
 		const res = await patchClient({
 			baseUrl: "https://example.com",
-			rfc: "ABC123456789",
+			id: "ABC123456789",
 			input: partialInput,
 		});
 		expect(res.email).toBe("newemail@example.com");
@@ -288,7 +289,7 @@ describe("api/clients", () => {
 
 		await deleteClient({
 			baseUrl: "https://example.com",
-			rfc: "ABC123456789",
+			id: "ABC123456789",
 		});
 		// Should not throw
 	});

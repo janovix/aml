@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Save, User } from "lucide-react";
+import { Save, User, Lock, Hash } from "lucide-react";
 import { PageHero } from "@/components/page-hero";
 import { PageHeroSkeleton } from "@/components/skeletons";
 import type {
@@ -18,9 +18,9 @@ import type {
 	Client,
 } from "../../types/client";
 import { useToast } from "../../hooks/use-toast";
-import { getClientByRfc, updateClient } from "../../lib/api/clients";
+import { getClientById, updateClient } from "../../lib/api/clients";
 import { executeMutation } from "../../lib/mutations";
-import { getPersonTypeDisplay } from "../../lib/person-type";
+import { getPersonTypeStyle } from "../../lib/person-type-icon";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
 import { getFieldDescription } from "../../lib/field-descriptions";
 import { CatalogSelector } from "../catalogs/CatalogSelector";
@@ -115,8 +115,8 @@ export function ClientEditView({
 		const fetchClient = async () => {
 			try {
 				setIsLoading(true);
-				const data = await getClientByRfc({
-					rfc: clientId,
+				const data = await getClientById({
+					id: clientId,
 				});
 				setClient(data);
 
@@ -260,7 +260,7 @@ export function ClientEditView({
 			await executeMutation({
 				mutation: () =>
 					updateClient({
-						rfc: clientId,
+						id: clientId,
 						input: request,
 					}),
 				loading: "Actualizando cliente...",
@@ -318,7 +318,7 @@ export function ClientEditView({
 			<div className="space-y-6">
 				<PageHero
 					title="Cliente no encontrado"
-					subtitle={`El cliente con RFC ${clientId} no existe`}
+					subtitle={`El cliente con ID ${clientId} no existe`}
 					icon={User}
 					backButton={{
 						label: "Volver a Clientes",
@@ -330,8 +330,8 @@ export function ClientEditView({
 	}
 
 	const lockedPersonType = formData.personType ?? client.personType;
-	const { label: personTypeLabel, helper: personTypeHelper } =
-		getPersonTypeDisplay(lockedPersonType);
+	const personTypeStyle = getPersonTypeStyle(lockedPersonType);
+	const PersonTypeIcon = personTypeStyle.icon;
 
 	return (
 		<div className="space-y-6">
@@ -372,24 +372,52 @@ export function ClientEditView({
 					className="sr-only"
 				/>
 				<Card>
-					<CardHeader>
-						<CardTitle className="text-lg">Tipo de Persona</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-4">
-						<div className="space-y-2">
-							<Label className="text-sm font-medium leading-none">Tipo *</Label>
-							<div className="flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-muted bg-muted/60 p-3">
-								<Badge
-									variant="outline"
-									className="px-3 py-1 text-sm font-medium"
+					<CardContent className="p-6">
+						<div className="flex flex-col sm:flex-row sm:items-center gap-6">
+							{/* Person Type Section - Locked */}
+							<div
+								className={`flex items-center gap-4 rounded-xl border ${personTypeStyle.borderColor} ${personTypeStyle.bgColor} p-4 sm:min-w-[240px]`}
+							>
+								<div
+									className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg ${personTypeStyle.bgColor}`}
 								>
-									{personTypeLabel}
-								</Badge>
-								<p className="text-sm text-muted-foreground">
-									{personTypeHelper}
-								</p>
+									<PersonTypeIcon
+										className={`h-6 w-6 ${personTypeStyle.iconColor}`}
+									/>
+								</div>
+								<div className="min-w-0 flex-1">
+									<div className="flex items-center gap-2">
+										<p className={`font-semibold ${personTypeStyle.iconColor}`}>
+											{personTypeStyle.label}
+										</p>
+										<Lock className="h-3.5 w-3.5 text-muted-foreground" />
+									</div>
+									<p className="text-xs text-muted-foreground">
+										{personTypeStyle.description}
+									</p>
+								</div>
+							</div>
+
+							{/* RFC Section */}
+							<div className="flex items-center gap-4 rounded-xl border border-border bg-muted/30 p-4 flex-1">
+								<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-muted">
+									<Hash className="h-6 w-6 text-muted-foreground" />
+								</div>
+								<div className="min-w-0 flex-1">
+									<p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+										RFC
+									</p>
+									<p className="font-mono text-lg font-semibold tracking-wide">
+										{formData.rfc}
+									</p>
+								</div>
 							</div>
 						</div>
+						<p className="mt-4 text-xs text-muted-foreground flex items-center gap-1.5">
+							<Lock className="h-3 w-3" />
+							El tipo de persona no se puede modificar después de crear el
+							cliente.
+						</p>
 					</CardContent>
 				</Card>
 

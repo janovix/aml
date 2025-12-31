@@ -40,7 +40,7 @@ import {
 	listTransactions,
 	type ListTransactionsOptions,
 } from "@/lib/api/transactions";
-import { getClientByRfc } from "@/lib/api/clients";
+import { getClientById } from "@/lib/api/clients";
 import type { Transaction, TransactionVehicleType } from "@/types/transaction";
 import type { Client } from "@/types/client";
 import { getClientDisplayName } from "@/types/client";
@@ -142,7 +142,7 @@ export function TransactionsTable({
 			// Fetch only missing clients in parallel
 			const clientPromises = missingClientIds.map(async (clientId) => {
 				try {
-					const client = await getClientByRfc({ rfc: clientId });
+					const client = await getClientById({ id: clientId });
 					return { clientId, client };
 				} catch (error) {
 					console.error(`Error fetching client ${clientId}:`, error);
