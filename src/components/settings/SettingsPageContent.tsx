@@ -16,7 +16,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@algtools/ui";
-import { Save, Building2, AlertCircle } from "lucide-react";
+import { Save, Building2, AlertCircle, Settings } from "lucide-react";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
 import {
 	getFieldDescription,
@@ -150,19 +150,27 @@ export function SettingsPageContent(): React.JSX.Element {
 		}
 	};
 
+	// Consistent page header component
+	const PageHeader = () => (
+		<div className="flex items-start gap-3 min-w-0">
+			<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+				<Settings className="h-5 w-5" />
+			</div>
+			<div className="min-w-0">
+				<h1 className="text-2xl font-semibold text-foreground tracking-tight">
+					Configuración
+				</h1>
+				<p className="text-sm text-muted-foreground mt-0.5">
+					Gestión de datos de la organización
+				</p>
+			</div>
+		</div>
+	);
+
 	if (isLoading) {
 		return (
 			<div className="space-y-6">
-				<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							Configuración
-						</h1>
-						<p className="text-sm text-muted-foreground">
-							Gestión de datos de la organización
-						</p>
-					</div>
-				</div>
+				<PageHeader />
 				<Card>
 					<CardContent className="p-6">
 						<div className="animate-pulse space-y-4">
@@ -180,16 +188,7 @@ export function SettingsPageContent(): React.JSX.Element {
 	if (hasNoOrganization) {
 		return (
 			<div className="space-y-6">
-				<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							Configuración
-						</h1>
-						<p className="text-sm text-muted-foreground">
-							Gestión de datos de la organización
-						</p>
-					</div>
-				</div>
+				<PageHeader />
 				<Card>
 					<CardContent className="p-8">
 						<div className="flex flex-col items-center justify-center text-center space-y-4">
@@ -220,16 +219,7 @@ export function SettingsPageContent(): React.JSX.Element {
 
 	return (
 		<div className="space-y-6">
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div>
-					<h1 className="text-xl font-semibold text-foreground">
-						Configuración
-					</h1>
-					<p className="text-sm text-muted-foreground">
-						Gestión de datos de la organización
-					</p>
-				</div>
-			</div>
+			<PageHeader />
 
 			<form onSubmit={handleSubmit} className="space-y-6">
 				<Card>

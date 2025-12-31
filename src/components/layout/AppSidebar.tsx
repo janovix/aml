@@ -276,7 +276,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	return (
 		<>
 			<Sidebar collapsible="icon" {...props}>
-				<SidebarHeader className="border-b border-sidebar-border">
+				<SidebarHeader className="h-16 border-b border-sidebar-border justify-center">
 					<OrganizationSwitcher
 						organizations={legacyOrganizations}
 						activeOrganization={legacyActiveOrg}
