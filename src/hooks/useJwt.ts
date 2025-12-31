@@ -37,10 +37,20 @@ export function useJwt(): UseJwtResult {
 
 	const fetchJwt = useCallback(
 		async (forceRefresh: boolean = false) => {
+			// Don't fetch JWT if no organization is selected
+			// The JWT includes organizationId claim, so it would be invalid without one
+			const organizationId = currentOrg?.id ?? null;
+			if (!organizationId) {
+				setJwt(null);
+				setIsLoading(false);
+				setError(null);
+				organizationIdRef.current = null;
+				return;
+			}
+
 			try {
 				setIsLoading(true);
 				setError(null);
-				const organizationId = currentOrg?.id ?? null;
 				const token = await tokenCache.getToken(organizationId, forceRefresh);
 				setJwt(token);
 				organizationIdRef.current = organizationId;
@@ -57,6 +67,16 @@ export function useJwt(): UseJwtResult {
 	// Refetch JWT when organization changes - the token includes organizationId claim
 	useEffect(() => {
 		const organizationId = currentOrg?.id ?? null;
+
+		// If no organization, clear JWT and stop loading
+		if (!organizationId) {
+			tokenCache.clear();
+			setJwt(null);
+			setIsLoading(false);
+			setError(null);
+			organizationIdRef.current = null;
+			return;
+		}
 
 		// If organization changed, clear cache and force refresh
 		if (organizationIdRef.current !== organizationId) {

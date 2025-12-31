@@ -211,6 +211,18 @@ export function TransactionsTable({
 
 	// Initial load - refetch when organization changes
 	useEffect(() => {
+		// Wait for an organization to be selected
+		// Without an organization, the API will return 403 "Organization Required"
+		if (!currentOrg?.id) {
+			setTransactions([]);
+			setClients(new Map());
+			setBrandNames(new Map());
+			fetchedClientIdsRef.current.clear();
+			brandsFetchedRef.current = false;
+			setIsLoading(false);
+			return;
+		}
+
 		const fetchTransactions = async () => {
 			try {
 				setIsLoading(true);
@@ -255,7 +267,7 @@ export function TransactionsTable({
 
 	// Load more transactions for infinite scroll
 	const handleLoadMore = useCallback(async () => {
-		if (isLoadingMore || !hasMore) return;
+		if (isLoadingMore || !hasMore || !currentOrg?.id) return;
 
 		try {
 			setIsLoadingMore(true);
@@ -282,7 +294,7 @@ export function TransactionsTable({
 			setIsLoadingMore(false);
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [currentPage, hasMore, isLoadingMore, filters, toast]);
+	}, [currentPage, hasMore, isLoadingMore, filters, toast, currentOrg?.id]);
 
 	// Transform Transaction to TransactionRow format
 	const transactionsData: TransactionRow[] = useMemo(() => {

@@ -92,8 +92,16 @@ export function ClientsTable(): React.ReactElement {
 
 	// Initial load - refetch when organization changes
 	useEffect(() => {
-		// Wait for JWT to be ready
-		if (isJwtLoading) return;
+		// Wait for JWT to be ready and organization to be selected
+		// Without an organization, the API will return 403
+		if (isJwtLoading || !jwt || !currentOrg?.id) {
+			// If no org selected, clear data and stop loading
+			if (!currentOrg?.id && !isJwtLoading) {
+				setClients([]);
+				setIsLoading(false);
+			}
+			return;
+		}
 
 		const fetchClients = async () => {
 			try {
@@ -104,7 +112,7 @@ export function ClientsTable(): React.ReactElement {
 				const response = await listClients({
 					page: 1,
 					limit: ITEMS_PER_PAGE,
-					jwt: jwt ?? undefined,
+					jwt,
 				});
 				setClients(response.data);
 				setHasMore(response.pagination.page < response.pagination.totalPages);
@@ -124,7 +132,8 @@ export function ClientsTable(): React.ReactElement {
 
 	// Load more clients for infinite scroll
 	const handleLoadMore = useCallback(async () => {
-		if (isLoadingMore || !hasMore || isJwtLoading) return;
+		if (isLoadingMore || !hasMore || isJwtLoading || !jwt || !currentOrg?.id)
+			return;
 
 		try {
 			setIsLoadingMore(true);
@@ -132,7 +141,7 @@ export function ClientsTable(): React.ReactElement {
 			const response = await listClients({
 				page: nextPage,
 				limit: ITEMS_PER_PAGE,
-				jwt: jwt ?? undefined,
+				jwt,
 			});
 
 			setClients((prev) => [...prev, ...response.data]);
@@ -148,7 +157,15 @@ export function ClientsTable(): React.ReactElement {
 		} finally {
 			setIsLoadingMore(false);
 		}
-	}, [currentPage, hasMore, isLoadingMore, isJwtLoading, jwt, toast]);
+	}, [
+		currentPage,
+		hasMore,
+		isLoadingMore,
+		isJwtLoading,
+		jwt,
+		toast,
+		currentOrg?.id,
+	]);
 
 	// Transform clients to include display name
 	const clientsData: ClientRow[] = useMemo(() => {

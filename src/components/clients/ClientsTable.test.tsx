@@ -2790,6 +2790,8 @@ describe("ClientsTable", () => {
 	});
 
 	it("handles JWT being null when fetching clients", async () => {
+		// When JWT is null (no organization selected), the component should NOT
+		// attempt to fetch clients to avoid 403 "Organization Required" errors
 		mockUseJwt.mockReturnValue({
 			jwt: null,
 			isLoading: false,
@@ -2799,12 +2801,10 @@ describe("ClientsTable", () => {
 
 		render(<ClientsTable />);
 
+		// Give it some time to potentially make the call
 		await waitFor(() => {
-			expect(clientsApi.listClients).toHaveBeenCalledWith(
-				expect.objectContaining({
-					jwt: undefined,
-				}),
-			);
+			// Should NOT call listClients when JWT is null
+			expect(clientsApi.listClients).not.toHaveBeenCalled();
 		});
 	});
 

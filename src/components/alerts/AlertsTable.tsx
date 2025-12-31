@@ -176,8 +176,17 @@ export function AlertsTable({
 
 	// Initial load - refetch when organization changes
 	useEffect(() => {
-		// Wait for JWT to be ready
-		if (isJwtLoading) return;
+		// Wait for JWT to be ready and organization to be selected
+		// Without an organization, the API will return 403 "Organization Required"
+		if (isJwtLoading || !jwt || !currentOrg?.id) {
+			// If no org selected, clear data and stop loading
+			if (!currentOrg?.id && !isJwtLoading) {
+				setAlerts([]);
+				setClients(new Map());
+				setIsLoading(false);
+			}
+			return;
+		}
 
 		const fetchAlerts = async () => {
 			try {
@@ -190,7 +199,7 @@ export function AlertsTable({
 				const response = await listAlerts({
 					page: 1,
 					limit: ITEMS_PER_PAGE,
-					jwt: jwt ?? undefined,
+					jwt,
 					...filters,
 				});
 				setAlerts(response.data);
@@ -214,7 +223,8 @@ export function AlertsTable({
 
 	// Load more alerts for infinite scroll
 	const handleLoadMore = useCallback(async () => {
-		if (isLoadingMore || !hasMore || isJwtLoading) return;
+		if (isLoadingMore || !hasMore || isJwtLoading || !jwt || !currentOrg?.id)
+			return;
 
 		try {
 			setIsLoadingMore(true);
@@ -222,7 +232,7 @@ export function AlertsTable({
 			const response = await listAlerts({
 				page: nextPage,
 				limit: ITEMS_PER_PAGE,
-				jwt: jwt ?? undefined,
+				jwt,
 				...filters,
 			});
 
@@ -250,6 +260,7 @@ export function AlertsTable({
 		filters,
 		toast,
 		fetchClientsForAlerts,
+		currentOrg?.id,
 	]);
 
 	// Transform Alert to AlertRow format
