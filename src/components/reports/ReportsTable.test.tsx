@@ -35,7 +35,7 @@ describe("ReportsTable", () => {
 		await waitFor(() => {
 			// Wait for report data to load
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 	});
@@ -45,10 +45,10 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 			expect(
-				screen.getByText("Reporte Trimestral Q4 2024"),
+				screen.getByText("REPORTE TRIMESTRAL Q4 2024"),
 			).toBeInTheDocument();
 		});
 	});
@@ -60,7 +60,7 @@ describe("ReportsTable", () => {
 		// Wait for report data to load first
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -80,7 +80,7 @@ describe("ReportsTable", () => {
 		// Wait for report data to load first
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -99,7 +99,7 @@ describe("ReportsTable", () => {
 		// Wait for report data to load first
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -110,7 +110,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 	});
@@ -120,7 +120,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -136,7 +136,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -150,7 +150,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -164,7 +164,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -178,7 +178,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -192,7 +192,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -208,7 +208,7 @@ describe("ReportsTable", () => {
 		// Wait for report data to load first
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -245,7 +245,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -254,7 +254,7 @@ describe("ReportsTable", () => {
 		const rows = screen.getAllByRole("row");
 		expect(rows.length).toBeGreaterThan(1);
 		expect(
-			screen.getByText("Reporte Mensual Diciembre 2024"),
+			screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 		).toBeInTheDocument();
 	});
 
@@ -264,7 +264,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -291,7 +291,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -315,7 +315,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Trimestral Q4 2024"),
+				screen.getByText("REPORTE TRIMESTRAL Q4 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -345,7 +345,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -368,7 +368,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -401,7 +401,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -425,7 +425,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -457,7 +457,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -471,7 +471,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -485,7 +485,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Noviembre 2024"),
+				screen.getByText("REPORTE MENSUAL NOVIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -499,7 +499,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -514,7 +514,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -531,7 +531,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -559,7 +559,7 @@ describe("ReportsTable", () => {
 		await waitFor(() => {
 			// Find the GENERATED report (RPT-003)
 			expect(
-				screen.getByText("Reporte Trimestral Q4 2024"),
+				screen.getByText("REPORTE TRIMESTRAL Q4 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -588,7 +588,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -623,7 +623,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -658,7 +658,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Trimestral Q4 2024"),
+				screen.getByText("REPORTE TRIMESTRAL Q4 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -682,7 +682,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -698,7 +698,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Mensual Diciembre 2024"),
+				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
 		});
 
@@ -725,7 +725,7 @@ describe("ReportsTable", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("Reporte Trimestral Q4 2024"),
+				screen.getByText("REPORTE TRIMESTRAL Q4 2024"),
 			).toBeInTheDocument();
 		});
 

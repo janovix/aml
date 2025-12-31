@@ -72,7 +72,7 @@ const mockAlerts: Alert[] = [
 		updatedAt: new Date().toISOString(),
 		alertRule: {
 			id: "rule-1",
-			name: "Operación inusual",
+			name: "OPERACIÓN INUSUAL",
 			description: "Detecta operaciones inusuales",
 			active: true,
 			severity: "HIGH",
@@ -157,7 +157,7 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
 		});
 	});
 
@@ -165,9 +165,9 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
-			expect(screen.getByText("Transacción de alto monto")).toBeInTheDocument();
-			expect(screen.getByText("Estructuración")).toBeInTheDocument();
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
+			expect(screen.getByText("TRANSACCIÓN DE ALTO MONTO")).toBeInTheDocument();
+			expect(screen.getByText("ESTRUCTURACIÓN")).toBeInTheDocument();
 		});
 	});
 
@@ -176,7 +176,7 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
 		});
 
 		const checkboxes = screen.getAllByRole("checkbox");
@@ -193,7 +193,7 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
 		});
 
 		const selectAllCheckbox = screen.getAllByRole("checkbox")[0];
@@ -230,7 +230,7 @@ describe("AlertsTable", () => {
 		});
 
 		await waitFor(() => {
-			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
 		});
 	});
 
@@ -255,7 +255,7 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
 		});
 
 		const searchInput = screen.getByPlaceholderText(/buscar/i);
@@ -264,7 +264,7 @@ describe("AlertsTable", () => {
 		await user.type(searchInput, "Operación");
 
 		await waitFor(() => {
-			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
 		});
 	});
 
@@ -272,7 +272,7 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
 		});
 
 		// Use getAllByText since filter can appear in multiple places
@@ -288,7 +288,7 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
 		});
 
 		// Check that rows have action buttons
@@ -300,7 +300,7 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
 		});
 
 		// Check for client links
@@ -313,7 +313,7 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
 		});
 
 		const checkboxes = screen.getAllByRole("checkbox");
@@ -360,8 +360,10 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			// Should render alert even without deadline
-			expect(screen.getByText(firstAlert.alertRule!.name)).toBeInTheDocument();
+			// Should render alert even without deadline (now uppercase)
+			expect(
+				screen.getByText(firstAlert.alertRule!.name.toUpperCase()),
+			).toBeInTheDocument();
 		});
 	});
 
@@ -372,8 +374,10 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			// Should render overdue alerts
-			expect(screen.getByText(secondAlert.alertRule!.name)).toBeInTheDocument();
+			// Should render overdue alerts (now uppercase)
+			expect(
+				screen.getByText(secondAlert.alertRule!.name.toUpperCase()),
+			).toBeInTheDocument();
 		});
 	});
 
@@ -400,7 +404,9 @@ describe("AlertsTable", () => {
 
 		await waitFor(() => {
 			// Should render alert with notes
-			expect(screen.getByText(firstAlert.alertRule!.name)).toBeInTheDocument();
+			expect(
+				screen.getByText(firstAlert.alertRule!.name.toUpperCase()),
+			).toBeInTheDocument();
 		});
 	});
 
@@ -427,7 +433,9 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText(firstAlert.alertRule!.name)).toBeInTheDocument();
+			expect(
+				screen.getByText(firstAlert.alertRule!.name.toUpperCase()),
+			).toBeInTheDocument();
 		});
 
 		// Open action menu
@@ -468,7 +476,9 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText(firstAlert.alertRule!.name)).toBeInTheDocument();
+			expect(
+				screen.getByText(firstAlert.alertRule!.name.toUpperCase()),
+			).toBeInTheDocument();
 		});
 
 		// Open action menu
@@ -494,7 +504,9 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText(firstAlert.alertRule!.name)).toBeInTheDocument();
+			expect(
+				screen.getByText(firstAlert.alertRule!.name.toUpperCase()),
+			).toBeInTheDocument();
 		});
 
 		// Open action menu
@@ -535,7 +547,9 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText(firstAlert.alertRule!.name)).toBeInTheDocument();
+			expect(
+				screen.getByText(firstAlert.alertRule!.name.toUpperCase()),
+			).toBeInTheDocument();
 		});
 
 		// Open action menu
@@ -576,7 +590,9 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText(firstAlert.alertRule!.name)).toBeInTheDocument();
+			expect(
+				screen.getByText(firstAlert.alertRule!.name.toUpperCase()),
+			).toBeInTheDocument();
 		});
 
 		// Open action menu
@@ -617,7 +633,9 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText(firstAlert.alertRule!.name)).toBeInTheDocument();
+			expect(
+				screen.getByText(firstAlert.alertRule!.name.toUpperCase()),
+			).toBeInTheDocument();
 		});
 
 		// Open action menu
@@ -658,7 +676,9 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText(firstAlert.alertRule!.name)).toBeInTheDocument();
+			expect(
+				screen.getByText(firstAlert.alertRule!.name.toUpperCase()),
+			).toBeInTheDocument();
 		});
 
 		// Open action menu
@@ -681,7 +701,7 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
 		});
 
 		// Open action menu
@@ -707,7 +727,7 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
 		});
 
 		// Open action menu
@@ -735,7 +755,7 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
 		});
 
 		// Find the new alert buttons in the PageHero (there are mobile and desktop versions)
@@ -757,7 +777,7 @@ describe("AlertsTable", () => {
 		const { rerender } = render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
 		});
 
 		// Verify initial fetch was called

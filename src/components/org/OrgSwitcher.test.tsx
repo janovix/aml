@@ -72,7 +72,7 @@ describe("OrgSwitcher", () => {
 			</SidebarProvider>,
 		);
 
-		expect(screen.getByText("Test Org")).toBeInTheDocument();
+		expect(screen.getByText("TEST ORG")).toBeInTheDocument();
 	});
 
 	it("renders current organization plan", () => {
@@ -93,7 +93,7 @@ describe("OrgSwitcher", () => {
 			</SidebarProvider>,
 		);
 
-		const trigger = screen.getByText("Test Org");
+		const trigger = screen.getByText("TEST ORG");
 		await user.click(trigger);
 
 		expect(screen.getByText("My Organizations")).toBeInTheDocument();
@@ -107,10 +107,10 @@ describe("OrgSwitcher", () => {
 			</SidebarProvider>,
 		);
 
-		const trigger = screen.getByText("Test Org");
+		const trigger = screen.getByText("TEST ORG");
 		await user.click(trigger);
 
-		expect(screen.getByText("Other Org")).toBeInTheDocument();
+		expect(screen.getByText("OTHER ORG")).toBeInTheDocument();
 	});
 
 	it("calls setActiveOrganization when switching organizations", async () => {
@@ -121,10 +121,10 @@ describe("OrgSwitcher", () => {
 			</SidebarProvider>,
 		);
 
-		const trigger = screen.getByText("Test Org");
+		const trigger = screen.getByText("TEST ORG");
 		await user.click(trigger);
 
-		const otherOrg = screen.getByText("Other Org");
+		const otherOrg = screen.getByText("OTHER ORG");
 		await user.click(otherOrg);
 
 		expect(mockSetActiveOrganization).toHaveBeenCalledWith("org-2");
@@ -138,10 +138,10 @@ describe("OrgSwitcher", () => {
 			</SidebarProvider>,
 		);
 
-		const trigger = screen.getByText("Test Org");
+		const trigger = screen.getByText("TEST ORG");
 		await user.click(trigger);
 
-		const otherOrg = screen.getByText("Other Org");
+		const otherOrg = screen.getByText("OTHER ORG");
 		await user.click(otherOrg);
 
 		await waitFor(() => {
@@ -166,10 +166,10 @@ describe("OrgSwitcher", () => {
 			</SidebarProvider>,
 		);
 
-		const trigger = screen.getByText("Test Org");
+		const trigger = screen.getByText("TEST ORG");
 		await user.click(trigger);
 
-		const otherOrg = screen.getByText("Other Org");
+		const otherOrg = screen.getByText("OTHER ORG");
 		await user.click(otherOrg);
 
 		await waitFor(() => {
@@ -190,7 +190,7 @@ describe("OrgSwitcher", () => {
 			</SidebarProvider>,
 		);
 
-		const trigger = screen.getByText("Test Org");
+		const trigger = screen.getByText("TEST ORG");
 		await user.click(trigger);
 
 		expect(screen.getByText("New organization")).toBeInTheDocument();
@@ -204,7 +204,7 @@ describe("OrgSwitcher", () => {
 			</SidebarProvider>,
 		);
 
-		const trigger = screen.getByText("Test Org");
+		const trigger = screen.getByText("TEST ORG");
 		await user.click(trigger);
 
 		const newOrgButton = screen.getByText("New organization");
@@ -223,7 +223,7 @@ describe("OrgSwitcher", () => {
 			</SidebarProvider>,
 		);
 
-		const trigger = screen.getByText("Test Org");
+		const trigger = screen.getByText("TEST ORG");
 		await user.click(trigger);
 
 		const newOrgButton = screen.getByText("New organization");
@@ -255,13 +255,13 @@ describe("OrgSwitcher", () => {
 			</SidebarProvider>,
 		);
 
-		const trigger = screen.getByText("Test Org");
+		const trigger = screen.getByText("TEST ORG");
 		await user.click(trigger);
 
 		// The active org should have a visual indicator (a small dot)
 		const orgItems = screen.getAllByRole("menuitem");
 		const activeOrgItem = orgItems.find((item) =>
-			item.textContent?.includes("Test Org"),
+			item.textContent?.includes("TEST ORG"),
 		);
 		expect(activeOrgItem).toBeInTheDocument();
 	});
@@ -290,7 +290,7 @@ describe("OrgSwitcher", () => {
 			</SidebarProvider>,
 		);
 
-		const trigger = screen.getByText("Test Org");
+		const trigger = screen.getByText("TEST ORG");
 		await user.click(trigger);
 
 		const newOrgButton = screen.getByText("New organization");
@@ -317,7 +317,7 @@ describe("OrgSwitcher", () => {
 			</SidebarProvider>,
 		);
 
-		const trigger = screen.getByText("Test Org");
+		const trigger = screen.getByText("TEST ORG");
 		await user.click(trigger);
 
 		const newOrgButton = screen.getByText("New organization");
@@ -349,7 +349,7 @@ describe("OrgSwitcher", () => {
 			</SidebarProvider>,
 		);
 
-		const trigger = screen.getByText("Test Org");
+		const trigger = screen.getByText("TEST ORG");
 		await user.click(trigger);
 
 		const newOrgButton = screen.getByText("New organization");
@@ -385,7 +385,7 @@ describe("OrgSwitcher", () => {
 			</SidebarProvider>,
 		);
 
-		const trigger = screen.getByText("Test Org");
+		const trigger = screen.getByText("TEST ORG");
 		await user.click(trigger);
 
 		const newOrgButton = screen.getByText("New organization");
@@ -409,7 +409,7 @@ describe("OrgSwitcher", () => {
 			</SidebarProvider>,
 		);
 
-		const trigger = screen.getByText("Test Org");
+		const trigger = screen.getByText("TEST ORG");
 		await user.click(trigger);
 
 		const newOrgButton = screen.getByText("New organization");

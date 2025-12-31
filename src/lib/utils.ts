@@ -130,3 +130,15 @@ export function validateVIN(vin: string): { isValid: boolean; error?: string } {
 
 	return { isValid: true };
 }
+
+/**
+ * Formats proper nouns (names, company names, business names, brands, models) as all-uppercase
+ * @param text - The text to format
+ * @returns The text formatted as uppercase, or empty string if input is null/undefined/empty
+ */
+export function formatProperNoun(text: string | null | undefined): string {
+	if (!text || text.trim().length === 0) {
+		return "";
+	}
+	return text.trim().toUpperCase();
+}

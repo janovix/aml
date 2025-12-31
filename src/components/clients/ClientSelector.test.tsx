@@ -155,11 +155,12 @@ describe("ClientSelector", () => {
 		const trigger = screen.getByRole("combobox");
 		await user.click(trigger);
 
+		// Names are now displayed in uppercase by getClientDisplayName
 		await waitFor(() => {
-			expect(screen.getByText("Juan Pérez García")).toBeInTheDocument();
+			expect(screen.getByText("JUAN PÉREZ GARCÍA")).toBeInTheDocument();
 		});
 
-		const option = screen.getByText("Juan Pérez García");
+		const option = screen.getByText("JUAN PÉREZ GARCÍA");
 		await user.click(option);
 
 		expect(handleChange).toHaveBeenCalledWith(mockClients[0]);
@@ -362,11 +363,12 @@ describe("ClientSelector", () => {
 		const trigger = screen.getByRole("combobox");
 		await user.click(trigger);
 
+		// Names are now displayed in uppercase by getClientDisplayName
 		await waitFor(() => {
-			expect(screen.getByText("Juan Pérez García")).toBeInTheDocument();
+			expect(screen.getByText("JUAN PÉREZ GARCÍA")).toBeInTheDocument();
 		});
 
-		const option = screen.getByText("Juan Pérez García");
+		const option = screen.getByText("JUAN PÉREZ GARCÍA");
 		await user.click(option);
 
 		// Popover should close - verify by checking the trigger still exists and menu is not visible

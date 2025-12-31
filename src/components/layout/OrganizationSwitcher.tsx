@@ -18,6 +18,7 @@ import {
 	useSidebar,
 } from "@/components/ui/sidebar";
 import { Logo } from "./Logo";
+import { formatProperNoun } from "@/lib/utils";
 
 export interface Organization {
 	id: string;
@@ -110,7 +111,9 @@ export function OrganizationSwitcher({
 											<Building2 className="size-3.5 shrink-0" />
 										)}
 									</div>
-									<span className="flex-1 truncate">{org.name}</span>
+									<span className="flex-1 truncate">
+										{formatProperNoun(org.name)}
+									</span>
 									{activeOrganization?.id === org.id && (
 										<span className="text-xs text-muted-foreground">
 											Activa
@@ -188,7 +191,9 @@ export function OrganizationSwitcher({
 							</div>
 							<div className="grid flex-1 text-left text-sm leading-tight">
 								<span className="truncate font-medium">
-									{activeOrganization?.name ?? "Seleccionar"}
+									{activeOrganization?.name
+										? formatProperNoun(activeOrganization.name)
+										: "Seleccionar"}
 								</span>
 								<span className="truncate text-xs text-muted-foreground">
 									{activeOrganization?.slug ?? "organización"}
@@ -223,7 +228,9 @@ export function OrganizationSwitcher({
 										<Building2 className="size-3.5 shrink-0" />
 									)}
 								</div>
-								<span className="flex-1 truncate">{org.name}</span>
+								<span className="flex-1 truncate">
+									{formatProperNoun(org.name)}
+								</span>
 								{activeOrganization?.id === org.id && (
 									<span className="text-xs text-muted-foreground">Activa</span>
 								)}

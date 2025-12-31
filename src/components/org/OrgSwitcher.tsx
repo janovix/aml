@@ -27,6 +27,7 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarMenuButton } from "@/components/ui/sidebar";
 import { useToast } from "@/hooks/use-toast";
 import { useOrgStore } from "@/lib/org-store";
+import { formatProperNoun } from "@/lib/utils";
 import {
 	createOrganization,
 	setActiveOrganization,
@@ -238,7 +239,7 @@ export function OrgSwitcher() {
 					</Avatar>
 					<div className="grid flex-1 text-left text-sm leading-tight">
 						<span className="truncate font-semibold">
-							{currentOrg?.name || "Select"}
+							{currentOrg?.name ? formatProperNoun(currentOrg.name) : "Select"}
 						</span>
 						<span className="truncate text-xs text-muted-foreground capitalize">
 							{currentOrg?.plan ? `${currentOrg.plan} plan` : "No plan"}
@@ -272,7 +273,9 @@ export function OrgSwitcher() {
 								{getOrgInitials(org.name)}
 							</AvatarFallback>
 						</Avatar>
-						<span className="flex-1 truncate">{org.name}</span>
+						<span className="flex-1 truncate">
+							{formatProperNoun(org.name)}
+						</span>
 						{org.id === currentOrg?.id && (
 							<span className="h-2 w-2 rounded-full bg-primary" />
 						)}

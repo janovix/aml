@@ -307,35 +307,135 @@ export function CatalogSelector({
 		[reload, getOptionValue, onValueChange, onChange],
 	);
 
+	// Track if we're currently processing a load to prevent duplicate calls
+	const isLoadingMoreRef = useRef(false);
+
 	// Handle infinite scroll
 	const handleScroll = useCallback(async () => {
+		// Find the actual scrollable element - could be the ref or the cmdk-list element inside
 		const list = listRef.current;
-		if (!list || loadingMore || loading || !hasMore) {
+		if (
+			!list ||
+			loadingMore ||
+			loading ||
+			!hasMore ||
+			isLoadingMoreRef.current
+		) {
 			return;
 		}
 
-		const { scrollTop, scrollHeight, clientHeight } = list;
-		const threshold = 50; // Trigger when 50px from bottom
+		// Try to find the actual scrollable element (cmdk-list)
+		const scrollableElement =
+			list.querySelector<HTMLElement>("[cmdk-list]") || list;
 
-		if (scrollTop + clientHeight >= scrollHeight - threshold) {
+		if (!scrollableElement) {
+			return;
+		}
+
+		const { scrollTop, scrollHeight, clientHeight } = scrollableElement;
+		const threshold = 100; // Trigger when 100px from bottom for better UX
+
+		// Check if we're near the bottom
+		const isNearBottom = scrollTop + clientHeight >= scrollHeight - threshold;
+
+		if (isNearBottom) {
+			isLoadingMoreRef.current = true;
 			try {
 				await loadMore();
 			} catch {
 				// Ignore errors
+			} finally {
+				isLoadingMoreRef.current = false;
 			}
 		}
 	}, [loadMore, loadingMore, loading, hasMore]);
 
-	// Set up scroll listener
+	// After items are loaded, check if we need to load more
+	// This ensures we continue loading until the user scrolls away or no more pages are available
 	useEffect(() => {
-		const list = listRef.current;
-		if (!list || !open) {
+		if (
+			!open ||
+			loadingMore ||
+			loading ||
+			!hasMore ||
+			isLoadingMoreRef.current
+		) {
 			return;
 		}
 
-		list.addEventListener("scroll", handleScroll, { passive: true });
+		const list = listRef.current;
+		if (!list) {
+			return;
+		}
+
+		// Wait for DOM to update after items change
+		const timeoutId = setTimeout(() => {
+			const scrollableElement =
+				list.querySelector<HTMLElement>("[cmdk-list]") || list;
+
+			if (!scrollableElement) {
+				return;
+			}
+
+			const { scrollTop, scrollHeight, clientHeight } = scrollableElement;
+			const threshold = 100;
+
+			// If we're still near the bottom after loading, load more
+			const isNearBottom = scrollTop + clientHeight >= scrollHeight - threshold;
+
+			if (isNearBottom && hasMore && !loadingMore && !loading) {
+				isLoadingMoreRef.current = true;
+				loadMore()
+					.catch(() => {
+						// Ignore errors
+					})
+					.finally(() => {
+						isLoadingMoreRef.current = false;
+					});
+			}
+		}, 100); // Small delay to allow DOM to update
+
 		return () => {
-			list.removeEventListener("scroll", handleScroll);
+			clearTimeout(timeoutId);
+		};
+	}, [items, open, hasMore, loadingMore, loading, loadMore]);
+
+	// Set up scroll listener
+	useEffect(() => {
+		if (!open) {
+			return;
+		}
+
+		let timeoutId: NodeJS.Timeout;
+
+		// Wait for the DOM to be ready before attaching listener
+		timeoutId = setTimeout(() => {
+			const list = listRef.current;
+			if (!list) {
+				return;
+			}
+
+			// Find the actual scrollable element
+			const scrollableElement =
+				list.querySelector<HTMLElement>("[cmdk-list]") || list;
+
+			if (scrollableElement) {
+				scrollableElement.addEventListener("scroll", handleScroll, {
+					passive: true,
+				});
+			}
+		}, 0);
+
+		return () => {
+			clearTimeout(timeoutId);
+			// Try to find and remove listener from current DOM state
+			const list = listRef.current;
+			if (list) {
+				const element = list.querySelector<HTMLElement>("[cmdk-list]") || list;
+				if (element) {
+					element.removeEventListener("scroll", handleScroll);
+				}
+			}
 		};
 	}, [handleScroll, open]);
 

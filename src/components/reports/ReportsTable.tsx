@@ -34,6 +34,7 @@ import {
 	type FilterDef,
 } from "@/components/data-table";
 import { PageHero, type StatCard } from "@/components/page-hero";
+import { formatProperNoun } from "@/lib/utils";
 
 /**
  * Report type
@@ -216,7 +217,7 @@ export function ReportsTable(): React.ReactElement {
 							<div className="flex flex-col min-w-0">
 								<div className="flex items-center gap-2">
 									<span className="font-medium text-foreground truncate">
-										{item.name}
+										{formatProperNoun(item.name)}
 									</span>
 									<TooltipProvider>
 										<Tooltip>

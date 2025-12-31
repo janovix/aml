@@ -38,7 +38,7 @@ describe("ClientDetailPageContent", () => {
 			expect(nameElements.length).toBeGreaterThan(0);
 		} else {
 			const businessNameElements = screen.getAllByText(
-				client.businessName || "",
+				(client.businessName || "").toUpperCase(),
 			);
 			expect(businessNameElements.length).toBeGreaterThan(0);
 		}

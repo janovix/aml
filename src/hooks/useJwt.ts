@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { getClientJwt } from "@/lib/auth/authClient";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { tokenCache } from "@/lib/auth/tokenCache";
 import { useOrgStore } from "@/lib/org-store";
 
 interface UseJwtResult {
@@ -13,8 +13,11 @@ interface UseJwtResult {
 
 /**
  * Hook to get a JWT token for API authentication.
- * Fetches the JWT on mount and refetches when the active organization changes.
+ * Uses a shared token cache to prevent duplicate requests.
+ * Automatically refetches when the active organization changes.
  * The JWT includes the organizationId claim, so it must be refreshed when switching orgs.
+ *
+ * Token cache has a stale timeout (default: 5 minutes) to avoid excessive requests.
  *
  * @example
  * const { jwt, isLoading, error } = useJwt();
@@ -30,25 +33,45 @@ export function useJwt(): UseJwtResult {
 	const [jwt, setJwt] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<Error | null>(null);
+	const organizationIdRef = useRef<string | null>(currentOrg?.id ?? null);
 
-	const fetchJwt = useCallback(async () => {
-		try {
-			setIsLoading(true);
-			setError(null);
-			const token = await getClientJwt();
-			setJwt(token);
-		} catch (err) {
-			setError(err instanceof Error ? err : new Error("Failed to fetch JWT"));
-			setJwt(null);
-		} finally {
-			setIsLoading(false);
-		}
-	}, []);
+	const fetchJwt = useCallback(
+		async (forceRefresh: boolean = false) => {
+			try {
+				setIsLoading(true);
+				setError(null);
+				const organizationId = currentOrg?.id ?? null;
+				const token = await tokenCache.getToken(organizationId, forceRefresh);
+				setJwt(token);
+				organizationIdRef.current = organizationId;
+			} catch (err) {
+				setError(err instanceof Error ? err : new Error("Failed to fetch JWT"));
+				setJwt(null);
+			} finally {
+				setIsLoading(false);
+			}
+		},
+		[currentOrg?.id],
+	);
 
 	// Refetch JWT when organization changes - the token includes organizationId claim
 	useEffect(() => {
-		fetchJwt();
+		const organizationId = currentOrg?.id ?? null;
+
+		// If organization changed, clear cache and force refresh
+		if (organizationIdRef.current !== organizationId) {
+			tokenCache.clear();
+			fetchJwt(true);
+		} else {
+			// Otherwise, fetch normally (will use cache if valid)
+			fetchJwt(false);
+		}
 	}, [fetchJwt, currentOrg?.id]);
 
-	return { jwt, isLoading, error, refetch: fetchJwt };
+	return {
+		jwt,
+		isLoading,
+		error,
+		refetch: () => fetchJwt(true),
+	};
 }

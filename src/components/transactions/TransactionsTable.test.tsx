@@ -988,4 +988,38 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 			expect(transactionsApi.listTransactions).toHaveBeenCalledTimes(2);
 		});
 	});
+
+	it("refetches brand catalogs when organization changes", async () => {
+		// Initial render with org-1
+		mockUseOrgStore.mockReturnValue({
+			currentOrg: { id: "org-1", name: "Test Org", slug: "test-org" },
+		});
+
+		const { rerender } = render(<TransactionsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
+		});
+
+		// Verify initial catalog fetches were called (3 catalogs)
+		const initialCatalogCalls = vi.mocked(catalogsApi.fetchCatalogEntries).mock
+			.calls.length;
+		expect(initialCatalogCalls).toBeGreaterThanOrEqual(3);
+
+		// Change organization
+		mockUseOrgStore.mockReturnValue({
+			currentOrg: { id: "org-2", name: "Other Org", slug: "other-org" },
+		});
+
+		// Rerender to trigger the effect with new org
+		rerender(<TransactionsTable />);
+
+		// Wait for the brand catalogs to be refetched
+		await waitFor(() => {
+			// Should have at least 6 calls now (3 initial + 3 after org change)
+			expect(
+				vi.mocked(catalogsApi.fetchCatalogEntries).mock.calls.length,
+			).toBeGreaterThanOrEqual(initialCatalogCalls + 3);
+		});
+	});
 });

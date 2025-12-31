@@ -88,7 +88,7 @@ describe("OrganizationSwitcher", () => {
 			</SidebarProvider>,
 		);
 
-		expect(screen.getByText("Org 1")).toBeInTheDocument();
+		expect(screen.getByText("ORG 1")).toBeInTheDocument();
 		expect(screen.getByText("org-1")).toBeInTheDocument();
 	});
 
@@ -108,11 +108,11 @@ describe("OrganizationSwitcher", () => {
 		);
 
 		// Click on the organization button to open dropdown
-		const orgButton = screen.getByText("Org 1");
+		const orgButton = screen.getByText("ORG 1");
 		await user.click(orgButton);
 
 		// Find and click on the second organization
-		const org2Item = await screen.findByText("Org 2");
+		const org2Item = await screen.findByText("ORG 2");
 		await user.click(org2Item);
 
 		expect(mockOnChange).toHaveBeenCalledWith(mockOrganizations[1]);
@@ -174,7 +174,7 @@ describe("OrganizationSwitcher", () => {
 		);
 
 		// Open dropdown
-		const orgButton = screen.getByText("Org 1");
+		const orgButton = screen.getByText("ORG 1");
 		await user.click(orgButton);
 
 		// Find and click create organization option
@@ -199,7 +199,7 @@ describe("OrganizationSwitcher", () => {
 		);
 
 		// Open dropdown
-		const orgButton = screen.getByText("Org 1");
+		const orgButton = screen.getByText("ORG 1");
 		await user.click(orgButton);
 
 		// Check for "Activa" label
@@ -280,7 +280,7 @@ describe("OrganizationSwitcher", () => {
 		);
 
 		// Open dropdown
-		const orgButton = screen.getByText("Org 1");
+		const orgButton = screen.getByText("ORG 1");
 		await user.click(orgButton);
 
 		// Org 2 has a logo

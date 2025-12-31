@@ -48,6 +48,7 @@ import {
 	type ColumnDef,
 	type FilterDef,
 } from "@/components/data-table";
+import { formatProperNoun } from "@/lib/utils";
 import { PageHero, type StatCard } from "@/components/page-hero";
 
 /**
@@ -305,7 +306,7 @@ export function AlertsTable({
 										<Tooltip>
 											<TooltipTrigger asChild>
 												<span
-													className={`h-2 w-2 rounded-full flex-shrink-0 ${severityCfg.dotColor}`}
+													className={`h-2 w-2 rounded-full shrink-0 ${severityCfg.dotColor}`}
 												/>
 											</TooltipTrigger>
 											<TooltipContent>
@@ -314,7 +315,7 @@ export function AlertsTable({
 										</Tooltip>
 									</TooltipProvider>
 									<span className="font-medium text-foreground truncate">
-										{item.ruleName}
+										{formatProperNoun(item.ruleName)}
 									</span>
 								</div>
 								{item.notes && (
@@ -340,7 +341,7 @@ export function AlertsTable({
 							className="text-sm text-foreground hover:text-primary truncate"
 							onClick={(e) => e.stopPropagation()}
 						>
-							{item.clientName}
+							{formatProperNoun(item.clientName)}
 						</Link>
 						<span className="text-xs text-muted-foreground font-mono">
 							{item.clientId}

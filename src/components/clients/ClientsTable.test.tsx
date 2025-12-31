@@ -1368,9 +1368,9 @@ describe("ClientsTable", () => {
 				).toBeInTheDocument();
 			});
 
-			// Verify business name is shown in dialog
+			// Verify business name is shown in dialog (now uppercase)
 			expect(
-				screen.getByText(mockClients[0].businessName!),
+				screen.getByText(mockClients[0].businessName!.toUpperCase()),
 			).toBeInTheDocument();
 		}
 	});
@@ -1722,8 +1722,10 @@ describe("ClientsTable", () => {
 			expect(screen.getByText(displayName)).toBeInTheDocument();
 		});
 
-		// Verify trust type client is rendered
-		expect(screen.getByText(trustClient.businessName!)).toBeInTheDocument();
+		// Verify trust type client is rendered (now uppercase)
+		expect(
+			screen.getByText(trustClient.businessName!.toUpperCase()),
+		).toBeInTheDocument();
 	});
 
 	it("handles search functionality", async () => {
@@ -1970,10 +1972,12 @@ describe("ClientsTable", () => {
 				expect(screen.getByText(/¿Eliminar cliente\?/i)).toBeInTheDocument();
 			});
 
-			// Verify business name is shown in dialog
+			// Verify business name is shown in dialog (now uppercase)
 			if (moralClient.businessName) {
 				expect(
-					screen.getByText(moralClient.businessName, { exact: false }),
+					screen.getByText(moralClient.businessName.toUpperCase(), {
+						exact: false,
+					}),
 				).toBeInTheDocument();
 			}
 		}
@@ -2175,8 +2179,10 @@ describe("ClientsTable", () => {
 			expect(screen.getByText(displayName)).toBeInTheDocument();
 		});
 
-		// Verify trust type is rendered in the column
-		expect(screen.getByText(trustClient.businessName!)).toBeInTheDocument();
+		// Verify trust type is rendered in the column (now uppercase)
+		expect(
+			screen.getByText(trustClient.businessName!.toUpperCase()),
+		).toBeInTheDocument();
 	});
 
 	it("renders all person type configurations in column cell", async () => {
@@ -2264,10 +2270,12 @@ describe("ClientsTable", () => {
 				expect(screen.getByText(/¿Eliminar cliente\?/i)).toBeInTheDocument();
 			});
 
-			// Verify business name branch is covered
+			// Verify business name branch is covered (now uppercase)
 			if (moralClient.businessName) {
 				expect(
-					screen.getByText(moralClient.businessName, { exact: false }),
+					screen.getByText(moralClient.businessName.toUpperCase(), {
+						exact: false,
+					}),
 				).toBeInTheDocument();
 			}
 		}
@@ -3099,7 +3107,8 @@ describe("ClientsTable", () => {
 			updatedAt: "2024-01-01T00:00:00Z",
 		};
 
-		vi.mocked(clientsApi.listClients).mockResolvedValueOnce({
+		vi.mocked(clientsApi.listClients).mockReset();
+		vi.mocked(clientsApi.listClients).mockResolvedValue({
 			data: [clientWithEmptyContact],
 			pagination: {
 				page: 1,
@@ -3112,7 +3121,8 @@ describe("ClientsTable", () => {
 		render(<ClientsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Empty Contact Company")).toBeInTheDocument();
+			// Business names are now formatted as uppercase by getClientDisplayName
+			expect(screen.getByText("EMPTY CONTACT COMPANY")).toBeInTheDocument();
 		});
 	});
 

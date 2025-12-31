@@ -45,6 +45,7 @@ import {
 } from "@/components/data-table";
 import { fetchCatalogEntries } from "@/lib/catalogs";
 import type { CatalogItem } from "@/types/catalog";
+import { formatProperNoun } from "@/lib/utils";
 
 /**
  * Extended transaction row with resolved client data
@@ -214,10 +215,12 @@ export function TransactionsTable({
 			try {
 				setIsLoading(true);
 				setCurrentPage(1);
-				// Clear existing data and client cache when org changes
+				// Clear existing data and caches when org changes
 				setTransactions([]);
 				setClients(new Map());
+				setBrandNames(new Map());
 				fetchedClientIdsRef.current.clear();
+				brandsFetchedRef.current = false;
 
 				// Fetch brand catalogs in parallel with transactions
 				await Promise.all([
@@ -382,7 +385,7 @@ export function TransactionsTable({
 							</TooltipProvider>
 							<div className="flex flex-col min-w-0">
 								<span className="text-sm font-medium truncate">
-									{item.brand} {item.model}
+									{formatProperNoun(item.brand)} {formatProperNoun(item.model)}
 								</span>
 								<span className="text-xs text-muted-foreground">
 									{item.year}
