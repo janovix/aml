@@ -35,6 +35,32 @@ vi.mock("@/lib/auth/actions", () => ({
 	logout: () => mockLogout(),
 }));
 
+const mockSetActiveOrganization = vi.fn();
+vi.mock("@/lib/auth/organizations", () => ({
+	setActiveOrganization: (...args: unknown[]) =>
+		mockSetActiveOrganization(...args),
+}));
+
+const mockSetCurrentOrg = vi.fn();
+const mockUseOrgStore = vi.fn(() => ({
+	currentOrg: { id: "org-1", name: "Test Org", slug: "test-org" },
+	organizations: [
+		{ id: "org-1", name: "Test Org", slug: "test-org" },
+		{ id: "org-2", name: "Other Org", slug: "other-org" },
+	],
+	setCurrentOrg: mockSetCurrentOrg,
+	isLoading: false,
+}));
+vi.mock("@/lib/org-store", () => ({
+	useOrgStore: () => mockUseOrgStore(),
+}));
+
+vi.mock("@/hooks/use-toast", () => ({
+	useToast: () => ({
+		toast: vi.fn(),
+	}),
+}));
+
 const mockOnOrganizationChange = vi.fn();
 const mockOnCreateOrganization = vi.fn();
 
@@ -95,6 +121,10 @@ describe("AppSidebar", () => {
 			},
 			isPending: false,
 		});
+		mockSetActiveOrganization.mockResolvedValue({
+			data: { activeOrganizationId: "org-1" },
+			error: null,
+		});
 	});
 
 	it("renders sidebar with navigation items", () => {
@@ -146,7 +176,7 @@ describe("AppSidebar", () => {
 		const createOrgButton = screen.getByText("Create Org");
 		await user.click(createOrgButton);
 
-		expect(mockPush).toHaveBeenCalledWith("/settings/organizations/new");
+		expect(mockPush).toHaveBeenCalledWith("/team");
 	});
 
 	it("handles logout", async () => {
@@ -391,7 +421,6 @@ describe("AppSidebar", () => {
 
 	it("handles organization change callback", async () => {
 		const user = userEvent.setup();
-		const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
 		render(
 			<SidebarProvider>
@@ -402,12 +431,7 @@ describe("AppSidebar", () => {
 		const changeOrgButton = screen.getByText("Change Org");
 		await user.click(changeOrgButton);
 
-		// Should log organization change
-		expect(consoleSpy).toHaveBeenCalledWith(
-			"Switching to organization:",
-			"org-1",
-		);
-
-		consoleSpy.mockRestore();
+		// Should call setActiveOrganization API
+		expect(mockSetActiveOrganization).toHaveBeenCalledWith("org-1");
 	});
 });

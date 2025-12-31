@@ -12,6 +12,7 @@ import {
 	Database,
 	Clock,
 	Briefcase,
+	UsersRound,
 } from "lucide-react";
 
 import {
@@ -32,9 +33,12 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuthSession } from "@/lib/auth/useAuthSession";
 import { logout } from "@/lib/auth/actions";
+import { setActiveOrganization } from "@/lib/auth/organizations";
+import { useOrgStore, type Organization } from "@/lib/org-store";
+import { useToast } from "@/hooks/use-toast";
 import {
 	OrganizationSwitcher,
-	type Organization,
+	type Organization as LegacyOrganization,
 } from "./OrganizationSwitcher";
 import { NavUser } from "./NavUser";
 
@@ -86,7 +90,13 @@ const secondaryNavItems = [
 	},
 ];
 
-const bottomNavItems = [
+const orgNavItems = [
+	{
+		title: "Team",
+		href: "/team",
+		icon: UsersRound,
+		available: true,
+	},
 	{
 		title: "Configuración",
 		href: "/settings",
@@ -100,11 +110,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	const router = useRouter();
 	const { isMobile, setOpenMobile } = useSidebar();
 	const { data: session, isPending } = useAuthSession();
+	const { toast } = useToast();
 
-	// TODO: Replace with actual organization data from auth client
-	// This will be populated from better-auth organization plugin
-	const [organizations] = React.useState<Organization[]>([]);
-	const [activeOrganization] = React.useState<Organization | null>(null);
+	// Use org-store for organization state
+	const {
+		currentOrg,
+		organizations,
+		setCurrentOrg,
+		isLoading: orgLoading,
+	} = useOrgStore();
 
 	const handleLinkClick = React.useCallback(() => {
 		if (isMobile) {
@@ -116,16 +130,49 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 		await logout();
 	};
 
-	const handleOrganizationChange = async (org: Organization) => {
-		// TODO: Call better-auth setActiveOrganization and refresh JWT
-		console.log("Switching to organization:", org.id);
-		// This will trigger a session refresh with the new organization
+	const handleOrganizationChange = async (org: LegacyOrganization) => {
+		const result = await setActiveOrganization(org.id);
+		if (result.error) {
+			toast({
+				variant: "destructive",
+				title: "Failed to switch organization",
+				description: result.error,
+			});
+		} else {
+			const fullOrg = organizations.find((o) => o.id === org.id);
+			if (fullOrg) {
+				setCurrentOrg(fullOrg);
+				toast({
+					title: "Organization switched",
+					description: `${fullOrg.name} is now active.`,
+				});
+			}
+		}
 	};
 
 	const handleCreateOrganization = () => {
-		// TODO: Navigate to organization creation page or open modal
-		router.push("/settings/organizations/new");
+		// Navigate to team page where org creation dialog is available
+		router.push("/team");
 	};
+
+	// Convert org-store organizations to legacy format for OrganizationSwitcher
+	const legacyOrganizations: LegacyOrganization[] = organizations.map(
+		(org) => ({
+			id: org.id,
+			name: org.name,
+			slug: org.slug,
+			logo: org.logo ?? undefined,
+		}),
+	);
+
+	const legacyActiveOrg: LegacyOrganization | null = currentOrg
+		? {
+				id: currentOrg.id,
+				name: currentOrg.name,
+				slug: currentOrg.slug,
+				logo: currentOrg.logo ?? undefined,
+			}
+		: null;
 
 	const user = session?.user
 		? {
@@ -139,11 +186,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 		<Sidebar collapsible="icon" {...props}>
 			<SidebarHeader className="border-b border-sidebar-border">
 				<OrganizationSwitcher
-					organizations={organizations}
-					activeOrganization={activeOrganization}
+					organizations={legacyOrganizations}
+					activeOrganization={legacyActiveOrg}
 					onOrganizationChange={handleOrganizationChange}
 					onCreateOrganization={handleCreateOrganization}
-					isLoading={isPending}
+					isLoading={isPending || orgLoading}
 				/>
 			</SidebarHeader>
 
@@ -239,9 +286,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				<SidebarSeparator className="mt-auto" />
 
 				<SidebarGroup>
+					<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
+						Organization
+					</SidebarGroupLabel>
 					<SidebarGroupContent>
 						<SidebarMenu>
-							{bottomNavItems.map((item) => {
+							{orgNavItems.map((item) => {
 								const Icon = item.icon;
 								const isActive =
 									pathname === item.href ||
