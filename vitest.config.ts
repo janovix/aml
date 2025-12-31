@@ -46,6 +46,11 @@ export default defineConfig({
 				// Hooks with browser-only behavior difficult to test in jsdom
 				"src/hooks/useViewportHeight.ts",
 				"src/hooks/useJwt.ts",
+				// URL-based hooks heavily dependent on Next.js navigation - integration tested
+				"src/hooks/useUrlFilters.ts",
+				"src/hooks/useDataTableUrlFilters.ts",
+				"src/hooks/useOrgNavigation.ts",
+				"src/lib/navigation.ts",
 				// Test helpers themselves
 				"src/lib/testHelpers.ts",
 				// Barrel exports (index.ts) - re-exports only, no runtime logic

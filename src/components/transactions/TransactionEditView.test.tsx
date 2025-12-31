@@ -7,8 +7,11 @@ import { mockTransactions } from "@/data/mockTransactions";
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
 		push: vi.fn(),
+		replace: vi.fn(),
 	}),
-	usePathname: () => "/transactions/TRX-2024-001/edit",
+	usePathname: () => "/test-org/transactions/TRX-2024-001/edit",
+	useSearchParams: () => new URLSearchParams(),
+	useParams: () => ({ orgSlug: "test-org", id: "TRX-2024-001" }),
 }));
 
 vi.mock("@/hooks/use-toast", () => ({

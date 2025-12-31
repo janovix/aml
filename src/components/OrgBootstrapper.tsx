@@ -1,69 +1,103 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
+import { useParams } from "next/navigation";
 import { useOrgStore } from "@/lib/org-store";
 import { useAuthSession } from "@/lib/auth/useAuthSession";
 import {
-	createOrganization,
 	listMembers,
 	listOrganizations,
 	setActiveOrganization,
 } from "@/lib/auth/organizations";
 import { tokenCache } from "@/lib/auth/tokenCache";
 import type { Organization } from "@/lib/org-store";
-import { executeMutation } from "@/lib/mutations";
 import { toast } from "sonner";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Loader2, Building2 } from "lucide-react";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { PageHeroSkeleton } from "@/components/skeletons/page-hero-skeleton";
+import { TableSkeleton } from "@/components/skeletons/table-skeleton";
+
+// Must match the cookie name in sidebar.tsx
+const SIDEBAR_COOKIE_NAME = "sidebar_state";
+
+/**
+ * Read the sidebar state from the cookie (client-side only)
+ * Returns true if expanded, false if collapsed
+ */
+function getSidebarStateFromCookie(): boolean {
+	if (typeof document === "undefined") return true; // Default to expanded on SSR
+	const cookies = document.cookie.split(";");
+	for (const cookie of cookies) {
+		const [name, value] = cookie.trim().split("=");
+		if (name === SIDEBAR_COOKIE_NAME) {
+			return value !== "false";
+		}
+	}
+	return true; // Default to expanded if no cookie
+}
 
 /**
  * App skeleton that mimics the dashboard layout structure
- * Shows while bootstrapping organizations and syncing session
+ * Shows while loading organization data
+ * Uses standardized skeleton components to prevent layout jumping
+ * Respects the persisted sidebar state to prevent layout jumps
  */
 function AppSkeleton() {
+	// Read sidebar state from cookie to match the actual sidebar
+	const isSidebarExpanded = useMemo(() => getSidebarStateFromCookie(), []);
+
 	return (
 		<div className="flex h-screen w-full bg-background">
-			{/* Sidebar skeleton */}
-			<div className="hidden w-64 shrink-0 border-r bg-sidebar md:block">
+			{/* Sidebar skeleton - respects persisted collapsed/expanded state */}
+			<div
+				className="hidden shrink-0 border-r bg-sidebar md:block transition-[width] duration-200"
+				style={{ width: isSidebarExpanded ? "16rem" : "3rem" }}
+			>
 				<div className="flex h-full flex-col">
 					{/* Sidebar header */}
-					<div className="flex h-16 items-center gap-3 border-b px-4">
-						<Skeleton className="h-8 w-8 rounded-lg" />
-						<Skeleton className="h-5 w-28" />
+					<div className="flex h-16 items-center justify-center gap-3 border-b px-2">
+						<Skeleton className="h-8 w-8 shrink-0 rounded-lg" />
+						{isSidebarExpanded && <Skeleton className="h-5 w-28" />}
 					</div>
 
 					{/* Sidebar nav items */}
-					<div className="flex-1 space-y-2 p-4">
-						<Skeleton className="h-9 w-full rounded-lg" />
-						<Skeleton className="h-9 w-full rounded-lg" />
-						<Skeleton className="h-9 w-full rounded-lg" />
-						<Skeleton className="h-9 w-3/4 rounded-lg" />
-						<div className="pt-4">
-							<Skeleton className="h-4 w-20 mb-2" />
-							<Skeleton className="h-9 w-full rounded-lg" />
-							<Skeleton className="h-9 w-full rounded-lg mt-2" />
-						</div>
+					<div className="flex-1 space-y-2 p-2">
+						{isSidebarExpanded ? (
+							<>
+								<Skeleton className="h-9 w-full rounded-lg" />
+								<Skeleton className="h-9 w-full rounded-lg" />
+								<Skeleton className="h-9 w-full rounded-lg" />
+								<Skeleton className="h-9 w-3/4 rounded-lg" />
+								<div className="pt-4">
+									<Skeleton className="mb-2 h-4 w-20" />
+									<Skeleton className="h-9 w-full rounded-lg" />
+									<Skeleton className="mt-2 h-9 w-full rounded-lg" />
+								</div>
+							</>
+						) : (
+							<>
+								<Skeleton className="mx-auto h-9 w-9 rounded-lg" />
+								<Skeleton className="mx-auto h-9 w-9 rounded-lg" />
+								<Skeleton className="mx-auto h-9 w-9 rounded-lg" />
+								<Skeleton className="mx-auto h-9 w-9 rounded-lg" />
+							</>
+						)}
 					</div>
 
 					{/* Sidebar footer / user */}
-					<div className="border-t p-4">
-						<div className="flex items-center gap-3">
-							<Skeleton className="h-10 w-10 rounded-full" />
-							<div className="flex-1 space-y-1.5">
-								<Skeleton className="h-4 w-24" />
-								<Skeleton className="h-3 w-32" />
+					<div className="border-t p-2">
+						{isSidebarExpanded ? (
+							<div className="flex items-center gap-3 px-2">
+								<Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+								<div className="flex-1 space-y-1.5">
+									<Skeleton className="h-4 w-24" />
+									<Skeleton className="h-3 w-32" />
+								</div>
 							</div>
-						</div>
+						) : (
+							<div className="flex justify-center">
+								<Skeleton className="h-8 w-8 rounded-full" />
+							</div>
+						)}
 					</div>
 				</div>
 			</div>
@@ -78,57 +112,23 @@ function AppSkeleton() {
 					</div>
 				</header>
 
-				{/* Content skeleton */}
+				{/* Content skeleton - uses standardized components */}
 				<main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
-					{/* Page header */}
-					<div className="mb-6 space-y-2">
-						<Skeleton className="h-8 w-48" />
-						<Skeleton className="h-4 w-72" />
-					</div>
+					<div className="space-y-6">
+						{/* PageHero skeleton with stats */}
+						<PageHeroSkeleton
+							showStats={true}
+							showActions={true}
+							actionCount={1}
+						/>
 
-					{/* Stats cards */}
-					<div className="mb-8 grid gap-4 md:grid-cols-3">
-						{[1, 2, 3].map((i) => (
-							<div key={i} className="rounded-xl border bg-card p-6">
-								<Skeleton className="h-4 w-20 mb-2" />
-								<Skeleton className="h-8 w-16" />
-							</div>
-						))}
-					</div>
-
-					{/* Table skeleton */}
-					<div className="rounded-xl border bg-card">
-						{/* Table header */}
-						<div className="flex items-center justify-between border-b p-4">
-							<Skeleton className="h-9 w-64 rounded-md" />
-							<Skeleton className="h-9 w-24 rounded-md" />
-						</div>
-
-						{/* Table rows */}
-						<div className="divide-y">
-							{[1, 2, 3, 4, 5].map((i) => (
-								<div key={i} className="flex items-center gap-4 p-4">
-									<Skeleton className="h-5 w-24" />
-									<Skeleton className="h-5 w-32 flex-1" />
-									<Skeleton className="h-5 w-20" />
-									<Skeleton className="h-5 w-16" />
-									<Skeleton className="h-8 w-8 rounded-md" />
-								</div>
-							))}
-						</div>
+						{/* Table skeleton */}
+						<TableSkeleton rows={10} columns={5} />
 					</div>
 				</main>
 			</div>
 		</div>
 	);
-}
-
-function slugify(value: string) {
-	return value
-		.toLowerCase()
-		.trim()
-		.replace(/[^a-z0-9]+/g, "-")
-		.replace(/^-+|-+$/g, "");
 }
 
 interface OrgBootstrapperProps {
@@ -139,352 +139,142 @@ interface OrgBootstrapperProps {
 	};
 }
 
+/**
+ * OrgBootstrapper - Simplified organization context provider
+ *
+ * Responsibilities:
+ * 1. Sync current org to Zustand store based on URL org slug
+ * 2. Set activeOrganizationId in auth session when org is visited
+ * 3. Fetch members for the current org
+ * 4. Provide loading state while syncing
+ *
+ * Note: Org validation (access check) is handled by middleware.
+ * Note: Org selection UI is handled by the index page.
+ */
 export function OrgBootstrapper({
 	children,
 	initialOrganizations,
 }: OrgBootstrapperProps) {
 	const { data: session } = useAuthSession();
+	const params = useParams();
+	const urlOrgSlug = params?.orgSlug as string | undefined;
+
 	const {
 		currentOrg,
-		organizations,
 		setCurrentOrg,
 		setOrganizations,
 		setMembers,
 		setLoading,
-		setError,
-		isLoading,
-		error,
 		setCurrentUserId,
-		addOrganization,
 	} = useOrgStore();
-	// Initialize isBootstrapped to true if we have server-side data
-	const [isBootstrapped, setIsBootstrapped] = useState(
-		() => !!initialOrganizations,
-	);
-	// Track if the auth session has been synchronized with the selected organization
-	// This ensures the JWT will include the correct organizationId
-	const [isSessionSynced, setIsSessionSynced] = useState(false);
-	const [nameInput, setNameInput] = useState("");
-	const [slugInput, setSlugInput] = useState("");
-	const derivedSlug = useMemo(
-		() => slugify(slugInput || nameInput),
-		[nameInput, slugInput],
-	);
-	const [isCreating, setIsCreating] = useState(false);
-	const initializedRef = useRef(false);
-	const sessionSyncRef = useRef(false);
 
+	const [isReady, setIsReady] = useState(false);
+	const initRef = useRef(false);
+	const lastSyncedOrgRef = useRef<string | null | undefined>(null);
+
+	// Set current user ID from session
 	useEffect(() => {
 		if (session?.user?.id) {
 			setCurrentUserId(session.user.id);
 		}
 	}, [session?.user?.id, setCurrentUserId]);
 
-	// Track the last synced organization to detect changes
-	const lastSyncedOrgRef = useRef<string | null>(null);
-
-	// Synchronize the auth session with the selected organization
-	// This ensures the JWT will include the correct organizationId
+	// Initialize and sync org on mount or when URL org changes
 	useEffect(() => {
-		// Skip if no organization is selected
-		if (!currentOrg?.id) {
+		// Skip if no org slug in URL (should be handled by middleware/index)
+		if (!urlOrgSlug) {
+			setIsReady(true);
 			return;
 		}
 
-		// Skip if already synced with this organization
-		if (lastSyncedOrgRef.current === currentOrg.id && isSessionSynced) {
+		// Skip if already synced to this org
+		if (lastSyncedOrgRef.current === urlOrgSlug && isReady) {
 			return;
 		}
 
-		// Organization changed - need to re-sync
-		if (lastSyncedOrgRef.current !== currentOrg.id) {
-			setIsSessionSynced(false);
-		}
-
-		// Prevent concurrent syncs for the same org
-		if (sessionSyncRef.current) {
-			return;
-		}
-
-		sessionSyncRef.current = true;
-
-		async function syncSession() {
-			try {
-				// Clear token cache to ensure we get a fresh JWT after sync
-				tokenCache.clear();
-
-				// Update the auth session with the selected organization
-				const result = await setActiveOrganization(currentOrg!.id);
-
-				if (result.error) {
-					console.error(
-						"[OrgBootstrapper] Failed to sync organization:",
-						result.error,
-					);
-					// Don't block the app on sync failure - the user can still use the app
-					// and retry organization selection manually
-				}
-
-				lastSyncedOrgRef.current = currentOrg!.id;
-				setIsSessionSynced(true);
-			} catch (error) {
-				console.error("[OrgBootstrapper] Error syncing organization:", error);
-				// Still mark as synced to unblock the UI - errors will surface in API calls
-				lastSyncedOrgRef.current = currentOrg!.id;
-				setIsSessionSynced(true);
-			} finally {
-				sessionSyncRef.current = false;
-			}
-		}
-
-		syncSession();
-	}, [currentOrg?.id, isSessionSynced]);
-
-	// Synchronously initialize store with server-side data before paint
-	useLayoutEffect(() => {
-		if (initialOrganizations && !initializedRef.current) {
-			initializedRef.current = true;
-			const nextOrgs = initialOrganizations.organizations;
-			setOrganizations(nextOrgs);
-
-			// Validate persisted organization: check if it exists in the list from server
-			// This handles cases where: persisted org was deleted, user lost access, org disappeared
-			const persistedOrg = currentOrg;
-			const persistedOrgFromList = persistedOrg
-				? nextOrgs.find((org) => org.id === persistedOrg.id)
-				: null;
-
-			// Log if persisted org is no longer valid
-			if (persistedOrg && !persistedOrgFromList) {
-				console.warn(
-					`[OrgBootstrapper] Persisted organization "${persistedOrg.id}" is no longer accessible. Falling back to available organization.`,
-				);
-			}
-
-			// Use persisted org if available, otherwise fall back to server's active org
-			const active =
-				persistedOrgFromList ??
-				nextOrgs.find(
-					(org) => org.id === initialOrganizations.activeOrganizationId,
-				) ??
-				nextOrgs[0] ??
-				null;
-			setCurrentOrg(active ?? null);
-			setLoading(false);
-
-			// Fetch members asynchronously without blocking render
-			if (active) {
-				listMembers(active.id).then((membersResult) => {
-					if (membersResult.data) {
-						setMembers(membersResult.data);
-					} else if (membersResult.error) {
-						toast.error("Failed to load members", {
-							description: membersResult.error,
-						});
-					}
-				});
-			}
-		}
-	}, [
-		initialOrganizations,
-		setCurrentOrg,
-		setOrganizations,
-		setLoading,
-		setMembers,
-	]);
-
-	// Client-side fetch only when no initial data is provided
-	useEffect(() => {
-		// Skip if we have initial organizations (already handled by useLayoutEffect)
-		if (initialOrganizations) {
-			return;
-		}
-
-		let cancelled = false;
-		async function bootstrap() {
+		async function syncOrg() {
 			setLoading(true);
-			setError(null);
 
-			const result = await listOrganizations();
-			if (cancelled) return;
+			// Use initial data if available (first load)
+			let orgs: Organization[];
+			let activeOrgId: string | null = null;
 
-			if (result.error || !result.data) {
-				setError(result.error || "Failed to load organizations");
-				toast.error("Error loading organizations", {
-					description: result.error || "Please try again later.",
-				});
+			if (initialOrganizations && !initRef.current) {
+				initRef.current = true;
+				orgs = initialOrganizations.organizations;
+				activeOrgId = initialOrganizations.activeOrganizationId;
+				setOrganizations(orgs);
+			} else {
+				// Fetch organizations
+				const result = await listOrganizations();
+				if (result.error || !result.data) {
+					toast.error("Error loading organizations", {
+						description: result.error || "Please try again later.",
+					});
+					setLoading(false);
+					setIsReady(true);
+					return;
+				}
+				orgs = result.data.organizations;
+				activeOrgId = result.data.activeOrganizationId;
+				setOrganizations(orgs);
+			}
+
+			// Find the org matching the URL slug
+			const targetOrg = orgs.find((org) => org.slug === urlOrgSlug);
+
+			if (!targetOrg) {
+				// Middleware should have caught this, but handle gracefully
+				console.warn(`[OrgBootstrapper] Org "${urlOrgSlug}" not found`);
 				setLoading(false);
+				setIsReady(true);
 				return;
 			}
 
-			const nextOrgs = result.data.organizations;
-			setOrganizations(nextOrgs);
+			// Set as current org
+			setCurrentOrg(targetOrg);
 
-			// Validate persisted organization: check if it exists in the list from server
-			// This handles cases where: persisted org was deleted, user lost access, org disappeared
-			const persistedOrg = useOrgStore.getState().currentOrg;
-			const persistedOrgFromList = persistedOrg
-				? nextOrgs.find((org) => org.id === persistedOrg.id)
-				: null;
-
-			// Log if persisted org is no longer valid
-			if (persistedOrg && !persistedOrgFromList) {
-				console.warn(
-					`[OrgBootstrapper] Persisted organization "${persistedOrg.id}" is no longer accessible. Falling back to available organization.`,
-				);
-			}
-
-			// Use persisted org if available, otherwise fall back to server's active org
-			const active =
-				persistedOrgFromList ??
-				nextOrgs.find((org) => org.id === result.data?.activeOrganizationId) ??
-				nextOrgs[0] ??
-				null;
-			setCurrentOrg(active ?? null);
-
-			if (active) {
-				const membersResult = await listMembers(active.id);
-				if (!cancelled) {
-					if (membersResult.data) {
-						setMembers(membersResult.data);
-					} else if (membersResult.error) {
-						toast.error("Failed to load members", {
-							description: membersResult.error,
-						});
-					}
+			// Sync activeOrganizationId if different
+			if (activeOrgId !== targetOrg.id) {
+				tokenCache.clear();
+				const syncResult = await setActiveOrganization(targetOrg.id);
+				if (syncResult.error) {
+					console.error(
+						"[OrgBootstrapper] Failed to sync active org:",
+						syncResult.error,
+					);
 				}
 			}
 
-			setIsBootstrapped(true);
+			// Fetch members
+			const membersResult = await listMembers(targetOrg.id);
+			if (membersResult.data) {
+				setMembers(membersResult.data);
+			} else if (membersResult.error) {
+				toast.error("Failed to load team members", {
+					description: membersResult.error,
+				});
+			}
+
+			lastSyncedOrgRef.current = urlOrgSlug;
 			setLoading(false);
+			setIsReady(true);
 		}
 
-		bootstrap();
-		return () => {
-			cancelled = true;
-		};
+		syncOrg();
 	}, [
+		urlOrgSlug,
 		initialOrganizations,
 		setCurrentOrg,
-		setMembers,
 		setOrganizations,
-		setError,
+		setMembers,
 		setLoading,
+		isReady,
 	]);
 
-	const showLoading = useMemo(
-		() =>
-			isLoading ||
-			(!isBootstrapped && organizations.length === 0) ||
-			// Wait for session to be synced before rendering children
-			// This ensures the JWT will have the correct organizationId
-			(currentOrg?.id && !isSessionSynced),
-		[
-			isBootstrapped,
-			isLoading,
-			organizations.length,
-			currentOrg?.id,
-			isSessionSynced,
-		],
-	);
-
-	if (showLoading) {
+	// Show loading skeleton while syncing
+	if (!isReady || !currentOrg) {
 		return <AppSkeleton />;
-	}
-
-	if (!currentOrg || error) {
-		return (
-			<div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted/50 p-4">
-				<Card className="w-full max-w-md">
-					<CardHeader className="text-center">
-						<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-							<Building2 className="h-8 w-8 text-primary" />
-						</div>
-						<CardTitle className="text-2xl">
-							Create your first organization
-						</CardTitle>
-						<CardDescription>
-							{error ||
-								"You need at least one organization to continue. Create your first one to get started."}
-						</CardDescription>
-					</CardHeader>
-					<CardContent className="space-y-4">
-						<div className="space-y-2">
-							<label className="text-sm font-medium" htmlFor="org-name">
-								Name
-							</label>
-							<Input
-								id="org-name"
-								placeholder="My Organization"
-								value={nameInput}
-								onChange={(e) => setNameInput(e.target.value)}
-							/>
-						</div>
-						<div className="space-y-1">
-							<label className="text-sm font-medium" htmlFor="org-slug">
-								Slug (URL identifier)
-							</label>
-							<Input
-								id="org-slug"
-								placeholder="my-organization"
-								value={slugInput}
-								onChange={(e) => setSlugInput(e.target.value)}
-							/>
-							<p className="text-xs text-muted-foreground">
-								Final slug:{" "}
-								<span className="font-medium">{derivedSlug || "..."}</span>
-							</p>
-						</div>
-					</CardContent>
-					<CardFooter>
-						<Button
-							className="w-full"
-							onClick={async () => {
-								if (!nameInput || !derivedSlug) return;
-								setIsCreating(true);
-								try {
-									await executeMutation({
-										mutation: async () => {
-											const result = await createOrganization({
-												name: nameInput,
-												slug: derivedSlug,
-											});
-											if (result.error || !result.data) {
-												throw new Error(
-													result.error || "Failed to create organization",
-												);
-											}
-											return result.data;
-										},
-										loading: "Creating organization...",
-										success: (org) => `${org.name} is ready.`,
-										onSuccess: (org) => {
-											addOrganization(org);
-											setCurrentOrg(org);
-											setError(null);
-										},
-									});
-								} catch {
-									// Error is already handled by executeMutation via Sonner
-								} finally {
-									setIsCreating(false);
-								}
-							}}
-							disabled={!nameInput || !derivedSlug || isCreating}
-						>
-							{isCreating ? (
-								<>
-									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-									Creating...
-								</>
-							) : (
-								"Create organization"
-							)}
-						</Button>
-					</CardFooter>
-				</Card>
-			</div>
-		);
 	}
 
 	return <>{children}</>;

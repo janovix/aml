@@ -17,6 +17,8 @@ const mockRouter = {
 vi.mock("next/navigation", () => ({
 	usePathname: () => mockPathname(),
 	useRouter: () => mockRouter,
+	useSearchParams: () => new URLSearchParams(),
+	useParams: () => ({ orgSlug: "test-org" }),
 }));
 
 vi.mock("next-themes", () => ({
@@ -26,7 +28,7 @@ vi.mock("next-themes", () => ({
 	}),
 }));
 
-vi.mock("@algtools/ui", () => ({
+vi.mock("@/components/ThemeSwitcher", () => ({
 	ThemeSwitcher: () => <div data-testid="theme-switcher">Theme Switcher</div>,
 }));
 
@@ -71,9 +73,9 @@ describe("DashboardLayout", () => {
 			</DashboardLayout>,
 		);
 
-		// Check for main navigation items
-		const clientesLink = screen.getByRole("link", { name: /clientes/i });
-		expect(clientesLink).toBeInTheDocument();
+		// Check for main navigation items (may appear in both sidebar and breadcrumb)
+		const clientesLinks = screen.getAllByRole("link", { name: /clientes/i });
+		expect(clientesLinks.length).toBeGreaterThan(0);
 	});
 
 	it("renders sidebar trigger button", () => {
@@ -139,15 +141,19 @@ describe("DashboardLayout", () => {
 	});
 
 	it("highlights active navigation item", () => {
-		mockPathname.mockReturnValue("/clients");
+		mockPathname.mockReturnValue("/test-org/clients");
 		render(
 			<DashboardLayout>
 				<div>Test</div>
 			</DashboardLayout>,
 		);
 
-		const clientesLink = screen.getByRole("link", { name: /clientes/i });
-		expect(clientesLink).toHaveAttribute("data-active", "true");
+		// Find the sidebar link (the one with data-active attribute)
+		const clientesLinks = screen.getAllByRole("link", { name: /clientes/i });
+		const sidebarLink = clientesLinks.find(
+			(link) => link.getAttribute("data-active") !== null,
+		);
+		expect(sidebarLink).toHaveAttribute("data-active", "true");
 	});
 
 	it("renders sidebar logo", () => {

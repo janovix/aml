@@ -83,6 +83,14 @@ export interface DataTableProps<T> {
 	subtitle?: string;
 	/** Message to display when no results */
 	emptyMessage?: string;
+	/** Icon to display in empty state */
+	emptyIcon?: LucideIcon;
+	/** Label for the empty state action button */
+	emptyActionLabel?: string;
+	/** URL for the empty state action button */
+	emptyActionHref?: string;
+	/** Callback for the empty state action button (alternative to href) */
+	onEmptyAction?: () => void;
 	/** Callback when a row is clicked */
 	onRowClick?: (item: T) => void;
 	/** Render function for row actions */
@@ -133,6 +141,21 @@ export interface DataTableProps<T> {
 	hasMore?: boolean;
 	/** Whether currently loading more items (for infinite scroll) */
 	isLoadingMore?: boolean;
+
+	// URL persistence props
+
+	/** Initial filter state (from URL) */
+	initialFilters?: Record<string, string[]>;
+	/** Callback when filters change (for URL persistence) */
+	onFiltersChange?: (filters: Record<string, string[]>) => void;
+	/** Initial search query (from URL) */
+	initialSearch?: string;
+	/** Callback when search changes (for URL persistence) */
+	onSearchChange?: (search: string) => void;
+	/** Initial sort state (from URL) */
+	initialSort?: SortState;
+	/** Callback when sort changes (for URL persistence) */
+	onSortChange?: (sort: SortState) => void;
 }
 
 /**

@@ -9,8 +9,11 @@ const mockPush = vi.fn();
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
 		push: mockPush,
+		replace: vi.fn(),
 	}),
-	usePathname: () => `/clients/test-id`,
+	usePathname: () => `/test-org/clients/test-id`,
+	useSearchParams: () => new URLSearchParams(),
+	useParams: () => ({ orgSlug: "test-org", id: "test-id" }),
 }));
 
 describe("ClientDetailPageContent", () => {

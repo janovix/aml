@@ -21,7 +21,11 @@ const mockPush = vi.fn();
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
 		push: mockPush,
+		replace: vi.fn(),
 	}),
+	usePathname: () => "/test-org/reports",
+	useSearchParams: () => new URLSearchParams(),
+	useParams: () => ({ orgSlug: "test-org" }),
 }));
 
 describe("ReportsTable", () => {
@@ -281,7 +285,7 @@ describe("ReportsTable", () => {
 
 			await user.click(screen.getByText("Ver detalle"));
 
-			expect(mockPush).toHaveBeenCalledWith("/reports/RPT-001");
+			expect(mockPush).toHaveBeenCalledWith("/test-org/reports/RPT-001");
 		}
 	});
 
@@ -522,7 +526,7 @@ describe("ReportsTable", () => {
 		const newReportButton = screen.getByText("Nuevo Reporte");
 		await user.click(newReportButton);
 
-		expect(mockPush).toHaveBeenCalledWith("/reports/new");
+		expect(mockPush).toHaveBeenCalledWith("/test-org/reports/new");
 	});
 
 	it("shows and can click 'Generar reporte' option for DRAFT status", async () => {

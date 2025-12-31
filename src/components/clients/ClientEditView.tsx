@@ -2,29 +2,25 @@
 
 import type React from "react";
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import {
-	Badge,
-	Button,
-	Card,
-	CardContent,
-	CardHeader,
-	CardTitle,
-	Input,
-	Label,
-	Separator,
-	Textarea,
-} from "@algtools/ui";
-import { ArrowLeft, Save } from "lucide-react";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Save, User, Lock, Hash } from "lucide-react";
+import { PageHero } from "@/components/page-hero";
+import { PageHeroSkeleton } from "@/components/skeletons";
 import type {
 	PersonType,
 	ClientCreateRequest,
 	Client,
 } from "../../types/client";
 import { useToast } from "../../hooks/use-toast";
-import { getClientByRfc, updateClient } from "../../lib/api/clients";
+import { getClientById, updateClient } from "../../lib/api/clients";
 import { executeMutation } from "../../lib/mutations";
-import { getPersonTypeDisplay } from "../../lib/person-type";
+import { getPersonTypeStyle } from "../../lib/person-type-icon";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
 import { getFieldDescription } from "../../lib/field-descriptions";
 import { CatalogSelector } from "../catalogs/CatalogSelector";
@@ -67,7 +63,7 @@ interface ClientEditViewProps {
 export function ClientEditView({
 	clientId,
 }: ClientEditViewProps): React.JSX.Element {
-	const router = useRouter();
+	const { navigateTo } = useOrgNavigation();
 	const { toast } = useToast();
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
@@ -119,8 +115,8 @@ export function ClientEditView({
 		const fetchClient = async () => {
 			try {
 				setIsLoading(true);
-				const data = await getClientByRfc({
-					rfc: clientId,
+				const data = await getClientById({
+					id: clientId,
 				});
 				setClient(data);
 
@@ -264,13 +260,13 @@ export function ClientEditView({
 			await executeMutation({
 				mutation: () =>
 					updateClient({
-						rfc: clientId,
+						id: clientId,
 						input: request,
 					}),
 				loading: "Actualizando cliente...",
 				success: "Cliente actualizado exitosamente",
 				onSuccess: () => {
-					router.push(`/clients/${clientId}`);
+					navigateTo(`/clients/${clientId}`);
 				},
 			});
 		} catch (error) {
@@ -282,24 +278,36 @@ export function ClientEditView({
 	};
 
 	const handleCancel = (): void => {
-		router.push(`/clients/${clientId}`);
+		navigateTo(`/clients/${clientId}`);
 	};
 
 	if (isLoading) {
 		return (
 			<div className="space-y-6">
-				<div className="flex items-center gap-4">
-					<Button variant="ghost" size="icon" onClick={handleCancel}>
-						<ArrowLeft className="h-5 w-5" />
-					</Button>
-					<div>
-						<h1 className="text-3xl font-bold tracking-tight">
-							Editar Cliente
-						</h1>
-						<p className="text-muted-foreground">
-							Cargando información del cliente...
-						</p>
-					</div>
+				<PageHeroSkeleton
+					showStats={false}
+					showBackButton={true}
+					actionCount={2}
+				/>
+				{/* Form skeleton */}
+				<div className="max-w-4xl space-y-6">
+					{[1, 2, 3].map((i) => (
+						<Card key={i}>
+							<CardHeader>
+								<div className="h-6 w-48 bg-accent animate-pulse rounded" />
+							</CardHeader>
+							<CardContent>
+								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+									{[1, 2, 3, 4].map((j) => (
+										<div key={j} className="space-y-2">
+											<div className="h-4 w-24 bg-accent animate-pulse rounded" />
+											<div className="h-10 w-full bg-accent animate-pulse rounded" />
+										</div>
+									))}
+								</div>
+							</CardContent>
+						</Card>
+					))}
 				</div>
 			</div>
 		);
@@ -308,72 +316,47 @@ export function ClientEditView({
 	if (!client) {
 		return (
 			<div className="space-y-6">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="icon"
-						onClick={() => router.push("/clients")}
-					>
-						<ArrowLeft className="h-5 w-5" />
-					</Button>
-					<div>
-						<h1 className="text-3xl font-bold tracking-tight">
-							Cliente no encontrado
-						</h1>
-						<p className="text-muted-foreground">
-							El cliente con ID {clientId} no existe.
-						</p>
-					</div>
-				</div>
+				<PageHero
+					title="Cliente no encontrado"
+					subtitle={`El cliente con ID ${clientId} no existe`}
+					icon={User}
+					backButton={{
+						label: "Volver a Clientes",
+						onClick: () => navigateTo("/clients"),
+					}}
+				/>
 			</div>
 		);
 	}
 
 	const lockedPersonType = formData.personType ?? client.personType;
-	const { label: personTypeLabel, helper: personTypeHelper } =
-		getPersonTypeDisplay(lockedPersonType);
+	const personTypeStyle = getPersonTypeStyle(lockedPersonType);
+	const PersonTypeIcon = personTypeStyle.icon;
 
 	return (
 		<div className="space-y-6">
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="sm"
-						className="gap-2"
-						onClick={handleCancel}
-					>
-						<ArrowLeft className="h-4 w-4" />
-						<span className="hidden sm:inline">Volver</span>
-					</Button>
-					<Separator orientation="vertical" className="hidden h-6 sm:block" />
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							Editar Cliente
-						</h1>
-						<p className="text-sm text-muted-foreground">
-							Modificar información del cliente
-						</p>
-					</div>
-				</div>
-				<div className="flex items-center gap-2">
-					<Button variant="outline" size="sm" onClick={handleCancel}>
-						Cancelar
-					</Button>
-					<Button
-						size="sm"
-						className="gap-2"
-						type="button"
-						onClick={handleToolbarSubmit}
-						disabled={isSubmitting}
-					>
-						<Save className="h-4 w-4" />
-						<span className="hidden sm:inline">
-							{isSubmitting ? "Guardando..." : "Guardar Cambios"}
-						</span>
-					</Button>
-				</div>
-			</div>
+			<PageHero
+				title="Editar Cliente"
+				subtitle="Modificar información del cliente"
+				icon={User}
+				backButton={{
+					label: "Volver",
+					onClick: handleCancel,
+				}}
+				actions={[
+					{
+						label: isSubmitting ? "Guardando..." : "Guardar Cambios",
+						icon: Save,
+						onClick: handleToolbarSubmit,
+						disabled: isSubmitting,
+					},
+					{
+						label: "Cancelar",
+						onClick: handleCancel,
+						variant: "outline",
+					},
+				]}
+			/>
 
 			<form
 				id="client-edit-form"
@@ -389,24 +372,52 @@ export function ClientEditView({
 					className="sr-only"
 				/>
 				<Card>
-					<CardHeader>
-						<CardTitle className="text-lg">Tipo de Persona</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-4">
-						<div className="space-y-2">
-							<Label className="text-sm font-medium leading-none">Tipo *</Label>
-							<div className="flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-muted bg-muted/60 p-3">
-								<Badge
-									variant="outline"
-									className="px-3 py-1 text-sm font-medium"
+					<CardContent className="p-6">
+						<div className="flex flex-col sm:flex-row sm:items-center gap-6">
+							{/* Person Type Section - Locked */}
+							<div
+								className={`flex items-center gap-4 rounded-xl border ${personTypeStyle.borderColor} ${personTypeStyle.bgColor} p-4 sm:min-w-[240px]`}
+							>
+								<div
+									className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg ${personTypeStyle.bgColor}`}
 								>
-									{personTypeLabel}
-								</Badge>
-								<p className="text-sm text-muted-foreground">
-									{personTypeHelper}
-								</p>
+									<PersonTypeIcon
+										className={`h-6 w-6 ${personTypeStyle.iconColor}`}
+									/>
+								</div>
+								<div className="min-w-0 flex-1">
+									<div className="flex items-center gap-2">
+										<p className={`font-semibold ${personTypeStyle.iconColor}`}>
+											{personTypeStyle.label}
+										</p>
+										<Lock className="h-3.5 w-3.5 text-muted-foreground" />
+									</div>
+									<p className="text-xs text-muted-foreground">
+										{personTypeStyle.description}
+									</p>
+								</div>
+							</div>
+
+							{/* RFC Section */}
+							<div className="flex items-center gap-4 rounded-xl border border-border bg-muted/30 p-4 flex-1">
+								<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-muted">
+									<Hash className="h-6 w-6 text-muted-foreground" />
+								</div>
+								<div className="min-w-0 flex-1">
+									<p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+										RFC
+									</p>
+									<p className="font-mono text-lg font-semibold tracking-wide">
+										{formData.rfc}
+									</p>
+								</div>
 							</div>
 						</div>
+						<p className="mt-4 text-xs text-muted-foreground flex items-center gap-1.5">
+							<Lock className="h-3 w-3" />
+							El tipo de persona no se puede modificar después de crear el
+							cliente.
+						</p>
 					</CardContent>
 				</Card>
 

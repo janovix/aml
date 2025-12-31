@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { Info } from "lucide-react";
-import { Label } from "@algtools/ui";
+import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip";
 
 interface LabelWithInfoProps {

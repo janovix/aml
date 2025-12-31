@@ -2,24 +2,28 @@
 
 import type React from "react";
 import { useState, useEffect } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
+import { Button } from "@/components/ui/button";
 import {
-	Button,
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-	Input,
-	Label,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-	Separator,
-} from "@algtools/ui";
-import { ArrowLeft, Save, Plus, Trash2 } from "lucide-react";
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Save, Plus, Trash2, ReceiptText } from "lucide-react";
+import { PageHero } from "@/components/page-hero";
 import { toast } from "sonner";
 import { createTransaction } from "../../lib/api/transactions";
 import { executeMutation } from "../../lib/mutations";
@@ -57,7 +61,7 @@ interface TransactionFormData {
 }
 
 export function TransactionCreateView(): React.JSX.Element {
-	const router = useRouter();
+	const { navigateTo, orgPath } = useOrgNavigation();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 	const [isSaving, setIsSaving] = useState(false);
@@ -96,7 +100,7 @@ export function TransactionCreateView(): React.JSX.Element {
 
 	const handleCreateNewClient = (): void => {
 		const returnUrl = encodeURIComponent(pathname);
-		router.push(`/clients/new?returnUrl=${returnUrl}`);
+		navigateTo(`/clients/new?returnUrl=${returnUrl}`);
 	};
 
 	const handleInputChange = (
@@ -258,7 +262,7 @@ export function TransactionCreateView(): React.JSX.Element {
 				loading: "Creando transacción...",
 				success: "Transacción creada exitosamente",
 				onSuccess: () => {
-					router.push("/transactions");
+					navigateTo("/transactions");
 				},
 			});
 		} catch (error) {
@@ -270,49 +274,37 @@ export function TransactionCreateView(): React.JSX.Element {
 	};
 
 	const handleCancel = (): void => {
-		router.push("/transactions");
+		navigateTo("/transactions");
 	};
 
 	return (
 		<div className="space-y-6">
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="sm"
-						className="gap-2"
-						onClick={handleCancel}
-					>
-						<ArrowLeft className="h-4 w-4" />
-						<span className="hidden sm:inline">Volver</span>
-					</Button>
-					<Separator orientation="vertical" className="hidden h-6 sm:block" />
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							Nueva Transacción
-						</h1>
-						<p className="text-sm text-muted-foreground">
-							Registrar una nueva transacción
-						</p>
-					</div>
-				</div>
-				<div className="flex items-center gap-2">
-					<Button variant="outline" size="sm" onClick={handleCancel}>
-						Cancelar
-					</Button>
-					<Button
-						size="sm"
-						className="gap-2"
-						onClick={handleSubmit}
-						disabled={isSaving}
-					>
-						<Save className="h-4 w-4" />
-						<span className="hidden sm:inline">
-							{isSaving ? "Creando..." : "Crear Transacción"}
-						</span>
-					</Button>
-				</div>
-			</div>
+			<PageHero
+				title="Nueva Transacción"
+				subtitle="Registrar una nueva transacción"
+				icon={ReceiptText}
+				backButton={{
+					label: "Volver",
+					onClick: handleCancel,
+				}}
+				actions={[
+					{
+						label: isSaving ? "Creando..." : "Crear Transacción",
+						icon: Save,
+						onClick: () => {
+							void handleSubmit({
+								preventDefault: () => {},
+							} as React.FormEvent);
+						},
+						disabled: isSaving,
+					},
+					{
+						label: "Cancelar",
+						onClick: handleCancel,
+						variant: "outline",
+					},
+				]}
+			/>
 
 			<form onSubmit={handleSubmit} className="space-y-6">
 				<Card>

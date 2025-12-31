@@ -13,20 +13,24 @@ import {
 	Flag,
 	FileText,
 	Trash2,
+	UserPlus,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import {
-	Button,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
 	AlertDialog,
 	AlertDialogAction,
 	AlertDialogCancel,
@@ -35,8 +39,10 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-} from "@algtools/ui";
+} from "@/components/ui/alert-dialog";
 import { useJwt } from "@/hooks/useJwt";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
+import { useDataTableUrlFilters } from "@/hooks/useDataTableUrlFilters";
 import { executeMutation } from "@/lib/mutations";
 import { toast } from "sonner";
 import { useOrgStore } from "@/lib/org-store";
@@ -77,10 +83,14 @@ const personTypeConfig: Record<
 	},
 };
 
+// Filter IDs for URL persistence
+const CLIENT_FILTER_IDS = ["personType", "stateCode"];
+
 export function ClientsTable(): React.ReactElement {
-	const router = useRouter();
+	const { navigateTo, orgPath } = useOrgNavigation();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const { currentOrg } = useOrgStore();
+	const urlFilters = useDataTableUrlFilters(CLIENT_FILTER_IDS);
 	const [clients, setClients] = useState<Client[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -191,15 +201,15 @@ export function ClientsTable(): React.ReactElement {
 		if (!clientToDelete) return;
 
 		const clientName = getClientDisplayName(clientToDelete);
-		const clientRfc = clientToDelete.rfc;
+		const clientId = clientToDelete.id;
 
 		try {
 			await executeMutation({
-				mutation: () => deleteClient({ rfc: clientRfc, jwt: jwt ?? undefined }),
+				mutation: () => deleteClient({ id: clientId, jwt: jwt ?? undefined }),
 				loading: "Eliminando cliente...",
 				success: `${clientName} ha sido eliminado del sistema.`,
 				onSuccess: () => {
-					setClients(clients.filter((c) => c.rfc !== clientRfc));
+					setClients(clients.filter((c) => c.id !== clientId));
 				},
 			});
 		} catch {
@@ -239,7 +249,7 @@ export function ClientsTable(): React.ReactElement {
 							</TooltipProvider>
 							<div className="flex flex-col min-w-0">
 								<Link
-									href={`/clients/${item.rfc}`}
+									href={orgPath(`/clients/${item.id}`)}
 									className="font-medium text-foreground hover:text-primary truncate"
 									onClick={(e) => e.stopPropagation()}
 								>
@@ -372,14 +382,14 @@ export function ClientsTable(): React.ReactElement {
 			<DropdownMenuContent align="end" className="w-48">
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => router.push(`/clients/${item.rfc}`)}
+					onClick={() => navigateTo(`/clients/${item.id}`)}
 				>
 					<Eye className="h-4 w-4" />
 					Ver detalle
 				</DropdownMenuItem>
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => router.push(`/clients/${item.rfc}/edit`)}
+					onClick={() => navigateTo(`/clients/${item.id}/edit`)}
 				>
 					<Edit className="h-4 w-4" />
 					Editar cliente
@@ -393,12 +403,12 @@ export function ClientsTable(): React.ReactElement {
 				</DropdownMenuItem>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem
-					onClick={() => router.push(`/transactions?clientId=${item.rfc}`)}
+					onClick={() => navigateTo(`/transactions?clientId=${item.id}`)}
 				>
 					Ver transacciones
 				</DropdownMenuItem>
 				<DropdownMenuItem
-					onClick={() => router.push(`/alerts?clientId=${item.rfc}`)}
+					onClick={() => navigateTo(`/alerts?clientId=${item.id}`)}
 				>
 					Ver alertas
 				</DropdownMenuItem>
@@ -438,6 +448,9 @@ export function ClientsTable(): React.ReactElement {
 				]}
 				searchPlaceholder="Buscar por nombre, RFC, email..."
 				emptyMessage="No se encontraron clientes"
+				emptyIcon={Users}
+				emptyActionLabel="Crear Cliente"
+				emptyActionHref={orgPath("/clients/new")}
 				loadingMessage="Cargando clientes..."
 				isLoading={isLoading}
 				selectable
@@ -447,6 +460,13 @@ export function ClientsTable(): React.ReactElement {
 				onLoadMore={handleLoadMore}
 				hasMore={hasMore}
 				isLoadingMore={isLoadingMore}
+				// URL persistence
+				initialFilters={urlFilters.initialFilters}
+				initialSearch={urlFilters.initialSearch}
+				initialSort={urlFilters.initialSort}
+				onFiltersChange={urlFilters.onFiltersChange}
+				onSearchChange={urlFilters.onSearchChange}
+				onSortChange={urlFilters.onSortChange}
 			/>
 
 			<AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

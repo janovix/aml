@@ -14,15 +14,18 @@ import type { Client, PersonType } from "../../types/client";
 
 const mockPush = vi.fn();
 const mockToast = vi.fn();
-const mockGetClientByRfc = vi.fn();
+const mockGetClientById = vi.fn();
 const mockUpdateClient = vi.fn();
 const originalRequestSubmit = HTMLFormElement.prototype.requestSubmit;
 
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
 		push: mockPush,
+		replace: vi.fn(),
 	}),
-	usePathname: () => "/clients/1/edit",
+	usePathname: () => "/test-org/clients/1/edit",
+	useSearchParams: () => new URLSearchParams(),
+	useParams: () => ({ orgSlug: "test-org", id: "1" }),
 }));
 
 vi.mock("../../hooks/use-toast", () => ({
@@ -42,7 +45,7 @@ vi.mock("../../hooks/useJwt", () => ({
 }));
 
 vi.mock("../../lib/api/clients", () => ({
-	getClientByRfc: (...args: unknown[]) => mockGetClientByRfc(...args),
+	getClientById: (...args: unknown[]) => mockGetClientById(...args),
 	updateClient: (...args: unknown[]) => mockUpdateClient(...args),
 }));
 
@@ -87,17 +90,17 @@ describe("ClientEditView", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockGetClientByRfc.mockReset();
+		mockGetClientById.mockReset();
 		mockUpdateClient.mockReset();
 		mockToast.mockReset();
 		mockPush.mockReset();
 	});
 
-	it("renders edit client header", () => {
-		mockGetClientByRfc.mockResolvedValue(buildClient());
+	it("renders edit client header", async () => {
+		mockGetClientById.mockResolvedValue(buildClient());
 		mockUpdateClient.mockResolvedValue(buildClient());
 		render(<ClientEditView clientId="1" />);
-		expect(screen.getByText("Editar Cliente")).toBeInTheDocument();
+		expect(await screen.findByText("Editar Cliente")).toBeInTheDocument();
 	});
 
 	it("submits updates keeping the loaded person type for moral clients", async () => {
@@ -105,11 +108,11 @@ describe("ClientEditView", () => {
 			personType: "moral",
 			businessName: "Visionaria S.A.",
 		});
-		mockGetClientByRfc.mockResolvedValue(client);
+		mockGetClientById.mockResolvedValue(client);
 		mockUpdateClient.mockResolvedValue(client);
 
 		const user = userEvent.setup();
-		render(<ClientEditView clientId={client.rfc} />);
+		render(<ClientEditView clientId={client.id} />);
 
 		await screen.findByDisplayValue("Visionaria S.A.");
 		const saveButtons = screen.getAllByRole("button", {
@@ -119,7 +122,7 @@ describe("ClientEditView", () => {
 
 		await waitFor(() => expect(mockUpdateClient).toHaveBeenCalled());
 		expect(mockUpdateClient).toHaveBeenCalledWith({
-			rfc: client.rfc,
+			id: client.id,
 			input: expect.objectContaining({
 				personType: "moral",
 				businessName: "Visionaria S.A.",
@@ -138,11 +141,11 @@ describe("ClientEditView", () => {
 			curp: "LOGA900501MDFRRN09",
 			businessName: null,
 		});
-		mockGetClientByRfc.mockResolvedValue(client);
+		mockGetClientById.mockResolvedValue(client);
 		mockUpdateClient.mockResolvedValue(client);
 
 		const user = userEvent.setup();
-		render(<ClientEditView clientId={client.rfc} />);
+		render(<ClientEditView clientId={client.id} />);
 
 		// Wait for form to load
 		await screen.findByDisplayValue("Ana");
@@ -175,11 +178,11 @@ describe("ClientEditView", () => {
 			personType: undefined as unknown as PersonType,
 			businessName: "Sin Tipo",
 		});
-		mockGetClientByRfc.mockResolvedValue(client);
+		mockGetClientById.mockResolvedValue(client);
 		mockUpdateClient.mockResolvedValue(client);
 
 		const user = userEvent.setup();
-		render(<ClientEditView clientId={client.rfc} />);
+		render(<ClientEditView clientId={client.id} />);
 
 		await screen.findByText("Editar Cliente");
 		const saveButtons = screen.getAllByRole("button", {

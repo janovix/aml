@@ -1,18 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
-	Button,
-	Card,
-	CardContent,
-	CardHeader,
-	CardTitle,
-	Badge,
-	Separator,
-} from "@algtools/ui";
-import {
-	ArrowLeft,
 	Edit,
 	Flag,
 	FileText,
@@ -22,20 +14,24 @@ import {
 	Mail,
 	Calendar,
 	User,
+	Hash,
 } from "lucide-react";
 import type { Client } from "../../types/client";
 import { getClientDisplayName } from "../../types/client";
-import { getClientByRfc } from "../../lib/api/clients";
+import { getClientById } from "../../lib/api/clients";
 import { useToast } from "../../hooks/use-toast";
+import { PageHero } from "@/components/page-hero";
+import { PageHeroSkeleton } from "@/components/skeletons";
+import { getPersonTypeStyle } from "../../lib/person-type-icon";
 
 interface ClientDetailsViewProps {
-	clientId: string; // RFC is passed as clientId
+	clientId: string; // Client ID
 }
 
 export function ClientDetailsView({
 	clientId,
 }: ClientDetailsViewProps): React.JSX.Element {
-	const router = useRouter();
+	const { navigateTo } = useOrgNavigation();
 	const { toast } = useToast();
 	const [client, setClient] = useState<Client | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
@@ -44,8 +40,8 @@ export function ClientDetailsView({
 		const fetchClient = async () => {
 			try {
 				setIsLoading(true);
-				const data = await getClientByRfc({
-					rfc: clientId,
+				const data = await getClientById({
+					id: clientId,
 				});
 				setClient(data);
 			} catch (error) {
@@ -65,21 +61,30 @@ export function ClientDetailsView({
 	if (isLoading) {
 		return (
 			<div className="space-y-6">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="sm"
-						className="gap-2"
-						onClick={() => router.push("/clients")}
-					>
-						<ArrowLeft className="h-4 w-4" />
-						Volver
-					</Button>
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							Cargando cliente...
-						</h1>
-					</div>
+				<PageHeroSkeleton
+					showStats={false}
+					showBackButton={true}
+					actionCount={3}
+				/>
+				{/* Content skeleton */}
+				<div className="space-y-6">
+					{[1, 2, 3, 4].map((i) => (
+						<Card key={i}>
+							<CardHeader>
+								<div className="h-6 w-48 bg-accent animate-pulse rounded" />
+							</CardHeader>
+							<CardContent>
+								<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+									{[1, 2].map((j) => (
+										<div key={j} className="space-y-2">
+											<div className="h-4 w-24 bg-accent animate-pulse rounded" />
+											<div className="h-5 w-40 bg-accent animate-pulse rounded" />
+										</div>
+									))}
+								</div>
+							</CardContent>
+						</Card>
+					))}
 				</div>
 			</div>
 		);
@@ -88,22 +93,15 @@ export function ClientDetailsView({
 	if (!client) {
 		return (
 			<div className="space-y-6">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="sm"
-						className="gap-2"
-						onClick={() => router.push("/clients")}
-					>
-						<ArrowLeft className="h-4 w-4" />
-						Volver
-					</Button>
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							Cliente no encontrado
-						</h1>
-					</div>
-				</div>
+				<PageHero
+					title="Cliente no encontrado"
+					subtitle={`El cliente con ID ${clientId} no existe`}
+					icon={User}
+					backButton={{
+						label: "Volver a Clientes",
+						onClick: () => navigateTo("/clients"),
+					}}
+				/>
 			</div>
 		);
 	}
@@ -118,66 +116,96 @@ export function ClientDetailsView({
 
 	return (
 		<div className="space-y-6">
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="sm"
-						className="gap-2"
-						onClick={() => router.push("/clients")}
-					>
-						<ArrowLeft className="h-4 w-4" />
-						<span className="hidden sm:inline">Volver</span>
-					</Button>
-					<Separator orientation="vertical" className="hidden h-6 sm:block" />
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							Detalles del Cliente
-						</h1>
-						<p className="text-sm text-muted-foreground">
-							{getClientDisplayName(client)}
-						</p>
-					</div>
-				</div>
-				<div className="flex items-center gap-2">
-					<Button variant="outline" size="sm" className="gap-2 hidden sm:flex">
-						<FileText className="h-4 w-4" />
-						Generar Reporte
-					</Button>
-					<Button variant="outline" size="sm" className="gap-2 hidden sm:flex">
-						<Flag className="h-4 w-4" />
-						Marcar Sospechoso
-					</Button>
-					<Button
-						size="sm"
-						className="gap-2"
-						onClick={() => router.push(`/clients/${clientId}/edit`)}
-					>
-						<Edit className="h-4 w-4" />
-						<span className="hidden sm:inline">Editar</span>
-					</Button>
-				</div>
-			</div>
+			<PageHero
+				title="Detalles del Cliente"
+				subtitle={getClientDisplayName(client)}
+				icon={client.personType === "physical" ? User : Building2}
+				backButton={{
+					label: "Volver a Clientes",
+					onClick: () => navigateTo("/clients"),
+				}}
+				actions={[
+					{
+						label: "Editar",
+						icon: Edit,
+						onClick: () => navigateTo(`/clients/${clientId}/edit`),
+					},
+					{
+						label: "Generar Reporte",
+						icon: FileText,
+						onClick: () => {
+							toast({
+								title: "Próximamente",
+								description: "Función en desarrollo",
+							});
+						},
+						variant: "outline",
+					},
+					{
+						label: "Marcar Sospechoso",
+						icon: Flag,
+						onClick: () => {
+							toast({
+								title: "Próximamente",
+								description: "Función en desarrollo",
+							});
+						},
+						variant: "outline",
+					},
+				]}
+			/>
 
 			<div className="space-y-6">
-				<Card>
-					<CardHeader>
-						<CardTitle className="text-lg">Información General</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-6">
-						<div className="flex flex-wrap gap-4">
-							<div className="flex items-center gap-2">
-								<span className="text-sm text-muted-foreground">RFC:</span>
-								<Badge
-									variant="outline"
-									className="font-medium text-sm font-mono"
-								>
-									{client.rfc}
-								</Badge>
-							</div>
-						</div>
-					</CardContent>
-				</Card>
+				{/* Información General Card - Enhanced with Person Type */}
+				{(() => {
+					const personTypeStyle = getPersonTypeStyle(client.personType);
+					const PersonTypeIcon = personTypeStyle.icon;
+					return (
+						<Card>
+							<CardContent className="p-6">
+								<div className="flex flex-col sm:flex-row sm:items-center gap-6">
+									{/* Person Type Section */}
+									<div
+										className={`flex items-center gap-4 rounded-xl border ${personTypeStyle.borderColor} ${personTypeStyle.bgColor} p-4 sm:min-w-[200px]`}
+									>
+										<div
+											className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg ${personTypeStyle.bgColor}`}
+										>
+											<PersonTypeIcon
+												className={`h-6 w-6 ${personTypeStyle.iconColor}`}
+											/>
+										</div>
+										<div className="min-w-0">
+											<p
+												className={`font-semibold ${personTypeStyle.iconColor}`}
+											>
+												{personTypeStyle.label}
+											</p>
+											<p className="text-xs text-muted-foreground">
+												{personTypeStyle.description}
+											</p>
+										</div>
+									</div>
+
+									{/* RFC Section */}
+									<div className="flex items-center gap-4 rounded-xl border border-border bg-muted/30 p-4 flex-1">
+										<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-muted">
+											<Hash className="h-6 w-6 text-muted-foreground" />
+										</div>
+										<div className="min-w-0">
+											<p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+												RFC
+											</p>
+											<p className="font-mono text-lg font-semibold tracking-wide">
+												{client.rfc}
+											</p>
+										</div>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+					);
+				})()}
 
 				<Card>
 					<CardHeader>

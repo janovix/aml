@@ -12,7 +12,10 @@ vi.mock("next/navigation", () => ({
 	usePathname: () => mockUsePathname(),
 	useRouter: () => ({
 		push: mockPush,
+		replace: vi.fn(),
 	}),
+	useSearchParams: () => new URLSearchParams(),
+	useParams: () => ({ orgSlug: "test-org" }),
 }));
 
 const mockUseAuthSession = vi.fn(() => ({

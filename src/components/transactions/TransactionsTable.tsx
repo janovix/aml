@@ -12,28 +12,35 @@ import {
 	Eye,
 	Edit,
 	FileText,
+	Receipt,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
+import { useDataTableUrlFilters } from "@/hooks/useDataTableUrlFilters";
+
+// Filter IDs for URL persistence
+const TRANSACTION_FILTER_IDS = ["operationType", "vehicleType", "currency"];
+import { Button } from "@/components/ui/button";
 import {
-	Button,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "@algtools/ui";
+} from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useOrgStore } from "@/lib/org-store";
 import {
 	listTransactions,
 	type ListTransactionsOptions,
 } from "@/lib/api/transactions";
-import { getClientByRfc } from "@/lib/api/clients";
+import { getClientById } from "@/lib/api/clients";
 import type { Transaction, TransactionVehicleType } from "@/types/transaction";
 import type { Client } from "@/types/client";
 import { getClientDisplayName } from "@/types/client";
@@ -99,9 +106,10 @@ interface TransactionsTableProps {
 export function TransactionsTable({
 	filters,
 }: TransactionsTableProps = {}): React.ReactElement {
-	const router = useRouter();
+	const { navigateTo, orgPath } = useOrgNavigation();
 	const { toast } = useToast();
 	const { currentOrg } = useOrgStore();
+	const urlFilters = useDataTableUrlFilters(TRANSACTION_FILTER_IDS);
 	const [transactions, setTransactions] = useState<Transaction[]>([]);
 	const [clients, setClients] = useState<Map<string, Client>>(new Map());
 	const [isLoading, setIsLoading] = useState(true);
@@ -134,7 +142,7 @@ export function TransactionsTable({
 			// Fetch only missing clients in parallel
 			const clientPromises = missingClientIds.map(async (clientId) => {
 				try {
-					const client = await getClientByRfc({ rfc: clientId });
+					const client = await getClientById({ id: clientId });
 					return { clientId, client };
 				} catch (error) {
 					console.error(`Error fetching client ${clientId}:`, error);
@@ -302,7 +310,7 @@ export function TransactionsTable({
 						</TooltipProvider>
 						<div className="flex flex-col min-w-0">
 							<Link
-								href={`/transactions/${item.id}`}
+								href={orgPath(`/transactions/${item.id}`)}
 								className="font-medium text-foreground hover:text-primary truncate"
 								onClick={(e) => e.stopPropagation()}
 							>
@@ -487,14 +495,14 @@ export function TransactionsTable({
 			<DropdownMenuContent align="end" className="w-48">
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => router.push(`/transactions/${item.id}`)}
+					onClick={() => navigateTo(`/transactions/${item.id}`)}
 				>
 					<Eye className="h-4 w-4" />
 					Ver detalle
 				</DropdownMenuItem>
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => router.push(`/transactions/${item.id}/edit`)}
+					onClick={() => navigateTo(`/transactions/${item.id}/edit`)}
 				>
 					<Edit className="h-4 w-4" />
 					Editar transacción
@@ -502,7 +510,7 @@ export function TransactionsTable({
 				<DropdownMenuSeparator />
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => router.push(`/clients/${item.clientId}`)}
+					onClick={() => navigateTo(`/clients/${item.clientId}`)}
 				>
 					Ver cliente
 				</DropdownMenuItem>
@@ -522,6 +530,9 @@ export function TransactionsTable({
 			searchKeys={["clientName", "clientId", "shortId", "brand", "model"]}
 			searchPlaceholder="Buscar por cliente, marca, modelo..."
 			emptyMessage="No se encontraron transacciones"
+			emptyIcon={Receipt}
+			emptyActionLabel="Crear Transacción"
+			emptyActionHref={orgPath("/transactions/new")}
 			loadingMessage="Cargando transacciones..."
 			isLoading={isLoading}
 			selectable
@@ -531,6 +542,13 @@ export function TransactionsTable({
 			onLoadMore={handleLoadMore}
 			hasMore={hasMore}
 			isLoadingMore={isLoadingMore}
+			// URL persistence
+			initialFilters={urlFilters.initialFilters}
+			initialSearch={urlFilters.initialSearch}
+			initialSort={urlFilters.initialSort}
+			onFiltersChange={urlFilters.onFiltersChange}
+			onSearchChange={urlFilters.onSearchChange}
+			onSortChange={urlFilters.onSortChange}
 		/>
 	);
 }

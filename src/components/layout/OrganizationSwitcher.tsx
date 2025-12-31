@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Building2, ChevronsUpDown, Plus } from "lucide-react";
+import { ChevronsUpDown, Plus, Building2 } from "lucide-react";
 
 import {
 	DropdownMenu,
@@ -72,15 +72,15 @@ export function OrganizationSwitcher({
 								size="lg"
 								className="justify-center data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
 							>
-								<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+								<div className="flex items-center justify-center">
 									{activeOrganization?.logo ? (
 										<img
 											src={activeOrganization.logo}
 											alt={activeOrganization.name}
-											className="size-5 rounded"
+											className="size-8 rounded-lg object-contain"
 										/>
 									) : (
-										<Building2 className="size-4" />
+										<Logo variant="icon" width={32} height={32} />
 									)}
 								</div>
 							</SidebarMenuButton>
@@ -100,17 +100,17 @@ export function OrganizationSwitcher({
 									onClick={() => onOrganizationChange(org)}
 									className="gap-2 p-2"
 								>
-									<div className="flex size-6 items-center justify-center rounded-md border">
-										{org.logo ? (
+									{org.logo ? (
+										<div className="flex size-6 items-center justify-center rounded-md border overflow-hidden">
 											<img
 												src={org.logo}
 												alt={org.name}
 												className="size-4 rounded"
 											/>
-										) : (
-											<Building2 className="size-3.5 shrink-0" />
-										)}
-									</div>
+										</div>
+									) : (
+										<Building2 className="size-4 text-muted-foreground" />
+									)}
 									<span className="flex-1 truncate">
 										{formatProperNoun(org.name)}
 									</span>
@@ -128,9 +128,7 @@ export function OrganizationSwitcher({
 										className="gap-2 p-2"
 										onClick={onCreateOrganization}
 									>
-										<div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
-											<Plus className="size-4" />
-										</div>
+										<Plus className="size-4" />
 										<span className="text-muted-foreground font-medium">
 											Crear organización
 										</span>
@@ -178,15 +176,15 @@ export function OrganizationSwitcher({
 							size="lg"
 							className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
 						>
-							<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+							<div className="flex items-center justify-center shrink-0">
 								{activeOrganization?.logo ? (
 									<img
 										src={activeOrganization.logo}
 										alt={activeOrganization.name}
-										className="size-5 rounded"
+										className="size-8 rounded-lg object-contain"
 									/>
 								) : (
-									<Building2 className="size-4" />
+									<Logo variant="icon" width={32} height={32} />
 								)}
 							</div>
 							<div className="grid flex-1 text-left text-sm leading-tight">
@@ -217,17 +215,17 @@ export function OrganizationSwitcher({
 								onClick={() => onOrganizationChange(org)}
 								className="gap-2 p-2"
 							>
-								<div className="flex size-6 items-center justify-center rounded-md border">
-									{org.logo ? (
+								{org.logo ? (
+									<div className="flex size-6 items-center justify-center rounded-md border overflow-hidden">
 										<img
 											src={org.logo}
 											alt={org.name}
 											className="size-4 rounded"
 										/>
-									) : (
-										<Building2 className="size-3.5 shrink-0" />
-									)}
-								</div>
+									</div>
+								) : (
+									<Building2 className="size-4 text-muted-foreground" />
+								)}
 								<span className="flex-1 truncate">
 									{formatProperNoun(org.name)}
 								</span>
@@ -243,9 +241,7 @@ export function OrganizationSwitcher({
 									className="gap-2 p-2"
 									onClick={onCreateOrganization}
 								>
-									<div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
-										<Plus className="size-4" />
-									</div>
+									<Plus className="size-4" />
 									<span className="text-muted-foreground font-medium">
 										Crear organización
 									</span>

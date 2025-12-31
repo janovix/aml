@@ -16,19 +16,25 @@ import {
 	Plus,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
+import { useDataTableUrlFilters } from "@/hooks/useDataTableUrlFilters";
+
+// Filter IDs for URL persistence
+const ALERT_FILTER_IDS = ["status", "severity", "isOverdue"];
+import { Button } from "@/components/ui/button";
 import {
-	Button,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "@algtools/ui";
+} from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useJwt } from "@/hooks/useJwt";
 import { useOrgStore } from "@/lib/org-store";
@@ -40,7 +46,7 @@ import {
 	type AlertSeverity,
 	type ListAlertsOptions,
 } from "@/lib/api/alerts";
-import { getClientByRfc } from "@/lib/api/clients";
+import { getClientById } from "@/lib/api/clients";
 import type { Client } from "@/types/client";
 import { getClientDisplayName } from "@/types/client";
 import {
@@ -116,10 +122,11 @@ interface AlertsTableProps {
 export function AlertsTable({
 	filters,
 }: AlertsTableProps = {}): React.ReactElement {
-	const router = useRouter();
+	const { navigateTo, orgPath } = useOrgNavigation();
 	const { toast } = useToast();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const { currentOrg } = useOrgStore();
+	const urlFilters = useDataTableUrlFilters(ALERT_FILTER_IDS);
 	const [alerts, setAlerts] = useState<Alert[]>([]);
 	const [clients, setClients] = useState<Map<string, Client>>(new Map());
 	const [isLoading, setIsLoading] = useState(true);
@@ -148,8 +155,8 @@ export function AlertsTable({
 			// Fetch only missing clients in parallel
 			const clientPromises = missingClientIds.map(async (clientId) => {
 				try {
-					const client = await getClientByRfc({
-						rfc: clientId,
+					const client = await getClientById({
+						id: clientId,
 						jwt: jwt ?? undefined,
 					});
 					return { clientId, client };
@@ -348,7 +355,7 @@ export function AlertsTable({
 				cell: (item) => (
 					<div className="flex flex-col min-w-0">
 						<Link
-							href={`/clients/${item.clientId}`}
+							href={orgPath(`/clients/${item.clientId}`)}
 							className="text-sm text-foreground hover:text-primary truncate"
 							onClick={(e) => e.stopPropagation()}
 						>
@@ -528,7 +535,7 @@ export function AlertsTable({
 			<DropdownMenuContent align="end" className="w-48">
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => router.push(`/alerts/${item.id}`)}
+					onClick={() => navigateTo(`/alerts/${item.id}`)}
 				>
 					<Eye className="h-4 w-4" />
 					Ver detalle
@@ -548,7 +555,7 @@ export function AlertsTable({
 				<DropdownMenuSeparator />
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => router.push(`/clients/${item.clientId}`)}
+					onClick={() => navigateTo(`/clients/${item.clientId}`)}
 				>
 					<User className="h-4 w-4" />
 					Ver cliente
@@ -616,7 +623,7 @@ export function AlertsTable({
 				stats={stats}
 				ctaLabel="Nueva Alerta"
 				ctaIcon={Plus}
-				onCtaClick={() => router.push("/alerts/new")}
+				onCtaClick={() => navigateTo("/alerts/new")}
 			/>
 			<DataTable
 				data={alertsWithStringOverdue as unknown as AlertRow[]}
@@ -625,6 +632,7 @@ export function AlertsTable({
 				searchKeys={["ruleName", "clientName", "clientId", "notes"]}
 				searchPlaceholder="Buscar por regla, cliente..."
 				emptyMessage="No se encontraron alertas"
+				emptyIcon={Bell}
 				loadingMessage="Cargando alertas..."
 				isLoading={isLoading}
 				selectable
@@ -634,6 +642,13 @@ export function AlertsTable({
 				onLoadMore={handleLoadMore}
 				hasMore={hasMore}
 				isLoadingMore={isLoadingMore}
+				// URL persistence
+				initialFilters={urlFilters.initialFilters}
+				initialSearch={urlFilters.initialSearch}
+				initialSort={urlFilters.initialSort}
+				onFiltersChange={urlFilters.onFiltersChange}
+				onSearchChange={urlFilters.onSearchChange}
+				onSortChange={urlFilters.onSortChange}
 			/>
 		</div>
 	);

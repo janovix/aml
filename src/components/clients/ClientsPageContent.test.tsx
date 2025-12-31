@@ -8,8 +8,11 @@ const mockPush = vi.fn();
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
 		push: mockPush,
+		replace: vi.fn(),
 	}),
-	usePathname: () => "/clients",
+	usePathname: () => "/test-org/clients",
+	useSearchParams: () => new URLSearchParams(),
+	useParams: () => ({ orgSlug: "test-org" }),
 }));
 
 describe("ClientsPageContent", () => {
@@ -44,7 +47,7 @@ describe("ClientsPageContent", () => {
 		});
 		await user.click(newButtons[0]);
 
-		expect(mockPush).toHaveBeenCalledWith("/clients/new");
+		expect(mockPush).toHaveBeenCalledWith("/test-org/clients/new");
 	});
 
 	it("renders KPI cards", () => {

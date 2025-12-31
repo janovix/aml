@@ -5,7 +5,14 @@ import type {
 	FilterDef,
 	DataTableProps,
 } from "../../components/data-table/types";
-import { Filter, Trash2, Edit, MoreHorizontal } from "lucide-react";
+import {
+	Filter,
+	Trash2,
+	Edit,
+	MoreHorizontal,
+	Users,
+	SearchX,
+} from "lucide-react";
 import { Button } from "../../components/ui/button";
 import {
 	DropdownMenu,
@@ -242,6 +249,37 @@ export const Empty: Story = {
 		searchKeys: ["name", "email"],
 		searchPlaceholder: "Search users...",
 		emptyMessage: "No users found",
+		emptyIcon: SearchX,
+		getId: (item) => item.id,
+	},
+};
+
+export const EmptyWithCTA: Story = {
+	args: {
+		data: [],
+		columns,
+		filters,
+		searchKeys: ["name", "email"],
+		searchPlaceholder: "Search users...",
+		emptyMessage: "No users found",
+		emptyIcon: Users,
+		emptyActionLabel: "Add User",
+		emptyActionHref: "/users/new",
+		getId: (item) => item.id,
+	},
+};
+
+export const EmptyWithClickAction: Story = {
+	args: {
+		data: [],
+		columns,
+		filters,
+		searchKeys: ["name", "email"],
+		searchPlaceholder: "Search users...",
+		emptyMessage: "No users found",
+		emptyIcon: Users,
+		emptyActionLabel: "Create User",
+		onEmptyAction: () => alert("Create user clicked!"),
 		getId: (item) => item.id,
 	},
 };
