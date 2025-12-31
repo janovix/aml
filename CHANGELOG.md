@@ -1,3 +1,12 @@
+# [1.1.0-rc.18](https://github.com/janovix/aml/compare/v1.1.0-rc.17...v1.1.0-rc.18) (2025-12-31)
+
+
+### Features
+
+* enhance Team and Settings pages with consistent page header components and improved layout ([edc7dc2](https://github.com/janovix/aml/commit/edc7dc2b2c23f3aaca9f42f23f67442d0f2a6770))
+* implement AppSkeleton component in OrgBootstrapper for improved loading state visualization ([5618647](https://github.com/janovix/aml/commit/561864750e140de94849bfd7791ee9b3a2c07b07))
+* synchronize auth session with selected organization in OrgBootstrapper and handle organization accessibility checks ([0758f21](https://github.com/janovix/aml/commit/0758f21062c9a27cb6cb6c125faf6467c9278906))
+
 # [1.1.0-rc.17](https://github.com/janovix/aml/compare/v1.1.0-rc.16...v1.1.0-rc.17) (2025-12-31)
 
 
