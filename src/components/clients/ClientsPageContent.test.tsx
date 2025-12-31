@@ -50,9 +50,9 @@ describe("ClientsPageContent", () => {
 	it("renders KPI cards", () => {
 		render(<ClientsPageContent />);
 
-		const avisos = screen.getAllByText("Avisos Abiertos");
+		const alertas = screen.getAllByText("Alertas Abiertas");
 		const total = screen.getAllByText("Total Clientes");
-		expect(avisos.length).toBeGreaterThan(0);
+		expect(alertas.length).toBeGreaterThan(0);
 		expect(total.length).toBeGreaterThan(0);
 	});
 

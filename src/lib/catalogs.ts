@@ -1,4 +1,8 @@
-import type { CatalogQueryParams, CatalogResponse } from "@/types/catalog";
+import type {
+	CatalogItem,
+	CatalogQueryParams,
+	CatalogResponse,
+} from "@/types/catalog";
 import { getAmlCoreBaseUrl } from "./api/config";
 import { fetchJson } from "./api/http";
 
@@ -60,5 +64,36 @@ export async function fetchCatalogEntries(
 			);
 		}
 		throw new Error(`No se pudo consultar el catálogo "${catalogKey}".`);
+	}
+}
+
+export async function createCatalogItem(
+	catalogKey: string,
+	name: string,
+	requestInit?: RequestInit,
+): Promise<CatalogItem> {
+	const baseUrl = getAmlCoreBaseUrl();
+	const url = `${baseUrl}/api/v1/catalogs/${catalogKey}/items`;
+
+	try {
+		const { json } = await fetchJson<CatalogItem>(url, {
+			method: "POST",
+			...requestInit,
+			headers: {
+				"Content-Type": "application/json",
+				...requestInit?.headers,
+			},
+			body: JSON.stringify({ name }),
+		});
+		return json;
+	} catch (error) {
+		if (error instanceof Error) {
+			throw new Error(
+				`No se pudo crear el elemento en el catálogo "${catalogKey}": ${error.message}`,
+			);
+		}
+		throw new Error(
+			`No se pudo crear el elemento en el catálogo "${catalogKey}".`,
+		);
 	}
 }

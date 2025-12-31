@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
 	ArrowDownCircle,
 	ArrowUpCircle,
@@ -28,6 +28,7 @@ import {
 	TooltipTrigger,
 } from "@algtools/ui";
 import { useToast } from "@/hooks/use-toast";
+import { useOrgStore } from "@/lib/org-store";
 import {
 	listTransactions,
 	type ListTransactionsOptions,
@@ -42,6 +43,9 @@ import {
 	type ColumnDef,
 	type FilterDef,
 } from "@/components/data-table";
+import { fetchCatalogEntries } from "@/lib/catalogs";
+import type { CatalogItem } from "@/types/catalog";
+import { formatProperNoun } from "@/lib/utils";
 
 /**
  * Extended transaction row with resolved client data
@@ -99,39 +103,153 @@ export function TransactionsTable({
 }: TransactionsTableProps = {}): React.ReactElement {
 	const router = useRouter();
 	const { toast } = useToast();
+	const { currentOrg } = useOrgStore();
 	const [transactions, setTransactions] = useState<Transaction[]>([]);
 	const [clients, setClients] = useState<Map<string, Client>>(new Map());
+	const [brandNames, setBrandNames] = useState<Map<string, string>>(new Map());
 	const [isLoading, setIsLoading] = useState(true);
+	const [isLoadingMore, setIsLoadingMore] = useState(false);
+	const [currentPage, setCurrentPage] = useState(1);
+	const [hasMore, setHasMore] = useState(true);
+	const ITEMS_PER_PAGE = 20;
 
+	// Track which client IDs we've already attempted to fetch (to avoid re-fetching)
+	const fetchedClientIdsRef = useRef<Set<string>>(new Set());
+	const brandsFetchedRef = useRef<boolean>(false);
+
+	// Fetch brand catalogs for all vehicle types
+	const fetchBrandCatalogs = useCallback(async () => {
+		if (brandsFetchedRef.current) {
+			return;
+		}
+
+		try {
+			brandsFetchedRef.current = true;
+			const catalogKeys = [
+				"terrestrial-vehicle-brands",
+				"maritime-vehicle-brands",
+				"air-vehicle-brands",
+			];
+
+			const catalogPromises = catalogKeys.map(async (catalogKey) => {
+				try {
+					const response = await fetchCatalogEntries(catalogKey, {
+						pageSize: 1000, // Fetch all brands
+					});
+					return response.data;
+				} catch (error) {
+					console.error(`Error fetching catalog ${catalogKey}:`, error);
+					return [];
+				}
+			});
+
+			const catalogResults = await Promise.all(catalogPromises);
+			const brandMap = new Map<string, string>();
+
+			catalogResults.forEach((items: CatalogItem[]) => {
+				items.forEach((item: CatalogItem) => {
+					brandMap.set(item.id, item.name);
+				});
+			});
+
+			setBrandNames(brandMap);
+		} catch (error) {
+			console.error("Error fetching brand catalogs:", error);
+			brandsFetchedRef.current = false; // Allow retry on error
+		}
+	}, []);
+
+	// Fetch client information for transactions - optimized to only fetch missing clients
+	const fetchClientsForTransactions = useCallback(
+		async (txList: Transaction[]) => {
+			const uniqueClientIds = [...new Set(txList.map((tx) => tx.clientId))];
+
+			// Filter out clients we've already attempted to fetch
+			const missingClientIds = uniqueClientIds.filter(
+				(clientId) => !fetchedClientIdsRef.current.has(clientId),
+			);
+
+			// If all clients are already loaded or fetched, skip fetching
+			if (missingClientIds.length === 0) {
+				return;
+			}
+
+			// Mark these as being fetched
+			missingClientIds.forEach((id) => fetchedClientIdsRef.current.add(id));
+
+			// Fetch only missing clients in parallel
+			const clientPromises = missingClientIds.map(async (clientId) => {
+				try {
+					const client = await getClientByRfc({ rfc: clientId });
+					return { clientId, client };
+				} catch (error) {
+					console.error(`Error fetching client ${clientId}:`, error);
+					return null;
+				}
+			});
+
+			const results = await Promise.all(clientPromises);
+
+			// Only update state if we have new results
+			const validResults = results.filter(
+				(result): result is { clientId: string; client: Client } =>
+					result !== null,
+			);
+
+			if (validResults.length > 0) {
+				setClients((prev) => {
+					const merged = new Map(prev);
+					validResults.forEach((result) => {
+						merged.set(result.clientId, result.client);
+					});
+					return merged;
+				});
+			}
+		},
+		[], // No dependencies - uses ref to track fetched clients
+	);
+
+	// Initial load - refetch when organization changes
 	useEffect(() => {
+		// Wait for an organization to be selected
+		// Without an organization, the API will return 403 "Organization Required"
+		if (!currentOrg?.id) {
+			setTransactions([]);
+			setClients(new Map());
+			setBrandNames(new Map());
+			fetchedClientIdsRef.current.clear();
+			brandsFetchedRef.current = false;
+			setIsLoading(false);
+			return;
+		}
+
 		const fetchTransactions = async () => {
 			try {
 				setIsLoading(true);
-				const response = await listTransactions({
-					page: 1,
-					limit: 100,
-					...filters,
-				});
-				setTransactions(response.data);
+				setCurrentPage(1);
+				// Clear existing data and caches when org changes
+				setTransactions([]);
+				setClients(new Map());
+				setBrandNames(new Map());
+				fetchedClientIdsRef.current.clear();
+				brandsFetchedRef.current = false;
 
-				// Fetch client information for all unique client IDs
-				const uniqueClientIds = [
-					...new Set(response.data.map((tx) => tx.clientId)),
-				];
-				const clientsMap = new Map<string, Client>();
-
-				await Promise.all(
-					uniqueClientIds.map(async (clientId) => {
-						try {
-							const client = await getClientByRfc({ rfc: clientId });
-							clientsMap.set(clientId, client);
-						} catch (error) {
-							console.error(`Error fetching client ${clientId}:`, error);
-						}
-					}),
-				);
-
-				setClients(clientsMap);
+				// Fetch brand catalogs in parallel with transactions
+				await Promise.all([
+					fetchBrandCatalogs(),
+					(async () => {
+						const response = await listTransactions({
+							page: 1,
+							limit: ITEMS_PER_PAGE,
+							...filters,
+						});
+						setTransactions(response.data);
+						setHasMore(
+							response.pagination.page < response.pagination.totalPages,
+						);
+						await fetchClientsForTransactions(response.data);
+					})(),
+				]);
 			} catch (error) {
 				console.error("Error fetching transactions:", error);
 				toast({
@@ -144,18 +262,52 @@ export function TransactionsTable({
 			}
 		};
 		fetchTransactions();
-	}, [filters, toast]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [filters, toast, currentOrg?.id, fetchBrandCatalogs]);
+
+	// Load more transactions for infinite scroll
+	const handleLoadMore = useCallback(async () => {
+		if (isLoadingMore || !hasMore || !currentOrg?.id) return;
+
+		try {
+			setIsLoadingMore(true);
+			const nextPage = currentPage + 1;
+			const response = await listTransactions({
+				page: nextPage,
+				limit: ITEMS_PER_PAGE,
+				...filters,
+			});
+
+			setTransactions((prev) => [...prev, ...response.data]);
+			setCurrentPage(nextPage);
+			setHasMore(response.pagination.page < response.pagination.totalPages);
+
+			await fetchClientsForTransactions(response.data);
+		} catch (error) {
+			console.error("Error loading more transactions:", error);
+			toast({
+				title: "Error",
+				description: "No se pudieron cargar más transacciones.",
+				variant: "destructive",
+			});
+		} finally {
+			setIsLoadingMore(false);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [currentPage, hasMore, isLoadingMore, filters, toast, currentOrg?.id]);
 
 	// Transform Transaction to TransactionRow format
 	const transactionsData: TransactionRow[] = useMemo(() => {
 		return transactions.map((tx) => {
 			const client = clients.get(tx.clientId);
+			// Resolve brand ID to brand name, fallback to ID if not found
+			const brandName = brandNames.get(tx.brand) || tx.brand;
 			return {
 				id: tx.id,
 				shortId: generateShortTransactionId(tx.id),
 				operationType: tx.operationType,
 				vehicleType: tx.vehicleType,
-				brand: tx.brand,
+				brand: brandName,
 				model: tx.model,
 				year: tx.year,
 				amount: parseFloat(tx.amount),
@@ -168,7 +320,7 @@ export function TransactionsTable({
 					.join(", "),
 			};
 		});
-	}, [transactions, clients]);
+	}, [transactions, clients, brandNames]);
 
 	// Column definitions
 	const columns: ColumnDef<TransactionRow>[] = useMemo(
@@ -245,7 +397,7 @@ export function TransactionsTable({
 							</TooltipProvider>
 							<div className="flex flex-col min-w-0">
 								<span className="text-sm font-medium truncate">
-									{item.brand} {item.model}
+									{formatProperNoun(item.brand)} {formatProperNoun(item.model)}
 								</span>
 								<span className="text-xs text-muted-foreground">
 									{item.year}
@@ -432,6 +584,10 @@ export function TransactionsTable({
 			selectable
 			getId={(item) => item.id}
 			actions={renderActions}
+			paginationMode="infinite-scroll"
+			onLoadMore={handleLoadMore}
+			hasMore={hasMore}
+			isLoadingMore={isLoadingMore}
 		/>
 	);
 }

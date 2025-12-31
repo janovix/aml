@@ -9,7 +9,7 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -29,6 +29,7 @@ import {
 import type { CatalogItem } from "@/types/catalog";
 import { useCatalogSearch } from "@/hooks/useCatalogSearch";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
+import { AddCatalogItemDialog } from "./AddCatalogItemDialog";
 
 type OptionRenderer = (
 	option: CatalogItem,
@@ -137,6 +138,7 @@ export function CatalogSelector({
 
 	const {
 		items,
+		catalog,
 		pagination,
 		loading,
 		loadingMore,
@@ -144,6 +146,7 @@ export function CatalogSelector({
 		searchTerm,
 		setSearchTerm,
 		loadMore,
+		reload,
 		hasMore,
 	} = useCatalogSearch({
 		catalogKey,
@@ -151,6 +154,10 @@ export function CatalogSelector({
 		debounceMs,
 		enabled: !disabled,
 	});
+
+	// State for "Add new item" dialog
+	const [addDialogOpen, setAddDialogOpen] = useState(false);
+	const allowNewItems = catalog?.allowNewItems ?? false;
 
 	const mappedItems = useMemo(
 		() =>
@@ -277,35 +284,158 @@ export function CatalogSelector({
 		setShowResults(next);
 	};
 
+	const handleAddNewClick = useCallback((): void => {
+		setOpen(false);
+		setAddDialogOpen(true);
+	}, []);
+
+	const handleItemCreated = useCallback(
+		(newItem: CatalogItem): void => {
+			// Reload the catalog to include the new item
+			reload();
+
+			// Select the newly created item
+			setSelectedOption(newItem);
+			setSelectedLabel(newItem.name);
+
+			const optionValue = getOptionValue
+				? getOptionValue(newItem)
+				: (newItem.id ?? newItem.name);
+			onValueChange?.(optionValue);
+			onChange?.(newItem);
+		},
+		[reload, getOptionValue, onValueChange, onChange],
+	);
+
+	// Track if we're currently processing a load to prevent duplicate calls
+	const isLoadingMoreRef = useRef(false);
+
 	// Handle infinite scroll
 	const handleScroll = useCallback(async () => {
+		// Find the actual scrollable element - could be the ref or the cmdk-list element inside
 		const list = listRef.current;
-		if (!list || loadingMore || loading || !hasMore) {
+		if (
+			!list ||
+			loadingMore ||
+			loading ||
+			!hasMore ||
+			isLoadingMoreRef.current
+		) {
 			return;
 		}
 
-		const { scrollTop, scrollHeight, clientHeight } = list;
-		const threshold = 50; // Trigger when 50px from bottom
+		// Try to find the actual scrollable element (cmdk-list)
+		const scrollableElement =
+			list.querySelector<HTMLElement>("[cmdk-list]") || list;
 
-		if (scrollTop + clientHeight >= scrollHeight - threshold) {
+		if (!scrollableElement) {
+			return;
+		}
+
+		const { scrollTop, scrollHeight, clientHeight } = scrollableElement;
+		const threshold = 100; // Trigger when 100px from bottom for better UX
+
+		// Check if we're near the bottom
+		const isNearBottom = scrollTop + clientHeight >= scrollHeight - threshold;
+
+		if (isNearBottom) {
+			isLoadingMoreRef.current = true;
 			try {
 				await loadMore();
 			} catch {
 				// Ignore errors
+			} finally {
+				isLoadingMoreRef.current = false;
 			}
 		}
 	}, [loadMore, loadingMore, loading, hasMore]);
 
-	// Set up scroll listener
+	// After items are loaded, check if we need to load more
+	// This ensures we continue loading until the user scrolls away or no more pages are available
 	useEffect(() => {
-		const list = listRef.current;
-		if (!list || !open) {
+		if (
+			!open ||
+			loadingMore ||
+			loading ||
+			!hasMore ||
+			isLoadingMoreRef.current
+		) {
 			return;
 		}
 
-		list.addEventListener("scroll", handleScroll, { passive: true });
+		const list = listRef.current;
+		if (!list) {
+			return;
+		}
+
+		// Wait for DOM to update after items change
+		const timeoutId = setTimeout(() => {
+			const scrollableElement =
+				list.querySelector<HTMLElement>("[cmdk-list]") || list;
+
+			if (!scrollableElement) {
+				return;
+			}
+
+			const { scrollTop, scrollHeight, clientHeight } = scrollableElement;
+			const threshold = 100;
+
+			// If we're still near the bottom after loading, load more
+			const isNearBottom = scrollTop + clientHeight >= scrollHeight - threshold;
+
+			if (isNearBottom && hasMore && !loadingMore && !loading) {
+				isLoadingMoreRef.current = true;
+				loadMore()
+					.catch(() => {
+						// Ignore errors
+					})
+					.finally(() => {
+						isLoadingMoreRef.current = false;
+					});
+			}
+		}, 100); // Small delay to allow DOM to update
+
 		return () => {
-			list.removeEventListener("scroll", handleScroll);
+			clearTimeout(timeoutId);
+		};
+	}, [items, open, hasMore, loadingMore, loading, loadMore]);
+
+	// Set up scroll listener
+	useEffect(() => {
+		if (!open) {
+			return;
+		}
+
+		let timeoutId: NodeJS.Timeout;
+
+		// Wait for the DOM to be ready before attaching listener
+		timeoutId = setTimeout(() => {
+			const list = listRef.current;
+			if (!list) {
+				return;
+			}
+
+			// Find the actual scrollable element
+			const scrollableElement =
+				list.querySelector<HTMLElement>("[cmdk-list]") || list;
+
+			if (scrollableElement) {
+				scrollableElement.addEventListener("scroll", handleScroll, {
+					passive: true,
+				});
+			}
+		}, 0);
+
+		return () => {
+			clearTimeout(timeoutId);
+			// Try to find and remove listener from current DOM state
+			const list = listRef.current;
+			if (list) {
+				const element = list.querySelector<HTMLElement>("[cmdk-list]") || list;
+				if (element) {
+					element.removeEventListener("scroll", handleScroll);
+				}
+			}
 		};
 	}, [handleScroll, open]);
 
@@ -395,7 +525,23 @@ export function CatalogSelector({
 							<>
 								<CommandList ref={listRef} className="max-h-[300px]">
 									{mappedItems.length === 0 ? (
-										<CommandEmpty>{emptyState}</CommandEmpty>
+										<CommandEmpty>
+											<div className="flex flex-col items-center gap-2 py-2">
+												<span>{emptyState}</span>
+												{allowNewItems && searchTerm.trim() && (
+													<Button
+														type="button"
+														variant="outline"
+														size="sm"
+														onClick={handleAddNewClick}
+														className="mt-2"
+													>
+														<Plus className="mr-2 h-4 w-4" />
+														Agregar &quot;{searchTerm.trim()}&quot;
+													</Button>
+												)}
+											</div>
+										</CommandEmpty>
 									) : (
 										<CommandGroup heading="Resultados">
 											{mappedItems.map(({ item, value: optionValue }) => {
@@ -416,6 +562,19 @@ export function CatalogSelector({
 													</CommandItem>
 												);
 											})}
+											{allowNewItems && searchTerm.trim() && (
+												<CommandItem
+													key="__add_new__"
+													value="__add_new__"
+													onSelect={handleAddNewClick}
+													className="text-primary"
+												>
+													<div className="flex items-center gap-2">
+														<Plus className="h-4 w-4" />
+														<span>Agregar &quot;{searchTerm.trim()}&quot;</span>
+													</div>
+												</CommandItem>
+											)}
 										</CommandGroup>
 									)}
 									{loadingMore && (
@@ -444,6 +603,15 @@ export function CatalogSelector({
 			{helperText && (
 				<p className="text-xs text-muted-foreground">{helperText}</p>
 			)}
+
+			<AddCatalogItemDialog
+				open={addDialogOpen}
+				onOpenChange={setAddDialogOpen}
+				catalogKey={catalogKey}
+				catalogName={catalog?.name}
+				initialValue={searchTerm.trim()}
+				onItemCreated={handleItemCreated}
+			/>
 		</div>
 	);
 }

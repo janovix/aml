@@ -29,6 +29,8 @@ import { LabelWithInfo } from "../ui/LabelWithInfo";
 import { getFieldDescription } from "../../lib/field-descriptions";
 import { CatalogSelector } from "../catalogs/CatalogSelector";
 import { PhoneInput } from "../ui/phone-input";
+import { validateRFC, validateCURP } from "../../lib/utils";
+import { toast as sonnerToast } from "sonner";
 
 interface ClientFormData {
 	personType: PersonType;
@@ -108,6 +110,11 @@ export function ClientEditView({
 		notes: "",
 	});
 
+	const [validationErrors, setValidationErrors] = useState<{
+		rfc?: string;
+		curp?: string;
+	}>({});
+
 	useEffect(() => {
 		const fetchClient = async () => {
 			try {
@@ -172,9 +179,35 @@ export function ClientEditView({
 	const handleSubmit = async (e: React.FormEvent): Promise<void> => {
 		e.preventDefault();
 		if (isSubmitting) return;
-		setIsSubmitting(true);
 
 		const currentPersonType = client?.personType ?? formData.personType;
+
+		// Client-side validation
+		const errors: { rfc?: string; curp?: string } = {};
+
+		// Validate RFC
+		const rfcValidation = validateRFC(formData.rfc, currentPersonType);
+		if (!rfcValidation.isValid) {
+			errors.rfc = rfcValidation.error;
+		}
+
+		// Validate CURP (only for physical persons)
+		if (currentPersonType === "physical" && formData.curp) {
+			const curpValidation = validateCURP(formData.curp);
+			if (!curpValidation.isValid) {
+				errors.curp = curpValidation.error;
+			}
+		}
+
+		// If there are validation errors, show them and prevent submission
+		if (Object.keys(errors).length > 0) {
+			setValidationErrors(errors);
+			sonnerToast.error("Por favor, corrija los errores en el formulario");
+			return;
+		}
+
+		setValidationErrors({});
+		setIsSubmitting(true);
 
 		if (!currentPersonType) {
 			toast({
@@ -472,12 +505,27 @@ export function ClientEditView({
 										<Input
 											id="curp"
 											value={formData.curp}
-											onChange={(e) =>
-												handleInputChange("curp", e.target.value)
-											}
+											onChange={(e) => {
+												handleInputChange("curp", e.target.value);
+												// Clear error when user starts typing
+												if (validationErrors.curp) {
+													setValidationErrors((prev) => ({
+														...prev,
+														curp: undefined,
+													}));
+												}
+											}}
 											placeholder="PECJ850615HDFRRN09"
+											className={
+												validationErrors.curp ? "border-destructive" : ""
+											}
 											required
 										/>
+										{validationErrors.curp && (
+											<p className="text-xs text-destructive">
+												{validationErrors.curp}
+											</p>
+										)}
 									</div>
 								</div>
 							</>
@@ -532,8 +580,19 @@ export function ClientEditView({
 							<Input
 								id="rfc"
 								value={formData.rfc}
-								onChange={(e) => handleInputChange("rfc", e.target.value)}
-								className="font-mono uppercase"
+								onChange={(e) => {
+									handleInputChange("rfc", e.target.value);
+									// Clear error when user starts typing
+									if (validationErrors.rfc) {
+										setValidationErrors((prev) => ({
+											...prev,
+											rfc: undefined,
+										}));
+									}
+								}}
+								className={`font-mono uppercase ${
+									validationErrors.rfc ? "border-destructive" : ""
+								}`}
 								placeholder={
 									formData.personType === "physical"
 										? "PECJ850615E56"
@@ -542,11 +601,17 @@ export function ClientEditView({
 								maxLength={formData.personType === "physical" ? 13 : 12}
 								required
 							/>
-							<p className="text-xs text-muted-foreground">
-								{formData.personType === "physical"
-									? "13 caracteres para persona física"
-									: "12 caracteres para persona moral/fideicomiso"}
-							</p>
+							{validationErrors.rfc ? (
+								<p className="text-xs text-destructive">
+									{validationErrors.rfc}
+								</p>
+							) : (
+								<p className="text-xs text-muted-foreground">
+									{formData.personType === "physical"
+										? "13 caracteres para persona física"
+										: "12 caracteres para persona moral/fideicomiso"}
+								</p>
+							)}
 						</div>
 						{formData.personType === "physical" && (
 							<CatalogSelector

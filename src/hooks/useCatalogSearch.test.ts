@@ -3,18 +3,22 @@ import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import type { CatalogItem, CatalogResponse } from "@/types/catalog";
 import { useCatalogSearch } from "./useCatalogSearch";
 
-const buildResponse = (data: CatalogItem[]): CatalogResponse => ({
+const buildResponse = (
+	data: CatalogItem[],
+	options?: { allowNewItems?: boolean; page?: number; totalPages?: number },
+): CatalogResponse => ({
 	catalog: {
 		id: "cat-1",
 		key: "vehicle-brands",
 		name: "Vehicle Brands",
+		allowNewItems: options?.allowNewItems ?? false,
 	},
 	data,
 	pagination: {
-		page: 1,
+		page: options?.page ?? 1,
 		pageSize: 25,
 		total: data.length,
-		totalPages: 1,
+		totalPages: options?.totalPages ?? 1,
 	},
 });
 
@@ -367,5 +371,45 @@ describe("useCatalogSearch", () => {
 		await waitFor(() => expect(result.current.loadingMore).toBe(false));
 		expect(result.current.error).toContain("Network error");
 		expect(result.current.items).toHaveLength(2); // Should not have added items
+	});
+
+	it("returns catalog info with allowNewItems flag", async () => {
+		mockFetch.mockResolvedValue(
+			new Response(
+				JSON.stringify(buildResponse(sampleItems, { allowNewItems: true })),
+				{
+					status: 200,
+					headers: { "content-type": "application/json" },
+				},
+			),
+		);
+
+		const { result } = renderHook(() =>
+			useCatalogSearch({ catalogKey: "vehicle-brands", debounceMs: 0 }),
+		);
+
+		await waitFor(() => expect(result.current.loading).toBe(false));
+
+		expect(result.current.catalog).not.toBeNull();
+		expect(result.current.catalog?.allowNewItems).toBe(true);
+		expect(result.current.catalog?.key).toBe("vehicle-brands");
+	});
+
+	it("returns catalog info with allowNewItems false by default", async () => {
+		mockFetch.mockResolvedValue(
+			new Response(JSON.stringify(buildResponse(sampleItems)), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			}),
+		);
+
+		const { result } = renderHook(() =>
+			useCatalogSearch({ catalogKey: "vehicle-brands", debounceMs: 0 }),
+		);
+
+		await waitFor(() => expect(result.current.loading).toBe(false));
+
+		expect(result.current.catalog).not.toBeNull();
+		expect(result.current.catalog?.allowNewItems).toBe(false);
 	});
 });

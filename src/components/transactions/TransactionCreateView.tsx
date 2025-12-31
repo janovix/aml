@@ -33,6 +33,8 @@ import { CatalogSelector } from "../catalogs/CatalogSelector";
 import { ClientSelector } from "../clients/ClientSelector";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
 import { getFieldDescription } from "../../lib/field-descriptions";
+import { validateVIN } from "../../lib/utils";
+import { getVehicleBrandCatalogKey } from "../../lib/vehicle-utils";
 
 interface TransactionFormData {
 	clientId: string;
@@ -80,6 +82,10 @@ export function TransactionCreateView(): React.JSX.Element {
 		paymentMethods: [{ method: "EFECTIVO", amount: "" }],
 	});
 
+	const [validationErrors, setValidationErrors] = useState<{
+		vin?: string;
+	}>({});
+
 	// Auto-select client from URL params (after returning from client creation)
 	useEffect(() => {
 		const clientIdFromUrl = searchParams.get("clientId");
@@ -97,7 +103,27 @@ export function TransactionCreateView(): React.JSX.Element {
 		field: keyof TransactionFormData,
 		value: string | PaymentMethodInput[],
 	): void => {
-		setFormData((prev) => ({ ...prev, [field]: value }));
+		setFormData((prev) => {
+			// When vehicle type changes, reset the brand since catalogs are different
+			if (
+				field === "vehicleType" &&
+				typeof value === "string" &&
+				prev.vehicleType !== value
+			) {
+				return {
+					...prev,
+					vehicleType: value as TransactionVehicleType,
+					brand: "",
+				};
+			}
+			if (field === "paymentMethods" && Array.isArray(value)) {
+				return { ...prev, paymentMethods: value };
+			}
+			if (typeof value === "string") {
+				return { ...prev, [field]: value };
+			}
+			return prev;
+		});
 	};
 
 	const handlePaymentMethodChange = (
@@ -161,6 +187,16 @@ export function TransactionCreateView(): React.JSX.Element {
 			const hasVIN = formData.vin && formData.vin.trim().length > 0;
 			const hasEngineNumber =
 				formData.engineNumber && formData.engineNumber.trim().length > 0;
+
+			// Validate VIN format if provided
+			if (hasVIN) {
+				const vinValidation = validateVIN(formData.vin || "");
+				if (!vinValidation.isValid) {
+					setValidationErrors({ vin: vinValidation.error });
+					toast.error(vinValidation.error);
+					return false;
+				}
+			}
 
 			if (!hasPlates && !hasVIN && !hasEngineNumber) {
 				toast.error(
@@ -382,22 +418,18 @@ export function TransactionCreateView(): React.JSX.Element {
 						<Separator />
 
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<div className="space-y-2">
-								<LabelWithInfo
-									htmlFor="brand"
-									description={getFieldDescription("brand")}
-									required
-								>
-									Marca
-								</LabelWithInfo>
-								<Input
-									id="brand"
-									value={formData.brand}
-									onChange={(e) => handleInputChange("brand", e.target.value)}
-									placeholder="Toyota, Honda, BMW, etc."
-									required
-								/>
-							</div>
+							<CatalogSelector
+								catalogKey={getVehicleBrandCatalogKey(formData.vehicleType)}
+								label="Marca"
+								labelDescription={getFieldDescription("brand")}
+								value={formData.brand}
+								searchPlaceholder="Buscar marca..."
+								required
+								disabled={!formData.vehicleType}
+								onChange={(option) =>
+									handleInputChange("brand", option?.id ?? "")
+								}
+							/>
 
 							<div className="space-y-2">
 								<LabelWithInfo
@@ -448,10 +480,31 @@ export function TransactionCreateView(): React.JSX.Element {
 										<Input
 											id="vin"
 											value={formData.vin}
-											onChange={(e) => handleInputChange("vin", e.target.value)}
+											onChange={(e) => {
+												handleInputChange("vin", e.target.value);
+												// Clear error when user starts typing
+												if (validationErrors.vin) {
+													setValidationErrors((prev) => ({
+														...prev,
+														vin: undefined,
+													}));
+												}
+											}}
 											placeholder="17 caracteres"
 											maxLength={17}
+											className={
+												validationErrors.vin ? "border-destructive" : ""
+											}
 										/>
+										{validationErrors.vin ? (
+											<p className="text-xs text-destructive">
+												{validationErrors.vin}
+											</p>
+										) : (
+											<p className="text-xs text-muted-foreground">
+												17 caracteres alfanuméricos (excluyendo I, O, Q)
+											</p>
+										)}
 									</div>
 									<div className="space-y-2">
 										<LabelWithInfo

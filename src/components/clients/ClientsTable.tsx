@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
 	Users,
 	Building2,
@@ -38,6 +38,7 @@ import {
 } from "@algtools/ui";
 import { useToast } from "@/hooks/use-toast";
 import { useJwt } from "@/hooks/useJwt";
+import { useOrgStore } from "@/lib/org-store";
 import type { Client, PersonType } from "@/types/client";
 import { getClientDisplayName } from "@/types/client";
 import { listClients, deleteClient } from "@/lib/api/clients";
@@ -79,24 +80,42 @@ export function ClientsTable(): React.ReactElement {
 	const router = useRouter();
 	const { toast } = useToast();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
+	const { currentOrg } = useOrgStore();
 	const [clients, setClients] = useState<Client[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
+	const [isLoadingMore, setIsLoadingMore] = useState(false);
+	const [currentPage, setCurrentPage] = useState(1);
+	const [hasMore, setHasMore] = useState(true);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
+	const ITEMS_PER_PAGE = 20;
 
+	// Initial load - refetch when organization changes
 	useEffect(() => {
-		// Wait for JWT to be ready
-		if (isJwtLoading) return;
+		// Wait for JWT to be ready and organization to be selected
+		// Without an organization, the API will return 403
+		if (isJwtLoading || !jwt || !currentOrg?.id) {
+			// If no org selected, clear data and stop loading
+			if (!currentOrg?.id && !isJwtLoading) {
+				setClients([]);
+				setIsLoading(false);
+			}
+			return;
+		}
 
 		const fetchClients = async () => {
 			try {
 				setIsLoading(true);
+				setCurrentPage(1);
+				// Clear existing data when org changes
+				setClients([]);
 				const response = await listClients({
 					page: 1,
-					limit: 100,
-					jwt: jwt ?? undefined,
+					limit: ITEMS_PER_PAGE,
+					jwt,
 				});
 				setClients(response.data);
+				setHasMore(response.pagination.page < response.pagination.totalPages);
 			} catch (error) {
 				console.error("Error fetching clients:", error);
 				toast({
@@ -109,7 +128,44 @@ export function ClientsTable(): React.ReactElement {
 			}
 		};
 		fetchClients();
-	}, [toast, jwt, isJwtLoading]);
+	}, [toast, jwt, isJwtLoading, currentOrg?.id]);
+
+	// Load more clients for infinite scroll
+	const handleLoadMore = useCallback(async () => {
+		if (isLoadingMore || !hasMore || isJwtLoading || !jwt || !currentOrg?.id)
+			return;
+
+		try {
+			setIsLoadingMore(true);
+			const nextPage = currentPage + 1;
+			const response = await listClients({
+				page: nextPage,
+				limit: ITEMS_PER_PAGE,
+				jwt,
+			});
+
+			setClients((prev) => [...prev, ...response.data]);
+			setCurrentPage(nextPage);
+			setHasMore(response.pagination.page < response.pagination.totalPages);
+		} catch (error) {
+			console.error("Error loading more clients:", error);
+			toast({
+				title: "Error",
+				description: "No se pudieron cargar más clientes.",
+				variant: "destructive",
+			});
+		} finally {
+			setIsLoadingMore(false);
+		}
+	}, [
+		currentPage,
+		hasMore,
+		isLoadingMore,
+		isJwtLoading,
+		jwt,
+		toast,
+		currentOrg?.id,
+	]);
 
 	// Transform clients to include display name
 	const clientsData: ClientRow[] = useMemo(() => {
@@ -360,7 +416,7 @@ export function ClientsTable(): React.ReactElement {
 					Ver transacciones
 				</DropdownMenuItem>
 				<DropdownMenuItem
-					onClick={() => router.push(`/alertas?clientId=${item.rfc}`)}
+					onClick={() => router.push(`/alerts?clientId=${item.rfc}`)}
 				>
 					Ver alertas
 				</DropdownMenuItem>
@@ -405,6 +461,10 @@ export function ClientsTable(): React.ReactElement {
 				selectable
 				getId={(item) => item.rfc}
 				actions={renderActions}
+				paginationMode="infinite-scroll"
+				onLoadMore={handleLoadMore}
+				hasMore={hasMore}
+				isLoadingMore={isLoadingMore}
 			/>
 
 			<AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

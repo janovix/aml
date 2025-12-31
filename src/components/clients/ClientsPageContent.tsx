@@ -59,7 +59,7 @@ export function ClientsPageContent(): React.ReactElement {
 
 	const heroStats: StatCard[] = [
 		{
-			label: "Avisos Abiertos",
+			label: "Alertas Abiertas",
 			value: isLoading ? "..." : (stats?.openAlerts ?? 0),
 			icon: AlertTriangle,
 			variant: "primary",

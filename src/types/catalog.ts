@@ -1,4 +1,11 @@
 export interface CatalogMetadata {
+	/** Country of origin for the catalog item (e.g., vehicle brand origin country) */
+	originCountry?: string;
+	/** Type/category of the item (e.g., "Automóviles, SUVs" or "Jets ejecutivos") */
+	type?: string;
+	/** SAT code for regulatory catalogs */
+	code?: string;
+	/** Allow additional unknown properties */
 	[key: string]: unknown;
 }
 
@@ -17,6 +24,7 @@ export interface CatalogInfo {
 	id: string;
 	key: string;
 	name: string;
+	allowNewItems?: boolean;
 }
 
 export interface CatalogPagination {

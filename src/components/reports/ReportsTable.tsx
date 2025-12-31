@@ -34,6 +34,7 @@ import {
 	type FilterDef,
 } from "@/components/data-table";
 import { PageHero, type StatCard } from "@/components/page-hero";
+import { formatProperNoun } from "@/lib/utils";
 
 /**
  * Report type
@@ -216,7 +217,7 @@ export function ReportsTable(): React.ReactElement {
 							<div className="flex flex-col min-w-0">
 								<div className="flex items-center gap-2">
 									<span className="font-medium text-foreground truncate">
-										{item.name}
+										{formatProperNoun(item.name)}
 									</span>
 									<TooltipProvider>
 										<Tooltip>
@@ -396,7 +397,7 @@ export function ReportsTable(): React.ReactElement {
 			<DropdownMenuContent align="end" className="w-48">
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => router.push(`/reportes/${item.id}`)}
+					onClick={() => router.push(`/reports/${item.id}`)}
 				>
 					<Eye className="h-4 w-4" />
 					Ver detalle
@@ -477,7 +478,7 @@ export function ReportsTable(): React.ReactElement {
 				stats={stats}
 				ctaLabel="Nuevo Reporte"
 				ctaIcon={Plus}
-				onCtaClick={() => router.push("/reportes/new")}
+				onCtaClick={() => router.push("/reports/new")}
 			/>
 			<DataTable
 				data={reports}
@@ -491,6 +492,8 @@ export function ReportsTable(): React.ReactElement {
 				selectable
 				getId={(item) => item.id}
 				actions={renderActions}
+				paginationMode="infinite-scroll"
+				hasMore={false}
 			/>
 		</div>
 	);

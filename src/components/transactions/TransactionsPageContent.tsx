@@ -4,27 +4,15 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TransactionsTable } from "@/components/transactions/TransactionsTable";
 import { PageHero, type StatCard } from "@/components/page-hero";
-import {
-	DollarSign,
-	Package,
-	Calendar,
-	AlertCircle,
-	Receipt,
-	Plus,
-} from "lucide-react";
-import { getTransactionStats } from "@/lib/api/stats";
+import { DollarSign, Calendar, AlertCircle, Receipt, Plus } from "lucide-react";
+import { getTransactionStats, type TransactionStats } from "@/lib/api/stats";
 import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@/lib/api/http";
 
 export function TransactionsPageContent(): React.ReactElement {
 	const router = useRouter();
 	const { toast } = useToast();
-	const [stats, setStats] = useState<{
-		transactionsToday: number;
-		suspiciousTransactions: number;
-		totalVolume: string;
-		totalVehicles: number;
-	} | null>(null);
+	const [stats, setStats] = useState<TransactionStats | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 
 	useEffect(() => {
@@ -78,10 +66,6 @@ export function TransactionsPageContent(): React.ReactElement {
 		}).format(num);
 	};
 
-	const formatNumber = (num: number): string => {
-		return new Intl.NumberFormat("es-MX").format(num);
-	};
-
 	const heroStats: StatCard[] = [
 		{
 			label: "Transacciones Hoy",
@@ -102,15 +86,6 @@ export function TransactionsPageContent(): React.ReactElement {
 					? formatCurrency(stats.totalVolume)
 					: "$0",
 			icon: DollarSign,
-		},
-		{
-			label: "Total Vehículos",
-			value: isLoading
-				? "..."
-				: stats?.totalVehicles
-					? formatNumber(stats.totalVehicles)
-					: "0",
-			icon: Package,
 		},
 	];
 

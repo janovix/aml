@@ -7,6 +7,7 @@ const mockCatalogResponse: CatalogResponse = {
 		id: "01JCXACB0001ABCDEFGHJ1",
 		key: "vehicle-brands",
 		name: "Vehicle Brands",
+		allowNewItems: true,
 	},
 	data: [
 		{
@@ -58,6 +59,22 @@ const mockCatalogResponse: CatalogResponse = {
 	},
 };
 
+const emptyCatalogResponse: CatalogResponse = {
+	catalog: {
+		id: "01JCXACB0002ABCDEFGHJ2",
+		key: "vehicle-brands",
+		name: "Vehicle Brands",
+		allowNewItems: true,
+	},
+	data: [],
+	pagination: {
+		page: 1,
+		pageSize: 25,
+		total: 0,
+		totalPages: 0,
+	},
+};
+
 const CatalogDecorator: Decorator = (Story) => {
 	if (typeof window !== "undefined") {
 		const originalFetch = window.fetch;
@@ -70,6 +87,25 @@ const CatalogDecorator: Decorator = (Story) => {
 						: "";
 
 			if (url.includes("/api/v1/catalogs/vehicle-brands")) {
+				// Check if there's a search query parameter
+				const urlObj = new URL(url, window.location.origin);
+				const search = urlObj.searchParams.get("search") || "";
+
+				// If searching for something that doesn't exist, return empty results
+				// This allows the "Agregar" button to appear in the empty state
+				if (
+					search &&
+					search.toLowerCase() !== "toyota" &&
+					search.toLowerCase() !== "nissan" &&
+					search.toLowerCase() !== "volkswagen" &&
+					search.toLowerCase() !== "ford"
+				) {
+					return new Response(JSON.stringify(emptyCatalogResponse), {
+						status: 200,
+						headers: { "Content-Type": "application/json" },
+					});
+				}
+
 				return new Response(JSON.stringify(mockCatalogResponse), {
 					status: 200,
 					headers: { "Content-Type": "application/json" },
@@ -115,5 +151,17 @@ export const WithSelectedValue: Story = {
 		// Use the actual item ID to properly demonstrate selected value displaying name
 		value: "01JCXAVB0001ABCDEFGHJ1",
 		searchPlaceholder: "Buscar marca...",
+	},
+};
+
+export const WithAddNewItem: Story = {
+	args: {
+		catalogKey: "vehicle-brands",
+		label: "Marca",
+		searchPlaceholder: "Buscar marca...",
+		emptyState: "No se encontraron resultados para tu búsqueda.",
+		// Note: The catalog must have allowNewItems: true (handled by the decorator)
+		// To see the "Agregar" button, open the selector and type a search term
+		// that doesn't match any existing items (e.g., "Honda", "BMW", "Tesla")
 	},
 };

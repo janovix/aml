@@ -29,6 +29,7 @@ const createHookResult = (
 	overrides: Partial<CatalogSearchResult> = {},
 ): CatalogSearchResult => ({
 	items: sampleItems,
+	catalog: null,
 	pagination: {
 		page: 1,
 		pageSize: 25,
@@ -565,5 +566,404 @@ describe("CatalogSelector", () => {
 		const trigger = screen.getByRole("combobox");
 		// Type label should appear in the trigger
 		expect(trigger).toBeInTheDocument();
+	});
+
+	describe("open catalog functionality", () => {
+		it("shows 'Add new' button when catalog allows new items and no results", async () => {
+			const user = userEvent.setup();
+
+			const setSearchTermMock = vi.fn();
+			mockedUseCatalogSearch.mockReturnValue(
+				createHookResult({
+					items: [],
+					catalog: {
+						id: "cat-1",
+						key: "terrestrial-vehicle-brands",
+						name: "Terrestrial Vehicle Brands",
+						allowNewItems: true,
+					},
+					searchTerm: "NewBrand",
+					setSearchTerm: setSearchTermMock,
+				}),
+			);
+
+			render(
+				<CatalogSelector
+					catalogKey="terrestrial-vehicle-brands"
+					label="Marca"
+				/>,
+			);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			// Should show the "Add new" button in the empty state
+			await waitFor(() => {
+				expect(
+					screen.getByRole("button", { name: /Agregar.*NewBrand/i }),
+				).toBeInTheDocument();
+			});
+		});
+
+		it("shows 'Add new' option in results when catalog allows new items and has results", async () => {
+			const user = userEvent.setup();
+
+			const setSearchTermMock = vi.fn();
+			mockedUseCatalogSearch.mockReturnValue(
+				createHookResult({
+					items: sampleItems,
+					catalog: {
+						id: "cat-1",
+						key: "terrestrial-vehicle-brands",
+						name: "Terrestrial Vehicle Brands",
+						allowNewItems: true,
+					},
+					searchTerm: "Toy",
+					setSearchTerm: setSearchTermMock,
+				}),
+			);
+
+			render(
+				<CatalogSelector
+					catalogKey="terrestrial-vehicle-brands"
+					label="Marca"
+				/>,
+			);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			// Should show the "Add new" option in the results
+			await waitFor(() => {
+				expect(screen.getByText(/Agregar.*Toy/i)).toBeInTheDocument();
+			});
+		});
+
+		it("does not show 'Add new' button when catalog does not allow new items", async () => {
+			const user = userEvent.setup();
+
+			const setSearchTermMock = vi.fn();
+			mockedUseCatalogSearch.mockReturnValue(
+				createHookResult({
+					items: [],
+					catalog: {
+						id: "cat-1",
+						key: "countries",
+						name: "Countries",
+						allowNewItems: false,
+					},
+					searchTerm: "NewCountry",
+					setSearchTerm: setSearchTermMock,
+				}),
+			);
+
+			render(<CatalogSelector catalogKey="countries" label="País" />);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			// Should NOT show the "Add new" button
+			await waitFor(() => {
+				expect(
+					screen.queryByRole("button", { name: /Agregar/i }),
+				).not.toBeInTheDocument();
+			});
+		});
+	});
+
+	it("handles infinite scroll when scrolling near bottom", async () => {
+		const user = userEvent.setup();
+		const mockLoadMore = vi.fn().mockResolvedValue(undefined);
+
+		mockedUseCatalogSearch.mockReturnValue(
+			createHookResult({
+				items: sampleItems,
+				hasMore: true,
+				loadingMore: false,
+				loading: false,
+				loadMore: mockLoadMore,
+			}),
+		);
+
+		render(<CatalogSelector catalogKey="vehicle-brands" label="Marca" />);
+
+		const trigger = screen.getByRole("combobox");
+		await user.click(trigger);
+
+		// Wait for popover to open
+		await waitFor(() => {
+			expect(screen.getByText("Toyota")).toBeInTheDocument();
+		});
+
+		// Wait for scroll listener to be attached
+		await new Promise((resolve) => setTimeout(resolve, 50));
+
+		// Find the scrollable list
+		const commandList = document.querySelector("[cmdk-list]");
+		if (commandList) {
+			// Simulate scrolling near the bottom (within 100px threshold)
+			// scrollTop + clientHeight >= scrollHeight - threshold
+			// 900 + 100 >= 1000 - 100 => 1000 >= 900 (true)
+			Object.defineProperty(commandList, "scrollTop", {
+				writable: true,
+				configurable: true,
+				value: 900,
+			});
+			Object.defineProperty(commandList, "scrollHeight", {
+				writable: true,
+				configurable: true,
+				value: 1000,
+			});
+			Object.defineProperty(commandList, "clientHeight", {
+				writable: true,
+				configurable: true,
+				value: 100,
+			});
+
+			// Trigger scroll event
+			const scrollEvent = new Event("scroll", { bubbles: true });
+			commandList.dispatchEvent(scrollEvent);
+
+			// Wait a bit for the handler to process
+			await waitFor(
+				() => {
+					expect(mockLoadMore).toHaveBeenCalled();
+				},
+				{ timeout: 1000 },
+			);
+		}
+	});
+
+	it("does not load more when already loading", async () => {
+		const user = userEvent.setup();
+		const mockLoadMore = vi.fn().mockResolvedValue(undefined);
+
+		mockedUseCatalogSearch.mockReturnValue(
+			createHookResult({
+				items: sampleItems,
+				hasMore: true,
+				loadingMore: true,
+				loading: false,
+				loadMore: mockLoadMore,
+			}),
+		);
+
+		render(<CatalogSelector catalogKey="vehicle-brands" label="Marca" />);
+
+		const trigger = screen.getByRole("combobox");
+		await user.click(trigger);
+
+		await waitFor(() => {
+			expect(screen.getByText("Toyota")).toBeInTheDocument();
+		});
+
+		// Simulate scroll - should not call loadMore when already loading
+		const commandList = document.querySelector("[cmdk-list]");
+		if (commandList) {
+			const scrollEvent = new Event("scroll", { bubbles: true });
+			commandList.dispatchEvent(scrollEvent);
+		}
+
+		// Should not call loadMore when already loading
+		expect(mockLoadMore).not.toHaveBeenCalled();
+	});
+
+	it("handles scroll when popover is closed", async () => {
+		const mockLoadMore = vi.fn().mockResolvedValue(undefined);
+
+		mockedUseCatalogSearch.mockReturnValue(
+			createHookResult({
+				items: sampleItems,
+				hasMore: true,
+				loadingMore: false,
+				loading: false,
+				loadMore: mockLoadMore,
+			}),
+		);
+
+		render(<CatalogSelector catalogKey="vehicle-brands" label="Marca" />);
+
+		// Popover is closed, so scroll should not trigger loadMore
+		const commandList = document.querySelector("[cmdk-list]");
+		if (commandList) {
+			const scrollEvent = new Event("scroll", { bubbles: true });
+			commandList.dispatchEvent(scrollEvent);
+		}
+
+		// Should not call loadMore when popover is closed
+		expect(mockLoadMore).not.toHaveBeenCalled();
+	});
+
+	it("continues loading more pages when still near bottom after items change", async () => {
+		const user = userEvent.setup();
+		const mockLoadMore = vi.fn().mockResolvedValue(undefined);
+
+		const moreItems: CatalogItem[] = [
+			...sampleItems,
+			{
+				id: "brand-2",
+				catalogId: "vehicle-brands",
+				name: "Honda",
+				normalizedName: "honda",
+				active: true,
+				metadata: {},
+				createdAt: "2024-01-01T00:00:00Z",
+				updatedAt: "2024-01-01T00:00:00Z",
+			},
+		];
+
+		// Initial render with first page
+		mockedUseCatalogSearch.mockReturnValue(
+			createHookResult({
+				items: sampleItems,
+				hasMore: true,
+				loadingMore: false,
+				loading: false,
+				loadMore: mockLoadMore,
+				pagination: {
+					page: 1,
+					pageSize: 1,
+					total: 3,
+					totalPages: 3,
+				},
+			}),
+		);
+
+		const { rerender } = render(
+			<CatalogSelector catalogKey="vehicle-brands" label="Marca" />,
+		);
+
+		const trigger = screen.getByRole("combobox");
+		await user.click(trigger);
+
+		// Wait for popover to open
+		await waitFor(() => {
+			expect(screen.getByText("Toyota")).toBeInTheDocument();
+		});
+
+		// Wait for scroll listener to be attached
+		await new Promise((resolve) => setTimeout(resolve, 50));
+
+		const commandList = document.querySelector("[cmdk-list]");
+		if (commandList) {
+			// Simulate being near the bottom
+			Object.defineProperty(commandList, "scrollTop", {
+				writable: true,
+				configurable: true,
+				value: 900,
+			});
+			Object.defineProperty(commandList, "scrollHeight", {
+				writable: true,
+				configurable: true,
+				value: 1000,
+			});
+			Object.defineProperty(commandList, "clientHeight", {
+				writable: true,
+				configurable: true,
+				value: 100,
+			});
+
+			// Trigger scroll event to load first page
+			const scrollEvent = new Event("scroll", { bubbles: true });
+			commandList.dispatchEvent(scrollEvent);
+
+			// Wait for loadMore to be called
+			await waitFor(
+				() => {
+					expect(mockLoadMore).toHaveBeenCalledTimes(1);
+				},
+				{ timeout: 1000 },
+			);
+
+			// Simulate items changing after loadMore completes
+			// User is still near bottom, so it should load more
+			mockedUseCatalogSearch.mockReturnValue(
+				createHookResult({
+					items: moreItems,
+					hasMore: true,
+					loadingMore: false,
+					loading: false,
+					loadMore: mockLoadMore,
+					pagination: {
+						page: 2,
+						pageSize: 1,
+						total: 3,
+						totalPages: 3,
+					},
+				}),
+			);
+
+			rerender(<CatalogSelector catalogKey="vehicle-brands" label="Marca" />);
+
+			// Wait for the effect to check if we need to load more
+			await waitFor(
+				() => {
+					// Should have been called again because we're still near bottom
+					expect(mockLoadMore).toHaveBeenCalledTimes(2);
+				},
+				{ timeout: 2000 },
+			);
+		}
+	});
+
+	it("stops loading when no more pages are available", async () => {
+		const user = userEvent.setup();
+		const mockLoadMore = vi.fn().mockResolvedValue(undefined);
+
+		mockedUseCatalogSearch.mockReturnValue(
+			createHookResult({
+				items: sampleItems,
+				hasMore: false, // No more pages
+				loadingMore: false,
+				loading: false,
+				loadMore: mockLoadMore,
+				pagination: {
+					page: 1,
+					pageSize: 25,
+					total: 1,
+					totalPages: 1,
+				},
+			}),
+		);
+
+		render(<CatalogSelector catalogKey="vehicle-brands" label="Marca" />);
+
+		const trigger = screen.getByRole("combobox");
+		await user.click(trigger);
+
+		await waitFor(() => {
+			expect(screen.getByText("Toyota")).toBeInTheDocument();
+		});
+
+		await new Promise((resolve) => setTimeout(resolve, 50));
+
+		const commandList = document.querySelector("[cmdk-list]");
+		if (commandList) {
+			// Simulate scrolling near the bottom
+			Object.defineProperty(commandList, "scrollTop", {
+				writable: true,
+				configurable: true,
+				value: 900,
+			});
+			Object.defineProperty(commandList, "scrollHeight", {
+				writable: true,
+				configurable: true,
+				value: 1000,
+			});
+			Object.defineProperty(commandList, "clientHeight", {
+				writable: true,
+				configurable: true,
+				value: 100,
+			});
+
+			const scrollEvent = new Event("scroll", { bubbles: true });
+			commandList.dispatchEvent(scrollEvent);
+
+			// Wait a bit
+			await new Promise((resolve) => setTimeout(resolve, 200));
+
+			// Should not call loadMore when hasMore is false
+			expect(mockLoadMore).not.toHaveBeenCalled();
+		}
 	});
 });

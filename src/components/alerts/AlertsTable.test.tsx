@@ -29,6 +29,16 @@ vi.mock("@/hooks/use-mobile", () => ({
 	useIsMobile: () => false,
 }));
 
+const mockCurrentOrg = { id: "org-1", name: "Test Org", slug: "test-org" };
+
+const mockUseOrgStore = vi.fn(() => ({
+	currentOrg: mockCurrentOrg,
+}));
+
+vi.mock("@/lib/org-store", () => ({
+	useOrgStore: () => mockUseOrgStore(),
+}));
+
 const mockPush = vi.fn();
 
 vi.mock("next/navigation", () => ({
@@ -62,7 +72,7 @@ const mockAlerts: Alert[] = [
 		updatedAt: new Date().toISOString(),
 		alertRule: {
 			id: "rule-1",
-			name: "Operación inusual",
+			name: "OPERACIÓN INUSUAL",
 			description: "Detecta operaciones inusuales",
 			active: true,
 			severity: "HIGH",
@@ -147,7 +157,7 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
 		});
 	});
 
@@ -155,9 +165,9 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
-			expect(screen.getByText("Transacción de alto monto")).toBeInTheDocument();
-			expect(screen.getByText("Estructuración")).toBeInTheDocument();
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
+			expect(screen.getByText("TRANSACCIÓN DE ALTO MONTO")).toBeInTheDocument();
+			expect(screen.getByText("ESTRUCTURACIÓN")).toBeInTheDocument();
 		});
 	});
 
@@ -166,7 +176,7 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
 		});
 
 		const checkboxes = screen.getAllByRole("checkbox");
@@ -183,7 +193,7 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
 		});
 
 		const selectAllCheckbox = screen.getAllByRole("checkbox")[0];
@@ -205,7 +215,9 @@ describe("AlertsTable", () => {
 
 		render(<AlertsTable />);
 
-		expect(screen.getByText("Cargando alertas...")).toBeInTheDocument();
+		// Should show skeleton loaders instead of text
+		const skeletons = screen.getAllByTestId("skeleton");
+		expect(skeletons.length).toBeGreaterThan(0);
 
 		resolveAlerts!({
 			data: mockAlerts,
@@ -218,7 +230,7 @@ describe("AlertsTable", () => {
 		});
 
 		await waitFor(() => {
-			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
 		});
 	});
 
@@ -243,7 +255,7 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
 		});
 
 		const searchInput = screen.getByPlaceholderText(/buscar/i);
@@ -252,7 +264,7 @@ describe("AlertsTable", () => {
 		await user.type(searchInput, "Operación");
 
 		await waitFor(() => {
-			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
 		});
 	});
 
@@ -260,7 +272,7 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
 		});
 
 		// Use getAllByText since filter can appear in multiple places
@@ -276,7 +288,7 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
 		});
 
 		// Check that rows have action buttons
@@ -288,7 +300,7 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
 		});
 
 		// Check for client links
@@ -301,7 +313,7 @@ describe("AlertsTable", () => {
 		render(<AlertsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
 		});
 
 		const checkboxes = screen.getAllByRole("checkbox");
@@ -323,6 +335,465 @@ describe("AlertsTable", () => {
 					status: "DETECTED",
 				}),
 			);
+		});
+	});
+
+	it("renders deadline column with null submissionDeadline", async () => {
+		const firstAlert = mockAlerts[0];
+		if (!firstAlert || !firstAlert.alertRule) return;
+
+		const alertWithoutDeadline: Alert = {
+			...firstAlert,
+			submissionDeadline: undefined,
+		};
+
+		vi.mocked(alertsApi.listAlerts).mockResolvedValueOnce({
+			data: [alertWithoutDeadline],
+			pagination: {
+				page: 1,
+				limit: 100,
+				total: 1,
+				totalPages: 1,
+			},
+		});
+
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			// Should render alert even without deadline (now uppercase)
+			expect(
+				screen.getByText(firstAlert.alertRule!.name.toUpperCase()),
+			).toBeInTheDocument();
+		});
+	});
+
+	it("renders deadline column with overdue status", async () => {
+		const secondAlert = mockAlerts[1];
+		if (!secondAlert || !secondAlert.alertRule) return;
+
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			// Should render overdue alerts (now uppercase)
+			expect(
+				screen.getByText(secondAlert.alertRule!.name.toUpperCase()),
+			).toBeInTheDocument();
+		});
+	});
+
+	it("renders ruleName column with notes", async () => {
+		const firstAlert = mockAlerts[0];
+		if (!firstAlert || !firstAlert.alertRule) return;
+
+		const alertWithNotes: Alert = {
+			...firstAlert,
+			notes: "Test notes",
+		};
+
+		vi.mocked(alertsApi.listAlerts).mockResolvedValueOnce({
+			data: [alertWithNotes],
+			pagination: {
+				page: 1,
+				limit: 100,
+				total: 1,
+				totalPages: 1,
+			},
+		});
+
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			// Should render alert with notes
+			expect(
+				screen.getByText(firstAlert.alertRule!.name.toUpperCase()),
+			).toBeInTheDocument();
+		});
+	});
+
+	it("renders action menu with DETECTED status options", async () => {
+		const user = userEvent.setup();
+		const firstAlert = mockAlerts[0];
+		if (!firstAlert || !firstAlert.alertRule) return;
+
+		const detectedAlert: Alert = {
+			...firstAlert,
+			status: "DETECTED",
+		};
+
+		vi.mocked(alertsApi.listAlerts).mockResolvedValueOnce({
+			data: [detectedAlert],
+			pagination: {
+				page: 1,
+				limit: 100,
+				total: 1,
+				totalPages: 1,
+			},
+		});
+
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText(firstAlert.alertRule!.name.toUpperCase()),
+			).toBeInTheDocument();
+		});
+
+		// Open action menu
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				// Should show "Generar archivo" for DETECTED status
+				expect(screen.getByText("Generar archivo")).toBeInTheDocument();
+			});
+		}
+	});
+
+	it("renders action menu with FILE_GENERATED status options", async () => {
+		const user = userEvent.setup();
+		const firstAlert = mockAlerts[0];
+		if (!firstAlert || !firstAlert.alertRule) return;
+
+		const fileGeneratedAlert: Alert = {
+			...firstAlert,
+			status: "FILE_GENERATED",
+		};
+
+		vi.mocked(alertsApi.listAlerts).mockResolvedValueOnce({
+			data: [fileGeneratedAlert],
+			pagination: {
+				page: 1,
+				limit: 100,
+				total: 1,
+				totalPages: 1,
+			},
+		});
+
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText(firstAlert.alertRule!.name.toUpperCase()),
+			).toBeInTheDocument();
+		});
+
+		// Open action menu
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				// Should show "Enviar a SAT" for FILE_GENERATED status
+				expect(screen.getByText("Enviar a SAT")).toBeInTheDocument();
+			});
+		}
+	});
+
+	it("renders action menu with cancel option for non-CANCELLED and non-SUBMITTED status", async () => {
+		const user = userEvent.setup();
+		const firstAlert = mockAlerts[0];
+		if (!firstAlert || !firstAlert.alertRule) return;
+
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText(firstAlert.alertRule!.name.toUpperCase()),
+			).toBeInTheDocument();
+		});
+
+		// Open action menu
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				// Should show "Cancelar alerta" for DETECTED status
+				expect(screen.getByText("Cancelar alerta")).toBeInTheDocument();
+			});
+		}
+	});
+
+	it("does not render cancel option for CANCELLED status", async () => {
+		const user = userEvent.setup();
+		const firstAlert = mockAlerts[0];
+		if (!firstAlert || !firstAlert.alertRule) return;
+
+		const cancelledAlert: Alert = {
+			...firstAlert,
+			status: "CANCELLED",
+		};
+
+		vi.mocked(alertsApi.listAlerts).mockResolvedValueOnce({
+			data: [cancelledAlert],
+			pagination: {
+				page: 1,
+				limit: 100,
+				total: 1,
+				totalPages: 1,
+			},
+		});
+
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText(firstAlert.alertRule!.name.toUpperCase()),
+			).toBeInTheDocument();
+		});
+
+		// Open action menu
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				// Should not show "Cancelar alerta" for CANCELLED status
+				expect(screen.queryByText("Cancelar alerta")).not.toBeInTheDocument();
+			});
+		}
+	});
+
+	it("does not render cancel option for SUBMITTED status", async () => {
+		const user = userEvent.setup();
+		const firstAlert = mockAlerts[0];
+		if (!firstAlert || !firstAlert.alertRule) return;
+
+		const submittedAlert: Alert = {
+			...firstAlert,
+			status: "SUBMITTED",
+		};
+
+		vi.mocked(alertsApi.listAlerts).mockResolvedValueOnce({
+			data: [submittedAlert],
+			pagination: {
+				page: 1,
+				limit: 100,
+				total: 1,
+				totalPages: 1,
+			},
+		});
+
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText(firstAlert.alertRule!.name.toUpperCase()),
+			).toBeInTheDocument();
+		});
+
+		// Open action menu
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				// Should not show "Cancelar alerta" for SUBMITTED status
+				expect(screen.queryByText("Cancelar alerta")).not.toBeInTheDocument();
+			});
+		}
+	});
+
+	it("renders Generar archivo option for DETECTED status", async () => {
+		const user = userEvent.setup();
+		const firstAlert = mockAlerts[0];
+		if (!firstAlert || !firstAlert.alertRule) return;
+
+		const detectedAlert: Alert = {
+			...firstAlert,
+			status: "DETECTED",
+		};
+
+		vi.mocked(alertsApi.listAlerts).mockResolvedValueOnce({
+			data: [detectedAlert],
+			pagination: {
+				page: 1,
+				limit: 100,
+				total: 1,
+				totalPages: 1,
+			},
+		});
+
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText(firstAlert.alertRule!.name.toUpperCase()),
+			).toBeInTheDocument();
+		});
+
+		// Open action menu
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				// Should show "Generar archivo" for DETECTED status
+				expect(screen.getByText("Generar archivo")).toBeInTheDocument();
+			});
+		}
+	});
+
+	it("renders Enviar a SAT option for FILE_GENERATED status", async () => {
+		const user = userEvent.setup();
+		const firstAlert = mockAlerts[0];
+		if (!firstAlert || !firstAlert.alertRule) return;
+
+		const fileGeneratedAlert: Alert = {
+			...firstAlert,
+			status: "FILE_GENERATED",
+		};
+
+		vi.mocked(alertsApi.listAlerts).mockResolvedValueOnce({
+			data: [fileGeneratedAlert],
+			pagination: {
+				page: 1,
+				limit: 100,
+				total: 1,
+				totalPages: 1,
+			},
+		});
+
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText(firstAlert.alertRule!.name.toUpperCase()),
+			).toBeInTheDocument();
+		});
+
+		// Open action menu
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				// Should show "Enviar a SAT" for FILE_GENERATED status
+				expect(screen.getByText("Enviar a SAT")).toBeInTheDocument();
+			});
+		}
+	});
+
+	it("navigates to alert detail when Ver detalle is clicked", async () => {
+		const user = userEvent.setup();
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
+		});
+
+		// Open action menu
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				expect(screen.getByText("Ver detalle")).toBeInTheDocument();
+			});
+
+			await user.click(screen.getByText("Ver detalle"));
+
+			expect(mockPush).toHaveBeenCalledWith(`/alerts/${mockAlerts[0]?.id}`);
+		}
+	});
+
+	it("navigates to client when Ver cliente is clicked", async () => {
+		const user = userEvent.setup();
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
+		});
+
+		// Open action menu
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				expect(screen.getByText("Ver cliente")).toBeInTheDocument();
+			});
+
+			await user.click(screen.getByText("Ver cliente"));
+
+			expect(mockPush).toHaveBeenCalledWith(
+				`/clients/${mockAlerts[0]?.clientId}`,
+			);
+		}
+	});
+
+	it("renders CTA button that navigates to new alert page", async () => {
+		const user = userEvent.setup();
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
+		});
+
+		// Find the new alert buttons in the PageHero (there are mobile and desktop versions)
+		const newAlertButtons = screen.getAllByRole("button", {
+			name: /nueva alerta/i,
+		});
+		expect(newAlertButtons.length).toBeGreaterThan(0);
+
+		await user.click(newAlertButtons[0]);
+		expect(mockPush).toHaveBeenCalledWith("/alerts/new");
+	});
+
+	it("refetches data when organization changes", async () => {
+		// Initial render with org-1
+		mockUseOrgStore.mockReturnValue({
+			currentOrg: { id: "org-1", name: "Test Org", slug: "test-org" },
+		});
+
+		const { rerender } = render(<AlertsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
+		});
+
+		// Verify initial fetch was called
+		expect(alertsApi.listAlerts).toHaveBeenCalledTimes(1);
+
+		// Change organization
+		mockUseOrgStore.mockReturnValue({
+			currentOrg: { id: "org-2", name: "Other Org", slug: "other-org" },
+		});
+
+		// Rerender to trigger the effect with new org
+		rerender(<AlertsTable />);
+
+		// Wait for the refetch to be called
+		await waitFor(() => {
+			expect(alertsApi.listAlerts).toHaveBeenCalledTimes(2);
 		});
 	});
 });

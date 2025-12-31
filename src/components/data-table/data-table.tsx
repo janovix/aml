@@ -1,17 +1,19 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import {
 	Search,
 	X,
 	ArrowUpDown,
 	ChevronLeft,
 	ChevronRight,
+	Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { DataTableProps, SortState, ActiveFilter } from "./types";
 import { FilterDrawer } from "./filter-drawer";
@@ -47,6 +49,11 @@ export function DataTable<T extends object>({
 	activeText = "activo",
 	activePluralText = "activos",
 	clearSearchAriaLabel = "Limpiar búsqueda",
+	paginationMode = "pagination",
+	itemsPerPage = ITEMS_PER_PAGE,
+	onLoadMore,
+	hasMore = false,
+	isLoadingMore = false,
 }: DataTableProps<T>) {
 	const isMobile = useIsMobile();
 	const [searchQuery, setSearchQuery] = useState("");
@@ -60,6 +67,7 @@ export function DataTable<T extends object>({
 	});
 	const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
 	const [currentPage, setCurrentPage] = useState(1);
+	const scrollSentinelRef = useRef<HTMLDivElement>(null);
 
 	// Calculate active filter count
 	const activeFilterCount = useMemo(
@@ -209,12 +217,49 @@ export function DataTable<T extends object>({
 		return result;
 	}, [data, searchQuery, searchKeys, activeFilters, sortState]);
 
-	// Pagination
-	const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+	// Pagination or Infinite Scroll
+	const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 	const paginatedData = useMemo(() => {
-		const start = (currentPage - 1) * ITEMS_PER_PAGE;
-		return filteredData.slice(start, start + ITEMS_PER_PAGE);
-	}, [filteredData, currentPage]);
+		if (paginationMode === "infinite-scroll") {
+			// For infinite scroll, show all filtered data (parent manages loading more)
+			return filteredData;
+		}
+		const start = (currentPage - 1) * itemsPerPage;
+		return filteredData.slice(start, start + itemsPerPage);
+	}, [filteredData, currentPage, paginationMode, itemsPerPage]);
+
+	// Infinite scroll: Intersection Observer
+	useEffect(() => {
+		if (
+			paginationMode !== "infinite-scroll" ||
+			!onLoadMore ||
+			!hasMore ||
+			isLoadingMore
+		) {
+			return;
+		}
+
+		const sentinel = scrollSentinelRef.current;
+		if (!sentinel) return;
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				const [entry] = entries;
+				if (entry?.isIntersecting && hasMore && !isLoadingMore) {
+					onLoadMore();
+				}
+			},
+			{
+				rootMargin: "100px",
+			},
+		);
+
+		observer.observe(sentinel);
+
+		return () => {
+			observer.disconnect();
+		};
+	}, [paginationMode, onLoadMore, hasMore, isLoadingMore]);
 
 	// Filter visible columns for mobile
 	const visibleColumns = useMemo(() => {
@@ -226,9 +271,20 @@ export function DataTable<T extends object>({
 
 	return (
 		<>
-			<div className="rounded-lg border border-border bg-card overflow-hidden">
+			<div
+				className={cn(
+					"rounded-lg border border-border bg-card overflow-hidden",
+					paginationMode === "infinite-scroll" && "relative",
+				)}
+			>
 				{/* Header with Search and Filters */}
-				<div className="border-b border-border bg-muted/20">
+				<div
+					className={cn(
+						"border-b border-border bg-muted/20",
+						paginationMode === "infinite-scroll" &&
+							"sticky top-0 z-10 bg-card/95 backdrop-blur-sm shadow-sm",
+					)}
+				>
 					<div className="flex items-center gap-2 p-3">
 						{/* Search Input */}
 						<div className="relative flex-1 max-w-sm">
@@ -349,18 +405,39 @@ export function DataTable<T extends object>({
 						</thead>
 						<tbody>
 							{isLoading ? (
-								<tr>
-									<td
-										colSpan={
-											visibleColumns.length +
-											(selectable ? 1 : 0) +
-											(actions ? 1 : 0)
-										}
-										className="p-8 text-center text-muted-foreground"
+								// Skeleton loading rows
+								Array.from({ length: itemsPerPage }).map((_, index) => (
+									<tr
+										key={`skeleton-${index}`}
+										className="border-b border-border"
 									>
-										{loadingMessage}
-									</td>
-								</tr>
+										{selectable && (
+											<td className="p-3">
+												<Skeleton className="h-4 w-4 rounded" />
+											</td>
+										)}
+										{visibleColumns.map((column) => (
+											<td
+												key={column.id}
+												className={cn("p-3", column.className)}
+											>
+												<Skeleton
+													className={cn(
+														"h-4 w-full",
+														index % 3 === 0 && "w-3/4",
+														index % 3 === 1 && "w-full",
+														index % 3 === 2 && "w-5/6",
+													)}
+												/>
+											</td>
+										))}
+										{actions && (
+											<td className="p-3">
+												<Skeleton className="h-8 w-8 rounded" />
+											</td>
+										)}
+									</tr>
+								))
 							) : paginatedData.length === 0 ? (
 								<tr>
 									<td
@@ -429,10 +506,14 @@ export function DataTable<T extends object>({
 					</table>
 				</div>
 
-				{/* Footer with Pagination */}
+				{/* Footer with Pagination or Infinite Scroll */}
 				<div className="border-t border-border px-3 py-2 flex items-center justify-between text-sm text-muted-foreground bg-muted/20">
 					<div className="flex items-center gap-2">
-						<span className="tabular-nums">{filteredData.length}</span>
+						<span className="tabular-nums">
+							{paginationMode === "infinite-scroll"
+								? `${paginatedData.length} / ${filteredData.length}`
+								: filteredData.length}
+						</span>
 						<span>{filteredData.length !== 1 ? resultsText : resultText}</span>
 						{selectedRows.size > 0 && (
 							<span className="text-primary">
@@ -441,7 +522,7 @@ export function DataTable<T extends object>({
 							</span>
 						)}
 					</div>
-					{totalPages > 1 && (
+					{paginationMode === "pagination" && totalPages > 1 && (
 						<div className="flex items-center gap-1">
 							<Button
 								variant="ghost"
@@ -469,6 +550,24 @@ export function DataTable<T extends object>({
 						</div>
 					)}
 				</div>
+
+				{/* Infinite Scroll Sentinel and Loading Indicator */}
+				{paginationMode === "infinite-scroll" && (
+					<>
+						<div ref={scrollSentinelRef} className="h-1" />
+						{isLoadingMore && (
+							<div className="border-t border-border px-3 py-4 flex items-center justify-center text-sm text-muted-foreground bg-muted/20">
+								<Loader2 className="h-4 w-4 animate-spin mr-2" />
+								<span>Cargando más...</span>
+							</div>
+						)}
+						{!hasMore && paginatedData.length > 0 && (
+							<div className="border-t border-border px-3 py-2 text-center text-sm text-muted-foreground bg-muted/20">
+								<span>No hay más resultados</span>
+							</div>
+						)}
+					</>
+				)}
 			</div>
 
 			{/* Mobile Filter Drawer */}

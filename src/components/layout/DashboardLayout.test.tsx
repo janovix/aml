@@ -4,9 +4,19 @@ import userEvent from "@testing-library/user-event";
 import { DashboardLayout } from "./DashboardLayout";
 
 const mockPathname = vi.fn(() => "/clients");
+const mockPush = vi.fn();
+const mockRouter = {
+	push: mockPush,
+	replace: vi.fn(),
+	prefetch: vi.fn(),
+	back: vi.fn(),
+	forward: vi.fn(),
+	refresh: vi.fn(),
+};
 
 vi.mock("next/navigation", () => ({
 	usePathname: () => mockPathname(),
+	useRouter: () => mockRouter,
 }));
 
 vi.mock("next-themes", () => ({
@@ -18,6 +28,25 @@ vi.mock("next-themes", () => ({
 
 vi.mock("@algtools/ui", () => ({
 	ThemeSwitcher: () => <div data-testid="theme-switcher">Theme Switcher</div>,
+}));
+
+vi.mock("@/lib/auth/useAuthSession", () => ({
+	useAuthSession: () => ({
+		data: {
+			user: {
+				id: "1",
+				name: "Test User",
+				email: "test@example.com",
+				image: null,
+			},
+		},
+		error: null,
+		isPending: false,
+	}),
+}));
+
+vi.mock("@/lib/auth/actions", () => ({
+	logout: vi.fn(),
 }));
 
 describe("DashboardLayout", () => {
@@ -76,11 +105,9 @@ describe("DashboardLayout", () => {
 			</DashboardLayout>,
 		);
 
-		// Avatar button is in the header, find by checking for User icon or dropdown trigger
-		const avatarButton = document.querySelector(
-			'[data-slot="dropdown-menu-trigger"]',
-		);
-		expect(avatarButton).toBeInTheDocument();
+		// Avatar button is in the sidebar footer, find by checking for user name or email
+		const userName = screen.getByText("Test User");
+		expect(userName).toBeInTheDocument();
 	});
 
 	it("opens avatar dropdown menu when clicked", async () => {
@@ -91,29 +118,24 @@ describe("DashboardLayout", () => {
 			</DashboardLayout>,
 		);
 
-		// Find the dropdown trigger button
-		const avatarButton = document.querySelector(
-			'[data-slot="dropdown-menu-trigger"]',
-		) as HTMLElement;
-		expect(avatarButton).toBeInTheDocument();
+		// Find the dropdown trigger button by user name
+		const userName = screen.getByText("Test User");
+		expect(userName).toBeInTheDocument();
 
-		await user.click(avatarButton);
+		// Click on the user name to open dropdown
+		await user.click(userName);
 
 		// Wait for dropdown menu content to appear
 		// The dropdown content should be rendered (Radix UI renders it in a portal)
-		const dropdownContent = document.querySelector(
-			'[data-slot="dropdown-menu-content"]',
-		);
-		// Check if dropdown is open by looking for the content or menu items
-		if (dropdownContent) {
-			// There might be multiple "Configuración" texts (sidebar and dropdown)
-			const configTexts = screen.getAllByText("Configuración");
-			expect(configTexts.length).toBeGreaterThan(0);
-			expect(screen.getByText("Cerrar sesión")).toBeInTheDocument();
-		} else {
-			// If dropdown doesn't open immediately, at least verify the trigger exists
-			expect(avatarButton).toBeInTheDocument();
-		}
+		// Check if dropdown is open by looking for the menu items
+		// There might be multiple "Configuración" texts (sidebar and dropdown)
+		const configTexts = await screen.findAllByText("Configuración", undefined, {
+			timeout: 2000,
+		});
+		expect(configTexts.length).toBeGreaterThan(0);
+		expect(
+			await screen.findByText("Cerrar sesión", undefined, { timeout: 2000 }),
+		).toBeInTheDocument();
 	});
 
 	it("highlights active navigation item", () => {
@@ -136,8 +158,13 @@ describe("DashboardLayout", () => {
 		);
 
 		// Check for Logo SVG element (should be in sidebar header)
-		// When sidebar is open, it should show the logo variant
+		// When sidebar is open (defaultOpen={true}), OrganizationSwitcher shows "Crear organización"
+		// When collapsed, it shows the icon variant. Check for either the logo or the organization switcher
 		const logoSvg = document.querySelector('svg[viewBox="0 0 102 16"]');
-		expect(logoSvg).toBeInTheDocument();
+		const logoIcon = document.querySelector('svg[viewBox="0 0 200 200"]');
+		const orgSwitcher = screen.queryByText("Crear organización");
+
+		// Logo should be present either as full logo, icon, or organization switcher should be visible
+		expect(logoSvg || logoIcon || orgSwitcher).toBeTruthy();
 	});
 });

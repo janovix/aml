@@ -22,6 +22,7 @@ export interface PageHeroProps {
 	title: string;
 	subtitle: string;
 	icon: LucideIcon;
+	/** Stats cards to display. Maximum of 3 will be rendered. */
 	stats: StatCard[];
 	ctaLabel?: string;
 	ctaIcon?: LucideIcon;
@@ -85,8 +86,8 @@ export function PageHero({
 			</div>
 
 			{/* Stats cards */}
-			<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-				{stats.map((stat, index) => {
+			<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+				{stats.slice(0, 3).map((stat) => {
 					const StatIcon = stat.icon;
 					const isPrimary = stat.variant === "primary";
 

@@ -9,10 +9,24 @@ class ResizeObserverMock {
 	disconnect() {}
 }
 
+// Mock IntersectionObserver for infinite scroll
+class IntersectionObserverMock {
+	observe() {}
+	unobserve() {}
+	disconnect() {}
+	constructor() {}
+}
+
 // Mock window.matchMedia
 beforeAll(() => {
 	// Add ResizeObserver mock
 	global.ResizeObserver = ResizeObserverMock;
+
+	// Add IntersectionObserver mock
+	global.IntersectionObserver =
+		IntersectionObserverMock as unknown as typeof IntersectionObserver;
+	window.IntersectionObserver =
+		IntersectionObserverMock as unknown as typeof IntersectionObserver;
 
 	// Add scrollIntoView mock for cmdk/Command component
 	Element.prototype.scrollIntoView = () => {};
