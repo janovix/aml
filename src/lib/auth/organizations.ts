@@ -131,7 +131,7 @@ function normalizeSettings(
 	};
 }
 
-function normalizeOrganization(raw: unknown): Organization {
+export function normalizeOrganization(raw: unknown): Organization {
 	if (!raw || typeof raw !== "object") {
 		return {
 			id: generateId("org"),

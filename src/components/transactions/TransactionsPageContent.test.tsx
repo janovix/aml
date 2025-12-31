@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TransactionsPageContent } from "./TransactionsPageContent";
 import * as statsApi from "@/lib/api/stats";
@@ -24,6 +24,12 @@ vi.mock("@/hooks/use-toast", () => ({
 
 vi.mock("@/lib/api/stats", () => ({
 	getTransactionStats: vi.fn(),
+}));
+
+vi.mock("@/components/transactions/TransactionsTable", () => ({
+	TransactionsTable: () => (
+		<div data-testid="transactions-table">Mocked TransactionsTable</div>
+	),
 }));
 
 describe("TransactionsPageContent", () => {
@@ -136,8 +142,24 @@ describe("TransactionsPageContent", () => {
 
 		render(<TransactionsPageContent />);
 
-		// Should display zero values
-		await screen.findByText("0");
+		// Wait for stats to load and verify zero values are displayed
+		// Check for stat labels first to ensure component rendered
+		expect(screen.getByText("Transacciones Hoy")).toBeInTheDocument();
+
+		// Wait for loading to complete (check that "..." is gone)
+		await waitFor(
+			() => {
+				// After loading, the "..." should be replaced with actual values
+				const loadingIndicators = screen.queryAllByText("...");
+				// In stat cards, there should be no "..." after loading
+				expect(loadingIndicators.length).toBe(0);
+			},
+			{ timeout: 5000 },
+		);
+
+		// Then verify zero values are displayed
+		const zeroValues = screen.getAllByText("0");
+		expect(zeroValues.length).toBeGreaterThan(0);
 	});
 
 	it("handles ApiError when fetching stats", async () => {

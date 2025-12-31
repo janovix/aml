@@ -491,6 +491,8 @@ export function ReportsTable(): React.ReactElement {
 				selectable
 				getId={(item) => item.id}
 				actions={renderActions}
+				paginationMode="infinite-scroll"
+				hasMore={false}
 			/>
 		</div>
 	);

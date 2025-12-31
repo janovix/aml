@@ -88,7 +88,7 @@ describe("DataTable", () => {
 		expect(screen.getByText(String(mockData.length))).toBeInTheDocument();
 	});
 
-	it("shows loading state", () => {
+	it("shows loading state with skeleton rows", () => {
 		render(
 			<DataTable
 				data={[]}
@@ -101,7 +101,11 @@ describe("DataTable", () => {
 			/>,
 		);
 
-		expect(screen.getByText("Loading items...")).toBeInTheDocument();
+		// Should show skeleton loaders instead of text
+		const skeletons = screen.getAllByTestId("skeleton");
+		expect(skeletons.length).toBeGreaterThan(0);
+		// Should show multiple skeleton rows (one per itemsPerPage)
+		expect(skeletons.length).toBeGreaterThanOrEqual(10);
 	});
 
 	it("shows empty state", () => {
@@ -1199,5 +1203,60 @@ describe("DataTable", () => {
 		await waitFor(() => {
 			expect(screen.getByText("Item One")).toBeInTheDocument();
 		});
+	});
+
+	it("supports infinite scroll mode", () => {
+		const handleLoadMore = vi.fn();
+		render(
+			<DataTable
+				data={mockData}
+				columns={columns}
+				filters={filters}
+				searchKeys={["name"]}
+				getId={(item) => item.id}
+				paginationMode="infinite-scroll"
+				onLoadMore={handleLoadMore}
+				hasMore={true}
+			/>,
+		);
+
+		// Should show all data (no pagination)
+		expect(screen.getByText("Item One")).toBeInTheDocument();
+		expect(screen.getByText("Item Five")).toBeInTheDocument();
+		// Should not show pagination controls
+		expect(screen.queryByText("1 /")).not.toBeInTheDocument();
+	});
+
+	it("shows loading more indicator in infinite scroll mode", () => {
+		render(
+			<DataTable
+				data={mockData}
+				columns={columns}
+				filters={filters}
+				searchKeys={["name"]}
+				getId={(item) => item.id}
+				paginationMode="infinite-scroll"
+				hasMore={true}
+				isLoadingMore={true}
+			/>,
+		);
+
+		expect(screen.getByText("Cargando más...")).toBeInTheDocument();
+	});
+
+	it("shows no more results message in infinite scroll mode", () => {
+		render(
+			<DataTable
+				data={mockData}
+				columns={columns}
+				filters={filters}
+				searchKeys={["name"]}
+				getId={(item) => item.id}
+				paginationMode="infinite-scroll"
+				hasMore={false}
+			/>,
+		);
+
+		expect(screen.getByText("No hay más resultados")).toBeInTheDocument();
 	});
 });

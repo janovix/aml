@@ -33,8 +33,10 @@ describe("ReportsTable", () => {
 		render(<ReportsTable />);
 
 		await waitFor(() => {
-			// Should show reports count
-			expect(screen.getByText(/resultado/)).toBeInTheDocument();
+			// Wait for report data to load
+			expect(
+				screen.getByText("Reporte Mensual Diciembre 2024"),
+			).toBeInTheDocument();
 		});
 	});
 
@@ -56,7 +58,15 @@ describe("ReportsTable", () => {
 		render(<ReportsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText(/resultado/)).toBeInTheDocument();
+			// Check for the results count in footer
+			// In infinite scroll mode, footer shows "X / Y" format, so look for the number pattern
+			// The footer contains a span with tabular-nums class that has the count
+			const footer = screen.getByText((content, element) => {
+				return !!(
+					element?.classList.contains("tabular-nums") && /\d+/.test(content)
+				);
+			});
+			expect(footer).toBeInTheDocument();
 		});
 
 		const checkboxes = screen.getAllByRole("checkbox");
@@ -73,7 +83,15 @@ describe("ReportsTable", () => {
 		render(<ReportsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText(/resultado/)).toBeInTheDocument();
+			// Check for the results count in footer
+			// In infinite scroll mode, footer shows "X / Y" format, so look for the number pattern
+			// The footer contains a span with tabular-nums class that has the count
+			const footer = screen.getByText((content, element) => {
+				return !!(
+					element?.classList.contains("tabular-nums") && /\d+/.test(content)
+				);
+			});
+			expect(footer).toBeInTheDocument();
 		});
 
 		const selectAllCheckbox = screen.getAllByRole("checkbox")[0];
@@ -89,7 +107,15 @@ describe("ReportsTable", () => {
 		render(<ReportsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText(/resultado/)).toBeInTheDocument();
+			// Check for the results count in footer
+			// In infinite scroll mode, footer shows "X / Y" format, so look for the number pattern
+			// The footer contains a span with tabular-nums class that has the count
+			const footer = screen.getByText((content, element) => {
+				return !!(
+					element?.classList.contains("tabular-nums") && /\d+/.test(content)
+				);
+			});
+			expect(footer).toBeInTheDocument();
 		});
 
 		const searchInput = screen.getByPlaceholderText(/buscar/i);
@@ -195,7 +221,15 @@ describe("ReportsTable", () => {
 		render(<ReportsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText(/resultado/)).toBeInTheDocument();
+			// Check for the results count in footer
+			// In infinite scroll mode, footer shows "X / Y" format, so look for the number pattern
+			// The footer contains a span with tabular-nums class that has the count
+			const footer = screen.getByText((content, element) => {
+				return !!(
+					element?.classList.contains("tabular-nums") && /\d+/.test(content)
+				);
+			});
+			expect(footer).toBeInTheDocument();
 		});
 
 		const checkboxes = screen.getAllByRole("checkbox");

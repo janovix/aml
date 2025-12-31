@@ -158,8 +158,9 @@ describe("ClientsTable", () => {
 
 		render(<ClientsTable />);
 
-		// Should show loading initially
-		expect(screen.getByText("Cargando clientes...")).toBeInTheDocument();
+		// Should show skeleton loaders instead of text
+		const skeletons = screen.getAllByTestId("skeleton");
+		expect(skeletons.length).toBeGreaterThan(0);
 
 		// Resolve the promise
 		resolveClients!({

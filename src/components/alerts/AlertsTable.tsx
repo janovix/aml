@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
 	AlertTriangle,
 	Bell,
@@ -120,7 +120,58 @@ export function AlertsTable({
 	const [alerts, setAlerts] = useState<Alert[]>([]);
 	const [clients, setClients] = useState<Map<string, Client>>(new Map());
 	const [isLoading, setIsLoading] = useState(true);
+	const [isLoadingMore, setIsLoadingMore] = useState(false);
+	const [currentPage, setCurrentPage] = useState(1);
+	const [hasMore, setHasMore] = useState(true);
+	const ITEMS_PER_PAGE = 20;
 
+	// Fetch client information for alerts - optimized to only fetch missing clients
+	const fetchClientsForAlerts = useCallback(
+		async (alertList: Alert[]) => {
+			const uniqueClientIds = [
+				...new Set(alertList.map((alert) => alert.clientId)),
+			];
+
+			// Filter out clients we already have
+			const missingClientIds = uniqueClientIds.filter(
+				(clientId) => !clients.has(clientId),
+			);
+
+			// If all clients are already loaded, skip fetching
+			if (missingClientIds.length === 0) {
+				return;
+			}
+
+			// Fetch only missing clients in parallel
+			const clientPromises = missingClientIds.map(async (clientId) => {
+				try {
+					const client = await getClientByRfc({
+						rfc: clientId,
+						jwt: jwt ?? undefined,
+					});
+					return { clientId, client };
+				} catch (error) {
+					console.error(`Error fetching client ${clientId}:`, error);
+					return null;
+				}
+			});
+
+			const results = await Promise.all(clientPromises);
+
+			setClients((prev) => {
+				const merged = new Map(prev);
+				results.forEach((result) => {
+					if (result) {
+						merged.set(result.clientId, result.client);
+					}
+				});
+				return merged;
+			});
+		},
+		[jwt, clients],
+	);
+
+	// Initial load
 	useEffect(() => {
 		// Wait for JWT to be ready
 		if (isJwtLoading) return;
@@ -128,35 +179,17 @@ export function AlertsTable({
 		const fetchAlerts = async () => {
 			try {
 				setIsLoading(true);
+				setCurrentPage(1);
 				const response = await listAlerts({
 					page: 1,
-					limit: 100,
+					limit: ITEMS_PER_PAGE,
 					jwt: jwt ?? undefined,
 					...filters,
 				});
 				setAlerts(response.data);
+				setHasMore(response.pagination.page < response.pagination.totalPages);
 
-				// Fetch client information for all unique client IDs
-				const uniqueClientIds = [
-					...new Set(response.data.map((alert) => alert.clientId)),
-				];
-				const clientsMap = new Map<string, Client>();
-
-				await Promise.all(
-					uniqueClientIds.map(async (clientId) => {
-						try {
-							const client = await getClientByRfc({
-								rfc: clientId,
-								jwt: jwt ?? undefined,
-							});
-							clientsMap.set(clientId, client);
-						} catch (error) {
-							console.error(`Error fetching client ${clientId}:`, error);
-						}
-					}),
-				);
-
-				setClients(clientsMap);
+				await fetchClientsForAlerts(response.data);
 			} catch (error) {
 				console.error("Error fetching alerts:", error);
 				toast({
@@ -169,7 +202,47 @@ export function AlertsTable({
 			}
 		};
 		fetchAlerts();
-	}, [filters, toast, jwt, isJwtLoading]);
+	}, [filters, toast, jwt, isJwtLoading, fetchClientsForAlerts]);
+
+	// Load more alerts for infinite scroll
+	const handleLoadMore = useCallback(async () => {
+		if (isLoadingMore || !hasMore || isJwtLoading) return;
+
+		try {
+			setIsLoadingMore(true);
+			const nextPage = currentPage + 1;
+			const response = await listAlerts({
+				page: nextPage,
+				limit: ITEMS_PER_PAGE,
+				jwt: jwt ?? undefined,
+				...filters,
+			});
+
+			setAlerts((prev) => [...prev, ...response.data]);
+			setCurrentPage(nextPage);
+			setHasMore(response.pagination.page < response.pagination.totalPages);
+
+			await fetchClientsForAlerts(response.data);
+		} catch (error) {
+			console.error("Error loading more alerts:", error);
+			toast({
+				title: "Error",
+				description: "No se pudieron cargar más alertas.",
+				variant: "destructive",
+			});
+		} finally {
+			setIsLoadingMore(false);
+		}
+	}, [
+		currentPage,
+		hasMore,
+		isLoadingMore,
+		isJwtLoading,
+		jwt,
+		filters,
+		toast,
+		fetchClientsForAlerts,
+	]);
 
 	// Transform Alert to AlertRow format
 	const alertsData: AlertRow[] = useMemo(() => {
@@ -538,6 +611,10 @@ export function AlertsTable({
 				selectable
 				getId={(item) => item.id}
 				actions={renderActions}
+				paginationMode="infinite-scroll"
+				onLoadMore={handleLoadMore}
+				hasMore={hasMore}
+				isLoadingMore={isLoadingMore}
 			/>
 		</div>
 	);

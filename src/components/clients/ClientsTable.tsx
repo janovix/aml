@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
 	Users,
 	Building2,
@@ -81,9 +81,14 @@ export function ClientsTable(): React.ReactElement {
 	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const [clients, setClients] = useState<Client[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
+	const [isLoadingMore, setIsLoadingMore] = useState(false);
+	const [currentPage, setCurrentPage] = useState(1);
+	const [hasMore, setHasMore] = useState(true);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
+	const ITEMS_PER_PAGE = 20;
 
+	// Initial load
 	useEffect(() => {
 		// Wait for JWT to be ready
 		if (isJwtLoading) return;
@@ -91,12 +96,14 @@ export function ClientsTable(): React.ReactElement {
 		const fetchClients = async () => {
 			try {
 				setIsLoading(true);
+				setCurrentPage(1);
 				const response = await listClients({
 					page: 1,
-					limit: 100,
+					limit: ITEMS_PER_PAGE,
 					jwt: jwt ?? undefined,
 				});
 				setClients(response.data);
+				setHasMore(response.pagination.page < response.pagination.totalPages);
 			} catch (error) {
 				console.error("Error fetching clients:", error);
 				toast({
@@ -110,6 +117,34 @@ export function ClientsTable(): React.ReactElement {
 		};
 		fetchClients();
 	}, [toast, jwt, isJwtLoading]);
+
+	// Load more clients for infinite scroll
+	const handleLoadMore = useCallback(async () => {
+		if (isLoadingMore || !hasMore || isJwtLoading) return;
+
+		try {
+			setIsLoadingMore(true);
+			const nextPage = currentPage + 1;
+			const response = await listClients({
+				page: nextPage,
+				limit: ITEMS_PER_PAGE,
+				jwt: jwt ?? undefined,
+			});
+
+			setClients((prev) => [...prev, ...response.data]);
+			setCurrentPage(nextPage);
+			setHasMore(response.pagination.page < response.pagination.totalPages);
+		} catch (error) {
+			console.error("Error loading more clients:", error);
+			toast({
+				title: "Error",
+				description: "No se pudieron cargar más clientes.",
+				variant: "destructive",
+			});
+		} finally {
+			setIsLoadingMore(false);
+		}
+	}, [currentPage, hasMore, isLoadingMore, isJwtLoading, jwt, toast]);
 
 	// Transform clients to include display name
 	const clientsData: ClientRow[] = useMemo(() => {
@@ -405,6 +440,10 @@ export function ClientsTable(): React.ReactElement {
 				selectable
 				getId={(item) => item.rfc}
 				actions={renderActions}
+				paginationMode="infinite-scroll"
+				onLoadMore={handleLoadMore}
+				hasMore={hasMore}
+				isLoadingMore={isLoadingMore}
 			/>
 
 			<AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

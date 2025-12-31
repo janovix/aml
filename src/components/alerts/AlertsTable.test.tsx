@@ -205,7 +205,9 @@ describe("AlertsTable", () => {
 
 		render(<AlertsTable />);
 
-		expect(screen.getByText("Cargando alertas...")).toBeInTheDocument();
+		// Should show skeleton loaders instead of text
+		const skeletons = screen.getAllByTestId("skeleton");
+		expect(skeletons.length).toBeGreaterThan(0);
 
 		resolveAlerts!({
 			data: mockAlerts,

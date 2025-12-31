@@ -123,6 +123,16 @@ export interface DataTableProps<T> {
 	activePluralText?: string;
 	/** Aria label for clear search button */
 	clearSearchAriaLabel?: string;
+	/** Pagination mode: 'pagination' or 'infinite-scroll' (default: 'pagination') */
+	paginationMode?: "pagination" | "infinite-scroll";
+	/** Items per page for pagination mode (default: 10) */
+	itemsPerPage?: number;
+	/** Callback when more items should be loaded (for infinite scroll) */
+	onLoadMore?: () => void;
+	/** Whether more items are available to load (for infinite scroll) */
+	hasMore?: boolean;
+	/** Whether currently loading more items (for infinite scroll) */
+	isLoadingMore?: boolean;
 }
 
 /**

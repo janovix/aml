@@ -1,6 +1,4 @@
 import { OrgTeamTable } from "@/components/org";
-import { AlertsTable } from "@/components/alerts";
-import { ReportsTable } from "@/components/reports";
 
 export default function TeamPage() {
 	return (
@@ -12,8 +10,6 @@ export default function TeamPage() {
 				</p>
 			</div>
 			<OrgTeamTable />
-			<AlertsTable />
-			<ReportsTable />
 		</div>
 	);
 }

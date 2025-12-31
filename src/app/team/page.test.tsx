@@ -9,18 +9,6 @@ vi.mock("@/components/org", () => ({
 	),
 }));
 
-// Mock the AlertsTable component
-vi.mock("@/components/alerts", () => ({
-	AlertsTable: () => <div data-testid="alerts-table">Mocked AlertsTable</div>,
-}));
-
-// Mock the ReportsTable component
-vi.mock("@/components/reports", () => ({
-	ReportsTable: () => (
-		<div data-testid="reports-table">Mocked ReportsTable</div>
-	),
-}));
-
 describe("TeamPage", () => {
 	it("renders the page title", () => {
 		render(<TeamPage />);
@@ -44,17 +32,5 @@ describe("TeamPage", () => {
 		render(<TeamPage />);
 
 		expect(screen.getByTestId("org-team-table")).toBeInTheDocument();
-	});
-
-	it("renders the AlertsTable component", () => {
-		render(<TeamPage />);
-
-		expect(screen.getByTestId("alerts-table")).toBeInTheDocument();
-	});
-
-	it("renders the ReportsTable component", () => {
-		render(<TeamPage />);
-
-		expect(screen.getByTestId("reports-table")).toBeInTheDocument();
 	});
 });

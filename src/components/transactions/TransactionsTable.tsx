@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
 	ArrowDownCircle,
 	ArrowUpCircle,
@@ -102,36 +102,67 @@ export function TransactionsTable({
 	const [transactions, setTransactions] = useState<Transaction[]>([]);
 	const [clients, setClients] = useState<Map<string, Client>>(new Map());
 	const [isLoading, setIsLoading] = useState(true);
+	const [isLoadingMore, setIsLoadingMore] = useState(false);
+	const [currentPage, setCurrentPage] = useState(1);
+	const [hasMore, setHasMore] = useState(true);
+	const ITEMS_PER_PAGE = 20;
 
+	// Fetch client information for transactions - optimized to only fetch missing clients
+	const fetchClientsForTransactions = useCallback(
+		async (txList: Transaction[]) => {
+			const uniqueClientIds = [...new Set(txList.map((tx) => tx.clientId))];
+
+			// Filter out clients we already have
+			const missingClientIds = uniqueClientIds.filter(
+				(clientId) => !clients.has(clientId),
+			);
+
+			// If all clients are already loaded, skip fetching
+			if (missingClientIds.length === 0) {
+				return;
+			}
+
+			// Fetch only missing clients in parallel
+			const clientPromises = missingClientIds.map(async (clientId) => {
+				try {
+					const client = await getClientByRfc({ rfc: clientId });
+					return { clientId, client };
+				} catch (error) {
+					console.error(`Error fetching client ${clientId}:`, error);
+					return null;
+				}
+			});
+
+			const results = await Promise.all(clientPromises);
+
+			setClients((prev) => {
+				const merged = new Map(prev);
+				results.forEach((result) => {
+					if (result) {
+						merged.set(result.clientId, result.client);
+					}
+				});
+				return merged;
+			});
+		},
+		[clients],
+	);
+
+	// Initial load
 	useEffect(() => {
 		const fetchTransactions = async () => {
 			try {
 				setIsLoading(true);
+				setCurrentPage(1);
 				const response = await listTransactions({
 					page: 1,
-					limit: 100,
+					limit: ITEMS_PER_PAGE,
 					...filters,
 				});
 				setTransactions(response.data);
+				setHasMore(response.pagination.page < response.pagination.totalPages);
 
-				// Fetch client information for all unique client IDs
-				const uniqueClientIds = [
-					...new Set(response.data.map((tx) => tx.clientId)),
-				];
-				const clientsMap = new Map<string, Client>();
-
-				await Promise.all(
-					uniqueClientIds.map(async (clientId) => {
-						try {
-							const client = await getClientByRfc({ rfc: clientId });
-							clientsMap.set(clientId, client);
-						} catch (error) {
-							console.error(`Error fetching client ${clientId}:`, error);
-						}
-					}),
-				);
-
-				setClients(clientsMap);
+				await fetchClientsForTransactions(response.data);
 			} catch (error) {
 				console.error("Error fetching transactions:", error);
 				toast({
@@ -144,7 +175,44 @@ export function TransactionsTable({
 			}
 		};
 		fetchTransactions();
-	}, [filters, toast]);
+	}, [filters, toast, fetchClientsForTransactions]);
+
+	// Load more transactions for infinite scroll
+	const handleLoadMore = useCallback(async () => {
+		if (isLoadingMore || !hasMore) return;
+
+		try {
+			setIsLoadingMore(true);
+			const nextPage = currentPage + 1;
+			const response = await listTransactions({
+				page: nextPage,
+				limit: ITEMS_PER_PAGE,
+				...filters,
+			});
+
+			setTransactions((prev) => [...prev, ...response.data]);
+			setCurrentPage(nextPage);
+			setHasMore(response.pagination.page < response.pagination.totalPages);
+
+			await fetchClientsForTransactions(response.data);
+		} catch (error) {
+			console.error("Error loading more transactions:", error);
+			toast({
+				title: "Error",
+				description: "No se pudieron cargar más transacciones.",
+				variant: "destructive",
+			});
+		} finally {
+			setIsLoadingMore(false);
+		}
+	}, [
+		currentPage,
+		hasMore,
+		isLoadingMore,
+		filters,
+		toast,
+		fetchClientsForTransactions,
+	]);
 
 	// Transform Transaction to TransactionRow format
 	const transactionsData: TransactionRow[] = useMemo(() => {
@@ -432,6 +500,10 @@ export function TransactionsTable({
 			selectable
 			getId={(item) => item.id}
 			actions={renderActions}
+			paginationMode="infinite-scroll"
+			onLoadMore={handleLoadMore}
+			hasMore={hasMore}
+			isLoadingMore={isLoadingMore}
 		/>
 	);
 }

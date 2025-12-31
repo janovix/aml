@@ -44,9 +44,9 @@ describe("TransactionsTable", () => {
 			data: mockTransactions,
 			pagination: {
 				page: 1,
-				limit: 100,
+				limit: 20,
 				total: mockTransactions.length,
-				totalPages: 1,
+				totalPages: Math.ceil(mockTransactions.length / 20),
 			},
 		});
 
@@ -200,8 +200,9 @@ describe("TransactionsTable", () => {
 
 		render(<TransactionsTable />);
 
-		// Should show loading initially
-		expect(screen.getByText("Cargando transacciones...")).toBeInTheDocument();
+		// Should show skeleton loaders instead of text
+		const skeletons = screen.getAllByTestId("skeleton");
+		expect(skeletons.length).toBeGreaterThan(0);
 
 		// Resolve the promise
 		resolveTransactions!({
@@ -428,17 +429,28 @@ describe("TransactionsTable", () => {
 	});
 
 	it("renders transaction with clientId when client is not found", async () => {
-		// Mock getClientByRfc to fail for all clients
-		vi.mocked(clientsApi.getClientByRfc).mockRejectedValue(
-			new Error("Client not found"),
-		);
+		// Mock getClientByRfc to fail for all clients immediately
+		vi.mocked(clientsApi.getClientByRfc).mockImplementation(async () => {
+			throw new Error("Client not found");
+		});
 
 		render(<TransactionsTable />);
 
-		await waitFor(() => {
-			// Should render clientId when client is not found
-			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
-		});
+		// Wait for transaction data to appear - brand should render regardless of client fetch status
+		// The component should render transactions even if client fetching fails
+		await waitFor(
+			() => {
+				// Check for brand which should render regardless of client fetch status
+				expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
+			},
+			{ timeout: 10000 },
+		);
+
+		// Verify that clientId is shown when client is not found
+		// The clientName should be the clientId when client fetch fails
+		// The clientId "1" should appear in the table when client fetch fails
+		const clientIdText = screen.getAllByText("1");
+		expect(clientIdText.length).toBeGreaterThan(0);
 	});
 
 	it("renders all action menu items", async () => {

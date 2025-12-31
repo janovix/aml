@@ -8,6 +8,7 @@ import {
 	listMembers,
 	listOrganizations,
 } from "@/lib/auth/organizations";
+import type { Organization } from "@/lib/org-store";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -31,9 +32,16 @@ function slugify(value: string) {
 
 interface OrgBootstrapperProps {
 	children: React.ReactNode;
+	initialOrganizations?: {
+		organizations: Organization[];
+		activeOrganizationId: string | null;
+	};
 }
 
-export function OrgBootstrapper({ children }: OrgBootstrapperProps) {
+export function OrgBootstrapper({
+	children,
+	initialOrganizations,
+}: OrgBootstrapperProps) {
 	const { toast } = useToast();
 	const { data: session } = useAuthSession();
 	const {
@@ -64,10 +72,44 @@ export function OrgBootstrapper({ children }: OrgBootstrapperProps) {
 		}
 	}, [session?.user?.id, setCurrentUserId]);
 
-	// Bootstrap organizations from auth-svc
+	// Bootstrap organizations from auth-svc or use initial data
 	useEffect(() => {
 		let cancelled = false;
 		async function bootstrap() {
+			// If initial organizations are provided, use them and skip client-side fetch
+			if (initialOrganizations) {
+				const nextOrgs = initialOrganizations.organizations;
+				setOrganizations(nextOrgs);
+
+				const active =
+					nextOrgs.find(
+						(org) => org.id === initialOrganizations.activeOrganizationId,
+					) ??
+					nextOrgs[0] ??
+					null;
+				setCurrentOrg(active ?? null);
+
+				if (active) {
+					const membersResult = await listMembers(active.id);
+					if (!cancelled) {
+						if (membersResult.data) {
+							setMembers(membersResult.data);
+						} else if (membersResult.error) {
+							toast({
+								variant: "destructive",
+								title: "Failed to load members",
+								description: membersResult.error,
+							});
+						}
+					}
+				}
+
+				setIsBootstrapped(true);
+				setLoading(false);
+				return;
+			}
+
+			// Otherwise, fetch from client
 			setLoading(true);
 			setError(null);
 
@@ -118,6 +160,7 @@ export function OrgBootstrapper({ children }: OrgBootstrapperProps) {
 			cancelled = true;
 		};
 	}, [
+		initialOrganizations,
 		setCurrentOrg,
 		setMembers,
 		setOrganizations,
