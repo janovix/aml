@@ -44,7 +44,11 @@ const mockPush = vi.fn();
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
 		push: mockPush,
+		replace: vi.fn(),
 	}),
+	usePathname: () => "/test-org/alerts",
+	useSearchParams: () => new URLSearchParams(),
+	useParams: () => ({ orgSlug: "test-org" }),
 }));
 
 vi.mock("@/lib/api/alerts", () => ({
@@ -765,7 +769,7 @@ describe("AlertsTable", () => {
 		expect(newAlertButtons.length).toBeGreaterThan(0);
 
 		await user.click(newAlertButtons[0]);
-		expect(mockPush).toHaveBeenCalledWith("/alerts/new");
+		expect(mockPush).toHaveBeenCalledWith("/test-org/alerts/new");
 	});
 
 	it("refetches data when organization changes", async () => {

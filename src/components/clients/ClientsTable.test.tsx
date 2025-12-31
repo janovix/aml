@@ -66,7 +66,11 @@ const mockPush = vi.fn();
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
 		push: mockPush,
+		replace: vi.fn(),
 	}),
+	usePathname: () => "/test-org/clients",
+	useSearchParams: () => new URLSearchParams(),
+	useParams: () => ({ orgSlug: "test-org" }),
 }));
 
 vi.mock("@/lib/api/clients", () => ({
@@ -1048,7 +1052,7 @@ describe("ClientsTable", () => {
 		// The actual stopPropagation behavior is tested implicitly through the component's behavior
 		expect(clientLink).toHaveAttribute(
 			"href",
-			`/clients/${mockClients[0].rfc}`,
+			`/test-org/clients/${mockClients[0].rfc}`,
 		);
 
 		// Test that stopPropagation is called when link is clicked

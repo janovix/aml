@@ -54,17 +54,22 @@ export function DataTable<T extends object>({
 	onLoadMore,
 	hasMore = false,
 	isLoadingMore = false,
+	initialFilters,
+	onFiltersChange,
+	initialSearch,
+	onSearchChange,
+	initialSort,
+	onSortChange,
 }: DataTableProps<T>) {
 	const isMobile = useIsMobile();
-	const [searchQuery, setSearchQuery] = useState("");
+	const [searchQuery, setSearchQuery] = useState(initialSearch ?? "");
 	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 	const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>(
-		{},
+		initialFilters ?? {},
 	);
-	const [sortState, setSortState] = useState<SortState>({
-		field: null,
-		direction: "desc",
-	});
+	const [sortState, setSortState] = useState<SortState>(
+		initialSort ?? { field: null, direction: "desc" },
+	);
 	const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
 	const [currentPage, setCurrentPage] = useState(1);
 	const scrollSentinelRef = useRef<HTMLDivElement>(null);
@@ -126,6 +131,37 @@ export function DataTable<T extends object>({
 		}));
 		setCurrentPage(1);
 	}, []);
+
+	// Notify parent of filter changes for URL persistence
+	const prevFiltersRef = useRef(activeFilters);
+	useEffect(() => {
+		if (onFiltersChange && prevFiltersRef.current !== activeFilters) {
+			// Only include non-empty filter arrays
+			const cleanFilters = Object.fromEntries(
+				Object.entries(activeFilters).filter(([, v]) => v.length > 0),
+			);
+			onFiltersChange(cleanFilters);
+		}
+		prevFiltersRef.current = activeFilters;
+	}, [activeFilters, onFiltersChange]);
+
+	// Notify parent of search changes for URL persistence
+	const prevSearchRef = useRef(searchQuery);
+	useEffect(() => {
+		if (onSearchChange && prevSearchRef.current !== searchQuery) {
+			onSearchChange(searchQuery);
+		}
+		prevSearchRef.current = searchQuery;
+	}, [searchQuery, onSearchChange]);
+
+	// Notify parent of sort changes for URL persistence
+	const prevSortRef = useRef(sortState);
+	useEffect(() => {
+		if (onSortChange && prevSortRef.current !== sortState) {
+			onSortChange(sortState);
+		}
+		prevSortRef.current = sortState;
+	}, [sortState, onSortChange]);
 
 	// Toggle sort
 	const toggleSort = useCallback((field: string) => {

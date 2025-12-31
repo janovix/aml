@@ -5,11 +5,13 @@ import { TransactionCreateView } from "./TransactionCreateView";
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
 		push: vi.fn(),
+		replace: vi.fn(),
 	}),
-	usePathname: () => "/transactions/new",
+	usePathname: () => "/test-org/transactions/new",
 	useSearchParams: () => ({
 		get: () => null,
 	}),
+	useParams: () => ({ orgSlug: "test-org" }),
 }));
 
 describe("TransactionCreateView", () => {

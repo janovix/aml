@@ -2,7 +2,8 @@
 
 import type React from "react";
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import {
 	Button,
 	Card,
@@ -59,7 +60,7 @@ interface ClientFormData {
 }
 
 export function ClientCreateView(): React.JSX.Element {
-	const router = useRouter();
+	const { navigateTo, orgPath } = useOrgNavigation();
 	const searchParams = useSearchParams();
 	const returnUrl = searchParams.get("returnUrl");
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -182,9 +183,15 @@ export function ClientCreateView(): React.JSX.Element {
 					if (returnUrl) {
 						// Append client ID to return URL for auto-selection
 						const separator = returnUrl.includes("?") ? "&" : "?";
-						router.push(`${returnUrl}${separator}clientId=${client.id}`);
+						// returnUrl is already org-prefixed from search params
+						navigateTo(
+							`${returnUrl}${separator}clientId=${client.id}`.replace(
+								/^\/[^/]+/,
+								"",
+							),
+						);
 					} else {
-						router.push("/clients");
+						navigateTo("/clients");
 					}
 				},
 			});
@@ -198,9 +205,10 @@ export function ClientCreateView(): React.JSX.Element {
 
 	const handleCancel = (): void => {
 		if (returnUrl) {
-			router.push(returnUrl);
+			// returnUrl is already org-prefixed from search params
+			navigateTo(returnUrl.replace(/^\/[^/]+/, ""));
 		} else {
-			router.push("/clients");
+			navigateTo("/clients");
 		}
 	};
 

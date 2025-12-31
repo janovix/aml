@@ -17,6 +17,8 @@ const mockRouter = {
 vi.mock("next/navigation", () => ({
 	usePathname: () => mockPathname(),
 	useRouter: () => mockRouter,
+	useSearchParams: () => new URLSearchParams(),
+	useParams: () => ({ orgSlug: "test-org" }),
 }));
 
 vi.mock("next-themes", () => ({
@@ -139,7 +141,7 @@ describe("DashboardLayout", () => {
 	});
 
 	it("highlights active navigation item", () => {
-		mockPathname.mockReturnValue("/clients");
+		mockPathname.mockReturnValue("/test-org/clients");
 		render(
 			<DashboardLayout>
 				<div>Test</div>

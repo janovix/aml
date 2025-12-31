@@ -21,8 +21,11 @@ const originalRequestSubmit = HTMLFormElement.prototype.requestSubmit;
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
 		push: mockPush,
+		replace: vi.fn(),
 	}),
-	usePathname: () => "/clients/1/edit",
+	usePathname: () => "/test-org/clients/1/edit",
+	useSearchParams: () => new URLSearchParams(),
+	useParams: () => ({ orgSlug: "test-org", id: "1" }),
 }));
 
 vi.mock("../../hooks/use-toast", () => ({

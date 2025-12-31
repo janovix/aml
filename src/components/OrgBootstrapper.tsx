@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { useOrgStore } from "@/lib/org-store";
 import { useAuthSession } from "@/lib/auth/useAuthSession";
 import {
@@ -144,6 +145,11 @@ export function OrgBootstrapper({
 	initialOrganizations,
 }: OrgBootstrapperProps) {
 	const { data: session } = useAuthSession();
+	const params = useParams();
+	const pathname = usePathname();
+	const router = useRouter();
+	const urlOrgSlug = params?.orgSlug as string | undefined;
+
 	const {
 		currentOrg,
 		organizations,
@@ -164,6 +170,8 @@ export function OrgBootstrapper({
 	// Track if the auth session has been synchronized with the selected organization
 	// This ensures the JWT will include the correct organizationId
 	const [isSessionSynced, setIsSessionSynced] = useState(false);
+	// Track if URL org sync has been processed
+	const [isUrlOrgSynced, setIsUrlOrgSynced] = useState(false);
 	const [nameInput, setNameInput] = useState("");
 	const [slugInput, setSlugInput] = useState("");
 	const derivedSlug = useMemo(
@@ -173,6 +181,7 @@ export function OrgBootstrapper({
 	const [isCreating, setIsCreating] = useState(false);
 	const initializedRef = useRef(false);
 	const sessionSyncRef = useRef(false);
+	const urlSyncRef = useRef(false);
 
 	useEffect(() => {
 		if (session?.user?.id) {
@@ -239,6 +248,123 @@ export function OrgBootstrapper({
 
 		syncSession();
 	}, [currentOrg?.id, isSessionSynced]);
+
+	// Sync organization from URL parameter
+	// When a URL contains an org slug, switch to that organization
+	useEffect(() => {
+		// Skip if not bootstrapped yet
+		if (!isBootstrapped) {
+			return;
+		}
+
+		// Skip if no org slug in URL
+		if (!urlOrgSlug) {
+			setIsUrlOrgSynced(true);
+			return;
+		}
+
+		// If no organizations exist, mark URL sync as complete so the create form can show
+		if (organizations.length === 0) {
+			setIsUrlOrgSynced(true);
+			return;
+		}
+
+		// Skip if already processing
+		if (urlSyncRef.current) {
+			return;
+		}
+
+		// Find the organization by slug
+		const urlOrg = organizations.find((org) => org.slug === urlOrgSlug);
+
+		if (!urlOrg) {
+			// User doesn't have access to this organization
+			console.warn(
+				`[OrgBootstrapper] Organization "${urlOrgSlug}" not found or access denied.`,
+			);
+			// Redirect to forbidden page
+			router.replace(`/${urlOrgSlug}/forbidden`);
+			setIsUrlOrgSynced(true);
+			return;
+		}
+
+		// If current org already matches URL, we're done
+		if (currentOrg?.slug === urlOrgSlug) {
+			setIsUrlOrgSynced(true);
+			return;
+		}
+
+		// Switch to the org from URL
+		urlSyncRef.current = true;
+		console.log(
+			`[OrgBootstrapper] Switching to organization "${urlOrgSlug}" from URL`,
+		);
+
+		setCurrentOrg(urlOrg);
+		setIsSessionSynced(false); // Force re-sync of session
+		setIsUrlOrgSynced(true);
+		urlSyncRef.current = false;
+
+		// Fetch members for the new org
+		listMembers(urlOrg.id).then((membersResult) => {
+			if (membersResult.data) {
+				setMembers(membersResult.data);
+			}
+		});
+	}, [
+		urlOrgSlug,
+		organizations,
+		currentOrg?.slug,
+		isBootstrapped,
+		setCurrentOrg,
+		setMembers,
+		router,
+	]);
+
+	// Update URL when organization changes (user switches via picker)
+	useEffect(() => {
+		// Skip if not bootstrapped or no current org
+		if (!isBootstrapped || !currentOrg?.slug || !isUrlOrgSynced) {
+			return;
+		}
+
+		// Skip if URL already matches
+		if (currentOrg.slug === urlOrgSlug) {
+			return;
+		}
+
+		// Skip if we're on an org-free route
+		if (
+			pathname?.startsWith("/invitations") ||
+			pathname?.includes("/forbidden")
+		) {
+			return;
+		}
+
+		// Extract the path after the org slug
+		const pathSegments = pathname?.split("/").filter(Boolean) ?? [];
+		let newPath: string;
+
+		if (pathSegments.length > 1 && pathSegments[0] === urlOrgSlug) {
+			// Replace org slug with new one
+			newPath = `/${currentOrg.slug}/${pathSegments.slice(1).join("/")}`;
+		} else if (pathSegments.length > 0) {
+			// Prefix with org slug
+			newPath = `/${currentOrg.slug}/${pathSegments.join("/")}`;
+		} else {
+			// Default to clients
+			newPath = `/${currentOrg.slug}/clients`;
+		}
+
+		router.replace(newPath);
+	}, [
+		currentOrg?.slug,
+		urlOrgSlug,
+		pathname,
+		isBootstrapped,
+		isUrlOrgSynced,
+		router,
+	]);
 
 	// Synchronously initialize store with server-side data before paint
 	useLayoutEffect(() => {
@@ -376,6 +502,8 @@ export function OrgBootstrapper({
 		() =>
 			isLoading ||
 			(!isBootstrapped && organizations.length === 0) ||
+			// Wait for URL org sync to complete
+			(urlOrgSlug && !isUrlOrgSynced) ||
 			// Wait for session to be synced before rendering children
 			// This ensures the JWT will have the correct organizationId
 			(currentOrg?.id && !isSessionSynced),
@@ -385,6 +513,8 @@ export function OrgBootstrapper({
 			organizations.length,
 			currentOrg?.id,
 			isSessionSynced,
+			urlOrgSlug,
+			isUrlOrgSynced,
 		],
 	);
 

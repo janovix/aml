@@ -16,7 +16,11 @@ import {
 	Plus,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
+import { useDataTableUrlFilters } from "@/hooks/useDataTableUrlFilters";
+
+// Filter IDs for URL persistence
+const ALERT_FILTER_IDS = ["status", "severity", "isOverdue"];
 import {
 	Button,
 	DropdownMenu,
@@ -116,10 +120,11 @@ interface AlertsTableProps {
 export function AlertsTable({
 	filters,
 }: AlertsTableProps = {}): React.ReactElement {
-	const router = useRouter();
+	const { navigateTo, orgPath } = useOrgNavigation();
 	const { toast } = useToast();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const { currentOrg } = useOrgStore();
+	const urlFilters = useDataTableUrlFilters(ALERT_FILTER_IDS);
 	const [alerts, setAlerts] = useState<Alert[]>([]);
 	const [clients, setClients] = useState<Map<string, Client>>(new Map());
 	const [isLoading, setIsLoading] = useState(true);
@@ -348,7 +353,7 @@ export function AlertsTable({
 				cell: (item) => (
 					<div className="flex flex-col min-w-0">
 						<Link
-							href={`/clients/${item.clientId}`}
+							href={orgPath(`/clients/${item.clientId}`)}
 							className="text-sm text-foreground hover:text-primary truncate"
 							onClick={(e) => e.stopPropagation()}
 						>
@@ -528,7 +533,7 @@ export function AlertsTable({
 			<DropdownMenuContent align="end" className="w-48">
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => router.push(`/alerts/${item.id}`)}
+					onClick={() => navigateTo(`/alerts/${item.id}`)}
 				>
 					<Eye className="h-4 w-4" />
 					Ver detalle
@@ -548,7 +553,7 @@ export function AlertsTable({
 				<DropdownMenuSeparator />
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => router.push(`/clients/${item.clientId}`)}
+					onClick={() => navigateTo(`/clients/${item.clientId}`)}
 				>
 					<User className="h-4 w-4" />
 					Ver cliente
@@ -616,7 +621,7 @@ export function AlertsTable({
 				stats={stats}
 				ctaLabel="Nueva Alerta"
 				ctaIcon={Plus}
-				onCtaClick={() => router.push("/alerts/new")}
+				onCtaClick={() => navigateTo("/alerts/new")}
 			/>
 			<DataTable
 				data={alertsWithStringOverdue as unknown as AlertRow[]}
@@ -634,6 +639,13 @@ export function AlertsTable({
 				onLoadMore={handleLoadMore}
 				hasMore={hasMore}
 				isLoadingMore={isLoadingMore}
+				// URL persistence
+				initialFilters={urlFilters.initialFilters}
+				initialSearch={urlFilters.initialSearch}
+				initialSort={urlFilters.initialSort}
+				onFiltersChange={urlFilters.onFiltersChange}
+				onSearchChange={urlFilters.onSearchChange}
+				onSortChange={urlFilters.onSortChange}
 			/>
 		</div>
 	);

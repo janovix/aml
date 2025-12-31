@@ -18,6 +18,17 @@ vi.mock("zustand/middleware", async (importOriginal) => {
 	};
 });
 
+// Mock next/navigation
+vi.mock("next/navigation", () => ({
+	useRouter: () => ({
+		push: vi.fn(),
+		replace: vi.fn(),
+	}),
+	usePathname: () => "/test-org/clients",
+	useSearchParams: () => new URLSearchParams(),
+	useParams: () => ({ orgSlug: "test-org" }),
+}));
+
 // Mock auth session
 const mockSessionData = {
 	user: {
@@ -545,7 +556,7 @@ describe("OrgBootstrapper", () => {
 		});
 	});
 
-	it("uses persisted organization when it's still in the list (client-side fetch)", async () => {
+	it("uses URL organization when available, overriding persisted org (client-side fetch)", async () => {
 		const persistedOrg: Organization = {
 			id: "org-2",
 			name: "Persisted Organization",
@@ -553,7 +564,7 @@ describe("OrgBootstrapper", () => {
 			status: "active",
 		};
 
-		const serverActiveOrg = mockOrganization;
+		const serverActiveOrg = mockOrganization; // slug: "test-org", id: "org-1"
 
 		// Set up persisted organization in store
 		const { result } = renderHook(() => useOrgStore());
@@ -571,27 +582,28 @@ describe("OrgBootstrapper", () => {
 			data: [mockMember],
 		});
 
+		// Note: useParams mock returns { orgSlug: "test-org" } which matches serverActiveOrg
 		render(
 			<OrgBootstrapper>
 				<div>Children Content</div>
 			</OrgBootstrapper>,
 		);
 
-		// Should use persisted org, not server's active org
+		// Should use URL org (test-org / org-1), not persisted org
 		await waitFor(() => {
-			expect(mockListMembers).toHaveBeenCalledWith(persistedOrg.id);
+			expect(mockListMembers).toHaveBeenCalledWith(serverActiveOrg.id);
 		});
 
 		await waitFor(() => {
 			expect(screen.getByText("Children Content")).toBeInTheDocument();
 		});
 
-		// Verify persisted org is still set
+		// Verify URL org is set (overriding persisted org)
 		const storeState = useOrgStore.getState();
-		expect(storeState.currentOrg?.id).toBe(persistedOrg.id);
+		expect(storeState.currentOrg?.id).toBe(serverActiveOrg.id);
 	});
 
-	it("uses persisted organization when it's still in the list (server-side initial data)", async () => {
+	it("uses URL organization when available, overriding persisted org (server-side initial data)", async () => {
 		const persistedOrg: Organization = {
 			id: "org-2",
 			name: "Persisted Organization",
@@ -599,7 +611,7 @@ describe("OrgBootstrapper", () => {
 			status: "active",
 		};
 
-		const serverActiveOrg = mockOrganization;
+		const serverActiveOrg = mockOrganization; // slug: "test-org", id: "org-1"
 
 		// Set up persisted organization in store
 		const { result } = renderHook(() => useOrgStore());
@@ -611,6 +623,7 @@ describe("OrgBootstrapper", () => {
 			data: [mockMember],
 		});
 
+		// Note: useParams mock returns { orgSlug: "test-org" } which matches serverActiveOrg
 		render(
 			<OrgBootstrapper
 				initialOrganizations={{
@@ -622,18 +635,18 @@ describe("OrgBootstrapper", () => {
 			</OrgBootstrapper>,
 		);
 
-		// Should use persisted org, not server's active org
+		// Should use URL org (test-org / org-1), not persisted org
 		await waitFor(() => {
-			expect(mockListMembers).toHaveBeenCalledWith(persistedOrg.id);
+			expect(mockListMembers).toHaveBeenCalledWith(serverActiveOrg.id);
 		});
 
 		await waitFor(() => {
 			expect(screen.getByText("Children Content")).toBeInTheDocument();
 		});
 
-		// Verify persisted org is still set
+		// Verify URL org is set (overriding persisted org)
 		const storeState = useOrgStore.getState();
-		expect(storeState.currentOrg?.id).toBe(persistedOrg.id);
+		expect(storeState.currentOrg?.id).toBe(serverActiveOrg.id);
 	});
 
 	it("falls back to server's active organization when persisted org is not in the list", async () => {

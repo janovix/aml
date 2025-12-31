@@ -14,7 +14,7 @@ import {
 	Trash2,
 	Plus,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import {
 	Button,
 	DropdownMenu,
@@ -179,7 +179,7 @@ const mockReports: Report[] = [
 ];
 
 export function ReportsTable(): React.ReactElement {
-	const router = useRouter();
+	const { navigateTo } = useOrgNavigation();
 	const { toast } = useToast();
 	// TODO: Replace with API call when reports endpoint is available
 	const [reports] = useState<Report[]>(mockReports);
@@ -397,7 +397,7 @@ export function ReportsTable(): React.ReactElement {
 			<DropdownMenuContent align="end" className="w-48">
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => router.push(`/reports/${item.id}`)}
+					onClick={() => navigateTo(`/reports/${item.id}`)}
 				>
 					<Eye className="h-4 w-4" />
 					Ver detalle
@@ -478,7 +478,7 @@ export function ReportsTable(): React.ReactElement {
 				stats={stats}
 				ctaLabel="Nuevo Reporte"
 				ctaIcon={Plus}
-				onCtaClick={() => router.push("/reports/new")}
+				onCtaClick={() => navigateTo("/reports/new")}
 			/>
 			<DataTable
 				data={reports}

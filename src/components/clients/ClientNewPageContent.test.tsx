@@ -9,8 +9,11 @@ const mockToast = vi.fn();
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
 		push: mockPush,
+		replace: vi.fn(),
 	}),
-	usePathname: () => `/clients/new`,
+	usePathname: () => `/test-org/clients/new`,
+	useSearchParams: () => new URLSearchParams(),
+	useParams: () => ({ orgSlug: "test-org" }),
 }));
 
 vi.mock("@/hooks/use-toast", () => ({

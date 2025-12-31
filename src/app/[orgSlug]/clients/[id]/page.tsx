@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ClientDetailsView } from "../../../components/clients/ClientDetailsView";
+import { ClientDetailsView } from "@/components/clients/ClientDetailsView";
 
 export const metadata: Metadata = {
 	title: "Detalle Cliente | Plataforma AML",

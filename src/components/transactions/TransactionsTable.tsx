@@ -14,7 +14,11 @@ import {
 	FileText,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
+import { useDataTableUrlFilters } from "@/hooks/useDataTableUrlFilters";
+
+// Filter IDs for URL persistence
+const TRANSACTION_FILTER_IDS = ["operationType", "vehicleType", "currency"];
 import {
 	Button,
 	DropdownMenu,
@@ -99,9 +103,10 @@ interface TransactionsTableProps {
 export function TransactionsTable({
 	filters,
 }: TransactionsTableProps = {}): React.ReactElement {
-	const router = useRouter();
+	const { navigateTo, orgPath } = useOrgNavigation();
 	const { toast } = useToast();
 	const { currentOrg } = useOrgStore();
+	const urlFilters = useDataTableUrlFilters(TRANSACTION_FILTER_IDS);
 	const [transactions, setTransactions] = useState<Transaction[]>([]);
 	const [clients, setClients] = useState<Map<string, Client>>(new Map());
 	const [isLoading, setIsLoading] = useState(true);
@@ -302,7 +307,7 @@ export function TransactionsTable({
 						</TooltipProvider>
 						<div className="flex flex-col min-w-0">
 							<Link
-								href={`/transactions/${item.id}`}
+								href={orgPath(`/transactions/${item.id}`)}
 								className="font-medium text-foreground hover:text-primary truncate"
 								onClick={(e) => e.stopPropagation()}
 							>
@@ -487,14 +492,14 @@ export function TransactionsTable({
 			<DropdownMenuContent align="end" className="w-48">
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => router.push(`/transactions/${item.id}`)}
+					onClick={() => navigateTo(`/transactions/${item.id}`)}
 				>
 					<Eye className="h-4 w-4" />
 					Ver detalle
 				</DropdownMenuItem>
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => router.push(`/transactions/${item.id}/edit`)}
+					onClick={() => navigateTo(`/transactions/${item.id}/edit`)}
 				>
 					<Edit className="h-4 w-4" />
 					Editar transacción
@@ -502,7 +507,7 @@ export function TransactionsTable({
 				<DropdownMenuSeparator />
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => router.push(`/clients/${item.clientId}`)}
+					onClick={() => navigateTo(`/clients/${item.clientId}`)}
 				>
 					Ver cliente
 				</DropdownMenuItem>
@@ -531,6 +536,13 @@ export function TransactionsTable({
 			onLoadMore={handleLoadMore}
 			hasMore={hasMore}
 			isLoadingMore={isLoadingMore}
+			// URL persistence
+			initialFilters={urlFilters.initialFilters}
+			initialSearch={urlFilters.initialSearch}
+			initialSort={urlFilters.initialSort}
+			onFiltersChange={urlFilters.onFiltersChange}
+			onSearchChange={urlFilters.onSearchChange}
+			onSortChange={urlFilters.onSortChange}
 		/>
 	);
 }

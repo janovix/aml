@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import {
 	Button,
 	Card,
@@ -45,7 +45,7 @@ interface TransactionEditViewProps {
 export function TransactionEditView({
 	transactionId,
 }: TransactionEditViewProps): React.JSX.Element {
-	const router = useRouter();
+	const { navigateTo } = useOrgNavigation();
 	const [isLoading, setIsLoading] = useState(true);
 	const [isSaving, setIsSaving] = useState(false);
 	const [formData, setFormData] = useState({
@@ -109,7 +109,7 @@ export function TransactionEditView({
 			} catch (error) {
 				console.error("Error fetching transaction:", error);
 				toast.error("No se pudo cargar la transacción.");
-				router.push("/transactions");
+				navigateTo("/transactions");
 			} finally {
 				setIsLoading(false);
 			}
@@ -211,7 +211,7 @@ export function TransactionEditView({
 				loading: "Actualizando transacción...",
 				success: "Transacción actualizada exitosamente",
 				onSuccess: () => {
-					router.push(`/transactions/${transactionId}`);
+					navigateTo(`/transactions/${transactionId}`);
 				},
 			});
 		} catch {
@@ -222,7 +222,7 @@ export function TransactionEditView({
 	};
 
 	const handleCancel = (): void => {
-		router.push(`/transactions/${transactionId}`);
+		navigateTo(`/transactions/${transactionId}`);
 	};
 
 	const handleChange = (field: string, value: string): void => {

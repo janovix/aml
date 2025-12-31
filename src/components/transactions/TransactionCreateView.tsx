@@ -2,7 +2,8 @@
 
 import type React from "react";
 import { useState, useEffect } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import {
 	Button,
 	Card,
@@ -57,7 +58,7 @@ interface TransactionFormData {
 }
 
 export function TransactionCreateView(): React.JSX.Element {
-	const router = useRouter();
+	const { navigateTo, orgPath } = useOrgNavigation();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 	const [isSaving, setIsSaving] = useState(false);
@@ -96,7 +97,7 @@ export function TransactionCreateView(): React.JSX.Element {
 
 	const handleCreateNewClient = (): void => {
 		const returnUrl = encodeURIComponent(pathname);
-		router.push(`/clients/new?returnUrl=${returnUrl}`);
+		navigateTo(`/clients/new?returnUrl=${returnUrl}`);
 	};
 
 	const handleInputChange = (
@@ -258,7 +259,7 @@ export function TransactionCreateView(): React.JSX.Element {
 				loading: "Creando transacción...",
 				success: "Transacción creada exitosamente",
 				onSuccess: () => {
-					router.push("/transactions");
+					navigateTo("/transactions");
 				},
 			});
 		} catch (error) {
@@ -270,7 +271,7 @@ export function TransactionCreateView(): React.JSX.Element {
 	};
 
 	const handleCancel = (): void => {
-		router.push("/transactions");
+		navigateTo("/transactions");
 	};
 
 	return (

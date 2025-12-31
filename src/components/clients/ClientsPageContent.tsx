@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { useEffect, useState } from "react";
 import { ClientsTable } from "@/components/clients/ClientsTable";
 import { PageHero, type StatCard } from "@/components/page-hero";
@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@/lib/api/http";
 
 export function ClientsPageContent(): React.ReactElement {
-	const router = useRouter();
+	const { navigateTo } = useOrgNavigation();
 	const { toast } = useToast();
 	const [stats, setStats] = useState<{
 		openAlerts: number;
@@ -89,7 +89,7 @@ export function ClientsPageContent(): React.ReactElement {
 				stats={heroStats}
 				ctaLabel="Nuevo Cliente"
 				ctaIcon={Plus}
-				onCtaClick={() => router.push("/clients/new")}
+				onCtaClick={() => navigateTo("/clients/new")}
 			/>
 
 			<ClientsTable />

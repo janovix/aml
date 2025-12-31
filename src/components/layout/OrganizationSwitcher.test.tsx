@@ -51,11 +51,9 @@ describe("OrganizationSwitcher", () => {
 			</SidebarProvider>,
 		);
 
-		// When collapsed, it should show the Building2 icon (interactive org picker)
-		const buildingIcon = document.querySelector(
-			'svg.lucide-building-2, svg[class*="building"]',
-		);
-		expect(buildingIcon).toBeInTheDocument();
+		// When collapsed, it should show the Janovix logo icon (interactive org picker)
+		const logoSvg = document.querySelector('svg[viewBox="0 0 200 200"]');
+		expect(logoSvg).toBeInTheDocument();
 	});
 
 	it("renders create organization button when no organizations", () => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import {
 	Button,
 	Card,
@@ -35,7 +35,7 @@ interface ClientDetailsViewProps {
 export function ClientDetailsView({
 	clientId,
 }: ClientDetailsViewProps): React.JSX.Element {
-	const router = useRouter();
+	const { navigateTo } = useOrgNavigation();
 	const { toast } = useToast();
 	const [client, setClient] = useState<Client | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
@@ -70,7 +70,7 @@ export function ClientDetailsView({
 						variant="ghost"
 						size="sm"
 						className="gap-2"
-						onClick={() => router.push("/clients")}
+						onClick={() => navigateTo("/clients")}
 					>
 						<ArrowLeft className="h-4 w-4" />
 						Volver
@@ -93,7 +93,7 @@ export function ClientDetailsView({
 						variant="ghost"
 						size="sm"
 						className="gap-2"
-						onClick={() => router.push("/clients")}
+						onClick={() => navigateTo("/clients")}
 					>
 						<ArrowLeft className="h-4 w-4" />
 						Volver
@@ -124,7 +124,7 @@ export function ClientDetailsView({
 						variant="ghost"
 						size="sm"
 						className="gap-2"
-						onClick={() => router.push("/clients")}
+						onClick={() => navigateTo("/clients")}
 					>
 						<ArrowLeft className="h-4 w-4" />
 						<span className="hidden sm:inline">Volver</span>
@@ -151,7 +151,7 @@ export function ClientDetailsView({
 					<Button
 						size="sm"
 						className="gap-2"
-						onClick={() => router.push(`/clients/${clientId}/edit`)}
+						onClick={() => navigateTo(`/clients/${clientId}/edit`)}
 					>
 						<Edit className="h-4 w-4" />
 						<span className="hidden sm:inline">Editar</span>

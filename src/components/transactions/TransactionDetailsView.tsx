@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import {
 	Button,
 	Card,
@@ -72,7 +72,7 @@ export function TransactionDetailsView({
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [transaction, setTransaction] = useState<Transaction | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
-	const router = useRouter();
+	const { navigateTo } = useOrgNavigation();
 	const { toast } = useToast();
 
 	useEffect(() => {
@@ -88,7 +88,7 @@ export function TransactionDetailsView({
 					description: "No se pudo cargar la transacción.",
 					variant: "destructive",
 				});
-				router.push("/transactions");
+				navigateTo("/transactions");
 			} finally {
 				setIsLoading(false);
 			}
@@ -105,7 +105,7 @@ export function TransactionDetailsView({
 						variant="ghost"
 						size="sm"
 						className="gap-2"
-						onClick={() => router.push("/transactions")}
+						onClick={() => navigateTo("/transactions")}
 					>
 						<ArrowLeft className="h-4 w-4" />
 						Volver
@@ -129,7 +129,7 @@ export function TransactionDetailsView({
 						variant="ghost"
 						size="sm"
 						className="gap-2"
-						onClick={() => router.push("/transactions")}
+						onClick={() => navigateTo("/transactions")}
 					>
 						<ArrowLeft className="h-4 w-4" />
 						Volver
@@ -185,7 +185,7 @@ export function TransactionDetailsView({
 				description: `La transacción ${transaction.id} ha sido eliminada.`,
 				variant: "destructive",
 			});
-			router.push("/transactions");
+			navigateTo("/transactions");
 		} catch (error) {
 			console.error("Error deleting transaction:", error);
 			toast({
@@ -204,7 +204,7 @@ export function TransactionDetailsView({
 						variant="ghost"
 						size="sm"
 						className="gap-2"
-						onClick={() => router.push("/transactions")}
+						onClick={() => navigateTo("/transactions")}
 					>
 						<ArrowLeft className="h-4 w-4" />
 						Volver
@@ -224,7 +224,7 @@ export function TransactionDetailsView({
 						variant="outline"
 						size="sm"
 						className="gap-2 hidden sm:flex"
-						onClick={() => router.push(`/transactions/${transaction.id}/edit`)}
+						onClick={() => navigateTo(`/transactions/${transaction.id}/edit`)}
 					>
 						<Edit className="h-4 w-4" />
 						Editar

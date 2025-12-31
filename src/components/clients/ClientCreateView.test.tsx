@@ -5,11 +5,13 @@ import { ClientCreateView } from "./ClientCreateView";
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
 		push: vi.fn(),
+		replace: vi.fn(),
 	}),
-	usePathname: () => "/clients/new",
+	usePathname: () => "/test-org/clients/new",
 	useSearchParams: () => ({
 		get: () => null,
 	}),
+	useParams: () => ({ orgSlug: "test-org" }),
 }));
 
 describe("ClientCreateView", () => {

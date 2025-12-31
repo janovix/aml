@@ -7,8 +7,11 @@ import { mockClients } from "@/data/mockClients";
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
 		push: vi.fn(),
+		replace: vi.fn(),
 	}),
-	usePathname: () => "/clients/1",
+	usePathname: () => "/test-org/clients/1",
+	useSearchParams: () => new URLSearchParams(),
+	useParams: () => ({ orgSlug: "test-org", id: "1" }),
 }));
 
 vi.mock("@/hooks/use-toast", () => ({

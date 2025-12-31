@@ -15,8 +15,11 @@ const mockToast = vi.fn();
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
 		push: mockPush,
+		replace: vi.fn(),
 	}),
 	usePathname: () => mockPathname(),
+	useSearchParams: () => new URLSearchParams(),
+	useParams: () => ({ orgSlug: "test-org" }),
 }));
 
 vi.mock("@/hooks/use-toast", () => ({
@@ -117,7 +120,7 @@ describe("TransactionsPageContent", () => {
 		// Click the first button (mobile or desktop)
 		await user.click(buttons[0]);
 
-		expect(mockPush).toHaveBeenCalledWith("/transactions/new");
+		expect(mockPush).toHaveBeenCalledWith("/test-org/transactions/new");
 	});
 
 	it("renders KPI cards", () => {

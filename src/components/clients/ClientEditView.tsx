@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import {
 	Badge,
 	Button,
@@ -67,7 +67,7 @@ interface ClientEditViewProps {
 export function ClientEditView({
 	clientId,
 }: ClientEditViewProps): React.JSX.Element {
-	const router = useRouter();
+	const { navigateTo } = useOrgNavigation();
 	const { toast } = useToast();
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
@@ -270,7 +270,7 @@ export function ClientEditView({
 				loading: "Actualizando cliente...",
 				success: "Cliente actualizado exitosamente",
 				onSuccess: () => {
-					router.push(`/clients/${clientId}`);
+					navigateTo(`/clients/${clientId}`);
 				},
 			});
 		} catch (error) {
@@ -282,7 +282,7 @@ export function ClientEditView({
 	};
 
 	const handleCancel = (): void => {
-		router.push(`/clients/${clientId}`);
+		navigateTo(`/clients/${clientId}`);
 	};
 
 	if (isLoading) {
@@ -312,7 +312,7 @@ export function ClientEditView({
 					<Button
 						variant="ghost"
 						size="icon"
-						onClick={() => router.push("/clients")}
+						onClick={() => navigateTo("/clients")}
 					>
 						<ArrowLeft className="h-5 w-5" />
 					</Button>

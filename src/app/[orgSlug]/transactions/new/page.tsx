@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { TransactionCreateView } from "../../../components/transactions/TransactionCreateView";
+import { TransactionCreateView } from "@/components/transactions/TransactionCreateView";
 
 export const metadata: Metadata = {
 	title: "Nueva Transacción | Plataforma AML",

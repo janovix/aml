@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import {
 	Users,
 	AlertTriangle,
@@ -127,6 +127,8 @@ const orgNavItems = [
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	const pathname = usePathname();
 	const router = useRouter();
+	const params = useParams();
+	const urlOrgSlug = params?.orgSlug as string | undefined;
 	const { isMobile, setOpenMobile } = useSidebar();
 	const { data: session, isPending } = useAuthSession();
 
@@ -137,6 +139,28 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 		setCurrentOrg,
 		isLoading: orgLoading,
 	} = useOrgStore();
+
+	// Get org slug from current org or URL
+	const orgSlug = currentOrg?.slug || urlOrgSlug;
+
+	// Helper to build org-prefixed paths
+	const orgPath = React.useCallback(
+		(path: string) => {
+			if (!orgSlug) return path;
+			return `/${orgSlug}${path}`;
+		},
+		[orgSlug],
+	);
+
+	// Check if a nav item is active (considering org prefix)
+	const isNavActive = React.useCallback(
+		(itemHref: string) => {
+			if (!pathname) return false;
+			const fullPath = orgPath(itemHref);
+			return pathname === fullPath || pathname.startsWith(`${fullPath}/`);
+		},
+		[pathname, orgPath],
+	);
 
 	const handleLinkClick = React.useCallback(() => {
 		if (isMobile) {
@@ -177,7 +201,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
 	const [createOrgDialogOpen, setCreateOrgDialogOpen] = React.useState(false);
 	const [orgName, setOrgName] = React.useState("");
-	const [orgSlug, setOrgSlug] = React.useState("");
+	const [newOrgSlug, setNewOrgSlug] = React.useState("");
 	const [orgLogo, setOrgLogo] = React.useState("");
 	const [isCreatingOrg, setIsCreatingOrg] = React.useState(false);
 	const [createOrgError, setCreateOrgError] = React.useState<string | null>(
@@ -185,8 +209,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	);
 
 	const derivedSlug = React.useMemo(
-		() => (orgSlug ? slugify(orgSlug) : slugify(orgName)),
-		[orgName, orgSlug],
+		() => (newOrgSlug ? slugify(newOrgSlug) : slugify(orgName)),
+		[orgName, newOrgSlug],
 	);
 
 	const handleCreateOrganization = () => {
@@ -234,7 +258,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
 					setCreateOrgDialogOpen(false);
 					setOrgName("");
-					setOrgSlug("");
+					setNewOrgSlug("");
 					setOrgLogo("");
 					setCreateOrgError(null);
 				},
@@ -295,9 +319,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 							<SidebarMenu>
 								{mainNavItems.map((item) => {
 									const Icon = item.icon;
-									const isActive =
-										pathname === item.href ||
-										pathname?.startsWith(`${item.href}/`);
+									const isActive = isNavActive(item.href);
 
 									return (
 										<SidebarMenuItem key={item.href}>
@@ -307,7 +329,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 												tooltip={item.title}
 											>
 												<Link
-													href={item.available ? item.href : "#"}
+													href={item.available ? orgPath(item.href) : "#"}
 													aria-disabled={!item.available}
 													className={cn(
 														!item.available && "pointer-events-none opacity-50",
@@ -340,9 +362,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 							<SidebarMenu>
 								{secondaryNavItems.map((item) => {
 									const Icon = item.icon;
-									const isActive =
-										pathname === item.href ||
-										pathname?.startsWith(`${item.href}/`);
+									const isActive = isNavActive(item.href);
 
 									return (
 										<SidebarMenuItem key={item.href}>
@@ -352,7 +372,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 												tooltip={item.title}
 											>
 												<Link
-													href={item.available ? item.href : "#"}
+													href={item.available ? orgPath(item.href) : "#"}
 													aria-disabled={!item.available}
 													className={cn(
 														!item.available && "pointer-events-none opacity-50",
@@ -385,9 +405,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 							<SidebarMenu>
 								{orgNavItems.map((item) => {
 									const Icon = item.icon;
-									const isActive =
-										pathname === item.href ||
-										pathname?.startsWith(`${item.href}/`);
+									const isActive = isNavActive(item.href);
 
 									return (
 										<SidebarMenuItem key={item.href}>
@@ -397,7 +415,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 												tooltip={item.title}
 											>
 												<Link
-													href={item.available ? item.href : "#"}
+													href={item.available ? orgPath(item.href) : "#"}
 													aria-disabled={!item.available}
 													className={cn(
 														!item.available && "pointer-events-none opacity-50",
@@ -458,9 +476,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 							</div>
 							<Input
 								id="org-slug"
-								value={orgSlug}
+								value={newOrgSlug}
 								onChange={(e) => {
-									setOrgSlug(e.target.value);
+									setNewOrgSlug(e.target.value);
 									setCreateOrgError(null);
 								}}
 								placeholder="mi-organizacion"

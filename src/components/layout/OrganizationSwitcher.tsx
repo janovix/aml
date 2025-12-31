@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Building2, ChevronsUpDown, Plus } from "lucide-react";
+import { ChevronsUpDown, Plus } from "lucide-react";
 
 import {
 	DropdownMenu,
@@ -72,7 +72,7 @@ export function OrganizationSwitcher({
 								size="lg"
 								className="justify-center data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
 							>
-								<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+								<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground overflow-hidden">
 									{activeOrganization?.logo ? (
 										<img
 											src={activeOrganization.logo}
@@ -80,7 +80,12 @@ export function OrganizationSwitcher({
 											className="size-5 rounded"
 										/>
 									) : (
-										<Building2 className="size-4" />
+										<Logo
+											variant="icon"
+											width={20}
+											height={20}
+											forceTheme="dark"
+										/>
 									)}
 								</div>
 							</SidebarMenuButton>
@@ -100,7 +105,7 @@ export function OrganizationSwitcher({
 									onClick={() => onOrganizationChange(org)}
 									className="gap-2 p-2"
 								>
-									<div className="flex size-6 items-center justify-center rounded-md border">
+									<div className="flex size-6 items-center justify-center rounded-md border overflow-hidden">
 										{org.logo ? (
 											<img
 												src={org.logo}
@@ -108,7 +113,7 @@ export function OrganizationSwitcher({
 												className="size-4 rounded"
 											/>
 										) : (
-											<Building2 className="size-3.5 shrink-0" />
+											<Logo variant="icon" width={16} height={16} />
 										)}
 									</div>
 									<span className="flex-1 truncate">
@@ -178,7 +183,7 @@ export function OrganizationSwitcher({
 							size="lg"
 							className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
 						>
-							<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+							<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground overflow-hidden">
 								{activeOrganization?.logo ? (
 									<img
 										src={activeOrganization.logo}
@@ -186,7 +191,12 @@ export function OrganizationSwitcher({
 										className="size-5 rounded"
 									/>
 								) : (
-									<Building2 className="size-4" />
+									<Logo
+										variant="icon"
+										width={20}
+										height={20}
+										forceTheme="dark"
+									/>
 								)}
 							</div>
 							<div className="grid flex-1 text-left text-sm leading-tight">
@@ -217,7 +227,7 @@ export function OrganizationSwitcher({
 								onClick={() => onOrganizationChange(org)}
 								className="gap-2 p-2"
 							>
-								<div className="flex size-6 items-center justify-center rounded-md border">
+								<div className="flex size-6 items-center justify-center rounded-md border overflow-hidden">
 									{org.logo ? (
 										<img
 											src={org.logo}
@@ -225,7 +235,7 @@ export function OrganizationSwitcher({
 											className="size-4 rounded"
 										/>
 									) : (
-										<Building2 className="size-3.5 shrink-0" />
+										<Logo variant="icon" width={16} height={16} />
 									)}
 								</div>
 								<span className="flex-1 truncate">

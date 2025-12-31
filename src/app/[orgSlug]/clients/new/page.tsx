@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ClientCreateView } from "../../../components/clients/ClientCreateView";
+import { ClientCreateView } from "@/components/clients/ClientCreateView";
 
 export const metadata: Metadata = {
 	title: "Nuevo Cliente | Plataforma AML",

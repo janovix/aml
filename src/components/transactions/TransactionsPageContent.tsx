@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { TransactionsTable } from "@/components/transactions/TransactionsTable";
 import { PageHero, type StatCard } from "@/components/page-hero";
 import { DollarSign, Calendar, AlertCircle, Receipt, Plus } from "lucide-react";
@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@/lib/api/http";
 
 export function TransactionsPageContent(): React.ReactElement {
-	const router = useRouter();
+	const { navigateTo } = useOrgNavigation();
 	const { toast } = useToast();
 	const [stats, setStats] = useState<TransactionStats | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
@@ -98,7 +98,7 @@ export function TransactionsPageContent(): React.ReactElement {
 				stats={heroStats}
 				ctaLabel="Nueva Transacción"
 				ctaIcon={Plus}
-				onCtaClick={() => router.push("/transactions/new")}
+				onCtaClick={() => navigateTo("/transactions/new")}
 			/>
 
 			<TransactionsTable />

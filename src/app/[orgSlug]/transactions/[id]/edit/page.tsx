@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { TransactionEditView } from "../../../../components/transactions/TransactionEditView";
+import { TransactionEditView } from "@/components/transactions/TransactionEditView";
 
 export const metadata: Metadata = {
 	title: "Editar Transacción | Plataforma AML",
