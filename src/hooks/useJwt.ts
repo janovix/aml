@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { getClientJwt } from "@/lib/auth/authClient";
+import { useOrgStore } from "@/lib/org-store";
 
 interface UseJwtResult {
 	jwt: string | null;
@@ -12,7 +13,8 @@ interface UseJwtResult {
 
 /**
  * Hook to get a JWT token for API authentication.
- * Fetches the JWT on mount and provides a refetch function.
+ * Fetches the JWT on mount and refetches when the active organization changes.
+ * The JWT includes the organizationId claim, so it must be refreshed when switching orgs.
  *
  * @example
  * const { jwt, isLoading, error } = useJwt();
@@ -24,6 +26,7 @@ interface UseJwtResult {
  * }, [jwt]);
  */
 export function useJwt(): UseJwtResult {
+	const { currentOrg } = useOrgStore();
 	const [jwt, setJwt] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<Error | null>(null);
@@ -42,9 +45,10 @@ export function useJwt(): UseJwtResult {
 		}
 	}, []);
 
+	// Refetch JWT when organization changes - the token includes organizationId claim
 	useEffect(() => {
 		fetchJwt();
-	}, [fetchJwt]);
+	}, [fetchJwt, currentOrg?.id]);
 
 	return { jwt, isLoading, error, refetch: fetchJwt };
 }
