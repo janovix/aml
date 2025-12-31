@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -291,6 +291,8 @@ export default function IndexPage() {
 	const [organizations, setOrganizations] = useState<Organization[]>([]);
 	const [activeOrgId, setActiveOrgId] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
+	const hasRedirected = useRef(false);
+	const hasFetched = useRef(false);
 
 	// Show error toast if redirected with error param
 	useEffect(() => {
@@ -307,6 +309,10 @@ export default function IndexPage() {
 
 	// Fetch organizations on mount
 	useEffect(() => {
+		// Prevent double fetch in React 18 strict mode
+		if (hasFetched.current) return;
+		hasFetched.current = true;
+
 		async function fetchOrgs() {
 			setIsLoading(true);
 			const result = await listOrganizations();
@@ -330,13 +336,20 @@ export default function IndexPage() {
 				return;
 			}
 
+			// Helper to redirect (only once)
+			const redirectToOrg = (org: Organization) => {
+				if (hasRedirected.current) return;
+				hasRedirected.current = true;
+				router.replace(`/${org.slug}/${DEFAULT_PAGE}`);
+			};
+
 			// Priority 1: If user has a previously selected org (activeOrganizationId), use that
 			if (result.data.activeOrganizationId) {
 				const activeOrg = orgs.find(
 					(o) => o.id === result.data?.activeOrganizationId,
 				);
 				if (activeOrg) {
-					router.replace(`/${activeOrg.slug}/${DEFAULT_PAGE}`);
+					redirectToOrg(activeOrg);
 					return;
 				}
 			}
@@ -344,8 +357,11 @@ export default function IndexPage() {
 			// Priority 2: If only 1 org, auto-redirect to it
 			if (orgs.length === 1) {
 				const org = orgs[0];
-				await setActiveOrganization(org.id);
-				router.replace(`/${org.slug}/${DEFAULT_PAGE}`);
+				// Set as active in background (don't block redirect)
+				setActiveOrganization(org.id).catch((err) => {
+					console.error("Failed to set active organization:", err);
+				});
+				redirectToOrg(org);
 				return;
 			}
 
