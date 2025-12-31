@@ -13,6 +13,7 @@ import {
 	Flag,
 	FileText,
 	Trash2,
+	UserPlus,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -447,6 +448,9 @@ export function ClientsTable(): React.ReactElement {
 				]}
 				searchPlaceholder="Buscar por nombre, RFC, email..."
 				emptyMessage="No se encontraron clientes"
+				emptyIcon={Users}
+				emptyActionLabel="Crear Cliente"
+				emptyActionHref={orgPath("/clients/new")}
 				loadingMessage="Cargando clientes..."
 				isLoading={isLoading}
 				selectable

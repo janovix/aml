@@ -12,6 +12,7 @@ import {
 	Eye,
 	Edit,
 	FileText,
+	Receipt,
 } from "lucide-react";
 import Link from "next/link";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
@@ -529,6 +530,9 @@ export function TransactionsTable({
 			searchKeys={["clientName", "clientId", "shortId", "brand", "model"]}
 			searchPlaceholder="Buscar por cliente, marca, modelo..."
 			emptyMessage="No se encontraron transacciones"
+			emptyIcon={Receipt}
+			emptyActionLabel="Crear Transacción"
+			emptyActionHref={orgPath("/transactions/new")}
 			loadingMessage="Cargando transacciones..."
 			isLoading={isLoading}
 			selectable

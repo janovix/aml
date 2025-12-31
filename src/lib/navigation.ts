@@ -9,10 +9,22 @@ import { useOrgStore } from "@/lib/org-store";
 
 /**
  * Get the current organization slug from the store
+ * Safe for server-side rendering - returns null on server
  */
 export function getOrgSlug(): string | null {
-	const { currentOrg } = useOrgStore.getState();
-	return currentOrg?.slug ?? null;
+	// On server-side, Zustand persist middleware may try to access localStorage
+	// which doesn't exist, causing errors. Return null safely.
+	if (typeof window === "undefined") {
+		return null;
+	}
+
+	try {
+		const { currentOrg } = useOrgStore.getState();
+		return currentOrg?.slug ?? null;
+	} catch {
+		// If store access fails (e.g., during SSR hydration), return null
+		return null;
+	}
 }
 
 /**

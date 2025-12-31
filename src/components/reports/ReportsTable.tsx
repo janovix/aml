@@ -489,6 +489,7 @@ export function ReportsTable(): React.ReactElement {
 				searchKeys={["id", "name", "period", "createdBy"]}
 				searchPlaceholder="Buscar por nombre, período..."
 				emptyMessage="No se encontraron reportes"
+				emptyIcon={FileText}
 				loadingMessage="Cargando reportes..."
 				isLoading={isLoading}
 				selectable

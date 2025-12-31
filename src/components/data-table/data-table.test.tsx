@@ -121,6 +121,55 @@ describe("DataTable", () => {
 		);
 
 		expect(screen.getByText("No items found")).toBeInTheDocument();
+		// Should also show hint text
+		expect(
+			screen.getByText("Intenta ajustar los filtros o la búsqueda"),
+		).toBeInTheDocument();
+	});
+
+	it("shows empty state with CTA link when emptyActionHref is provided", () => {
+		render(
+			<DataTable
+				data={[]}
+				columns={columns}
+				filters={filters}
+				searchKeys={["name"]}
+				getId={(item) => item.id}
+				emptyMessage="No clients found"
+				emptyActionLabel="Add Client"
+				emptyActionHref="/clients/new"
+			/>,
+		);
+
+		expect(screen.getByText("No clients found")).toBeInTheDocument();
+		const ctaLink = screen.getByRole("link", { name: /Add Client/i });
+		expect(ctaLink).toBeInTheDocument();
+		expect(ctaLink).toHaveAttribute("href", "/clients/new");
+	});
+
+	it("shows empty state with CTA button when onEmptyAction is provided", async () => {
+		const user = userEvent.setup();
+		const mockAction = vi.fn();
+
+		render(
+			<DataTable
+				data={[]}
+				columns={columns}
+				filters={filters}
+				searchKeys={["name"]}
+				getId={(item) => item.id}
+				emptyMessage="No clients found"
+				emptyActionLabel="Create New"
+				onEmptyAction={mockAction}
+			/>,
+		);
+
+		expect(screen.getByText("No clients found")).toBeInTheDocument();
+		const ctaButton = screen.getByRole("button", { name: /Create New/i });
+		expect(ctaButton).toBeInTheDocument();
+
+		await user.click(ctaButton);
+		expect(mockAction).toHaveBeenCalled();
 	});
 
 	it("filters data by search query", async () => {

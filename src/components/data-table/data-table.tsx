@@ -8,7 +8,10 @@ import {
 	ChevronLeft,
 	ChevronRight,
 	Loader2,
+	SearchX,
+	Plus,
 } from "lucide-react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +33,10 @@ export function DataTable<T extends object>({
 	searchKeys,
 	searchPlaceholder = "Buscar...",
 	emptyMessage = "No se encontraron resultados",
+	emptyIcon: EmptyIcon = SearchX,
+	emptyActionLabel,
+	emptyActionHref,
+	onEmptyAction,
 	onRowClick,
 	actions,
 	selectable = false,
@@ -446,104 +453,155 @@ export function DataTable<T extends object>({
 							</tr>
 						</thead>
 						<tbody>
-							{isLoading ? (
-								// Skeleton loading rows
-								Array.from({ length: itemsPerPage }).map((_, index) => (
-									<tr
-										key={`skeleton-${index}`}
-										className="border-b border-border"
-									>
-										{selectable && (
-											<td className="p-3">
-												<Skeleton className="h-4 w-4 rounded" />
-											</td>
-										)}
-										{visibleColumns.map((column) => (
-											<td
-												key={column.id}
-												className={cn("p-3", column.className)}
-											>
-												<Skeleton
-													className={cn(
-														"h-4 w-full",
-														index % 3 === 0 && "w-3/4",
-														index % 3 === 1 && "w-full",
-														index % 3 === 2 && "w-5/6",
-													)}
-												/>
-											</td>
-										))}
-										{actions && (
-											<td className="p-3">
-												<Skeleton className="h-8 w-8 rounded" />
-											</td>
-										)}
-									</tr>
-								))
-							) : paginatedData.length === 0 ? (
-								<tr>
-									<td
-										colSpan={
-											visibleColumns.length +
-											(selectable ? 1 : 0) +
-											(actions ? 1 : 0)
-										}
-										className="p-8 text-center text-muted-foreground"
-									>
-										{emptyMessage}
-									</td>
-								</tr>
-							) : (
-								paginatedData.map((item) => {
-									const id = getId(item);
-									return (
+							{isLoading
+								? // Skeleton loading rows
+									Array.from({ length: itemsPerPage }).map((_, index) => (
 										<tr
-											key={id}
-											onClick={() => onRowClick?.(item)}
-											className={cn(
-												"border-b border-border transition-colors",
-												onRowClick && "cursor-pointer hover:bg-muted/50",
-												selectedRows.has(id) && "bg-primary/5",
-											)}
+											key={`skeleton-${index}`}
+											className="border-b border-border"
 										>
 											{selectable && (
-												<td
-													className="p-3"
-													onClick={(e) => e.stopPropagation()}
-												>
-													<Checkbox
-														checked={selectedRows.has(id)}
-														onCheckedChange={() => toggleRowSelection(id)}
-													/>
+												<td className="p-3">
+													<Skeleton className="h-4 w-4 rounded" />
 												</td>
 											)}
 											{visibleColumns.map((column) => (
 												<td
 													key={column.id}
-													className={cn("p-3 text-sm", column.className)}
+													className={cn("p-3", column.className)}
 												>
-													{column.cell
-														? column.cell(item)
-														: String(
-																getNestedValue(
-																	item,
-																	column.accessorKey as string,
-																) ?? "",
-															)}
+													<Skeleton
+														className={cn(
+															"h-4 w-full",
+															index % 3 === 0 && "w-3/4",
+															index % 3 === 1 && "w-full",
+															index % 3 === 2 && "w-5/6",
+														)}
+													/>
 												</td>
 											))}
 											{actions && (
-												<td
-													className="p-3"
-													onClick={(e) => e.stopPropagation()}
-												>
-													{actions(item)}
+												<td className="p-3">
+													<Skeleton className="h-8 w-8 rounded" />
 												</td>
 											)}
 										</tr>
-									);
-								})
-							)}
+									))
+								: paginatedData.length === 0
+									? // Empty state with same height as skeleton
+										Array.from({ length: itemsPerPage }).map((_, index) =>
+											index === Math.floor(itemsPerPage / 2) - 1 ? (
+												<tr
+													key={`empty-${index}`}
+													className="border-b border-border"
+												>
+													<td
+														colSpan={
+															visibleColumns.length +
+															(selectable ? 1 : 0) +
+															(actions ? 1 : 0)
+														}
+														rowSpan={3}
+														className="p-8"
+													>
+														<div className="flex flex-col items-center justify-center gap-4 text-center">
+															<div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+																<EmptyIcon className="h-8 w-8 text-muted-foreground" />
+															</div>
+															<div className="space-y-1">
+																<p className="text-sm font-medium text-foreground">
+																	{emptyMessage}
+																</p>
+																<p className="text-xs text-muted-foreground">
+																	Intenta ajustar los filtros o la búsqueda
+																</p>
+															</div>
+															{(emptyActionHref || onEmptyAction) &&
+																emptyActionLabel && (
+																	<div>
+																		{emptyActionHref ? (
+																			<Button asChild size="sm">
+																				<Link href={emptyActionHref}>
+																					<Plus className="mr-2 h-4 w-4" />
+																					{emptyActionLabel}
+																				</Link>
+																			</Button>
+																		) : (
+																			<Button size="sm" onClick={onEmptyAction}>
+																				<Plus className="mr-2 h-4 w-4" />
+																				{emptyActionLabel}
+																			</Button>
+																		)}
+																	</div>
+																)}
+														</div>
+													</td>
+												</tr>
+											) : index >= Math.floor(itemsPerPage / 2) &&
+											  index < Math.floor(itemsPerPage / 2) + 2 ? null : (
+												<tr
+													key={`empty-spacer-${index}`}
+													className="border-b border-border h-12"
+												>
+													<td
+														colSpan={
+															visibleColumns.length +
+															(selectable ? 1 : 0) +
+															(actions ? 1 : 0)
+														}
+													/>
+												</tr>
+											),
+										)
+									: paginatedData.map((item) => {
+											const id = getId(item);
+											return (
+												<tr
+													key={id}
+													onClick={() => onRowClick?.(item)}
+													className={cn(
+														"border-b border-border transition-colors",
+														onRowClick && "cursor-pointer hover:bg-muted/50",
+														selectedRows.has(id) && "bg-primary/5",
+													)}
+												>
+													{selectable && (
+														<td
+															className="p-3"
+															onClick={(e) => e.stopPropagation()}
+														>
+															<Checkbox
+																checked={selectedRows.has(id)}
+																onCheckedChange={() => toggleRowSelection(id)}
+															/>
+														</td>
+													)}
+													{visibleColumns.map((column) => (
+														<td
+															key={column.id}
+															className={cn("p-3 text-sm", column.className)}
+														>
+															{column.cell
+																? column.cell(item)
+																: String(
+																		getNestedValue(
+																			item,
+																			column.accessorKey as string,
+																		) ?? "",
+																	)}
+														</td>
+													))}
+													{actions && (
+														<td
+															className="p-3"
+															onClick={(e) => e.stopPropagation()}
+														>
+															{actions(item)}
+														</td>
+													)}
+												</tr>
+											);
+										})}
 						</tbody>
 					</table>
 				</div>

@@ -7,15 +7,9 @@ import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Save, UserPlus } from "lucide-react";
+import { Save, UserPlus, User, Building2, Landmark, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { PageHero } from "@/components/page-hero";
 import type { PersonType, ClientCreateRequest } from "../../types/client";
 import { createClient } from "../../lib/api/clients";
@@ -26,6 +20,44 @@ import { CatalogSelector } from "../catalogs/CatalogSelector";
 import { PhoneInput } from "../ui/phone-input";
 import { validateRFC, validateCURP } from "../../lib/utils";
 import { toast } from "sonner";
+
+const personTypeOptions: {
+	value: PersonType;
+	label: string;
+	description: string;
+	icon: typeof User;
+	iconBg: string;
+	iconColor: string;
+	ringColor: string;
+}[] = [
+	{
+		value: "physical",
+		label: "Persona Física",
+		description: "Individuo o persona natural",
+		icon: User,
+		iconBg: "bg-sky-500/20",
+		iconColor: "text-sky-500",
+		ringColor: "ring-sky-500",
+	},
+	{
+		value: "moral",
+		label: "Persona Moral",
+		description: "Empresa o sociedad mercantil",
+		icon: Building2,
+		iconBg: "bg-violet-500/20",
+		iconColor: "text-violet-500",
+		ringColor: "ring-violet-500",
+	},
+	{
+		value: "trust",
+		label: "Fideicomiso",
+		description: "Contrato de administración fiduciaria",
+		icon: Landmark,
+		iconBg: "bg-amber-500/20",
+		iconColor: "text-amber-500",
+		ringColor: "ring-amber-500",
+	},
+];
 
 interface ClientFormData {
 	personType: PersonType;
@@ -242,25 +274,78 @@ export function ClientCreateView(): React.JSX.Element {
 					<CardHeader>
 						<CardTitle className="text-lg">Tipo de Persona</CardTitle>
 					</CardHeader>
-					<CardContent className="space-y-4">
-						<div className="space-y-2">
-							<Label htmlFor="personType">Tipo *</Label>
-							<Select
-								value={formData.personType}
-								onValueChange={(value) =>
-									handleInputChange("personType", value as PersonType)
-								}
-							>
-								<SelectTrigger id="personType">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="physical">Persona Física</SelectItem>
-									<SelectItem value="moral">Persona Moral</SelectItem>
-									<SelectItem value="trust">Fideicomiso</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
+					<CardContent>
+						<fieldset>
+							<legend className="sr-only">Selecciona el tipo de persona</legend>
+							<div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+								{personTypeOptions.map((option) => {
+									const isSelected = formData.personType === option.value;
+									const Icon = option.icon;
+									return (
+										<label
+											key={option.value}
+											className={cn(
+												"relative flex cursor-pointer rounded-xl border-2 p-4 transition-all duration-200",
+												"hover:border-muted-foreground/30 hover:bg-muted/50",
+												"focus-within:ring-2 focus-within:ring-offset-2",
+												isSelected
+													? `border-current ${option.iconColor} bg-muted/30 ${option.ringColor}`
+													: "border-border bg-background",
+											)}
+										>
+											<input
+												type="radio"
+												name="personType"
+												value={option.value}
+												checked={isSelected}
+												onChange={(e) =>
+													handleInputChange(
+														"personType",
+														e.target.value as PersonType,
+													)
+												}
+												className="sr-only"
+											/>
+											<div className="flex w-full items-start gap-3">
+												<div
+													className={cn(
+														"flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
+														option.iconBg,
+														option.iconColor,
+													)}
+												>
+													<Icon className="h-5 w-5" />
+												</div>
+												<div className="flex-1 min-w-0">
+													<span
+														className={cn(
+															"block text-sm font-semibold",
+															isSelected ? option.iconColor : "text-foreground",
+														)}
+													>
+														{option.label}
+													</span>
+													<span className="block text-xs text-muted-foreground mt-0.5 leading-tight">
+														{option.description}
+													</span>
+												</div>
+												{isSelected && (
+													<div
+														className={cn(
+															"flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
+															option.iconBg,
+															option.iconColor,
+														)}
+													>
+														<Check className="h-3 w-3" strokeWidth={3} />
+													</div>
+												)}
+											</div>
+										</label>
+									);
+								})}
+							</div>
+						</fieldset>
 					</CardContent>
 				</Card>
 

@@ -632,6 +632,7 @@ export function AlertsTable({
 				searchKeys={["ruleName", "clientName", "clientId", "notes"]}
 				searchPlaceholder="Buscar por regla, cliente..."
 				emptyMessage="No se encontraron alertas"
+				emptyIcon={Bell}
 				loadingMessage="Cargando alertas..."
 				isLoading={isLoading}
 				selectable
