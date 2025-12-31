@@ -1,7 +1,7 @@
 "use client";
 
 import { use } from "react";
-import { ShieldX, ArrowLeft, Home } from "lucide-react";
+import { SearchX, ArrowLeft, Home } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,26 +17,27 @@ interface PageProps {
 	params: Promise<{ orgSlug: string }>;
 }
 
-export default function ForbiddenPage({ params }: PageProps) {
+export default function OrgNotFoundPage({ params }: PageProps) {
 	const { orgSlug } = use(params);
 
 	return (
 		<div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted/50 p-4">
 			<Card className="w-full max-w-md">
 				<CardHeader className="text-center">
-					<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
-						<ShieldX className="h-8 w-8 text-destructive" />
+					<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+						<SearchX className="h-8 w-8 text-muted-foreground" />
 					</div>
-					<CardTitle className="text-2xl">Access Denied</CardTitle>
+					<CardTitle className="text-2xl">Organization Not Found</CardTitle>
 					<CardDescription>
-						You don&apos;t have access to the organization{" "}
-						<span className="font-semibold text-foreground">{orgSlug}</span>.
+						The organization{" "}
+						<span className="font-semibold text-foreground">{orgSlug}</span>{" "}
+						doesn&apos;t exist.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="text-center text-sm text-muted-foreground">
 					<p>
-						This could happen if you followed a shared link to an organization
-						you&apos;re not a member of, or if your access was revoked.
+						This could happen if the organization was deleted, the URL is
+						incorrect, or you followed an outdated link.
 					</p>
 				</CardContent>
 				<CardFooter className="flex gap-3">

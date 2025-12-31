@@ -285,7 +285,7 @@ describe("ReportsTable", () => {
 
 			await user.click(screen.getByText("Ver detalle"));
 
-			expect(mockPush).toHaveBeenCalledWith("/reports/RPT-001");
+			expect(mockPush).toHaveBeenCalledWith("/test-org/reports/RPT-001");
 		}
 	});
 

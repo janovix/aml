@@ -112,6 +112,13 @@ export function useDataTableUrlFilters(allowedFilterIds: string[]) {
 	const pathname = usePathname();
 	const router = useRouter();
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	// Store latest searchParams in ref to avoid stale closure in setTimeout
+	const searchParamsRef = useRef(searchParams);
+
+	// Keep ref in sync with latest searchParams
+	useEffect(() => {
+		searchParamsRef.current = searchParams;
+	}, [searchParams]);
 
 	// Parse initial state from URL
 	const initialState = useMemo(
@@ -198,11 +205,12 @@ export function useDataTableUrlFilters(allowedFilterIds: string[]) {
 			}
 
 			debounceRef.current = setTimeout(() => {
-				const newUrl = buildUrl(updates, searchParams);
+				// Read fresh searchParams from ref to avoid stale closure
+				const newUrl = buildUrl(updates, searchParamsRef.current);
 				router.replace(newUrl, { scroll: false });
 			}, 300);
 		},
-		[buildUrl, router, searchParams],
+		[buildUrl, router],
 	);
 
 	// Callbacks for DataTable
