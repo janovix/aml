@@ -488,71 +488,72 @@ export function DataTable<T extends object>({
 										</tr>
 									))
 								: paginatedData.length === 0
-									? // Empty state with same height as skeleton
-										Array.from({ length: itemsPerPage }).map((_, index) =>
-											index === Math.floor(itemsPerPage / 2) - 1 ? (
-												<tr
-													key={`empty-${index}`}
-													className="border-b border-border"
+									? // Empty state: icon/message/CTA at top, placeholder rows below
+										[
+											// First row: empty state content spanning multiple rows
+											<tr
+												key="empty-content"
+												className="border-b border-border"
+											>
+												<td
+													colSpan={
+														visibleColumns.length +
+														(selectable ? 1 : 0) +
+														(actions ? 1 : 0)
+													}
+													className="p-8"
 												>
-													<td
-														colSpan={
-															visibleColumns.length +
-															(selectable ? 1 : 0) +
-															(actions ? 1 : 0)
-														}
-														rowSpan={3}
-														className="p-8"
-													>
-														<div className="flex flex-col items-center justify-center gap-4 text-center">
-															<div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-																<EmptyIcon className="h-8 w-8 text-muted-foreground" />
-															</div>
-															<div className="space-y-1">
-																<p className="text-sm font-medium text-foreground">
-																	{emptyMessage}
-																</p>
-																<p className="text-xs text-muted-foreground">
-																	Intenta ajustar los filtros o la búsqueda
-																</p>
-															</div>
-															{(emptyActionHref || onEmptyAction) &&
-																emptyActionLabel && (
-																	<div>
-																		{emptyActionHref ? (
-																			<Button asChild size="sm">
-																				<Link href={emptyActionHref}>
-																					<Plus className="mr-2 h-4 w-4" />
-																					{emptyActionLabel}
-																				</Link>
-																			</Button>
-																		) : (
-																			<Button size="sm" onClick={onEmptyAction}>
+													<div className="flex flex-col items-center justify-center gap-4 text-center">
+														<div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+															<EmptyIcon className="h-8 w-8 text-muted-foreground" />
+														</div>
+														<div className="space-y-1">
+															<p className="text-sm font-medium text-foreground">
+																{emptyMessage}
+															</p>
+															<p className="text-xs text-muted-foreground">
+																Intenta ajustar los filtros o la búsqueda
+															</p>
+														</div>
+														{(emptyActionHref || onEmptyAction) &&
+															emptyActionLabel && (
+																<div>
+																	{emptyActionHref ? (
+																		<Button asChild size="sm">
+																			<Link href={emptyActionHref}>
 																				<Plus className="mr-2 h-4 w-4" />
 																				{emptyActionLabel}
-																			</Button>
-																		)}
-																	</div>
-																)}
-														</div>
-													</td>
-												</tr>
-											) : index >= Math.floor(itemsPerPage / 2) &&
-											  index < Math.floor(itemsPerPage / 2) + 2 ? null : (
-												<tr
-													key={`empty-spacer-${index}`}
-													className="border-b border-border h-12"
-												>
-													<td
-														colSpan={
-															visibleColumns.length +
-															(selectable ? 1 : 0) +
-															(actions ? 1 : 0)
-														}
-													/>
-												</tr>
+																			</Link>
+																		</Button>
+																	) : (
+																		<Button size="sm" onClick={onEmptyAction}>
+																			<Plus className="mr-2 h-4 w-4" />
+																			{emptyActionLabel}
+																		</Button>
+																	)}
+																</div>
+															)}
+													</div>
+												</td>
+											</tr>,
+											// Remaining placeholder rows below the empty state
+											...Array.from({ length: itemsPerPage - 1 }).map(
+												(_, index) => (
+													<tr
+														key={`empty-spacer-${index}`}
+														className="border-b border-border h-12"
+													>
+														<td
+															colSpan={
+																visibleColumns.length +
+																(selectable ? 1 : 0) +
+																(actions ? 1 : 0)
+															}
+														/>
+													</tr>
+												),
 											),
-										)
+										]
 									: paginatedData.map((item) => {
 											const id = getId(item);
 											return (
