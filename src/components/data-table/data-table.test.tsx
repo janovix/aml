@@ -173,6 +173,7 @@ describe("DataTable", () => {
 
 		await waitFor(() => {
 			expect(screen.getByText("Item Two")).toBeInTheDocument();
+			expect(searchInput).toHaveValue("");
 		});
 	});
 
@@ -680,38 +681,6 @@ describe("DataTable", () => {
 			if (lastPageNextButtons.length > 0) {
 				expect(lastPageNextButtons[0]).toBeDisabled();
 			}
-		}
-	});
-
-	it("clears search when clear button is clicked", async () => {
-		const user = userEvent.setup();
-		render(
-			<DataTable
-				data={mockData}
-				columns={columns}
-				filters={filters}
-				searchKeys={["name"]}
-				searchPlaceholder="Search items..."
-				getId={(item) => item.id}
-			/>,
-		);
-
-		const searchInput = screen.getByPlaceholderText("Search items...");
-		await user.type(searchInput, "One");
-
-		await waitFor(() => {
-			expect(screen.queryByText("Item Two")).not.toBeInTheDocument();
-		});
-
-		// Find and click clear button
-		const clearButton = searchInput.parentElement?.querySelector("button");
-		if (clearButton) {
-			await user.click(clearButton);
-
-			await waitFor(() => {
-				expect(screen.getByText("Item Two")).toBeInTheDocument();
-				expect(searchInput).toHaveValue("");
-			});
 		}
 	});
 

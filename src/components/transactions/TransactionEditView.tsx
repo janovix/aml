@@ -35,21 +35,7 @@ import { CatalogSelector } from "../catalogs/CatalogSelector";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
 import { getFieldDescription } from "../../lib/field-descriptions";
 import { validateVIN } from "../../lib/utils";
-
-function getVehicleBrandCatalogKey(
-	vehicleType: TransactionVehicleType,
-): string {
-	switch (vehicleType) {
-		case "land":
-			return "terrestrial-vehicle-brands";
-		case "marine":
-			return "maritime-vehicle-brands";
-		case "air":
-			return "air-vehicle-brands";
-		default:
-			return "terrestrial-vehicle-brands"; // Default fallback
-	}
-}
+import { getVehicleBrandCatalogKey } from "../../lib/vehicle-utils";
 
 interface TransactionEditViewProps {
 	transactionId: string;

@@ -136,7 +136,6 @@ vi.mock("@/components/ui/sidebar", async () => {
 	};
 });
 
-const mockOnLogout = vi.fn();
 vi.mock("./NavUser", () => ({
 	NavUser: ({ onLogout }: { onLogout: () => void }) => (
 		<div>
@@ -319,8 +318,6 @@ describe("AppSidebar", () => {
 		);
 
 		expect(screen.getByText("Transacciones")).toBeInTheDocument();
-		// Reset for other tests
-		mockUsePathname.mockReturnValue("/clients");
 	});
 
 	it("handles pathname with subpath for active navigation", () => {
@@ -334,8 +331,6 @@ describe("AppSidebar", () => {
 
 		// Should still show navigation items
 		expect(screen.getByText("Clientes")).toBeInTheDocument();
-		// Reset for other tests
-		mockUsePathname.mockReturnValue("/clients");
 	});
 
 	it("renders unavailable items with 'Pronto' badge", () => {

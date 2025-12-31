@@ -51,7 +51,6 @@ describe("TransactionsPageContent", () => {
 			transactionsToday: 15,
 			suspiciousTransactions: 3,
 			totalVolume: "1500000.00",
-			totalVehicles: 42,
 		});
 
 		// Mock transactions API for TransactionsTable
@@ -167,7 +166,6 @@ describe("TransactionsPageContent", () => {
 							transactionsToday: 15,
 							suspiciousTransactions: 3,
 							totalVolume: "1500000.00",
-							totalVehicles: 42,
 						});
 					}, 100);
 				}),
@@ -185,7 +183,6 @@ describe("TransactionsPageContent", () => {
 			transactionsToday: 0,
 			suspiciousTransactions: 0,
 			totalVolume: "0",
-			totalVehicles: 0,
 		});
 
 		render(<TransactionsPageContent />);
@@ -278,7 +275,6 @@ describe("TransactionsPageContent", () => {
 			transactionsToday: 15,
 			suspiciousTransactions: 3,
 			totalVolume: "2500000.00", // 2.5M
-			totalVehicles: 42,
 		});
 
 		render(<TransactionsPageContent />);
@@ -292,7 +288,6 @@ describe("TransactionsPageContent", () => {
 			transactionsToday: 15,
 			suspiciousTransactions: 3,
 			totalVolume: "50000.00", // 50K
-			totalVehicles: 42,
 		});
 
 		render(<TransactionsPageContent />);
@@ -306,7 +301,6 @@ describe("TransactionsPageContent", () => {
 			transactionsToday: 15,
 			suspiciousTransactions: 3,
 			totalVolume: "500.00", // < 1K
-			totalVehicles: 42,
 		});
 
 		render(<TransactionsPageContent />);
@@ -321,7 +315,6 @@ describe("TransactionsPageContent", () => {
 			transactionsToday: 15,
 			suspiciousTransactions: 3,
 			totalVolume: "invalid", // Will cause NaN
-			totalVehicles: 42,
 		});
 
 		render(<TransactionsPageContent />);
@@ -336,7 +329,6 @@ describe("TransactionsPageContent", () => {
 			transactionsToday: 15,
 			suspiciousTransactions: 3,
 			totalVolume: null as unknown as string,
-			totalVehicles: 42,
 		});
 
 		render(<TransactionsPageContent />);
@@ -365,7 +357,6 @@ describe("TransactionsPageContent", () => {
 			transactionsToday: 15,
 			suspiciousTransactions: 3,
 			totalVolume: "1000000.00", // Exactly 1M
-			totalVehicles: 42,
 		});
 
 		render(<TransactionsPageContent />);
@@ -379,7 +370,6 @@ describe("TransactionsPageContent", () => {
 			transactionsToday: 15,
 			suspiciousTransactions: 3,
 			totalVolume: "1000.00", // Exactly 1K
-			totalVehicles: 42,
 		});
 
 		render(<TransactionsPageContent />);
@@ -393,7 +383,6 @@ describe("TransactionsPageContent", () => {
 			transactionsToday: 15,
 			suspiciousTransactions: 3,
 			totalVolume: "0.00",
-			totalVehicles: 42,
 		});
 
 		render(<TransactionsPageContent />);

@@ -5,7 +5,7 @@ import type {
 	FilterDef,
 	DataTableProps,
 } from "../../components/data-table/types";
-import { MoreHorizontal, Trash2, Edit } from "lucide-react";
+import { Filter, Trash2, Edit, MoreHorizontal } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import {
 	DropdownMenu,
@@ -128,7 +128,7 @@ const filters: FilterDef[] = [
 	{
 		id: "status",
 		label: "Status",
-		icon: MoreHorizontal,
+		icon: Filter,
 		options: [
 			{ value: "active", label: "Active" },
 			{ value: "inactive", label: "Inactive" },
@@ -138,7 +138,7 @@ const filters: FilterDef[] = [
 	{
 		id: "role",
 		label: "Role",
-		icon: MoreHorizontal,
+		icon: Filter,
 		options: [
 			{ value: "admin", label: "Admin" },
 			{ value: "user", label: "User" },

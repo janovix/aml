@@ -5,17 +5,21 @@ describe("utils", () => {
 	describe("cn", () => {
 		it("merges class names", () => {
 			const result = cn("class1", "class2");
-			expect(result).toBeTruthy();
+			expect(result).toContain("class1");
+			expect(result).toContain("class2");
 		});
 
 		it("handles conditional classes", () => {
 			const result = cn("class1", false && "class2", "class3");
-			expect(result).toBeTruthy();
+			expect(result).toContain("class1");
+			expect(result).toContain("class3");
+			expect(result).not.toContain("class2");
 		});
 
 		it("handles undefined and null", () => {
 			const result = cn("class1", undefined, null, "class2");
-			expect(result).toBeTruthy();
+			expect(result).toContain("class1");
+			expect(result).toContain("class2");
 		});
 	});
 

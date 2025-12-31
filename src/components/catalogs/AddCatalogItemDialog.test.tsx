@@ -142,8 +142,6 @@ describe("AddCatalogItemDialog", () => {
 	});
 
 	it("shows error when name is empty", async () => {
-		const user = userEvent.setup();
-
 		render(
 			<AddCatalogItemDialog
 				open={true}
@@ -154,24 +152,10 @@ describe("AddCatalogItemDialog", () => {
 		);
 
 		const submitButton = screen.getByRole("button", { name: /agregar/i });
-		// Button should be disabled when name is empty
 		expect(submitButton).toBeDisabled();
 
-		// Try to submit via form
-		const form = screen.getByRole("dialog").querySelector("form");
-		if (form) {
-			const submitEvent = new Event("submit", {
-				bubbles: true,
-				cancelable: true,
-			});
-			form.dispatchEvent(submitEvent);
-		}
-
-		// Since button is disabled, form won't submit, so we need to enable it first
-		// Actually, let's just check that the button is disabled for empty name
 		const input = screen.getByPlaceholderText("Ingrese el nombre del elemento");
 		expect(input).toHaveValue("");
-		expect(submitButton).toBeDisabled();
 	});
 
 	it("shows error when name exceeds 200 characters", async () => {
@@ -349,8 +333,7 @@ describe("AddCatalogItemDialog", () => {
 
 	it("handles error with 409 status code", async () => {
 		const user = userEvent.setup();
-		const error = new Error("Conflict");
-		error.message = "409 Conflict";
+		const error = new Error("409 Conflict");
 		vi.mocked(catalogs.createCatalogItem).mockRejectedValue(error);
 
 		render(
