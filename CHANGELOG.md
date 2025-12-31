@@ -1,3 +1,16 @@
+# [1.1.0-rc.17](https://github.com/janovix/aml/compare/v1.1.0-rc.16...v1.1.0-rc.17) (2025-12-31)
+
+
+### Features
+
+* add AddCatalogItemDialog component and integrate with CatalogSelector ([a5309e6](https://github.com/janovix/aml/commit/a5309e65cf472b14f3e7d965fc9e59f8f824a511))
+* add Alertas and Reportes pages with corresponding tests and integrate infinite scroll functionality in tables ([73ef335](https://github.com/janovix/aml/commit/73ef335123e9260fdd14ca4287fa45ba7d92759d))
+* add organization invitation acceptance page and integrate zustand for state management ([d47c343](https://github.com/janovix/aml/commit/d47c3437958139e6aaf8e9d3e3b1715653139de5))
+* enhance organization handling in AlertsTable, ClientsTable, and TransactionsTable components to prevent API calls when no organization is selected ([c5682ff](https://github.com/janovix/aml/commit/c5682ffef6875b6bcde206b44bdca61496d80e65))
+* implement organization change handling in AlertsTable, ClientsTable, and TransactionsTable components to refetch data on organization switch ([34ab3a3](https://github.com/janovix/aml/commit/34ab3a35d3bfb52bb915eb016c54b8b9a457dd0e))
+* implement TeamPage and OrgTeamTable components with associated tests ([7632636](https://github.com/janovix/aml/commit/7632636981be3bc6cf1ce8b0f954c76d8d373868))
+* update useJwt hook to refetch JWT token on organization change, ensuring the token includes organizationId claim ([26b6bec](https://github.com/janovix/aml/commit/26b6bec35f88a0d480990128d5ad76f8ea90ba7d))
+
 # [1.1.0-rc.16](https://github.com/janovix/aml/compare/v1.1.0-rc.15...v1.1.0-rc.16) (2025-12-30)
 
 
