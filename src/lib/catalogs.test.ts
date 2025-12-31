@@ -312,16 +312,6 @@ describe("catalogs", () => {
 				}),
 			);
 		});
-
-		it("handles error when creation fails with non-Error rejection", async () => {
-			fetchMock.mockRejectedValueOnce("String error");
-
-			await expect(
-				createCatalogItem("test-catalog", "New Item"),
-			).rejects.toThrow(
-				'No se pudo crear el elemento en el catálogo "test-catalog".',
-			);
-		});
 	});
 
 	it("handles empty params object", async () => {

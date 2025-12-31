@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +37,11 @@ export function AddCatalogItemDialog({
 	const [name, setName] = useState(initialValue);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+
+	// Sync name state when initialValue changes (e.g., dialog reopened with new term)
+	useEffect(() => {
+		setName(initialValue);
+	}, [initialValue, open]);
 
 	const handleSubmit = useCallback(
 		async (e: React.FormEvent) => {

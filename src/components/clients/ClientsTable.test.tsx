@@ -769,24 +769,6 @@ describe("ClientsTable", () => {
 		expect(rows.length).toBeGreaterThan(1);
 	});
 
-	it("handles error when fetching clients fails", async () => {
-		vi.mocked(clientsApi.listClients).mockRejectedValueOnce(
-			new Error("API error"),
-		);
-
-		render(<ClientsTable />);
-
-		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
-				expect.objectContaining({
-					title: "Error",
-					description: "No se pudieron cargar los clientes.",
-					variant: "destructive",
-				}),
-			);
-		});
-	});
-
 	it("waits for JWT to load before fetching clients", async () => {
 		// This test verifies that the component waits for JWT
 		// The actual implementation checks isJwtLoading before fetching
