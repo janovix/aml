@@ -396,7 +396,7 @@ export function ReportsTable(): React.ReactElement {
 			<DropdownMenuContent align="end" className="w-48">
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => router.push(`/reportes/${item.id}`)}
+					onClick={() => router.push(`/reports/${item.id}`)}
 				>
 					<Eye className="h-4 w-4" />
 					Ver detalle
@@ -477,7 +477,7 @@ export function ReportsTable(): React.ReactElement {
 				stats={stats}
 				ctaLabel="Nuevo Reporte"
 				ctaIcon={Plus}
-				onCtaClick={() => router.push("/reportes/new")}
+				onCtaClick={() => router.push("/reports/new")}
 			/>
 			<DataTable
 				data={reports}

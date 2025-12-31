@@ -197,7 +197,7 @@ const meta = {
 		layout: "padded",
 		nextjs: {
 			router: {
-				pathname: "/alertas",
+				pathname: "/alerts",
 			},
 		},
 	},

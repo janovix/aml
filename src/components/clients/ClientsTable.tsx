@@ -395,7 +395,7 @@ export function ClientsTable(): React.ReactElement {
 					Ver transacciones
 				</DropdownMenuItem>
 				<DropdownMenuItem
-					onClick={() => router.push(`/alertas?clientId=${item.rfc}`)}
+					onClick={() => router.push(`/alerts?clientId=${item.rfc}`)}
 				>
 					Ver alertas
 				</DropdownMenuItem>

@@ -276,4 +276,162 @@ describe("OrgSwitcher", () => {
 		// "Test Org" should show "TO" initials
 		expect(screen.getByText("TO")).toBeInTheDocument();
 	});
+
+	it("shows error when organization creation fails without message", async () => {
+		mockCreateOrganization.mockResolvedValueOnce({
+			data: null,
+			error: null,
+		});
+
+		const user = userEvent.setup();
+		render(
+			<SidebarProvider>
+				<OrgSwitcher />
+			</SidebarProvider>,
+		);
+
+		const trigger = screen.getByText("Test Org");
+		await user.click(trigger);
+
+		const newOrgButton = screen.getByText("New organization");
+		await user.click(newOrgButton);
+
+		const nameInput = screen.getByLabelText("Name");
+		await user.type(nameInput, "My New Org");
+
+		const submitButton = screen.getByRole("button", {
+			name: "Create organization",
+		});
+		await user.click(submitButton);
+
+		await waitFor(() => {
+			expect(screen.getByText("Please try again later.")).toBeInTheDocument();
+		});
+	});
+
+	it("closes dialog when cancel button is clicked", async () => {
+		const user = userEvent.setup();
+		render(
+			<SidebarProvider>
+				<OrgSwitcher />
+			</SidebarProvider>,
+		);
+
+		const trigger = screen.getByText("Test Org");
+		await user.click(trigger);
+
+		const newOrgButton = screen.getByText("New organization");
+		await user.click(newOrgButton);
+
+		const nameInput = screen.getByLabelText("Name");
+		await user.type(nameInput, "My New Org");
+
+		// Click cancel button to close dialog
+		const cancelButton = screen.getByRole("button", { name: "Cancel" });
+		await user.click(cancelButton);
+
+		// Wait for dialog to close
+		await waitFor(() => {
+			expect(screen.queryByLabelText("Name")).not.toBeInTheDocument();
+		});
+	});
+
+	it("clears error when name input changes", async () => {
+		mockCreateOrganization.mockResolvedValueOnce({
+			data: null,
+			error: "Organization already exists",
+		});
+
+		const user = userEvent.setup();
+		render(
+			<SidebarProvider>
+				<OrgSwitcher />
+			</SidebarProvider>,
+		);
+
+		const trigger = screen.getByText("Test Org");
+		await user.click(trigger);
+
+		const newOrgButton = screen.getByText("New organization");
+		await user.click(newOrgButton);
+
+		const nameInput = screen.getByLabelText("Name");
+		await user.type(nameInput, "Existing Org");
+
+		const submitButton = screen.getByRole("button", {
+			name: "Create organization",
+		});
+		await user.click(submitButton);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText("Organization already exists"),
+			).toBeInTheDocument();
+		});
+
+		// Type more in name input to clear error
+		await user.type(nameInput, " Updated");
+
+		expect(
+			screen.queryByText("Organization already exists"),
+		).not.toBeInTheDocument();
+	});
+
+	it("allows setting custom slug", async () => {
+		const user = userEvent.setup();
+		render(
+			<SidebarProvider>
+				<OrgSwitcher />
+			</SidebarProvider>,
+		);
+
+		const trigger = screen.getByText("Test Org");
+		await user.click(trigger);
+
+		const newOrgButton = screen.getByText("New organization");
+		await user.click(newOrgButton);
+
+		const nameInput = screen.getByLabelText("Name");
+		await user.type(nameInput, "My New Org");
+
+		const slugInput = screen.getByLabelText("Slug");
+		await user.type(slugInput, "custom-slug");
+
+		// Final slug should show the custom slug
+		expect(screen.getByText("custom-slug")).toBeInTheDocument();
+	});
+
+	it("allows setting optional logo URL", async () => {
+		const user = userEvent.setup();
+		render(
+			<SidebarProvider>
+				<OrgSwitcher />
+			</SidebarProvider>,
+		);
+
+		const trigger = screen.getByText("Test Org");
+		await user.click(trigger);
+
+		const newOrgButton = screen.getByText("New organization");
+		await user.click(newOrgButton);
+
+		const nameInput = screen.getByLabelText("Name");
+		await user.type(nameInput, "My New Org");
+
+		const logoInput = screen.getByLabelText("Logo (optional URL)");
+		await user.type(logoInput, "https://example.com/logo.png");
+
+		const submitButton = screen.getByRole("button", {
+			name: "Create organization",
+		});
+		await user.click(submitButton);
+
+		await waitFor(() => {
+			expect(mockCreateOrganization).toHaveBeenCalledWith(
+				expect.objectContaining({
+					logo: "https://example.com/logo.png",
+				}),
+			);
+		});
+	});
 });

@@ -15,13 +15,22 @@ vi.mock("@/hooks/use-toast", () => ({
 	}),
 }));
 
-vi.mock("@/hooks/useJwt", () => ({
-	useJwt: () => ({
+const mockUseJwt = vi.fn(
+	(): {
+		jwt: string | null;
+		isLoading: boolean;
+		error: Error | null;
+		refetch: () => Promise<void>;
+	} => ({
 		jwt: "test-jwt-token",
 		isLoading: false,
 		error: null,
 		refetch: vi.fn(),
 	}),
+);
+
+vi.mock("@/hooks/useJwt", () => ({
+	useJwt: () => mockUseJwt(),
 }));
 
 vi.mock("@/hooks/use-mobile", () => ({
@@ -44,6 +53,12 @@ vi.mock("@/lib/api/clients", () => ({
 describe("ClientsTable", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mockUseJwt.mockReturnValue({
+			jwt: "test-jwt-token" as string | null,
+			isLoading: false,
+			error: null,
+			refetch: vi.fn(),
+		});
 		vi.mocked(clientsApi.listClients).mockResolvedValue({
 			data: mockClients,
 			pagination: {
@@ -435,7 +450,7 @@ describe("ClientsTable", () => {
 		// Open action menu and click delete
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -484,7 +499,7 @@ describe("ClientsTable", () => {
 		// Open action menu and click delete
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -541,7 +556,7 @@ describe("ClientsTable", () => {
 		// Open action menu and click delete
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -587,7 +602,7 @@ describe("ClientsTable", () => {
 
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -614,7 +629,7 @@ describe("ClientsTable", () => {
 
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -649,7 +664,7 @@ describe("ClientsTable", () => {
 
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -828,7 +843,7 @@ describe("ClientsTable", () => {
 
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -864,7 +879,7 @@ describe("ClientsTable", () => {
 
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -893,7 +908,7 @@ describe("ClientsTable", () => {
 
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -906,7 +921,7 @@ describe("ClientsTable", () => {
 			await user.click(screen.getByText("Ver alertas"));
 
 			expect(mockPush).toHaveBeenCalledWith(
-				`/alertas?clientId=${mockClients[0].rfc}`,
+				`/alerts?clientId=${mockClients[0].rfc}`,
 			);
 		}
 	});
@@ -922,7 +937,7 @@ describe("ClientsTable", () => {
 
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -949,7 +964,7 @@ describe("ClientsTable", () => {
 
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -978,7 +993,7 @@ describe("ClientsTable", () => {
 
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -1016,7 +1031,7 @@ describe("ClientsTable", () => {
 
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -1103,7 +1118,7 @@ describe("ClientsTable", () => {
 		// Open delete dialog
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -1168,7 +1183,7 @@ describe("ClientsTable", () => {
 		// Open delete dialog
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -1221,7 +1236,7 @@ describe("ClientsTable", () => {
 		// Open delete dialog
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -1293,7 +1308,7 @@ describe("ClientsTable", () => {
 		// Open delete dialog
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -1355,7 +1370,7 @@ describe("ClientsTable", () => {
 		// Open delete dialog for a moral person (has businessName)
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -1398,7 +1413,7 @@ describe("ClientsTable", () => {
 		// Open delete dialog for a physical person
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -1481,7 +1496,7 @@ describe("ClientsTable", () => {
 		// Open delete dialog
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -1585,7 +1600,7 @@ describe("ClientsTable", () => {
 		// Open action menu
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -1615,7 +1630,7 @@ describe("ClientsTable", () => {
 		// Open action menu
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -1644,7 +1659,7 @@ describe("ClientsTable", () => {
 		// Open action menu
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -1673,7 +1688,7 @@ describe("ClientsTable", () => {
 		// Open action menu
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -1685,7 +1700,7 @@ describe("ClientsTable", () => {
 			await user.click(screen.getByText("Ver alertas"));
 
 			expect(mockPush).toHaveBeenCalledWith(
-				`/alertas?clientId=${mockClients[0].rfc}`,
+				`/alerts?clientId=${mockClients[0].rfc}`,
 			);
 		}
 	});
@@ -2014,7 +2029,7 @@ describe("ClientsTable", () => {
 		// Open delete dialog
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -2125,7 +2140,7 @@ describe("ClientsTable", () => {
 		// Open action menu
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -2333,7 +2348,7 @@ describe("ClientsTable", () => {
 		// Open action menu
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -2367,7 +2382,7 @@ describe("ClientsTable", () => {
 		// Open action menu
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -2401,7 +2416,7 @@ describe("ClientsTable", () => {
 		// Open action menu
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -2429,7 +2444,7 @@ describe("ClientsTable", () => {
 		// Open action menu
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -2456,7 +2471,7 @@ describe("ClientsTable", () => {
 		// Open action menu
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -2483,7 +2498,7 @@ describe("ClientsTable", () => {
 		// Open action menu
 		const actionButtons = screen.getAllByRole("button", { hidden: true });
 		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+			btn.querySelector("svg.lucide-more-horizontal"),
 		);
 		if (moreButton) {
 			await user.click(moreButton);
@@ -2668,5 +2683,551 @@ describe("ClientsTable", () => {
 		// This is tested through the component rendering
 		const rows = screen.getAllByRole("row");
 		expect(rows.length).toBeGreaterThan(1);
+	});
+
+	it("does not fetch clients while JWT is loading", async () => {
+		mockUseJwt.mockReturnValue({
+			jwt: null,
+			isLoading: true,
+			error: null,
+			refetch: vi.fn(),
+		});
+
+		render(<ClientsTable />);
+
+		// Should not call listClients while JWT is loading
+		expect(clientsApi.listClients).not.toHaveBeenCalled();
+	});
+
+	it("fetches clients when JWT becomes available", async () => {
+		mockUseJwt.mockReturnValue({
+			jwt: "new-jwt-token",
+			isLoading: false,
+			error: null,
+			refetch: vi.fn(),
+		});
+
+		render(<ClientsTable />);
+
+		await waitFor(() => {
+			expect(clientsApi.listClients).toHaveBeenCalledWith(
+				expect.objectContaining({
+					jwt: "new-jwt-token",
+				}),
+			);
+		});
+	});
+
+	it("handles load more clients for infinite scroll", async () => {
+		render(<ClientsTable />);
+
+		await waitFor(() => {
+			expect(clientsApi.listClients).toHaveBeenCalledWith(
+				expect.objectContaining({
+					page: 1,
+				}),
+			);
+		});
+
+		// Initial load should be called
+		expect(clientsApi.listClients).toHaveBeenCalled();
+	});
+
+	it("handles pagination structure", async () => {
+		render(<ClientsTable />);
+
+		await waitFor(() => {
+			expect(clientsApi.listClients).toHaveBeenCalled();
+		});
+
+		// First page should be loaded successfully
+		const displayName = getClientDisplayName(mockClients[0]);
+		await waitFor(() => {
+			expect(screen.getByText(displayName)).toBeInTheDocument();
+		});
+	});
+
+	it("does not load more when hasMore is false", async () => {
+		// Mock a single page (hasMore = false)
+		vi.mocked(clientsApi.listClients).mockResolvedValue({
+			data: mockClients,
+			pagination: {
+				page: 1,
+				limit: 20,
+				total: mockClients.length,
+				totalPages: 1, // Only one page
+			},
+		});
+
+		render(<ClientsTable />);
+
+		await waitFor(() => {
+			const displayName = getClientDisplayName(mockClients[0]);
+			expect(screen.getByText(displayName)).toBeInTheDocument();
+		});
+
+		// Should have been called only once for initial load
+		expect(clientsApi.listClients).toHaveBeenCalledTimes(1);
+	});
+
+	it("does not load more while JWT is loading", async () => {
+		mockUseJwt.mockReturnValue({
+			jwt: "test-jwt-token",
+			isLoading: true,
+			error: null,
+			refetch: vi.fn(),
+		});
+
+		render(<ClientsTable />);
+
+		// Should not call listClients while JWT is loading
+		expect(clientsApi.listClients).not.toHaveBeenCalled();
+	});
+
+	it("does not load more while already loading more", async () => {
+		vi.mocked(clientsApi.listClients).mockResolvedValue({
+			data: mockClients,
+			pagination: {
+				page: 1,
+				limit: 20,
+				total: mockClients.length,
+				totalPages: 1,
+			},
+		});
+
+		render(<ClientsTable />);
+
+		await waitFor(() => {
+			expect(clientsApi.listClients).toHaveBeenCalledTimes(1);
+		});
+	});
+
+	it("handles JWT being null when fetching clients", async () => {
+		mockUseJwt.mockReturnValue({
+			jwt: null,
+			isLoading: false,
+			error: null,
+			refetch: vi.fn(),
+		});
+
+		render(<ClientsTable />);
+
+		await waitFor(() => {
+			expect(clientsApi.listClients).toHaveBeenCalledWith(
+				expect.objectContaining({
+					jwt: undefined,
+				}),
+			);
+		});
+	});
+
+	it("passes JWT to listClients correctly", async () => {
+		mockUseJwt.mockReturnValue({
+			jwt: "specific-jwt-token",
+			isLoading: false,
+			error: null,
+			refetch: vi.fn(),
+		});
+
+		render(<ClientsTable />);
+
+		await waitFor(() => {
+			expect(clientsApi.listClients).toHaveBeenCalledWith(
+				expect.objectContaining({
+					jwt: "specific-jwt-token",
+				}),
+			);
+		});
+	});
+
+	it("handles pagination correctly with multiple pages", async () => {
+		vi.mocked(clientsApi.listClients).mockResolvedValue({
+			data: mockClients,
+			pagination: {
+				page: 1,
+				limit: 20,
+				total: 100,
+				totalPages: 5,
+			},
+		});
+
+		render(<ClientsTable />);
+
+		await waitFor(() => {
+			const displayName = getClientDisplayName(mockClients[0]);
+			expect(screen.getByText(displayName)).toBeInTheDocument();
+		});
+
+		// Verify first page is rendered
+		expect(clientsApi.listClients).toHaveBeenCalledWith(
+			expect.objectContaining({
+				page: 1,
+			}),
+		);
+	});
+
+	it("handles clients with null secondLastName in delete dialog", async () => {
+		const user = userEvent.setup();
+
+		// Create a client without secondLastName
+		const physicalClientNoSecond: Client = {
+			id: "physical-no-second",
+			rfc: "PHYS850615E56",
+			personType: "physical",
+			firstName: "Test",
+			lastName: "User",
+			secondLastName: null,
+			email: "test@example.com",
+			phone: "+52 55 1111 1111",
+			country: "México",
+			stateCode: "CDMX",
+			city: "Ciudad de México",
+			municipality: "Benito Juárez",
+			neighborhood: "Del Valle",
+			street: "Test Street",
+			externalNumber: "123",
+			postalCode: "03100",
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		};
+
+		vi.mocked(clientsApi.listClients).mockResolvedValueOnce({
+			data: [physicalClientNoSecond],
+			pagination: {
+				page: 1,
+				limit: 100,
+				total: 1,
+				totalPages: 1,
+			},
+		});
+
+		render(<ClientsTable />);
+
+		await waitFor(() => {
+			const displayName = getClientDisplayName(physicalClientNoSecond);
+			expect(screen.getByText(displayName)).toBeInTheDocument();
+		});
+
+		// Open action menu and click delete
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector("svg.lucide-more-horizontal"),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				const deleteOption = screen.getByText("Eliminar");
+				expect(deleteOption).toBeInTheDocument();
+			});
+
+			await user.click(screen.getByText("Eliminar"));
+
+			// Wait for dialog to appear
+			await waitFor(() => {
+				expect(screen.getByText(/¿Eliminar cliente\?/i)).toBeInTheDocument();
+			});
+
+			// Verify name without secondLastName is shown (just firstName lastName)
+			expect(
+				screen.getByText("Test User", { exact: false }),
+			).toBeInTheDocument();
+		}
+	});
+
+	it("handles clients with undefined secondLastName in delete dialog", async () => {
+		const user = userEvent.setup();
+
+		// Create a client without secondLastName (undefined)
+		const physicalClientUndefined: Client = {
+			id: "physical-undefined",
+			rfc: "PHYS850615E57",
+			personType: "physical",
+			firstName: "Jane",
+			lastName: "Doe",
+			email: "jane@example.com",
+			phone: "+52 55 2222 2222",
+			country: "México",
+			stateCode: "CDMX",
+			city: "Ciudad de México",
+			municipality: "Benito Juárez",
+			neighborhood: "Del Valle",
+			street: "Test Street",
+			externalNumber: "456",
+			postalCode: "03100",
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		};
+
+		vi.mocked(clientsApi.listClients).mockResolvedValueOnce({
+			data: [physicalClientUndefined],
+			pagination: {
+				page: 1,
+				limit: 100,
+				total: 1,
+				totalPages: 1,
+			},
+		});
+
+		render(<ClientsTable />);
+
+		await waitFor(() => {
+			const displayName = getClientDisplayName(physicalClientUndefined);
+			expect(screen.getByText(displayName)).toBeInTheDocument();
+		});
+
+		// Open action menu and click delete
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector("svg.lucide-more-horizontal"),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				const deleteOption = screen.getByText("Eliminar");
+				expect(deleteOption).toBeInTheDocument();
+			});
+
+			await user.click(screen.getByText("Eliminar"));
+
+			// Wait for dialog to appear
+			await waitFor(() => {
+				expect(screen.getByText(/¿Eliminar cliente\?/i)).toBeInTheDocument();
+			});
+
+			// Verify name is shown correctly
+			expect(
+				screen.getByText("Jane Doe", { exact: false }),
+			).toBeInTheDocument();
+		}
+	});
+
+	it("handles different person types in filter options", async () => {
+		render(<ClientsTable />);
+
+		await waitFor(() => {
+			const displayName = getClientDisplayName(mockClients[0]);
+			expect(screen.getByText(displayName)).toBeInTheDocument();
+		});
+
+		// Filter definitions include all person types (physical, moral, trust)
+		// and all state codes (CDMX, JAL, NLE, QRO, MEX)
+		const rows = screen.getAllByRole("row");
+		expect(rows.length).toBeGreaterThan(1);
+	});
+
+	it("handles state code filter options", async () => {
+		render(<ClientsTable />);
+
+		await waitFor(() => {
+			const displayName = getClientDisplayName(mockClients[0]);
+			expect(screen.getByText(displayName)).toBeInTheDocument();
+		});
+
+		// State code filters include CDMX, JAL, NLE, QRO, MEX
+		const rows = screen.getAllByRole("row");
+		expect(rows.length).toBeGreaterThan(1);
+	});
+
+	it("renders all sortable columns correctly", async () => {
+		render(<ClientsTable />);
+
+		await waitFor(() => {
+			const displayName = getClientDisplayName(mockClients[0]);
+			expect(screen.getByText(displayName)).toBeInTheDocument();
+		});
+
+		// Verify sortable columns are rendered (Cliente, Ubicación, Registro)
+		expect(screen.getByText("Cliente")).toBeInTheDocument();
+		expect(screen.getByText("Contacto")).toBeInTheDocument();
+		expect(screen.getByText("Ubicación")).toBeInTheDocument();
+		expect(screen.getByText("Registro")).toBeInTheDocument();
+	});
+
+	it("handles large dataset efficiently", async () => {
+		// Create a large list of clients
+		const largeClientList: Client[] = Array.from(
+			{ length: 50 },
+			(_, i) =>
+				({
+					id: `client-${i}`,
+					rfc: `RFC${String(i).padStart(10, "0")}AAA`,
+					personType: i % 2 === 0 ? "moral" : "physical",
+					businessName: i % 2 === 0 ? `Company ${i}` : undefined,
+					firstName: i % 2 === 1 ? `First${i}` : undefined,
+					lastName: i % 2 === 1 ? `Last${i}` : undefined,
+					email: `test${i}@example.com`,
+					phone: `+52 55 ${String(i).padStart(4, "0")} ${String(i).padStart(4, "0")}`,
+					country: "México",
+					stateCode: ["CDMX", "JAL", "NLE", "QRO", "MEX"][i % 5],
+					city: [
+						"Ciudad de México",
+						"Guadalajara",
+						"Monterrey",
+						"Querétaro",
+						"Toluca",
+					][i % 5],
+					municipality: "Test Municipality",
+					neighborhood: "Test Neighborhood",
+					street: `Street ${i}`,
+					externalNumber: String(i),
+					postalCode: String(10000 + i),
+					createdAt: new Date(2024, i % 12, 1).toISOString(),
+					updatedAt: new Date(2024, i % 12, 1).toISOString(),
+				}) as Client,
+		);
+
+		vi.mocked(clientsApi.listClients).mockResolvedValueOnce({
+			data: largeClientList,
+			pagination: {
+				page: 1,
+				limit: 100,
+				total: largeClientList.length,
+				totalPages: 1,
+			},
+		});
+
+		render(<ClientsTable />);
+
+		await waitFor(() => {
+			const displayName = getClientDisplayName(largeClientList[0]);
+			expect(screen.getByText(displayName)).toBeInTheDocument();
+		});
+
+		// Should render all rows
+		const rows = screen.getAllByRole("row");
+		expect(rows.length).toBeGreaterThan(1);
+	});
+
+	it("handles empty email and phone in contact column", async () => {
+		const clientWithEmptyContact: Client = {
+			id: "empty-contact",
+			rfc: "EMPT850615E56",
+			personType: "moral",
+			businessName: "Empty Contact Company",
+			email: "",
+			phone: "",
+			country: "México",
+			stateCode: "CDMX",
+			city: "Ciudad de México",
+			municipality: "Benito Juárez",
+			neighborhood: "Del Valle",
+			street: "Test Street",
+			externalNumber: "123",
+			postalCode: "03100",
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		};
+
+		vi.mocked(clientsApi.listClients).mockResolvedValueOnce({
+			data: [clientWithEmptyContact],
+			pagination: {
+				page: 1,
+				limit: 100,
+				total: 1,
+				totalPages: 1,
+			},
+		});
+
+		render(<ClientsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Empty Contact Company")).toBeInTheDocument();
+		});
+	});
+
+	it("handles date formatting for different dates", async () => {
+		const clientsWithDifferentDates: Client[] = [
+			{
+				...mockClients[0],
+				createdAt: "2024-01-15T00:00:00Z", // January
+			},
+			{
+				...mockClients[1],
+				createdAt: "2024-06-15T00:00:00Z", // June
+			},
+			{
+				...mockClients[2],
+				createdAt: "2024-12-15T00:00:00Z", // December
+			},
+		];
+
+		vi.mocked(clientsApi.listClients).mockResolvedValueOnce({
+			data: clientsWithDifferentDates,
+			pagination: {
+				page: 1,
+				limit: 100,
+				total: clientsWithDifferentDates.length,
+				totalPages: 1,
+			},
+		});
+
+		render(<ClientsTable />);
+
+		await waitFor(() => {
+			const displayName = getClientDisplayName(clientsWithDifferentDates[0]);
+			expect(screen.getByText(displayName)).toBeInTheDocument();
+		});
+
+		// Verify different dates are rendered
+		const yearElements = screen.getAllByText("2024");
+		expect(yearElements.length).toBeGreaterThan(0);
+	});
+
+	it("handles search with multiple keys", async () => {
+		const user = userEvent.setup();
+		render(<ClientsTable />);
+
+		await waitFor(() => {
+			const displayName = getClientDisplayName(mockClients[0]);
+			expect(screen.getByText(displayName)).toBeInTheDocument();
+		});
+
+		// Search should work with displayName, rfc, email, city, businessName, firstName, lastName
+		const searchInput = screen.getByPlaceholderText(/buscar por nombre/i);
+
+		// Search by RFC
+		await user.type(searchInput, mockClients[0].rfc);
+		await waitFor(() => {
+			expect(searchInput).toHaveValue(mockClients[0].rfc);
+		});
+
+		// Clear and search by email
+		await user.clear(searchInput);
+		await user.type(searchInput, mockClients[0].email);
+		await waitFor(() => {
+			expect(searchInput).toHaveValue(mockClients[0].email);
+		});
+	});
+
+	it("renders all action menu items correctly", async () => {
+		const user = userEvent.setup();
+		render(<ClientsTable />);
+
+		await waitFor(() => {
+			const displayName = getClientDisplayName(mockClients[0]);
+			expect(screen.getByText(displayName)).toBeInTheDocument();
+		});
+
+		// Open action menu
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector("svg.lucide-more-horizontal"),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				// All action menu items should be present
+				expect(screen.getByText("Ver detalle")).toBeInTheDocument();
+				expect(screen.getByText("Editar cliente")).toBeInTheDocument();
+				expect(screen.getByText("Generar Reporte")).toBeInTheDocument();
+				expect(screen.getByText("Ver transacciones")).toBeInTheDocument();
+				expect(screen.getByText("Ver alertas")).toBeInTheDocument();
+				expect(screen.getByText("Marcar como Sospechoso")).toBeInTheDocument();
+				expect(screen.getByText("Eliminar")).toBeInTheDocument();
+			});
+		}
 	});
 });

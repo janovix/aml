@@ -188,16 +188,21 @@ describe("AddCatalogItemDialog", () => {
 		);
 
 		const input = screen.getByPlaceholderText("Ingrese el nombre del elemento");
-		await user.type(input, longName);
+		// Use paste for long strings to avoid timeout
+		await user.clear(input);
+		await user.paste(longName);
 
 		const submitButton = screen.getByRole("button", { name: /agregar/i });
 		await user.click(submitButton);
 
-		await waitFor(() => {
-			expect(
-				screen.getByText("El nombre no puede exceder 200 caracteres"),
-			).toBeInTheDocument();
-		});
+		await waitFor(
+			() => {
+				expect(
+					screen.getByText("El nombre no puede exceder 200 caracteres"),
+				).toBeInTheDocument();
+			},
+			{ timeout: 10000 },
+		);
 
 		expect(catalogs.createCatalogItem).not.toHaveBeenCalled();
 	});

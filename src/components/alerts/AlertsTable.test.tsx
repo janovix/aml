@@ -583,4 +583,158 @@ describe("AlertsTable", () => {
 			});
 		}
 	});
+
+	it("renders Generar archivo option for DETECTED status", async () => {
+		const user = userEvent.setup();
+		const firstAlert = mockAlerts[0];
+		if (!firstAlert || !firstAlert.alertRule) return;
+
+		const detectedAlert: Alert = {
+			...firstAlert,
+			status: "DETECTED",
+		};
+
+		vi.mocked(alertsApi.listAlerts).mockResolvedValueOnce({
+			data: [detectedAlert],
+			pagination: {
+				page: 1,
+				limit: 100,
+				total: 1,
+				totalPages: 1,
+			},
+		});
+
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText(firstAlert.alertRule!.name)).toBeInTheDocument();
+		});
+
+		// Open action menu
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				// Should show "Generar archivo" for DETECTED status
+				expect(screen.getByText("Generar archivo")).toBeInTheDocument();
+			});
+		}
+	});
+
+	it("renders Enviar a SAT option for FILE_GENERATED status", async () => {
+		const user = userEvent.setup();
+		const firstAlert = mockAlerts[0];
+		if (!firstAlert || !firstAlert.alertRule) return;
+
+		const fileGeneratedAlert: Alert = {
+			...firstAlert,
+			status: "FILE_GENERATED",
+		};
+
+		vi.mocked(alertsApi.listAlerts).mockResolvedValueOnce({
+			data: [fileGeneratedAlert],
+			pagination: {
+				page: 1,
+				limit: 100,
+				total: 1,
+				totalPages: 1,
+			},
+		});
+
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText(firstAlert.alertRule!.name)).toBeInTheDocument();
+		});
+
+		// Open action menu
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				// Should show "Enviar a SAT" for FILE_GENERATED status
+				expect(screen.getByText("Enviar a SAT")).toBeInTheDocument();
+			});
+		}
+	});
+
+	it("navigates to alert detail when Ver detalle is clicked", async () => {
+		const user = userEvent.setup();
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+		});
+
+		// Open action menu
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				expect(screen.getByText("Ver detalle")).toBeInTheDocument();
+			});
+
+			await user.click(screen.getByText("Ver detalle"));
+
+			expect(mockPush).toHaveBeenCalledWith(`/alerts/${mockAlerts[0]?.id}`);
+		}
+	});
+
+	it("navigates to client when Ver cliente is clicked", async () => {
+		const user = userEvent.setup();
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+		});
+
+		// Open action menu
+		const actionButtons = screen.getAllByRole("button", { hidden: true });
+		const moreButton = actionButtons.find((btn) =>
+			btn.querySelector('[class*="MoreHorizontal"]'),
+		);
+		if (moreButton) {
+			await user.click(moreButton);
+
+			await waitFor(() => {
+				expect(screen.getByText("Ver cliente")).toBeInTheDocument();
+			});
+
+			await user.click(screen.getByText("Ver cliente"));
+
+			expect(mockPush).toHaveBeenCalledWith(
+				`/clients/${mockAlerts[0]?.clientId}`,
+			);
+		}
+	});
+
+	it("renders CTA button that navigates to new alert page", async () => {
+		const user = userEvent.setup();
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Operación inusual")).toBeInTheDocument();
+		});
+
+		// Find the new alert buttons in the PageHero (there are mobile and desktop versions)
+		const newAlertButtons = screen.getAllByRole("button", {
+			name: /nueva alerta/i,
+		});
+		expect(newAlertButtons.length).toBeGreaterThan(0);
+
+		await user.click(newAlertButtons[0]);
+		expect(mockPush).toHaveBeenCalledWith("/alerts/new");
+	});
 });

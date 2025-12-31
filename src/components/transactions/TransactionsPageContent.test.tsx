@@ -3,6 +3,10 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TransactionsPageContent } from "./TransactionsPageContent";
 import * as statsApi from "@/lib/api/stats";
+import * as transactionsApi from "@/lib/api/transactions";
+import * as clientsApi from "@/lib/api/clients";
+import { mockTransactions } from "@/data/mockTransactions";
+import { mockClients } from "@/data/mockClients";
 
 const mockPush = vi.fn();
 const mockPathname = vi.fn(() => "/transactions");
@@ -26,10 +30,18 @@ vi.mock("@/lib/api/stats", () => ({
 	getTransactionStats: vi.fn(),
 }));
 
-vi.mock("@/components/transactions/TransactionsTable", () => ({
-	TransactionsTable: () => (
-		<div data-testid="transactions-table">Mocked TransactionsTable</div>
-	),
+// Don't mock TransactionsTable - we need to test the actual component with search functionality
+// But we need to mock the APIs it uses
+vi.mock("@/lib/api/transactions", () => ({
+	listTransactions: vi.fn(),
+}));
+
+vi.mock("@/lib/api/clients", () => ({
+	getClientByRfc: vi.fn(),
+}));
+
+vi.mock("@/hooks/use-mobile", () => ({
+	useIsMobile: () => false,
 }));
 
 describe("TransactionsPageContent", () => {
@@ -40,6 +52,37 @@ describe("TransactionsPageContent", () => {
 			suspiciousTransactions: 3,
 			totalVolume: "1500000.00",
 			totalVehicles: 42,
+		});
+
+		// Mock transactions API for TransactionsTable
+		vi.mocked(transactionsApi.listTransactions).mockResolvedValue({
+			data: mockTransactions,
+			pagination: {
+				page: 1,
+				limit: 20,
+				total: mockTransactions.length,
+				totalPages: Math.ceil(mockTransactions.length / 20),
+			},
+		});
+
+		// Mock client fetching - return clients based on clientId
+		const clientIdToRfc: Record<string, string> = {
+			"1": "EGL850101AAA",
+			"2": "CNO920315BBB",
+			"3": "SFM880520CCC",
+			"4": "IDP950712DDD",
+			"5": "PECJ850615E56",
+		};
+
+		vi.mocked(clientsApi.getClientByRfc).mockImplementation(async ({ rfc }) => {
+			let client = mockClients.find((c) => c.rfc === rfc);
+			if (!client && clientIdToRfc[rfc]) {
+				client = mockClients.find((c) => c.rfc === clientIdToRfc[rfc]);
+			}
+			if (client) {
+				return client;
+			}
+			throw new Error("Client not found");
 		});
 	});
 
@@ -91,12 +134,17 @@ describe("TransactionsPageContent", () => {
 		expect(volumenTotal.length).toBeGreaterThan(0);
 	});
 
-	it("renders transactions table with built-in search", () => {
+	it("renders transactions table with built-in search", async () => {
 		render(<TransactionsPageContent />);
 
-		// Check for the DataTable by looking for search placeholder
-		const searchInputs = screen.getAllByPlaceholderText(/buscar/i);
-		expect(searchInputs.length).toBeGreaterThan(0);
+		// Wait for the DataTable to load and check for search placeholder
+		await waitFor(
+			() => {
+				const searchInputs = screen.getAllByPlaceholderText(/buscar/i);
+				expect(searchInputs.length).toBeGreaterThan(0);
+			},
+			{ timeout: 10000 },
+		);
 	});
 
 	// Mobile menu button removed - sidebar is now handled by DashboardLayout

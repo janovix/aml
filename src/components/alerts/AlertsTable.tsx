@@ -509,7 +509,7 @@ export function AlertsTable({
 			<DropdownMenuContent align="end" className="w-48">
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => router.push(`/alertas/${item.id}`)}
+					onClick={() => router.push(`/alerts/${item.id}`)}
 				>
 					<Eye className="h-4 w-4" />
 					Ver detalle
@@ -597,7 +597,7 @@ export function AlertsTable({
 				stats={stats}
 				ctaLabel="Nueva Alerta"
 				ctaIcon={Plus}
-				onCtaClick={() => router.push("/alertas/new")}
+				onCtaClick={() => router.push("/alerts/new")}
 			/>
 			<DataTable
 				data={alertsWithStringOverdue as unknown as AlertRow[]}

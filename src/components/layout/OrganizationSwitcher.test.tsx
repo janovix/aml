@@ -39,7 +39,7 @@ describe("OrganizationSwitcher", () => {
 		expect(loadingElements.length).toBeGreaterThan(0);
 	});
 
-	it("renders collapsed state with logo when sidebar is collapsed", () => {
+	it("renders collapsed state with org icon when sidebar is collapsed", () => {
 		render(
 			<SidebarProvider defaultOpen={false}>
 				<OrganizationSwitcher
@@ -51,8 +51,11 @@ describe("OrganizationSwitcher", () => {
 			</SidebarProvider>,
 		);
 
-		const logoIcon = document.querySelector('svg[viewBox="0 0 200 200"]');
-		expect(logoIcon).toBeInTheDocument();
+		// When collapsed, it should show the Building2 icon (interactive org picker)
+		const buildingIcon = document.querySelector(
+			'svg.lucide-building-2, svg[class*="building"]',
+		);
+		expect(buildingIcon).toBeInTheDocument();
 	});
 
 	it("renders create organization button when no organizations", () => {
@@ -152,5 +155,136 @@ describe("OrganizationSwitcher", () => {
 		const logo = document.querySelector('img[alt="Org 2"]');
 		expect(logo).toBeInTheDocument();
 		expect(logo).toHaveAttribute("src", "https://example.com/logo.jpg");
+	});
+
+	it("shows create organization option in dropdown when onCreateOrganization is provided", async () => {
+		const mockOnCreate = vi.fn();
+		const user = userEvent.setup();
+
+		render(
+			<SidebarProvider defaultOpen={true}>
+				<OrganizationSwitcher
+					organizations={mockOrganizations}
+					activeOrganization={mockOrganizations[0]}
+					onOrganizationChange={vi.fn()}
+					onCreateOrganization={mockOnCreate}
+					isLoading={false}
+				/>
+			</SidebarProvider>,
+		);
+
+		// Open dropdown
+		const orgButton = screen.getByText("Org 1");
+		await user.click(orgButton);
+
+		// Find and click create organization option
+		const createOption = await screen.findByText("Crear organización");
+		await user.click(createOption);
+
+		expect(mockOnCreate).toHaveBeenCalledTimes(1);
+	});
+
+	it("shows Activa label for current organization in dropdown", async () => {
+		const user = userEvent.setup();
+
+		render(
+			<SidebarProvider defaultOpen={true}>
+				<OrganizationSwitcher
+					organizations={mockOrganizations}
+					activeOrganization={mockOrganizations[0]}
+					onOrganizationChange={vi.fn()}
+					isLoading={false}
+				/>
+			</SidebarProvider>,
+		);
+
+		// Open dropdown
+		const orgButton = screen.getByText("Org 1");
+		await user.click(orgButton);
+
+		// Check for "Activa" label
+		expect(await screen.findByText("Activa")).toBeInTheDocument();
+	});
+
+	it("renders collapsed state with organizations and opens dropdown on click", async () => {
+		const mockOnChange = vi.fn();
+		const user = userEvent.setup();
+
+		render(
+			<SidebarProvider defaultOpen={false}>
+				<OrganizationSwitcher
+					organizations={mockOrganizations}
+					activeOrganization={mockOrganizations[0]}
+					onOrganizationChange={mockOnChange}
+					isLoading={false}
+				/>
+			</SidebarProvider>,
+		);
+
+		// Find the collapsed button with Building2 icon
+		const buttons = screen.getAllByRole("button");
+		expect(buttons.length).toBeGreaterThan(0);
+
+		// Click to open dropdown
+		await user.click(buttons[0]);
+
+		// Should show organizations in dropdown
+		expect(await screen.findByText("Organizaciones")).toBeInTheDocument();
+	});
+
+	it("renders active organization with logo in collapsed state", () => {
+		render(
+			<SidebarProvider defaultOpen={false}>
+				<OrganizationSwitcher
+					organizations={mockOrganizations}
+					activeOrganization={mockOrganizations[1]}
+					onOrganizationChange={vi.fn()}
+					isLoading={false}
+				/>
+			</SidebarProvider>,
+		);
+
+		// Should show the org logo in collapsed state
+		const logo = document.querySelector('img[alt="Org 2"]');
+		expect(logo).toBeInTheDocument();
+	});
+
+	it("displays Seleccionar when no active organization", () => {
+		render(
+			<SidebarProvider defaultOpen={true}>
+				<OrganizationSwitcher
+					organizations={mockOrganizations}
+					activeOrganization={null}
+					onOrganizationChange={vi.fn()}
+					isLoading={false}
+				/>
+			</SidebarProvider>,
+		);
+
+		expect(screen.getByText("Seleccionar")).toBeInTheDocument();
+		expect(screen.getByText("organización")).toBeInTheDocument();
+	});
+
+	it("renders organization logo in dropdown items when available", async () => {
+		const user = userEvent.setup();
+
+		render(
+			<SidebarProvider defaultOpen={true}>
+				<OrganizationSwitcher
+					organizations={mockOrganizations}
+					activeOrganization={mockOrganizations[0]}
+					onOrganizationChange={vi.fn()}
+					isLoading={false}
+				/>
+			</SidebarProvider>,
+		);
+
+		// Open dropdown
+		const orgButton = screen.getByText("Org 1");
+		await user.click(orgButton);
+
+		// Org 2 has a logo
+		const logo = document.querySelector('img[alt="Org 2"]');
+		expect(logo).toBeInTheDocument();
 	});
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
 	ArrowDownCircle,
 	ArrowUpCircle,
@@ -107,20 +107,26 @@ export function TransactionsTable({
 	const [hasMore, setHasMore] = useState(true);
 	const ITEMS_PER_PAGE = 20;
 
+	// Track which client IDs we've already attempted to fetch (to avoid re-fetching)
+	const fetchedClientIdsRef = useRef<Set<string>>(new Set());
+
 	// Fetch client information for transactions - optimized to only fetch missing clients
 	const fetchClientsForTransactions = useCallback(
 		async (txList: Transaction[]) => {
 			const uniqueClientIds = [...new Set(txList.map((tx) => tx.clientId))];
 
-			// Filter out clients we already have
+			// Filter out clients we've already attempted to fetch
 			const missingClientIds = uniqueClientIds.filter(
-				(clientId) => !clients.has(clientId),
+				(clientId) => !fetchedClientIdsRef.current.has(clientId),
 			);
 
-			// If all clients are already loaded, skip fetching
+			// If all clients are already loaded or fetched, skip fetching
 			if (missingClientIds.length === 0) {
 				return;
 			}
+
+			// Mark these as being fetched
+			missingClientIds.forEach((id) => fetchedClientIdsRef.current.add(id));
 
 			// Fetch only missing clients in parallel
 			const clientPromises = missingClientIds.map(async (clientId) => {
@@ -135,17 +141,23 @@ export function TransactionsTable({
 
 			const results = await Promise.all(clientPromises);
 
-			setClients((prev) => {
-				const merged = new Map(prev);
-				results.forEach((result) => {
-					if (result) {
+			// Only update state if we have new results
+			const validResults = results.filter(
+				(result): result is { clientId: string; client: Client } =>
+					result !== null,
+			);
+
+			if (validResults.length > 0) {
+				setClients((prev) => {
+					const merged = new Map(prev);
+					validResults.forEach((result) => {
 						merged.set(result.clientId, result.client);
-					}
+					});
+					return merged;
 				});
-				return merged;
-			});
+			}
 		},
-		[clients],
+		[], // No dependencies - uses ref to track fetched clients
 	);
 
 	// Initial load
@@ -175,7 +187,8 @@ export function TransactionsTable({
 			}
 		};
 		fetchTransactions();
-	}, [filters, toast, fetchClientsForTransactions]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [filters, toast]);
 
 	// Load more transactions for infinite scroll
 	const handleLoadMore = useCallback(async () => {
@@ -205,14 +218,8 @@ export function TransactionsTable({
 		} finally {
 			setIsLoadingMore(false);
 		}
-	}, [
-		currentPage,
-		hasMore,
-		isLoadingMore,
-		filters,
-		toast,
-		fetchClientsForTransactions,
-	]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [currentPage, hasMore, isLoadingMore, filters, toast]);
 
 	// Transform Transaction to TransactionRow format
 	const transactionsData: TransactionRow[] = useMemo(() => {

@@ -74,8 +74,8 @@ const mainNavItems = [
 		available: true,
 	},
 	{
-		title: "Avisos",
-		href: "/alertas",
+		title: "Alertas",
+		href: "/alerts",
 		icon: AlertTriangle,
 		available: true,
 	},
@@ -87,7 +87,7 @@ const mainNavItems = [
 	},
 	{
 		title: "Reportes",
-		href: "/reportes",
+		href: "/reports",
 		icon: FileText,
 		available: true,
 	},

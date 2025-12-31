@@ -60,16 +60,82 @@ export function OrganizationSwitcher({
 		);
 	}
 
-	// If collapsed, show just the logo
+	// If collapsed, show just the org icon with dropdown
 	if (isCollapsed) {
 		return (
 			<SidebarMenu>
 				<SidebarMenuItem>
-					<SidebarMenuButton size="lg" className="justify-center" asChild>
-						<div className="flex items-center justify-center">
-							<Logo variant="icon" width={24} height={24} />
-						</div>
-					</SidebarMenuButton>
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<SidebarMenuButton
+								size="lg"
+								className="justify-center data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+							>
+								<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+									{activeOrganization?.logo ? (
+										<img
+											src={activeOrganization.logo}
+											alt={activeOrganization.name}
+											className="size-5 rounded"
+										/>
+									) : (
+										<Building2 className="size-4" />
+									)}
+								</div>
+							</SidebarMenuButton>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent
+							className="min-w-56 rounded-lg"
+							align="start"
+							side="right"
+							sideOffset={4}
+						>
+							<DropdownMenuLabel className="text-xs text-muted-foreground">
+								Organizaciones
+							</DropdownMenuLabel>
+							{organizations.map((org) => (
+								<DropdownMenuItem
+									key={org.id}
+									onClick={() => onOrganizationChange(org)}
+									className="gap-2 p-2"
+								>
+									<div className="flex size-6 items-center justify-center rounded-md border">
+										{org.logo ? (
+											<img
+												src={org.logo}
+												alt={org.name}
+												className="size-4 rounded"
+											/>
+										) : (
+											<Building2 className="size-3.5 shrink-0" />
+										)}
+									</div>
+									<span className="flex-1 truncate">{org.name}</span>
+									{activeOrganization?.id === org.id && (
+										<span className="text-xs text-muted-foreground">
+											Activa
+										</span>
+									)}
+								</DropdownMenuItem>
+							))}
+							{onCreateOrganization && (
+								<>
+									<DropdownMenuSeparator />
+									<DropdownMenuItem
+										className="gap-2 p-2"
+										onClick={onCreateOrganization}
+									>
+										<div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
+											<Plus className="size-4" />
+										</div>
+										<span className="text-muted-foreground font-medium">
+											Crear organización
+										</span>
+									</DropdownMenuItem>
+								</>
+							)}
+						</DropdownMenuContent>
+					</DropdownMenu>
 				</SidebarMenuItem>
 			</SidebarMenu>
 		);

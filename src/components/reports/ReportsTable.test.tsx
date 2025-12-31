@@ -57,16 +57,11 @@ describe("ReportsTable", () => {
 		const user = userEvent.setup();
 		render(<ReportsTable />);
 
+		// Wait for report data to load first
 		await waitFor(() => {
-			// Check for the results count in footer
-			// In infinite scroll mode, footer shows "X / Y" format, so look for the number pattern
-			// The footer contains a span with tabular-nums class that has the count
-			const footer = screen.getByText((content, element) => {
-				return !!(
-					element?.classList.contains("tabular-nums") && /\d+/.test(content)
-				);
-			});
-			expect(footer).toBeInTheDocument();
+			expect(
+				screen.getByText("Reporte Mensual Diciembre 2024"),
+			).toBeInTheDocument();
 		});
 
 		const checkboxes = screen.getAllByRole("checkbox");
@@ -82,16 +77,11 @@ describe("ReportsTable", () => {
 		const user = userEvent.setup();
 		render(<ReportsTable />);
 
+		// Wait for report data to load first
 		await waitFor(() => {
-			// Check for the results count in footer
-			// In infinite scroll mode, footer shows "X / Y" format, so look for the number pattern
-			// The footer contains a span with tabular-nums class that has the count
-			const footer = screen.getByText((content, element) => {
-				return !!(
-					element?.classList.contains("tabular-nums") && /\d+/.test(content)
-				);
-			});
-			expect(footer).toBeInTheDocument();
+			expect(
+				screen.getByText("Reporte Mensual Diciembre 2024"),
+			).toBeInTheDocument();
 		});
 
 		const selectAllCheckbox = screen.getAllByRole("checkbox")[0];
@@ -106,16 +96,11 @@ describe("ReportsTable", () => {
 		const user = userEvent.setup();
 		render(<ReportsTable />);
 
+		// Wait for report data to load first
 		await waitFor(() => {
-			// Check for the results count in footer
-			// In infinite scroll mode, footer shows "X / Y" format, so look for the number pattern
-			// The footer contains a span with tabular-nums class that has the count
-			const footer = screen.getByText((content, element) => {
-				return !!(
-					element?.classList.contains("tabular-nums") && /\d+/.test(content)
-				);
-			});
-			expect(footer).toBeInTheDocument();
+			expect(
+				screen.getByText("Reporte Mensual Diciembre 2024"),
+			).toBeInTheDocument();
 		});
 
 		const searchInput = screen.getByPlaceholderText(/buscar/i);
@@ -220,16 +205,11 @@ describe("ReportsTable", () => {
 		const user = userEvent.setup();
 		render(<ReportsTable />);
 
+		// Wait for report data to load first
 		await waitFor(() => {
-			// Check for the results count in footer
-			// In infinite scroll mode, footer shows "X / Y" format, so look for the number pattern
-			// The footer contains a span with tabular-nums class that has the count
-			const footer = screen.getByText((content, element) => {
-				return !!(
-					element?.classList.contains("tabular-nums") && /\d+/.test(content)
-				);
-			});
-			expect(footer).toBeInTheDocument();
+			expect(
+				screen.getByText("Reporte Mensual Diciembre 2024"),
+			).toBeInTheDocument();
 		});
 
 		const checkboxes = screen.getAllByRole("checkbox");
@@ -301,7 +281,7 @@ describe("ReportsTable", () => {
 
 			await user.click(screen.getByText("Ver detalle"));
 
-			expect(mockPush).toHaveBeenCalledWith("/reportes/RPT-001");
+			expect(mockPush).toHaveBeenCalledWith("/reports/RPT-001");
 		}
 	});
 
@@ -542,7 +522,7 @@ describe("ReportsTable", () => {
 		const newReportButton = screen.getByText("Nuevo Reporte");
 		await user.click(newReportButton);
 
-		expect(mockPush).toHaveBeenCalledWith("/reportes/new");
+		expect(mockPush).toHaveBeenCalledWith("/reports/new");
 	});
 
 	it("shows and can click 'Generar reporte' option for DRAFT status", async () => {

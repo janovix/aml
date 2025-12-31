@@ -450,4 +450,134 @@ describe("OrgTeamTable", () => {
 			).toBeInTheDocument();
 		});
 	});
+
+	it("resets invite form when cancel is clicked", async () => {
+		const user = userEvent.setup();
+		render(<OrgTeamTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText("John Doe")).toBeInTheDocument();
+		});
+
+		// Open invite dialog
+		const inviteButton = screen.getByRole("button", { name: /invite member/i });
+		await user.click(inviteButton);
+
+		await waitFor(() => {
+			expect(
+				screen.getByPlaceholderText("person@company.com"),
+			).toBeInTheDocument();
+		});
+
+		// Fill in the form
+		const emailInput = screen.getByPlaceholderText("person@company.com");
+		await user.type(emailInput, "test@example.com");
+
+		// Click cancel
+		const cancelButton = screen.getByRole("button", { name: /cancel/i });
+		await user.click(cancelButton);
+
+		// Reopen dialog
+		await user.click(inviteButton);
+
+		// Email should be reset
+		await waitFor(() => {
+			const newEmailInput = screen.getByPlaceholderText("person@company.com");
+			expect(newEmailInput).toHaveValue("");
+		});
+	});
+
+	it("allows changing role selection in invite dialog", async () => {
+		const user = userEvent.setup();
+		render(<OrgTeamTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText("John Doe")).toBeInTheDocument();
+		});
+
+		// Open invite dialog
+		const inviteButton = screen.getByRole("button", { name: /invite member/i });
+		await user.click(inviteButton);
+
+		await waitFor(() => {
+			expect(
+				screen.getByPlaceholderText("person@company.com"),
+			).toBeInTheDocument();
+		});
+
+		// Click on role selector
+		const roleSelector = screen.getByRole("combobox");
+		await user.click(roleSelector);
+
+		// Select a different role
+		await waitFor(() => {
+			expect(
+				screen.getByRole("option", { name: "Administrator" }),
+			).toBeInTheDocument();
+		});
+
+		await user.click(screen.getByRole("option", { name: "Administrator" }));
+
+		// Fill email and submit
+		const emailInput = screen.getByPlaceholderText("person@company.com");
+		await user.type(emailInput, "admin@example.com");
+
+		const submitButton = screen.getByRole("button", {
+			name: /send invitation/i,
+		});
+		await user.click(submitButton);
+
+		await waitFor(() => {
+			expect(mockInviteMember).toHaveBeenCalledWith(
+				expect.objectContaining({
+					role: "admin",
+				}),
+			);
+		});
+	});
+
+	it("shows error toast when loading members fails", async () => {
+		mockListMembers.mockResolvedValueOnce({
+			data: null,
+			error: "Failed to load members",
+		});
+
+		render(<OrgTeamTable />);
+
+		await waitFor(() => {
+			expect(mockToast).toHaveBeenCalledWith(
+				expect.objectContaining({
+					variant: "destructive",
+					title: "Failed to load members",
+				}),
+			);
+		});
+	});
+
+	it("shows error toast when resending invitation fails", async () => {
+		mockResendInvitation.mockResolvedValueOnce({
+			data: null,
+			error: "Failed to resend invitation",
+		});
+
+		const user = userEvent.setup();
+		render(<OrgTeamTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Pending Invitations")).toBeInTheDocument();
+		});
+
+		// Find the resend button
+		const resendButton = screen.getByTitle("Resend invitation");
+		await user.click(resendButton);
+
+		await waitFor(() => {
+			expect(mockToast).toHaveBeenCalledWith(
+				expect.objectContaining({
+					variant: "destructive",
+					title: "Failed to resend invitation",
+				}),
+			);
+		});
+	});
 });
