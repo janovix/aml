@@ -136,8 +136,9 @@ describe("OrgBootstrapper", () => {
 			</OrgBootstrapper>,
 		);
 
-		// Loading state should be shown initially
-		expect(screen.getByText("Loading organizations...")).toBeInTheDocument();
+		// Loading state should show the app skeleton (skeleton elements are rendered)
+		// The AppSkeleton renders multiple skeleton elements with data-testid="skeleton"
+		expect(screen.getAllByTestId("skeleton").length).toBeGreaterThan(0);
 
 		// Resolve to avoid hanging test
 		resolveOrgs!({
