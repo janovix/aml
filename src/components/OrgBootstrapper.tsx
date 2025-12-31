@@ -83,7 +83,15 @@ export function OrgBootstrapper({
 			const nextOrgs = initialOrganizations.organizations;
 			setOrganizations(nextOrgs);
 
+			// Check if there's a persisted organization that's still available
+			const persistedOrg = currentOrg;
+			const persistedOrgFromList = persistedOrg
+				? nextOrgs.find((org) => org.id === persistedOrg.id)
+				: null;
+
+			// Use persisted org if available, otherwise fall back to server's active org
 			const active =
+				persistedOrgFromList ??
 				nextOrgs.find(
 					(org) => org.id === initialOrganizations.activeOrganizationId,
 				) ??
@@ -145,7 +153,15 @@ export function OrgBootstrapper({
 			const nextOrgs = result.data.organizations;
 			setOrganizations(nextOrgs);
 
+			// Check if there's a persisted organization that's still available
+			const persistedOrg = useOrgStore.getState().currentOrg;
+			const persistedOrgFromList = persistedOrg
+				? nextOrgs.find((org) => org.id === persistedOrg.id)
+				: null;
+
+			// Use persisted org if available, otherwise fall back to server's active org
 			const active =
+				persistedOrgFromList ??
 				nextOrgs.find((org) => org.id === result.data?.activeOrganizationId) ??
 				nextOrgs[0] ??
 				null;

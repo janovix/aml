@@ -524,6 +524,178 @@ describe("OrgBootstrapper", () => {
 		});
 	});
 
+	it("uses persisted organization when it's still in the list (client-side fetch)", async () => {
+		const persistedOrg: Organization = {
+			id: "org-2",
+			name: "Persisted Organization",
+			slug: "persisted-org",
+			status: "active",
+		};
+
+		const serverActiveOrg = mockOrganization;
+
+		// Set up persisted organization in store
+		const { result } = renderHook(() => useOrgStore());
+		act(() => {
+			result.current.setCurrentOrg(persistedOrg);
+		});
+
+		mockListOrganizations.mockResolvedValue({
+			data: {
+				organizations: [persistedOrg, serverActiveOrg],
+				activeOrganizationId: serverActiveOrg.id, // Server says this is active
+			},
+		});
+		mockListMembers.mockResolvedValue({
+			data: [mockMember],
+		});
+
+		render(
+			<OrgBootstrapper>
+				<div>Children Content</div>
+			</OrgBootstrapper>,
+		);
+
+		// Should use persisted org, not server's active org
+		await waitFor(() => {
+			expect(mockListMembers).toHaveBeenCalledWith(persistedOrg.id);
+		});
+
+		await waitFor(() => {
+			expect(screen.getByText("Children Content")).toBeInTheDocument();
+		});
+
+		// Verify persisted org is still set
+		const storeState = useOrgStore.getState();
+		expect(storeState.currentOrg?.id).toBe(persistedOrg.id);
+	});
+
+	it("uses persisted organization when it's still in the list (server-side initial data)", async () => {
+		const persistedOrg: Organization = {
+			id: "org-2",
+			name: "Persisted Organization",
+			slug: "persisted-org",
+			status: "active",
+		};
+
+		const serverActiveOrg = mockOrganization;
+
+		// Set up persisted organization in store
+		const { result } = renderHook(() => useOrgStore());
+		act(() => {
+			result.current.setCurrentOrg(persistedOrg);
+		});
+
+		mockListMembers.mockResolvedValue({
+			data: [mockMember],
+		});
+
+		render(
+			<OrgBootstrapper
+				initialOrganizations={{
+					organizations: [persistedOrg, serverActiveOrg],
+					activeOrganizationId: serverActiveOrg.id, // Server says this is active
+				}}
+			>
+				<div>Children Content</div>
+			</OrgBootstrapper>,
+		);
+
+		// Should use persisted org, not server's active org
+		await waitFor(() => {
+			expect(mockListMembers).toHaveBeenCalledWith(persistedOrg.id);
+		});
+
+		await waitFor(() => {
+			expect(screen.getByText("Children Content")).toBeInTheDocument();
+		});
+
+		// Verify persisted org is still set
+		const storeState = useOrgStore.getState();
+		expect(storeState.currentOrg?.id).toBe(persistedOrg.id);
+	});
+
+	it("falls back to server's active organization when persisted org is not in the list", async () => {
+		const persistedOrg: Organization = {
+			id: "old-org",
+			name: "Old Organization",
+			slug: "old-org",
+			status: "active",
+		};
+
+		// Set up persisted organization in store
+		const { result } = renderHook(() => useOrgStore());
+		act(() => {
+			result.current.setCurrentOrg(persistedOrg);
+		});
+
+		mockListOrganizations.mockResolvedValue({
+			data: {
+				organizations: [mockOrganization], // Persisted org not in list
+				activeOrganizationId: mockOrganization.id,
+			},
+		});
+		mockListMembers.mockResolvedValue({
+			data: [mockMember],
+		});
+
+		render(
+			<OrgBootstrapper>
+				<div>Children Content</div>
+			</OrgBootstrapper>,
+		);
+
+		// Should use server's active org since persisted org is not available
+		await waitFor(() => {
+			expect(mockListMembers).toHaveBeenCalledWith(mockOrganization.id);
+		});
+
+		await waitFor(() => {
+			expect(screen.getByText("Children Content")).toBeInTheDocument();
+		});
+
+		// Verify server's org is now set
+		const storeState = useOrgStore.getState();
+		expect(storeState.currentOrg?.id).toBe(mockOrganization.id);
+	});
+
+	it("falls back to server's active organization when no persisted org exists", async () => {
+		// Ensure no persisted org
+		const { result } = renderHook(() => useOrgStore());
+		act(() => {
+			result.current.setCurrentOrg(null);
+		});
+
+		mockListOrganizations.mockResolvedValue({
+			data: {
+				organizations: [mockOrganization],
+				activeOrganizationId: mockOrganization.id,
+			},
+		});
+		mockListMembers.mockResolvedValue({
+			data: [mockMember],
+		});
+
+		render(
+			<OrgBootstrapper>
+				<div>Children Content</div>
+			</OrgBootstrapper>,
+		);
+
+		// Should use server's active org
+		await waitFor(() => {
+			expect(mockListMembers).toHaveBeenCalledWith(mockOrganization.id);
+		});
+
+		await waitFor(() => {
+			expect(screen.getByText("Children Content")).toBeInTheDocument();
+		});
+
+		// Verify server's org is set
+		const storeState = useOrgStore.getState();
+		expect(storeState.currentOrg?.id).toBe(mockOrganization.id);
+	});
+
 	it("handles error when result.data is null but no error message", async () => {
 		mockListOrganizations.mockResolvedValue({
 			data: null,
