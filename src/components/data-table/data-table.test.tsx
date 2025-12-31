@@ -533,6 +533,9 @@ describe("DataTable", () => {
 			h.textContent?.includes("Status"),
 		);
 		expect(statusHeaders.length).toBe(0);
+
+		// Restore mock to prevent state leakage
+		vi.mocked(useIsMobile).mockReturnValue(false);
 	});
 
 	it("handles nested value access in search", async () => {

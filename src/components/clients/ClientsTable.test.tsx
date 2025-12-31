@@ -770,48 +770,35 @@ describe("ClientsTable", () => {
 	});
 
 	it("waits for JWT to load before fetching clients", async () => {
-		// This test verifies that the component waits for JWT
-		// The actual implementation checks isJwtLoading before fetching
-		// Since we mock useJwt to return isLoading: false, the fetch happens immediately
-		// This is tested implicitly through other tests
-		render(<ClientsTable />);
-
-		await waitFor(() => {
-			expect(clientsApi.listClients).toHaveBeenCalled();
-		});
-	});
-
-	it("handles delete client successfully", async () => {
-		vi.mocked(clientsApi.deleteClient).mockResolvedValueOnce(undefined);
-
-		render(<ClientsTable />);
-
-		await waitFor(() => {
-			expect(
-				screen.getByText(getClientDisplayName(mockClients[0])),
-			).toBeInTheDocument();
+		// Initially mock JWT as loading
+		mockUseJwt.mockReturnValueOnce({
+			jwt: null,
+			isLoading: true,
+			error: null,
+			refetch: vi.fn(),
 		});
 
-		// Find and click delete button (this would require finding the action menu)
-		// For now, we'll test the delete handler indirectly
-		// The actual UI interaction would require more complex setup
-	});
+		// Render component while JWT is loading
+		const { rerender } = render(<ClientsTable />);
 
-	it("handles delete client error", async () => {
-		vi.mocked(clientsApi.deleteClient).mockRejectedValueOnce(
-			new Error("Delete failed"),
-		);
+		// Verify that listClients has NOT been called yet
+		expect(clientsApi.listClients).not.toHaveBeenCalled();
 
-		render(<ClientsTable />);
-
-		await waitFor(() => {
-			expect(
-				screen.getByText(getClientDisplayName(mockClients[0])),
-			).toBeInTheDocument();
+		// Update mock to return JWT as loaded
+		mockUseJwt.mockReturnValueOnce({
+			jwt: "test-jwt-token",
+			isLoading: false,
+			error: null,
+			refetch: vi.fn(),
 		});
 
-		// Error handling is tested through the component's error path
-		// The actual delete would require UI interaction
+		// Trigger re-render to flush effects
+		rerender(<ClientsTable />);
+
+		// Now verify that listClients is called once after JWT loads
+		await waitFor(() => {
+			expect(clientsApi.listClients).toHaveBeenCalledTimes(1);
+		});
 	});
 
 	it("flags suspicious client when action is clicked", async () => {
