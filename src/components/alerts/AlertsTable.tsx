@@ -31,6 +31,7 @@ import {
 } from "@algtools/ui";
 import { useToast } from "@/hooks/use-toast";
 import { useJwt } from "@/hooks/useJwt";
+import { useOrgStore } from "@/lib/org-store";
 import {
 	listAlerts,
 	getAlertById,
@@ -117,6 +118,7 @@ export function AlertsTable({
 	const router = useRouter();
 	const { toast } = useToast();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
+	const { currentOrg } = useOrgStore();
 	const [alerts, setAlerts] = useState<Alert[]>([]);
 	const [clients, setClients] = useState<Map<string, Client>>(new Map());
 	const [isLoading, setIsLoading] = useState(true);
@@ -171,7 +173,7 @@ export function AlertsTable({
 		[jwt, clients],
 	);
 
-	// Initial load
+	// Initial load - refetch when organization changes
 	useEffect(() => {
 		// Wait for JWT to be ready
 		if (isJwtLoading) return;
@@ -180,6 +182,10 @@ export function AlertsTable({
 			try {
 				setIsLoading(true);
 				setCurrentPage(1);
+				// Clear existing data when org changes
+				setAlerts([]);
+				setClients(new Map());
+
 				const response = await listAlerts({
 					page: 1,
 					limit: ITEMS_PER_PAGE,
@@ -202,7 +208,8 @@ export function AlertsTable({
 			}
 		};
 		fetchAlerts();
-	}, [filters, toast, jwt, isJwtLoading, fetchClientsForAlerts]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [filters, toast, jwt, isJwtLoading, currentOrg?.id]);
 
 	// Load more alerts for infinite scroll
 	const handleLoadMore = useCallback(async () => {

@@ -28,6 +28,7 @@ import {
 	TooltipTrigger,
 } from "@algtools/ui";
 import { useToast } from "@/hooks/use-toast";
+import { useOrgStore } from "@/lib/org-store";
 import {
 	listTransactions,
 	type ListTransactionsOptions,
@@ -42,6 +43,8 @@ import {
 	type ColumnDef,
 	type FilterDef,
 } from "@/components/data-table";
+import { fetchCatalogEntries } from "@/lib/catalogs";
+import type { CatalogItem } from "@/types/catalog";
 
 /**
  * Extended transaction row with resolved client data
@@ -99,8 +102,10 @@ export function TransactionsTable({
 }: TransactionsTableProps = {}): React.ReactElement {
 	const router = useRouter();
 	const { toast } = useToast();
+	const { currentOrg } = useOrgStore();
 	const [transactions, setTransactions] = useState<Transaction[]>([]);
 	const [clients, setClients] = useState<Map<string, Client>>(new Map());
+	const [brandNames, setBrandNames] = useState<Map<string, string>>(new Map());
 	const [isLoading, setIsLoading] = useState(true);
 	const [isLoadingMore, setIsLoadingMore] = useState(false);
 	const [currentPage, setCurrentPage] = useState(1);
@@ -109,6 +114,49 @@ export function TransactionsTable({
 
 	// Track which client IDs we've already attempted to fetch (to avoid re-fetching)
 	const fetchedClientIdsRef = useRef<Set<string>>(new Set());
+	const brandsFetchedRef = useRef<boolean>(false);
+
+	// Fetch brand catalogs for all vehicle types
+	const fetchBrandCatalogs = useCallback(async () => {
+		if (brandsFetchedRef.current) {
+			return;
+		}
+
+		try {
+			brandsFetchedRef.current = true;
+			const catalogKeys = [
+				"terrestrial-vehicle-brands",
+				"maritime-vehicle-brands",
+				"air-vehicle-brands",
+			];
+
+			const catalogPromises = catalogKeys.map(async (catalogKey) => {
+				try {
+					const response = await fetchCatalogEntries(catalogKey, {
+						pageSize: 1000, // Fetch all brands
+					});
+					return response.data;
+				} catch (error) {
+					console.error(`Error fetching catalog ${catalogKey}:`, error);
+					return [];
+				}
+			});
+
+			const catalogResults = await Promise.all(catalogPromises);
+			const brandMap = new Map<string, string>();
+
+			catalogResults.forEach((items: CatalogItem[]) => {
+				items.forEach((item: CatalogItem) => {
+					brandMap.set(item.id, item.name);
+				});
+			});
+
+			setBrandNames(brandMap);
+		} catch (error) {
+			console.error("Error fetching brand catalogs:", error);
+			brandsFetchedRef.current = false; // Allow retry on error
+		}
+	}, []);
 
 	// Fetch client information for transactions - optimized to only fetch missing clients
 	const fetchClientsForTransactions = useCallback(
@@ -160,21 +208,33 @@ export function TransactionsTable({
 		[], // No dependencies - uses ref to track fetched clients
 	);
 
-	// Initial load
+	// Initial load - refetch when organization changes
 	useEffect(() => {
 		const fetchTransactions = async () => {
 			try {
 				setIsLoading(true);
 				setCurrentPage(1);
-				const response = await listTransactions({
-					page: 1,
-					limit: ITEMS_PER_PAGE,
-					...filters,
-				});
-				setTransactions(response.data);
-				setHasMore(response.pagination.page < response.pagination.totalPages);
+				// Clear existing data and client cache when org changes
+				setTransactions([]);
+				setClients(new Map());
+				fetchedClientIdsRef.current.clear();
 
-				await fetchClientsForTransactions(response.data);
+				// Fetch brand catalogs in parallel with transactions
+				await Promise.all([
+					fetchBrandCatalogs(),
+					(async () => {
+						const response = await listTransactions({
+							page: 1,
+							limit: ITEMS_PER_PAGE,
+							...filters,
+						});
+						setTransactions(response.data);
+						setHasMore(
+							response.pagination.page < response.pagination.totalPages,
+						);
+						await fetchClientsForTransactions(response.data);
+					})(),
+				]);
 			} catch (error) {
 				console.error("Error fetching transactions:", error);
 				toast({
@@ -188,7 +248,7 @@ export function TransactionsTable({
 		};
 		fetchTransactions();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [filters, toast]);
+	}, [filters, toast, currentOrg?.id, fetchBrandCatalogs]);
 
 	// Load more transactions for infinite scroll
 	const handleLoadMore = useCallback(async () => {
@@ -225,12 +285,14 @@ export function TransactionsTable({
 	const transactionsData: TransactionRow[] = useMemo(() => {
 		return transactions.map((tx) => {
 			const client = clients.get(tx.clientId);
+			// Resolve brand ID to brand name, fallback to ID if not found
+			const brandName = brandNames.get(tx.brand) || tx.brand;
 			return {
 				id: tx.id,
 				shortId: generateShortTransactionId(tx.id),
 				operationType: tx.operationType,
 				vehicleType: tx.vehicleType,
-				brand: tx.brand,
+				brand: brandName,
 				model: tx.model,
 				year: tx.year,
 				amount: parseFloat(tx.amount),
@@ -243,7 +305,7 @@ export function TransactionsTable({
 					.join(", "),
 			};
 		});
-	}, [transactions, clients]);
+	}, [transactions, clients, brandNames]);
 
 	// Column definitions
 	const columns: ColumnDef<TransactionRow>[] = useMemo(

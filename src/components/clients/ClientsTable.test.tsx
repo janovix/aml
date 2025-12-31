@@ -37,6 +37,16 @@ vi.mock("@/hooks/use-mobile", () => ({
 	useIsMobile: () => false,
 }));
 
+const mockCurrentOrg = { id: "org-1", name: "Test Org", slug: "test-org" };
+
+const mockUseOrgStore = vi.fn(() => ({
+	currentOrg: mockCurrentOrg,
+}));
+
+vi.mock("@/lib/org-store", () => ({
+	useOrgStore: () => mockUseOrgStore(),
+}));
+
 const mockPush = vi.fn();
 
 vi.mock("next/navigation", () => ({
@@ -3198,5 +3208,35 @@ describe("ClientsTable", () => {
 				expect(screen.getByText("Eliminar")).toBeInTheDocument();
 			});
 		}
+	});
+
+	it("refetches data when organization changes", async () => {
+		// Initial render with org-1
+		mockUseOrgStore.mockReturnValue({
+			currentOrg: { id: "org-1", name: "Test Org", slug: "test-org" },
+		});
+
+		const { rerender } = render(<ClientsTable />);
+
+		await waitFor(() => {
+			const displayName = getClientDisplayName(mockClients[0]);
+			expect(screen.getByText(displayName)).toBeInTheDocument();
+		});
+
+		// Verify initial fetch was called
+		expect(clientsApi.listClients).toHaveBeenCalledTimes(1);
+
+		// Change organization
+		mockUseOrgStore.mockReturnValue({
+			currentOrg: { id: "org-2", name: "Other Org", slug: "other-org" },
+		});
+
+		// Rerender to trigger the effect with new org
+		rerender(<ClientsTable />);
+
+		// Wait for the refetch to be called
+		await waitFor(() => {
+			expect(clientsApi.listClients).toHaveBeenCalledTimes(2);
+		});
 	});
 });

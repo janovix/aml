@@ -21,6 +21,16 @@ vi.mock("@/hooks/use-mobile", () => ({
 	useIsMobile: () => false,
 }));
 
+const mockCurrentOrg = { id: "org-1", name: "Test Org", slug: "test-org" };
+
+const mockUseOrgStore = vi.fn(() => ({
+	currentOrg: mockCurrentOrg,
+}));
+
+vi.mock("@/lib/org-store", () => ({
+	useOrgStore: () => mockUseOrgStore(),
+}));
+
 const mockPush = vi.fn();
 
 vi.mock("next/navigation", () => ({
@@ -857,5 +867,34 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 		// Verify air vehicle is rendered
 		const rows = screen.getAllByRole("row");
 		expect(rows.length).toBeGreaterThan(1);
+	});
+
+	it("refetches data when organization changes", async () => {
+		// Initial render with org-1
+		mockUseOrgStore.mockReturnValue({
+			currentOrg: { id: "org-1", name: "Test Org", slug: "test-org" },
+		});
+
+		const { rerender } = render(<TransactionsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
+		});
+
+		// Verify initial fetch was called
+		expect(transactionsApi.listTransactions).toHaveBeenCalledTimes(1);
+
+		// Change organization
+		mockUseOrgStore.mockReturnValue({
+			currentOrg: { id: "org-2", name: "Other Org", slug: "other-org" },
+		});
+
+		// Rerender to trigger the effect with new org
+		rerender(<TransactionsTable />);
+
+		// Wait for the refetch to be called
+		await waitFor(() => {
+			expect(transactionsApi.listTransactions).toHaveBeenCalledTimes(2);
+		});
 	});
 });

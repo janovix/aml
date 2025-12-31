@@ -38,6 +38,7 @@ import {
 } from "@algtools/ui";
 import { useToast } from "@/hooks/use-toast";
 import { useJwt } from "@/hooks/useJwt";
+import { useOrgStore } from "@/lib/org-store";
 import type { Client, PersonType } from "@/types/client";
 import { getClientDisplayName } from "@/types/client";
 import { listClients, deleteClient } from "@/lib/api/clients";
@@ -79,6 +80,7 @@ export function ClientsTable(): React.ReactElement {
 	const router = useRouter();
 	const { toast } = useToast();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
+	const { currentOrg } = useOrgStore();
 	const [clients, setClients] = useState<Client[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -88,7 +90,7 @@ export function ClientsTable(): React.ReactElement {
 	const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
 	const ITEMS_PER_PAGE = 20;
 
-	// Initial load
+	// Initial load - refetch when organization changes
 	useEffect(() => {
 		// Wait for JWT to be ready
 		if (isJwtLoading) return;
@@ -97,6 +99,8 @@ export function ClientsTable(): React.ReactElement {
 			try {
 				setIsLoading(true);
 				setCurrentPage(1);
+				// Clear existing data when org changes
+				setClients([]);
 				const response = await listClients({
 					page: 1,
 					limit: ITEMS_PER_PAGE,
@@ -116,7 +120,7 @@ export function ClientsTable(): React.ReactElement {
 			}
 		};
 		fetchClients();
-	}, [toast, jwt, isJwtLoading]);
+	}, [toast, jwt, isJwtLoading, currentOrg?.id]);
 
 	// Load more clients for infinite scroll
 	const handleLoadMore = useCallback(async () => {
