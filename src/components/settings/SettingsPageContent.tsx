@@ -17,7 +17,6 @@ import {
 	SelectValue,
 } from "@algtools/ui";
 import { Save, Building2, AlertCircle } from "lucide-react";
-import { useToast } from "../../hooks/use-toast";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
 import {
 	getFieldDescription,
@@ -26,7 +25,8 @@ import {
 import { fetchJson } from "@/lib/api/http";
 import { getAmlCoreBaseUrl } from "@/lib/api/config";
 import { validateRFC } from "../../lib/utils";
-import { toast as sonnerToast } from "sonner";
+import { executeMutation } from "@/lib/mutations";
+import { toast } from "sonner";
 
 interface OrganizationSettingsData {
 	obligatedSubjectKey: string;
@@ -34,7 +34,6 @@ interface OrganizationSettingsData {
 }
 
 export function SettingsPageContent(): React.JSX.Element {
-	const { toast } = useToast();
 	const [isLoading, setIsLoading] = useState(true);
 	const [isSaving, setIsSaving] = useState(false);
 	const [hasNoOrganization, setHasNoOrganization] = useState(false);
@@ -95,7 +94,7 @@ export function SettingsPageContent(): React.JSX.Element {
 		const rfcValidation = validateRFC(formData.obligatedSubjectKey, "moral");
 		if (!rfcValidation.isValid) {
 			setValidationErrors({ rfc: rfcValidation.error });
-			sonnerToast.error("Por favor, corrija los errores en el formulario");
+			toast.error("Por favor, corrija los errores en el formulario");
 			return;
 		}
 
@@ -103,33 +102,25 @@ export function SettingsPageContent(): React.JSX.Element {
 		setIsSaving(true);
 
 		try {
-			const baseUrl = getAmlCoreBaseUrl();
-			await fetchJson(`${baseUrl}/api/v1/organization-settings`, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
+			await executeMutation({
+				mutation: async () => {
+					const baseUrl = getAmlCoreBaseUrl();
+					return fetchJson(`${baseUrl}/api/v1/organization-settings`, {
+						method: "PUT",
+						headers: {
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({
+							obligatedSubjectKey: formData.obligatedSubjectKey.toUpperCase(),
+							activityKey: formData.activityKey,
+						}),
+					});
 				},
-				body: JSON.stringify({
-					obligatedSubjectKey: formData.obligatedSubjectKey.toUpperCase(),
-					activityKey: formData.activityKey,
-				}),
+				loading: "Guardando configuración...",
+				success: "Los datos de la organización se han guardado exitosamente.",
 			});
-
-			toast({
-				title: "Configuración guardada",
-				description:
-					"Los datos de la organización se han guardado exitosamente.",
-			});
-		} catch (error) {
-			console.error("Error saving organization settings:", error);
-			toast({
-				title: "Error",
-				description:
-					error instanceof Error
-						? error.message
-						: "No se pudo guardar la configuración.",
-				variant: "destructive",
-			});
+		} catch {
+			// Error is already handled by executeMutation via Sonner
 		} finally {
 			setIsSaving(false);
 		}

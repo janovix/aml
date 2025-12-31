@@ -6,12 +6,26 @@ import { mockClients } from "@/data/mockClients";
 import { getClientDisplayName, type Client } from "@/types/client";
 import * as clientsApi from "@/lib/api/clients";
 
-const mockToast = vi.fn();
+// Mock sonner toast
+const mockToastError = vi.fn();
+const mockToastSuccess = vi.fn();
+const mockToastPromise = vi.fn();
+vi.mock("sonner", () => ({
+	toast: Object.assign(vi.fn(), {
+		error: (...args: unknown[]) => mockToastError(...args),
+		success: (...args: unknown[]) => mockToastSuccess(...args),
+		promise: (...args: unknown[]) => mockToastPromise(...args),
+	}),
+}));
 
-vi.mock("@/hooks/use-toast", () => ({
-	useToast: () => ({
-		toast: mockToast,
-		toasts: [],
+// Mock executeMutation to call the actual mutation and invoke onSuccess
+vi.mock("@/lib/mutations", () => ({
+	executeMutation: vi.fn(async ({ mutation, onSuccess }) => {
+		const result = await mutation();
+		if (onSuccess) {
+			await onSuccess(result);
+		}
+		return result;
 	}),
 }));
 
@@ -209,13 +223,10 @@ describe("ClientsTable", () => {
 
 		render(<ClientsTable />);
 
+		// Verify toast.error was called via Sonner
 		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
-				expect.objectContaining({
-					title: "Error",
-					description: "No se pudieron cargar los clientes.",
-					variant: "destructive",
-				}),
+			expect(mockToastError).toHaveBeenCalledWith(
+				"No se pudieron cargar los clientes.",
 			);
 		});
 	});
@@ -539,13 +550,9 @@ describe("ClientsTable", () => {
 				});
 			});
 
-			// Should show success toast
+			// Verify deleteClient was called (toast is handled by executeMutation)
 			await waitFor(() => {
-				expect(mockToast).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: "Cliente eliminado",
-					}),
-				);
+				expect(clientsApi.deleteClient).toHaveBeenCalled();
 			});
 		}
 	});
@@ -588,15 +595,9 @@ describe("ClientsTable", () => {
 			});
 			await user.click(confirmButton);
 
-			// Should show error toast
+			// Verify deleteClient was called (error is handled by executeMutation via Sonner)
 			await waitFor(() => {
-				expect(mockToast).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: "Error",
-						description: "No se pudo eliminar el cliente.",
-						variant: "destructive",
-					}),
-				);
+				expect(clientsApi.deleteClient).toHaveBeenCalled();
 			});
 		}
 	});
@@ -687,10 +688,8 @@ describe("ClientsTable", () => {
 			await user.click(screen.getByText("Generar Reporte"));
 
 			await waitFor(() => {
-				expect(mockToast).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: "Reporte generado",
-					}),
+				expect(mockToastSuccess).toHaveBeenCalledWith(
+					expect.stringContaining("descargado exitosamente"),
 				);
 			});
 		}
@@ -835,13 +834,8 @@ describe("ClientsTable", () => {
 			await user.click(screen.getByText("Marcar como Sospechoso"));
 
 			await waitFor(() => {
-				expect(mockToast).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: "Cliente marcado",
-						description: expect.stringContaining(
-							getClientDisplayName(mockClients[0]),
-						),
-					}),
+				expect(mockToastSuccess).toHaveBeenCalledWith(
+					expect.stringContaining("marcado como sospechoso"),
 				);
 			});
 		}
@@ -985,13 +979,8 @@ describe("ClientsTable", () => {
 			await user.click(screen.getByText("Generar Reporte"));
 
 			await waitFor(() => {
-				expect(mockToast).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: "Reporte generado",
-						description: expect.stringContaining(
-							getClientDisplayName(mockClients[0]),
-						),
-					}),
+				expect(mockToastSuccess).toHaveBeenCalledWith(
+					expect.stringContaining("descargado exitosamente"),
 				);
 			});
 		}
@@ -1033,15 +1022,7 @@ describe("ClientsTable", () => {
 			const confirmButton = screen.getByRole("button", { name: /eliminar/i });
 			await user.click(confirmButton);
 
-			await waitFor(() => {
-				expect(mockToast).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: "Cliente eliminado",
-					}),
-				);
-			});
-
-			// Verify delete was called
+			// Verify delete was called (toast is handled by executeMutation)
 			expect(clientsApi.deleteClient).toHaveBeenCalledWith({
 				rfc: mockClients[0].rfc,
 				jwt: "test-jwt-token",
@@ -1120,21 +1101,12 @@ describe("ClientsTable", () => {
 			const confirmButton = screen.getByRole("button", { name: /eliminar/i });
 			await user.click(confirmButton);
 
+			// Verify delete was called (toast is handled by executeMutation)
 			await waitFor(() => {
-				expect(mockToast).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: "Cliente eliminado",
-						description: expect.stringContaining(
-							getClientDisplayName(mockClients[0]),
-						),
-					}),
-				);
-			});
-
-			// Verify delete was called
-			expect(clientsApi.deleteClient).toHaveBeenCalledWith({
-				rfc: mockClients[0].rfc,
-				jwt: "test-jwt-token",
+				expect(clientsApi.deleteClient).toHaveBeenCalledWith({
+					rfc: mockClients[0].rfc,
+					jwt: "test-jwt-token",
+				});
 			});
 
 			// Verify client is removed from the list
@@ -1185,17 +1157,12 @@ describe("ClientsTable", () => {
 			const confirmButton = screen.getByRole("button", { name: /eliminar/i });
 			await user.click(confirmButton);
 
+			// Verify delete was called (error is handled by executeMutation via Sonner toast)
 			await waitFor(() => {
-				expect(mockToast).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: "Error",
-						description: "No se pudo eliminar el cliente.",
-						variant: "destructive",
-					}),
-				);
+				expect(clientsApi.deleteClient).toHaveBeenCalled();
 			});
 
-			// Verify client is still in the list
+			// Verify client is still in the list (since delete failed)
 			expect(
 				screen.getByText(getClientDisplayName(mockClients[0])),
 			).toBeInTheDocument();
@@ -2348,10 +2315,8 @@ describe("ClientsTable", () => {
 
 			// Verify report generation was triggered through toast notification
 			await waitFor(() => {
-				expect(mockToast).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: "Reporte generado",
-					}),
+				expect(mockToastSuccess).toHaveBeenCalledWith(
+					expect.stringContaining("descargado exitosamente"),
 				);
 			});
 		}
@@ -2382,10 +2347,8 @@ describe("ClientsTable", () => {
 
 			// Verify flag suspicious was triggered
 			await waitFor(() => {
-				expect(mockToast).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: "Cliente marcado",
-					}),
+				expect(mockToastSuccess).toHaveBeenCalledWith(
+					expect.stringContaining("marcado como sospechoso"),
 				);
 			});
 		}

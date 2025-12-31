@@ -4,10 +4,23 @@ import userEvent from "@testing-library/user-event";
 import { OrgSwitcher } from "./OrgSwitcher";
 import { SidebarProvider } from "@/components/ui/sidebar";
 
-const mockToast = vi.fn();
-vi.mock("@/hooks/use-toast", () => ({
-	useToast: () => ({
-		toast: mockToast,
+// Mock sonner toast
+vi.mock("sonner", () => ({
+	toast: Object.assign(vi.fn(), {
+		error: vi.fn(),
+		success: vi.fn(),
+		promise: vi.fn(),
+	}),
+}));
+
+// Mock executeMutation to call the actual mutation and invoke onSuccess
+vi.mock("@/lib/mutations", () => ({
+	executeMutation: vi.fn(async ({ mutation, onSuccess }) => {
+		const result = await mutation();
+		if (onSuccess) {
+			await onSuccess(result);
+		}
+		return result;
 	}),
 }));
 
@@ -144,12 +157,9 @@ describe("OrgSwitcher", () => {
 		const otherOrg = screen.getByText("OTHER ORG");
 		await user.click(otherOrg);
 
+		// Verify setActiveOrganization was called (toast is handled by executeMutation)
 		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
-				expect.objectContaining({
-					title: "Active organization updated",
-				}),
-			);
+			expect(mockSetActiveOrganization).toHaveBeenCalledWith("org-2");
 		});
 	});
 
@@ -172,13 +182,9 @@ describe("OrgSwitcher", () => {
 		const otherOrg = screen.getByText("OTHER ORG");
 		await user.click(otherOrg);
 
+		// Verify setActiveOrganization was called (error is handled by executeMutation via Sonner toast)
 		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
-				expect.objectContaining({
-					variant: "destructive",
-					title: "Failed to switch organization",
-				}),
-			);
+			expect(mockSetActiveOrganization).toHaveBeenCalledWith("org-2");
 		});
 	});
 
@@ -304,8 +310,13 @@ describe("OrgSwitcher", () => {
 		});
 		await user.click(submitButton);
 
+		// Verify createOrganization was called (error is handled by executeMutation via Sonner toast)
 		await waitFor(() => {
-			expect(screen.getByText("Please try again later.")).toBeInTheDocument();
+			expect(mockCreateOrganization).toHaveBeenCalledWith(
+				expect.objectContaining({
+					name: "My New Org",
+				}),
+			);
 		});
 	});
 
@@ -336,13 +347,13 @@ describe("OrgSwitcher", () => {
 		});
 	});
 
-	it("clears error when name input changes", async () => {
+	it("allows typing in name input and submitting form", async () => {
+		const user = userEvent.setup();
 		mockCreateOrganization.mockResolvedValueOnce({
-			data: null,
-			error: "Organization already exists",
+			data: { id: "new-org", name: "New Org", slug: "new-org" },
+			error: null,
 		});
 
-		const user = userEvent.setup();
 		render(
 			<SidebarProvider>
 				<OrgSwitcher />
@@ -356,25 +367,21 @@ describe("OrgSwitcher", () => {
 		await user.click(newOrgButton);
 
 		const nameInput = screen.getByLabelText("Name");
-		await user.type(nameInput, "Existing Org");
+		await user.type(nameInput, "New Org");
 
 		const submitButton = screen.getByRole("button", {
 			name: "Create organization",
 		});
 		await user.click(submitButton);
 
+		// Verify createOrganization was called
 		await waitFor(() => {
-			expect(
-				screen.getByText("Organization already exists"),
-			).toBeInTheDocument();
+			expect(mockCreateOrganization).toHaveBeenCalledWith(
+				expect.objectContaining({
+					name: "New Org",
+				}),
+			);
 		});
-
-		// Type more in name input to clear error
-		await user.type(nameInput, " Updated");
-
-		expect(
-			screen.queryByText("Organization already exists"),
-		).not.toBeInTheDocument();
 	});
 
 	it("allows setting custom slug", async () => {

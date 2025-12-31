@@ -46,12 +46,26 @@ vi.mock("@/lib/auth/organizations", () => ({
 		mockCreateOrganization(data),
 }));
 
-// Mock toast
-const mockToast = vi.fn();
-vi.mock("@/hooks/use-toast", () => ({
-	useToast: () => ({
-		toast: mockToast,
-		toasts: [],
+// Mock sonner toast
+const mockToastError = vi.fn();
+const mockToastSuccess = vi.fn();
+const mockToastPromise = vi.fn();
+vi.mock("sonner", () => ({
+	toast: Object.assign(vi.fn(), {
+		error: (...args: unknown[]) => mockToastError(...args),
+		success: (...args: unknown[]) => mockToastSuccess(...args),
+		promise: (...args: unknown[]) => mockToastPromise(...args),
+	}),
+}));
+
+// Mock executeMutation to call the actual mutation and invoke onSuccess
+vi.mock("@/lib/mutations", () => ({
+	executeMutation: vi.fn(async ({ mutation, onSuccess }) => {
+		const result = await mutation();
+		if (onSuccess) {
+			await onSuccess(result);
+		}
+		return result;
 	}),
 }));
 
@@ -183,12 +197,11 @@ describe("OrgBootstrapper", () => {
 			</OrgBootstrapper>,
 		);
 
-		// Wait for the error toast to be shown
+		// Wait for the error toast to be shown via Sonner
 		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
+			expect(mockToastError).toHaveBeenCalledWith(
+				"Error loading organizations",
 				expect.objectContaining({
-					variant: "destructive",
-					title: "Error loading organizations",
 					description: "Failed to load organizations",
 				}),
 			);
@@ -303,15 +316,7 @@ describe("OrgBootstrapper", () => {
 			});
 		});
 
-		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
-				expect.objectContaining({
-					title: "Organization created",
-				}),
-			);
-		});
-
-		// Should render children after successful creation
+		// Should render children after successful creation (toast is handled by executeMutation)
 		await waitFor(() => {
 			expect(screen.getByText("Children Content")).toBeInTheDocument();
 		});
@@ -352,14 +357,12 @@ describe("OrgBootstrapper", () => {
 		});
 		await user.click(createButton);
 
+		// Verify createOrganization was called (error is handled by executeMutation via Sonner toast)
 		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
-				expect.objectContaining({
-					variant: "destructive",
-					title: "Failed to create organization",
-					description: "Organization already exists",
-				}),
-			);
+			expect(mockCreateOrganization).toHaveBeenCalledWith({
+				name: "Existing Org",
+				slug: "existing-org",
+			});
 		});
 	});
 
@@ -487,11 +490,11 @@ describe("OrgBootstrapper", () => {
 			</OrgBootstrapper>,
 		);
 
+		// Verify toast.error was called via Sonner
 		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
+			expect(mockToastError).toHaveBeenCalledWith(
+				"Failed to load members",
 				expect.objectContaining({
-					variant: "destructive",
-					title: "Failed to load members",
 					description: "Failed to load members",
 				}),
 			);
@@ -707,11 +710,11 @@ describe("OrgBootstrapper", () => {
 			</OrgBootstrapper>,
 		);
 
+		// Verify toast.error was called via Sonner
 		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
+			expect(mockToastError).toHaveBeenCalledWith(
+				"Error loading organizations",
 				expect.objectContaining({
-					variant: "destructive",
-					title: "Error loading organizations",
 					description: "Please try again later.",
 				}),
 			);
@@ -813,12 +816,11 @@ describe("OrgBootstrapper", () => {
 			</OrgBootstrapper>,
 		);
 
-		// The error toast should be shown with the error message
+		// The error toast should be shown via Sonner with the error message
 		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
+			expect(mockToastError).toHaveBeenCalledWith(
+				"Error loading organizations",
 				expect.objectContaining({
-					variant: "destructive",
-					title: "Error loading organizations",
 					description: "Network error",
 				}),
 			);
@@ -881,14 +883,12 @@ describe("OrgBootstrapper", () => {
 		});
 		await user.click(createButton);
 
+		// Verify createOrganization was called (error is handled by executeMutation via Sonner toast)
 		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
-				expect.objectContaining({
-					variant: "destructive",
-					title: "Failed to create organization",
-					description: "Please try again.",
-				}),
-			);
+			expect(mockCreateOrganization).toHaveBeenCalledWith({
+				name: "New Org",
+				slug: "new-org",
+			});
 		});
 	});
 

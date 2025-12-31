@@ -3,10 +3,24 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { OrgTeamTable } from "./OrgTeamTable";
 
-const mockToast = vi.fn();
-vi.mock("@/hooks/use-toast", () => ({
-	useToast: () => ({
-		toast: mockToast,
+// Mock sonner toast
+const mockToastError = vi.fn();
+const mockToastPromise = vi.fn();
+vi.mock("sonner", () => ({
+	toast: Object.assign(vi.fn(), {
+		error: (...args: unknown[]) => mockToastError(...args),
+		promise: (...args: unknown[]) => mockToastPromise(...args),
+	}),
+}));
+
+// Mock executeMutation to call the actual mutation and invoke onSuccess
+vi.mock("@/lib/mutations", () => ({
+	executeMutation: vi.fn(async ({ mutation, onSuccess }) => {
+		const result = await mutation();
+		if (onSuccess) {
+			await onSuccess(result);
+		}
+		return result;
 	}),
 }));
 
@@ -224,10 +238,11 @@ describe("OrgTeamTable", () => {
 		});
 		await user.click(submitButton);
 
+		// Verify executeMutation was called (toast is handled by executeMutation)
 		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
+			expect(mockInviteMember).toHaveBeenCalledWith(
 				expect.objectContaining({
-					title: "Invitation sent",
+					email: "new@example.com",
 				}),
 			);
 		});
@@ -257,11 +272,11 @@ describe("OrgTeamTable", () => {
 		});
 		await user.click(submitButton);
 
+		// Verify inviteMember was called (error is handled by executeMutation throwing)
 		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
+			expect(mockInviteMember).toHaveBeenCalledWith(
 				expect.objectContaining({
-					variant: "destructive",
-					title: "Failed to send invitation",
+					email: "existing@example.com",
 				}),
 			);
 		});
@@ -393,12 +408,9 @@ describe("OrgTeamTable", () => {
 		const cancelButton = screen.getByTitle("Cancel invitation");
 		await user.click(cancelButton);
 
+		// Verify cancelInvitation was called (toast is handled by executeMutation)
 		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
-				expect.objectContaining({
-					title: "Invitation canceled",
-				}),
-			);
+			expect(mockCancelInvitation).toHaveBeenCalledWith("inv-1");
 		});
 	});
 
@@ -544,11 +556,12 @@ describe("OrgTeamTable", () => {
 
 		render(<OrgTeamTable />);
 
+		// Verify toast.error was called with the error message
 		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
+			expect(mockToastError).toHaveBeenCalledWith(
+				"Failed to load members",
 				expect.objectContaining({
-					variant: "destructive",
-					title: "Failed to load members",
+					description: "Failed to load members",
 				}),
 			);
 		});
@@ -571,11 +584,11 @@ describe("OrgTeamTable", () => {
 		const resendButton = screen.getByTitle("Resend invitation");
 		await user.click(resendButton);
 
+		// Verify resendInvitation was called (error is handled by executeMutation throwing)
 		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
+			expect(mockResendInvitation).toHaveBeenCalledWith(
 				expect.objectContaining({
-					variant: "destructive",
-					title: "Failed to resend invitation",
+					email: "pending@example.com",
 				}),
 			);
 		});

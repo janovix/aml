@@ -9,7 +9,8 @@ import {
 	listOrganizations,
 } from "@/lib/auth/organizations";
 import type { Organization } from "@/lib/org-store";
-import { useToast } from "@/hooks/use-toast";
+import { executeMutation } from "@/lib/mutations";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Building2 } from "lucide-react";
@@ -42,7 +43,6 @@ export function OrgBootstrapper({
 	children,
 	initialOrganizations,
 }: OrgBootstrapperProps) {
-	const { toast } = useToast();
 	const { data: session } = useAuthSession();
 	const {
 		currentOrg,
@@ -106,9 +106,7 @@ export function OrgBootstrapper({
 					if (membersResult.data) {
 						setMembers(membersResult.data);
 					} else if (membersResult.error) {
-						toast({
-							variant: "destructive",
-							title: "Failed to load members",
+						toast.error("Failed to load members", {
 							description: membersResult.error,
 						});
 					}
@@ -121,7 +119,6 @@ export function OrgBootstrapper({
 		setOrganizations,
 		setLoading,
 		setMembers,
-		toast,
 	]);
 
 	// Client-side fetch only when no initial data is provided
@@ -141,9 +138,7 @@ export function OrgBootstrapper({
 
 			if (result.error || !result.data) {
 				setError(result.error || "Failed to load organizations");
-				toast({
-					variant: "destructive",
-					title: "Error loading organizations",
+				toast.error("Error loading organizations", {
 					description: result.error || "Please try again later.",
 				});
 				setLoading(false);
@@ -173,9 +168,7 @@ export function OrgBootstrapper({
 					if (membersResult.data) {
 						setMembers(membersResult.data);
 					} else if (membersResult.error) {
-						toast({
-							variant: "destructive",
-							title: "Failed to load members",
+						toast.error("Failed to load members", {
 							description: membersResult.error,
 						});
 					}
@@ -197,7 +190,6 @@ export function OrgBootstrapper({
 		setOrganizations,
 		setError,
 		setLoading,
-		toast,
 	]);
 
 	const showLoading = useMemo(
@@ -268,26 +260,33 @@ export function OrgBootstrapper({
 							onClick={async () => {
 								if (!nameInput || !derivedSlug) return;
 								setIsCreating(true);
-								const result = await createOrganization({
-									name: nameInput,
-									slug: derivedSlug,
-								});
-								if (result.error || !result.data) {
-									toast({
-										variant: "destructive",
-										title: "Failed to create organization",
-										description: result.error || "Please try again.",
+								try {
+									await executeMutation({
+										mutation: async () => {
+											const result = await createOrganization({
+												name: nameInput,
+												slug: derivedSlug,
+											});
+											if (result.error || !result.data) {
+												throw new Error(
+													result.error || "Failed to create organization",
+												);
+											}
+											return result.data;
+										},
+										loading: "Creating organization...",
+										success: (org) => `${org.name} is ready.`,
+										onSuccess: (org) => {
+											addOrganization(org);
+											setCurrentOrg(org);
+											setError(null);
+										},
 									});
-								} else {
-									addOrganization(result.data);
-									setCurrentOrg(result.data);
-									setError(null);
-									toast({
-										title: "Organization created",
-										description: `${result.data.name} is ready.`,
-									});
+								} catch {
+									// Error is already handled by executeMutation via Sonner
+								} finally {
+									setIsCreating(false);
 								}
-								setIsCreating(false);
 							}}
 							disabled={!nameInput || !derivedSlug || isCreating}
 						>

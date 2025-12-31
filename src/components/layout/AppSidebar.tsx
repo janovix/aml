@@ -38,7 +38,8 @@ import {
 	createOrganization,
 } from "@/lib/auth/organizations";
 import { useOrgStore, type Organization } from "@/lib/org-store";
-import { useToast } from "@/hooks/use-toast";
+import { executeMutation } from "@/lib/mutations";
+import { toast } from "sonner";
 import {
 	OrganizationSwitcher,
 	type Organization as LegacyOrganization,
@@ -128,7 +129,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	const router = useRouter();
 	const { isMobile, setOpenMobile } = useSidebar();
 	const { data: session, isPending } = useAuthSession();
-	const { toast } = useToast();
 
 	// Use org-store for organization state
 	const {
@@ -149,22 +149,29 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	};
 
 	const handleOrganizationChange = async (org: LegacyOrganization) => {
-		const result = await setActiveOrganization(org.id);
-		if (result.error) {
-			toast({
-				variant: "destructive",
-				title: "Failed to switch organization",
-				description: result.error,
+		try {
+			await executeMutation({
+				mutation: async () => {
+					const result = await setActiveOrganization(org.id);
+					if (result.error) {
+						throw new Error(result.error);
+					}
+					return result.data;
+				},
+				loading: "Switching organization...",
+				success: () => {
+					const fullOrg = organizations.find((o) => o.id === org.id);
+					return `${fullOrg?.name || org.name} is now active.`;
+				},
+				onSuccess: () => {
+					const fullOrg = organizations.find((o) => o.id === org.id);
+					if (fullOrg) {
+						setCurrentOrg(fullOrg);
+					}
+				},
 			});
-		} else {
-			const fullOrg = organizations.find((o) => o.id === org.id);
-			if (fullOrg) {
-				setCurrentOrg(fullOrg);
-				toast({
-					title: "Organization switched",
-					description: `${fullOrg.name} is now active.`,
-				});
-			}
+		} catch {
+			// Error is already handled by executeMutation via Sonner
 		}
 	};
 
@@ -192,44 +199,51 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 		setIsCreatingOrg(true);
 		setCreateOrgError(null);
 
-		const result = await createOrganization({
-			name: orgName,
-			slug: derivedSlug,
-			logo: orgLogo || undefined,
-		});
+		try {
+			await executeMutation({
+				mutation: async () => {
+					const result = await createOrganization({
+						name: orgName,
+						slug: derivedSlug,
+						logo: orgLogo || undefined,
+					});
 
-		if (result.error || !result.data) {
-			setCreateOrgError(result.error || "Please try again later.");
+					if (result.error || !result.data) {
+						throw new Error(result.error || "Failed to create organization");
+					}
+
+					// Set as active
+					const setActiveResult = await setActiveOrganization(result.data.id);
+					if (setActiveResult.error) {
+						// Organization created but activation failed - still return org
+						// but we'll show a warning toast after success
+						console.warn(
+							"Organization created but failed to activate:",
+							setActiveResult.error,
+						);
+					}
+
+					return result.data;
+				},
+				loading: "Creating organization...",
+				success: (org) => `${org.name} has been created and is now active.`,
+				onSuccess: (org) => {
+					const { addOrganization, setCurrentOrg } = useOrgStore.getState();
+					addOrganization(org);
+					setCurrentOrg(org);
+
+					setCreateOrgDialogOpen(false);
+					setOrgName("");
+					setOrgSlug("");
+					setOrgLogo("");
+					setCreateOrgError(null);
+				},
+			});
+		} catch {
+			// Error is already handled by executeMutation via Sonner
+		} finally {
 			setIsCreatingOrg(false);
-			return;
 		}
-
-		// Add to store
-		const { addOrganization, setCurrentOrg } = useOrgStore.getState();
-		addOrganization(result.data);
-		setCurrentOrg(result.data);
-
-		// Set as active
-		const setActiveResult = await setActiveOrganization(result.data.id);
-		if (setActiveResult.error) {
-			toast({
-				variant: "destructive",
-				title: "Organization created but failed to activate",
-				description: setActiveResult.error,
-			});
-		} else {
-			toast({
-				title: "Organization created",
-				description: `${result.data.name} has been created and is now active.`,
-			});
-		}
-
-		setCreateOrgDialogOpen(false);
-		setOrgName("");
-		setOrgSlug("");
-		setOrgLogo("");
-		setCreateOrgError(null);
-		setIsCreatingOrg(false);
 	};
 
 	// Convert org-store organizations to legacy format for OrganizationSwitcher
