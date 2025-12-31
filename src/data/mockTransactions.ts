@@ -1,6 +1,6 @@
 import type { Transaction } from "../types/transaction";
 
-// Mock transactions in new API format
+// Mock transactions in new API format with enriched catalog items
 export const mockTransactions: Transaction[] = [
 	{
 		id: "TRX-2024-001",
@@ -28,6 +28,18 @@ export const mockTransactions: Transaction[] = [
 		paymentDate: "2024-01-15T10:00:00Z",
 		createdAt: "2024-01-15T10:00:00Z",
 		updatedAt: "2024-01-15T10:00:00Z",
+		// Enriched catalog items from backend
+		brandCatalog: {
+			id: "toyota-brand-id",
+			catalogId: "terrestrial-vehicle-brands-id",
+			name: "Toyota",
+			normalizedName: "toyota",
+			active: true,
+			catalogKey: "terrestrial-vehicle-brands",
+			metadata: { originCountry: "JP" },
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		},
 	},
 	{
 		id: "TRX-2024-002",
@@ -55,6 +67,17 @@ export const mockTransactions: Transaction[] = [
 		paymentDate: "2024-01-14T10:00:00Z",
 		createdAt: "2024-01-14T10:00:00Z",
 		updatedAt: "2024-01-14T10:00:00Z",
+		brandCatalog: {
+			id: "honda-brand-id",
+			catalogId: "terrestrial-vehicle-brands-id",
+			name: "Honda",
+			normalizedName: "honda",
+			active: true,
+			catalogKey: "terrestrial-vehicle-brands",
+			metadata: { originCountry: "JP" },
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		},
 	},
 	{
 		id: "TRX-2024-003",
@@ -82,6 +105,28 @@ export const mockTransactions: Transaction[] = [
 		paymentDate: "2024-01-14T10:00:00Z",
 		createdAt: "2024-01-14T10:00:00Z",
 		updatedAt: "2024-01-14T10:00:00Z",
+		brandCatalog: {
+			id: "sea-ray-brand-id",
+			catalogId: "maritime-vehicle-brands-id",
+			name: "Sea Ray",
+			normalizedName: "sea ray",
+			active: true,
+			catalogKey: "maritime-vehicle-brands",
+			metadata: { originCountry: "US" },
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		},
+		flagCountryCatalog: {
+			id: "mx-country-id",
+			catalogId: "countries-id",
+			name: "México",
+			normalizedName: "mexico",
+			active: true,
+			catalogKey: "countries",
+			metadata: { code: "MX" },
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		},
 	},
 	{
 		id: "TRX-2024-004",
@@ -109,6 +154,17 @@ export const mockTransactions: Transaction[] = [
 		paymentDate: "2024-01-13T10:00:00Z",
 		createdAt: "2024-01-13T10:00:00Z",
 		updatedAt: "2024-01-13T10:00:00Z",
+		brandCatalog: {
+			id: "bmw-brand-id",
+			catalogId: "terrestrial-vehicle-brands-id",
+			name: "BMW",
+			normalizedName: "bmw",
+			active: true,
+			catalogKey: "terrestrial-vehicle-brands",
+			metadata: { originCountry: "DE" },
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		},
 	},
 	{
 		id: "TRX-2024-005",
@@ -136,5 +192,27 @@ export const mockTransactions: Transaction[] = [
 		paymentDate: "2024-01-13T10:00:00Z",
 		createdAt: "2024-01-13T10:00:00Z",
 		updatedAt: "2024-01-13T10:00:00Z",
+		brandCatalog: {
+			id: "cessna-brand-id",
+			catalogId: "air-vehicle-brands-id",
+			name: "Cessna",
+			normalizedName: "cessna",
+			active: true,
+			catalogKey: "air-vehicle-brands",
+			metadata: { originCountry: "US" },
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		},
+		flagCountryCatalog: {
+			id: "mx-country-id",
+			catalogId: "countries-id",
+			name: "México",
+			normalizedName: "mexico",
+			active: true,
+			catalogKey: "countries",
+			metadata: { code: "MX" },
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		},
 	},
 ];
