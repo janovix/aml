@@ -5,9 +5,11 @@ import { CatalogSelector } from "./CatalogSelector";
 import type { CatalogItem } from "@/types/catalog";
 import { useCatalogSearch } from "@/hooks/useCatalogSearch";
 import { useIsMobile } from "@/hooks/use-mobile";
+import * as catalogs from "@/lib/catalogs";
 
 vi.mock("@/hooks/useCatalogSearch");
 vi.mock("@/hooks/use-mobile");
+vi.mock("@/lib/catalogs");
 
 const mockUseIsMobile = vi.mocked(useIsMobile);
 
@@ -54,6 +56,8 @@ const createHookResult = (
 beforeEach(() => {
 	mockedUseCatalogSearch.mockReturnValue(createHookResult());
 	mockUseIsMobile.mockReturnValue(false); // Default to desktop
+	vi.mocked(catalogs.fetchCatalogItemById).mockClear();
+	vi.mocked(catalogs.clearCatalogItemCache).mockClear();
 });
 
 describe("CatalogSelector", () => {
@@ -80,8 +84,7 @@ describe("CatalogSelector", () => {
 		expect(trigger).not.toHaveTextContent("e4d46ea04f22ddfb2f82286f6ee226d3");
 	});
 
-	it.skip("shows item name after loading when value matches item ID", () => {
-		// Skipped: Test expects behavior that needs component fix
+	it("shows item name after loading when value matches item ID", () => {
 		const itemsWithId: CatalogItem[] = [
 			{
 				id: "country-mx-id",
@@ -116,6 +119,127 @@ describe("CatalogSelector", () => {
 		expect(trigger).not.toHaveTextContent("country-mx-id");
 	});
 
+	it("fetches item by ID when not found in loaded items", async () => {
+		const itemNotInList: CatalogItem = {
+			id: "country-mx-id",
+			catalogId: "countries",
+			name: "México",
+			normalizedName: "mexico",
+			active: true,
+			metadata: {},
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		};
+
+		// Mock search results that don't include the item
+		mockedUseCatalogSearch.mockReturnValue(
+			createHookResult({
+				items: sampleItems, // Different items
+				pagination: {
+					page: 1,
+					pageSize: 25,
+					total: 1,
+					totalPages: 1,
+				},
+				loading: false,
+				hasMore: false,
+			}),
+		);
+
+		// Mock fetchCatalogItemById to return the item
+		vi.mocked(catalogs.fetchCatalogItemById).mockResolvedValue(itemNotInList);
+
+		render(<CatalogSelector catalogKey="countries" value="country-mx-id" />);
+
+		await waitFor(() => {
+			expect(catalogs.fetchCatalogItemById).toHaveBeenCalledWith(
+				"countries",
+				"country-mx-id",
+			);
+		});
+
+		const trigger = screen.getByRole("combobox");
+		await waitFor(() => {
+			expect(trigger).toHaveTextContent("México");
+		});
+	});
+
+	it("shows raw ID when fetch by ID fails", async () => {
+		// Mock search results that don't include the item
+		mockedUseCatalogSearch.mockReturnValue(
+			createHookResult({
+				items: sampleItems,
+				pagination: {
+					page: 1,
+					pageSize: 25,
+					total: 1,
+					totalPages: 1,
+				},
+				loading: false,
+				hasMore: false,
+			}),
+		);
+
+		// Mock fetchCatalogItemById to fail
+		vi.mocked(catalogs.fetchCatalogItemById).mockRejectedValue(
+			new Error("Not found"),
+		);
+
+		render(<CatalogSelector catalogKey="countries" value="country-mx-id" />);
+
+		await waitFor(() => {
+			expect(catalogs.fetchCatalogItemById).toHaveBeenCalledWith(
+				"countries",
+				"country-mx-id",
+			);
+		});
+
+		const trigger = screen.getByRole("combobox");
+		await waitFor(() => {
+			expect(trigger).toHaveTextContent("country-mx-id");
+		});
+	});
+
+	it("does not fetch by ID when item is found in loaded items", async () => {
+		const itemsWithId: CatalogItem[] = [
+			{
+				id: "country-mx-id",
+				catalogId: "countries",
+				name: "México",
+				normalizedName: "mexico",
+				active: true,
+				metadata: {},
+				createdAt: "2024-01-01T00:00:00Z",
+				updatedAt: "2024-01-01T00:00:00Z",
+			},
+		];
+
+		mockedUseCatalogSearch.mockReturnValue(
+			createHookResult({
+				items: itemsWithId,
+				pagination: {
+					page: 1,
+					pageSize: 25,
+					total: 1,
+					totalPages: 1,
+				},
+				loading: false,
+				hasMore: false,
+			}),
+		);
+
+		render(<CatalogSelector catalogKey="countries" value="country-mx-id" />);
+
+		// Wait for effects to complete
+		await waitFor(
+			() => {
+				// Should not call fetchCatalogItemById since item is in the list
+				expect(catalogs.fetchCatalogItemById).not.toHaveBeenCalled();
+			},
+			{ timeout: 1000 },
+		);
+	});
+
 	it("renders label and options", async () => {
 		const user = userEvent.setup();
 		render(
@@ -130,7 +254,33 @@ describe("CatalogSelector", () => {
 	});
 
 	it("shows the selected value in the trigger", () => {
-		render(<CatalogSelector catalogKey="vehicle-brands" value="Toyota" />);
+		const itemsWithName: CatalogItem[] = [
+			{
+				id: "brand-1",
+				catalogId: "vehicle-brands",
+				name: "Toyota",
+				normalizedName: "toyota",
+				active: true,
+				metadata: {},
+				createdAt: "2024-01-01T00:00:00Z",
+				updatedAt: "2024-01-01T00:00:00Z",
+			},
+		];
+
+		mockedUseCatalogSearch.mockReturnValue(
+			createHookResult({
+				items: itemsWithName,
+				pagination: {
+					page: 1,
+					pageSize: 25,
+					total: 1,
+					totalPages: 1,
+				},
+				loading: false,
+			}),
+		);
+
+		render(<CatalogSelector catalogKey="vehicle-brands" value="brand-1" />);
 
 		const trigger = screen.getByRole("combobox");
 		expect(trigger).toHaveTextContent("Toyota");
