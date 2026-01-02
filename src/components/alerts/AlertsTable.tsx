@@ -318,13 +318,13 @@ export function AlertsTable({
 									</TooltipContent>
 								</Tooltip>
 							</TooltipProvider>
-							<div className="flex flex-col min-w-0">
-								<div className="flex items-center gap-2">
+							<div className="flex flex-col min-w-0 flex-1 max-w-[600px]">
+								<div className="flex items-start gap-2">
 									<TooltipProvider>
 										<Tooltip>
 											<TooltipTrigger asChild>
 												<span
-													className={`h-2 w-2 rounded-full shrink-0 ${severityCfg.dotColor}`}
+													className={`h-2 w-2 rounded-full shrink-0 mt-1.5 ${severityCfg.dotColor}`}
 												/>
 											</TooltipTrigger>
 											<TooltipContent>
@@ -332,12 +332,16 @@ export function AlertsTable({
 											</TooltipContent>
 										</Tooltip>
 									</TooltipProvider>
-									<span className="font-medium text-foreground truncate">
+									<Link
+										href={orgPath(`/alerts/${item.id}`)}
+										className="font-medium text-foreground hover:text-primary transition-colors line-clamp-3 break-words"
+										onClick={(e) => e.stopPropagation()}
+									>
 										{formatProperNoun(item.ruleName)}
-									</span>
+									</Link>
 								</div>
 								{item.notes && (
-									<span className="text-xs text-muted-foreground line-clamp-1">
+									<span className="text-xs text-muted-foreground line-clamp-2 mt-1 break-words">
 										{item.notes}
 									</span>
 								)}
