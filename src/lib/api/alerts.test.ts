@@ -5,8 +5,16 @@ import {
 	getAlertById,
 	listAlerts,
 	updateAlertStatus,
+	createManualAlert,
+	listAlertRules,
+	getAlertRuleById,
 } from "./alerts";
-import type { Alert, AlertsListResponse } from "./alerts";
+import type {
+	Alert,
+	AlertsListResponse,
+	AlertRule,
+	AlertRulesListResponse,
+} from "./alerts";
 
 const mockAlert: Alert = {
 	id: "ALERT123",
@@ -16,7 +24,8 @@ const mockAlert: Alert = {
 	severity: "HIGH",
 	idempotencyKey: "idem-key-123",
 	contextHash: "hash-123",
-	alertData: '{"key": "value"}',
+	metadata: { key: "value" },
+	isManual: false,
 	isOverdue: false,
 	createdAt: "2024-01-15T10:00:00Z",
 	updatedAt: "2024-01-15T10:00:00Z",
@@ -205,5 +214,127 @@ describe("api/alerts", () => {
 			baseUrl: "https://example.com",
 		});
 		expect(res.fileUrl).toBe("https://example.com/files/alert-sat.xml");
+	});
+
+	it("createManualAlert sends POST with isManual=true", async () => {
+		const createdAlert: Alert = {
+			...mockAlert,
+			id: "ALERT456",
+			isManual: true,
+		};
+
+		const fetchSpy = vi.fn(
+			async (url: RequestInfo | URL, init?: RequestInit) => {
+				expect((init?.method ?? "POST").toUpperCase()).toBe("POST");
+				const u = new URL(typeof url === "string" ? url : url.toString());
+				expect(u.origin + u.pathname).toBe("https://example.com/api/v1/alerts");
+				const body = JSON.parse(init?.body as string);
+				expect(body.isManual).toBe(true);
+				expect(body.alertRuleId).toBe("RULE001");
+				expect(body.clientId).toBe("CLIENT123");
+				return new Response(JSON.stringify(createdAlert), {
+					status: 201,
+					headers: { "content-type": "application/json" },
+				});
+			},
+		);
+		vi.stubGlobal("fetch", fetchSpy);
+
+		const res = await createManualAlert({
+			alertRuleId: "RULE001",
+			clientId: "CLIENT123",
+			severity: "HIGH",
+			idempotencyKey: "manual-key-123",
+			contextHash: "hash-123",
+			metadata: { reason: "Test reason" },
+			baseUrl: "https://example.com",
+		});
+		expect(res.id).toBe("ALERT456");
+		expect(res.isManual).toBe(true);
+	});
+
+	it("listAlertRules fetches alert rules with filters", async () => {
+		const mockRules: AlertRule[] = [
+			{
+				id: "2501",
+				name: "Test Rule",
+				description: "Test description",
+				active: true,
+				severity: "HIGH",
+				ruleType: null,
+				isManualOnly: true,
+				activityCode: "VEH",
+				createdAt: "2024-01-15T10:00:00Z",
+				updatedAt: "2024-01-15T10:00:00Z",
+			},
+		];
+
+		const fetchSpy = vi.fn(
+			async (url: RequestInfo | URL, init?: RequestInit) => {
+				expect((init?.method ?? "GET").toUpperCase()).toBe("GET");
+				const u = new URL(typeof url === "string" ? url : url.toString());
+				expect(u.origin + u.pathname).toBe(
+					"https://example.com/api/v1/alert-rules",
+				);
+				expect(u.searchParams.get("active")).toBe("true");
+				expect(u.searchParams.get("limit")).toBe("50");
+				return new Response(
+					JSON.stringify({
+						data: mockRules,
+						pagination: { page: 1, limit: 50, total: 1, totalPages: 1 },
+					}),
+					{
+						status: 200,
+						headers: { "content-type": "application/json" },
+					},
+				);
+			},
+		);
+		vi.stubGlobal("fetch", fetchSpy);
+
+		const res = await listAlertRules({
+			baseUrl: "https://example.com",
+			active: true,
+			limit: 50,
+		});
+		expect(res.data).toHaveLength(1);
+		expect(res.data[0].id).toBe("2501");
+	});
+
+	it("getAlertRuleById fetches a single alert rule", async () => {
+		const mockRule: AlertRule = {
+			id: "2501",
+			name: "Test Rule",
+			description: "Test description",
+			active: true,
+			severity: "HIGH",
+			ruleType: null,
+			isManualOnly: true,
+			activityCode: "VEH",
+			createdAt: "2024-01-15T10:00:00Z",
+			updatedAt: "2024-01-15T10:00:00Z",
+		};
+
+		const fetchSpy = vi.fn(
+			async (url: RequestInfo | URL, init?: RequestInit) => {
+				expect((init?.method ?? "GET").toUpperCase()).toBe("GET");
+				const u = new URL(typeof url === "string" ? url : url.toString());
+				expect(u.origin + u.pathname).toBe(
+					"https://example.com/api/v1/alert-rules/2501",
+				);
+				return new Response(JSON.stringify(mockRule), {
+					status: 200,
+					headers: { "content-type": "application/json" },
+				});
+			},
+		);
+		vi.stubGlobal("fetch", fetchSpy);
+
+		const res = await getAlertRuleById({
+			id: "2501",
+			baseUrl: "https://example.com",
+		});
+		expect(res.id).toBe("2501");
+		expect(res.name).toBe("Test Rule");
 	});
 });
