@@ -337,4 +337,109 @@ describe("api/alerts", () => {
 		expect(res.id).toBe("2501");
 		expect(res.name).toBe("Test Rule");
 	});
+
+	it("listAlerts handles isManual=false correctly", async () => {
+		const fetchSpy = vi.fn(
+			async (url: RequestInfo | URL, init?: RequestInit) => {
+				const u = new URL(typeof url === "string" ? url : url.toString());
+				expect(u.searchParams.get("isManual")).toBe("false");
+				return new Response(
+					JSON.stringify({
+						data: [],
+						pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
+					}),
+					{
+						status: 200,
+						headers: { "content-type": "application/json" },
+					},
+				);
+			},
+		);
+		vi.stubGlobal("fetch", fetchSpy);
+
+		await listAlerts({
+			baseUrl: "https://example.com",
+			isManual: false,
+		});
+	});
+
+	it("listAlertRules handles all optional filters", async () => {
+		const fetchSpy = vi.fn(
+			async (url: RequestInfo | URL, init?: RequestInit) => {
+				const u = new URL(typeof url === "string" ? url : url.toString());
+				expect(u.searchParams.get("search")).toBe("test");
+				expect(u.searchParams.get("active")).toBe("true");
+				expect(u.searchParams.get("severity")).toBe("HIGH");
+				expect(u.searchParams.get("activityCode")).toBe("VEH");
+				expect(u.searchParams.get("isManualOnly")).toBe("true");
+				return new Response(
+					JSON.stringify({
+						data: [],
+						pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
+					}),
+					{
+						status: 200,
+						headers: { "content-type": "application/json" },
+					},
+				);
+			},
+		);
+		vi.stubGlobal("fetch", fetchSpy);
+
+		await listAlertRules({
+			baseUrl: "https://example.com",
+			search: "test",
+			active: true,
+			severity: "HIGH",
+			activityCode: "VEH",
+			isManualOnly: true,
+		});
+	});
+
+	it("updateAlertStatus omits notes when not provided", async () => {
+		const fetchSpy = vi.fn(
+			async (url: RequestInfo | URL, init?: RequestInit) => {
+				const body = JSON.parse(init?.body as string);
+				expect(body).not.toHaveProperty("notes");
+				return new Response(JSON.stringify(mockAlert), {
+					status: 200,
+					headers: { "content-type": "application/json" },
+				});
+			},
+		);
+		vi.stubGlobal("fetch", fetchSpy);
+
+		await updateAlertStatus({
+			id: "ALERT123",
+			status: "SUBMITTED",
+			baseUrl: "https://example.com",
+		});
+	});
+
+	it("createManualAlert includes optional transactionId and notes", async () => {
+		const fetchSpy = vi.fn(
+			async (url: RequestInfo | URL, init?: RequestInit) => {
+				const body = JSON.parse(init?.body as string);
+				expect(body.transactionId).toBe("TXN123");
+				expect(body.notes).toBe("Test notes");
+				return new Response(JSON.stringify(mockAlert), {
+					status: 201,
+					headers: { "content-type": "application/json" },
+				});
+			},
+		);
+		vi.stubGlobal("fetch", fetchSpy);
+
+		await createManualAlert({
+			alertRuleId: "RULE001",
+			clientId: "CLIENT123",
+			severity: "HIGH",
+			idempotencyKey: "key-123",
+			contextHash: "hash-123",
+			metadata: {},
+			transactionId: "TXN123",
+			notes: "Test notes",
+			baseUrl: "https://example.com",
+		});
+	});
 });
