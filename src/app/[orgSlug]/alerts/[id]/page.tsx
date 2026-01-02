@@ -10,4 +10,3 @@ export default async function AlertaDetallePage({
 	const { id } = await params;
 	return <AlertDetailsView alertId={id} />;
 }
-

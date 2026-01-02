@@ -79,7 +79,10 @@ const statusConfig: Record<
 
 const severityConfig: Record<
 	AlertSeverity,
-	{ label: string; badgeVariant: "default" | "secondary" | "destructive" | "outline" }
+	{
+		label: string;
+		badgeVariant: "default" | "secondary" | "destructive" | "outline";
+	}
 > = {
 	LOW: { label: "Baja", badgeVariant: "outline" },
 	MEDIUM: { label: "Media", badgeVariant: "secondary" },
@@ -545,10 +548,8 @@ export function AlertDetailsView({
 						<AlertDialogTitle>¿Cancelar alerta?</AlertDialogTitle>
 						<AlertDialogDescription>
 							Esta acción cancelará la alerta{" "}
-							<strong>
-								{alert.alertRule?.name || alert.alertRuleId}
-							</strong>
-							. Por favor, proporciona una razón para la cancelación.
+							<strong>{alert.alertRule?.name || alert.alertRuleId}</strong>. Por
+							favor, proporciona una razón para la cancelación.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<form
@@ -579,7 +580,9 @@ export function AlertDetailsView({
 						</div>
 						<AlertDialogFooter>
 							<AlertDialogCancel type="button">Cancelar</AlertDialogCancel>
-							<AlertDialogAction type="submit">Confirmar Cancelación</AlertDialogAction>
+							<AlertDialogAction type="submit">
+								Confirmar Cancelación
+							</AlertDialogAction>
 						</AlertDialogFooter>
 					</form>
 				</AlertDialogContent>
@@ -587,4 +590,3 @@ export function AlertDetailsView({
 		</div>
 	);
 }
-
