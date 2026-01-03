@@ -157,7 +157,7 @@ function ClientSelectorCommandContent({
 				onValueChange={onSearchChange}
 				placeholder={searchPlaceholder}
 				autoFocus={autoFocusSearch}
-				className={cn("text-base", isMobile && "sticky top-0 z-10")}
+				className={cn(isMobile && "sticky top-0 z-10")}
 			/>
 
 			{/* Create New Client button - always visible at top */}
@@ -383,6 +383,9 @@ export function ClientSelector({
 			// If JWT is not available yet, show the raw value temporarily
 			setSelectedLabel(value);
 		}
+		// Note: selectedLabel is intentionally excluded from dependencies
+		// It's only used for comparison to avoid unnecessary updates, not as input
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [
 		isControlled,
 		value,
@@ -390,7 +393,6 @@ export function ClientSelector({
 		getOptionValue,
 		loading,
 		selectedClient,
-		selectedLabel,
 		fetchingById,
 		jwt,
 	]);

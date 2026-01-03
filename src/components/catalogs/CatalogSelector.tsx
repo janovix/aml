@@ -163,7 +163,7 @@ function CatalogSelectorCommandContent({
 				onValueChange={onSearchChange}
 				placeholder={searchPlaceholder}
 				autoFocus={autoFocusSearch}
-				className={cn("text-base", isMobile && "sticky top-0 z-10")}
+				className={cn(isMobile && "sticky top-0 z-10")}
 			/>
 
 			{loading && (
@@ -440,6 +440,9 @@ export function CatalogSelector({
 					setFetchingById(false);
 				});
 		}
+		// Note: selectedLabel is intentionally excluded from dependencies
+		// It's only used for comparison to avoid unnecessary updates, not as input
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [
 		isControlled,
 		value,
@@ -452,7 +455,6 @@ export function CatalogSelector({
 		pagesSearchedForValue,
 		pagination,
 		selectedOption,
-		selectedLabel,
 		catalogKey,
 		fetchingById,
 	]);
@@ -604,7 +606,19 @@ export function CatalogSelector({
 		};
 	}, [items, open, hasMore, loadingMore, loading, loadMore]);
 
-	// Set up scroll listener
+	// Use a ref for the scroll handler to avoid constant listener re-attachment
+	const handleScrollRef = useRef(handleScroll);
+	handleScrollRef.current = handleScroll;
+
+	// Stable scroll handler that uses the ref
+	const stableScrollHandler = useCallback(() => {
+		handleScrollRef.current();
+	}, []);
+
+	// Ref to track the scrollable element for cleanup
+	const scrollableElementRef = useRef<HTMLElement | null>(null);
+
+	// Set up scroll listener - only depends on `open` to avoid constant re-attachment
 	useEffect(() => {
 		if (!open) {
 			return;
@@ -624,7 +638,8 @@ export function CatalogSelector({
 				list.querySelector<HTMLElement>("[cmdk-list]") || list;
 
 			if (scrollableElement) {
-				scrollableElement.addEventListener("scroll", handleScroll, {
+				scrollableElementRef.current = scrollableElement;
+				scrollableElement.addEventListener("scroll", stableScrollHandler, {
 					passive: true,
 				});
 			}
@@ -632,16 +647,15 @@ export function CatalogSelector({
 
 		return () => {
 			clearTimeout(timeoutId);
-			// Try to find and remove listener from current DOM state
-			const list = listRef.current;
-			if (list) {
-				const element = list.querySelector<HTMLElement>("[cmdk-list]") || list;
-				if (element) {
-					element.removeEventListener("scroll", handleScroll);
-				}
+			if (scrollableElementRef.current) {
+				scrollableElementRef.current.removeEventListener(
+					"scroll",
+					stableScrollHandler,
+				);
+				scrollableElementRef.current = null;
 			}
 		};
-	}, [handleScroll, open]);
+	}, [open, stableScrollHandler]);
 
 	const resultSummary = useMemo(() => {
 		if (loading) {
