@@ -7,6 +7,28 @@ import type { Alert, AlertsListResponse } from "@/lib/api/alerts";
 import * as alertsApi from "@/lib/api/alerts";
 import * as clientsApi from "@/lib/api/clients";
 import { getClientDisplayName } from "@/types/client";
+import { LanguageProvider } from "@/components/LanguageProvider";
+
+// Mock cookies module to return Spanish language for tests
+vi.mock("@/lib/cookies", () => ({
+	getCookie: (name: string) => {
+		if (name === "janovix-lang") return "es";
+		return undefined;
+	},
+	setCookie: vi.fn(),
+	deleteCookie: vi.fn(),
+	COOKIE_NAMES: {
+		THEME: "janovix-theme",
+		LANGUAGE: "janovix-lang",
+	},
+}));
+
+// Wrapper component with providers
+const renderWithProviders = (ui: React.ReactElement) => {
+	return render(ui, {
+		wrapper: ({ children }) => <LanguageProvider>{children}</LanguageProvider>,
+	});
+};
 
 const mockToast = vi.fn();
 
@@ -186,7 +208,7 @@ describe("AlertsTable", () => {
 	});
 
 	it("renders table with alert data", async () => {
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
@@ -194,7 +216,7 @@ describe("AlertsTable", () => {
 	});
 
 	it("renders all alert rows", async () => {
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
@@ -205,7 +227,7 @@ describe("AlertsTable", () => {
 
 	it("allows selecting individual alerts", async () => {
 		const user = userEvent.setup();
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
@@ -222,7 +244,7 @@ describe("AlertsTable", () => {
 
 	it("allows selecting all alerts", async () => {
 		const user = userEvent.setup();
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
@@ -245,7 +267,7 @@ describe("AlertsTable", () => {
 			alertsPromise as Promise<AlertsListResponse>,
 		);
 
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		// Should show skeleton loaders instead of text
 		const skeletons = screen.getAllByTestId("skeleton");
@@ -269,12 +291,12 @@ describe("AlertsTable", () => {
 	it("handles API error gracefully", async () => {
 		vi.mocked(alertsApi.listAlerts).mockRejectedValue(new Error("API error"));
 
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(mockToast).toHaveBeenCalledWith(
 				expect.objectContaining({
-					title: "Error",
+					title: "Ha ocurrido un error",
 					description: "No se pudieron cargar las alertas.",
 					variant: "destructive",
 				}),
@@ -284,7 +306,7 @@ describe("AlertsTable", () => {
 
 	it("has search functionality", async () => {
 		const user = userEvent.setup();
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
@@ -301,7 +323,7 @@ describe("AlertsTable", () => {
 	});
 
 	it("has filter popovers", async () => {
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
@@ -317,7 +339,7 @@ describe("AlertsTable", () => {
 	});
 
 	it("renders action menu for alerts", async () => {
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
@@ -329,7 +351,7 @@ describe("AlertsTable", () => {
 	});
 
 	it("renders client links in alerts", async () => {
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
@@ -342,7 +364,7 @@ describe("AlertsTable", () => {
 
 	it("shows selected count in footer", async () => {
 		const user = userEvent.setup();
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
@@ -359,7 +381,7 @@ describe("AlertsTable", () => {
 
 	it("passes filters to API", async () => {
 		const filters = { status: "DETECTED" as const };
-		render(<AlertsTable filters={filters} />);
+		renderWithProviders(<AlertsTable filters={filters} />);
 
 		await waitFor(() => {
 			expect(alertsApi.listAlerts).toHaveBeenCalledWith(
@@ -389,7 +411,7 @@ describe("AlertsTable", () => {
 			},
 		});
 
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			// Should render alert even without deadline (now uppercase)
@@ -403,7 +425,7 @@ describe("AlertsTable", () => {
 		const secondAlert = mockAlerts[1];
 		if (!secondAlert || !secondAlert.alertRule) return;
 
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			// Should render overdue alerts (now uppercase)
@@ -432,7 +454,7 @@ describe("AlertsTable", () => {
 			},
 		});
 
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			// Should render alert with notes
@@ -462,7 +484,7 @@ describe("AlertsTable", () => {
 			},
 		});
 
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -505,7 +527,7 @@ describe("AlertsTable", () => {
 			},
 		});
 
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -533,7 +555,7 @@ describe("AlertsTable", () => {
 		const firstAlert = mockAlerts[0];
 		if (!firstAlert || !firstAlert.alertRule) return;
 
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -576,7 +598,7 @@ describe("AlertsTable", () => {
 			},
 		});
 
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -619,7 +641,7 @@ describe("AlertsTable", () => {
 			},
 		});
 
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -662,7 +684,7 @@ describe("AlertsTable", () => {
 			},
 		});
 
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -705,7 +727,7 @@ describe("AlertsTable", () => {
 			},
 		});
 
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -730,7 +752,7 @@ describe("AlertsTable", () => {
 
 	it("navigates to alert detail when alert text is clicked", async () => {
 		const user = userEvent.setup();
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
@@ -750,7 +772,7 @@ describe("AlertsTable", () => {
 
 	it("navigates to alert detail when Ver detalle is clicked", async () => {
 		const user = userEvent.setup();
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
@@ -778,7 +800,7 @@ describe("AlertsTable", () => {
 
 	it("navigates to client when Ver cliente is clicked", async () => {
 		const user = userEvent.setup();
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
@@ -806,7 +828,7 @@ describe("AlertsTable", () => {
 
 	it("renders CTA button that navigates to new alert page", async () => {
 		const user = userEvent.setup();
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
@@ -829,7 +851,7 @@ describe("AlertsTable", () => {
 			currentOrg: { id: "org-1", name: "Test Org", slug: "test-org" },
 		});
 
-		const { rerender } = render(<AlertsTable />);
+		const { rerender } = renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
@@ -863,7 +885,7 @@ describe("AlertsTable", () => {
 			},
 		} as AlertsListResponse);
 
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
@@ -889,7 +911,7 @@ describe("AlertsTable", () => {
 			},
 		} as AlertsListResponse);
 
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
@@ -912,7 +934,7 @@ describe("AlertsTable", () => {
 			},
 		} as AlertsListResponse);
 
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
@@ -930,7 +952,7 @@ describe("AlertsTable", () => {
 			return mockClients.find((c) => c.id === id)!;
 		});
 
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			// Should still render alerts even if client fetch fails
@@ -944,7 +966,7 @@ describe("AlertsTable", () => {
 
 	it("skips fetching clients when all are already loaded", async () => {
 		// First render to load clients
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
@@ -990,7 +1012,7 @@ describe("AlertsTable", () => {
 		// Mock client fetch
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		// Wait for the alert to render - check that we have at least one table row
 		await waitFor(
@@ -1053,7 +1075,7 @@ describe("AlertsTable", () => {
 			return mockClients.find((c) => c.id === id)!;
 		});
 
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(
 			() => {
@@ -1107,7 +1129,7 @@ describe("AlertsTable", () => {
 			return mockClients.find((c) => c.id === id)!;
 		});
 
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			// May appear multiple times, so use getAllByText
@@ -1166,7 +1188,7 @@ describe("AlertsTable", () => {
 			return mockClients.find((c) => c.id === id)!;
 		});
 
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			// May appear multiple times, so use getAllByText
@@ -1192,14 +1214,12 @@ describe("AlertsTable", () => {
 			},
 		} as AlertsListResponse);
 
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		await waitFor(
 			() => {
 				// The empty message is passed to DataTable as emptyMessage prop
-				expect(
-					screen.getByText("No se encontraron alertas"),
-				).toBeInTheDocument();
+				expect(screen.getByText("No hay alertas")).toBeInTheDocument();
 			},
 			{ timeout: 5000 },
 		);
@@ -1209,7 +1229,7 @@ describe("AlertsTable", () => {
 		// This test verifies that the component waits for JWT to load
 		// Since we mock useJwt to return isLoading: false, the fetch happens immediately
 		// The actual behavior is tested through the useEffect dependency on isJwtLoading
-		render(<AlertsTable />);
+		renderWithProviders(<AlertsTable />);
 
 		// The component should fetch alerts when JWT is ready
 		await waitFor(() => {
@@ -1223,7 +1243,7 @@ describe("AlertsTable", () => {
 			currentOrg: { id: "org-1", name: "Test Org", slug: "test-org" },
 		});
 
-		const { rerender } = render(<AlertsTable />);
+		const { rerender } = renderWithProviders(<AlertsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
@@ -1264,7 +1284,7 @@ describe("AlertsTable", () => {
 		// Mock client fetch
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-		const { container } = render(<AlertsTable />);
+		const { container } = renderWithProviders(<AlertsTable />);
 
 		// Verify component renders without crashing
 		// The overdue styling is handled by the component's column renderer
@@ -1278,7 +1298,7 @@ describe("AlertsTable", () => {
 
 	it("renders client name when client is found", async () => {
 		// Use the default mock from beforeEach
-		const { container } = render(<AlertsTable />);
+		const { container } = renderWithProviders(<AlertsTable />);
 
 		// Verify component renders - client name rendering is tested in other tests
 		await waitFor(
@@ -1296,7 +1316,7 @@ describe("AlertsTable", () => {
 		});
 
 		// Use the default mock from beforeEach for alerts
-		const { container } = render(<AlertsTable />);
+		const { container } = renderWithProviders(<AlertsTable />);
 
 		// Verify component renders without crashing even when client fetch fails
 		// Client ID fallback is tested in "handles client fetch error gracefully" test
@@ -1320,7 +1340,7 @@ describe("AlertsTable", () => {
 			},
 		} as AlertsListResponse);
 
-		const { container } = render(<AlertsTable />);
+		const { container } = renderWithProviders(<AlertsTable />);
 
 		// Verify component renders with pagination structure
 		// Pagination logic is tested through the component's behavior

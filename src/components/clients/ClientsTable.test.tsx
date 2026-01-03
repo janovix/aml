@@ -5,6 +5,28 @@ import { ClientsTable } from "./ClientsTable";
 import { mockClients } from "@/data/mockClients";
 import { getClientDisplayName, type Client } from "@/types/client";
 import * as clientsApi from "@/lib/api/clients";
+import { LanguageProvider } from "@/components/LanguageProvider";
+
+// Mock cookies module to return Spanish language for tests
+vi.mock("@/lib/cookies", () => ({
+	getCookie: (name: string) => {
+		if (name === "janovix-lang") return "es";
+		return undefined;
+	},
+	setCookie: vi.fn(),
+	deleteCookie: vi.fn(),
+	COOKIE_NAMES: {
+		THEME: "janovix-theme",
+		LANGUAGE: "janovix-lang",
+	},
+}));
+
+// Wrapper component with providers
+const renderWithProviders = (ui: React.ReactElement) => {
+	return render(ui, {
+		wrapper: ({ children }) => <LanguageProvider>{children}</LanguageProvider>,
+	});
+};
 
 // Mock sonner toast
 const mockToastError = vi.fn();
@@ -103,7 +125,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("renders table with client data", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			// Check that data is loaded by looking for client content
@@ -113,7 +135,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("renders all client rows", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			mockClients.forEach((client) => {
@@ -126,7 +148,7 @@ describe("ClientsTable", () => {
 
 	it("allows selecting individual clients", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -144,7 +166,7 @@ describe("ClientsTable", () => {
 
 	it("allows selecting all clients", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -160,7 +182,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("renders action menu for each client", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -173,7 +195,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("displays RFC for each client", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -203,7 +225,7 @@ describe("ClientsTable", () => {
 			}>,
 		);
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		// Should show skeleton loaders instead of text
 		const skeletons = screen.getAllByTestId("skeleton");
@@ -229,7 +251,7 @@ describe("ClientsTable", () => {
 	it("handles API error gracefully", async () => {
 		vi.mocked(clientsApi.listClients).mockRejectedValue(new Error("API error"));
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		// Verify toast.error was called via Sonner
 		await waitFor(() => {
@@ -240,7 +262,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("navigates to client details via link click", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -257,7 +279,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("renders client links", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -270,7 +292,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("displays client data correctly", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -286,7 +308,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("displays contact information", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -299,7 +321,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("displays location information", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -314,7 +336,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("renders search input", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -327,7 +349,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("renders checkboxes for selection", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -340,7 +362,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("renders table header row", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -354,7 +376,7 @@ describe("ClientsTable", () => {
 
 	it("toggles individual client selection", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -375,7 +397,7 @@ describe("ClientsTable", () => {
 
 	it("toggles all clients when select all is clicked twice", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -395,7 +417,7 @@ describe("ClientsTable", () => {
 
 	it("shows selected count in footer", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -414,7 +436,7 @@ describe("ClientsTable", () => {
 
 	it("has search functionality", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -430,7 +452,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("has filter popovers", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -446,7 +468,7 @@ describe("ClientsTable", () => {
 
 	it("opens delete dialog when delete is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -469,7 +491,7 @@ describe("ClientsTable", () => {
 		const user = userEvent.setup();
 		vi.mocked(clientsApi.deleteClient).mockResolvedValue(undefined);
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -516,7 +538,7 @@ describe("ClientsTable", () => {
 		const user = userEvent.setup();
 		vi.mocked(clientsApi.deleteClient).mockResolvedValue(undefined);
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -571,7 +593,7 @@ describe("ClientsTable", () => {
 			new Error("Delete failed"),
 		);
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -612,7 +634,7 @@ describe("ClientsTable", () => {
 
 	it("navigates to view detail when action menu item is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -639,7 +661,7 @@ describe("ClientsTable", () => {
 
 	it("navigates to edit when edit action is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -674,7 +696,7 @@ describe("ClientsTable", () => {
 		global.URL.createObjectURL = vi.fn(() => "blob:mock-url");
 		global.URL.revokeObjectURL = vi.fn();
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -708,7 +730,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("renders action menu with flag suspicious option", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -725,7 +747,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("renders action menu with navigate to transactions option", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -742,7 +764,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("renders action menu with navigate to alerts option", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -759,7 +781,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("displays person type icons correctly", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -773,7 +795,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("formats dates correctly in createdAt column", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -787,27 +809,27 @@ describe("ClientsTable", () => {
 	});
 
 	it("waits for JWT to load before fetching clients", async () => {
-		// Initially mock JWT as loading
-		mockUseJwt.mockReturnValueOnce({
+		// Mock JWT as initially loading
+		mockUseJwt.mockImplementation(() => ({
 			jwt: null,
 			isLoading: true,
 			error: null,
 			refetch: vi.fn(),
-		});
+		}));
 
 		// Render component while JWT is loading
-		const { rerender } = render(<ClientsTable />);
+		const { rerender } = renderWithProviders(<ClientsTable />);
 
-		// Verify that listClients has NOT been called yet
+		// Verify that listClients has NOT been called yet (JWT is still loading)
 		expect(clientsApi.listClients).not.toHaveBeenCalled();
 
 		// Update mock to return JWT as loaded
-		mockUseJwt.mockReturnValueOnce({
+		mockUseJwt.mockImplementation(() => ({
 			jwt: "test-jwt-token",
 			isLoading: false,
 			error: null,
 			refetch: vi.fn(),
-		});
+		}));
 
 		// Trigger re-render to flush effects
 		rerender(<ClientsTable />);
@@ -816,11 +838,19 @@ describe("ClientsTable", () => {
 		await waitFor(() => {
 			expect(clientsApi.listClients).toHaveBeenCalledTimes(1);
 		});
+
+		// Restore default mock for subsequent tests
+		mockUseJwt.mockReturnValue({
+			jwt: "test-jwt-token",
+			isLoading: false,
+			error: null,
+			refetch: vi.fn(),
+		});
 	});
 
 	it("flags suspicious client when action is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -851,7 +881,7 @@ describe("ClientsTable", () => {
 
 	it("navigates to transactions when action is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -880,7 +910,7 @@ describe("ClientsTable", () => {
 
 	it("navigates to alerts when action is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -909,7 +939,7 @@ describe("ClientsTable", () => {
 
 	it("navigates to client detail when view detail is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -936,7 +966,7 @@ describe("ClientsTable", () => {
 
 	it("navigates to edit client when edit is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -965,7 +995,7 @@ describe("ClientsTable", () => {
 
 	it("generates report when generate report is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -998,7 +1028,7 @@ describe("ClientsTable", () => {
 		const user = userEvent.setup();
 		vi.mocked(clientsApi.deleteClient).mockResolvedValueOnce(undefined);
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1039,7 +1069,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("stops propagation when client link is clicked", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1076,7 +1106,7 @@ describe("ClientsTable", () => {
 		const user = userEvent.setup();
 		vi.mocked(clientsApi.deleteClient).mockResolvedValueOnce(undefined);
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1132,7 +1162,7 @@ describe("ClientsTable", () => {
 			new Error("Delete failed"),
 		);
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1180,7 +1210,7 @@ describe("ClientsTable", () => {
 	it("cancels delete when cancel button is clicked in dialog", async () => {
 		const user = userEvent.setup();
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1240,11 +1270,11 @@ describe("ClientsTable", () => {
 			},
 		});
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("No se encontraron clientes"),
+				screen.getByText("No hay clientes registrados"),
 			).toBeInTheDocument();
 		});
 	});
@@ -1252,7 +1282,7 @@ describe("ClientsTable", () => {
 	it("closes delete dialog when onOpenChange is called with false", async () => {
 		const user = userEvent.setup();
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1299,7 +1329,7 @@ describe("ClientsTable", () => {
 		// when called without a client to delete
 		const user = userEvent.setup();
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1314,7 +1344,7 @@ describe("ClientsTable", () => {
 	it("displays dialog with business name for moral person", async () => {
 		const user = userEvent.setup();
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1353,7 +1383,7 @@ describe("ClientsTable", () => {
 	it("displays dialog with full name for physical person", async () => {
 		const user = userEvent.setup();
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		// Find the physical person client (index 4)
 		const physicalClient = mockClients.find((c) => c.personType === "physical");
@@ -1424,7 +1454,7 @@ describe("ClientsTable", () => {
 			},
 		});
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(trustClient);
@@ -1440,7 +1470,7 @@ describe("ClientsTable", () => {
 		const user = userEvent.setup();
 		vi.mocked(clientsApi.deleteClient).mockResolvedValueOnce(undefined);
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1479,7 +1509,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("renders all person type icons in table", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1500,7 +1530,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("renders contact information column correctly", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1513,7 +1543,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("renders location column correctly", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1528,7 +1558,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("renders createdAt date column correctly", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1544,7 +1574,7 @@ describe("ClientsTable", () => {
 
 	it("renders all action menu items when menu is opened", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1574,7 +1604,7 @@ describe("ClientsTable", () => {
 
 	it("navigates to edit client page when edit is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1603,7 +1633,7 @@ describe("ClientsTable", () => {
 
 	it("navigates to transactions page when Ver transacciones is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1632,7 +1662,7 @@ describe("ClientsTable", () => {
 
 	it("navigates to alerts page when Ver alertas is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1690,7 +1720,7 @@ describe("ClientsTable", () => {
 			},
 		});
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(trustClient);
@@ -1705,7 +1735,7 @@ describe("ClientsTable", () => {
 
 	it("handles search functionality", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1727,7 +1757,7 @@ describe("ClientsTable", () => {
 
 	it("handles filter interactions", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1750,7 +1780,7 @@ describe("ClientsTable", () => {
 
 	it("handles sorting functionality", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1773,7 +1803,7 @@ describe("ClientsTable", () => {
 
 	it("renders tooltip for person type icons", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1787,7 +1817,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("handles component rendering with all column types", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1807,7 +1837,7 @@ describe("ClientsTable", () => {
 
 	it("handles client link click with stopPropagation", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1832,7 +1862,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("renders all filter options correctly", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1847,7 +1877,7 @@ describe("ClientsTable", () => {
 
 	it("handles empty search results", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1866,7 +1896,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("renders createdAt with proper date formatting", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1882,7 +1912,7 @@ describe("ClientsTable", () => {
 
 	it("handles multiple filter selections", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1904,7 +1934,7 @@ describe("ClientsTable", () => {
 		// This test verifies that the component waits for JWT to load
 		// Since we mock useJwt to return isLoading: false, the fetch happens immediately
 		// The actual behavior is tested through the useEffect dependency on isJwtLoading
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		// The component should fetch clients when JWT is ready
 		await waitFor(() => {
@@ -1914,7 +1944,7 @@ describe("ClientsTable", () => {
 
 	it("displays dialog with businessName for moral person in delete confirmation", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -1977,7 +2007,7 @@ describe("ClientsTable", () => {
 			},
 		});
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(physicalClientWithoutSecond);
@@ -2013,7 +2043,7 @@ describe("ClientsTable", () => {
 
 	it("renders all person type configurations in filter options", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -2035,7 +2065,7 @@ describe("ClientsTable", () => {
 
 	it("renders all state code filter options", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -2057,7 +2087,7 @@ describe("ClientsTable", () => {
 		// This tests the guard clause in handleDeleteConfirm
 		// The function should handle null gracefully
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -2070,7 +2100,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("renders createdAt column with proper date formatting for all dates", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -2088,7 +2118,7 @@ describe("ClientsTable", () => {
 
 	it("handles all action menu items being clicked", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -2147,7 +2177,7 @@ describe("ClientsTable", () => {
 			},
 		});
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(trustClient);
@@ -2162,7 +2192,7 @@ describe("ClientsTable", () => {
 
 	it("renders all person type configurations in column cell", async () => {
 		// Test that all person types (physical, moral, trust) are rendered correctly
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			// Verify physical person is rendered
@@ -2184,7 +2214,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("renders filter definitions with all person type options", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -2198,7 +2228,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("renders all state code filter options", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -2213,7 +2243,7 @@ describe("ClientsTable", () => {
 
 	it("handles dialog description with businessName for moral person", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -2258,7 +2288,7 @@ describe("ClientsTable", () => {
 
 	it("handles dialog description with firstName/lastName for physical person", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -2300,7 +2330,7 @@ describe("ClientsTable", () => {
 
 	it("calls handleGenerateReport when Generar Reporte is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -2332,7 +2362,7 @@ describe("ClientsTable", () => {
 
 	it("calls handleFlagSuspicious when Marcar como Sospechoso is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -2364,7 +2394,7 @@ describe("ClientsTable", () => {
 
 	it("navigates to Ver detalle when clicked", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -2392,7 +2422,7 @@ describe("ClientsTable", () => {
 
 	it("navigates to Editar cliente when clicked", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -2419,7 +2449,7 @@ describe("ClientsTable", () => {
 
 	it("navigates to Ver transacciones when clicked", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -2446,7 +2476,7 @@ describe("ClientsTable", () => {
 
 	it("navigates to Ver alertas when clicked", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -2542,7 +2572,7 @@ describe("ClientsTable", () => {
 			},
 		});
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			// Verify all person types are rendered, which exercises all column cell renderers
@@ -2558,7 +2588,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("exercises contact column cell renderer", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -2573,7 +2603,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("exercises location column cell renderer", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -2615,7 +2645,7 @@ describe("ClientsTable", () => {
 			},
 		});
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			// Verify all dates are rendered, which exercises the createdAt column cell renderer
@@ -2629,7 +2659,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("exercises client column cell renderer with tooltip", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -2651,7 +2681,7 @@ describe("ClientsTable", () => {
 			refetch: vi.fn(),
 		});
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		// Should not call listClients while JWT is loading
 		expect(clientsApi.listClients).not.toHaveBeenCalled();
@@ -2665,7 +2695,7 @@ describe("ClientsTable", () => {
 			refetch: vi.fn(),
 		});
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			expect(clientsApi.listClients).toHaveBeenCalledWith(
@@ -2677,7 +2707,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("handles load more clients for infinite scroll", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			expect(clientsApi.listClients).toHaveBeenCalledWith(
@@ -2692,7 +2722,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("handles pagination structure", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			expect(clientsApi.listClients).toHaveBeenCalled();
@@ -2717,7 +2747,7 @@ describe("ClientsTable", () => {
 			},
 		});
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -2736,7 +2766,7 @@ describe("ClientsTable", () => {
 			refetch: vi.fn(),
 		});
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		// Should not call listClients while JWT is loading
 		expect(clientsApi.listClients).not.toHaveBeenCalled();
@@ -2753,7 +2783,7 @@ describe("ClientsTable", () => {
 			},
 		});
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			expect(clientsApi.listClients).toHaveBeenCalledTimes(1);
@@ -2770,7 +2800,7 @@ describe("ClientsTable", () => {
 			refetch: vi.fn(),
 		});
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		// Give it some time to potentially make the call
 		await waitFor(() => {
@@ -2787,7 +2817,7 @@ describe("ClientsTable", () => {
 			refetch: vi.fn(),
 		});
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			expect(clientsApi.listClients).toHaveBeenCalledWith(
@@ -2809,7 +2839,7 @@ describe("ClientsTable", () => {
 			},
 		});
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -2859,7 +2889,7 @@ describe("ClientsTable", () => {
 			},
 		});
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(physicalClientNoSecond);
@@ -2927,7 +2957,7 @@ describe("ClientsTable", () => {
 			},
 		});
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(physicalClientUndefined);
@@ -2962,7 +2992,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("handles different person types in filter options", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -2976,7 +3006,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("handles state code filter options", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -2989,7 +3019,7 @@ describe("ClientsTable", () => {
 	});
 
 	it("renders all sortable columns correctly", async () => {
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -3046,7 +3076,7 @@ describe("ClientsTable", () => {
 			},
 		});
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(largeClientList[0]);
@@ -3089,7 +3119,7 @@ describe("ClientsTable", () => {
 			},
 		});
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			// Business names are now formatted as uppercase by getClientDisplayName
@@ -3123,7 +3153,7 @@ describe("ClientsTable", () => {
 			},
 		});
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(clientsWithDifferentDates[0]);
@@ -3137,7 +3167,7 @@ describe("ClientsTable", () => {
 
 	it("handles search with multiple keys", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -3163,7 +3193,7 @@ describe("ClientsTable", () => {
 
 	it("renders all action menu items correctly", async () => {
 		const user = userEvent.setup();
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -3197,7 +3227,7 @@ describe("ClientsTable", () => {
 			currentOrg: { id: "org-1", name: "Test Org", slug: "test-org" },
 		});
 
-		const { rerender } = render(<ClientsTable />);
+		const { rerender } = renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -3233,7 +3263,7 @@ describe("ClientsTable", () => {
 			},
 		});
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -3261,7 +3291,7 @@ describe("ClientsTable", () => {
 			},
 		});
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -3285,7 +3315,7 @@ describe("ClientsTable", () => {
 			},
 		});
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
@@ -3315,7 +3345,7 @@ describe("ClientsTable", () => {
 			},
 		});
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		// Should not call listClients while JWT is loading
 		expect(clientsApi.listClients).not.toHaveBeenCalled();
@@ -3329,7 +3359,7 @@ describe("ClientsTable", () => {
 			refetch: vi.fn(),
 		});
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		// Should not call listClients when JWT is null
 		await waitFor(() => {
@@ -3342,7 +3372,7 @@ describe("ClientsTable", () => {
 			currentOrg: null,
 		});
 
-		render(<ClientsTable />);
+		renderWithProviders(<ClientsTable />);
 
 		// Should not call listClients when org is not selected
 		await waitFor(() => {
@@ -3362,7 +3392,7 @@ describe("ClientsTable", () => {
 			},
 		});
 
-		const { container } = render(<ClientsTable />);
+		const { container } = renderWithProviders(<ClientsTable />);
 
 		// Verify component renders with pagination structure
 		// Pagination logic is tested through the component's behavior

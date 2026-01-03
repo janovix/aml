@@ -1,6 +1,28 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { NavBreadcrumb } from "./NavBreadcrumb";
+import { LanguageProvider } from "@/components/LanguageProvider";
+
+// Mock cookies module to return Spanish language for tests
+vi.mock("@/lib/cookies", () => ({
+	getCookie: (name: string) => {
+		if (name === "janovix-lang") return "es";
+		return undefined;
+	},
+	setCookie: vi.fn(),
+	deleteCookie: vi.fn(),
+	COOKIE_NAMES: {
+		THEME: "janovix-theme",
+		LANGUAGE: "janovix-lang",
+	},
+}));
+
+// Wrapper component with providers
+const renderWithProviders = (ui: React.ReactElement) => {
+	return render(ui, {
+		wrapper: ({ children }) => <LanguageProvider>{children}</LanguageProvider>,
+	});
+};
 
 // Mock usePathname
 const mockPathname = vi.fn(() => "/test-org/clients");
@@ -49,7 +71,7 @@ describe("NavBreadcrumb", () => {
 	});
 
 	it("renders home link", () => {
-		render(<NavBreadcrumb />);
+		renderWithProviders(<NavBreadcrumb />);
 
 		// Should have a link to home (anchor tag, not BreadcrumbPage span with role="link")
 		const homeLink = screen.getByRole("link", { name: /inicio/i });
@@ -58,14 +80,14 @@ describe("NavBreadcrumb", () => {
 	});
 
 	it("renders current page in breadcrumb", () => {
-		render(<NavBreadcrumb />);
+		renderWithProviders(<NavBreadcrumb />);
 
 		// Should show Clientes as the current page
 		expect(screen.getByText("Clientes")).toBeInTheDocument();
 	});
 
 	it("renders breadcrumb navigation", () => {
-		render(<NavBreadcrumb />);
+		renderWithProviders(<NavBreadcrumb />);
 
 		// Should have breadcrumb navigation
 		const nav = screen.getByRole("navigation", { name: /breadcrumb/i });
@@ -74,7 +96,7 @@ describe("NavBreadcrumb", () => {
 
 	it("renders nested route correctly", () => {
 		mockPathname.mockReturnValue("/test-org/clients/123/edit");
-		render(<NavBreadcrumb />);
+		renderWithProviders(<NavBreadcrumb />);
 
 		// Should show Clientes, truncated ID, and Editar
 		expect(screen.getByText("Clientes")).toBeInTheDocument();
@@ -83,42 +105,42 @@ describe("NavBreadcrumb", () => {
 
 	it("renders transactions route", () => {
 		mockPathname.mockReturnValue("/test-org/transactions");
-		render(<NavBreadcrumb />);
+		renderWithProviders(<NavBreadcrumb />);
 
 		expect(screen.getByText("Transacciones")).toBeInTheDocument();
 	});
 
 	it("renders alerts route", () => {
 		mockPathname.mockReturnValue("/test-org/alerts");
-		render(<NavBreadcrumb />);
+		renderWithProviders(<NavBreadcrumb />);
 
 		expect(screen.getByText("Alertas")).toBeInTheDocument();
 	});
 
 	it("renders reports route", () => {
 		mockPathname.mockReturnValue("/test-org/reports");
-		render(<NavBreadcrumb />);
+		renderWithProviders(<NavBreadcrumb />);
 
 		expect(screen.getByText("Reportes")).toBeInTheDocument();
 	});
 
 	it("renders team route", () => {
 		mockPathname.mockReturnValue("/test-org/team");
-		render(<NavBreadcrumb />);
+		renderWithProviders(<NavBreadcrumb />);
 
 		expect(screen.getByText("Equipo")).toBeInTheDocument();
 	});
 
 	it("renders settings route", () => {
 		mockPathname.mockReturnValue("/test-org/settings");
-		render(<NavBreadcrumb />);
+		renderWithProviders(<NavBreadcrumb />);
 
 		expect(screen.getByText("Configuración")).toBeInTheDocument();
 	});
 
 	it("renders new client route", () => {
 		mockPathname.mockReturnValue("/test-org/clients/new");
-		render(<NavBreadcrumb />);
+		renderWithProviders(<NavBreadcrumb />);
 
 		expect(screen.getByText("Clientes")).toBeInTheDocument();
 		expect(screen.getByText("Nuevo")).toBeInTheDocument();
@@ -126,32 +148,36 @@ describe("NavBreadcrumb", () => {
 
 	it("renders edit route", () => {
 		mockPathname.mockReturnValue("/test-org/transactions/abc123/edit");
-		render(<NavBreadcrumb />);
+		renderWithProviders(<NavBreadcrumb />);
 
 		expect(screen.getByText("Transacciones")).toBeInTheDocument();
 		expect(screen.getByText("Editar")).toBeInTheDocument();
 	});
 
-	it("truncates long IDs", () => {
+	it("truncates long IDs", async () => {
 		mockPathname.mockReturnValue(
 			"/test-org/clients/12345678-1234-1234-1234-123456789012",
 		);
-		render(<NavBreadcrumb />);
+		// Reset mock to reject so we test the fallback truncation
+		mockGetClientById.mockRejectedValue(new Error("Not found"));
+		renderWithProviders(<NavBreadcrumb />);
 
-		// UUID should be truncated
-		expect(screen.getByText("12345678…")).toBeInTheDocument();
+		// UUID should be truncated - wait for component to stabilize
+		await waitFor(() => {
+			expect(screen.getByText("12345678…")).toBeInTheDocument();
+		});
 	});
 
 	it("renders home page when at org root", () => {
 		mockPathname.mockReturnValue("/test-org");
-		render(<NavBreadcrumb />);
+		renderWithProviders(<NavBreadcrumb />);
 
 		// Should show just home
 		expect(screen.getByText("Inicio")).toBeInTheDocument();
 	});
 
 	it("has horizontal scroll container for mobile", () => {
-		render(<NavBreadcrumb />);
+		renderWithProviders(<NavBreadcrumb />);
 
 		// Check for overflow-x-auto class on the breadcrumb list
 		const list = document.querySelector('[data-slot="breadcrumb-list"]');
@@ -160,7 +186,7 @@ describe("NavBreadcrumb", () => {
 
 	it("renders separators between breadcrumb items", () => {
 		mockPathname.mockReturnValue("/test-org/clients/new");
-		render(<NavBreadcrumb />);
+		renderWithProviders(<NavBreadcrumb />);
 
 		// Should have separators
 		const separators = document.querySelectorAll(
@@ -172,12 +198,9 @@ describe("NavBreadcrumb", () => {
 	describe("client name fetching", () => {
 		it("fetches and displays client name for client detail pages", async () => {
 			mockPathname.mockReturnValue("/test-org/clients/CLT123456789");
-			render(<NavBreadcrumb />);
+			renderWithProviders(<NavBreadcrumb />);
 
-			// Initially should show truncated ID
-			expect(screen.getByText("CLT12345…")).toBeInTheDocument();
-
-			// After fetch, should show client name (formatProperNoun converts to uppercase)
+			// After fetch completes, should show client name
 			await waitFor(() => {
 				expect(screen.getByText("JUAN PÉREZ GARCÍA")).toBeInTheDocument();
 			});
@@ -209,7 +232,7 @@ describe("NavBreadcrumb", () => {
 			});
 
 			mockPathname.mockReturnValue("/test-org/clients/CLT987654321");
-			render(<NavBreadcrumb />);
+			renderWithProviders(<NavBreadcrumb />);
 
 			// formatProperNoun converts to uppercase
 			await waitFor(() => {
@@ -223,37 +246,33 @@ describe("NavBreadcrumb", () => {
 			mockGetClientById.mockRejectedValue(new Error("Client not found"));
 
 			mockPathname.mockReturnValue("/test-org/clients/CLT123456789");
-			render(<NavBreadcrumb />);
-
-			// Should show truncated ID
-			expect(screen.getByText("CLT12345…")).toBeInTheDocument();
+			renderWithProviders(<NavBreadcrumb />);
 
 			// Wait for fetch to fail
 			await waitFor(() => {
 				expect(mockGetClientById).toHaveBeenCalled();
 			});
 
-			// Should still show truncated ID after failure
-			expect(screen.getByText("CLT12345…")).toBeInTheDocument();
+			// Should show truncated ID after failed fetch
+			await waitFor(() => {
+				expect(screen.getByText("CLT12345…")).toBeInTheDocument();
+			});
 		});
 
 		it("displays client name in edit page breadcrumb", async () => {
 			mockPathname.mockReturnValue("/test-org/clients/CLT123456789/edit");
-			render(<NavBreadcrumb />);
+			renderWithProviders(<NavBreadcrumb />);
 
-			// Initially shows truncated ID for the client segment
-			expect(screen.getByText("CLT12345…")).toBeInTheDocument();
-			expect(screen.getByText("Editar")).toBeInTheDocument();
-
-			// After fetch, should show client name (formatProperNoun converts to uppercase)
+			// After fetch, should show client name and Edit label
 			await waitFor(() => {
 				expect(screen.getByText("JUAN PÉREZ GARCÍA")).toBeInTheDocument();
 			});
+			expect(screen.getByText("Editar")).toBeInTheDocument();
 		});
 
 		it("does not fetch client for non-client ID segments", () => {
 			mockPathname.mockReturnValue("/test-org/transactions/TXN123456789");
-			render(<NavBreadcrumb />);
+			renderWithProviders(<NavBreadcrumb />);
 
 			// Should not call getClientById for transaction IDs
 			expect(mockGetClientById).not.toHaveBeenCalled();

@@ -108,18 +108,17 @@ const defaultRenderOption: OptionRenderer = (rule, isSelected) => {
 	const severityCfg = severityConfig[rule.severity];
 	return (
 		<div className="flex w-full items-center justify-between gap-3">
-			<div className="flex flex-col gap-0.5">
-				<div className="flex items-center gap-2">
+			<div className="flex flex-col gap-0.5 min-w-0">
+				<div className="flex items-start gap-2">
 					<span
-						className={`h-2 w-2 rounded-full shrink-0 ${severityCfg.dotColor}`}
+						className={`h-2 w-2 rounded-full shrink-0 mt-1.5 ${severityCfg.dotColor}`}
 					/>
 					<span className="text-sm font-medium text-foreground">
-						{rule.id} -{" "}
-						{rule.name.length > 60 ? `${rule.name.slice(0, 60)}...` : rule.name}
+						{rule.id} - {rule.name}
 					</span>
 				</div>
 				{rule.description && (
-					<span className="text-xs text-muted-foreground line-clamp-1 ml-4">
+					<span className="text-xs text-muted-foreground line-clamp-2 ml-4">
 						{rule.description}
 					</span>
 				)}

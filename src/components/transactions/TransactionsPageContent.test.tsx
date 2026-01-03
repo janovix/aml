@@ -7,6 +7,28 @@ import * as transactionsApi from "@/lib/api/transactions";
 import * as clientsApi from "@/lib/api/clients";
 import { mockTransactions } from "@/data/mockTransactions";
 import { mockClients } from "@/data/mockClients";
+import { LanguageProvider } from "@/components/LanguageProvider";
+
+// Mock cookies module to return Spanish language for tests
+vi.mock("@/lib/cookies", () => ({
+	getCookie: (name: string) => {
+		if (name === "janovix-lang") return "es";
+		return undefined;
+	},
+	setCookie: vi.fn(),
+	deleteCookie: vi.fn(),
+	COOKIE_NAMES: {
+		THEME: "janovix-theme",
+		LANGUAGE: "janovix-lang",
+	},
+}));
+
+// Wrapper component with providers
+const renderWithProviders = (ui: React.ReactElement) => {
+	return render(ui, {
+		wrapper: ({ children }) => <LanguageProvider>{children}</LanguageProvider>,
+	});
+};
 
 const mockPush = vi.fn();
 const mockPathname = vi.fn(() => "/transactions");
@@ -78,7 +100,7 @@ describe("TransactionsPageContent", () => {
 	});
 
 	it("renders page header", () => {
-		render(<TransactionsPageContent />);
+		renderWithProviders(<TransactionsPageContent />);
 
 		const transaccionesHeaders = screen.getAllByText("Transacciones");
 		const descriptionTexts = screen.getAllByText(
@@ -89,7 +111,7 @@ describe("TransactionsPageContent", () => {
 	});
 
 	it("renders new transaction button", () => {
-		render(<TransactionsPageContent />);
+		renderWithProviders(<TransactionsPageContent />);
 
 		const newButtons = screen.getAllByRole("button", {
 			name: /nueva transacción/i,
@@ -99,7 +121,7 @@ describe("TransactionsPageContent", () => {
 
 	it("navigates to new transaction page when button is clicked", async () => {
 		const user = userEvent.setup();
-		render(<TransactionsPageContent />);
+		renderWithProviders(<TransactionsPageContent />);
 
 		const buttons = screen.getAllByRole("button", {
 			name: /nueva transacción/i,
@@ -113,7 +135,7 @@ describe("TransactionsPageContent", () => {
 	});
 
 	it("renders KPI cards", () => {
-		render(<TransactionsPageContent />);
+		renderWithProviders(<TransactionsPageContent />);
 
 		const transaccionesHoy = screen.getAllByText("Transacciones Hoy");
 		const transaccionesSospechosas = screen.getAllByText(
@@ -126,7 +148,7 @@ describe("TransactionsPageContent", () => {
 	});
 
 	it("renders transactions table with built-in search", async () => {
-		render(<TransactionsPageContent />);
+		renderWithProviders(<TransactionsPageContent />);
 
 		// Wait for the DataTable to load and check for search placeholder
 		await waitFor(
@@ -163,7 +185,7 @@ describe("TransactionsPageContent", () => {
 				}),
 		);
 
-		render(<TransactionsPageContent />);
+		renderWithProviders(<TransactionsPageContent />);
 
 		// Should show loading indicators
 		const loadingIndicators = screen.getAllByText("...");
@@ -177,7 +199,7 @@ describe("TransactionsPageContent", () => {
 			totalVolume: "0",
 		});
 
-		render(<TransactionsPageContent />);
+		renderWithProviders(<TransactionsPageContent />);
 
 		// Wait for stats to load and verify zero values are displayed
 		// Check for stat labels first to ensure component rendered
@@ -210,7 +232,7 @@ describe("TransactionsPageContent", () => {
 
 		const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-		render(<TransactionsPageContent />);
+		renderWithProviders(<TransactionsPageContent />);
 
 		// Wait for async error handling to complete
 		await new Promise((resolve) => setTimeout(resolve, 100));
@@ -226,7 +248,7 @@ describe("TransactionsPageContent", () => {
 		);
 
 		expect(mockToast).toHaveBeenCalledWith({
-			title: "Error",
+			title: "Ha ocurrido un error",
 			description: "No se pudieron cargar las estadísticas.",
 			variant: "destructive",
 		});
@@ -241,7 +263,7 @@ describe("TransactionsPageContent", () => {
 
 		const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-		render(<TransactionsPageContent />);
+		renderWithProviders(<TransactionsPageContent />);
 
 		// Wait for async error handling to complete
 		await new Promise((resolve) => setTimeout(resolve, 100));
@@ -254,7 +276,7 @@ describe("TransactionsPageContent", () => {
 		);
 
 		expect(mockToast).toHaveBeenCalledWith({
-			title: "Error",
+			title: "Ha ocurrido un error",
 			description: "No se pudieron cargar las estadísticas.",
 			variant: "destructive",
 		});
@@ -269,7 +291,7 @@ describe("TransactionsPageContent", () => {
 			totalVolume: "2500000.00", // 2.5M
 		});
 
-		render(<TransactionsPageContent />);
+		renderWithProviders(<TransactionsPageContent />);
 
 		// Should format as $2.5M
 		await screen.findByText("$2.5M");
@@ -282,7 +304,7 @@ describe("TransactionsPageContent", () => {
 			totalVolume: "50000.00", // 50K
 		});
 
-		render(<TransactionsPageContent />);
+		renderWithProviders(<TransactionsPageContent />);
 
 		// Should format as $50.0K
 		await screen.findByText("$50.0K");
@@ -295,7 +317,7 @@ describe("TransactionsPageContent", () => {
 			totalVolume: "500.00", // < 1K
 		});
 
-		render(<TransactionsPageContent />);
+		renderWithProviders(<TransactionsPageContent />);
 
 		// Should format as regular currency (MXN format)
 		const volumeElement = screen.getByText("Volumen Total").closest("div");
@@ -309,7 +331,7 @@ describe("TransactionsPageContent", () => {
 			totalVolume: "invalid", // Will cause NaN
 		});
 
-		render(<TransactionsPageContent />);
+		renderWithProviders(<TransactionsPageContent />);
 
 		// Should display $0 for invalid amounts
 		const volumeLabels = screen.getAllByText("Volumen Total");
@@ -323,7 +345,7 @@ describe("TransactionsPageContent", () => {
 			totalVolume: null as unknown as string,
 		});
 
-		render(<TransactionsPageContent />);
+		renderWithProviders(<TransactionsPageContent />);
 
 		// Should display $0 for null volume
 		const volumeLabels = screen.getAllByText("Volumen Total");
@@ -331,7 +353,7 @@ describe("TransactionsPageContent", () => {
 	});
 
 	it("renders maximum of 3 stat cards", () => {
-		render(<TransactionsPageContent />);
+		renderWithProviders(<TransactionsPageContent />);
 
 		// Should render exactly 3 stat cards
 		const transaccionesHoy = screen.getAllByText("Transacciones Hoy");
@@ -351,7 +373,7 @@ describe("TransactionsPageContent", () => {
 			totalVolume: "1000000.00", // Exactly 1M
 		});
 
-		render(<TransactionsPageContent />);
+		renderWithProviders(<TransactionsPageContent />);
 
 		// Should format as $1.0M
 		await screen.findByText("$1.0M");
@@ -364,7 +386,7 @@ describe("TransactionsPageContent", () => {
 			totalVolume: "1000.00", // Exactly 1K
 		});
 
-		render(<TransactionsPageContent />);
+		renderWithProviders(<TransactionsPageContent />);
 
 		// Should format as $1.0K
 		await screen.findByText("$1.0K");
@@ -377,7 +399,7 @@ describe("TransactionsPageContent", () => {
 			totalVolume: "0.00",
 		});
 
-		render(<TransactionsPageContent />);
+		renderWithProviders(<TransactionsPageContent />);
 
 		// Should format as $0
 		const volumeLabels = screen.getAllByText("Volumen Total");
@@ -389,7 +411,7 @@ describe("TransactionsPageContent", () => {
 
 		const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-		render(<TransactionsPageContent />);
+		renderWithProviders(<TransactionsPageContent />);
 
 		// Wait for async error handling to complete
 		await new Promise((resolve) => setTimeout(resolve, 100));
@@ -402,7 +424,7 @@ describe("TransactionsPageContent", () => {
 		);
 
 		expect(mockToast).toHaveBeenCalledWith({
-			title: "Error",
+			title: "Ha ocurrido un error",
 			description: "No se pudieron cargar las estadísticas.",
 			variant: "destructive",
 		});

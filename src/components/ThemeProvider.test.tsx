@@ -6,6 +6,22 @@ vi.mock("next-themes", () => ({
 	ThemeProvider: ({ children }: { children: React.ReactNode }) => (
 		<div data-testid="theme-provider">{children}</div>
 	),
+	useTheme: () => ({
+		theme: "light",
+		setTheme: vi.fn(),
+		systemTheme: "light",
+		themes: ["light", "dark", "system"],
+		resolvedTheme: "light",
+	}),
+}));
+
+vi.mock("@/lib/cookies", () => ({
+	getCookie: vi.fn(),
+	setCookie: vi.fn(),
+	COOKIE_NAMES: {
+		THEME: "janovix-theme",
+		LANGUAGE: "janovix-lang",
+	},
 }));
 
 describe("ThemeProvider", () => {

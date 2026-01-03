@@ -8,10 +8,13 @@ import { Users, AlertTriangle, Clock, Plus } from "lucide-react";
 import { getClientStats } from "@/lib/api/stats";
 import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@/lib/api/http";
+import { useLanguage } from "@/components/LanguageProvider";
+import { getLocaleForLanguage } from "@/lib/translations";
 
 export function ClientsPageContent(): React.ReactElement {
 	const { navigateTo } = useOrgNavigation();
 	const { toast } = useToast();
+	const { t, language } = useLanguage();
 	const [stats, setStats] = useState<{
 		openAlerts: number;
 		urgentReviews: number;
@@ -41,8 +44,8 @@ export function ClientsPageContent(): React.ReactElement {
 					);
 				}
 				toast({
-					title: "Error",
-					description: "No se pudieron cargar las estadísticas.",
+					title: t("errorGeneric"),
+					description: t("errorLoadingStats"),
 					variant: "destructive",
 				});
 			} finally {
@@ -51,26 +54,26 @@ export function ClientsPageContent(): React.ReactElement {
 		};
 
 		fetchStats();
-	}, [toast]);
+	}, [toast, t]);
 
 	const formatNumber = (num: number): string => {
-		return new Intl.NumberFormat("es-MX").format(num);
+		return new Intl.NumberFormat(getLocaleForLanguage(language)).format(num);
 	};
 
 	const heroStats: StatCard[] = [
 		{
-			label: "Alertas Abiertas",
+			label: t("statsOpenAlerts"),
 			value: isLoading ? "..." : (stats?.openAlerts ?? 0),
 			icon: AlertTriangle,
 			variant: "primary",
 		},
 		{
-			label: "Revisiones Urgentes",
+			label: t("statsUrgentReviews"),
 			value: isLoading ? "..." : (stats?.urgentReviews ?? 0),
 			icon: Clock,
 		},
 		{
-			label: "Total Clientes",
+			label: t("statsTotalClients"),
 			value: isLoading
 				? "..."
 				: stats?.totalClients
@@ -83,11 +86,11 @@ export function ClientsPageContent(): React.ReactElement {
 	return (
 		<div className="space-y-6">
 			<PageHero
-				title="Clientes"
-				subtitle="Gestión y monitoreo de clientes"
+				title={t("clientsTitle")}
+				subtitle={t("clientsSubtitle")}
 				icon={Users}
 				stats={heroStats}
-				ctaLabel="Nuevo Cliente"
+				ctaLabel={t("clientsNew")}
 				ctaIcon={Plus}
 				onCtaClick={() => navigateTo("/clients/new")}
 			/>

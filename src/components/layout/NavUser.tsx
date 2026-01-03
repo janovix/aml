@@ -19,6 +19,7 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from "@/components/ui/sidebar";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface NavUserProps {
 	user: {
@@ -42,6 +43,7 @@ function getInitials(name: string): string {
 
 export function NavUser({ user, isLoading = false, onLogout }: NavUserProps) {
 	const { isMobile, setOpenMobile } = useSidebar();
+	const { t } = useLanguage();
 
 	const handleLinkClick = () => {
 		if (isMobile) {
@@ -124,7 +126,7 @@ export function NavUser({ user, isLoading = false, onLogout }: NavUserProps) {
 									onClick={handleLinkClick}
 								>
 									<Settings className="size-4" />
-									Configuración
+									{t("navSettings")}
 								</Link>
 							</DropdownMenuItem>
 							<DropdownMenuItem asChild>
@@ -134,7 +136,7 @@ export function NavUser({ user, isLoading = false, onLogout }: NavUserProps) {
 									onClick={handleLinkClick}
 								>
 									<User className="size-4" />
-									Perfil
+									{t("sidebarProfile")}
 								</Link>
 							</DropdownMenuItem>
 						</DropdownMenuGroup>
@@ -144,7 +146,7 @@ export function NavUser({ user, isLoading = false, onLogout }: NavUserProps) {
 							onClick={onLogout}
 						>
 							<LogOut className="size-4" />
-							Cerrar sesión
+							{t("sidebarLogout")}
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>

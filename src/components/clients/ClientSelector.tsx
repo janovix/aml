@@ -202,7 +202,7 @@ function ClientSelectorCommandContent({
 					>
 						{mappedItems.length === 0 ? (
 							<CommandEmpty>
-								<div className="flex flex-col items-center gap-3 py-2">
+								<div className="flex flex-col items-center gap-3 px-4 py-2 text-center">
 									<span>{emptyState}</span>
 									{onCreateNew && (
 										<Button
@@ -297,6 +297,8 @@ export function ClientSelector({
 	const [open, setOpen] = useState(false);
 	const [showResults, setShowResults] = useState(false);
 	const [fetchingById, setFetchingById] = useState(false);
+	// Track which value we've already attempted to fetch by ID to prevent infinite loops
+	const fetchedByIdForValueRef = useRef<string | undefined>(undefined);
 
 	const { items, pagination, loading, error, searchTerm, setSearchTerm } =
 		useClientSearch({
@@ -328,7 +330,16 @@ export function ClientSelector({
 		if (!value) {
 			setSelectedLabel("");
 			setSelectedClient(null);
+			fetchedByIdForValueRef.current = undefined;
 			return;
+		}
+
+		// Reset fetch tracker when value changes
+		if (
+			fetchedByIdForValueRef.current !== undefined &&
+			fetchedByIdForValueRef.current !== value
+		) {
+			fetchedByIdForValueRef.current = undefined;
 		}
 
 		// If we already have a selectedClient that matches the current value,
@@ -358,9 +369,17 @@ export function ClientSelector({
 		if (match) {
 			setSelectedClient(match);
 			setSelectedLabel(getClientDisplayName(match) || match.rfc);
-		} else if (!loading && !match && !fetchingById && jwt) {
+		} else if (
+			!loading &&
+			!match &&
+			!fetchingById &&
+			jwt &&
+			fetchedByIdForValueRef.current !== value
+		) {
 			// If we've loaded data but still can't find the item, try fetching by ID directly
 			// This handles cases where the item exists but isn't in the search results
+			// Mark that we've attempted to fetch this value to prevent infinite loops
+			fetchedByIdForValueRef.current = value;
 			setFetchingById(true);
 			getClientById({ id: value, jwt })
 				.then((client) => {

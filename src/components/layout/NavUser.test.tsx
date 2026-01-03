@@ -3,13 +3,35 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NavUser } from "./NavUser";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { LanguageProvider } from "@/components/LanguageProvider";
+
+// Mock cookies module to return Spanish language for tests
+vi.mock("@/lib/cookies", () => ({
+	getCookie: (name: string) => {
+		if (name === "janovix-lang") return "es";
+		return undefined;
+	},
+	setCookie: vi.fn(),
+	deleteCookie: vi.fn(),
+	COOKIE_NAMES: {
+		THEME: "janovix-theme",
+		LANGUAGE: "janovix-lang",
+	},
+}));
+
+// Wrapper component with providers
+const TestWrapper = ({ children }: { children: React.ReactNode }) => (
+	<LanguageProvider>
+		<SidebarProvider>{children}</SidebarProvider>
+	</LanguageProvider>
+);
 
 describe("NavUser", () => {
 	it("renders loading state when isLoading is true", () => {
 		render(
-			<SidebarProvider>
+			<TestWrapper>
 				<NavUser user={null} isLoading={true} onLogout={vi.fn()} />
-			</SidebarProvider>,
+			</TestWrapper>,
 		);
 
 		const loadingElements = document.querySelectorAll(".animate-pulse");
@@ -18,9 +40,9 @@ describe("NavUser", () => {
 
 	it("returns null when user is null and not loading", () => {
 		const { container } = render(
-			<SidebarProvider>
+			<TestWrapper>
 				<NavUser user={null} isLoading={false} onLogout={vi.fn()} />
-			</SidebarProvider>,
+			</TestWrapper>,
 		);
 
 		// NavUser returns null, but SidebarProvider renders a wrapper
@@ -36,9 +58,9 @@ describe("NavUser", () => {
 		};
 
 		render(
-			<SidebarProvider>
+			<TestWrapper>
 				<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />
-			</SidebarProvider>,
+			</TestWrapper>,
 		);
 
 		expect(screen.getByText("Test User")).toBeInTheDocument();
@@ -53,9 +75,9 @@ describe("NavUser", () => {
 		};
 
 		render(
-			<SidebarProvider>
+			<TestWrapper>
 				<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />
-			</SidebarProvider>,
+			</TestWrapper>,
 		);
 
 		// Avatar might be in AvatarImage or AvatarFallback
@@ -73,9 +95,9 @@ describe("NavUser", () => {
 
 		const user = userEvent.setup();
 		render(
-			<SidebarProvider>
+			<TestWrapper>
 				<NavUser user={mockUser} isLoading={false} onLogout={mockLogout} />
-			</SidebarProvider>,
+			</TestWrapper>,
 		);
 
 		// First click to open dropdown
@@ -97,9 +119,9 @@ describe("NavUser", () => {
 
 		const user = userEvent.setup();
 		render(
-			<SidebarProvider>
+			<TestWrapper>
 				<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />
-			</SidebarProvider>,
+			</TestWrapper>,
 		);
 
 		// Open dropdown first
@@ -122,9 +144,9 @@ describe("NavUser", () => {
 		};
 
 		render(
-			<SidebarProvider>
+			<TestWrapper>
 				<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />
-			</SidebarProvider>,
+			</TestWrapper>,
 		);
 
 		expect(screen.getByText("John")).toBeInTheDocument();
@@ -138,9 +160,9 @@ describe("NavUser", () => {
 		};
 
 		render(
-			<SidebarProvider>
+			<TestWrapper>
 				<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />
-			</SidebarProvider>,
+			</TestWrapper>,
 		);
 
 		expect(screen.getByText("John Doe Smith")).toBeInTheDocument();
@@ -155,9 +177,9 @@ describe("NavUser", () => {
 
 		const user = userEvent.setup();
 		render(
-			<SidebarProvider defaultOpen={true}>
+			<TestWrapper>
 				<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />
-			</SidebarProvider>,
+			</TestWrapper>,
 		);
 
 		// Open dropdown
@@ -178,9 +200,9 @@ describe("NavUser", () => {
 		};
 
 		render(
-			<SidebarProvider>
+			<TestWrapper>
 				<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />
-			</SidebarProvider>,
+			</TestWrapper>,
 		);
 
 		// Should render with fallback initial
@@ -194,9 +216,9 @@ describe("NavUser", () => {
 		};
 
 		render(
-			<SidebarProvider>
+			<TestWrapper>
 				<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />
-			</SidebarProvider>,
+			</TestWrapper>,
 		);
 
 		// Should render with fallback initial
@@ -210,9 +232,9 @@ describe("NavUser", () => {
 		};
 
 		render(
-			<SidebarProvider>
+			<TestWrapper>
 				<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />
-			</SidebarProvider>,
+			</TestWrapper>,
 		);
 
 		expect(screen.getByText("John Doe")).toBeInTheDocument();
@@ -226,9 +248,9 @@ describe("NavUser", () => {
 		};
 
 		render(
-			<SidebarProvider>
+			<TestWrapper>
 				<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />
-			</SidebarProvider>,
+			</TestWrapper>,
 		);
 
 		expect(screen.getByText("John Michael Doe Smith")).toBeInTheDocument();
@@ -244,9 +266,9 @@ describe("NavUser", () => {
 
 		const user = userEvent.setup();
 		render(
-			<SidebarProvider>
+			<TestWrapper>
 				<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />
-			</SidebarProvider>,
+			</TestWrapper>,
 		);
 
 		// Open dropdown

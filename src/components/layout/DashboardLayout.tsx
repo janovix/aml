@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
 	SidebarInset,
 	SidebarProvider,
@@ -17,13 +18,14 @@ interface DashboardLayoutProps {
 
 function Navbar() {
 	return (
-		<header className="z-50 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4">
+		<header className="z-50 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 shadow-xs">
 			<SidebarTrigger className="-ml-1" />
 			<Separator orientation="vertical" className="mx-2 h-6" />
 			<div className="flex-1 min-w-0">
 				<NavBreadcrumb />
 			</div>
 			<div className="flex shrink-0 items-center gap-2">
+				<LanguageSwitcher />
 				<ThemeSwitcher />
 			</div>
 		</header>

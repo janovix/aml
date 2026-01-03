@@ -314,6 +314,8 @@ export function CatalogSelector({
 		string | undefined
 	>(value);
 	const [fetchingById, setFetchingById] = useState(false);
+	// Track which value we've already attempted to fetch by ID to prevent infinite loops
+	const fetchedByIdForValueRef = useRef<string | undefined>(undefined);
 
 	const {
 		items,
@@ -348,11 +350,12 @@ export function CatalogSelector({
 		[items, getOptionValue],
 	);
 
-	// Reset search counter when value changes
+	// Reset search counter and fetch-by-ID tracker when value changes
 	useEffect(() => {
 		if (value !== lastSearchedValue) {
 			setPagesSearchedForValue(0);
 			setLastSearchedValue(value);
+			fetchedByIdForValueRef.current = undefined;
 		}
 	}, [value, lastSearchedValue]);
 
@@ -417,10 +420,13 @@ export function CatalogSelector({
 			!loadingMore &&
 			!match &&
 			pagination !== null &&
-			!fetchingById
+			!fetchingById &&
+			fetchedByIdForValueRef.current !== value
 		) {
 			// If we've loaded data but still can't find the item, try fetching by ID directly
 			// This handles cases where the item exists but isn't in the search results
+			// Mark that we've attempted to fetch this value to prevent infinite loops
+			fetchedByIdForValueRef.current = value;
 			setFetchingById(true);
 			fetchCatalogItemById(catalogKey, value)
 				.then((item) => {

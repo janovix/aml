@@ -60,64 +60,73 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { slugify } from "@/lib/slugify";
 import { Plus } from "lucide-react";
+import { useLanguage } from "@/components/LanguageProvider";
+import type { TranslationKeys } from "@/lib/translations";
 
-const mainNavItems = [
+type NavItem = {
+	titleKey: TranslationKeys;
+	href: string;
+	icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+	available: boolean;
+};
+
+const mainNavItems: NavItem[] = [
 	{
-		title: "Dashboard",
+		titleKey: "navDashboard",
 		href: "/dashboard",
 		icon: BarChart3,
 		available: false,
 	},
 	{
-		title: "Clientes",
+		titleKey: "navClients",
 		href: "/clients",
 		icon: Users,
 		available: true,
 	},
 	{
-		title: "Alertas",
+		titleKey: "navAlerts",
 		href: "/alerts",
 		icon: AlertTriangle,
 		available: true,
 	},
 	{
-		title: "Transacciones",
+		titleKey: "navTransactions",
 		href: "/transactions",
 		icon: Briefcase,
 		available: true,
 	},
 	{
-		title: "Reportes",
+		titleKey: "navReports",
 		href: "/reports",
 		icon: FileText,
 		available: true,
 	},
 ];
 
-const secondaryNavItems = [
+const secondaryNavItems: NavItem[] = [
 	{
-		title: "Modelos de Riesgo",
+		titleKey: "navRiskModels",
 		href: "/modelos",
 		icon: Database,
 		available: false,
 	},
 	{
-		title: "Historial",
+		titleKey: "navHistory",
 		href: "/historial",
 		icon: Clock,
 		available: false,
 	},
 ];
 
-const orgNavItems = [
+const orgNavItems: NavItem[] = [
 	{
-		title: "Team",
+		titleKey: "navTeam",
 		href: "/team",
 		icon: UsersRound,
 		available: true,
 	},
 	{
-		title: "Configuración",
+		titleKey: "navSettings",
 		href: "/settings",
 		icon: Settings,
 		available: true,
@@ -125,6 +134,7 @@ const orgNavItems = [
 ];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+	const { t } = useLanguage();
 	const pathname = usePathname();
 	const router = useRouter();
 	const params = useParams();
@@ -307,7 +317,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
 	const user = session?.user
 		? {
-				name: session.user.name || "Usuario",
+				name: session.user.name || t("sidebarUser"),
 				email: session.user.email || "",
 				avatar: session.user.image || undefined,
 			}
@@ -329,20 +339,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				<SidebarContent>
 					<SidebarGroup>
 						<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
-							Transacción
+							{t("navTransaction")}
 						</SidebarGroupLabel>
 						<SidebarGroupContent>
 							<SidebarMenu>
 								{mainNavItems.map((item) => {
 									const Icon = item.icon;
 									const isActive = isNavActive(item.href);
+									const title = t(item.titleKey);
 
 									return (
 										<SidebarMenuItem key={item.href}>
 											<SidebarMenuButton
 												asChild
 												isActive={isActive}
-												tooltip={item.title}
+												tooltip={title}
 											>
 												<Link
 													href={item.available ? orgPath(item.href) : "#"}
@@ -353,10 +364,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 													onClick={item.available ? handleLinkClick : undefined}
 												>
 													<Icon />
-													<span>{item.title}</span>
+													<span>{title}</span>
 													{!item.available && (
 														<span className="ml-auto text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded group-data-[collapsible=icon]:hidden">
-															Pronto
+															{t("navComingSoon")}
 														</span>
 													)}
 												</Link>
@@ -372,20 +383,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
 					<SidebarGroup>
 						<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
-							Análisis
+							{t("navAnalysis")}
 						</SidebarGroupLabel>
 						<SidebarGroupContent>
 							<SidebarMenu>
 								{secondaryNavItems.map((item) => {
 									const Icon = item.icon;
 									const isActive = isNavActive(item.href);
+									const title = t(item.titleKey);
 
 									return (
 										<SidebarMenuItem key={item.href}>
 											<SidebarMenuButton
 												asChild
 												isActive={isActive}
-												tooltip={item.title}
+												tooltip={title}
 											>
 												<Link
 													href={item.available ? orgPath(item.href) : "#"}
@@ -396,10 +408,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 													onClick={item.available ? handleLinkClick : undefined}
 												>
 													<Icon />
-													<span>{item.title}</span>
+													<span>{title}</span>
 													{!item.available && (
 														<span className="ml-auto text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded group-data-[collapsible=icon]:hidden">
-															Pronto
+															{t("navComingSoon")}
 														</span>
 													)}
 												</Link>
@@ -415,20 +427,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
 					<SidebarGroup>
 						<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
-							Organization
+							{t("navOrganization")}
 						</SidebarGroupLabel>
 						<SidebarGroupContent>
 							<SidebarMenu>
 								{orgNavItems.map((item) => {
 									const Icon = item.icon;
 									const isActive = isNavActive(item.href);
+									const title = t(item.titleKey);
 
 									return (
 										<SidebarMenuItem key={item.href}>
 											<SidebarMenuButton
 												asChild
 												isActive={isActive}
-												tooltip={item.title}
+												tooltip={title}
 											>
 												<Link
 													href={item.available ? orgPath(item.href) : "#"}
@@ -439,7 +452,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 													onClick={item.available ? handleLinkClick : undefined}
 												>
 													<Icon />
-													<span>{item.title}</span>
+													<span>{title}</span>
 												</Link>
 											</SidebarMenuButton>
 										</SidebarMenuItem>
@@ -459,10 +472,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 			<Dialog open={createOrgDialogOpen} onOpenChange={setCreateOrgDialogOpen}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Nueva organización</DialogTitle>
-						<DialogDescription>
-							Crea una organización para gestionar tu equipo y datos.
-						</DialogDescription>
+						<DialogTitle>{t("orgNewTitle")}</DialogTitle>
+						<DialogDescription>{t("orgNewDescription")}</DialogDescription>
 					</DialogHeader>
 					<form onSubmit={handleCreateOrgSubmit} className="space-y-4">
 						{createOrgError && (
@@ -471,7 +482,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 							</div>
 						)}
 						<div className="space-y-2">
-							<Label htmlFor="org-name">Nombre</Label>
+							<Label htmlFor="org-name">{t("formName")}</Label>
 							<Input
 								id="org-name"
 								value={orgName}
@@ -480,14 +491,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 									setCreateOrgError(null);
 								}}
 								required
-								placeholder="Mi organización"
+								placeholder={t("orgNamePlaceholder")}
 							/>
 						</div>
 						<div className="space-y-2">
 							<div className="flex items-center justify-between">
 								<Label htmlFor="org-slug">Slug</Label>
 								<span className="text-xs text-muted-foreground">
-									Usado en la URL
+									{t("orgSlugHint")}
 								</span>
 							</div>
 							<Input
@@ -497,15 +508,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 									setNewOrgSlug(e.target.value);
 									setCreateOrgError(null);
 								}}
-								placeholder="mi-organizacion"
+								placeholder={t("orgSlugPlaceholder")}
 							/>
 							<p className="text-xs text-muted-foreground">
-								Slug final:{" "}
+								{t("orgSlugFinal")}{" "}
 								<span className="font-medium">{derivedSlug || "..."}</span>
 							</p>
 						</div>
 						<div className="space-y-2">
-							<Label htmlFor="org-logo">Logo (URL opcional)</Label>
+							<Label htmlFor="org-logo">{t("orgLogoLabel")}</Label>
 							<Input
 								id="org-logo"
 								value={orgLogo}
@@ -520,10 +531,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 								variant="outline"
 								onClick={() => setCreateOrgDialogOpen(false)}
 							>
-								Cancelar
+								{t("cancel")}
 							</Button>
 							<Button type="submit" disabled={isCreatingOrg || !orgName}>
-								{isCreatingOrg ? "Creando..." : "Crear organización"}
+								{isCreatingOrg ? t("orgCreating") : t("sidebarCreateOrg")}
 							</Button>
 						</DialogFooter>
 					</form>

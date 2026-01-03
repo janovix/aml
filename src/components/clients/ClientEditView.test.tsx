@@ -11,6 +11,28 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ClientEditView } from "./ClientEditView";
 import type { Client, PersonType } from "../../types/client";
+import { LanguageProvider } from "@/components/LanguageProvider";
+
+// Mock cookies module to return Spanish language for tests
+vi.mock("@/lib/cookies", () => ({
+	getCookie: (name: string) => {
+		if (name === "janovix-lang") return "es";
+		return undefined;
+	},
+	setCookie: vi.fn(),
+	deleteCookie: vi.fn(),
+	COOKIE_NAMES: {
+		THEME: "janovix-theme",
+		LANGUAGE: "janovix-lang",
+	},
+}));
+
+// Wrapper component with providers
+const renderWithProviders = (ui: React.ReactElement) => {
+	return render(ui, {
+		wrapper: ({ children }) => <LanguageProvider>{children}</LanguageProvider>,
+	});
+};
 
 const mockPush = vi.fn();
 const mockToast = vi.fn();
@@ -99,7 +121,7 @@ describe("ClientEditView", () => {
 	it("renders edit client header", async () => {
 		mockGetClientById.mockResolvedValue(buildClient());
 		mockUpdateClient.mockResolvedValue(buildClient());
-		render(<ClientEditView clientId="1" />);
+		renderWithProviders(<ClientEditView clientId="1" />);
 		expect(await screen.findByText("Editar Cliente")).toBeInTheDocument();
 	});
 
@@ -112,7 +134,7 @@ describe("ClientEditView", () => {
 		mockUpdateClient.mockResolvedValue(client);
 
 		const user = userEvent.setup();
-		render(<ClientEditView clientId={client.id} />);
+		renderWithProviders(<ClientEditView clientId={client.id} />);
 
 		await screen.findByDisplayValue("Visionaria S.A.");
 		const saveButtons = screen.getAllByRole("button", {
@@ -145,7 +167,7 @@ describe("ClientEditView", () => {
 		mockUpdateClient.mockResolvedValue(client);
 
 		const user = userEvent.setup();
-		render(<ClientEditView clientId={client.id} />);
+		renderWithProviders(<ClientEditView clientId={client.id} />);
 
 		// Wait for form to load
 		await screen.findByDisplayValue("Ana");
@@ -182,7 +204,7 @@ describe("ClientEditView", () => {
 		mockUpdateClient.mockResolvedValue(client);
 
 		const user = userEvent.setup();
-		render(<ClientEditView clientId={client.id} />);
+		renderWithProviders(<ClientEditView clientId={client.id} />);
 
 		await screen.findByText("Editar Cliente");
 		const saveButtons = screen.getAllByRole("button", {

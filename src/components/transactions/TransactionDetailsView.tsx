@@ -21,7 +21,10 @@ import {
 	getTransactionById,
 	deleteTransaction,
 } from "../../lib/api/transactions";
+import { getClientById } from "@/lib/api/clients";
+import { getClientDisplayName } from "@/types/client";
 import type { Transaction } from "../../types/transaction";
+import type { Client } from "@/types/client";
 import { PageHero } from "@/components/page-hero";
 import { PageHeroSkeleton } from "@/components/skeletons";
 
@@ -69,6 +72,7 @@ export function TransactionDetailsView({
 }: TransactionDetailsViewProps): React.JSX.Element {
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [transaction, setTransaction] = useState<Transaction | null>(null);
+	const [client, setClient] = useState<Client | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const { navigateTo } = useOrgNavigation();
 	const { toast } = useToast();
@@ -79,6 +83,17 @@ export function TransactionDetailsView({
 				setIsLoading(true);
 				const data = await getTransactionById({ id: transactionId });
 				setTransaction(data);
+
+				// Fetch client information
+				if (data.clientId) {
+					try {
+						const clientData = await getClientById({ id: data.clientId });
+						setClient(clientData);
+					} catch (error) {
+						console.error("Error fetching client:", error);
+						// Silently fail - we'll just show the client ID
+					}
+				}
 			} catch (error) {
 				console.error("Error fetching transaction:", error);
 				toast({
@@ -216,7 +231,7 @@ export function TransactionDetailsView({
 			/>
 
 			<div className="space-y-6">
-				<div className="grid gap-6 md:grid-cols-2">
+				<div className="grid gap-6 md:grid-cols-2 pb-6">
 					<Card>
 						<CardHeader>
 							<CardTitle>Información de la Transacción</CardTitle>
@@ -233,10 +248,10 @@ export function TransactionDetailsView({
 							<Separator />
 							<div>
 								<p className="text-sm font-medium text-muted-foreground">
-									Cliente ID
+									Cliente
 								</p>
 								<p className="text-base font-medium mt-1">
-									{transaction.clientId}
+									{client ? getClientDisplayName(client) : transaction.clientId}
 								</p>
 							</div>
 							<Separator />
@@ -370,7 +385,7 @@ export function TransactionDetailsView({
 										Marca
 									</p>
 									<p className="text-base font-medium mt-1">
-										{transaction.brand}
+										{transaction.brandCatalog?.name || transaction.brand}
 									</p>
 								</div>
 								<div>

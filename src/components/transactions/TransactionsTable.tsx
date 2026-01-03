@@ -51,6 +51,8 @@ import {
 	type FilterDef,
 } from "@/components/data-table";
 import { formatProperNoun } from "@/lib/utils";
+import { useLanguage } from "@/components/LanguageProvider";
+import { getLocaleForLanguage } from "@/lib/translations";
 
 /**
  * Extended transaction row with resolved client data
@@ -110,6 +112,7 @@ export function TransactionsTable({
 	const { toast } = useToast();
 	const { currentOrg } = useOrgStore();
 	const urlFilters = useDataTableUrlFilters(TRANSACTION_FILTER_IDS);
+	const { t, language } = useLanguage();
 	const [transactions, setTransactions] = useState<Transaction[]>([]);
 	const [clients, setClients] = useState<Map<string, Client>>(new Map());
 	const [isLoading, setIsLoading] = useState(true);
@@ -204,8 +207,8 @@ export function TransactionsTable({
 			} catch (error) {
 				console.error("Error fetching transactions:", error);
 				toast({
-					title: "Error",
-					description: "No se pudieron cargar las transacciones.",
+					title: t("errorGeneric"),
+					description: t("transactionsLoadError"),
 					variant: "destructive",
 				});
 			} finally {
@@ -237,8 +240,8 @@ export function TransactionsTable({
 		} catch (error) {
 			console.error("Error loading more transactions:", error);
 			toast({
-				title: "Error",
-				description: "No se pudieron cargar más transacciones.",
+				title: t("errorGeneric"),
+				description: t("transactionsLoadMoreError"),
 				variant: "destructive",
 			});
 		} finally {
@@ -528,12 +531,12 @@ export function TransactionsTable({
 			columns={columns}
 			filters={filterDefs}
 			searchKeys={["clientName", "clientId", "shortId", "brand", "model"]}
-			searchPlaceholder="Buscar por cliente, marca, modelo..."
-			emptyMessage="No se encontraron transacciones"
+			searchPlaceholder={t("transactionsSearchPlaceholder")}
+			emptyMessage={t("transactionNoTransactions")}
 			emptyIcon={Receipt}
-			emptyActionLabel="Crear Transacción"
+			emptyActionLabel={t("transactionsNew")}
 			emptyActionHref={orgPath("/transactions/new")}
-			loadingMessage="Cargando transacciones..."
+			loadingMessage={t("transactionsLoading")}
 			isLoading={isLoading}
 			selectable
 			getId={(item) => item.id}
