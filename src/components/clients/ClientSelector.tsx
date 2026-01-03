@@ -38,6 +38,8 @@ import type { Client } from "@/types/client";
 import { useClientSearch } from "@/hooks/useClientSearch";
 import { getClientDisplayName } from "@/types/client";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { getClientById } from "@/lib/api/clients";
+import { useJwt } from "@/hooks/useJwt";
 
 type OptionRenderer = (option: Client, isSelected: boolean) => React.ReactNode;
 
@@ -284,15 +286,17 @@ export function ClientSelector({
 	const labelId = useId();
 	const listRef = useRef<HTMLDivElement>(null);
 	const isMobile = useIsMobile();
+	const { jwt } = useJwt();
 	const resolvedPlaceholder =
 		placeholder ??
 		(label ? `Seleccionar ${label.toLowerCase()}` : "Seleccionar cliente");
 	const isControlled = value !== undefined;
 
-	const [selectedLabel, setSelectedLabel] = useState(value ?? "");
+	const [selectedLabel, setSelectedLabel] = useState("");
 	const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 	const [open, setOpen] = useState(false);
 	const [showResults, setShowResults] = useState(false);
+	const [fetchingById, setFetchingById] = useState(false);
 
 	const { items, pagination, loading, error, searchTerm, setSearchTerm } =
 		useClientSearch({
@@ -311,24 +315,85 @@ export function ClientSelector({
 		[items, getOptionValue],
 	);
 
+	// Helper to get the value from a client
+	const getOptionValueResolved = (client: Client): string => {
+		return getOptionValue ? getOptionValue(client) : client.id;
+	};
+
 	useEffect(() => {
 		if (!isControlled) {
 			return;
 		}
 
-		setSelectedLabel(value ?? "");
-
 		if (!value) {
+			setSelectedLabel("");
 			setSelectedClient(null);
 			return;
 		}
 
-		const match = items.find(
-			(client) =>
-				(getOptionValue ? getOptionValue(client) : client.id) === value,
-		);
-		setSelectedClient(match ?? null);
-	}, [isControlled, value, items, getOptionValue]);
+		// If we already have a selectedClient that matches the current value,
+		// preserve it - don't let filtered search results overwrite the label
+		if (selectedClient && getOptionValueResolved(selectedClient) === value) {
+			// Ensure label is set correctly (in case it was empty initially)
+			if (selectedLabel !== getClientDisplayName(selectedClient)) {
+				setSelectedLabel(
+					getClientDisplayName(selectedClient) || selectedClient.rfc,
+				);
+			}
+			return;
+		}
+
+		// If selectedClient exists but doesn't match the value, clear it
+		// This happens when the value prop changes
+		if (selectedClient && getOptionValueResolved(selectedClient) !== value) {
+			setSelectedClient(null);
+			setSelectedLabel("");
+		}
+
+		// Find the item by comparing the value (ID) with the client's ID or computed value
+		const match = items.find((client) => {
+			return getOptionValueResolved(client) === value;
+		});
+
+		if (match) {
+			setSelectedClient(match);
+			setSelectedLabel(getClientDisplayName(match) || match.rfc);
+		} else if (!loading && !match && !fetchingById && jwt) {
+			// If we've loaded data but still can't find the item, try fetching by ID directly
+			// This handles cases where the item exists but isn't in the search results
+			setFetchingById(true);
+			getClientById({ id: value, jwt })
+				.then((client) => {
+					// Verify the client matches the value (in case getOptionValue is custom)
+					if (getOptionValueResolved(client) === value) {
+						setSelectedClient(client);
+						setSelectedLabel(getClientDisplayName(client) || client.rfc);
+					} else {
+						setSelectedLabel(value);
+					}
+				})
+				.catch(() => {
+					// If fetching by ID fails, fallback to showing the raw value
+					setSelectedLabel(value);
+				})
+				.finally(() => {
+					setFetchingById(false);
+				});
+		} else if (!loading && !match && !jwt) {
+			// If JWT is not available yet, show the raw value temporarily
+			setSelectedLabel(value);
+		}
+	}, [
+		isControlled,
+		value,
+		items,
+		getOptionValue,
+		loading,
+		selectedClient,
+		selectedLabel,
+		fetchingById,
+		jwt,
+	]);
 
 	const handleSelect = (optionValue: string): void => {
 		const match = mappedItems.find((entry) => entry.value === optionValue);

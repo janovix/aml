@@ -608,6 +608,70 @@ describe("catalogs", () => {
 				}),
 			);
 		});
+
+		it("fetches catalog item by shortName (e.g., MXN for currencies)", async () => {
+			const mockItem = {
+				id: "currency-mxn-id",
+				catalogId: "catalog-1",
+				name: "Mexican Peso",
+				normalizedName: "mexican peso",
+				active: true,
+				metadata: { shortName: "MXN", code: "3" },
+				createdAt: "2024-01-01T00:00:00Z",
+				updatedAt: "2024-01-01T00:00:00Z",
+			};
+
+			fetchMock.mockResolvedValueOnce(
+				new Response(JSON.stringify(mockItem), {
+					status: 200,
+					headers: { "content-type": "application/json" },
+				}),
+			);
+
+			const result = await fetchCatalogItemById("currencies", "MXN");
+
+			expect(result).toEqual(mockItem);
+			expect(fetchMock).toHaveBeenCalledWith(
+				"https://aml-bff.example.com/api/v1/catalogs/currencies/items/MXN",
+				expect.objectContaining({
+					headers: expect.objectContaining({
+						"Content-Type": "application/json",
+					}),
+				}),
+			);
+		});
+
+		it("fetches catalog item by code (e.g., '3' for MXN)", async () => {
+			const mockItem = {
+				id: "currency-mxn-id",
+				catalogId: "catalog-1",
+				name: "Mexican Peso",
+				normalizedName: "mexican peso",
+				active: true,
+				metadata: { shortName: "MXN", code: "3" },
+				createdAt: "2024-01-01T00:00:00Z",
+				updatedAt: "2024-01-01T00:00:00Z",
+			};
+
+			fetchMock.mockResolvedValueOnce(
+				new Response(JSON.stringify(mockItem), {
+					status: 200,
+					headers: { "content-type": "application/json" },
+				}),
+			);
+
+			const result = await fetchCatalogItemById("currencies", "3");
+
+			expect(result).toEqual(mockItem);
+			expect(fetchMock).toHaveBeenCalledWith(
+				"https://aml-bff.example.com/api/v1/catalogs/currencies/items/3",
+				expect.objectContaining({
+					headers: expect.objectContaining({
+						"Content-Type": "application/json",
+					}),
+				}),
+			);
+		});
 	});
 
 	describe("clearCatalogItemCache", () => {
