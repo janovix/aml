@@ -27,24 +27,8 @@ import type { Transaction } from "../../types/transaction";
 import type { Client } from "@/types/client";
 import { PageHero } from "@/components/page-hero";
 import { PageHeroSkeleton } from "@/components/skeletons";
-
-const operationTypeLabels: Record<Transaction["operationType"], string> = {
-	purchase: "Compra",
-	sale: "Venta",
-};
-
-const vehicleTypeLabels: Record<Transaction["vehicleType"], string> = {
-	land: "Terrestre",
-	marine: "Marítimo",
-	air: "Aéreo",
-};
-
-const paymentMethodLabels: Record<string, string> = {
-	EFECTIVO: "Efectivo",
-	TRANSFERENCIA: "Transferencia",
-	CHEQUE: "Cheque",
-	FINANCIAMIENTO: "Financiamiento",
-};
+import { useLanguage } from "@/components/LanguageProvider";
+import type { TranslationKeys } from "@/lib/translations";
 
 const getPaymentMethodBadgeVariant = (
 	method: string,
@@ -70,12 +54,32 @@ interface TransactionDetailsViewProps {
 export function TransactionDetailsView({
 	transactionId,
 }: TransactionDetailsViewProps): React.JSX.Element {
+	const { t } = useLanguage();
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [transaction, setTransaction] = useState<Transaction | null>(null);
 	const [client, setClient] = useState<Client | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const { navigateTo } = useOrgNavigation();
 	const { toast } = useToast();
+
+	// Translation helper for labels
+	const operationTypeLabels: Record<Transaction["operationType"], string> = {
+		purchase: t("txnOperationPurchase"),
+		sale: t("txnOperationSale"),
+	};
+
+	const vehicleTypeLabels: Record<Transaction["vehicleType"], string> = {
+		land: t("txnVehicleTypeLand"),
+		marine: t("txnVehicleTypeMarine"),
+		air: t("txnVehicleTypeAir"),
+	};
+
+	const paymentMethodLabels: Record<string, string> = {
+		EFECTIVO: t("txnPaymentMethodCash"),
+		TRANSFERENCIA: t("txnPaymentMethodTransfer"),
+		CHEQUE: t("txnPaymentMethodCheck"),
+		FINANCIAMIENTO: t("txnPaymentMethodFinancing"),
+	};
 
 	useEffect(() => {
 		const fetchTransaction = async () => {
@@ -98,7 +102,7 @@ export function TransactionDetailsView({
 				console.error("Error fetching transaction:", error);
 				toast({
 					title: "Error",
-					description: "No se pudo cargar la transacción.",
+					description: t("txnLoadError"),
 					variant: "destructive",
 				});
 				navigateTo("/transactions");
@@ -158,11 +162,11 @@ export function TransactionDetailsView({
 
 	const formatDateTime = (dateString: string | null | undefined): string => {
 		if (!dateString) {
-			return "No disponible";
+			return t("txnDateNotAvailable");
 		}
 		const date = new Date(dateString);
 		if (isNaN(date.getTime())) {
-			return "Fecha inválida";
+			return t("txnDateInvalid");
 		}
 		return date.toLocaleString("es-MX", {
 			day: "2-digit",
@@ -175,8 +179,8 @@ export function TransactionDetailsView({
 
 	const handleExport = (): void => {
 		toast({
-			title: "Exportación exitosa",
-			description: `La transacción ${transaction.id} ha sido exportada.`,
+			title: t("txnExportSuccess"),
+			description: t("txnExportSuccessDesc"),
 		});
 	};
 
@@ -184,8 +188,8 @@ export function TransactionDetailsView({
 		try {
 			await deleteTransaction({ id: transactionId });
 			toast({
-				title: "Transacción eliminada",
-				description: `La transacción ${transaction.id} ha sido eliminada.`,
+				title: t("txnDeletedSuccess"),
+				description: t("txnDeletedSuccessDesc"),
 				variant: "destructive",
 			});
 			navigateTo("/transactions");
@@ -193,7 +197,7 @@ export function TransactionDetailsView({
 			console.error("Error deleting transaction:", error);
 			toast({
 				title: "Error",
-				description: "No se pudo eliminar la transacción.",
+				description: t("txnDeleteError"),
 				variant: "destructive",
 			});
 		}
@@ -203,26 +207,26 @@ export function TransactionDetailsView({
 		<div className="space-y-6">
 			<PageHero
 				title={transaction.id}
-				subtitle="Detalles de la transacción"
+				subtitle={t("txnDetailsSubtitle")}
 				icon={Receipt}
 				backButton={{
-					label: "Volver a Transacciones",
+					label: t("txnBackToList"),
 					onClick: () => navigateTo("/transactions"),
 				}}
 				actions={[
 					{
-						label: "Editar",
+						label: t("edit"),
 						icon: Edit,
 						onClick: () => navigateTo(`/transactions/${transaction.id}/edit`),
 					},
 					{
-						label: "Exportar",
+						label: t("txnExport"),
 						icon: Download,
 						onClick: handleExport,
 						variant: "outline",
 					},
 					{
-						label: "Eliminar",
+						label: t("delete"),
 						icon: Trash2,
 						onClick: () => setDeleteDialogOpen(true),
 						variant: "destructive",
@@ -234,7 +238,7 @@ export function TransactionDetailsView({
 				<div className="grid gap-6 md:grid-cols-2 pb-6">
 					<Card>
 						<CardHeader>
-							<CardTitle>Información de la Transacción</CardTitle>
+							<CardTitle>{t("txnInfoTitle")}</CardTitle>
 						</CardHeader>
 						<CardContent className="space-y-4">
 							<div>
@@ -307,7 +311,7 @@ export function TransactionDetailsView({
 
 					<Card>
 						<CardHeader>
-							<CardTitle>Información de Pago</CardTitle>
+							<CardTitle>{t("txnPaymentTitle")}</CardTitle>
 						</CardHeader>
 						<CardContent className="space-y-4">
 							<div>
@@ -365,7 +369,7 @@ export function TransactionDetailsView({
 
 					<Card className="md:col-span-2">
 						<CardHeader>
-							<CardTitle>Información del Vehículo</CardTitle>
+							<CardTitle>{t("txnVehicleTitle")}</CardTitle>
 						</CardHeader>
 						<CardContent className="space-y-4">
 							<div className="grid gap-4 md:grid-cols-3">
@@ -473,7 +477,7 @@ export function TransactionDetailsView({
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancelar</AlertDialogCancel>
+						<AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
 						<AlertDialogAction
 							onClick={handleDelete}
 							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

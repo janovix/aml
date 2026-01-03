@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
 import { CreateManualAlertView } from "./CreateManualAlertView";
 import * as alertsApi from "@/lib/api/alerts";
 import type {
@@ -9,6 +10,16 @@ import type {
 	Alert,
 } from "@/lib/api/alerts";
 import type { Client } from "@/types/client";
+import { LanguageProvider } from "@/components/LanguageProvider";
+
+// Helper to render with LanguageProvider - force Spanish for consistent testing
+const renderWithProviders = (ui: React.ReactElement) => {
+	return render(ui, {
+		wrapper: ({ children }) => (
+			<LanguageProvider defaultLanguage="es">{children}</LanguageProvider>
+		),
+	});
+};
 
 // Mock Next.js navigation
 const mockNavigateTo = vi.fn();
@@ -144,23 +155,23 @@ describe("CreateManualAlertView", () => {
 	});
 
 	it("renders the page title and form", () => {
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 		expect(screen.getByText("Nueva Alerta Manual")).toBeInTheDocument();
 		expect(screen.getByText("Información de la Alerta")).toBeInTheDocument();
 	});
 
 	it("renders the alert rule selector", () => {
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 		expect(screen.getByText("Regla de Alerta")).toBeInTheDocument();
 	});
 
 	it("renders the severity selector", () => {
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 		expect(screen.getByText("Severidad")).toBeInTheDocument();
 	});
 
 	it("renders notes textarea", () => {
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 		expect(screen.getByText("Notas")).toBeInTheDocument();
 		expect(
 			screen.getByPlaceholderText(/Describe el motivo/),
@@ -168,7 +179,7 @@ describe("CreateManualAlertView", () => {
 	});
 
 	it("renders cancel and submit buttons", () => {
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 		expect(
 			screen.getByRole("button", { name: /Cancelar/i }),
 		).toBeInTheDocument();
@@ -178,14 +189,14 @@ describe("CreateManualAlertView", () => {
 	});
 
 	it("submit button is disabled initially", () => {
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 		const submitButton = screen.getByRole("button", { name: /Crear Alerta/i });
 		expect(submitButton).toBeDisabled();
 	});
 
 	it("navigates back when cancel is clicked", async () => {
 		const user = userEvent.setup();
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		const cancelButton = screen.getByRole("button", { name: /Cancelar/i });
 		await user.click(cancelButton);
@@ -195,7 +206,7 @@ describe("CreateManualAlertView", () => {
 
 	it("updates notes field on input", async () => {
 		const user = userEvent.setup();
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		const notesInput = screen.getByPlaceholderText(/Describe el motivo/);
 		await user.type(notesInput, "Test notes");
@@ -205,7 +216,7 @@ describe("CreateManualAlertView", () => {
 
 	it("shows character count for notes", async () => {
 		const user = userEvent.setup();
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		const notesInput = screen.getByPlaceholderText(/Describe el motivo/);
 		await user.type(notesInput, "Test notes");
@@ -215,7 +226,7 @@ describe("CreateManualAlertView", () => {
 
 	it("shows severity options when selector is opened", async () => {
 		const user = userEvent.setup();
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		// Find the severity trigger by its data-slot attribute (select-trigger)
 		const severityTrigger = document.querySelector(
@@ -233,7 +244,7 @@ describe("CreateManualAlertView", () => {
 	});
 
 	it("renders helper text for fields", () => {
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 		expect(
 			screen.getByText(
 				"Selecciona el tipo de alerta a generar según el catálogo LFPIORPI",
@@ -244,7 +255,7 @@ describe("CreateManualAlertView", () => {
 	it("auto-populates clientId from URL params", async () => {
 		mockSearchParams.mockReturnValue(new URLSearchParams("?clientId=client-1"));
 
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		await waitFor(() => {
 			// Component should have auto-populated clientId from URL
@@ -255,7 +266,7 @@ describe("CreateManualAlertView", () => {
 	it("auto-populates alertRuleId from URL params", async () => {
 		mockSearchParams.mockReturnValue(new URLSearchParams("?alertRuleId=2501"));
 
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		await waitFor(() => {
 			// Component should have auto-populated alertRuleId from URL
@@ -263,7 +274,7 @@ describe("CreateManualAlertView", () => {
 	});
 
 	it("auto-populates severity from selected rule", async () => {
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		// Wait for component to render
 		await waitFor(() => {
@@ -278,7 +289,7 @@ describe("CreateManualAlertView", () => {
 
 	it("enables submit button when all required fields are filled", async () => {
 		const user = userEvent.setup();
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		// Wait for component to load
 		await waitFor(() => {
@@ -298,7 +309,7 @@ describe("CreateManualAlertView", () => {
 			return { id: "alert-1" } as Alert;
 		});
 
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		// The button should be disabled during save
 		// This is tested through isSaving state
@@ -309,14 +320,14 @@ describe("CreateManualAlertView", () => {
 			jwt: null,
 			isLoading: false,
 		});
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		const submitButton = screen.getByRole("button", { name: /Crear Alerta/i });
 		expect(submitButton).toBeDisabled();
 	});
 
 	it("shows selected rule details when rule is selected", async () => {
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Regla de Alerta")).toBeInTheDocument();
@@ -328,7 +339,7 @@ describe("CreateManualAlertView", () => {
 	});
 
 	it("displays rule code and severity badge", async () => {
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Regla de Alerta")).toBeInTheDocument();
@@ -357,7 +368,7 @@ describe("CreateManualAlertView", () => {
 
 		mockExecuteMutation.mockResolvedValue(createdAlert);
 
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Regla de Alerta")).toBeInTheDocument();
@@ -392,7 +403,7 @@ describe("CreateManualAlertView", () => {
 			return createdAlert;
 		});
 
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Nueva Alerta Manual")).toBeInTheDocument();
@@ -407,7 +418,7 @@ describe("CreateManualAlertView", () => {
 		const error = new Error("Request failed: 409 Conflict");
 		mockExecuteMutation.mockRejectedValue(error);
 
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Nueva Alerta Manual")).toBeInTheDocument();
@@ -422,7 +433,7 @@ describe("CreateManualAlertView", () => {
 		const error = new Error("Network error");
 		mockExecuteMutation.mockRejectedValue(error);
 
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Nueva Alerta Manual")).toBeInTheDocument();
@@ -434,7 +445,7 @@ describe("CreateManualAlertView", () => {
 	});
 
 	it("generates idempotency key correctly", async () => {
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Nueva Alerta Manual")).toBeInTheDocument();
@@ -446,7 +457,7 @@ describe("CreateManualAlertView", () => {
 	});
 
 	it("generates context hash correctly", async () => {
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Nueva Alerta Manual")).toBeInTheDocument();
@@ -458,7 +469,7 @@ describe("CreateManualAlertView", () => {
 	});
 
 	it("includes client name in metadata for moral person", async () => {
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Nueva Alerta Manual")).toBeInTheDocument();
@@ -470,7 +481,7 @@ describe("CreateManualAlertView", () => {
 	});
 
 	it("includes client name in metadata for physical person", async () => {
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Nueva Alerta Manual")).toBeInTheDocument();
@@ -482,7 +493,7 @@ describe("CreateManualAlertView", () => {
 	});
 
 	it("includes RFC in metadata when businessName is missing", async () => {
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Nueva Alerta Manual")).toBeInTheDocument();
@@ -494,7 +505,7 @@ describe("CreateManualAlertView", () => {
 	});
 
 	it("includes transactionId in metadata when provided", async () => {
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Nueva Alerta Manual")).toBeInTheDocument();
@@ -507,7 +518,7 @@ describe("CreateManualAlertView", () => {
 
 	it("includes notes in metadata when provided", async () => {
 		const user = userEvent.setup();
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		await waitFor(() => {
 			expect(
@@ -524,7 +535,7 @@ describe("CreateManualAlertView", () => {
 
 	it("limits notes to 1000 characters", async () => {
 		const user = userEvent.setup();
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		await waitFor(() => {
 			expect(
@@ -546,7 +557,7 @@ describe("CreateManualAlertView", () => {
 	});
 
 	it("navigates to client creation with return URL", async () => {
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Cliente Afectado")).toBeInTheDocument();
@@ -558,7 +569,7 @@ describe("CreateManualAlertView", () => {
 	});
 
 	it("preserves alertRuleId in return URL when creating client", async () => {
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Cliente Afectado")).toBeInTheDocument();
@@ -571,7 +582,7 @@ describe("CreateManualAlertView", () => {
 
 	it("displays all severity options correctly", async () => {
 		const user = userEvent.setup();
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		const severityTrigger = document.querySelector(
 			'[data-slot="select-trigger"]',
@@ -590,7 +601,7 @@ describe("CreateManualAlertView", () => {
 
 	it("shows severity descriptions in dropdown", async () => {
 		const user = userEvent.setup();
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Severidad")).toBeInTheDocument();
@@ -620,7 +631,7 @@ describe("CreateManualAlertView", () => {
 	});
 
 	it("displays rule description when available", async () => {
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Regla de Alerta")).toBeInTheDocument();
@@ -657,7 +668,7 @@ describe("CreateManualAlertView", () => {
 			},
 		} as AlertRulesListResponse);
 
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Regla de Alerta")).toBeInTheDocument();
@@ -674,7 +685,7 @@ describe("CreateManualAlertView", () => {
 			return { id: "alert-1" } as Alert;
 		});
 
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		// Cancel button should be disabled during save
 		const cancelButton = screen.getByRole("button", { name: /Cancelar/i });
@@ -688,7 +699,7 @@ describe("CreateManualAlertView", () => {
 			return { id: "alert-1" } as Alert;
 		});
 
-		render(<CreateManualAlertView />);
+		renderWithProviders(<CreateManualAlertView />);
 
 		// Submit button should show loading state
 		const submitButton = screen.getByRole("button", { name: /Crear Alerta/i });

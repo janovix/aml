@@ -15,6 +15,7 @@ import {
 import { acceptInvitation } from "@/lib/auth/organizations";
 import { useAuthSession } from "@/lib/auth/useAuthSession";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/components/LanguageProvider";
 
 type InvitationState =
 	| "loading"
@@ -25,6 +26,7 @@ type InvitationState =
 	| "not-authenticated";
 
 export default function AcceptInvitationPage() {
+	const { t } = useLanguage();
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const { toast } = useToast();
@@ -44,7 +46,7 @@ export default function AcceptInvitationPage() {
 
 		if (!invitationId) {
 			setState("error");
-			setErrorMessage("No valid invitation ID was provided.");
+			setErrorMessage(t("invitationNoId"));
 			return;
 		}
 
@@ -62,14 +64,14 @@ export default function AcceptInvitationPage() {
 			setErrorMessage(result.error);
 			toast({
 				variant: "destructive",
-				title: "Error accepting invitation",
+				title: t("invitationAcceptError"),
 				description: result.error,
 			});
 		} else {
 			setState("accepted");
 			toast({
-				title: "Invitation accepted!",
-				description: "You are now part of the organization.",
+				title: t("invitationAcceptedSuccess"),
+				description: t("invitationAcceptedSuccessDesc"),
 			});
 			// Redirect to main page after a short delay
 			setTimeout(() => {
@@ -99,7 +101,7 @@ export default function AcceptInvitationPage() {
 				<Card className="w-full max-w-md">
 					<CardContent className="flex flex-col items-center justify-center py-12">
 						<Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-						<p className="text-muted-foreground">Verifying invitation...</p>
+						<p className="text-muted-foreground">{t("invitationVerifying")}</p>
 					</CardContent>
 				</Card>
 			</div>
@@ -114,23 +116,20 @@ export default function AcceptInvitationPage() {
 						<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10">
 							<Users className="h-8 w-8 text-amber-600" />
 						</div>
-						<CardTitle className="text-2xl">Organization Invitation</CardTitle>
-						<CardDescription>
-							You have a pending invitation to join an organization.
-						</CardDescription>
+						<CardTitle className="text-2xl">{t("invitationTitle")}</CardTitle>
+						<CardDescription>{t("invitationPendingDesc")}</CardDescription>
 					</CardHeader>
 					<CardContent className="text-center">
 						<p className="text-muted-foreground mb-4">
-							To accept this invitation, you must first sign in or create an
-							account.
+							{t("invitationSignInRequired")}
 						</p>
 					</CardContent>
 					<CardFooter className="flex flex-col gap-3">
 						<Button onClick={handleLogin} className="w-full" size="lg">
-							Sign in
+							{t("invitationSignIn")}
 						</Button>
 						<p className="text-xs text-muted-foreground text-center">
-							You will be redirected back after signing in
+							{t("invitationRedirectAfterSignIn")}
 						</p>
 					</CardFooter>
 				</Card>
@@ -146,20 +145,17 @@ export default function AcceptInvitationPage() {
 						<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-500/10">
 							<CheckCircle className="h-8 w-8 text-green-600" />
 						</div>
-						<CardTitle className="text-2xl">Welcome to the team!</CardTitle>
-						<CardDescription>
-							You have successfully accepted the invitation.
-						</CardDescription>
+						<CardTitle className="text-2xl">{t("invitationWelcome")}</CardTitle>
+						<CardDescription>{t("invitationAcceptedDesc")}</CardDescription>
 					</CardHeader>
 					<CardContent className="text-center">
 						<p className="text-muted-foreground">
-							You will be redirected to the organization dashboard in a few
-							seconds...
+							{t("invitationRedirecting")}
 						</p>
 					</CardContent>
 					<CardFooter>
 						<Button onClick={() => router.push("/")} className="w-full">
-							Go to dashboard
+							{t("invitationGoToDashboard")}
 						</Button>
 					</CardFooter>
 				</Card>
@@ -175,15 +171,14 @@ export default function AcceptInvitationPage() {
 						<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
 							<AlertCircle className="h-8 w-8 text-destructive" />
 						</div>
-						<CardTitle className="text-2xl">Error</CardTitle>
-						<CardDescription>
-							The invitation could not be processed.
-						</CardDescription>
+						<CardTitle className="text-2xl">
+							{t("invitationErrorTitle")}
+						</CardTitle>
+						<CardDescription>{t("invitationErrorDesc")}</CardDescription>
 					</CardHeader>
 					<CardContent className="text-center">
 						<p className="text-muted-foreground">
-							{errorMessage ||
-								"The invitation may have expired or has already been used."}
+							{errorMessage || t("invitationErrorExpired")}
 						</p>
 					</CardContent>
 					<CardFooter className="flex gap-3">
@@ -192,7 +187,7 @@ export default function AcceptInvitationPage() {
 							onClick={() => router.push("/")}
 							className="flex-1"
 						>
-							Back to home
+							{t("invitationBackToHome")}
 						</Button>
 					</CardFooter>
 				</Card>
@@ -208,17 +203,15 @@ export default function AcceptInvitationPage() {
 					<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
 						<Users className="h-8 w-8 text-primary" />
 					</div>
-					<CardTitle className="text-2xl">Organization Invitation</CardTitle>
-					<CardDescription>
-						You have been invited to join an organization on Janovix.
-					</CardDescription>
+					<CardTitle className="text-2xl">{t("invitationTitle")}</CardTitle>
+					<CardDescription>{t("invitationInvitedToJoin")}</CardDescription>
 				</CardHeader>
 				<CardContent className="text-center">
 					<p className="text-muted-foreground mb-2">
-						Would you like to accept this invitation and join the team?
+						{t("invitationAcceptQuestion")}
 					</p>
 					<p className="text-xs text-muted-foreground">
-						Signed in as:{" "}
+						{t("invitationSignedInAs")}{" "}
 						<span className="font-medium">{session?.user?.email}</span>
 					</p>
 				</CardContent>
@@ -229,7 +222,7 @@ export default function AcceptInvitationPage() {
 						className="flex-1"
 						disabled={state === "accepting"}
 					>
-						Decline
+						{t("invitationDecline")}
 					</Button>
 					<Button
 						onClick={handleAccept}
@@ -239,10 +232,10 @@ export default function AcceptInvitationPage() {
 						{state === "accepting" ? (
 							<>
 								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-								Accepting...
+								{t("invitationAccepting")}
 							</>
 						) : (
-							"Accept invitation"
+							t("invitationAccept")
 						)}
 					</Button>
 				</CardFooter>

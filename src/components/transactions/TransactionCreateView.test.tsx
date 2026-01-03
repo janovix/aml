@@ -1,6 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import React from "react";
 import { TransactionCreateView } from "./TransactionCreateView";
+import { LanguageProvider } from "@/components/LanguageProvider";
+
+// Helper to render with LanguageProvider - force Spanish for consistent testing
+const renderWithProviders = (ui: React.ReactElement) => {
+	return render(ui, {
+		wrapper: ({ children }) => (
+			<LanguageProvider defaultLanguage="es">{children}</LanguageProvider>
+		),
+	});
+};
 
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
@@ -16,7 +27,7 @@ vi.mock("next/navigation", () => ({
 
 describe("TransactionCreateView", () => {
 	it("renders create transaction header", () => {
-		render(<TransactionCreateView />);
+		renderWithProviders(<TransactionCreateView />);
 		expect(screen.getByText("Nueva Transacción")).toBeInTheDocument();
 	});
 });

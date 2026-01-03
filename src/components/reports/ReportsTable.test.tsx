@@ -1,7 +1,18 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
 import { ReportsTable } from "./ReportsTable";
+import { LanguageProvider } from "@/components/LanguageProvider";
+
+// Helper to render with LanguageProvider - force Spanish for consistent testing
+const renderWithProviders = (ui: React.ReactElement) => {
+	return render(ui, {
+		wrapper: ({ children }) => (
+			<LanguageProvider defaultLanguage="es">{children}</LanguageProvider>
+		),
+	});
+};
 
 const mockToast = vi.fn();
 
@@ -34,7 +45,7 @@ describe("ReportsTable", () => {
 	});
 
 	it("renders table with mock report data", async () => {
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			// Wait for report data to load
@@ -45,7 +56,7 @@ describe("ReportsTable", () => {
 	});
 
 	it("renders report names", async () => {
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -59,7 +70,7 @@ describe("ReportsTable", () => {
 
 	it("allows selecting individual reports", async () => {
 		const user = userEvent.setup();
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		// Wait for report data to load first
 		await waitFor(() => {
@@ -79,7 +90,7 @@ describe("ReportsTable", () => {
 
 	it("allows selecting all reports", async () => {
 		const user = userEvent.setup();
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		// Wait for report data to load first
 		await waitFor(() => {
@@ -98,7 +109,7 @@ describe("ReportsTable", () => {
 
 	it("has search functionality", async () => {
 		const user = userEvent.setup();
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		// Wait for report data to load first
 		await waitFor(() => {
@@ -120,7 +131,7 @@ describe("ReportsTable", () => {
 	});
 
 	it("has filter popovers", async () => {
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -136,7 +147,7 @@ describe("ReportsTable", () => {
 	});
 
 	it("renders action menu for reports", async () => {
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -150,7 +161,7 @@ describe("ReportsTable", () => {
 	});
 
 	it("renders table with correct structure", async () => {
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -164,7 +175,7 @@ describe("ReportsTable", () => {
 	});
 
 	it("renders checkboxes for selection", async () => {
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -178,7 +189,7 @@ describe("ReportsTable", () => {
 	});
 
 	it("renders reports with actions", async () => {
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -192,7 +203,7 @@ describe("ReportsTable", () => {
 	});
 
 	it("displays correct status for reports", async () => {
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -207,7 +218,7 @@ describe("ReportsTable", () => {
 
 	it("shows selected count in footer", async () => {
 		const user = userEvent.setup();
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		// Wait for report data to load first
 		await waitFor(() => {
@@ -226,7 +237,7 @@ describe("ReportsTable", () => {
 	});
 
 	it("displays period information", async () => {
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Diciembre 2024")).toBeInTheDocument();
@@ -235,7 +246,7 @@ describe("ReportsTable", () => {
 	});
 
 	it("displays record count", async () => {
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			// Check for numeric record counts
@@ -245,7 +256,7 @@ describe("ReportsTable", () => {
 	});
 
 	it("renders action menu buttons for reports", async () => {
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -264,7 +275,7 @@ describe("ReportsTable", () => {
 
 	it("navigates to report detail when view action is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -291,7 +302,7 @@ describe("ReportsTable", () => {
 
 	it("shows generate report option for DRAFT status", async () => {
 		const user = userEvent.setup();
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -315,7 +326,7 @@ describe("ReportsTable", () => {
 
 	it("shows send to SAT option for GENERATED status", async () => {
 		const user = userEvent.setup();
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -345,7 +356,7 @@ describe("ReportsTable", () => {
 
 	it("shows download XML option for all reports", async () => {
 		const user = userEvent.setup();
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -368,7 +379,7 @@ describe("ReportsTable", () => {
 
 	it("calls download handler when download is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -401,7 +412,7 @@ describe("ReportsTable", () => {
 
 	it("shows delete option only for DRAFT reports", async () => {
 		const user = userEvent.setup();
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -425,7 +436,7 @@ describe("ReportsTable", () => {
 
 	it("calls delete handler when delete is clicked for DRAFT report", async () => {
 		const user = userEvent.setup();
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -457,7 +468,7 @@ describe("ReportsTable", () => {
 	});
 
 	it("displays status icons correctly", async () => {
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -471,7 +482,7 @@ describe("ReportsTable", () => {
 	});
 
 	it("displays type badges correctly", async () => {
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -485,7 +496,7 @@ describe("ReportsTable", () => {
 	});
 
 	it("formats submitted date correctly when present", async () => {
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -499,7 +510,7 @@ describe("ReportsTable", () => {
 	});
 
 	it("shows dash when submitted date is not present", async () => {
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -514,7 +525,7 @@ describe("ReportsTable", () => {
 
 	it("navigates to new report page when CTA button is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -531,7 +542,7 @@ describe("ReportsTable", () => {
 
 	it("shows and can click 'Generar reporte' option for DRAFT status", async () => {
 		const user = userEvent.setup();
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -558,7 +569,7 @@ describe("ReportsTable", () => {
 
 	it("shows and can click 'Enviar a SAT' option for GENERATED status", async () => {
 		const user = userEvent.setup();
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			// Find the GENERATED report (RPT-003)
@@ -588,7 +599,7 @@ describe("ReportsTable", () => {
 
 	it("calls handleDownload when download is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -623,7 +634,7 @@ describe("ReportsTable", () => {
 
 	it("calls handleDelete when delete is clicked for DRAFT report", async () => {
 		const user = userEvent.setup();
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -658,7 +669,7 @@ describe("ReportsTable", () => {
 
 	it("does not show delete option for non-DRAFT reports", async () => {
 		const user = userEvent.setup();
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -682,7 +693,7 @@ describe("ReportsTable", () => {
 	});
 
 	it("renders stats correctly from reports data", async () => {
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -698,7 +709,7 @@ describe("ReportsTable", () => {
 
 	it("handles generate report action for DRAFT status", async () => {
 		const user = userEvent.setup();
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
@@ -725,7 +736,7 @@ describe("ReportsTable", () => {
 
 	it("handles send to SAT action for GENERATED status", async () => {
 		const user = userEvent.setup();
-		render(<ReportsTable />);
+		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(

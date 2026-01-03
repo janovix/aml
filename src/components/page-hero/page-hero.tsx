@@ -16,6 +16,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useLanguage } from "@/components/LanguageProvider";
 
 export interface StatCard {
 	label: string;
@@ -69,6 +70,7 @@ export function PageHero({
 	onCtaClick,
 	className,
 }: PageHeroProps) {
+	const { t } = useLanguage();
 	const isMobile = useIsMobile();
 
 	// Convert legacy CTA prop to actions array for backward compatibility
@@ -104,13 +106,13 @@ export function PageHero({
 										size="icon"
 										onClick={backButton.onClick}
 										className="shrink-0 -ml-2"
-										aria-label={backButton.label ?? "Volver"}
+										aria-label={backButton.label ?? t("back")}
 									>
 										<ArrowLeft className="h-5 w-5" />
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent side="bottom">
-									<p>{backButton.label ?? "Volver"}</p>
+									<p>{backButton.label ?? t("back")}</p>
 								</TooltipContent>
 							</Tooltip>
 						</TooltipProvider>
@@ -164,7 +166,7 @@ export function PageHero({
 											<Button
 												variant="outline"
 												size="icon"
-												aria-label="Más acciones"
+												aria-label={t("pageHeroMoreActions")}
 											>
 												<MoreHorizontal className="h-4 w-4" />
 											</Button>

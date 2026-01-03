@@ -189,7 +189,7 @@ function CatalogSelectorCommandContent({
 					>
 						{mappedItems.length === 0 ? (
 							<CommandEmpty>
-								<div className="flex flex-col items-center gap-2 py-2">
+								<div className="flex flex-col items-center gap-2 py-2 px-3">
 									<span>{emptyState}</span>
 									{allowNewItems && searchTerm.trim() && (
 										<Button

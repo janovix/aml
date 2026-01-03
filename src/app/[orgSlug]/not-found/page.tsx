@@ -12,12 +12,14 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface PageProps {
 	params: Promise<{ orgSlug: string }>;
 }
 
 export default function OrgNotFoundPage({ params }: PageProps) {
+	const { t } = useLanguage();
 	const { orgSlug } = use(params);
 
 	return (
@@ -27,18 +29,14 @@ export default function OrgNotFoundPage({ params }: PageProps) {
 					<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
 						<SearchX className="h-8 w-8 text-muted-foreground" />
 					</div>
-					<CardTitle className="text-2xl">Organization Not Found</CardTitle>
+					<CardTitle className="text-2xl">{t("errorOrgNotFound")}</CardTitle>
 					<CardDescription>
-						The organization{" "}
-						<span className="font-semibold text-foreground">{orgSlug}</span>{" "}
-						doesn&apos;t exist.
+						{t("errorOrgNotFoundDesc")}{" "}
+						<span className="font-semibold text-foreground">{orgSlug}</span>.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="text-center text-sm text-muted-foreground">
-					<p>
-						This could happen if the organization was deleted, the URL is
-						incorrect, or you followed an outdated link.
-					</p>
+					<p>{t("errorOrgNotFoundReason")}</p>
 				</CardContent>
 				<CardFooter className="flex gap-3">
 					<Button
@@ -47,12 +45,12 @@ export default function OrgNotFoundPage({ params }: PageProps) {
 						onClick={() => window.history.back()}
 					>
 						<ArrowLeft className="mr-2 h-4 w-4" />
-						Go Back
+						{t("errorGoBack")}
 					</Button>
 					<Button asChild className="flex-1">
 						<Link href="/">
 							<Home className="mr-2 h-4 w-4" />
-							Home
+							{t("errorHome")}
 						</Link>
 					</Button>
 				</CardFooter>

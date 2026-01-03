@@ -39,6 +39,7 @@ import { LabelWithInfo } from "../ui/LabelWithInfo";
 import { getFieldDescription } from "../../lib/field-descriptions";
 import { validateVIN } from "../../lib/utils";
 import { getVehicleBrandCatalogKey } from "../../lib/vehicle-utils";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface TransactionFormData {
 	clientId: string;
@@ -61,6 +62,7 @@ interface TransactionFormData {
 }
 
 export function TransactionCreateView(): React.JSX.Element {
+	const { t } = useLanguage();
 	const { navigateTo, orgPath } = useOrgNavigation();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
@@ -280,16 +282,16 @@ export function TransactionCreateView(): React.JSX.Element {
 	return (
 		<div className="space-y-6">
 			<PageHero
-				title="Nueva Transacción"
-				subtitle="Registrar una nueva transacción"
+				title={t("txnNewTitle")}
+				subtitle={t("txnNewSubtitle")}
 				icon={ReceiptText}
 				backButton={{
-					label: "Volver",
+					label: t("back"),
 					onClick: handleCancel,
 				}}
 				actions={[
 					{
-						label: isSaving ? "Creando..." : "Crear Transacción",
+						label: isSaving ? t("txnCreating") : t("txnCreateButton"),
 						icon: Save,
 						onClick: () => {
 							void handleSubmit({
@@ -299,7 +301,7 @@ export function TransactionCreateView(): React.JSX.Element {
 						disabled: isSaving,
 					},
 					{
-						label: "Cancelar",
+						label: t("cancel"),
 						onClick: handleCancel,
 						variant: "outline",
 					},
@@ -309,21 +311,17 @@ export function TransactionCreateView(): React.JSX.Element {
 			<form onSubmit={handleSubmit} className="space-y-6">
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">
-							Información de la Transacción
-						</CardTitle>
-						<CardDescription>
-							Detalles básicos de la transacción
-						</CardDescription>
+						<CardTitle className="text-lg">{t("txnInfoTitle")}</CardTitle>
+						<CardDescription>{t("txnInfoDesc")}</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div className="space-y-2">
 								<ClientSelector
-									label="Cliente"
+									label={t("txnClient")}
 									value={formData.clientId}
-									placeholder="Seleccionar cliente"
-									searchPlaceholder="Buscar cliente por nombre o RFC..."
+									placeholder={t("txnClientPlaceholder")}
+									searchPlaceholder={t("txnClientSearch")}
 									onValueChange={(value) =>
 										handleInputChange("clientId", value || "")
 									}
@@ -338,7 +336,7 @@ export function TransactionCreateView(): React.JSX.Element {
 									description={getFieldDescription("operationDate")}
 									required
 								>
-									Fecha de operación
+									{t("txnOperationDate")}
 								</LabelWithInfo>
 								<Input
 									id="operation-date"
@@ -357,7 +355,7 @@ export function TransactionCreateView(): React.JSX.Element {
 									description={getFieldDescription("branchPostalCode")}
 									required
 								>
-									Código Postal Sucursal
+									{t("txnBranchPostalCode")}
 								</LabelWithInfo>
 								<Input
 									id="branch-postal-code"
@@ -375,10 +373,8 @@ export function TransactionCreateView(): React.JSX.Element {
 
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">Información del Vehículo</CardTitle>
-						<CardDescription>
-							Detalles del vehículo involucrado en la transacción
-						</CardDescription>
+						<CardTitle className="text-lg">{t("txnVehicleTitle")}</CardTitle>
+						<CardDescription>{t("txnVehicleDesc")}</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="space-y-2">
@@ -387,7 +383,7 @@ export function TransactionCreateView(): React.JSX.Element {
 								description={getFieldDescription("vehicleType")}
 								required
 							>
-								Tipo de vehículo
+								{t("txnVehicleType")}
 							</LabelWithInfo>
 							<Select
 								value={formData.vehicleType}
@@ -397,12 +393,16 @@ export function TransactionCreateView(): React.JSX.Element {
 								required
 							>
 								<SelectTrigger id="vehicle-type">
-									<SelectValue placeholder="Seleccionar tipo" />
+									<SelectValue placeholder={t("txnVehicleTypePlaceholder")} />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="land">Terrestre</SelectItem>
-									<SelectItem value="marine">Marítimo</SelectItem>
-									<SelectItem value="air">Aéreo</SelectItem>
+									<SelectItem value="land">
+										{t("txnVehicleTypeLand")}
+									</SelectItem>
+									<SelectItem value="marine">
+										{t("txnVehicleTypeMarine")}
+									</SelectItem>
+									<SelectItem value="air">{t("txnVehicleTypeAir")}</SelectItem>
 								</SelectContent>
 							</Select>
 						</div>
@@ -412,10 +412,10 @@ export function TransactionCreateView(): React.JSX.Element {
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<CatalogSelector
 								catalogKey={getVehicleBrandCatalogKey(formData.vehicleType)}
-								label="Marca"
+								label={t("txnBrand")}
 								labelDescription={getFieldDescription("brand")}
 								value={formData.brand}
-								searchPlaceholder="Buscar marca..."
+								searchPlaceholder={t("txnBrandSearch")}
 								required
 								disabled={!formData.vehicleType}
 								onChange={(option) =>
@@ -429,7 +429,7 @@ export function TransactionCreateView(): React.JSX.Element {
 									description={getFieldDescription("model")}
 									required
 								>
-									Modelo
+									{t("txnModel")}
 								</LabelWithInfo>
 								<Input
 									id="model"
@@ -446,7 +446,7 @@ export function TransactionCreateView(): React.JSX.Element {
 									description={getFieldDescription("year")}
 									required
 								>
-									Año
+									{t("txnYear")}
 								</LabelWithInfo>
 								<Input
 									id="year"
@@ -467,7 +467,7 @@ export function TransactionCreateView(): React.JSX.Element {
 											htmlFor="vin"
 											description={getFieldDescription("vin")}
 										>
-											VIN (Número de Identificación Vehicular)
+											{t("txnVin")}
 										</LabelWithInfo>
 										<Input
 											id="vin"
@@ -503,7 +503,7 @@ export function TransactionCreateView(): React.JSX.Element {
 											htmlFor="plates"
 											description={getFieldDescription("plates")}
 										>
-											Placas
+											{t("txnPlates")}
 										</LabelWithInfo>
 										<Input
 											id="plates"
@@ -519,7 +519,7 @@ export function TransactionCreateView(): React.JSX.Element {
 											htmlFor="engine-number"
 											description={getFieldDescription("engineNumber")}
 										>
-											Número de motor
+											{t("txnEngineNumber")}
 										</LabelWithInfo>
 										<Input
 											id="engine-number"
@@ -549,7 +549,7 @@ export function TransactionCreateView(): React.JSX.Element {
 											description={getFieldDescription("registrationNumber")}
 											required
 										>
-											Número de registro
+											{t("txnRegistrationNumber")}
 										</LabelWithInfo>
 										<Input
 											id="registration-number"
@@ -563,10 +563,10 @@ export function TransactionCreateView(): React.JSX.Element {
 									</div>
 									<CatalogSelector
 										catalogKey="countries"
-										label="País de bandera"
+										label={t("txnFlagCountry")}
 										labelDescription={getFieldDescription("flagCountryId")}
 										value={formData.flagCountryId}
-										searchPlaceholder="Buscar país..."
+										searchPlaceholder={t("search")}
 										onChange={(option) =>
 											handleInputChange("flagCountryId", option?.id ?? "")
 										}
@@ -579,20 +579,18 @@ export function TransactionCreateView(): React.JSX.Element {
 
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">Información de Pago</CardTitle>
-						<CardDescription>
-							Detalles financieros de la transacción
-						</CardDescription>
+						<CardTitle className="text-lg">{t("txnPaymentTitle")}</CardTitle>
+						<CardDescription>{t("txnPaymentDesc")}</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<CatalogSelector
 								catalogKey="currencies"
-								label="Moneda"
+								label={t("txnCurrency")}
 								labelDescription={getFieldDescription("currency")}
 								value={formData.currency}
 								required
-								searchPlaceholder="Buscar moneda..."
+								searchPlaceholder={t("search")}
 								onChange={(option) =>
 									handleInputChange("currency", option?.id ?? "")
 								}
@@ -603,7 +601,7 @@ export function TransactionCreateView(): React.JSX.Element {
 
 						<div className="space-y-4">
 							<div className="flex items-center justify-between">
-								<Label>Métodos de Pago *</Label>
+								<Label>{t("txnPaymentMethods")} *</Label>
 								<Button
 									type="button"
 									variant="outline"
@@ -612,7 +610,7 @@ export function TransactionCreateView(): React.JSX.Element {
 									className="gap-2"
 								>
 									<Plus className="h-4 w-4" />
-									Agregar Método
+									{t("txnAddPaymentMethod")}
 								</Button>
 							</div>
 
@@ -647,7 +645,7 @@ export function TransactionCreateView(): React.JSX.Element {
 								>
 									<div className="space-y-2">
 										<Label htmlFor={`payment-method-${index}`}>
-											Método {index + 1} *
+											{t("txnPaymentMethodLabel")} {index + 1} *
 										</Label>
 										<Select
 											value={pm.method}
@@ -660,13 +658,17 @@ export function TransactionCreateView(): React.JSX.Element {
 												<SelectValue />
 											</SelectTrigger>
 											<SelectContent>
-												<SelectItem value="EFECTIVO">Efectivo</SelectItem>
-												<SelectItem value="TRANSFERENCIA">
-													Transferencia
+												<SelectItem value="EFECTIVO">
+													{t("txnPaymentMethodCash")}
 												</SelectItem>
-												<SelectItem value="CHEQUE">Cheque</SelectItem>
+												<SelectItem value="TRANSFERENCIA">
+													{t("txnPaymentMethodTransfer")}
+												</SelectItem>
+												<SelectItem value="CHEQUE">
+													{t("txnPaymentMethodCheck")}
+												</SelectItem>
 												<SelectItem value="FINANCIAMIENTO">
-													Financiamiento
+													{t("txnPaymentMethodFinancing")}
 												</SelectItem>
 											</SelectContent>
 										</Select>
@@ -674,7 +676,7 @@ export function TransactionCreateView(): React.JSX.Element {
 
 									<div className="space-y-2">
 										<Label htmlFor={`payment-amount-${index}`}>
-											Monto {index + 1} *
+											{t("txnPaymentAmountLabel")} {index + 1} *
 										</Label>
 										<Input
 											id={`payment-amount-${index}`}
@@ -704,7 +706,7 @@ export function TransactionCreateView(): React.JSX.Element {
 												className="gap-2 text-destructive"
 											>
 												<Trash2 className="h-4 w-4" />
-												Eliminar
+												{t("delete")}
 											</Button>
 										)}
 									</div>

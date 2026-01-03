@@ -79,14 +79,22 @@ import {
 	CollapsibleContent,
 	CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { useLanguage } from "@/components/LanguageProvider";
+import type { TranslationKeys } from "@/lib/translations";
 
-const roleLabels: Record<OrganizationRole, string> = {
-	owner: "Owner",
-	admin: "Administrator",
-	manager: "Manager",
-	member: "Member",
-	analyst: "Analyst",
-	readonly: "Read-only",
+const getRoleLabel = (
+	role: OrganizationRole,
+	t: (key: TranslationKeys) => string,
+): string => {
+	const roleMap: Record<OrganizationRole, TranslationKeys> = {
+		owner: "teamOwner",
+		admin: "teamAdmin",
+		manager: "teamManager",
+		member: "teamMemberLabel",
+		analyst: "teamAnalyst",
+		readonly: "teamReadonly",
+	};
+	return t(roleMap[role] || "teamMemberLabel");
 };
 
 const roleColors: Record<OrganizationRole, string> = {
@@ -99,6 +107,7 @@ const roleColors: Record<OrganizationRole, string> = {
 };
 
 export function OrgTeamTable() {
+	const { t } = useLanguage();
 	const { currentOrg, members, setMembers } = useOrgStore();
 	const [searchQuery, setSearchQuery] = useState("");
 	const [roleFilter, setRoleFilter] = useState<string>("all");
@@ -126,7 +135,7 @@ export function OrgTeamTable() {
 			if (result.data) {
 				setMembers(result.data);
 			} else if (result.error) {
-				toast.error("Failed to load members", {
+				toast.error(t("errorLoadingData"), {
 					description: result.error,
 				});
 			}
@@ -217,8 +226,8 @@ export function OrgTeamTable() {
 
 					return result.data;
 				},
-				loading: "Sending invitation...",
-				success: `${emailToInvite} was invited as ${roleLabels[roleToInvite]}.`,
+				loading: t("teamSendingInvitation"),
+				success: `${emailToInvite} ${t("teamWasInvitedAs")} ${getRoleLabel(roleToInvite, t)}.`,
 				onSuccess: async () => {
 					// Refresh invitations list
 					const invResult = await listInvitations(orgId, "pending");
@@ -253,8 +262,8 @@ export function OrgTeamTable() {
 					}
 					return result.data;
 				},
-				loading: "Canceling invitation...",
-				success: `The invitation to ${invitationEmail} has been canceled.`,
+				loading: t("teamCancelingInvitation"),
+				success: `${t("teamCancelInvitation")} ${invitationEmail}`,
 				onSuccess: () => {
 					setInvitations((prev) => prev.filter((i) => i.id !== invitationId));
 				},
@@ -289,8 +298,8 @@ export function OrgTeamTable() {
 
 					return result.data;
 				},
-				loading: "Resending invitation...",
-				success: `The invitation was resent to ${invitationEmail}.`,
+				loading: t("teamResendingInvitation"),
+				success: `${t("teamResendInvitation")} ${invitationEmail}.`,
 				onSuccess: async () => {
 					// Refresh invitations to get updated expiration
 					const invResult = await listInvitations(orgId, "pending");
@@ -329,13 +338,13 @@ export function OrgTeamTable() {
 										</div>
 										<div>
 											<CardTitle className="text-base">
-												Pending Invitations
+												{t("teamPendingInvitations")}
 											</CardTitle>
 											<CardDescription>
 												{pendingCount}{" "}
 												{pendingCount === 1
-													? "invitation awaiting response"
-													: "invitations awaiting response"}
+													? t("teamInvitationAwaiting")
+													: t("teamInvitationsAwaiting")}
 											</CardDescription>
 										</div>
 									</div>
@@ -354,10 +363,10 @@ export function OrgTeamTable() {
 										<Table>
 											<TableHeader>
 												<TableRow>
-													<TableHead>Email</TableHead>
-													<TableHead>Role</TableHead>
-													<TableHead>Sent</TableHead>
-													<TableHead>Expires</TableHead>
+													<TableHead>{t("formEmail")}</TableHead>
+													<TableHead>{t("teamRole")}</TableHead>
+													<TableHead>{t("teamSent")}</TableHead>
+													<TableHead>{t("teamExpires")}</TableHead>
 													<TableHead className="w-[100px]"></TableHead>
 												</TableRow>
 											</TableHeader>
@@ -368,7 +377,7 @@ export function OrgTeamTable() {
 															colSpan={5}
 															className="text-center text-muted-foreground"
 														>
-															Loading invitations...
+															{t("teamLoadingInvitations")}
 														</TableCell>
 													</TableRow>
 												)}
@@ -393,7 +402,8 @@ export function OrgTeamTable() {
 																			</p>
 																			{invitation.inviterName && (
 																				<p className="text-xs text-muted-foreground">
-																					Invited by {invitation.inviterName}
+																					{t("teamInvitedBy")}{" "}
+																					{invitation.inviterName}
 																				</p>
 																			)}
 																		</div>
@@ -407,8 +417,7 @@ export function OrgTeamTable() {
 																			roleColors.member
 																		}
 																	>
-																		{roleLabels[invitation.role] ||
-																			invitation.role}
+																		{getRoleLabel(invitation.role, t)}
 																	</Badge>
 																</TableCell>
 																<TableCell className="text-muted-foreground text-sm whitespace-nowrap">
@@ -420,7 +429,7 @@ export function OrgTeamTable() {
 																			variant="destructive"
 																			className="text-xs"
 																		>
-																			Expired
+																			{t("teamExpired")}
 																		</Badge>
 																	) : (
 																		<span className="text-muted-foreground text-sm whitespace-nowrap">
@@ -440,7 +449,7 @@ export function OrgTeamTable() {
 																			disabled={
 																				processingInvitationId === invitation.id
 																			}
-																			title="Resend invitation"
+																			title={t("teamResendInvitation")}
 																		>
 																			{processingInvitationId ===
 																			invitation.id ? (
@@ -459,7 +468,7 @@ export function OrgTeamTable() {
 																			disabled={
 																				processingInvitationId === invitation.id
 																			}
-																			title="Cancel invitation"
+																			title={t("teamCancelInvitation")}
 																		>
 																			<XCircle className="h-4 w-4" />
 																		</Button>
@@ -482,39 +491,39 @@ export function OrgTeamTable() {
 				<CardHeader>
 					<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 						<div className="min-w-0">
-							<CardTitle>Team Members</CardTitle>
-							<CardDescription>
-								Manage access and permissions for your organization
-							</CardDescription>
+							<CardTitle>{t("teamMembers")}</CardTitle>
+							<CardDescription>{t("teamMembersDesc")}</CardDescription>
 						</div>
 						<Dialog open={openInvite} onOpenChange={setOpenInvite}>
 							<DialogTrigger asChild>
 								<Button className="gap-2">
 									<UserPlus className="h-4 w-4" />
-									Invite member
+									{t("teamInviteMember")}
 								</Button>
 							</DialogTrigger>
 							<DialogContent>
 								<DialogHeader>
-									<DialogTitle>Invite member</DialogTitle>
+									<DialogTitle>{t("teamInviteMember")}</DialogTitle>
 									<DialogDescription>
-										Send an email invitation to join the organization.
+										{t("teamInviteMemberDesc")}
 									</DialogDescription>
 								</DialogHeader>
 								<div className="space-y-4">
 									<div className="space-y-2">
-										<Label htmlFor="invite-email">Email address</Label>
+										<Label htmlFor="invite-email">
+											{t("teamEmailAddress")}
+										</Label>
 										<Input
 											id="invite-email"
 											type="email"
 											required
 											value={inviteEmail}
 											onChange={(e) => setInviteEmail(e.target.value)}
-											placeholder="person@company.com"
+											placeholder={t("teamEmailPlaceholder")}
 										/>
 									</div>
 									<div className="space-y-2">
-										<Label>Role</Label>
+										<Label>{t("teamRole")}</Label>
 										<Select
 											value={inviteRole}
 											onValueChange={(value) =>
@@ -522,15 +531,23 @@ export function OrgTeamTable() {
 											}
 										>
 											<SelectTrigger>
-												<SelectValue placeholder="Select a role" />
+												<SelectValue placeholder={t("teamSelectRole")} />
 											</SelectTrigger>
 											<SelectContent>
-												<SelectItem value="owner">Owner</SelectItem>
-												<SelectItem value="admin">Administrator</SelectItem>
-												<SelectItem value="manager">Manager</SelectItem>
-												<SelectItem value="member">Member</SelectItem>
-												<SelectItem value="analyst">Analyst</SelectItem>
-												<SelectItem value="readonly">Read-only</SelectItem>
+												<SelectItem value="owner">{t("teamOwner")}</SelectItem>
+												<SelectItem value="admin">{t("teamAdmin")}</SelectItem>
+												<SelectItem value="manager">
+													{t("teamManager")}
+												</SelectItem>
+												<SelectItem value="member">
+													{t("teamMemberLabel")}
+												</SelectItem>
+												<SelectItem value="analyst">
+													{t("teamAnalyst")}
+												</SelectItem>
+												<SelectItem value="readonly">
+													{t("teamReadonly")}
+												</SelectItem>
 											</SelectContent>
 										</Select>
 									</div>
@@ -545,7 +562,7 @@ export function OrgTeamTable() {
 												setInviteRole("member");
 											}}
 										>
-											Cancel
+											{t("cancel")}
 										</Button>
 									</DialogClose>
 									<Button
@@ -553,7 +570,7 @@ export function OrgTeamTable() {
 										onClick={handleInvite}
 										disabled={isInviting || !inviteEmail}
 									>
-										{isInviting ? "Sending..." : "Send invitation"}
+										{isInviting ? t("teamSending") : t("teamSendInvitation")}
 									</Button>
 								</DialogFooter>
 							</DialogContent>
@@ -565,7 +582,7 @@ export function OrgTeamTable() {
 						<div className="relative flex-1">
 							<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 							<Input
-								placeholder="Search by name or email..."
+								placeholder={t("teamSearchByNameOrEmail")}
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
 								className="pl-9"
@@ -573,16 +590,16 @@ export function OrgTeamTable() {
 						</div>
 						<Select value={roleFilter} onValueChange={setRoleFilter}>
 							<SelectTrigger className="w-full sm:w-[180px]">
-								<SelectValue placeholder="Filter by role" />
+								<SelectValue placeholder={t("teamFilterByRole")} />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value="all">All roles</SelectItem>
-								<SelectItem value="owner">Owner</SelectItem>
-								<SelectItem value="admin">Administrator</SelectItem>
-								<SelectItem value="manager">Manager</SelectItem>
-								<SelectItem value="member">Member</SelectItem>
-								<SelectItem value="analyst">Analyst</SelectItem>
-								<SelectItem value="readonly">Read-only</SelectItem>
+								<SelectItem value="all">{t("teamAllRoles")}</SelectItem>
+								<SelectItem value="owner">{t("teamOwner")}</SelectItem>
+								<SelectItem value="admin">{t("teamAdmin")}</SelectItem>
+								<SelectItem value="manager">{t("teamManager")}</SelectItem>
+								<SelectItem value="member">{t("teamMemberLabel")}</SelectItem>
+								<SelectItem value="analyst">{t("teamAnalyst")}</SelectItem>
+								<SelectItem value="readonly">{t("teamReadonly")}</SelectItem>
 							</SelectContent>
 						</Select>
 					</div>
@@ -592,10 +609,10 @@ export function OrgTeamTable() {
 							<Table>
 								<TableHeader>
 									<TableRow>
-										<TableHead>Member</TableHead>
-										<TableHead>Role</TableHead>
-										<TableHead>Status</TableHead>
-										<TableHead>Joined</TableHead>
+										<TableHead>{t("teamMemberLabel")}</TableHead>
+										<TableHead>{t("teamRole")}</TableHead>
+										<TableHead>{t("teamStatus")}</TableHead>
+										<TableHead>{t("teamJoined")}</TableHead>
 										<TableHead className="w-[50px]"></TableHead>
 									</TableRow>
 								</TableHeader>
@@ -606,7 +623,7 @@ export function OrgTeamTable() {
 												colSpan={5}
 												className="text-center text-muted-foreground"
 											>
-												Loading members...
+												{t("teamLoadingMembers")}
 											</TableCell>
 										</TableRow>
 									)}
@@ -635,7 +652,7 @@ export function OrgTeamTable() {
 																{member.name || member.email || member.userId}
 															</p>
 															<p className="text-sm text-muted-foreground truncate">
-																{member.email || "Email not available"}
+																{member.email || t("teamEmailNotAvailable")}
 															</p>
 														</div>
 													</div>
@@ -647,7 +664,7 @@ export function OrgTeamTable() {
 															roleColors[member.role] || roleColors.member
 														}
 													>
-														{roleLabels[member.role] || member.role}
+														{getRoleLabel(member.role, t)}
 													</Badge>
 												</TableCell>
 												<TableCell>
@@ -658,7 +675,9 @@ export function OrgTeamTable() {
 																: "secondary"
 														}
 													>
-														{member.status === "active" ? "Active" : "Pending"}
+														{member.status === "active"
+															? t("teamActive")
+															: t("teamPending")}
 													</Badge>
 												</TableCell>
 												<TableCell className="text-muted-foreground whitespace-nowrap">
@@ -673,24 +692,26 @@ export function OrgTeamTable() {
 																className="h-8 w-8"
 															>
 																<MoreHorizontal className="h-4 w-4" />
-																<span className="sr-only">Actions</span>
+																<span className="sr-only">{t("actions")}</span>
 															</Button>
 														</DropdownMenuTrigger>
 														<DropdownMenuContent align="end">
-															<DropdownMenuLabel>Actions</DropdownMenuLabel>
+															<DropdownMenuLabel>
+																{t("actions")}
+															</DropdownMenuLabel>
 															<DropdownMenuSeparator />
 															<DropdownMenuItem>
 																<Mail className="mr-2 h-4 w-4" />
-																Send message
+																{t("teamSendMessage")}
 															</DropdownMenuItem>
 															<DropdownMenuItem>
 																<Shield className="mr-2 h-4 w-4" />
-																Change role
+																{t("teamChangeRole")}
 															</DropdownMenuItem>
 															<DropdownMenuSeparator />
 															<DropdownMenuItem className="text-destructive">
 																<UserX className="mr-2 h-4 w-4" />
-																Remove from team
+																{t("teamRemoveFromTeam")}
 															</DropdownMenuItem>
 														</DropdownMenuContent>
 													</DropdownMenu>
@@ -704,7 +725,7 @@ export function OrgTeamTable() {
 
 					{!isLoading && filteredMembers.length === 0 && (
 						<div className="text-center py-8 text-muted-foreground">
-							No members found with the selected filters
+							{t("teamNoMembersFound")}
 						</div>
 					)}
 				</CardContent>

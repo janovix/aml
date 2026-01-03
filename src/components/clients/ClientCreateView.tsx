@@ -20,20 +20,24 @@ import { CatalogSelector } from "../catalogs/CatalogSelector";
 import { PhoneInput } from "../ui/phone-input";
 import { validateRFC, validateCURP } from "../../lib/utils";
 import { toast } from "sonner";
+import { useLanguage } from "@/components/LanguageProvider";
+import type { TranslationKeys } from "@/lib/translations";
 
-const personTypeOptions: {
+interface PersonTypeOption {
 	value: PersonType;
-	label: string;
-	description: string;
+	labelKey: TranslationKeys;
+	descriptionKey: TranslationKeys;
 	icon: typeof User;
 	iconBg: string;
 	iconColor: string;
 	ringColor: string;
-}[] = [
+}
+
+const personTypeOptionsConfig: PersonTypeOption[] = [
 	{
 		value: "physical",
-		label: "Persona Física",
-		description: "Individuo o persona natural",
+		labelKey: "clientPersonPhysical",
+		descriptionKey: "clientPersonPhysicalDesc",
 		icon: User,
 		iconBg: "bg-sky-500/20",
 		iconColor: "text-sky-500",
@@ -41,8 +45,8 @@ const personTypeOptions: {
 	},
 	{
 		value: "moral",
-		label: "Persona Moral",
-		description: "Empresa o sociedad mercantil",
+		labelKey: "clientPersonMoral",
+		descriptionKey: "clientPersonMoralDesc",
 		icon: Building2,
 		iconBg: "bg-violet-500/20",
 		iconColor: "text-violet-500",
@@ -50,8 +54,8 @@ const personTypeOptions: {
 	},
 	{
 		value: "trust",
-		label: "Fideicomiso",
-		description: "Contrato de administración fiduciaria",
+		labelKey: "clientTrust",
+		descriptionKey: "clientTrustDesc",
 		icon: Landmark,
 		iconBg: "bg-amber-500/20",
 		iconColor: "text-amber-500",
@@ -88,10 +92,18 @@ interface ClientFormData {
 }
 
 export function ClientCreateView(): React.JSX.Element {
+	const { t } = useLanguage();
 	const { navigateTo, orgPath } = useOrgNavigation();
 	const searchParams = useSearchParams();
 	const returnUrl = searchParams.get("returnUrl");
 	const [isSubmitting, setIsSubmitting] = useState(false);
+
+	// Build person type options with translations
+	const personTypeOptions = personTypeOptionsConfig.map((opt) => ({
+		...opt,
+		label: t(opt.labelKey),
+		description: t(opt.descriptionKey),
+	}));
 
 	const [formData, setFormData] = useState<ClientFormData>({
 		personType: "moral",
@@ -243,16 +255,16 @@ export function ClientCreateView(): React.JSX.Element {
 	return (
 		<div className="space-y-6">
 			<PageHero
-				title="Nuevo Cliente"
-				subtitle="Registrar un nuevo cliente en el sistema"
+				title={t("clientNewTitle")}
+				subtitle={t("clientNewSubtitle")}
 				icon={UserPlus}
 				backButton={{
-					label: "Volver",
+					label: t("back"),
 					onClick: handleCancel,
 				}}
 				actions={[
 					{
-						label: isSubmitting ? "Creando..." : "Crear Cliente",
+						label: isSubmitting ? t("clientCreating") : t("clientCreateButton"),
 						icon: Save,
 						onClick: () => {
 							void handleSubmit({
@@ -262,7 +274,7 @@ export function ClientCreateView(): React.JSX.Element {
 						disabled: isSubmitting,
 					},
 					{
-						label: "Cancelar",
+						label: t("cancel"),
 						onClick: handleCancel,
 						variant: "outline",
 					},
@@ -272,11 +284,11 @@ export function ClientCreateView(): React.JSX.Element {
 			<form onSubmit={handleSubmit} className="max-w-4xl space-y-6 pb-6">
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">Tipo de Persona</CardTitle>
+						<CardTitle className="text-lg">{t("clientPersonType")}</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<fieldset>
-							<legend className="sr-only">Selecciona el tipo de persona</legend>
+							<legend className="sr-only">{t("clientPersonTypeSelect")}</legend>
 							<div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
 								{personTypeOptions.map((option) => {
 									const isSelected = formData.personType === option.value;
@@ -569,7 +581,7 @@ export function ClientCreateView(): React.JSX.Element {
 
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">Información de Contacto</CardTitle>
+						<CardTitle className="text-lg">{t("clientContactInfo")}</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -614,7 +626,7 @@ export function ClientCreateView(): React.JSX.Element {
 
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">Dirección</CardTitle>
+						<CardTitle className="text-lg">{t("clientAddressInfo")}</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -775,7 +787,9 @@ export function ClientCreateView(): React.JSX.Element {
 
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">Notas de Cumplimiento</CardTitle>
+						<CardTitle className="text-lg">
+							{t("clientComplianceNotes")}
+						</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<div className="space-y-2">

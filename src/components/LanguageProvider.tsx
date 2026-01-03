@@ -25,12 +25,27 @@ const LanguageContext = createContext<LanguageContextType | undefined>(
 	undefined,
 );
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
-	const [language, setLanguageState] = useState<Language>("es");
+interface LanguageProviderProps {
+	children: ReactNode;
+	/** Force a specific language (useful for testing) */
+	defaultLanguage?: Language;
+}
+
+export function LanguageProvider({
+	children,
+	defaultLanguage,
+}: LanguageProviderProps) {
+	const [language, setLanguageState] = useState<Language>(
+		defaultLanguage ?? "es",
+	);
 	const [mounted, setMounted] = useState(false);
 
 	useEffect(() => {
 		setMounted(true);
+		// If defaultLanguage is set, skip detection (useful for testing)
+		if (defaultLanguage) {
+			return;
+		}
 		// Check cookie first, then browser language
 		const stored = getCookie(COOKIE_NAMES.LANGUAGE) as Language | undefined;
 		if (stored && ["es", "en"].includes(stored)) {
@@ -40,7 +55,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 			setLanguageState(detected);
 			setCookie(COOKIE_NAMES.LANGUAGE, detected);
 		}
-	}, []);
+	}, [defaultLanguage]);
 
 	const setLanguage = (lang: Language) => {
 		setLanguageState(lang);
@@ -53,12 +68,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
 	// Return default context during SSR
 	if (!mounted) {
+		const ssrLanguage = defaultLanguage ?? "es";
 		return (
 			<LanguageContext.Provider
 				value={{
-					language: "es",
+					language: ssrLanguage,
 					setLanguage: () => {},
-					t: (key) => translations["es"][key] || key,
+					t: (key) => translations[ssrLanguage][key] || key,
 				}}
 			>
 				{children}

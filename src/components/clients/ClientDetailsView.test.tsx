@@ -1,7 +1,18 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import React from "react";
 import { ClientDetailsView } from "./ClientDetailsView";
 import { mockClients } from "@/data/mockClients";
+import { LanguageProvider } from "@/components/LanguageProvider";
+
+// Helper to render with LanguageProvider - force Spanish for consistent testing
+const renderWithProviders = (ui: React.ReactElement) => {
+	return render(ui, {
+		wrapper: ({ children }) => (
+			<LanguageProvider defaultLanguage="es">{children}</LanguageProvider>
+		),
+	});
+};
 
 const mockNavigateTo = vi.fn();
 const mockGetClientById = vi.fn();
@@ -64,7 +75,7 @@ describe("ClientDetailsView", () => {
 		const client = mockClients[0];
 		mockGetClientById.mockResolvedValue(client);
 
-		render(<ClientDetailsView clientId={client.id} />);
+		renderWithProviders(<ClientDetailsView clientId={client.id} />);
 
 		// Should show skeleton while loading
 		expect(screen.getByTestId("page-hero-skeleton")).toBeInTheDocument();
@@ -74,7 +85,7 @@ describe("ClientDetailsView", () => {
 		const client = mockClients[0];
 		mockGetClientById.mockResolvedValue(client);
 
-		render(<ClientDetailsView clientId={client.id} />);
+		renderWithProviders(<ClientDetailsView clientId={client.id} />);
 
 		await waitFor(() => {
 			expect(mockGetClientById).toHaveBeenCalledWith({
