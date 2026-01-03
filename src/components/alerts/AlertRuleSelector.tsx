@@ -176,7 +176,7 @@ function AlertRuleSelectorCommandContent({
 				onValueChange={onSearchChange}
 				placeholder={searchPlaceholder}
 				autoFocus={autoFocusSearch}
-				className={cn(isMobile && "sticky top-0 z-10")}
+				className={cn("text-base", isMobile && "sticky top-0 z-10")}
 			/>
 
 			{loading && (
