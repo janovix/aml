@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { AlertRuleSelector } from "./AlertRuleSelector";
 import * as alertsApi from "@/lib/api/alerts";
 import type { AlertRule, AlertRulesListResponse } from "@/lib/api/alerts";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Mock useJwt hook
 vi.mock("@/hooks/useJwt", () => ({
@@ -11,9 +12,9 @@ vi.mock("@/hooks/useJwt", () => ({
 }));
 
 // Mock use-mobile hook
-vi.mock("@/hooks/use-mobile", () => ({
-	useIsMobile: () => false,
-}));
+vi.mock("@/hooks/use-mobile");
+
+const mockUseIsMobile = vi.mocked(useIsMobile);
 
 // Mock the alerts API
 vi.mock("@/lib/api/alerts", async (importOriginal) => {
@@ -67,6 +68,7 @@ const mockAlertRules: AlertRule[] = [
 describe("AlertRuleSelector", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mockUseIsMobile.mockReturnValue(false); // Default to desktop
 		vi.mocked(alertsApi.listAlertRules).mockResolvedValue({
 			data: mockAlertRules,
 			pagination: {
@@ -218,6 +220,135 @@ describe("AlertRuleSelector", () => {
 
 		await waitFor(() => {
 			expect(screen.getByText("No rules found")).toBeInTheDocument();
+		});
+	});
+
+	describe("mobile dialog behavior", () => {
+		beforeEach(() => {
+			mockUseIsMobile.mockReturnValue(true);
+		});
+
+		it("should open fullscreen dialog on mobile when trigger is clicked", async () => {
+			const user = userEvent.setup();
+
+			render(<AlertRuleSelector label="Regla de Alerta" />);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			// On mobile, Dialog should render with dialog role
+			await waitFor(() => {
+				expect(screen.getByRole("dialog")).toBeInTheDocument();
+			});
+
+			// Should show the title in the dialog header (h2 element)
+			const dialog = screen.getByRole("dialog");
+			expect(dialog.querySelector("h2")).toHaveTextContent("Regla de Alerta");
+		});
+
+		it("should show search input in mobile dialog", async () => {
+			const user = userEvent.setup();
+
+			render(<AlertRuleSelector label="Regla de Alerta" />);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			await waitFor(() => {
+				expect(
+					screen.getByPlaceholderText("Buscar regla de alerta..."),
+				).toBeInTheDocument();
+			});
+		});
+
+		it("should allow selecting rule in mobile dialog", async () => {
+			const user = userEvent.setup();
+			const handleChange = vi.fn();
+
+			render(<AlertRuleSelector onChange={handleChange} />);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			await waitFor(() => {
+				expect(screen.getByText(/2501/)).toBeInTheDocument();
+			});
+
+			const option = screen.getByText(/2501/);
+			await user.click(option);
+
+			expect(handleChange).toHaveBeenCalledWith(mockAlertRules[0]);
+		});
+
+		it("should close dialog after selection on mobile", async () => {
+			const user = userEvent.setup();
+
+			render(<AlertRuleSelector />);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			await waitFor(() => {
+				expect(screen.getByText(/2501/)).toBeInTheDocument();
+			});
+
+			const option = screen.getByText(/2501/);
+			await user.click(option);
+
+			await waitFor(() => {
+				expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+			});
+		});
+
+		it("should show required indicator in mobile dialog title", async () => {
+			const user = userEvent.setup();
+
+			render(<AlertRuleSelector label="Regla de Alerta" required />);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			await waitFor(() => {
+				const dialog = screen.getByRole("dialog");
+				expect(dialog.querySelector(".text-destructive")).toBeInTheDocument();
+			});
+		});
+
+		it("should show close button in mobile dialog header", async () => {
+			const user = userEvent.setup();
+
+			render(<AlertRuleSelector label="Regla de Alerta" />);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			await waitFor(() => {
+				expect(screen.getByRole("dialog")).toBeInTheDocument();
+			});
+
+			// Should have a close button with "Cerrar" text
+			const closeButton = screen.getByRole("button", { name: /cerrar/i });
+			expect(closeButton).toBeInTheDocument();
+		});
+
+		it("should close dialog when close button is clicked", async () => {
+			const user = userEvent.setup();
+
+			render(<AlertRuleSelector label="Regla de Alerta" />);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			await waitFor(() => {
+				expect(screen.getByRole("dialog")).toBeInTheDocument();
+			});
+
+			const closeButton = screen.getByRole("button", { name: /cerrar/i });
+			await user.click(closeButton);
+
+			await waitFor(() => {
+				expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+			});
 		});
 	});
 });

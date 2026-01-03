@@ -54,7 +54,7 @@ const ERROR_MESSAGES: Record<string, string> = {
  */
 function IndexSkeleton() {
 	return (
-		<div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted/50 p-4">
+		<div className="flex min-h-full items-center justify-center bg-gradient-to-br from-background to-muted/50 p-4">
 			<Card className="w-full max-w-md">
 				<CardHeader className="text-center">
 					<Skeleton className="mx-auto mb-4 h-16 w-16 rounded-full" />
@@ -148,7 +148,7 @@ function CreateOrgForm({
 	};
 
 	return (
-		<div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted/50 p-4">
+		<div className="flex min-h-full items-center justify-center bg-gradient-to-br from-background to-muted/50 p-4 py-8">
 			<Card className="w-full max-w-md">
 				<CardHeader className="text-center">
 					<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
@@ -247,7 +247,7 @@ function OrgPicker({
 	}, [organizations, activeOrgId]);
 
 	return (
-		<div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted/50 p-4">
+		<div className="flex min-h-full items-center justify-center bg-gradient-to-br from-background to-muted/50 p-4 py-8">
 			<Card className="w-full max-w-md">
 				<CardHeader className="text-center">
 					<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">

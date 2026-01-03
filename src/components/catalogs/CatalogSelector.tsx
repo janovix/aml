@@ -9,7 +9,7 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { Check, ChevronsUpDown, Plus } from "lucide-react";
+import { Check, ChevronsUpDown, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -33,6 +33,13 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
 import type { CatalogItem } from "@/types/catalog";
 import { useCatalogSearch } from "@/hooks/useCatalogSearch";
 import { fetchCatalogItemById } from "@/lib/catalogs";
@@ -147,12 +154,16 @@ function CatalogSelectorCommandContent({
 	isMobile = false,
 }: CatalogSelectorCommandContentProps): React.ReactElement {
 	return (
-		<Command shouldFilter={false}>
+		<Command
+			shouldFilter={false}
+			className={cn(isMobile && "flex flex-col h-full")}
+		>
 			<CommandInput
 				value={searchTerm}
 				onValueChange={onSearchChange}
 				placeholder={searchPlaceholder}
 				autoFocus={autoFocusSearch}
+				className={cn(isMobile && "sticky top-0 z-10")}
 			/>
 
 			{loading && (
@@ -170,7 +181,11 @@ function CatalogSelectorCommandContent({
 				<>
 					<CommandList
 						ref={listRef}
-						className={cn(isMobile ? "max-h-[60vh]" : "max-h-[300px]")}
+						className={cn(
+							isMobile
+								? "flex-1 overflow-y-auto overscroll-contain"
+								: "max-h-[300px]",
+						)}
 					>
 						{mappedItems.length === 0 ? (
 							<CommandEmpty>
@@ -182,7 +197,7 @@ function CatalogSelectorCommandContent({
 											variant="outline"
 											size="sm"
 											onClick={onAddNewClick}
-											className="mt-2"
+											className="mt-2 bg-transparent"
 										>
 											<Plus className="mr-2 h-4 w-4" />
 											Agregar &quot;{searchTerm.trim()}&quot;
@@ -205,6 +220,7 @@ function CatalogSelectorCommandContent({
 											key={optionValue}
 											value={optionValue}
 											onSelect={() => onSelect(optionValue)}
+											className={cn(isMobile && "py-3")}
 										>
 											{renderOption(item, isSelected)}
 										</CommandItem>
@@ -215,7 +231,7 @@ function CatalogSelectorCommandContent({
 										key="__add_new__"
 										value="__add_new__"
 										onSelect={onAddNewClick}
-										className="text-primary"
+										className={cn("text-primary", isMobile && "py-3")}
 									>
 										<div className="flex items-center gap-2">
 											<Plus className="h-4 w-4" />
@@ -235,8 +251,10 @@ function CatalogSelectorCommandContent({
 					{shouldShowSummary && (
 						<div
 							className={cn(
-								"sticky bottom-0 border-t px-3 py-2",
-								isMobile ? "bg-background" : "bg-popover",
+								"border-t px-3 py-2",
+								isMobile
+									? "sticky bottom-0 bg-background pb-[env(safe-area-inset-bottom)]"
+									: "bg-popover",
 							)}
 						>
 							<p
@@ -650,7 +668,7 @@ export function CatalogSelector({
 			aria-expanded={open}
 			aria-labelledby={label ? labelId : undefined}
 			disabled={disabled}
-			className="w-full justify-between text-left font-normal"
+			className="w-full justify-between text-left font-normal bg-transparent"
 		>
 			<span className="truncate">{selectedLabel || resolvedPlaceholder}</span>
 			<span className="ml-2 flex items-center gap-1 text-xs text-muted-foreground">
@@ -704,23 +722,36 @@ export function CatalogSelector({
 				))}
 
 			{isMobile ? (
-				<Sheet open={open} onOpenChange={handleOpenChange}>
-					<SheetTrigger asChild>{triggerButton}</SheetTrigger>
-					<SheetContent
-						side="bottom"
-						className="h-[85vh] flex flex-col p-0 [&>button]:hidden"
+				<Dialog open={open} onOpenChange={handleOpenChange}>
+					<DialogTrigger asChild>{triggerButton}</DialogTrigger>
+					<DialogContent
+						className="h-dvh max-h-dvh w-screen max-w-none m-0 p-0 rounded-none flex flex-col gap-0 border-0 [&>button]:hidden"
+						showCloseButton={false}
 					>
-						<SheetHeader className="px-4 pt-4 pb-2 border-b">
-							<SheetTitle>
-								{label || "Seleccionar opción"}
-								{required && <span className="ml-1 text-destructive">*</span>}
-							</SheetTitle>
-						</SheetHeader>
-						<div className="flex-1 overflow-hidden">
+						{/* Fixed header with close button */}
+						<DialogHeader className="flex-none px-4 pt-[env(safe-area-inset-top)] pb-2 border-b bg-background">
+							<div className="flex items-center justify-between">
+								<DialogTitle className="text-base font-semibold">
+									{label || "Seleccionar opción"}
+									{required && <span className="ml-1 text-destructive">*</span>}
+								</DialogTitle>
+								<Button
+									variant="ghost"
+									size="icon"
+									className="h-8 w-8 -mr-2"
+									onClick={() => setOpen(false)}
+								>
+									<X className="h-4 w-4" />
+									<span className="sr-only">Cerrar</span>
+								</Button>
+							</div>
+						</DialogHeader>
+						{/* Flex-grow content area that adapts to keyboard */}
+						<div className="flex-1 min-h-0 overflow-hidden">
 							<CatalogSelectorCommandContent {...commandContentProps} />
 						</div>
-					</SheetContent>
-				</Sheet>
+					</DialogContent>
+				</Dialog>
 			) : (
 				<Popover open={open} onOpenChange={handleOpenChange}>
 					<PopoverTrigger asChild>{triggerButton}</PopoverTrigger>
