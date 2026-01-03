@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/sheet";
 import type { CatalogItem } from "@/types/catalog";
 import { useCatalogSearch } from "@/hooks/useCatalogSearch";
+import { fetchCatalogItemById } from "@/lib/catalogs";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
 import { AddCatalogItemDialog } from "./AddCatalogItemDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -294,6 +295,7 @@ export function CatalogSelector({
 	const [lastSearchedValue, setLastSearchedValue] = useState<
 		string | undefined
 	>(value);
+	const [fetchingById, setFetchingById] = useState(false);
 
 	const {
 		items,
@@ -363,6 +365,13 @@ export function CatalogSelector({
 			return;
 		}
 
+		// If selectedOption exists but doesn't match the value, clear it
+		// This happens when the value prop changes
+		if (selectedOption && getOptionValueResolved(selectedOption) !== value) {
+			setSelectedOption(null);
+			setSelectedLabel("");
+		}
+
 		// Find the item by comparing the value (ID) with the item's ID or computed value
 		const match = items.find((entry) => {
 			return getOptionValueResolved(entry) === value;
@@ -383,19 +392,35 @@ export function CatalogSelector({
 			// Limit to 5 pages to avoid infinite loops
 			setPagesSearchedForValue((prev) => prev + 1);
 			loadMore().catch(() => {
-				// Ignore errors, will fall back to showing value
+				// Ignore errors, will fall back to fetching by ID
 			});
 		} else if (
 			!loading &&
 			!loadingMore &&
 			!match &&
 			pagination !== null &&
-			!selectedOption
+			!fetchingById
 		) {
-			// Only fallback to showing the raw value after we've actually loaded data
-			// (pagination !== null indicates at least one successful fetch)
-			// and confirmed no match exists AND we don't already have a valid selection
-			setSelectedLabel(value);
+			// If we've loaded data but still can't find the item, try fetching by ID directly
+			// This handles cases where the item exists but isn't in the search results
+			setFetchingById(true);
+			fetchCatalogItemById(catalogKey, value)
+				.then((item) => {
+					// Verify the item matches the value (in case getOptionValue is custom)
+					if (getOptionValueResolved(item) === value) {
+						setSelectedOption(item);
+						setSelectedLabel(item.name);
+					} else {
+						setSelectedLabel(value);
+					}
+				})
+				.catch(() => {
+					// If fetching by ID fails, fallback to showing the raw value
+					setSelectedLabel(value);
+				})
+				.finally(() => {
+					setFetchingById(false);
+				});
 		}
 	}, [
 		isControlled,
@@ -410,6 +435,8 @@ export function CatalogSelector({
 		pagination,
 		selectedOption,
 		selectedLabel,
+		catalogKey,
+		fetchingById,
 	]);
 
 	const handleSelect = (optionValue: string): void => {

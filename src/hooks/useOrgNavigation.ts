@@ -71,6 +71,8 @@ export function useOrgNavigation() {
 			},
 			alerts: {
 				list: () => orgPath("/alerts"),
+				new: () => orgPath("/alerts/new"),
+				detail: (id: string) => orgPath(`/alerts/${id}`),
 			},
 			reports: {
 				list: () => orgPath("/reports"),

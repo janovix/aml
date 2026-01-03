@@ -45,6 +45,7 @@ vi.mock("@/lib/org-store", () => ({
 }));
 
 const mockPush = vi.fn();
+const mockOrgPath = vi.fn((path: string) => `/test-org${path}`);
 
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
@@ -54,6 +55,19 @@ vi.mock("next/navigation", () => ({
 	usePathname: () => "/test-org/alerts",
 	useSearchParams: () => new URLSearchParams(),
 	useParams: () => ({ orgSlug: "test-org" }),
+}));
+
+vi.mock("@/hooks/useOrgNavigation", () => ({
+	useOrgNavigation: () => ({
+		navigateTo: mockPush,
+		orgPath: mockOrgPath,
+		routes: {
+			alerts: {
+				list: () => "/test-org/alerts",
+				detail: (id: string) => `/test-org/alerts/${id}`,
+			},
+		},
+	}),
 }));
 
 vi.mock("@/lib/api/alerts", () => ({
@@ -74,7 +88,8 @@ const mockAlerts: Alert[] = [
 		severity: "HIGH",
 		idempotencyKey: "key-1",
 		contextHash: "hash-1",
-		alertData: "{}",
+		metadata: {},
+		isManual: false,
 		submissionDeadline: new Date(Date.now() + 86400000 * 7).toISOString(), // 7 days from now
 		isOverdue: false,
 		createdAt: new Date().toISOString(),
@@ -85,7 +100,9 @@ const mockAlerts: Alert[] = [
 			description: "Detecta operaciones inusuales",
 			active: true,
 			severity: "HIGH",
-			ruleConfig: "{}",
+			ruleType: "unusual_operation",
+			isManualOnly: false,
+			activityCode: "VEH",
 			createdAt: new Date().toISOString(),
 			updatedAt: new Date().toISOString(),
 		},
@@ -98,7 +115,8 @@ const mockAlerts: Alert[] = [
 		severity: "MEDIUM",
 		idempotencyKey: "key-2",
 		contextHash: "hash-2",
-		alertData: "{}",
+		metadata: {},
+		isManual: false,
 		submissionDeadline: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
 		isOverdue: true,
 		createdAt: new Date().toISOString(),
@@ -109,7 +127,9 @@ const mockAlerts: Alert[] = [
 			description: "Detecta transacciones de alto monto",
 			active: true,
 			severity: "MEDIUM",
-			ruleConfig: "{}",
+			ruleType: "high_amount",
+			isManualOnly: false,
+			activityCode: "VEH",
 			createdAt: new Date().toISOString(),
 			updatedAt: new Date().toISOString(),
 		},
@@ -122,7 +142,8 @@ const mockAlerts: Alert[] = [
 		severity: "LOW",
 		idempotencyKey: "key-3",
 		contextHash: "hash-3",
-		alertData: "{}",
+		metadata: {},
+		isManual: false,
 		isOverdue: false,
 		cancellationReason: "Falso positivo",
 		createdAt: new Date().toISOString(),
@@ -133,7 +154,9 @@ const mockAlerts: Alert[] = [
 			description: "Detecta estructuración",
 			active: true,
 			severity: "LOW",
-			ruleConfig: "{}",
+			ruleType: "structuring",
+			isManualOnly: false,
+			activityCode: "VEH",
 			createdAt: new Date().toISOString(),
 			updatedAt: new Date().toISOString(),
 		},
@@ -705,6 +728,26 @@ describe("AlertsTable", () => {
 		}
 	});
 
+	it("navigates to alert detail when alert text is clicked", async () => {
+		const user = userEvent.setup();
+		render(<AlertsTable />);
+
+		await waitFor(() => {
+			expect(screen.getByText("OPERACIÓN INUSUAL")).toBeInTheDocument();
+		});
+
+		// Find the alert link
+		const alertLink = screen
+			.getByText("OPERACIÓN INUSUAL")
+			.closest("a") as HTMLAnchorElement;
+
+		expect(alertLink).toBeInTheDocument();
+		expect(alertLink).toHaveAttribute(
+			"href",
+			`/test-org/alerts/${mockAlerts[0]?.id}`,
+		);
+	});
+
 	it("navigates to alert detail when Ver detalle is clicked", async () => {
 		const user = userEvent.setup();
 		render(<AlertsTable />);
@@ -727,7 +770,9 @@ describe("AlertsTable", () => {
 
 			await user.click(screen.getByText("Ver detalle"));
 
-			expect(mockPush).toHaveBeenCalledWith(`/alerts/${mockAlerts[0]?.id}`);
+			expect(mockPush).toHaveBeenCalledWith(
+				`/test-org/alerts/${mockAlerts[0]?.id}`,
+			);
 		}
 	});
 
@@ -774,7 +819,8 @@ describe("AlertsTable", () => {
 		expect(newAlertButtons.length).toBeGreaterThan(0);
 
 		await user.click(newAlertButtons[0]);
-		expect(mockPush).toHaveBeenCalledWith("/test-org/alerts/new");
+		// PageHero uses navigateTo which we've mocked as mockPush
+		expect(mockPush).toHaveBeenCalledWith("/alerts/new");
 	});
 
 	it("refetches data when organization changes", async () => {
