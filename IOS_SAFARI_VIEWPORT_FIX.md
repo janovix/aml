@@ -9,6 +9,12 @@ iOS Safari has a dynamic viewport that changes when the browser chrome (address 
 - Content gets cut off
 - Full-height layouts become unstable
 
+Additionally, iOS Safari has issues with the virtual keyboard:
+
+- When the keyboard opens, `visualViewport.height` shrinks
+- This can cause layouts using viewport height to compress incorrectly
+- Form inputs can get hidden behind the keyboard
+
 ## Solution
 
 We've implemented a solution that uses the `visualViewport` API to track the actual viewport height and update a CSS custom property (`--viewport-height`) dynamically.
@@ -21,12 +27,21 @@ We've implemented a solution that uses the `visualViewport` API to track the act
    - Listens to `resize`, `scroll`, and `orientationchange` events
    - Returns the current viewport height in pixels
 
-2. **`ViewportHeightProvider.tsx` Component**
+2. **`use-keyboard-scroll-fix.ts` Hook**
+   - Detects iOS devices (iPhone, iPad, iPod)
+   - Listens for `focusin` events on input elements
+   - When keyboard opens, scrolls the focused input into view
+   - Uses `visualViewport` to calculate the actual visible area
+   - Ensures form inputs remain visible above the keyboard
+
+3. **`ViewportHeightProvider.tsx` Component**
    - Sets the `--viewport-height` CSS custom property on `document.documentElement`
    - Updates automatically when the viewport changes
+   - **Keyboard-aware**: Detects when keyboard is opening (>20% height reduction + input focused) and doesn't shrink the layout
+   - Uses the `useKeyboardScrollFix` hook to handle scrolling inputs into view
    - Wraps the application at the root level
 
-3. **CSS Updates (`globals.css`)**
+4. **CSS Updates (`globals.css`)**
    - Defines `--viewport-height` CSS variable with fallbacks
    - Uses `100dvh` (dynamic viewport height) when supported
    - Overrides Tailwind's `h-screen` and `min-h-screen` classes to use the variable
@@ -39,6 +54,13 @@ We've implemented a solution that uses the `visualViewport` API to track the act
 3. All `h-screen` and `min-h-screen` classes automatically use this variable instead of `100vh`
 4. When the viewport changes (scroll, resize, orientation), the hook updates and the CSS variable is refreshed
 5. The layout remains stable because it uses the actual visible viewport height, not the full browser height
+
+**Keyboard Handling:**
+
+6. When an input is focused and the viewport shrinks significantly (>20%), the system detects this as keyboard opening
+7. Instead of shrinking the layout, it maintains the previous stable height
+8. The `useKeyboardScrollFix` hook scrolls the focused input into view, positioning it in the upper third of the visible area
+9. When the keyboard closes (input loses focus or height increases), normal viewport updates resume
 
 ### Browser Support
 
@@ -58,6 +80,16 @@ We've implemented a solution that uses the `visualViewport` API to track the act
    - Content remains visible and accessible
    - Full-height layouts stay stable
    - No content cutoff
+
+### Keyboard Testing on iOS
+
+1. Open a form page (e.g., /transactions/new)
+2. Tap on an input field to open the keyboard
+3. Verify:
+   - The layout does NOT shrink when keyboard opens
+   - The focused input scrolls into view above the keyboard
+   - Content is accessible and not covered by the keyboard
+   - When keyboard closes, layout returns to normal
 
 ### In Safari Responsive Mode
 
@@ -94,11 +126,13 @@ iOS Safari uses a "dynamic viewport" where:
 
 ## Files Modified
 
-- `/workspace/src/hooks/use-viewport-height.ts` - New hook
-- `/workspace/src/components/ViewportHeightProvider.tsx` - New provider component
+- `/workspace/src/hooks/use-viewport-height.ts` - Hook for viewport height tracking
+- `/workspace/src/hooks/use-keyboard-scroll-fix.ts` - Hook for iOS keyboard scroll handling
+- `/workspace/src/components/ViewportHeightProvider.tsx` - Provider component with keyboard-aware logic
 - `/workspace/src/components/ClientLayout.tsx` - Added ViewportHeightProvider
 - `/workspace/src/app/globals.css` - Added CSS variable and overrides
-- `/workspace/src/hooks/use-viewport-height.test.ts` - Tests
+- `/workspace/src/hooks/use-viewport-height.test.ts` - Tests for viewport height hook
+- `/workspace/src/hooks/use-keyboard-scroll-fix.test.ts` - Tests for keyboard scroll fix
 
 ## Usage
 
