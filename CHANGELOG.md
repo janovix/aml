@@ -1,3 +1,12 @@
+# [1.1.0-rc.20](https://github.com/janovix/aml/compare/v1.1.0-rc.19...v1.1.0-rc.20) (2026-01-03)
+
+
+### Features
+
+* add AlertDetailsView component and related navigation enhancements for detailed alert management ([590ac48](https://github.com/janovix/aml/commit/590ac4850def3900f02e611c747141b17d5911ab))
+* add CreateManualAlertView and AlertRuleSelector components with corresponding tests for manual alert creation functionality ([f490c39](https://github.com/janovix/aml/commit/f490c3964a226ce8eb4bdeb4c472a4ed1358044c))
+* implement fetchCatalogItemById function with caching and error handling, and enhance CatalogSelector tests for item fetching scenarios ([961b876](https://github.com/janovix/aml/commit/961b87697bc8ca9e38d6b607b869cfafb4c5001c))
+
 # [1.1.0-rc.19](https://github.com/janovix/aml/compare/v1.1.0-rc.18...v1.1.0-rc.19) (2025-12-31)
 
 
