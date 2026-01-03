@@ -95,6 +95,8 @@
 		"check": "pnpm run build && pnpm run typecheck",
 		"deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
 		"dev": "next dev",
+		"dev:local": "echo 'Access via https://aml-local.janovix.workers.dev (see LOCAL_DEV_SETUP.md)' && next dev",
+		"caddy:dev": "caddy run --config Caddyfile",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
 		"lint": "eslint . --max-warnings=0",

@@ -269,7 +269,7 @@ export function ClientCreateView(): React.JSX.Element {
 				]}
 			/>
 
-			<form onSubmit={handleSubmit} className="max-w-4xl space-y-6">
+			<form onSubmit={handleSubmit} className="max-w-4xl space-y-6 pb-6">
 				<Card>
 					<CardHeader>
 						<CardTitle className="text-lg">Tipo de Persona</CardTitle>

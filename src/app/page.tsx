@@ -21,7 +21,7 @@ import {
 	setActiveOrganization,
 } from "@/lib/auth/organizations";
 import { executeMutation } from "@/lib/mutations";
-import type { Organization } from "@/lib/org-store";
+import { useOrgStore, type Organization } from "@/lib/org-store";
 
 /**
  * Convert a string to a URL-safe slug
@@ -294,6 +294,9 @@ export default function IndexPage() {
 	const hasRedirected = useRef(false);
 	const hasFetched = useRef(false);
 
+	// Get organizations from store (populated by OrgBootstrapper from server data)
+	const storeOrganizations = useOrgStore((state) => state.organizations);
+
 	// Show error toast if redirected with error param
 	useEffect(() => {
 		const errorParam = searchParams.get("error");
@@ -307,7 +310,7 @@ export default function IndexPage() {
 		}
 	}, [searchParams, router]);
 
-	// Fetch organizations on mount
+	// Load organizations on mount - prefer store data, fallback to API
 	useEffect(() => {
 		// Prevent double fetch in React 18 strict mode
 		if (hasFetched.current) return;
@@ -315,20 +318,34 @@ export default function IndexPage() {
 
 		async function fetchOrgs() {
 			setIsLoading(true);
-			const result = await listOrganizations();
 
-			if (result.error || !result.data) {
-				setError(result.error || "Failed to load organizations");
-				toast.error("Error loading organizations", {
-					description: result.error || "Please try again later.",
-				});
-				setIsLoading(false);
-				return;
+			// Use store data if available (populated from server by OrgBootstrapper)
+			let orgs: Organization[];
+			let fetchedActiveOrgId: string | null = null;
+
+			if (storeOrganizations.length > 0) {
+				orgs = storeOrganizations;
+			} else {
+				// Fallback to client-side API call
+				const result = await listOrganizations();
+
+				if (result.error || !result.data) {
+					setError(result.error || "Failed to load organizations");
+					toast.error("Error loading organizations", {
+						description: result.error || "Please try again later.",
+					});
+					setIsLoading(false);
+					return;
+				}
+
+				orgs = result.data.organizations;
+				fetchedActiveOrgId = result.data.activeOrganizationId;
 			}
 
-			const orgs = result.data.organizations;
 			setOrganizations(orgs);
-			setActiveOrgId(result.data.activeOrganizationId);
+			if (fetchedActiveOrgId) {
+				setActiveOrgId(fetchedActiveOrgId);
+			}
 
 			// No orgs - will show create form
 			if (orgs.length === 0) {
@@ -344,10 +361,8 @@ export default function IndexPage() {
 			};
 
 			// Priority 1: If user has a previously selected org (activeOrganizationId), use that
-			if (result.data.activeOrganizationId) {
-				const activeOrg = orgs.find(
-					(o) => o.id === result.data?.activeOrganizationId,
-				);
+			if (fetchedActiveOrgId) {
+				const activeOrg = orgs.find((o) => o.id === fetchedActiveOrgId);
 				if (activeOrg) {
 					redirectToOrg(activeOrg);
 					return;
@@ -370,7 +385,7 @@ export default function IndexPage() {
 		}
 
 		fetchOrgs();
-	}, [router]);
+	}, [router, storeOrganizations]);
 
 	// Handle org selection
 	const handleOrgSelect = (org: Organization) => {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { NavBreadcrumb } from "./NavBreadcrumb";
 
 // Mock usePathname
@@ -16,10 +16,36 @@ vi.mock("@/lib/org-store", () => ({
 	}),
 }));
 
+// Mock getClientById
+const mockGetClientById = vi.fn();
+vi.mock("@/lib/api/clients", () => ({
+	getClientById: (opts: { id: string }) => mockGetClientById(opts),
+}));
+
 describe("NavBreadcrumb", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockPathname.mockReturnValue("/test-org/clients");
+		mockGetClientById.mockResolvedValue({
+			id: "CLT123456789",
+			personType: "physical",
+			firstName: "Juan",
+			lastName: "Pérez",
+			secondLastName: "García",
+			rfc: "PEGJ800101AAA",
+			email: "juan@example.com",
+			phone: "5551234567",
+			country: "MX",
+			stateCode: "CMX",
+			city: "CDMX",
+			municipality: "Cuauhtémoc",
+			neighborhood: "Centro",
+			street: "Reforma",
+			externalNumber: "123",
+			postalCode: "06600",
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		});
 	});
 
 	it("renders home link", () => {
@@ -141,5 +167,96 @@ describe("NavBreadcrumb", () => {
 			'[data-slot="breadcrumb-separator"]',
 		);
 		expect(separators.length).toBeGreaterThan(0);
+	});
+
+	describe("client name fetching", () => {
+		it("fetches and displays client name for client detail pages", async () => {
+			mockPathname.mockReturnValue("/test-org/clients/CLT123456789");
+			render(<NavBreadcrumb />);
+
+			// Initially should show truncated ID
+			expect(screen.getByText("CLT12345…")).toBeInTheDocument();
+
+			// After fetch, should show client name (formatProperNoun converts to uppercase)
+			await waitFor(() => {
+				expect(screen.getByText("JUAN PÉREZ GARCÍA")).toBeInTheDocument();
+			});
+
+			// Should have called getClientById with the correct ID
+			expect(mockGetClientById).toHaveBeenCalledWith(
+				expect.objectContaining({ id: "CLT123456789" }),
+			);
+		});
+
+		it("displays business name for moral person clients", async () => {
+			mockGetClientById.mockResolvedValue({
+				id: "CLT987654321",
+				personType: "moral",
+				businessName: "ACME Corporation S.A. de C.V.",
+				rfc: "ACM800101AAA",
+				email: "contact@acme.com",
+				phone: "5551234567",
+				country: "MX",
+				stateCode: "CMX",
+				city: "CDMX",
+				municipality: "Cuauhtémoc",
+				neighborhood: "Centro",
+				street: "Reforma",
+				externalNumber: "456",
+				postalCode: "06600",
+				createdAt: "2024-01-01T00:00:00Z",
+				updatedAt: "2024-01-01T00:00:00Z",
+			});
+
+			mockPathname.mockReturnValue("/test-org/clients/CLT987654321");
+			render(<NavBreadcrumb />);
+
+			// formatProperNoun converts to uppercase
+			await waitFor(() => {
+				expect(
+					screen.getByText("ACME CORPORATION S.A. DE C.V."),
+				).toBeInTheDocument();
+			});
+		});
+
+		it("keeps showing truncated ID when client fetch fails", async () => {
+			mockGetClientById.mockRejectedValue(new Error("Client not found"));
+
+			mockPathname.mockReturnValue("/test-org/clients/CLT123456789");
+			render(<NavBreadcrumb />);
+
+			// Should show truncated ID
+			expect(screen.getByText("CLT12345…")).toBeInTheDocument();
+
+			// Wait for fetch to fail
+			await waitFor(() => {
+				expect(mockGetClientById).toHaveBeenCalled();
+			});
+
+			// Should still show truncated ID after failure
+			expect(screen.getByText("CLT12345…")).toBeInTheDocument();
+		});
+
+		it("displays client name in edit page breadcrumb", async () => {
+			mockPathname.mockReturnValue("/test-org/clients/CLT123456789/edit");
+			render(<NavBreadcrumb />);
+
+			// Initially shows truncated ID for the client segment
+			expect(screen.getByText("CLT12345…")).toBeInTheDocument();
+			expect(screen.getByText("Editar")).toBeInTheDocument();
+
+			// After fetch, should show client name (formatProperNoun converts to uppercase)
+			await waitFor(() => {
+				expect(screen.getByText("JUAN PÉREZ GARCÍA")).toBeInTheDocument();
+			});
+		});
+
+		it("does not fetch client for non-client ID segments", () => {
+			mockPathname.mockReturnValue("/test-org/transactions/TXN123456789");
+			render(<NavBreadcrumb />);
+
+			// Should not call getClientById for transaction IDs
+			expect(mockGetClientById).not.toHaveBeenCalled();
+		});
 	});
 });

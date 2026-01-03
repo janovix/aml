@@ -290,7 +290,7 @@ export function ClientEditView({
 					actionCount={2}
 				/>
 				{/* Form skeleton */}
-				<div className="max-w-4xl space-y-6">
+				<div className="max-w-4xl space-y-6 pb-6">
 					{[1, 2, 3].map((i) => (
 						<Card key={i}>
 							<CardHeader>
@@ -362,7 +362,7 @@ export function ClientEditView({
 				id="client-edit-form"
 				ref={formRef}
 				onSubmit={handleSubmit}
-				className="max-w-4xl space-y-6"
+				className="max-w-4xl space-y-6 pb-6"
 			>
 				<button
 					ref={hiddenSubmitButtonRef}

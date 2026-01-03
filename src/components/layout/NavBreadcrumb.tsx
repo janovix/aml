@@ -13,6 +13,8 @@ import {
 	BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { useOrgStore } from "@/lib/org-store";
+import { getClientById } from "@/lib/api/clients";
+import { getClientDisplayName } from "@/types/client";
 
 /**
  * Route segment to human-readable label mapping
@@ -53,7 +55,7 @@ function isIdSegment(segment: string): boolean {
 }
 
 /**
- * Get label for a path segment
+ * Get label for a path segment (used when no dynamic lookup is available)
  */
 function getSegmentLabel(segment: string): string {
 	if (ROUTE_LABELS[segment]) {
@@ -71,6 +73,10 @@ interface BreadcrumbSegment {
 	label: string;
 	href: string;
 	isCurrentPage: boolean;
+	/** ID for dynamic entities (e.g., client ID) that need name lookup */
+	entityId?: string;
+	/** Type of entity for dynamic lookup */
+	entityType?: "client";
 }
 
 export function NavBreadcrumb() {
@@ -78,6 +84,11 @@ export function NavBreadcrumb() {
 	const params = useParams();
 	const { currentOrg } = useOrgStore();
 	const orgSlug = (params?.orgSlug as string) || currentOrg?.slug;
+
+	// Store fetched entity names (e.g., client names)
+	const [entityNames, setEntityNames] = React.useState<Record<string, string>>(
+		{},
+	);
 
 	const segments = React.useMemo((): BreadcrumbSegment[] => {
 		if (!pathname || !orgSlug) return [];
@@ -96,17 +107,57 @@ export function NavBreadcrumb() {
 
 		for (let i = 0; i < pathSegments.length; i++) {
 			const segment = pathSegments[i];
+			const prevSegment = pathSegments[i - 1];
 			currentPath += `/${segment}`;
+
+			// Check if this segment is a client ID (segment after "clients")
+			const isClientId = prevSegment === "clients" && isIdSegment(segment);
 
 			breadcrumbs.push({
 				label: getSegmentLabel(segment),
 				href: currentPath,
 				isCurrentPage: i === pathSegments.length - 1,
+				...(isClientId && { entityId: segment, entityType: "client" }),
 			});
 		}
 
 		return breadcrumbs;
 	}, [pathname, orgSlug]);
+
+	// Fetch client names for client ID segments
+	React.useEffect(() => {
+		const clientSegments = segments.filter((s) => s.entityType === "client");
+		if (clientSegments.length === 0) return;
+
+		const controller = new AbortController();
+
+		for (const segment of clientSegments) {
+			if (!segment.entityId || entityNames[segment.entityId]) continue;
+
+			getClientById({ id: segment.entityId, signal: controller.signal })
+				.then((client) => {
+					setEntityNames((prev) => ({
+						...prev,
+						[segment.entityId!]: getClientDisplayName(client),
+					}));
+				})
+				.catch(() => {
+					// Silently fail - keep showing truncated ID
+				});
+		}
+
+		return () => controller.abort();
+	}, [segments, entityNames]);
+
+	/**
+	 * Get the display label for a segment, using fetched entity name if available
+	 */
+	const getDisplayLabel = (segment: BreadcrumbSegment): string => {
+		if (segment.entityId && entityNames[segment.entityId]) {
+			return entityNames[segment.entityId];
+		}
+		return segment.label;
+	};
 
 	// Don't render if we're at the root or there are no segments
 	if (segments.length === 0) {
@@ -140,13 +191,13 @@ export function NavBreadcrumb() {
 					</BreadcrumbLink>
 				</BreadcrumbItem>
 
-				{segments.map((segment, index) => (
+				{segments.map((segment) => (
 					<React.Fragment key={segment.href}>
 						<BreadcrumbSeparator className="shrink-0" />
 						<BreadcrumbItem className="shrink-0">
 							{segment.isCurrentPage ? (
 								<BreadcrumbPage className="max-w-[150px] truncate sm:max-w-[200px]">
-									{segment.label}
+									{getDisplayLabel(segment)}
 								</BreadcrumbPage>
 							) : (
 								<BreadcrumbLink asChild>
@@ -154,7 +205,7 @@ export function NavBreadcrumb() {
 										href={segment.href}
 										className="max-w-[100px] truncate sm:max-w-[150px]"
 									>
-										{segment.label}
+										{getDisplayLabel(segment)}
 									</Link>
 								</BreadcrumbLink>
 							)}

@@ -155,7 +155,7 @@ export function ClientDetailsView({
 				]}
 			/>
 
-			<div className="space-y-6">
+			<div className="space-y-6 pb-6">
 				{/* Información General Card - Enhanced with Person Type */}
 				{(() => {
 					const personTypeStyle = getPersonTypeStyle(client.personType);

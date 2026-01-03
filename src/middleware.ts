@@ -3,20 +3,57 @@ import { getSessionCookie } from "better-auth/cookies";
 
 const getAuthAppUrl = () => {
 	return (
-		process.env.NEXT_PUBLIC_AUTH_APP_URL || "https://auth.example.workers.dev"
+		process.env.NEXT_PUBLIC_AUTH_APP_URL || "https://auth.janovix.workers.dev"
 	);
 };
 
 const getAuthServiceUrl = () => {
 	return (
 		process.env.NEXT_PUBLIC_AUTH_SERVICE_URL ||
-		"https://auth-svc.example.workers.dev"
+		"https://auth-svc.janovix.workers.dev"
 	);
 };
 
+/**
+ * Get the external base URL for the request, using forwarded headers from reverse proxy.
+ * Returns the origin (protocol + host) without path.
+ */
+function getExternalOrigin(request: NextRequest): string {
+	// Check for forwarded headers (set by Caddy or other reverse proxies)
+	const forwardedHost = request.headers.get("x-forwarded-host");
+	const forwardedProto = request.headers.get("x-forwarded-proto");
+
+	if (forwardedHost) {
+		const protocol = forwardedProto || "https";
+		return `${protocol}://${forwardedHost}`;
+	}
+
+	// Fallback to request.url origin (works when not behind a proxy)
+	return new URL(request.url).origin;
+}
+
+/**
+ * Get the full external URL for the request, using forwarded headers from reverse proxy.
+ * Falls back to request.url if no forwarded headers are present.
+ */
+function getExternalUrl(request: NextRequest): string {
+	const origin = getExternalOrigin(request);
+	const pathname = request.nextUrl.pathname;
+	const search = request.nextUrl.search;
+	return `${origin}${pathname}${search}`;
+}
+
+/**
+ * Create a URL using the external origin (respects reverse proxy headers).
+ * Use this instead of `new URL(path, request.url)` for redirects.
+ */
+function createExternalUrl(path: string, request: NextRequest): URL {
+	return new URL(path, getExternalOrigin(request));
+}
+
 function redirectToLogin(request: NextRequest): NextResponse {
 	const authAppUrl = getAuthAppUrl();
-	const returnUrl = encodeURIComponent(request.url);
+	const returnUrl = encodeURIComponent(getExternalUrl(request));
 	return NextResponse.redirect(`${authAppUrl}/login?redirect_to=${returnUrl}`);
 }
 
@@ -255,7 +292,7 @@ export async function middleware(request: NextRequest) {
 		if (organizations.length === 0) {
 			// User has no orgs - redirect to index to create one
 			// In vanity mode, we need to redirect to a path-based URL
-			return NextResponse.redirect(new URL("/", request.url));
+			return NextResponse.redirect(createExternalUrl("/", request));
 		}
 
 		if (!hasAccessToOrg(organizations, orgSlug)) {
@@ -263,7 +300,7 @@ export async function middleware(request: NextRequest) {
 			// Check if org exists at all (for proper error message)
 			// For now, we'll show forbidden - the page will display appropriate message
 			return NextResponse.rewrite(
-				new URL(`/${orgSlug}/forbidden`, request.url),
+				createExternalUrl(`/${orgSlug}/forbidden`, request),
 			);
 		}
 
@@ -298,7 +335,7 @@ export async function middleware(request: NextRequest) {
 
 		if (organizations.length === 0) {
 			// No orgs - redirect to index to create one
-			return NextResponse.redirect(new URL("/", request.url));
+			return NextResponse.redirect(createExternalUrl("/", request));
 		}
 
 		// Find target org (active or first)
@@ -310,12 +347,12 @@ export async function middleware(request: NextRequest) {
 		if (targetOrg) {
 			// Redirect to /{orgSlug}/original-path
 			return NextResponse.redirect(
-				new URL(`/${targetOrg.slug}${pathname}`, request.url),
+				createExternalUrl(`/${targetOrg.slug}${pathname}`, request),
 			);
 		}
 
 		// Fallback - shouldn't reach here
-		return NextResponse.redirect(new URL("/", request.url));
+		return NextResponse.redirect(createExternalUrl("/", request));
 	}
 
 	// First segment might be an org slug - validate it
@@ -328,21 +365,21 @@ export async function middleware(request: NextRequest) {
 
 		if (organizations.length === 0) {
 			// User has no orgs - redirect to index to create one
-			return NextResponse.redirect(new URL("/", request.url));
+			return NextResponse.redirect(createExternalUrl("/", request));
 		}
 
 		// Check if user has access to this org
 		if (!hasAccessToOrg(organizations, orgSlug)) {
 			// No access - show forbidden page
 			return NextResponse.rewrite(
-				new URL(`/${orgSlug}/forbidden`, request.url),
+				createExternalUrl(`/${orgSlug}/forbidden`, request),
 			);
 		}
 
 		// If path is just /{orgSlug}, redirect to default page
 		if (pathSegments.length === 1) {
 			return NextResponse.redirect(
-				new URL(`/${orgSlug}/${DEFAULT_PAGE}`, request.url),
+				createExternalUrl(`/${orgSlug}/${DEFAULT_PAGE}`, request),
 			);
 		}
 
@@ -353,7 +390,7 @@ export async function middleware(request: NextRequest) {
 	// Unknown first segment - treat as potential org slug that doesn't exist
 	// Show not-found page
 	return NextResponse.rewrite(
-		new URL(`/${firstSegment}/not-found`, request.url),
+		createExternalUrl(`/${firstSegment}/not-found`, request),
 	);
 }
 

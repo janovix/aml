@@ -1,3 +1,5 @@
+"use client";
+
 import { OrgTeamTable } from "@/components/org";
 import { PageHero } from "@/components/page-hero";
 import { Users } from "lucide-react";
