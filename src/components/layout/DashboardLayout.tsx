@@ -20,7 +20,9 @@ function Navbar() {
 		<header className="z-50 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4">
 			<SidebarTrigger className="-ml-1" />
 			<Separator orientation="vertical" className="mx-2 h-6" />
-			<NavBreadcrumb />
+			<div className="flex-1 min-w-0">
+				<NavBreadcrumb />
+			</div>
 			<div className="flex shrink-0 items-center gap-2">
 				<ThemeSwitcher />
 			</div>

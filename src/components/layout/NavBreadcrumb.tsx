@@ -111,7 +111,7 @@ export function NavBreadcrumb() {
 	// Don't render if we're at the root or there are no segments
 	if (segments.length === 0) {
 		return (
-			<Breadcrumb>
+			<Breadcrumb className="min-w-0 flex-1">
 				<BreadcrumbList>
 					<BreadcrumbItem>
 						<BreadcrumbPage className="flex items-center gap-1.5">
