@@ -278,24 +278,34 @@ main {
 	input[type="number"],
 	input[type="password"],
 	input[type="search"],
+	input[type="date"],
 	textarea,
 	select {
 		font-size: 16px; /* Prevents zoom on focus in iOS Safari */
 	}
 
 	/* Fix for iOS Safari keyboard accessory bar spacing */
-	/* When keyboard is open, prevent extra space by using proper height calculations */
-	html,
-	body {
-		/* Use fixed positioning context for keyboard handling */
+	/* Prevent the body from scrolling - all scroll should happen in main container */
+	html {
 		height: 100%;
-		height: var(--viewport-height, 100vh);
+		overflow: hidden;
+		position: fixed;
+		width: 100%;
 	}
 
-	/* Prevent iOS from adding extra scroll space when keyboard opens */
 	body {
-		overflow: auto;
+		height: 100%;
+		overflow: hidden;
+		position: fixed;
+		width: 100%;
+		/* Prevent overscroll/bounce effect that can cause the gap */
+		overscroll-behavior: none;
+	}
+
+	/* The main content scrolls, not the body */
+	main {
 		-webkit-overflow-scrolling: touch;
+		overscroll-behavior: contain;
 	}
 }
 

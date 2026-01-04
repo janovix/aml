@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useViewportHeight } from "@/hooks/use-viewport-height";
+import { useIOSKeyboardFix } from "@/hooks/use-ios-keyboard-fix";
 
 /**
  * Provider component that sets CSS custom properties for viewport dimensions
@@ -23,6 +24,9 @@ export function ViewportHeightProvider({
 	children: React.ReactNode;
 }) {
 	const { height, offsetTop } = useViewportHeight();
+
+	// Apply iOS keyboard focus fixes
+	useIOSKeyboardFix();
 
 	useEffect(() => {
 		const root = document.documentElement;
