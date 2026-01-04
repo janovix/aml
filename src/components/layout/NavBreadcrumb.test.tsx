@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import { NavBreadcrumb } from "./NavBreadcrumb";
-import { LanguageProvider } from "@/components/LanguageProvider";
+import { renderWithProviders } from "@/lib/testHelpers";
 
 // Mock cookies module to return Spanish language for tests
 vi.mock("@/lib/cookies", () => ({
@@ -16,13 +16,6 @@ vi.mock("@/lib/cookies", () => ({
 		LANGUAGE: "janovix-lang",
 	},
 }));
-
-// Wrapper component with providers
-const renderWithProviders = (ui: React.ReactElement) => {
-	return render(ui, {
-		wrapper: ({ children }) => <LanguageProvider>{children}</LanguageProvider>,
-	});
-};
 
 // Mock usePathname
 const mockPathname = vi.fn(() => "/test-org/clients");

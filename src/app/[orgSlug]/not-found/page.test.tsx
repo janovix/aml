@@ -1,23 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { act, render, screen } from "@testing-library/react";
+import { act, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Suspense } from "react";
 import React from "react";
 import OrgNotFoundPage from "./page";
-import { LanguageProvider } from "@/components/LanguageProvider";
-import { translations } from "@/lib/translations";
-
-// Helper to render with LanguageProvider - force Spanish for consistent testing
-const renderWithProviders = (ui: React.ReactElement) => {
-	return render(ui, {
-		wrapper: ({ children }) => (
-			<LanguageProvider defaultLanguage="es">{children}</LanguageProvider>
-		),
-	});
-};
-
-// Get Spanish translations for test assertions (default in Node.js test environment)
-const t = (key: keyof typeof translations.es) => translations.es[key];
+import { renderWithProviders, t } from "@/lib/testHelpers";
 
 // Mock next/navigation
 vi.mock("next/navigation", () => ({

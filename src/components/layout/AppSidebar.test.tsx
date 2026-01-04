@@ -19,16 +19,14 @@ vi.mock("@/lib/cookies", () => ({
 	},
 }));
 
-// Wrapper component with providers
-const TestWrapper = ({ children }: { children: React.ReactNode }) => (
-	<LanguageProvider>
-		<SidebarProvider>{children}</SidebarProvider>
-	</LanguageProvider>
-);
-
+// Custom wrapper for AppSidebar tests (requires SidebarProvider in addition to LanguageProvider)
 const renderWithProviders = (ui: React.ReactElement) => {
 	return render(ui, {
-		wrapper: TestWrapper,
+		wrapper: ({ children }) => (
+			<LanguageProvider defaultLanguage="es">
+				<SidebarProvider>{children}</SidebarProvider>
+			</LanguageProvider>
+		),
 	});
 };
 

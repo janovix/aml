@@ -28,9 +28,11 @@ import {
 	Calendar,
 	Clock,
 	CheckCircle2,
+	Download,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useJwt } from "@/hooks/useJwt";
+import { useLanguage } from "@/components/LanguageProvider";
 import {
 	getAlertById,
 	cancelAlert,
@@ -104,6 +106,7 @@ export function AlertDetailsView({
 	const { navigateTo, orgPath } = useOrgNavigation();
 	const { toast } = useToast();
 	const { jwt } = useJwt();
+	const { t } = useLanguage();
 
 	useEffect(() => {
 		const fetchAlert = async () => {
@@ -241,6 +244,48 @@ export function AlertDetailsView({
 		}
 	};
 
+	const handleDownloadXml = async (): Promise<void> => {
+		if (!alert?.satFileUrl) {
+			toast({
+				title: t("alertDownloadXmlNoFile"),
+				variant: "destructive",
+			});
+			return;
+		}
+
+		try {
+			toast({
+				title: t("alertDownloadingXml"),
+			});
+
+			const response = await fetch(alert.satFileUrl);
+			if (!response.ok) {
+				throw new Error("Failed to download file");
+			}
+
+			const blob = await response.blob();
+			const url = window.URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			// Create a filename from alertRuleId and alert id
+			a.download = `alerta-${alert.alertRuleId}-${alert.id}.xml`;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			window.URL.revokeObjectURL(url);
+
+			toast({
+				title: t("alertDownloadXmlSuccess"),
+			});
+		} catch (error) {
+			console.error("Error downloading XML:", error);
+			toast({
+				title: t("alertDownloadXmlError"),
+				variant: "destructive",
+			});
+		}
+	};
+
 	const statusCfg = statusConfig[alert.status];
 	const severityCfg = severityConfig[alert.severity];
 
@@ -254,18 +299,27 @@ export function AlertDetailsView({
 					label: "Volver a Alertas",
 					onClick: () => navigateTo("/alerts"),
 				}}
-				actions={[
-					...(alert.status !== "CANCELLED"
-						? [
-								{
-									label: "Cancelar Alerta",
-									icon: XCircle,
-									onClick: () => setCancelDialogOpen(true),
-									variant: "destructive" as const,
-								},
-							]
-						: []),
-				]}
+			actions={[
+				...(alert.satFileUrl
+					? [
+							{
+								label: t("alertDownloadXml"),
+								icon: Download,
+								onClick: handleDownloadXml,
+							},
+						]
+					: []),
+				...(alert.status !== "CANCELLED"
+					? [
+							{
+								label: "Cancelar Alerta",
+								icon: XCircle,
+								onClick: () => setCancelDialogOpen(true),
+								variant: "destructive" as const,
+							},
+						]
+					: []),
+			]}
 			/>
 
 			<div className="space-y-6">

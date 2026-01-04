@@ -14,6 +14,7 @@ import {
 	FileText,
 	User,
 	Plus,
+	Download,
 } from "lucide-react";
 import Link from "next/link";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
@@ -73,6 +74,7 @@ interface AlertRow {
 	isOverdue: boolean;
 	notes?: string;
 	createdAt: string;
+	satFileUrl?: string | null;
 }
 
 const statusConfig: Record<
@@ -288,6 +290,7 @@ export function AlertsTable({
 				isOverdue: alert.isOverdue,
 				notes: alert.notes,
 				createdAt: alert.createdAt,
+				satFileUrl: alert.satFileUrl,
 			};
 		});
 	}, [alerts, clients]);
@@ -530,6 +533,48 @@ export function AlertsTable({
 		[],
 	);
 
+	// Handle XML download
+	const handleDownloadXml = async (item: AlertRow): Promise<void> => {
+		if (!item.satFileUrl) {
+			toast({
+				title: t("alertDownloadXmlNoFile"),
+				variant: "destructive",
+			});
+			return;
+		}
+
+		try {
+			toast({
+				title: t("alertDownloadingXml"),
+			});
+
+			const response = await fetch(item.satFileUrl);
+			if (!response.ok) {
+				throw new Error("Failed to download file");
+			}
+
+			const blob = await response.blob();
+			const url = window.URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = `alerta-${item.alertRuleId}-${item.id}.xml`;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			window.URL.revokeObjectURL(url);
+
+			toast({
+				title: t("alertDownloadXmlSuccess"),
+			});
+		} catch (error) {
+			console.error("Error downloading XML:", error);
+			toast({
+				title: t("alertDownloadXmlError"),
+				variant: "destructive",
+			});
+		}
+	};
+
 	// Row actions
 	const renderActions = (item: AlertRow) => (
 		<DropdownMenu>
@@ -556,6 +601,15 @@ export function AlertsTable({
 					<DropdownMenuItem className="gap-2">
 						<Send className="h-4 w-4" />
 						Enviar a SAT
+					</DropdownMenuItem>
+				)}
+				{item.satFileUrl && (
+					<DropdownMenuItem
+						className="gap-2"
+						onClick={() => handleDownloadXml(item)}
+					>
+						<Download className="h-4 w-4" />
+						{t("alertDownloadXml")}
 					</DropdownMenuItem>
 				)}
 				<DropdownMenuSeparator />

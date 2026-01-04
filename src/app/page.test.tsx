@@ -1,10 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 import IndexPage from "./page";
-import { LanguageProvider } from "@/components/LanguageProvider";
-import { translations } from "@/lib/translations";
+import { renderWithProviders, t } from "@/lib/testHelpers";
 
 // Mock next/navigation
 const mockReplace = vi.fn();
@@ -63,18 +62,6 @@ const mockOrg2 = {
 	status: "active" as const,
 };
 
-// Helper to render with LanguageProvider - force Spanish for consistent testing
-const renderWithProviders = (ui: React.ReactElement) => {
-	return render(ui, {
-		wrapper: ({ children }) => (
-			<LanguageProvider defaultLanguage="es">{children}</LanguageProvider>
-		),
-	});
-};
-
-// Get English translations for test assertions
-// Use Spanish translations since detectBrowserLanguage() defaults to "es" in Node.js
-const t = (key: keyof typeof translations.es) => translations.es[key];
 
 describe("IndexPage", () => {
 	beforeEach(() => {

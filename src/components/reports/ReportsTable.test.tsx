@@ -1,18 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 import { ReportsTable } from "./ReportsTable";
-import { LanguageProvider } from "@/components/LanguageProvider";
-
-// Helper to render with LanguageProvider - force Spanish for consistent testing
-const renderWithProviders = (ui: React.ReactElement) => {
-	return render(ui, {
-		wrapper: ({ children }) => (
-			<LanguageProvider defaultLanguage="es">{children}</LanguageProvider>
-		),
-	});
-};
+import { renderWithProviders } from "@/lib/testHelpers";
 
 const mockToast = vi.fn();
 

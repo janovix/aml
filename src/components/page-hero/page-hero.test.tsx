@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 import { PageHero } from "./page-hero";
@@ -13,16 +13,7 @@ import {
 	Save,
 	ArrowLeft,
 } from "lucide-react";
-import { LanguageProvider } from "@/components/LanguageProvider";
-
-// Helper to render with LanguageProvider - force Spanish for consistent testing
-const renderWithProviders = (ui: React.ReactElement) => {
-	return render(ui, {
-		wrapper: ({ children }) => (
-			<LanguageProvider defaultLanguage="es">{children}</LanguageProvider>
-		),
-	});
-};
+import { renderWithProviders } from "@/lib/testHelpers";
 
 // Mock useIsMobile hook
 vi.mock("@/hooks/use-mobile", () => ({

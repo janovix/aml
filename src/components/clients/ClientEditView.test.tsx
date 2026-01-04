@@ -7,11 +7,11 @@ import {
 	beforeAll,
 	afterAll,
 } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ClientEditView } from "./ClientEditView";
 import type { Client, PersonType } from "../../types/client";
-import { LanguageProvider } from "@/components/LanguageProvider";
+import { renderWithProviders } from "@/lib/testHelpers";
 
 // Mock cookies module to return Spanish language for tests
 vi.mock("@/lib/cookies", () => ({
@@ -26,13 +26,6 @@ vi.mock("@/lib/cookies", () => ({
 		LANGUAGE: "janovix-lang",
 	},
 }));
-
-// Wrapper component with providers
-const renderWithProviders = (ui: React.ReactElement) => {
-	return render(ui, {
-		wrapper: ({ children }) => <LanguageProvider>{children}</LanguageProvider>,
-	});
-};
 
 const mockPush = vi.fn();
 const mockToast = vi.fn();

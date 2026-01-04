@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AlertsTable } from "./AlertsTable";
 import { mockClients } from "@/data/mockClients";
@@ -7,7 +7,7 @@ import type { Alert, AlertsListResponse } from "@/lib/api/alerts";
 import * as alertsApi from "@/lib/api/alerts";
 import * as clientsApi from "@/lib/api/clients";
 import { getClientDisplayName } from "@/types/client";
-import { LanguageProvider } from "@/components/LanguageProvider";
+import { renderWithProviders } from "@/lib/testHelpers";
 
 // Mock cookies module to return Spanish language for tests
 vi.mock("@/lib/cookies", () => ({
@@ -22,13 +22,6 @@ vi.mock("@/lib/cookies", () => ({
 		LANGUAGE: "janovix-lang",
 	},
 }));
-
-// Wrapper component with providers
-const renderWithProviders = (ui: React.ReactElement) => {
-	return render(ui, {
-		wrapper: ({ children }) => <LanguageProvider>{children}</LanguageProvider>,
-	});
-};
 
 const mockToast = vi.fn();
 
