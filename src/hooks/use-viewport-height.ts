@@ -2,25 +2,33 @@
 
 import { useEffect, useState } from "react";
 
+export interface ViewportDimensions {
+	height: number;
+	offsetTop: number;
+}
+
 /**
- * Hook to get the current viewport height, accounting for iOS Safari's dynamic viewport.
+ * Hook to get the current viewport dimensions, accounting for iOS Safari's dynamic viewport.
  * Uses visualViewport API when available, falls back to window.innerHeight.
  *
- * @returns The current viewport height in pixels
+ * @returns Object containing height and offsetTop in pixels
  */
-export function useViewportHeight(): number {
-	const [height, setHeight] = useState(() => {
+export function useViewportHeight(): ViewportDimensions {
+	const [dimensions, setDimensions] = useState<ViewportDimensions>(() => {
 		if (typeof window === "undefined") {
-			return 0;
+			return { height: 0, offsetTop: 0 };
 		}
 
 		// Use visualViewport if available (iOS Safari, modern browsers)
 		if (window.visualViewport) {
-			return window.visualViewport.height;
+			return {
+				height: window.visualViewport.height,
+				offsetTop: window.visualViewport.offsetTop,
+			};
 		}
 
 		// Fallback to window.innerHeight
-		return window.innerHeight;
+		return { height: window.innerHeight, offsetTop: 0 };
 	});
 
 	useEffect(() => {
@@ -28,38 +36,41 @@ export function useViewportHeight(): number {
 			return;
 		}
 
-		const updateHeight = () => {
+		const updateDimensions = () => {
 			if (window.visualViewport) {
-				setHeight(window.visualViewport.height);
+				setDimensions({
+					height: window.visualViewport.height,
+					offsetTop: window.visualViewport.offsetTop,
+				});
 			} else {
-				setHeight(window.innerHeight);
+				setDimensions({ height: window.innerHeight, offsetTop: 0 });
 			}
 		};
 
 		// Use visualViewport events if available
 		if (window.visualViewport) {
-			window.visualViewport.addEventListener("resize", updateHeight);
-			window.visualViewport.addEventListener("scroll", updateHeight);
+			window.visualViewport.addEventListener("resize", updateDimensions);
+			window.visualViewport.addEventListener("scroll", updateDimensions);
 
 			// Also listen to orientation changes
-			window.addEventListener("orientationchange", updateHeight);
+			window.addEventListener("orientationchange", updateDimensions);
 
 			return () => {
-				window.visualViewport?.removeEventListener("resize", updateHeight);
-				window.visualViewport?.removeEventListener("scroll", updateHeight);
-				window.removeEventListener("orientationchange", updateHeight);
+				window.visualViewport?.removeEventListener("resize", updateDimensions);
+				window.visualViewport?.removeEventListener("scroll", updateDimensions);
+				window.removeEventListener("orientationchange", updateDimensions);
 			};
 		}
 
 		// Fallback for browsers without visualViewport
-		window.addEventListener("resize", updateHeight);
-		window.addEventListener("orientationchange", updateHeight);
+		window.addEventListener("resize", updateDimensions);
+		window.addEventListener("orientationchange", updateDimensions);
 
 		return () => {
-			window.removeEventListener("resize", updateHeight);
-			window.removeEventListener("orientationchange", updateHeight);
+			window.removeEventListener("resize", updateDimensions);
+			window.removeEventListener("orientationchange", updateDimensions);
 		};
 	}, []);
 
-	return height;
+	return dimensions;
 }

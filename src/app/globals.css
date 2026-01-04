@@ -12,6 +12,8 @@
 :root {
 	--viewport-height: 100vh;
 	--viewport-height-fallback: 100vh;
+	--viewport-offset-top: 0px;
+	--keyboard-open: 0;
 }
 
 @supports (height: 100dvh) {
@@ -268,14 +270,6 @@ main {
 /* Ensure inputs scroll into view properly when focused, accounting for browser chrome */
 @supports (-webkit-touch-callout: none) {
 	/* iOS Safari specific styles */
-	input:focus,
-	textarea:focus,
-	select:focus {
-		/* Add scroll margin to account for fixed headers and browser chrome */
-		scroll-margin-top: 100px;
-		/* Smooth scroll into view */
-		scroll-behavior: smooth;
-	}
 
 	/* Prevent iOS Safari from zooming on input focus (if viewport scale is set) */
 	input[type="text"],
@@ -284,9 +278,34 @@ main {
 	input[type="number"],
 	input[type="password"],
 	input[type="search"],
+	input[type="date"],
 	textarea,
 	select {
 		font-size: 16px; /* Prevents zoom on focus in iOS Safari */
+	}
+
+	/* Fix for iOS Safari keyboard accessory bar spacing */
+	/* Prevent the body from scrolling - all scroll should happen in main container */
+	html {
+		height: 100%;
+		overflow: hidden;
+		position: fixed;
+		width: 100%;
+	}
+
+	body {
+		height: 100%;
+		overflow: hidden;
+		position: fixed;
+		width: 100%;
+		/* Prevent overscroll/bounce effect that can cause the gap */
+		overscroll-behavior: none;
+	}
+
+	/* The main content scrolls, not the body */
+	main {
+		-webkit-overflow-scrolling: touch;
+		overscroll-behavior: contain;
 	}
 }
 
@@ -294,15 +313,7 @@ main {
 @media screen and (max-width: 768px) {
 	form,
 	[role="form"] {
-		/* Add padding at the bottom to account for keyboard and browser chrome */
+		/* Add padding at the bottom to account for safe area */
 		padding-bottom: env(safe-area-inset-bottom, 0px);
-	}
-
-	/* When input is focused, ensure it's visible above keyboard */
-	input:focus,
-	textarea:focus,
-	select:focus {
-		position: relative;
-		z-index: 1;
 	}
 }
