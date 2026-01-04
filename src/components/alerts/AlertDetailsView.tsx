@@ -299,27 +299,27 @@ export function AlertDetailsView({
 					label: "Volver a Alertas",
 					onClick: () => navigateTo("/alerts"),
 				}}
-			actions={[
-				...(alert.satFileUrl
-					? [
-							{
-								label: t("alertDownloadXml"),
-								icon: Download,
-								onClick: handleDownloadXml,
-							},
-						]
-					: []),
-				...(alert.status !== "CANCELLED"
-					? [
-							{
-								label: "Cancelar Alerta",
-								icon: XCircle,
-								onClick: () => setCancelDialogOpen(true),
-								variant: "destructive" as const,
-							},
-						]
-					: []),
-			]}
+				actions={[
+					...(alert.satFileUrl
+						? [
+								{
+									label: t("alertDownloadXml"),
+									icon: Download,
+									onClick: handleDownloadXml,
+								},
+							]
+						: []),
+					...(alert.status !== "CANCELLED"
+						? [
+								{
+									label: "Cancelar Alerta",
+									icon: XCircle,
+									onClick: () => setCancelDialogOpen(true),
+									variant: "destructive" as const,
+								},
+							]
+						: []),
+				]}
 			/>
 
 			<div className="space-y-6">

@@ -77,7 +77,6 @@ vi.mock("@/lib/org-store", () => ({
 	useOrgStore: () => mockUseOrgStore(),
 }));
 
-
 describe("OrgTeamTable", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();

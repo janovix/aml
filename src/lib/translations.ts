@@ -385,11 +385,11 @@ export const translations = {
 		alertDuplicateError:
 			"Ya existe una alerta similar para este cliente y regla",
 		alertCreateError: "Error al crear la alerta",
-	alertDownloadXml: "Descargar XML",
-	alertDownloadXmlNoFile: "No hay archivo XML disponible",
-	alertDownloadingXml: "Descargando archivo XML...",
-	alertDownloadXmlSuccess: "Archivo XML descargado exitosamente",
-	alertDownloadXmlError: "Error al descargar el archivo XML",
+		alertDownloadXml: "Descargar XML",
+		alertDownloadXmlNoFile: "No hay archivo XML disponible",
+		alertDownloadingXml: "Descargando archivo XML...",
+		alertDownloadXmlSuccess: "Archivo XML descargado exitosamente",
+		alertDownloadXmlError: "Error al descargar el archivo XML",
 
 		// Reports
 		reportsTitle: "Reportes",
@@ -929,11 +929,11 @@ export const translations = {
 		alertDuplicateError:
 			"A similar alert already exists for this client and rule",
 		alertCreateError: "Error creating alert",
-	alertDownloadXml: "Download XML",
-	alertDownloadXmlNoFile: "No XML file available",
-	alertDownloadingXml: "Downloading XML file...",
-	alertDownloadXmlSuccess: "XML file downloaded successfully",
-	alertDownloadXmlError: "Error downloading XML file",
+		alertDownloadXml: "Download XML",
+		alertDownloadXmlNoFile: "No XML file available",
+		alertDownloadingXml: "Downloading XML file...",
+		alertDownloadXmlSuccess: "XML file downloaded successfully",
+		alertDownloadXmlError: "Error downloading XML file",
 
 		// Reports
 		reportsTitle: "Reports",

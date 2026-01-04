@@ -62,7 +62,6 @@ const mockOrg2 = {
 	status: "active" as const,
 };
 
-
 describe("IndexPage", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();

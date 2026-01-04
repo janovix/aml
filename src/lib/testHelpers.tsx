@@ -2,7 +2,11 @@ import { render, type RenderOptions } from "@testing-library/react";
 import type { ReactElement } from "react";
 import React from "react";
 import { LanguageProvider } from "@/components/LanguageProvider";
-import { translations, type Language, type TranslationKeys } from "./translations";
+import {
+	translations,
+	type Language,
+	type TranslationKeys,
+} from "./translations";
 
 /**
  * Lightweight helper for component rendering in tests.

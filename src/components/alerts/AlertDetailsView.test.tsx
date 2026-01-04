@@ -99,6 +99,7 @@ const mockAlert: Alert = {
 describe("AlertDetailsView", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		vi.restoreAllMocks();
 		mockExecuteMutation.mockImplementation(async ({ mutation, onSuccess }) => {
 			const result = await mutation();
 			if (onSuccess) {
@@ -677,25 +678,32 @@ describe("AlertDetailsView", () => {
 		global.URL.createObjectURL = mockCreateObjectURL;
 		global.URL.revokeObjectURL = mockRevokeObjectURL;
 
-		// Mock document.createElement and appendChild/removeChild
+		// Render first, then mock document methods for the download action
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Descargar XML")).toBeInTheDocument();
+		});
+
+		// Mock document.createElement and appendChild/removeChild AFTER initial render
 		const mockAnchor = {
 			href: "",
 			download: "",
 			click: vi.fn(),
 		} as unknown as HTMLAnchorElement;
 		const originalCreateElement = document.createElement.bind(document);
-		vi.spyOn(document, "createElement").mockImplementation((tagName) => {
-			if (tagName === "a") return mockAnchor;
-			return originalCreateElement(tagName);
-		});
-		vi.spyOn(document.body, "appendChild").mockImplementation(() => mockAnchor);
-		vi.spyOn(document.body, "removeChild").mockImplementation(() => mockAnchor);
-
-		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
-
-		await waitFor(() => {
-			expect(screen.getByText("Descargar XML")).toBeInTheDocument();
-		});
+		const createElementSpy = vi
+			.spyOn(document, "createElement")
+			.mockImplementation((tagName) => {
+				if (tagName === "a") return mockAnchor;
+				return originalCreateElement(tagName);
+			});
+		const appendChildSpy = vi
+			.spyOn(document.body, "appendChild")
+			.mockImplementation(() => mockAnchor);
+		const removeChildSpy = vi
+			.spyOn(document.body, "removeChild")
+			.mockImplementation(() => mockAnchor);
 
 		const downloadButton = screen.getByText("Descargar XML");
 		await user.click(downloadButton);
@@ -707,6 +715,11 @@ describe("AlertDetailsView", () => {
 			expect(mockAnchor.download).toBe("alerta-2501-alert-1.xml");
 			expect(mockRevokeObjectURL).toHaveBeenCalledWith(mockUrl);
 		});
+
+		// Clean up spies
+		createElementSpy.mockRestore();
+		appendChildSpy.mockRestore();
+		removeChildSpy.mockRestore();
 	});
 
 	it("shows error toast when download fails", async () => {
