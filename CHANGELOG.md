@@ -1,3 +1,21 @@
+# [1.1.0-rc.21](https://github.com/janovix/aml/compare/v1.1.0-rc.20...v1.1.0-rc.21) (2026-01-04)
+
+
+### Bug Fixes
+
+* adjust layout of Navbar and NavBreadcrumb components for improved responsiveness and visual consistency ([2ec5844](https://github.com/janovix/aml/commit/2ec5844c9043282122ecb2ce3f69f108471d8a7e))
+* improve DataTable component layout for loading and empty states, ensuring consistent row heights and placeholder rows ([053ee16](https://github.com/janovix/aml/commit/053ee16fee914c44e9edef8f0055b3d2c141e28e))
+
+
+### Features
+
+* add Caddyfile for local development setup and create LOCAL_DEV_SETUP.md for guidance on using deployed auth service ([8000aae](https://github.com/janovix/aml/commit/8000aaec3e90e98d872024b46a741776c55d3fc5))
+* enhance ClientSelector to fetch client by ID when not found in search results, improving selection accuracy and user experience ([6832122](https://github.com/janovix/aml/commit/683212251c467f10db397ba4bba2cdc71bcd7ae2))
+* enhance multilingual support, improving accessibility ([0f72161](https://github.com/janovix/aml/commit/0f7216121b844cc5ac6d578c8d4a9d7b3d41b06e))
+* implement LanguageProvider and LanguageSwitcher components for multilingual support, enhancing user experience with language selection and translations ([cca4223](https://github.com/janovix/aml/commit/cca4223f95b956442f69370dec0ba631954a1a63))
+* implement XML download functionality in AlertDetailsView and AlertsTable components ([d59a140](https://github.com/janovix/aml/commit/d59a140754b3c00fac182cbb75954179cec4f3e9))
+* transition mobile drawer to dialog for CatalogSelector, ClientSelector, and AlertRuleSelector components, enhancing mobile user experience with close button functionality ([4cfff22](https://github.com/janovix/aml/commit/4cfff22332938807d469a77f010f2c525cc8f020))
+
 # [1.1.0-rc.20](https://github.com/janovix/aml/compare/v1.1.0-rc.19...v1.1.0-rc.20) (2026-01-03)
 
 
