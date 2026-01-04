@@ -5,7 +5,14 @@ import type {
 	FilterDef,
 	DataTableProps,
 } from "../../components/data-table/types";
-import { MoreHorizontal, Trash2, Edit } from "lucide-react";
+import {
+	Filter,
+	Trash2,
+	Edit,
+	MoreHorizontal,
+	Users,
+	SearchX,
+} from "lucide-react";
 import { Button } from "../../components/ui/button";
 import {
 	DropdownMenu,
@@ -128,7 +135,7 @@ const filters: FilterDef[] = [
 	{
 		id: "status",
 		label: "Status",
-		icon: MoreHorizontal,
+		icon: Filter,
 		options: [
 			{ value: "active", label: "Active" },
 			{ value: "inactive", label: "Inactive" },
@@ -138,7 +145,7 @@ const filters: FilterDef[] = [
 	{
 		id: "role",
 		label: "Role",
-		icon: MoreHorizontal,
+		icon: Filter,
 		options: [
 			{ value: "admin", label: "Admin" },
 			{ value: "user", label: "User" },
@@ -242,6 +249,37 @@ export const Empty: Story = {
 		searchKeys: ["name", "email"],
 		searchPlaceholder: "Search users...",
 		emptyMessage: "No users found",
+		emptyIcon: SearchX,
+		getId: (item) => item.id,
+	},
+};
+
+export const EmptyWithCTA: Story = {
+	args: {
+		data: [],
+		columns,
+		filters,
+		searchKeys: ["name", "email"],
+		searchPlaceholder: "Search users...",
+		emptyMessage: "No users found",
+		emptyIcon: Users,
+		emptyActionLabel: "Add User",
+		emptyActionHref: "/users/new",
+		getId: (item) => item.id,
+	},
+};
+
+export const EmptyWithClickAction: Story = {
+	args: {
+		data: [],
+		columns,
+		filters,
+		searchKeys: ["name", "email"],
+		searchPlaceholder: "Search users...",
+		emptyMessage: "No users found",
+		emptyIcon: Users,
+		emptyActionLabel: "Create User",
+		onEmptyAction: () => alert("Create user clicked!"),
 		getId: (item) => item.id,
 	},
 };

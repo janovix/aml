@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
 	ArrowDownCircle,
 	ArrowUpCircle,
@@ -12,27 +12,35 @@ import {
 	Eye,
 	Edit,
 	FileText,
+	Receipt,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
+import { useDataTableUrlFilters } from "@/hooks/useDataTableUrlFilters";
+
+// Filter IDs for URL persistence
+const TRANSACTION_FILTER_IDS = ["operationType", "vehicleType", "currency"];
+import { Button } from "@/components/ui/button";
 import {
-	Button,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "@algtools/ui";
+} from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+import { useOrgStore } from "@/lib/org-store";
 import {
 	listTransactions,
 	type ListTransactionsOptions,
 } from "@/lib/api/transactions";
-import { getClientByRfc } from "@/lib/api/clients";
+import { getClientById } from "@/lib/api/clients";
 import type { Transaction, TransactionVehicleType } from "@/types/transaction";
 import type { Client } from "@/types/client";
 import { getClientDisplayName } from "@/types/client";
@@ -42,6 +50,9 @@ import {
 	type ColumnDef,
 	type FilterDef,
 } from "@/components/data-table";
+import { formatProperNoun } from "@/lib/utils";
+import { useLanguage } from "@/components/LanguageProvider";
+import { getLocaleForLanguage } from "@/lib/translations";
 
 /**
  * Extended transaction row with resolved client data
@@ -97,46 +108,107 @@ interface TransactionsTableProps {
 export function TransactionsTable({
 	filters,
 }: TransactionsTableProps = {}): React.ReactElement {
-	const router = useRouter();
+	const { navigateTo, orgPath } = useOrgNavigation();
 	const { toast } = useToast();
+	const { currentOrg } = useOrgStore();
+	const urlFilters = useDataTableUrlFilters(TRANSACTION_FILTER_IDS);
+	const { t, language } = useLanguage();
 	const [transactions, setTransactions] = useState<Transaction[]>([]);
 	const [clients, setClients] = useState<Map<string, Client>>(new Map());
 	const [isLoading, setIsLoading] = useState(true);
+	const [isLoadingMore, setIsLoadingMore] = useState(false);
+	const [currentPage, setCurrentPage] = useState(1);
+	const [hasMore, setHasMore] = useState(true);
+	const ITEMS_PER_PAGE = 20;
 
+	// Track which client IDs we've already attempted to fetch (to avoid re-fetching)
+	const fetchedClientIdsRef = useRef<Set<string>>(new Set());
+
+	// Fetch client information for transactions - optimized to only fetch missing clients
+	const fetchClientsForTransactions = useCallback(
+		async (txList: Transaction[]) => {
+			const uniqueClientIds = [...new Set(txList.map((tx) => tx.clientId))];
+
+			// Filter out clients we've already attempted to fetch
+			const missingClientIds = uniqueClientIds.filter(
+				(clientId) => !fetchedClientIdsRef.current.has(clientId),
+			);
+
+			// If all clients are already loaded or fetched, skip fetching
+			if (missingClientIds.length === 0) {
+				return;
+			}
+
+			// Mark these as being fetched
+			missingClientIds.forEach((id) => fetchedClientIdsRef.current.add(id));
+
+			// Fetch only missing clients in parallel
+			const clientPromises = missingClientIds.map(async (clientId) => {
+				try {
+					const client = await getClientById({ id: clientId });
+					return { clientId, client };
+				} catch (error) {
+					console.error(`Error fetching client ${clientId}:`, error);
+					return null;
+				}
+			});
+
+			const results = await Promise.all(clientPromises);
+
+			// Only update state if we have new results
+			const validResults = results.filter(
+				(result): result is { clientId: string; client: Client } =>
+					result !== null,
+			);
+
+			if (validResults.length > 0) {
+				setClients((prev) => {
+					const merged = new Map(prev);
+					validResults.forEach((result) => {
+						merged.set(result.clientId, result.client);
+					});
+					return merged;
+				});
+			}
+		},
+		[], // No dependencies - uses ref to track fetched clients
+	);
+
+	// Initial load - refetch when organization changes
 	useEffect(() => {
+		// Wait for an organization to be selected
+		// Without an organization, the API will return 403 "Organization Required"
+		if (!currentOrg?.id) {
+			setTransactions([]);
+			setClients(new Map());
+			fetchedClientIdsRef.current.clear();
+			setIsLoading(false);
+			return;
+		}
+
 		const fetchTransactions = async () => {
 			try {
 				setIsLoading(true);
+				setCurrentPage(1);
+				// Clear existing data and caches when org changes
+				setTransactions([]);
+				setClients(new Map());
+				fetchedClientIdsRef.current.clear();
+
+				// Fetch transactions (brand data is now enriched by the backend)
 				const response = await listTransactions({
 					page: 1,
-					limit: 100,
+					limit: ITEMS_PER_PAGE,
 					...filters,
 				});
 				setTransactions(response.data);
-
-				// Fetch client information for all unique client IDs
-				const uniqueClientIds = [
-					...new Set(response.data.map((tx) => tx.clientId)),
-				];
-				const clientsMap = new Map<string, Client>();
-
-				await Promise.all(
-					uniqueClientIds.map(async (clientId) => {
-						try {
-							const client = await getClientByRfc({ rfc: clientId });
-							clientsMap.set(clientId, client);
-						} catch (error) {
-							console.error(`Error fetching client ${clientId}:`, error);
-						}
-					}),
-				);
-
-				setClients(clientsMap);
+				setHasMore(response.pagination.page < response.pagination.totalPages);
+				await fetchClientsForTransactions(response.data);
 			} catch (error) {
 				console.error("Error fetching transactions:", error);
 				toast({
-					title: "Error",
-					description: "No se pudieron cargar las transacciones.",
+					title: t("errorGeneric"),
+					description: t("transactionsLoadError"),
 					variant: "destructive",
 				});
 			} finally {
@@ -144,18 +216,52 @@ export function TransactionsTable({
 			}
 		};
 		fetchTransactions();
-	}, [filters, toast]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [filters, toast, currentOrg?.id]);
+
+	// Load more transactions for infinite scroll
+	const handleLoadMore = useCallback(async () => {
+		if (isLoadingMore || !hasMore || !currentOrg?.id) return;
+
+		try {
+			setIsLoadingMore(true);
+			const nextPage = currentPage + 1;
+			const response = await listTransactions({
+				page: nextPage,
+				limit: ITEMS_PER_PAGE,
+				...filters,
+			});
+
+			setTransactions((prev) => [...prev, ...response.data]);
+			setCurrentPage(nextPage);
+			setHasMore(response.pagination.page < response.pagination.totalPages);
+
+			await fetchClientsForTransactions(response.data);
+		} catch (error) {
+			console.error("Error loading more transactions:", error);
+			toast({
+				title: t("errorGeneric"),
+				description: t("transactionsLoadMoreError"),
+				variant: "destructive",
+			});
+		} finally {
+			setIsLoadingMore(false);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [currentPage, hasMore, isLoadingMore, filters, toast, currentOrg?.id]);
 
 	// Transform Transaction to TransactionRow format
 	const transactionsData: TransactionRow[] = useMemo(() => {
 		return transactions.map((tx) => {
 			const client = clients.get(tx.clientId);
+			// Use enriched brand catalog name if available, fallback to brand ID
+			const brandName = tx.brandCatalog?.name || tx.brand;
 			return {
 				id: tx.id,
 				shortId: generateShortTransactionId(tx.id),
 				operationType: tx.operationType,
 				vehicleType: tx.vehicleType,
-				brand: tx.brand,
+				brand: brandName,
 				model: tx.model,
 				year: tx.year,
 				amount: parseFloat(tx.amount),
@@ -207,7 +313,7 @@ export function TransactionsTable({
 						</TooltipProvider>
 						<div className="flex flex-col min-w-0">
 							<Link
-								href={`/transactions/${item.id}`}
+								href={orgPath(`/transactions/${item.id}`)}
 								className="font-medium text-foreground hover:text-primary truncate"
 								onClick={(e) => e.stopPropagation()}
 							>
@@ -245,7 +351,7 @@ export function TransactionsTable({
 							</TooltipProvider>
 							<div className="flex flex-col min-w-0">
 								<span className="text-sm font-medium truncate">
-									{item.brand} {item.model}
+									{formatProperNoun(item.brand)} {formatProperNoun(item.model)}
 								</span>
 								<span className="text-xs text-muted-foreground">
 									{item.year}
@@ -392,14 +498,14 @@ export function TransactionsTable({
 			<DropdownMenuContent align="end" className="w-48">
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => router.push(`/transactions/${item.id}`)}
+					onClick={() => navigateTo(`/transactions/${item.id}`)}
 				>
 					<Eye className="h-4 w-4" />
 					Ver detalle
 				</DropdownMenuItem>
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => router.push(`/transactions/${item.id}/edit`)}
+					onClick={() => navigateTo(`/transactions/${item.id}/edit`)}
 				>
 					<Edit className="h-4 w-4" />
 					Editar transacción
@@ -407,7 +513,7 @@ export function TransactionsTable({
 				<DropdownMenuSeparator />
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => router.push(`/clients/${item.clientId}`)}
+					onClick={() => navigateTo(`/clients/${item.clientId}`)}
 				>
 					Ver cliente
 				</DropdownMenuItem>
@@ -425,13 +531,27 @@ export function TransactionsTable({
 			columns={columns}
 			filters={filterDefs}
 			searchKeys={["clientName", "clientId", "shortId", "brand", "model"]}
-			searchPlaceholder="Buscar por cliente, marca, modelo..."
-			emptyMessage="No se encontraron transacciones"
-			loadingMessage="Cargando transacciones..."
+			searchPlaceholder={t("transactionsSearchPlaceholder")}
+			emptyMessage={t("transactionNoTransactions")}
+			emptyIcon={Receipt}
+			emptyActionLabel={t("transactionsNew")}
+			emptyActionHref={orgPath("/transactions/new")}
+			loadingMessage={t("transactionsLoading")}
 			isLoading={isLoading}
 			selectable
 			getId={(item) => item.id}
 			actions={renderActions}
+			paginationMode="infinite-scroll"
+			onLoadMore={handleLoadMore}
+			hasMore={hasMore}
+			isLoadingMore={isLoadingMore}
+			// URL persistence
+			initialFilters={urlFilters.initialFilters}
+			initialSearch={urlFilters.initialSearch}
+			initialSort={urlFilters.initialSort}
+			onFiltersChange={urlFilters.onFiltersChange}
+			onSearchChange={urlFilters.onSearchChange}
+			onSortChange={urlFilters.onSortChange}
 		/>
 	);
 }

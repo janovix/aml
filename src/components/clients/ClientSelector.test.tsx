@@ -3,8 +3,12 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ClientSelector } from "./ClientSelector";
 import { useClientSearch } from "@/hooks/useClientSearch";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 vi.mock("@/hooks/useClientSearch");
+vi.mock("@/hooks/use-mobile");
+
+const mockUseIsMobile = vi.mocked(useIsMobile);
 
 const mockClients = [
 	{
@@ -48,6 +52,7 @@ describe("ClientSelector", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		vi.mocked(useClientSearch).mockReturnValue(mockUseClientSearch);
+		mockUseIsMobile.mockReturnValue(false); // Default to desktop
 	});
 
 	it("should render with label", () => {
@@ -155,11 +160,12 @@ describe("ClientSelector", () => {
 		const trigger = screen.getByRole("combobox");
 		await user.click(trigger);
 
+		// Names are now displayed in uppercase by getClientDisplayName
 		await waitFor(() => {
-			expect(screen.getByText("Juan Pérez García")).toBeInTheDocument();
+			expect(screen.getByText("JUAN PÉREZ GARCÍA")).toBeInTheDocument();
 		});
 
-		const option = screen.getByText("Juan Pérez García");
+		const option = screen.getByText("JUAN PÉREZ GARCÍA");
 		await user.click(option);
 
 		expect(handleChange).toHaveBeenCalledWith(mockClients[0]);
@@ -362,11 +368,12 @@ describe("ClientSelector", () => {
 		const trigger = screen.getByRole("combobox");
 		await user.click(trigger);
 
+		// Names are now displayed in uppercase by getClientDisplayName
 		await waitFor(() => {
-			expect(screen.getByText("Juan Pérez García")).toBeInTheDocument();
+			expect(screen.getByText("JUAN PÉREZ GARCÍA")).toBeInTheDocument();
 		});
 
-		const option = screen.getByText("Juan Pérez García");
+		const option = screen.getByText("JUAN PÉREZ GARCÍA");
 		await user.click(option);
 
 		// Popover should close - verify by checking the trigger still exists and menu is not visible
@@ -406,5 +413,148 @@ describe("ClientSelector", () => {
 		expect(
 			await screen.findByPlaceholderText("Buscar por RFC o nombre..."),
 		).toBeInTheDocument();
+	});
+
+	describe("mobile dialog behavior", () => {
+		beforeEach(() => {
+			mockUseIsMobile.mockReturnValue(true);
+		});
+
+		it("should open fullscreen dialog on mobile when trigger is clicked", async () => {
+			const user = userEvent.setup();
+
+			render(<ClientSelector label="Cliente" />);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			// On mobile, Dialog should render with dialog role
+			await waitFor(() => {
+				expect(screen.getByRole("dialog")).toBeInTheDocument();
+			});
+
+			// Should show the title in the dialog header (h2 element)
+			const dialog = screen.getByRole("dialog");
+			expect(dialog.querySelector("h2")).toHaveTextContent("Cliente");
+		});
+
+		it("should show search input in mobile dialog", async () => {
+			const user = userEvent.setup();
+
+			render(<ClientSelector label="Cliente" />);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			await waitFor(() => {
+				expect(
+					screen.getByPlaceholderText("Buscar cliente por nombre o RFC..."),
+				).toBeInTheDocument();
+			});
+		});
+
+		it("should allow selecting client in mobile dialog", async () => {
+			const user = userEvent.setup();
+			const handleChange = vi.fn();
+
+			render(<ClientSelector onChange={handleChange} />);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			await waitFor(() => {
+				expect(screen.getByText("JUAN PÉREZ GARCÍA")).toBeInTheDocument();
+			});
+
+			const option = screen.getByText("JUAN PÉREZ GARCÍA");
+			await user.click(option);
+
+			expect(handleChange).toHaveBeenCalledWith(mockClients[0]);
+		});
+
+		it("should close dialog after selection on mobile", async () => {
+			const user = userEvent.setup();
+
+			render(<ClientSelector />);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			await waitFor(() => {
+				expect(screen.getByText("JUAN PÉREZ GARCÍA")).toBeInTheDocument();
+			});
+
+			const option = screen.getByText("JUAN PÉREZ GARCÍA");
+			await user.click(option);
+
+			await waitFor(() => {
+				expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+			});
+		});
+
+		it("should show required indicator in mobile dialog title", async () => {
+			const user = userEvent.setup();
+
+			render(<ClientSelector label="Cliente" required />);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			await waitFor(() => {
+				const dialog = screen.getByRole("dialog");
+				expect(dialog.querySelector(".text-destructive")).toBeInTheDocument();
+			});
+		});
+
+		it("should show create new button in mobile dialog when onCreateNew is provided", async () => {
+			const user = userEvent.setup();
+			const onCreateNew = vi.fn();
+
+			render(<ClientSelector onCreateNew={onCreateNew} />);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			await waitFor(() => {
+				expect(screen.getByText("Crear nuevo cliente")).toBeInTheDocument();
+			});
+		});
+
+		it("should show close button in mobile dialog header", async () => {
+			const user = userEvent.setup();
+
+			render(<ClientSelector label="Cliente" />);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			await waitFor(() => {
+				expect(screen.getByRole("dialog")).toBeInTheDocument();
+			});
+
+			// Should have a close button with "Cerrar" text
+			const closeButton = screen.getByRole("button", { name: /cerrar/i });
+			expect(closeButton).toBeInTheDocument();
+		});
+
+		it("should close dialog when close button is clicked", async () => {
+			const user = userEvent.setup();
+
+			render(<ClientSelector label="Cliente" />);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			await waitFor(() => {
+				expect(screen.getByRole("dialog")).toBeInTheDocument();
+			});
+
+			const closeButton = screen.getByRole("button", { name: /cerrar/i });
+			await user.click(closeButton);
+
+			await waitFor(() => {
+				expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+			});
+		});
 	});
 });

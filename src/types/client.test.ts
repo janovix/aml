@@ -26,7 +26,8 @@ describe("Client Types", () => {
 				updatedAt: "2024-01-01T00:00:00Z",
 			};
 
-			expect(getClientDisplayName(client)).toBe("Juan Pérez García");
+			// formatProperNoun converts names to uppercase
+			expect(getClientDisplayName(client)).toBe("JUAN PÉREZ GARCÍA");
 		});
 
 		it("returns business name for moral person type", () => {
@@ -49,7 +50,8 @@ describe("Client Types", () => {
 				updatedAt: "2024-01-01T00:00:00Z",
 			};
 
-			expect(getClientDisplayName(client)).toBe("Empresa Test S.A. de C.V.");
+			// formatProperNoun converts business names to uppercase
+			expect(getClientDisplayName(client)).toBe("EMPRESA TEST S.A. DE C.V.");
 		});
 
 		it("handles missing secondLastName", () => {
@@ -73,7 +75,8 @@ describe("Client Types", () => {
 				updatedAt: "2024-01-01T00:00:00Z",
 			};
 
-			expect(getClientDisplayName(client)).toBe("Juan Pérez");
+			// formatProperNoun converts names to uppercase
+			expect(getClientDisplayName(client)).toBe("JUAN PÉREZ");
 		});
 	});
 });

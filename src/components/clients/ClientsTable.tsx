@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
 	Users,
 	Building2,
@@ -13,20 +13,24 @@ import {
 	Flag,
 	FileText,
 	Trash2,
+	UserPlus,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import {
-	Button,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
 	AlertDialog,
 	AlertDialogAction,
 	AlertDialogCancel,
@@ -35,9 +39,13 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-} from "@algtools/ui";
-import { useToast } from "@/hooks/use-toast";
+} from "@/components/ui/alert-dialog";
 import { useJwt } from "@/hooks/useJwt";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
+import { useDataTableUrlFilters } from "@/hooks/useDataTableUrlFilters";
+import { executeMutation } from "@/lib/mutations";
+import { toast } from "sonner";
+import { useOrgStore } from "@/lib/org-store";
 import type { Client, PersonType } from "@/types/client";
 import { getClientDisplayName } from "@/types/client";
 import { listClients, deleteClient } from "@/lib/api/clients";
@@ -46,6 +54,8 @@ import {
 	type ColumnDef,
 	type FilterDef,
 } from "@/components/data-table";
+import { useLanguage } from "@/components/LanguageProvider";
+import { getLocaleForLanguage } from "@/lib/translations";
 
 /**
  * Client row with computed display name
@@ -54,62 +64,118 @@ interface ClientRow extends Client {
 	displayName: string;
 }
 
-const personTypeConfig: Record<
-	PersonType,
-	{ label: string; icon: React.ReactNode; bgColor: string }
-> = {
-	physical: {
-		label: "Persona Física",
-		icon: <User className="h-4 w-4" />,
-		bgColor: "bg-sky-500/20 text-sky-400",
-	},
-	moral: {
-		label: "Persona Moral",
-		icon: <Building2 className="h-4 w-4" />,
-		bgColor: "bg-violet-500/20 text-violet-400",
-	},
-	trust: {
-		label: "Fideicomiso",
-		icon: <Landmark className="h-4 w-4" />,
-		bgColor: "bg-amber-500/20 text-amber-400",
-	},
+const personTypeIcons: Record<PersonType, React.ReactNode> = {
+	physical: <User className="h-4 w-4" />,
+	moral: <Building2 className="h-4 w-4" />,
+	trust: <Landmark className="h-4 w-4" />,
 };
 
+const personTypeBgColors: Record<PersonType, string> = {
+	physical: "bg-sky-500/20 text-sky-400",
+	moral: "bg-violet-500/20 text-violet-400",
+	trust: "bg-amber-500/20 text-amber-400",
+};
+
+// Filter IDs for URL persistence
+const CLIENT_FILTER_IDS = ["personType", "stateCode"];
+
 export function ClientsTable(): React.ReactElement {
-	const router = useRouter();
-	const { toast } = useToast();
+	const { navigateTo, orgPath } = useOrgNavigation();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
+	const { currentOrg } = useOrgStore();
+	const urlFilters = useDataTableUrlFilters(CLIENT_FILTER_IDS);
+	const { t, language } = useLanguage();
+
+	// Build person type config with translations
+	const personTypeConfig = useMemo(
+		() => ({
+			physical: {
+				label: t("clientPersonPhysical"),
+				icon: personTypeIcons.physical,
+				bgColor: personTypeBgColors.physical,
+			},
+			moral: {
+				label: t("clientPersonMoral"),
+				icon: personTypeIcons.moral,
+				bgColor: personTypeBgColors.moral,
+			},
+			trust: {
+				label: t("clientTrust"),
+				icon: personTypeIcons.trust,
+				bgColor: personTypeBgColors.trust,
+			},
+		}),
+		[t],
+	);
 	const [clients, setClients] = useState<Client[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
+	const [isLoadingMore, setIsLoadingMore] = useState(false);
+	const [currentPage, setCurrentPage] = useState(1);
+	const [hasMore, setHasMore] = useState(true);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
+	const ITEMS_PER_PAGE = 20;
 
+	// Initial load - refetch when organization changes
 	useEffect(() => {
-		// Wait for JWT to be ready
-		if (isJwtLoading) return;
+		// Wait for JWT to be ready and organization to be selected
+		// Without an organization, the API will return 403
+		if (isJwtLoading || !jwt || !currentOrg?.id) {
+			// If no org selected, clear data and stop loading
+			if (!currentOrg?.id && !isJwtLoading) {
+				setClients([]);
+				setIsLoading(false);
+			}
+			return;
+		}
 
 		const fetchClients = async () => {
 			try {
 				setIsLoading(true);
+				setCurrentPage(1);
+				// Clear existing data when org changes
+				setClients([]);
 				const response = await listClients({
 					page: 1,
-					limit: 100,
-					jwt: jwt ?? undefined,
+					limit: ITEMS_PER_PAGE,
+					jwt,
 				});
 				setClients(response.data);
+				setHasMore(response.pagination.page < response.pagination.totalPages);
 			} catch (error) {
 				console.error("Error fetching clients:", error);
-				toast({
-					title: "Error",
-					description: "No se pudieron cargar los clientes.",
-					variant: "destructive",
-				});
+				toast.error(t("clientsLoadError"));
 			} finally {
 				setIsLoading(false);
 			}
 		};
 		fetchClients();
-	}, [toast, jwt, isJwtLoading]);
+	}, [jwt, isJwtLoading, currentOrg?.id]);
+
+	// Load more clients for infinite scroll
+	const handleLoadMore = useCallback(async () => {
+		if (isLoadingMore || !hasMore || isJwtLoading || !jwt || !currentOrg?.id)
+			return;
+
+		try {
+			setIsLoadingMore(true);
+			const nextPage = currentPage + 1;
+			const response = await listClients({
+				page: nextPage,
+				limit: ITEMS_PER_PAGE,
+				jwt,
+			});
+
+			setClients((prev) => [...prev, ...response.data]);
+			setCurrentPage(nextPage);
+			setHasMore(response.pagination.page < response.pagination.totalPages);
+		} catch (error) {
+			console.error("Error loading more clients:", error);
+			toast.error(t("clientsLoadMoreError"));
+		} finally {
+			setIsLoadingMore(false);
+		}
+	}, [currentPage, hasMore, isLoadingMore, isJwtLoading, jwt, currentOrg?.id]);
 
 	// Transform clients to include display name
 	const clientsData: ClientRow[] = useMemo(() => {
@@ -125,23 +191,21 @@ export function ClientsTable(): React.ReactElement {
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement("a");
 		a.href = url;
-		a.download = `reporte-${client.rfc}.json`;
+		a.download = `report-${client.rfc}.json`;
 		document.body.appendChild(a);
 		a.click();
 		document.body.removeChild(a);
 		URL.revokeObjectURL(url);
 
-		toast({
-			title: "Reporte generado",
-			description: `Reporte para ${getClientDisplayName(client)} descargado exitosamente.`,
-		});
+		toast.success(
+			`${t("clientReportDownloaded")} ${getClientDisplayName(client)}`,
+		);
 	};
 
 	const handleFlagSuspicious = (client: Client): void => {
-		toast({
-			title: "Cliente marcado",
-			description: `${getClientDisplayName(client)} ha sido marcado como sospechoso.`,
-		});
+		toast.success(
+			`${getClientDisplayName(client)} ${t("clientMarkedSuspicious")}`,
+		);
 	};
 
 	const handleDeleteClick = (client: Client): void => {
@@ -150,25 +214,25 @@ export function ClientsTable(): React.ReactElement {
 	};
 
 	const handleDeleteConfirm = async (): Promise<void> => {
-		if (clientToDelete) {
-			try {
-				await deleteClient({ rfc: clientToDelete.rfc, jwt: jwt ?? undefined });
-				setClients(clients.filter((c) => c.rfc !== clientToDelete.rfc));
-				toast({
-					title: "Cliente eliminado",
-					description: `${getClientDisplayName(clientToDelete)} ha sido eliminado del sistema.`,
-				});
-			} catch (error) {
-				console.error("Error deleting client:", error);
-				toast({
-					title: "Error",
-					description: "No se pudo eliminar el cliente.",
-					variant: "destructive",
-				});
-			} finally {
-				setDeleteDialogOpen(false);
-				setClientToDelete(null);
-			}
+		if (!clientToDelete) return;
+
+		const clientName = getClientDisplayName(clientToDelete);
+		const clientId = clientToDelete.id;
+
+		try {
+			await executeMutation({
+				mutation: () => deleteClient({ id: clientId, jwt: jwt ?? undefined }),
+				loading: t("clientDeleting"),
+				success: `${clientName} ${t("clientDeleted")}`,
+				onSuccess: () => {
+					setClients(clients.filter((c) => c.id !== clientId));
+				},
+			});
+		} catch {
+			// Error is already handled by executeMutation via Sonner
+		} finally {
+			setDeleteDialogOpen(false);
+			setClientToDelete(null);
 		}
 	};
 
@@ -177,7 +241,7 @@ export function ClientsTable(): React.ReactElement {
 		() => [
 			{
 				id: "client",
-				header: "Cliente",
+				header: t("tableClient"),
 				accessorKey: "displayName",
 				sortable: true,
 				cell: (item) => {
@@ -201,7 +265,7 @@ export function ClientsTable(): React.ReactElement {
 							</TooltipProvider>
 							<div className="flex flex-col min-w-0">
 								<Link
-									href={`/clients/${item.rfc}`}
+									href={orgPath(`/clients/${item.id}`)}
 									className="font-medium text-foreground hover:text-primary truncate"
 									onClick={(e) => e.stopPropagation()}
 								>
@@ -217,7 +281,7 @@ export function ClientsTable(): React.ReactElement {
 			},
 			{
 				id: "contact",
-				header: "Contacto",
+				header: t("tableContact"),
 				accessorKey: "email",
 				hideOnMobile: true,
 				cell: (item) => (
@@ -231,7 +295,7 @@ export function ClientsTable(): React.ReactElement {
 			},
 			{
 				id: "location",
-				header: "Ubicación",
+				header: t("tableLocation"),
 				accessorKey: "city",
 				sortable: true,
 				hideOnMobile: true,
@@ -246,7 +310,7 @@ export function ClientsTable(): React.ReactElement {
 			},
 			{
 				id: "createdAt",
-				header: "Registro",
+				header: t("tableRegistration"),
 				accessorKey: "createdAt",
 				sortable: true,
 				cell: (item) => {
@@ -254,7 +318,7 @@ export function ClientsTable(): React.ReactElement {
 					return (
 						<div className="flex flex-col">
 							<span className="text-sm text-foreground tabular-nums">
-								{date.toLocaleDateString("es-MX", {
+								{date.toLocaleDateString(getLocaleForLanguage(language), {
 									day: "2-digit",
 									month: "short",
 								})}
@@ -267,7 +331,7 @@ export function ClientsTable(): React.ReactElement {
 				},
 			},
 		],
-		[],
+		[t, personTypeConfig, orgPath, language],
 	);
 
 	// Filter definitions
@@ -275,12 +339,12 @@ export function ClientsTable(): React.ReactElement {
 		() => [
 			{
 				id: "personType",
-				label: "Tipo",
+				label: t("filterType"),
 				icon: Users,
 				options: [
 					{
 						value: "physical",
-						label: "Persona Física",
+						label: t("clientPersonPhysical"),
 						icon: (
 							<span className="flex items-center justify-center h-5 w-5 rounded bg-sky-500/20 text-sky-400">
 								<User className="h-3 w-3" />
@@ -289,7 +353,7 @@ export function ClientsTable(): React.ReactElement {
 					},
 					{
 						value: "moral",
-						label: "Persona Moral",
+						label: t("clientPersonMoral"),
 						icon: (
 							<span className="flex items-center justify-center h-5 w-5 rounded bg-violet-500/20 text-violet-400">
 								<Building2 className="h-3 w-3" />
@@ -298,7 +362,7 @@ export function ClientsTable(): React.ReactElement {
 					},
 					{
 						value: "trust",
-						label: "Fideicomiso",
+						label: t("clientTrust"),
 						icon: (
 							<span className="flex items-center justify-center h-5 w-5 rounded bg-amber-500/20 text-amber-400">
 								<Landmark className="h-3 w-3" />
@@ -309,7 +373,7 @@ export function ClientsTable(): React.ReactElement {
 			},
 			{
 				id: "stateCode",
-				label: "Estado",
+				label: t("filterState"),
 				icon: MapPin,
 				options: [
 					{ value: "CDMX", label: "Ciudad de México" },
@@ -320,7 +384,7 @@ export function ClientsTable(): React.ReactElement {
 				],
 			},
 		],
-		[],
+		[t],
 	);
 
 	// Row actions
@@ -334,35 +398,35 @@ export function ClientsTable(): React.ReactElement {
 			<DropdownMenuContent align="end" className="w-48">
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => router.push(`/clients/${item.rfc}`)}
+					onClick={() => navigateTo(`/clients/${item.id}`)}
 				>
 					<Eye className="h-4 w-4" />
-					Ver detalle
+					{t("actionViewDetail")}
 				</DropdownMenuItem>
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => router.push(`/clients/${item.rfc}/edit`)}
+					onClick={() => navigateTo(`/clients/${item.id}/edit`)}
 				>
 					<Edit className="h-4 w-4" />
-					Editar cliente
+					{t("actionEditClient")}
 				</DropdownMenuItem>
 				<DropdownMenuItem
 					className="gap-2"
 					onClick={() => handleGenerateReport(item)}
 				>
 					<FileText className="h-4 w-4" />
-					Generar Reporte
+					{t("actionGenerateReport")}
 				</DropdownMenuItem>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem
-					onClick={() => router.push(`/transactions?clientId=${item.rfc}`)}
+					onClick={() => navigateTo(`/transactions?clientId=${item.id}`)}
 				>
-					Ver transacciones
+					{t("actionViewTransactions")}
 				</DropdownMenuItem>
 				<DropdownMenuItem
-					onClick={() => router.push(`/alertas?clientId=${item.rfc}`)}
+					onClick={() => navigateTo(`/alerts?clientId=${item.id}`)}
 				>
-					Ver alertas
+					{t("actionViewAlerts")}
 				</DropdownMenuItem>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem
@@ -370,14 +434,14 @@ export function ClientsTable(): React.ReactElement {
 					onClick={() => handleFlagSuspicious(item)}
 				>
 					<Flag className="h-4 w-4" />
-					Marcar como Sospechoso
+					{t("actionMarkSuspicious")}
 				</DropdownMenuItem>
 				<DropdownMenuItem
 					className="gap-2 text-destructive"
 					onClick={() => handleDeleteClick(item)}
 				>
 					<Trash2 className="h-4 w-4" />
-					Eliminar
+					{t("delete")}
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>
@@ -398,35 +462,48 @@ export function ClientsTable(): React.ReactElement {
 					"firstName",
 					"lastName",
 				]}
-				searchPlaceholder="Buscar por nombre, RFC, email..."
-				emptyMessage="No se encontraron clientes"
-				loadingMessage="Cargando clientes..."
+				searchPlaceholder={t("clientsSearchPlaceholder")}
+				emptyMessage={t("clientNoClients")}
+				emptyIcon={Users}
+				emptyActionLabel={t("clientsNew")}
+				emptyActionHref={orgPath("/clients/new")}
+				loadingMessage={t("clientsLoading")}
 				isLoading={isLoading}
 				selectable
 				getId={(item) => item.rfc}
 				actions={renderActions}
+				paginationMode="infinite-scroll"
+				onLoadMore={handleLoadMore}
+				hasMore={hasMore}
+				isLoadingMore={isLoadingMore}
+				// URL persistence
+				initialFilters={urlFilters.initialFilters}
+				initialSearch={urlFilters.initialSearch}
+				initialSort={urlFilters.initialSort}
+				onFiltersChange={urlFilters.onFiltersChange}
+				onSearchChange={urlFilters.onSearchChange}
+				onSortChange={urlFilters.onSortChange}
 			/>
 
 			<AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>¿Eliminar cliente?</AlertDialogTitle>
+						<AlertDialogTitle>{t("clientDeleteTitle")}</AlertDialogTitle>
 						<AlertDialogDescription>
-							Esta acción eliminará permanentemente el cliente{" "}
+							{t("clientDeleteDescription")}{" "}
 							<strong>
 								{clientToDelete?.businessName ||
 									`${clientToDelete?.firstName} ${clientToDelete?.lastName} ${clientToDelete?.secondLastName || ""}`.trim()}
-							</strong>{" "}
-							del sistema. Esta acción no se puede deshacer.
+							</strong>
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancelar</AlertDialogCancel>
+						<AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
 						<AlertDialogAction
 							onClick={handleDeleteConfirm}
 							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
 						>
-							Eliminar
+							{t("delete")}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

@@ -20,11 +20,6 @@ const defaultStats: StatCard[] = [
 		value: 89,
 		icon: FileText,
 	},
-	{
-		label: "Alerts",
-		value: 12,
-		icon: AlertTriangle,
-	},
 ];
 
 const meta = {
@@ -95,6 +90,11 @@ export const ManyStats: Story = {
 				label: "Growth",
 				value: "+15%",
 				icon: TrendingUp,
+			},
+			{
+				label: "Alerts",
+				value: 12,
+				icon: AlertTriangle,
 			},
 		],
 	},

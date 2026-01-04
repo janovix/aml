@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
 	createClient,
 	deleteClient,
+	getClientById,
 	getClientByRfc,
 	listClients,
 	patchClient,
@@ -76,7 +77,7 @@ describe("api/clients", () => {
 		expect(res.pagination.limit).toBe(20);
 	});
 
-	it("getClientByRfc requests /api/v1/clients/:rfc", async () => {
+	it("getClientByRfc searches /api/v1/clients with rfc query param", async () => {
 		const mockClient: Client = {
 			id: "test-id",
 			rfc: "ABC123456789",
@@ -101,9 +102,10 @@ describe("api/clients", () => {
 			async (url: RequestInfo | URL, init?: RequestInit) => {
 				expect((init?.method ?? "GET").toUpperCase()).toBe("GET");
 				expect(typeof url === "string" ? url : url.toString()).toBe(
-					"https://example.com/api/v1/clients/ABC123456789",
+					"https://example.com/api/v1/clients?rfc=ABC123456789&limit=1",
 				);
-				return new Response(JSON.stringify(mockClient), {
+				// Returns a list response with the matching client
+				return new Response(JSON.stringify({ data: [mockClient], total: 1 }), {
 					status: 200,
 					headers: { "content-type": "application/json" },
 				});
@@ -213,7 +215,7 @@ describe("api/clients", () => {
 
 		const res = await updateClient({
 			baseUrl: "https://example.com",
-			rfc: "EMP850101AAA",
+			id: "EMP850101AAA",
 			input,
 		});
 		expect(res.rfc).toBe("EMP850101AAA");
@@ -265,7 +267,7 @@ describe("api/clients", () => {
 
 		const res = await patchClient({
 			baseUrl: "https://example.com",
-			rfc: "ABC123456789",
+			id: "ABC123456789",
 			input: partialInput,
 		});
 		expect(res.email).toBe("newemail@example.com");
@@ -288,7 +290,7 @@ describe("api/clients", () => {
 
 		await deleteClient({
 			baseUrl: "https://example.com",
-			rfc: "ABC123456789",
+			id: "ABC123456789",
 		});
 		// Should not throw
 	});
@@ -315,6 +317,70 @@ describe("api/clients", () => {
 		vi.stubGlobal("fetch", fetchSpy);
 
 		await listClients();
+
+		if (prev === undefined) delete process.env.NEXT_PUBLIC_AML_CORE_URL;
+		else process.env.NEXT_PUBLIC_AML_CORE_URL = prev;
+	});
+
+	it("getClientByRfc throws error when client not found", async () => {
+		const fetchSpy = vi.fn(async () => {
+			return new Response(
+				JSON.stringify({
+					data: [],
+					pagination: { page: 1, limit: 1, total: 0, totalPages: 0 },
+				}),
+				{
+					status: 200,
+					headers: { "content-type": "application/json" },
+				},
+			);
+		});
+		vi.stubGlobal("fetch", fetchSpy);
+
+		await expect(
+			getClientByRfc({
+				baseUrl: "https://example.com",
+				rfc: "NONEXISTENT",
+			}),
+		).rejects.toThrow("Client not found");
+	});
+
+	it("getClientById uses getAmlCoreBaseUrl when baseUrl not provided", async () => {
+		const prev = process.env.NEXT_PUBLIC_AML_CORE_URL;
+		process.env.NEXT_PUBLIC_AML_CORE_URL = "https://aml-core.example.com";
+
+		const mockClient: Client = {
+			id: "test-id",
+			rfc: "ABC123456789",
+			personType: "physical",
+			firstName: "John",
+			lastName: "Doe",
+			email: "john@example.com",
+			phone: "+1234567890",
+			country: "México",
+			stateCode: "NL",
+			city: "Monterrey",
+			municipality: "Monterrey",
+			neighborhood: "Centro",
+			street: "Av. Constitución",
+			externalNumber: "123",
+			postalCode: "64000",
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		};
+
+		const fetchSpy = vi.fn(async () => {
+			return new Response(JSON.stringify(mockClient), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			});
+		});
+		vi.stubGlobal("fetch", fetchSpy);
+
+		const res = await getClientById({
+			id: "test-id",
+		});
+		expect(res.id).toBe("test-id");
 
 		if (prev === undefined) delete process.env.NEXT_PUBLIC_AML_CORE_URL;
 		else process.env.NEXT_PUBLIC_AML_CORE_URL = prev;

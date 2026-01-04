@@ -1,8 +1,23 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ClientEditPageContent } from "./ClientEditPageContent";
 import { mockClients } from "@/data/mockClients";
+import { renderWithProviders } from "@/lib/testHelpers";
+
+// Mock cookies module to return Spanish language for tests
+vi.mock("@/lib/cookies", () => ({
+	getCookie: (name: string) => {
+		if (name === "janovix-lang") return "es";
+		return undefined;
+	},
+	setCookie: vi.fn(),
+	deleteCookie: vi.fn(),
+	COOKIE_NAMES: {
+		THEME: "janovix-theme",
+		LANGUAGE: "janovix-lang",
+	},
+}));
 
 const mockPush = vi.fn();
 const mockToast = vi.fn();
@@ -10,8 +25,11 @@ const mockToast = vi.fn();
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
 		push: mockPush,
+		replace: vi.fn(),
 	}),
-	usePathname: () => `/clients/test-id/edit`,
+	usePathname: () => `/test-org/clients/test-id/edit`,
+	useSearchParams: () => new URLSearchParams(),
+	useParams: () => ({ orgSlug: "test-org", id: "test-id" }),
 }));
 
 vi.mock("@/hooks/use-toast", () => ({
@@ -27,14 +45,14 @@ describe("ClientEditPageContent", () => {
 	});
 
 	it("renders client not found message when client doesn't exist", () => {
-		render(<ClientEditPageContent clientId="non-existent" />);
+		renderWithProviders(<ClientEditPageContent clientId="non-existent" />);
 
 		expect(screen.getByText("Cliente no encontrado")).toBeInTheDocument();
 	});
 
 	it("renders edit form when client exists", () => {
 		const client = mockClients[0];
-		render(<ClientEditPageContent clientId={client.rfc} />);
+		renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 		expect(screen.getByText("Editar Cliente")).toBeInTheDocument();
 		expect(screen.getByLabelText("RFC *")).toBeInTheDocument();
@@ -42,7 +60,7 @@ describe("ClientEditPageContent", () => {
 
 	it("displays client data in form fields", () => {
 		const client = mockClients[0];
-		render(<ClientEditPageContent clientId={client.rfc} />);
+		renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 		const rfcInput = screen.getByLabelText("RFC *") as HTMLInputElement;
 		expect(rfcInput.value).toBe(client.rfc);
@@ -50,7 +68,7 @@ describe("ClientEditPageContent", () => {
 
 	it("renders all form sections", () => {
 		const client = mockClients[0];
-		render(<ClientEditPageContent clientId={client.rfc} />);
+		renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 		const basicInfoElements = screen.getAllByText("Información Básica");
 		const addressElements = screen.getAllByText("Dirección");
@@ -61,7 +79,7 @@ describe("ClientEditPageContent", () => {
 	it("renders person type specific fields for physical", () => {
 		const client = mockClients.find((c) => c.personType === "physical");
 		if (client) {
-			render(<ClientEditPageContent clientId={client.rfc} />);
+			renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 			expect(screen.getByLabelText("Nombre *")).toBeInTheDocument();
 			expect(screen.getByLabelText("Apellido Paterno *")).toBeInTheDocument();
@@ -71,7 +89,7 @@ describe("ClientEditPageContent", () => {
 	it("renders business name field for moral", () => {
 		const client = mockClients.find((c) => c.personType === "moral");
 		if (client) {
-			render(<ClientEditPageContent clientId={client.rfc} />);
+			renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 			expect(screen.getByLabelText("Razón Social *")).toBeInTheDocument();
 		}
@@ -79,7 +97,7 @@ describe("ClientEditPageContent", () => {
 
 	it("renders all required form fields", () => {
 		const client = mockClients[0];
-		render(<ClientEditPageContent clientId={client.rfc} />);
+		renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 		expect(screen.getByLabelText("RFC *")).toBeInTheDocument();
 		expect(screen.getByLabelText("Email *")).toBeInTheDocument();
@@ -88,7 +106,7 @@ describe("ClientEditPageContent", () => {
 
 	it("shows person type as a read-only indicator", () => {
 		const client = mockClients[0];
-		render(<ClientEditPageContent clientId={client.rfc} />);
+		renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 		expect(screen.getByText("Persona Moral")).toBeInTheDocument();
 		expect(
@@ -105,7 +123,7 @@ describe("ClientEditPageContent", () => {
 
 	it("renders cancel and save buttons", () => {
 		const client = mockClients[0];
-		render(<ClientEditPageContent clientId={client.rfc} />);
+		renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 		const cancelButtons = screen.getAllByText("Cancelar");
 		const saveButtons = screen.getAllByText("Guardar Cambios");
@@ -115,7 +133,7 @@ describe("ClientEditPageContent", () => {
 
 	it("renders form with submit button", () => {
 		const client = mockClients[0];
-		render(<ClientEditPageContent clientId={client.rfc} />);
+		renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 		const saveButtons = screen.getAllByText("Guardar Cambios");
 		expect(saveButtons.length).toBeGreaterThan(0);
@@ -124,7 +142,7 @@ describe("ClientEditPageContent", () => {
 	it("navigates back to client detail when cancel is clicked", async () => {
 		const user = userEvent.setup();
 		const client = mockClients[0];
-		render(<ClientEditPageContent clientId={client.rfc} />);
+		renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 		const cancelButtons = screen.getAllByRole("button", { name: /cancelar/i });
 		await user.click(cancelButtons[0]);
@@ -135,7 +153,7 @@ describe("ClientEditPageContent", () => {
 	it("navigates back to client detail when back button is clicked", async () => {
 		const user = userEvent.setup();
 		const client = mockClients[0];
-		render(<ClientEditPageContent clientId={client.rfc} />);
+		renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 		const backButton = screen.getByRole("button", { name: /volver/i });
 		await user.click(backButton);
@@ -145,7 +163,7 @@ describe("ClientEditPageContent", () => {
 
 	it("navigates to clients list when back button is clicked on not found page", async () => {
 		const user = userEvent.setup();
-		render(<ClientEditPageContent clientId="non-existent" />);
+		renderWithProviders(<ClientEditPageContent clientId="non-existent" />);
 
 		const backButton = screen.getByRole("button", {
 			name: /volver a clientes/i,
@@ -158,7 +176,7 @@ describe("ClientEditPageContent", () => {
 	it("allows updating RFC field", async () => {
 		const user = userEvent.setup();
 		const client = mockClients[0];
-		render(<ClientEditPageContent clientId={client.rfc} />);
+		renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 		const rfcInput = screen.getByLabelText("RFC *");
 		await user.clear(rfcInput);
@@ -170,7 +188,7 @@ describe("ClientEditPageContent", () => {
 	it("allows updating email field", async () => {
 		const user = userEvent.setup();
 		const client = mockClients[0];
-		render(<ClientEditPageContent clientId={client.rfc} />);
+		renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 		const emailInput = screen.getByLabelText("Email *");
 		await user.clear(emailInput);
@@ -182,7 +200,7 @@ describe("ClientEditPageContent", () => {
 	it("allows updating phone field", async () => {
 		const user = userEvent.setup();
 		const client = mockClients[0];
-		render(<ClientEditPageContent clientId={client.rfc} />);
+		renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 		const phoneInput = screen.getByLabelText("Teléfono *");
 		await user.clear(phoneInput);
@@ -202,7 +220,7 @@ describe("ClientEditPageContent", () => {
 		const client = mockClients.find((c) => c.personType === "moral");
 		if (!client) return;
 
-		render(<ClientEditPageContent clientId={client.rfc} />);
+		renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 		const businessNameInput = screen.getByLabelText("Razón Social *");
 		await user.clear(businessNameInput);
@@ -214,7 +232,7 @@ describe("ClientEditPageContent", () => {
 	it("allows updating address fields", async () => {
 		const user = userEvent.setup();
 		const client = mockClients[0];
-		render(<ClientEditPageContent clientId={client.rfc} />);
+		renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 		const streetInput = screen.getByLabelText("Calle");
 		await user.clear(streetInput);
@@ -226,7 +244,7 @@ describe("ClientEditPageContent", () => {
 	it("allows updating city field", async () => {
 		const user = userEvent.setup();
 		const client = mockClients[0];
-		render(<ClientEditPageContent clientId={client.rfc} />);
+		renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 		const cityInput = screen.getByLabelText("Ciudad");
 		await user.clear(cityInput);
@@ -238,7 +256,7 @@ describe("ClientEditPageContent", () => {
 	it("allows updating postal code field", async () => {
 		const user = userEvent.setup();
 		const client = mockClients[0];
-		render(<ClientEditPageContent clientId={client.rfc} />);
+		renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 		const postalCodeInput = screen.getByLabelText("Código Postal");
 		await user.clear(postalCodeInput);
@@ -250,7 +268,7 @@ describe("ClientEditPageContent", () => {
 	it("allows updating exterior number field", async () => {
 		const user = userEvent.setup();
 		const client = mockClients[0];
-		render(<ClientEditPageContent clientId={client.rfc} />);
+		renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 		const extNumberInput = screen.getByLabelText("Número Exterior");
 		await user.clear(extNumberInput);
@@ -262,7 +280,7 @@ describe("ClientEditPageContent", () => {
 	it("allows updating interior number field", async () => {
 		const user = userEvent.setup();
 		const client = mockClients[0];
-		render(<ClientEditPageContent clientId={client.rfc} />);
+		renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 		const intNumberInput = screen.getByLabelText("Número Interior");
 		await user.clear(intNumberInput);
@@ -274,7 +292,7 @@ describe("ClientEditPageContent", () => {
 	it("allows updating neighborhood field", async () => {
 		const user = userEvent.setup();
 		const client = mockClients[0];
-		render(<ClientEditPageContent clientId={client.rfc} />);
+		renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 		const neighborhoodInput = screen.getByLabelText("Colonia");
 		await user.clear(neighborhoodInput);
@@ -286,7 +304,7 @@ describe("ClientEditPageContent", () => {
 	it("allows updating state field", async () => {
 		const user = userEvent.setup();
 		const client = mockClients[0];
-		render(<ClientEditPageContent clientId={client.rfc} />);
+		renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 		const stateInput = screen.getByLabelText("Estado");
 		await user.clear(stateInput);
@@ -298,7 +316,7 @@ describe("ClientEditPageContent", () => {
 	it("submits form and shows success toast", async () => {
 		const user = userEvent.setup();
 		const client = mockClients[0];
-		render(<ClientEditPageContent clientId={client.rfc} />);
+		renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 		// Click the submit button
 		const saveButtons = screen.getAllByRole("button", {
@@ -325,7 +343,7 @@ describe("ClientEditPageContent", () => {
 	it("shows loading state during form submission", async () => {
 		const user = userEvent.setup();
 		const client = mockClients[0];
-		render(<ClientEditPageContent clientId={client.rfc} />);
+		renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 		// Click the submit button
 		const saveButtons = screen.getAllByRole("button", {
@@ -344,7 +362,7 @@ describe("ClientEditPageContent", () => {
 		const client = mockClients.find((c) => c.personType === "physical");
 		if (!client) return;
 
-		render(<ClientEditPageContent clientId={client.rfc} />);
+		renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 		const firstNameInput = screen.getByLabelText("Nombre *");
 		await user.clear(firstNameInput);
@@ -358,7 +376,7 @@ describe("ClientEditPageContent", () => {
 		const client = mockClients.find((c) => c.personType === "physical");
 		if (!client) return;
 
-		render(<ClientEditPageContent clientId={client.rfc} />);
+		renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 		const lastNameInput = screen.getByLabelText("Apellido Paterno *");
 		await user.clear(lastNameInput);
@@ -372,7 +390,7 @@ describe("ClientEditPageContent", () => {
 		const client = mockClients.find((c) => c.personType === "physical");
 		if (!client) return;
 
-		render(<ClientEditPageContent clientId={client.rfc} />);
+		renderWithProviders(<ClientEditPageContent clientId={client.rfc} />);
 
 		const secondLastNameInput = screen.getByLabelText("Apellido Materno");
 		await user.clear(secondLastNameInput);

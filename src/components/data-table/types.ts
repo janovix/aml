@@ -83,6 +83,14 @@ export interface DataTableProps<T> {
 	subtitle?: string;
 	/** Message to display when no results */
 	emptyMessage?: string;
+	/** Icon to display in empty state */
+	emptyIcon?: LucideIcon;
+	/** Label for the empty state action button */
+	emptyActionLabel?: string;
+	/** URL for the empty state action button */
+	emptyActionHref?: string;
+	/** Callback for the empty state action button (alternative to href) */
+	onEmptyAction?: () => void;
 	/** Callback when a row is clicked */
 	onRowClick?: (item: T) => void;
 	/** Render function for row actions */
@@ -123,6 +131,31 @@ export interface DataTableProps<T> {
 	activePluralText?: string;
 	/** Aria label for clear search button */
 	clearSearchAriaLabel?: string;
+	/** Pagination mode: 'pagination' or 'infinite-scroll' (default: 'pagination') */
+	paginationMode?: "pagination" | "infinite-scroll";
+	/** Items per page for pagination mode (default: 10) */
+	itemsPerPage?: number;
+	/** Callback when more items should be loaded (for infinite scroll) */
+	onLoadMore?: () => void;
+	/** Whether more items are available to load (for infinite scroll) */
+	hasMore?: boolean;
+	/** Whether currently loading more items (for infinite scroll) */
+	isLoadingMore?: boolean;
+
+	// URL persistence props
+
+	/** Initial filter state (from URL) */
+	initialFilters?: Record<string, string[]>;
+	/** Callback when filters change (for URL persistence) */
+	onFiltersChange?: (filters: Record<string, string[]>) => void;
+	/** Initial search query (from URL) */
+	initialSearch?: string;
+	/** Callback when search changes (for URL persistence) */
+	onSearchChange?: (search: string) => void;
+	/** Initial sort state (from URL) */
+	initialSort?: SortState;
+	/** Callback when sort changes (for URL persistence) */
+	onSortChange?: (sort: SortState) => void;
 }
 
 /**

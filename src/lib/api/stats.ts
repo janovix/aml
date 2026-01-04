@@ -11,7 +11,6 @@ export interface TransactionStats {
 	transactionsToday: number;
 	suspiciousTransactions: number;
 	totalVolume: string;
-	totalVehicles: number;
 }
 
 export interface StatsOptions {

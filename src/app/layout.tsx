@@ -1,6 +1,7 @@
 import ClientLayout from "@/components/ClientLayout";
 import { getServerSession } from "@/lib/auth/getServerSession";
 import { SessionHydrator } from "@/lib/auth/useAuthSession";
+import { listOrganizationsServer } from "@/lib/auth/organizations-server";
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -21,6 +22,8 @@ export const viewport: Viewport = {
 	initialScale: 1,
 	maximumScale: 5,
 	userScalable: true,
+	viewportFit: "cover",
+	interactiveWidget: "resizes-content",
 };
 
 export default async function RootLayout({
@@ -29,12 +32,15 @@ export default async function RootLayout({
 	children: React.ReactNode;
 }>) {
 	const session = await getServerSession();
+	const initialOrganizations = await listOrganizationsServer();
 
 	return (
 		<html lang="es" suppressHydrationWarning>
 			<body className={`${inter.variable} antialiased`}>
 				<SessionHydrator serverSession={session}>
-					<ClientLayout>{children}</ClientLayout>
+					<ClientLayout initialOrganizations={initialOrganizations}>
+						{children}
+					</ClientLayout>
 				</SessionHydrator>
 			</body>
 		</html>

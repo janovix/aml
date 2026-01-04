@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
 	AlertTriangle,
 	Bell,
@@ -14,23 +14,31 @@ import {
 	FileText,
 	User,
 	Plus,
+	Download,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
+import { useDataTableUrlFilters } from "@/hooks/useDataTableUrlFilters";
+
+// Filter IDs for URL persistence
+const ALERT_FILTER_IDS = ["status", "severity", "isOverdue"];
+import { Button } from "@/components/ui/button";
 import {
-	Button,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "@algtools/ui";
+} from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useJwt } from "@/hooks/useJwt";
+import { useOrgStore } from "@/lib/org-store";
 import {
 	listAlerts,
 	getAlertById,
@@ -39,7 +47,7 @@ import {
 	type AlertSeverity,
 	type ListAlertsOptions,
 } from "@/lib/api/alerts";
-import { getClientByRfc } from "@/lib/api/clients";
+import { getClientById } from "@/lib/api/clients";
 import type { Client } from "@/types/client";
 import { getClientDisplayName } from "@/types/client";
 import {
@@ -47,7 +55,9 @@ import {
 	type ColumnDef,
 	type FilterDef,
 } from "@/components/data-table";
+import { formatProperNoun } from "@/lib/utils";
 import { PageHero, type StatCard } from "@/components/page-hero";
+import { useLanguage } from "@/components/LanguageProvider";
 
 /**
  * Extended alert row with resolved client and rule names
@@ -64,6 +74,7 @@ interface AlertRow {
 	isOverdue: boolean;
 	notes?: string;
 	createdAt: string;
+	satFileUrl?: string | null;
 }
 
 const statusConfig: Record<
@@ -114,54 +125,103 @@ interface AlertsTableProps {
 export function AlertsTable({
 	filters,
 }: AlertsTableProps = {}): React.ReactElement {
-	const router = useRouter();
+	const { navigateTo, orgPath } = useOrgNavigation();
 	const { toast } = useToast();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
+	const { currentOrg } = useOrgStore();
+	const urlFilters = useDataTableUrlFilters(ALERT_FILTER_IDS);
+	const { t } = useLanguage();
 	const [alerts, setAlerts] = useState<Alert[]>([]);
 	const [clients, setClients] = useState<Map<string, Client>>(new Map());
 	const [isLoading, setIsLoading] = useState(true);
+	const [isLoadingMore, setIsLoadingMore] = useState(false);
+	const [currentPage, setCurrentPage] = useState(1);
+	const [hasMore, setHasMore] = useState(true);
+	const ITEMS_PER_PAGE = 20;
 
+	// Fetch client information for alerts - optimized to only fetch missing clients
+	const fetchClientsForAlerts = useCallback(
+		async (alertList: Alert[]) => {
+			const uniqueClientIds = [
+				...new Set(alertList.map((alert) => alert.clientId)),
+			];
+
+			// Filter out clients we already have
+			const missingClientIds = uniqueClientIds.filter(
+				(clientId) => !clients.has(clientId),
+			);
+
+			// If all clients are already loaded, skip fetching
+			if (missingClientIds.length === 0) {
+				return;
+			}
+
+			// Fetch only missing clients in parallel
+			const clientPromises = missingClientIds.map(async (clientId) => {
+				try {
+					const client = await getClientById({
+						id: clientId,
+						jwt: jwt ?? undefined,
+					});
+					return { clientId, client };
+				} catch (error) {
+					console.error(`Error fetching client ${clientId}:`, error);
+					return null;
+				}
+			});
+
+			const results = await Promise.all(clientPromises);
+
+			setClients((prev) => {
+				const merged = new Map(prev);
+				results.forEach((result) => {
+					if (result) {
+						merged.set(result.clientId, result.client);
+					}
+				});
+				return merged;
+			});
+		},
+		[jwt, clients],
+	);
+
+	// Initial load - refetch when organization changes
 	useEffect(() => {
-		// Wait for JWT to be ready
-		if (isJwtLoading) return;
+		// Wait for JWT to be ready and organization to be selected
+		// Without an organization, the API will return 403 "Organization Required"
+		if (isJwtLoading || !jwt || !currentOrg?.id) {
+			// If no org selected, clear data and stop loading
+			if (!currentOrg?.id && !isJwtLoading) {
+				setAlerts([]);
+				setClients(new Map());
+				setIsLoading(false);
+			}
+			return;
+		}
 
 		const fetchAlerts = async () => {
 			try {
 				setIsLoading(true);
+				setCurrentPage(1);
+				// Clear existing data when org changes
+				setAlerts([]);
+				setClients(new Map());
+
 				const response = await listAlerts({
 					page: 1,
-					limit: 100,
-					jwt: jwt ?? undefined,
+					limit: ITEMS_PER_PAGE,
+					jwt,
 					...filters,
 				});
 				setAlerts(response.data);
+				setHasMore(response.pagination.page < response.pagination.totalPages);
 
-				// Fetch client information for all unique client IDs
-				const uniqueClientIds = [
-					...new Set(response.data.map((alert) => alert.clientId)),
-				];
-				const clientsMap = new Map<string, Client>();
-
-				await Promise.all(
-					uniqueClientIds.map(async (clientId) => {
-						try {
-							const client = await getClientByRfc({
-								rfc: clientId,
-								jwt: jwt ?? undefined,
-							});
-							clientsMap.set(clientId, client);
-						} catch (error) {
-							console.error(`Error fetching client ${clientId}:`, error);
-						}
-					}),
-				);
-
-				setClients(clientsMap);
+				await fetchClientsForAlerts(response.data);
 			} catch (error) {
 				console.error("Error fetching alerts:", error);
 				toast({
-					title: "Error",
-					description: "No se pudieron cargar las alertas.",
+					title: t("errorGeneric"),
+					description: t("alertsLoadError"),
 					variant: "destructive",
 				});
 			} finally {
@@ -169,7 +229,50 @@ export function AlertsTable({
 			}
 		};
 		fetchAlerts();
-	}, [filters, toast, jwt, isJwtLoading]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [filters, toast, jwt, isJwtLoading, currentOrg?.id]);
+
+	// Load more alerts for infinite scroll
+	const handleLoadMore = useCallback(async () => {
+		if (isLoadingMore || !hasMore || isJwtLoading || !jwt || !currentOrg?.id)
+			return;
+
+		try {
+			setIsLoadingMore(true);
+			const nextPage = currentPage + 1;
+			const response = await listAlerts({
+				page: nextPage,
+				limit: ITEMS_PER_PAGE,
+				jwt,
+				...filters,
+			});
+
+			setAlerts((prev) => [...prev, ...response.data]);
+			setCurrentPage(nextPage);
+			setHasMore(response.pagination.page < response.pagination.totalPages);
+
+			await fetchClientsForAlerts(response.data);
+		} catch (error) {
+			console.error("Error loading more alerts:", error);
+			toast({
+				title: t("errorGeneric"),
+				description: t("alertsLoadMoreError"),
+				variant: "destructive",
+			});
+		} finally {
+			setIsLoadingMore(false);
+		}
+	}, [
+		currentPage,
+		hasMore,
+		isLoadingMore,
+		isJwtLoading,
+		jwt,
+		filters,
+		toast,
+		fetchClientsForAlerts,
+		currentOrg?.id,
+	]);
 
 	// Transform Alert to AlertRow format
 	const alertsData: AlertRow[] = useMemo(() => {
@@ -187,6 +290,7 @@ export function AlertsTable({
 				isOverdue: alert.isOverdue,
 				notes: alert.notes,
 				createdAt: alert.createdAt,
+				satFileUrl: alert.satFileUrl,
 			};
 		});
 	}, [alerts, clients]);
@@ -219,13 +323,13 @@ export function AlertsTable({
 									</TooltipContent>
 								</Tooltip>
 							</TooltipProvider>
-							<div className="flex flex-col min-w-0">
-								<div className="flex items-center gap-2">
+							<div className="flex flex-col min-w-0 flex-1 max-w-[600px]">
+								<div className="flex items-start gap-2">
 									<TooltipProvider>
 										<Tooltip>
 											<TooltipTrigger asChild>
 												<span
-													className={`h-2 w-2 rounded-full flex-shrink-0 ${severityCfg.dotColor}`}
+													className={`h-2 w-2 rounded-full shrink-0 mt-1.5 ${severityCfg.dotColor}`}
 												/>
 											</TooltipTrigger>
 											<TooltipContent>
@@ -233,12 +337,16 @@ export function AlertsTable({
 											</TooltipContent>
 										</Tooltip>
 									</TooltipProvider>
-									<span className="font-medium text-foreground truncate">
-										{item.ruleName}
-									</span>
+									<Link
+										href={orgPath(`/alerts/${item.id}`)}
+										className="font-medium text-foreground hover:text-primary transition-colors line-clamp-3 break-words"
+										onClick={(e) => e.stopPropagation()}
+									>
+										{formatProperNoun(item.ruleName)}
+									</Link>
 								</div>
 								{item.notes && (
-									<span className="text-xs text-muted-foreground line-clamp-1">
+									<span className="text-xs text-muted-foreground line-clamp-2 mt-1 break-words">
 										{item.notes}
 									</span>
 								)}
@@ -256,11 +364,11 @@ export function AlertsTable({
 				cell: (item) => (
 					<div className="flex flex-col min-w-0">
 						<Link
-							href={`/clients/${item.clientId}`}
+							href={orgPath(`/clients/${item.clientId}`)}
 							className="text-sm text-foreground hover:text-primary truncate"
 							onClick={(e) => e.stopPropagation()}
 						>
-							{item.clientName}
+							{formatProperNoun(item.clientName)}
 						</Link>
 						<span className="text-xs text-muted-foreground font-mono">
 							{item.clientId}
@@ -425,6 +533,48 @@ export function AlertsTable({
 		[],
 	);
 
+	// Handle XML download
+	const handleDownloadXml = async (item: AlertRow): Promise<void> => {
+		if (!item.satFileUrl) {
+			toast({
+				title: t("alertDownloadXmlNoFile"),
+				variant: "destructive",
+			});
+			return;
+		}
+
+		try {
+			toast({
+				title: t("alertDownloadingXml"),
+			});
+
+			const response = await fetch(item.satFileUrl);
+			if (!response.ok) {
+				throw new Error("Failed to download file");
+			}
+
+			const blob = await response.blob();
+			const url = window.URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = `alerta-${item.alertRuleId}-${item.id}.xml`;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			window.URL.revokeObjectURL(url);
+
+			toast({
+				title: t("alertDownloadXmlSuccess"),
+			});
+		} catch (error) {
+			console.error("Error downloading XML:", error);
+			toast({
+				title: t("alertDownloadXmlError"),
+				variant: "destructive",
+			});
+		}
+	};
+
 	// Row actions
 	const renderActions = (item: AlertRow) => (
 		<DropdownMenu>
@@ -436,7 +586,7 @@ export function AlertsTable({
 			<DropdownMenuContent align="end" className="w-48">
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => router.push(`/alertas/${item.id}`)}
+					onClick={() => navigateTo(`/alerts/${item.id}`)}
 				>
 					<Eye className="h-4 w-4" />
 					Ver detalle
@@ -453,10 +603,19 @@ export function AlertsTable({
 						Enviar a SAT
 					</DropdownMenuItem>
 				)}
+				{item.satFileUrl && (
+					<DropdownMenuItem
+						className="gap-2"
+						onClick={() => handleDownloadXml(item)}
+					>
+						<Download className="h-4 w-4" />
+						{t("alertDownloadXml")}
+					</DropdownMenuItem>
+				)}
 				<DropdownMenuSeparator />
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => router.push(`/clients/${item.clientId}`)}
+					onClick={() => navigateTo(`/clients/${item.clientId}`)}
 				>
 					<User className="h-4 w-4" />
 					Ver cliente
@@ -492,52 +651,64 @@ export function AlertsTable({
 
 		return [
 			{
-				label: "Total Alertas",
+				label: t("statsTotalAlerts"),
 				value: totalAlerts,
 				icon: Bell,
 			},
 			{
-				label: "Detectadas",
+				label: t("alertStatusDetected"),
 				value: detectedAlerts,
 				icon: AlertTriangle,
 				variant: "primary",
 			},
 			{
-				label: "Vencidas",
+				label: t("alertStatusOverdue"),
 				value: overdueAlerts,
 				icon: Clock,
 			},
 			{
-				label: "Enviadas",
+				label: t("alertStatusSubmitted"),
 				value: submittedAlerts,
 				icon: Send,
 			},
 		];
-	}, [alertsData]);
+	}, [alertsData, t]);
 
 	return (
 		<div className="space-y-6">
 			<PageHero
-				title="Alertas"
-				subtitle="Monitoreo y gestión de alertas AML"
+				title={t("alertsTitle")}
+				subtitle={t("alertsSubtitle")}
 				icon={Bell}
 				stats={stats}
-				ctaLabel="Nueva Alerta"
+				ctaLabel={t("alertsNew")}
 				ctaIcon={Plus}
-				onCtaClick={() => router.push("/alertas/new")}
+				onCtaClick={() => navigateTo("/alerts/new")}
 			/>
 			<DataTable
 				data={alertsWithStringOverdue as unknown as AlertRow[]}
 				columns={columns}
 				filters={filterDefs}
 				searchKeys={["ruleName", "clientName", "clientId", "notes"]}
-				searchPlaceholder="Buscar por regla, cliente..."
-				emptyMessage="No se encontraron alertas"
-				loadingMessage="Cargando alertas..."
+				searchPlaceholder={t("alertsSearchPlaceholder")}
+				emptyMessage={t("alertNoAlerts")}
+				emptyIcon={Bell}
+				loadingMessage={t("alertsLoading")}
 				isLoading={isLoading}
 				selectable
 				getId={(item) => item.id}
 				actions={renderActions}
+				paginationMode="infinite-scroll"
+				onLoadMore={handleLoadMore}
+				hasMore={hasMore}
+				isLoadingMore={isLoadingMore}
+				// URL persistence
+				initialFilters={urlFilters.initialFilters}
+				initialSearch={urlFilters.initialSearch}
+				initialSort={urlFilters.initialSort}
+				onFiltersChange={urlFilters.onFiltersChange}
+				onSearchChange={urlFilters.onSearchChange}
+				onSortChange={urlFilters.onSortChange}
 			/>
 		</div>
 	);

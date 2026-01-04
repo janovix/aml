@@ -2,29 +2,34 @@
 
 import type React from "react";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
+import { Button } from "@/components/ui/button";
 import {
-	Button,
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-	Input,
-	Label,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-	Separator,
-} from "@algtools/ui";
-import { ArrowLeft, Save, Plus, Trash2 } from "lucide-react";
-import { useToast } from "../../hooks/use-toast";
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Save, Plus, Trash2, Receipt } from "lucide-react";
+import { PageHero } from "@/components/page-hero";
+import { PageHeroSkeleton } from "@/components/skeletons";
 import {
 	getTransactionById,
 	updateTransaction,
 } from "../../lib/api/transactions";
+import { executeMutation } from "../../lib/mutations";
+import { toast } from "sonner";
 import type {
 	TransactionOperationType,
 	TransactionVehicleType,
@@ -34,6 +39,9 @@ import type {
 import { CatalogSelector } from "../catalogs/CatalogSelector";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
 import { getFieldDescription } from "../../lib/field-descriptions";
+import { validateVIN } from "../../lib/utils";
+import { getVehicleBrandCatalogKey } from "../../lib/vehicle-utils";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface TransactionEditViewProps {
 	transactionId: string;
@@ -42,8 +50,8 @@ interface TransactionEditViewProps {
 export function TransactionEditView({
 	transactionId,
 }: TransactionEditViewProps): React.JSX.Element {
-	const router = useRouter();
-	const { toast } = useToast();
+	const { t } = useLanguage();
+	const { navigateTo } = useOrgNavigation();
 	const [isLoading, setIsLoading] = useState(true);
 	const [isSaving, setIsSaving] = useState(false);
 	const [formData, setFormData] = useState({
@@ -68,6 +76,10 @@ export function TransactionEditView({
 		] as PaymentMethodInput[],
 		paymentDate: "",
 	});
+
+	const [validationErrors, setValidationErrors] = useState<{
+		vin?: string;
+	}>({});
 
 	useEffect(() => {
 		const fetchTransaction = async () => {
@@ -102,12 +114,8 @@ export function TransactionEditView({
 				});
 			} catch (error) {
 				console.error("Error fetching transaction:", error);
-				toast({
-					title: "Error",
-					description: "No se pudo cargar la transacción.",
-					variant: "destructive",
-				});
-				router.push("/transactions");
+				toast.error("No se pudo cargar la transacción.");
+				navigateTo("/transactions");
 			} finally {
 				setIsLoading(false);
 			}
@@ -124,11 +132,9 @@ export function TransactionEditView({
 		);
 
 		if (paymentMethodsSum > totalAmount) {
-			toast({
-				title: "Error de validación",
-				description: `La suma de los métodos de pago (${paymentMethodsSum.toFixed(2)}) excede el monto total de la transacción (${totalAmount.toFixed(2)}).`,
-				variant: "destructive",
-			});
+			toast.error(
+				`La suma de los métodos de pago (${paymentMethodsSum.toFixed(2)}) excede el monto total de la transacción (${totalAmount.toFixed(2)}).`,
+			);
 			return false;
 		}
 		return true;
@@ -141,13 +147,20 @@ export function TransactionEditView({
 			const hasEngineNumber =
 				formData.engineNumber && formData.engineNumber.trim().length > 0;
 
+			// Validate VIN format if provided
+			if (hasVIN) {
+				const vinValidation = validateVIN(formData.vin || "");
+				if (!vinValidation.isValid) {
+					setValidationErrors({ vin: vinValidation.error });
+					toast.error(vinValidation.error);
+					return false;
+				}
+			}
+
 			if (!hasPlates && !hasVIN && !hasEngineNumber) {
-				toast({
-					title: "Error de validación",
-					description:
-						"Para vehículos terrestres, debe proporcionar al menos uno de: Placas, VIN o Número de motor.",
-					variant: "destructive",
-				});
+				toast.error(
+					"Para vehículos terrestres, debe proporcionar al menos uno de: Placas, VIN o Número de motor.",
+				);
 				return false;
 			}
 		}
@@ -165,63 +178,71 @@ export function TransactionEditView({
 			return;
 		}
 
+		setIsSaving(true);
+		// Format operationDate as date-only (YYYY-MM-DD) - API expects this format, not ISO date-time
+		const operationDateFormatted =
+			formData.operationDate || new Date().toISOString().slice(0, 10);
+		const updateData: TransactionUpdateRequest = {
+			operationDate: operationDateFormatted,
+			operationType: formData.operationType,
+			branchPostalCode: formData.branchPostalCode,
+			vehicleType: formData.vehicleType,
+			brand: formData.brand,
+			model: formData.model,
+			year: parseInt(formData.year, 10),
+			amount: formData.amount,
+			currency: formData.currency,
+			paymentMethods: formData.paymentMethods,
+			paymentDate: new Date(formData.paymentDate).toISOString(),
+		};
+
+		if (formData.vehicleType === "land") {
+			// At least one of plates, VIN, or engineNumber must be provided
+			if (formData.vin) updateData.vin = formData.vin;
+			if (formData.repuve) updateData.repuve = formData.repuve;
+			if (formData.plates) updateData.plates = formData.plates;
+			if (formData.engineNumber)
+				updateData.engineNumber = formData.engineNumber;
+		} else {
+			if (formData.registrationNumber)
+				updateData.registrationNumber = formData.registrationNumber;
+			if (formData.flagCountryId)
+				updateData.flagCountryId = formData.flagCountryId;
+		}
+
 		try {
-			setIsSaving(true);
-			// Format operationDate as date-only (YYYY-MM-DD) - API expects this format, not ISO date-time
-			const operationDateFormatted =
-				formData.operationDate || new Date().toISOString().slice(0, 10);
-			const updateData: TransactionUpdateRequest = {
-				operationDate: operationDateFormatted,
-				operationType: formData.operationType,
-				branchPostalCode: formData.branchPostalCode,
-				vehicleType: formData.vehicleType,
-				brand: formData.brand,
-				model: formData.model,
-				year: parseInt(formData.year, 10),
-				amount: formData.amount,
-				currency: formData.currency,
-				paymentMethods: formData.paymentMethods,
-				paymentDate: new Date(formData.paymentDate).toISOString(),
-			};
-
-			if (formData.vehicleType === "land") {
-				// At least one of plates, VIN, or engineNumber must be provided
-				if (formData.vin) updateData.vin = formData.vin;
-				if (formData.repuve) updateData.repuve = formData.repuve;
-				if (formData.plates) updateData.plates = formData.plates;
-				if (formData.engineNumber)
-					updateData.engineNumber = formData.engineNumber;
-			} else {
-				if (formData.registrationNumber)
-					updateData.registrationNumber = formData.registrationNumber;
-				if (formData.flagCountryId)
-					updateData.flagCountryId = formData.flagCountryId;
-			}
-
-			await updateTransaction({ id: transactionId, input: updateData });
-			toast({
-				title: "Transacción actualizada",
-				description: "Los cambios han sido guardados exitosamente.",
+			await executeMutation({
+				mutation: () =>
+					updateTransaction({ id: transactionId, input: updateData }),
+				loading: "Actualizando transacción...",
+				success: "Transacción actualizada exitosamente",
+				onSuccess: () => {
+					navigateTo(`/transactions/${transactionId}`);
+				},
 			});
-			router.push(`/transactions/${transactionId}`);
-		} catch (error) {
-			console.error("Error updating transaction:", error);
-			toast({
-				title: "Error",
-				description: "No se pudo actualizar la transacción.",
-				variant: "destructive",
-			});
+		} catch {
+			// Error is already handled by executeMutation via Sonner
 		} finally {
 			setIsSaving(false);
 		}
 	};
 
 	const handleCancel = (): void => {
-		router.push(`/transactions/${transactionId}`);
+		navigateTo(`/transactions/${transactionId}`);
 	};
 
 	const handleChange = (field: string, value: string): void => {
-		setFormData((prev) => ({ ...prev, [field]: value }));
+		setFormData((prev) => {
+			// When vehicle type changes, reset the brand since catalogs are different
+			if (field === "vehicleType" && prev.vehicleType !== value) {
+				return {
+					...prev,
+					vehicleType: value as TransactionVehicleType,
+					brand: "",
+				};
+			}
+			return { ...prev, [field]: value } as typeof prev;
+		});
 	};
 
 	const handlePaymentMethodChange = (
@@ -256,25 +277,41 @@ export function TransactionEditView({
 		}));
 	};
 
+	const isSaveDisabled =
+		isLoading ||
+		isSaving ||
+		formData.paymentMethods.reduce(
+			(sum, pm) => sum + (parseFloat(pm.amount) || 0),
+			0,
+		) > (parseFloat(formData.amount) || 0);
+
 	if (isLoading) {
 		return (
 			<div className="space-y-6">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="sm"
-						className="gap-2"
-						onClick={handleCancel}
-					>
-						<ArrowLeft className="h-4 w-4" />
-						Volver
-					</Button>
-					<Separator orientation="vertical" className="h-6" />
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							Cargando...
-						</h1>
-					</div>
+				<PageHeroSkeleton
+					showStats={false}
+					showBackButton={true}
+					actionCount={2}
+				/>
+				{/* Form skeleton */}
+				<div className="space-y-6">
+					{[1, 2, 3].map((i) => (
+						<Card key={i}>
+							<CardHeader>
+								<div className="h-6 w-48 bg-accent animate-pulse rounded" />
+							</CardHeader>
+							<CardContent>
+								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+									{[1, 2, 3, 4].map((j) => (
+										<div key={j} className="space-y-2">
+											<div className="h-4 w-24 bg-accent animate-pulse rounded" />
+											<div className="h-10 w-full bg-accent animate-pulse rounded" />
+										</div>
+									))}
+								</div>
+							</CardContent>
+						</Card>
+					))}
 				</div>
 			</div>
 		);
@@ -282,64 +319,43 @@ export function TransactionEditView({
 
 	return (
 		<div className="space-y-6">
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="sm"
-						className="gap-2"
-						onClick={handleCancel}
-					>
-						<ArrowLeft className="h-4 w-4" />
-						<span className="hidden sm:inline">Volver</span>
-					</Button>
-					<Separator orientation="vertical" className="hidden h-6 sm:block" />
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							Editar Transacción
-						</h1>
-						<p className="text-sm text-muted-foreground">{transactionId}</p>
-					</div>
-				</div>
-				<div className="flex items-center gap-2">
-					<Button variant="outline" size="sm" onClick={handleCancel}>
-						Cancelar
-					</Button>
-					<Button
-						size="sm"
-						className="gap-2"
-						onClick={handleSubmit}
-						disabled={
-							isLoading ||
-							isSaving ||
-							formData.paymentMethods.reduce(
-								(sum, pm) => sum + (parseFloat(pm.amount) || 0),
-								0,
-							) > (parseFloat(formData.amount) || 0)
-						}
-					>
-						<Save className="h-4 w-4" />
-						<span className="hidden sm:inline">
-							{isSaving ? "Guardando..." : "Guardar Cambios"}
-						</span>
-					</Button>
-				</div>
-			</div>
+			<PageHero
+				title={t("txnEditTitle")}
+				subtitle={transactionId}
+				icon={Receipt}
+				backButton={{
+					label: t("back"),
+					onClick: handleCancel,
+				}}
+				actions={[
+					{
+						label: isSaving ? t("txnSaving") : t("txnSaveButton"),
+						icon: Save,
+						onClick: () => {
+							void handleSubmit({
+								preventDefault: () => {},
+							} as React.FormEvent);
+						},
+						disabled: isSaveDisabled,
+					},
+					{
+						label: t("cancel"),
+						onClick: handleCancel,
+						variant: "outline",
+					},
+				]}
+			/>
 
 			<form onSubmit={handleSubmit} className="space-y-6">
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">
-							Información de la Transacción
-						</CardTitle>
-						<CardDescription>
-							Detalles básicos de la transacción
-						</CardDescription>
+						<CardTitle className="text-lg">{t("txnInfoTitle")}</CardTitle>
+						<CardDescription>{t("txnInfoDesc")}</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div className="space-y-2">
-								<Label htmlFor="client">Cliente *</Label>
+								<Label htmlFor="client">{t("txnClient")} *</Label>
 								<Select
 									value={formData.clientId}
 									onValueChange={(value) => handleChange("clientId", value)}
@@ -359,7 +375,9 @@ export function TransactionEditView({
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="operation-date">Fecha de operación *</Label>
+								<Label htmlFor="operation-date">
+									{t("txnOperationDate")} *
+								</Label>
 								<Input
 									id="operation-date"
 									type="datetime-local"
@@ -372,7 +390,7 @@ export function TransactionEditView({
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="operation-type">Tipo de operación *</Label>
+								<Label htmlFor="operation-type">{t("transactionType")} *</Label>
 								<Select
 									value={formData.operationType}
 									onValueChange={(value) =>
@@ -384,8 +402,12 @@ export function TransactionEditView({
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="purchase">Compra</SelectItem>
-										<SelectItem value="sale">Venta</SelectItem>
+										<SelectItem value="purchase">
+											{t("txnOperationPurchase")}
+										</SelectItem>
+										<SelectItem value="sale">
+											{t("txnOperationSale")}
+										</SelectItem>
 									</SelectContent>
 								</Select>
 							</div>
@@ -410,14 +432,14 @@ export function TransactionEditView({
 
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">Información del Vehículo</CardTitle>
+						<CardTitle className="text-lg">{t("txnVehicleTitle")}</CardTitle>
 						<CardDescription>
 							Detalles del vehículo involucrado en la transacción
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="space-y-2">
-							<Label htmlFor="vehicle-type">Tipo de vehículo *</Label>
+							<Label htmlFor="vehicle-type">{t("txnVehicleType")} *</Label>
 							<Select
 								value={formData.vehicleType}
 								onValueChange={(value) => handleChange("vehicleType", value)}
@@ -427,9 +449,13 @@ export function TransactionEditView({
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="land">Terrestre</SelectItem>
-									<SelectItem value="marine">Marítimo</SelectItem>
-									<SelectItem value="air">Aéreo</SelectItem>
+									<SelectItem value="land">
+										{t("txnVehicleTypeLand")}
+									</SelectItem>
+									<SelectItem value="marine">
+										{t("txnVehicleTypeMarine")}
+									</SelectItem>
+									<SelectItem value="air">{t("txnVehicleTypeAir")}</SelectItem>
 								</SelectContent>
 							</Select>
 						</div>
@@ -437,25 +463,18 @@ export function TransactionEditView({
 						<Separator />
 
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<div className="space-y-2">
-								<LabelWithInfo
-									htmlFor="brand"
-									description={getFieldDescription("brand")}
-									required
-								>
-									Marca
-								</LabelWithInfo>
-								<Input
-									id="brand"
-									value={formData.brand}
-									onChange={(e) => handleChange("brand", e.target.value)}
-									placeholder="Toyota, Honda, BMW, etc."
-									required
-								/>
-							</div>
+							<CatalogSelector
+								catalogKey={getVehicleBrandCatalogKey(formData.vehicleType)}
+								label={t("txnBrand")}
+								labelDescription={getFieldDescription("brand")}
+								value={formData.brand}
+								searchPlaceholder="Buscar marca..."
+								required
+								onChange={(option) => handleChange("brand", option?.id ?? "")}
+							/>
 
 							<div className="space-y-2">
-								<Label htmlFor="model">Modelo *</Label>
+								<Label htmlFor="model">{t("txnModel")} *</Label>
 								<Input
 									id="model"
 									value={formData.model}
@@ -466,7 +485,7 @@ export function TransactionEditView({
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="year">Año *</Label>
+								<Label htmlFor="year">{t("txnYear")} *</Label>
 								<Input
 									id="year"
 									type="number"
@@ -491,10 +510,31 @@ export function TransactionEditView({
 										<Input
 											id="vin"
 											value={formData.vin}
-											onChange={(e) => handleChange("vin", e.target.value)}
+											onChange={(e) => {
+												handleChange("vin", e.target.value);
+												// Clear error when user starts typing
+												if (validationErrors.vin) {
+													setValidationErrors((prev) => ({
+														...prev,
+														vin: undefined,
+													}));
+												}
+											}}
 											placeholder="17 caracteres"
 											maxLength={17}
+											className={
+												validationErrors.vin ? "border-destructive" : ""
+											}
 										/>
+										{validationErrors.vin ? (
+											<p className="text-xs text-destructive">
+												{validationErrors.vin}
+											</p>
+										) : (
+											<p className="text-xs text-muted-foreground">
+												17 caracteres alfanuméricos (excluyendo I, O, Q)
+											</p>
+										)}
 									</div>
 									<div className="space-y-2">
 										<LabelWithInfo
@@ -586,7 +626,7 @@ export function TransactionEditView({
 
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">Información de Pago</CardTitle>
+						<CardTitle className="text-lg">{t("txnPaymentTitle")}</CardTitle>
 						<CardDescription>
 							Detalles financieros de la transacción
 						</CardDescription>
@@ -594,7 +634,7 @@ export function TransactionEditView({
 					<CardContent className="space-y-4">
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div className="space-y-2">
-								<Label htmlFor="amount">Monto *</Label>
+								<Label htmlFor="amount">{t("txnTotalAmount")} *</Label>
 								<Input
 									id="amount"
 									type="number"
@@ -609,7 +649,7 @@ export function TransactionEditView({
 
 							<CatalogSelector
 								catalogKey="currencies"
-								label="Moneda"
+								label={t("txnCurrency")}
 								labelDescription={getFieldDescription("currency")}
 								value={formData.currency}
 								required
@@ -620,7 +660,7 @@ export function TransactionEditView({
 							/>
 
 							<div className="space-y-2">
-								<Label htmlFor="payment-date">Fecha de pago *</Label>
+								<Label htmlFor="payment-date">{t("txnPaymentDate")} *</Label>
 								<Input
 									id="payment-date"
 									type="datetime-local"
@@ -635,7 +675,7 @@ export function TransactionEditView({
 
 						<div className="space-y-4">
 							<div className="flex items-center justify-between">
-								<Label>Métodos de Pago *</Label>
+								<Label>{t("txnPaymentMethods")} *</Label>
 								<Button
 									type="button"
 									variant="outline"
@@ -718,11 +758,15 @@ export function TransactionEditView({
 												<SelectValue />
 											</SelectTrigger>
 											<SelectContent>
-												<SelectItem value="EFECTIVO">Efectivo</SelectItem>
+												<SelectItem value="EFECTIVO">
+													{t("txnPaymentMethodCash")}
+												</SelectItem>
 												<SelectItem value="TRANSFERENCIA">
 													Transferencia
 												</SelectItem>
-												<SelectItem value="CHEQUE">Cheque</SelectItem>
+												<SelectItem value="CHEQUE">
+													{t("txnPaymentMethodCheck")}
+												</SelectItem>
 												<SelectItem value="FINANCIAMIENTO">
 													Financiamiento
 												</SelectItem>

@@ -14,19 +14,21 @@ import {
 	Trash2,
 	Plus,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
+import { Button } from "@/components/ui/button";
 import {
-	Button,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "@algtools/ui";
+} from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import {
 	DataTable,
@@ -34,6 +36,7 @@ import {
 	type FilterDef,
 } from "@/components/data-table";
 import { PageHero, type StatCard } from "@/components/page-hero";
+import { formatProperNoun } from "@/lib/utils";
 
 /**
  * Report type
@@ -178,7 +181,7 @@ const mockReports: Report[] = [
 ];
 
 export function ReportsTable(): React.ReactElement {
-	const router = useRouter();
+	const { navigateTo } = useOrgNavigation();
 	const { toast } = useToast();
 	// TODO: Replace with API call when reports endpoint is available
 	const [reports] = useState<Report[]>(mockReports);
@@ -216,7 +219,7 @@ export function ReportsTable(): React.ReactElement {
 							<div className="flex flex-col min-w-0">
 								<div className="flex items-center gap-2">
 									<span className="font-medium text-foreground truncate">
-										{item.name}
+										{formatProperNoun(item.name)}
 									</span>
 									<TooltipProvider>
 										<Tooltip>
@@ -396,7 +399,7 @@ export function ReportsTable(): React.ReactElement {
 			<DropdownMenuContent align="end" className="w-48">
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => router.push(`/reportes/${item.id}`)}
+					onClick={() => navigateTo(`/reports/${item.id}`)}
 				>
 					<Eye className="h-4 w-4" />
 					Ver detalle
@@ -477,7 +480,7 @@ export function ReportsTable(): React.ReactElement {
 				stats={stats}
 				ctaLabel="Nuevo Reporte"
 				ctaIcon={Plus}
-				onCtaClick={() => router.push("/reportes/new")}
+				onCtaClick={() => navigateTo("/reports/new")}
 			/>
 			<DataTable
 				data={reports}
@@ -486,11 +489,14 @@ export function ReportsTable(): React.ReactElement {
 				searchKeys={["id", "name", "period", "createdBy"]}
 				searchPlaceholder="Buscar por nombre, período..."
 				emptyMessage="No se encontraron reportes"
+				emptyIcon={FileText}
 				loadingMessage="Cargando reportes..."
 				isLoading={isLoading}
 				selectable
 				getId={(item) => item.id}
 				actions={renderActions}
+				paginationMode="infinite-scroll"
+				hasMore={false}
 			/>
 		</div>
 	);

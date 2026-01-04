@@ -138,3 +138,50 @@ export const WithCreateNew: Story = {
 		},
 	},
 };
+
+/**
+ * On mobile devices (viewport < 768px), the selector opens as a bottom drawer
+ * instead of a popover for better touch interaction.
+ */
+export const Mobile: Story = {
+	args: {
+		label: "Cliente",
+		placeholder: "Seleccionar cliente",
+		searchPlaceholder: "Buscar cliente por nombre o RFC...",
+	},
+	parameters: {
+		viewport: {
+			defaultViewport: "mobile1",
+		},
+	},
+};
+
+export const MobileWithCreateNew: Story = {
+	args: {
+		label: "Cliente",
+		placeholder: "Seleccionar cliente",
+		searchPlaceholder: "Buscar cliente por nombre o RFC...",
+		onCreateNew: () => {
+			console.log("Create new client clicked");
+		},
+	},
+	parameters: {
+		viewport: {
+			defaultViewport: "mobile1",
+		},
+	},
+};
+
+export const MobileRequired: Story = {
+	args: {
+		label: "Cliente",
+		required: true,
+		placeholder: "Seleccionar cliente",
+		searchPlaceholder: "Buscar cliente por nombre o RFC...",
+	},
+	parameters: {
+		viewport: {
+			defaultViewport: "mobile1",
+		},
+	},
+};
