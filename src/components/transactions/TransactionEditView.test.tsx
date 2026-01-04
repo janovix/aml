@@ -1,8 +1,10 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
+import React from "react";
 import { TransactionEditView } from "./TransactionEditView";
 import * as transactionsApi from "@/lib/api/transactions";
 import { mockTransactions } from "@/data/mockTransactions";
+import { renderWithProviders } from "@/lib/testHelpers";
 
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
@@ -41,7 +43,7 @@ describe("TransactionEditView", () => {
 			transaction,
 		);
 
-		render(<TransactionEditView transactionId="TRX-2024-001" />);
+		renderWithProviders(<TransactionEditView transactionId="TRX-2024-001" />);
 
 		await waitFor(
 			() => {

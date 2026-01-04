@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
+import React from "react";
 import { TransactionCreateView } from "./TransactionCreateView";
+import { renderWithProviders } from "@/lib/testHelpers";
 
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
@@ -16,7 +18,7 @@ vi.mock("next/navigation", () => ({
 
 describe("TransactionCreateView", () => {
 	it("renders create transaction header", () => {
-		render(<TransactionCreateView />);
+		renderWithProviders(<TransactionCreateView />);
 		expect(screen.getByText("Nueva Transacción")).toBeInTheDocument();
 	});
 });

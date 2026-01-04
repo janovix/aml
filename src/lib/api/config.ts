@@ -1,6 +1,6 @@
 // Fallback example URL - will fail if NEXT_PUBLIC_AML_CORE_URL is not set
 // This helps detect missing environment variable configuration
-const DEFAULT_AML_CORE_URL = "https://aml-svc.example.workers.dev";
+const DEFAULT_AML_CORE_URL = "https://aml-svc.janovix.workers.dev";
 export const DEFAULT_API_BASE_URL =
 	"https://backend-template.algtools.workers.dev";
 

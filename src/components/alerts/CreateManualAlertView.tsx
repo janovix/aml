@@ -35,6 +35,8 @@ import { AlertRuleSelector } from "./AlertRuleSelector";
 import { LabelWithInfo } from "@/components/ui/LabelWithInfo";
 import type { Client } from "@/types/client";
 import { executeMutation } from "@/lib/mutations";
+import { useLanguage } from "@/components/LanguageProvider";
+import type { TranslationKeys } from "@/lib/translations";
 
 interface ManualAlertFormData {
 	alertRuleId: string;
@@ -46,28 +48,28 @@ interface ManualAlertFormData {
 
 const severityOptions: {
 	value: AlertSeverity;
-	label: string;
-	description: string;
+	labelKey: TranslationKeys;
+	descriptionKey: TranslationKeys;
 }[] = [
 	{
 		value: "LOW",
-		label: "Baja",
-		description: "Requiere monitoreo, sin urgencia",
+		labelKey: "alertSeverityLow",
+		descriptionKey: "alertSeverityLowDesc",
 	},
 	{
 		value: "MEDIUM",
-		label: "Media",
-		description: "Requiere revisión en el plazo normal",
+		labelKey: "alertSeverityMedium",
+		descriptionKey: "alertSeverityMediumDesc",
 	},
 	{
 		value: "HIGH",
-		label: "Alta",
-		description: "Requiere atención prioritaria",
+		labelKey: "alertSeverityHigh",
+		descriptionKey: "alertSeverityHighDesc",
 	},
 	{
 		value: "CRITICAL",
-		label: "Crítica",
-		description: "Requiere acción inmediata",
+		labelKey: "alertSeverityCritical",
+		descriptionKey: "alertSeverityCriticalDesc",
 	},
 ];
 
@@ -75,6 +77,7 @@ export function CreateManualAlertView(): React.JSX.Element {
 	const { navigateTo, orgPath } = useOrgNavigation();
 	const searchParams = useSearchParams();
 	const { jwt } = useJwt();
+	const { t } = useLanguage();
 	const [isSaving, setIsSaving] = useState(false);
 	const [selectedRule, setSelectedRule] = useState<AlertRule | null>(null);
 	const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -196,17 +199,17 @@ export function CreateManualAlertView(): React.JSX.Element {
 						notes: formData.notes || undefined,
 						jwt,
 					}),
-				loading: "Creando alerta...",
-				success: "Alerta creada exitosamente",
+				loading: t("alertCreating"),
+				success: t("alertCreatedSuccess"),
 				error: (err: unknown) => {
 					const error = err as Error;
 					if (
 						error.message?.includes("409") ||
 						error.message?.includes("duplicate")
 					) {
-						return "Ya existe una alerta similar para este cliente y regla";
+						return t("alertDuplicateError");
 					}
-					return `Error al crear la alerta: ${error.message || "Error desconocido"}`;
+					return `${t("alertCreateError")}: ${error.message || t("errorGeneric")}`;
 				},
 				onSuccess: (data) => {
 					navigateTo(`/alerts/${data.id}`);
@@ -220,8 +223,8 @@ export function CreateManualAlertView(): React.JSX.Element {
 	return (
 		<div className="space-y-6">
 			<PageHero
-				title="Nueva Alerta Manual"
-				subtitle="Crear una alerta de forma manual para un cliente"
+				title={t("alertNewManual")}
+				subtitle={t("alertNewManualSubtitle")}
 				icon={AlertTriangle}
 			/>
 
@@ -231,24 +234,22 @@ export function CreateManualAlertView(): React.JSX.Element {
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2">
 							<Bell className="h-5 w-5" />
-							Información de la Alerta
+							{t("alertInfo")}
 						</CardTitle>
-						<CardDescription>
-							Selecciona la regla de alerta y el cliente afectado
-						</CardDescription>
+						<CardDescription>{t("alertInfoDesc")}</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-6">
 						{/* Alert Rule Selection */}
 						<div className="space-y-2">
 							<AlertRuleSelector
-								label="Regla de Alerta"
+								label={t("alertRule")}
 								value={formData.alertRuleId}
 								onChange={handleAlertRuleChange}
 								onValueChange={(value) =>
 									setFormData((prev) => ({ ...prev, alertRuleId: value ?? "" }))
 								}
 								required
-								helperText="Selecciona el tipo de alerta a generar según el catálogo LFPIORPI"
+								helperText={t("alertRuleHelper")}
 							/>
 						</div>
 
@@ -258,7 +259,7 @@ export function CreateManualAlertView(): React.JSX.Element {
 								<div className="flex items-center gap-2">
 									<FileWarning className="h-4 w-4 text-muted-foreground" />
 									<span className="text-sm font-medium">
-										Código {selectedRule.id}
+										{t("alertCode")} {selectedRule.id}
 									</span>
 									<span
 										className={`ml-auto text-xs px-2 py-0.5 rounded-full ${
@@ -271,9 +272,11 @@ export function CreateManualAlertView(): React.JSX.Element {
 														: "bg-zinc-500/20 text-zinc-400"
 										}`}
 									>
-										{severityOptions.find(
-											(s) => s.value === selectedRule.severity,
-										)?.label ?? selectedRule.severity}
+										{t(
+											severityOptions.find(
+												(s) => s.value === selectedRule.severity,
+											)?.labelKey ?? "alertSeverityLow",
+										)}
 									</span>
 								</div>
 								<p className="text-sm text-muted-foreground">
@@ -293,7 +296,9 @@ export function CreateManualAlertView(): React.JSX.Element {
 						<div className="space-y-2">
 							<div className="flex items-center gap-2">
 								<User className="h-4 w-4 text-muted-foreground" />
-								<Label className="text-sm font-medium">Cliente Afectado</Label>
+								<Label className="text-sm font-medium">
+									{t("alertAffectedClient")}
+								</Label>
 							</div>
 							<ClientSelector
 								value={formData.clientId}
@@ -303,7 +308,7 @@ export function CreateManualAlertView(): React.JSX.Element {
 								}
 								required
 								onCreateNew={handleCreateNewClient}
-								helperText="Selecciona el cliente asociado a esta alerta"
+								helperText={t("alertClientHelper")}
 							/>
 						</div>
 
@@ -311,11 +316,8 @@ export function CreateManualAlertView(): React.JSX.Element {
 
 						{/* Severity Override */}
 						<div className="space-y-2">
-							<LabelWithInfo
-								description="Puedes modificar la severidad predeterminada de la regla si es necesario"
-								required
-							>
-								Severidad
+							<LabelWithInfo description={t("alertSeverityHelper")} required>
+								{t("alertSeverity")}
 							</LabelWithInfo>
 							<Select
 								value={formData.severity}
@@ -327,15 +329,15 @@ export function CreateManualAlertView(): React.JSX.Element {
 								}
 							>
 								<SelectTrigger>
-									<SelectValue placeholder="Seleccionar severidad" />
+									<SelectValue placeholder={t("alertSelectSeverity")} />
 								</SelectTrigger>
 								<SelectContent>
 									{severityOptions.map((option) => (
 										<SelectItem key={option.value} value={option.value}>
 											<div className="flex flex-col">
-												<span>{option.label}</span>
+												<span>{t(option.labelKey)}</span>
 												<span className="text-xs text-muted-foreground">
-													{option.description}
+													{t(option.descriptionKey)}
 												</span>
 											</div>
 										</SelectItem>
@@ -346,20 +348,20 @@ export function CreateManualAlertView(): React.JSX.Element {
 
 						{/* Notes */}
 						<div className="space-y-2">
-							<LabelWithInfo description="Describe el motivo de la alerta o información adicional relevante">
-								Notas
+							<LabelWithInfo description={t("alertNotesHelper")}>
+								{t("alertNotes")}
 							</LabelWithInfo>
 							<Textarea
 								value={formData.notes}
 								onChange={(e) =>
 									setFormData((prev) => ({ ...prev, notes: e.target.value }))
 								}
-								placeholder="Describe el motivo de la alerta, observaciones relevantes o información adicional..."
+								placeholder={t("alertNotesPlaceholder")}
 								rows={4}
 								maxLength={1000}
 							/>
 							<p className="text-xs text-muted-foreground text-right">
-								{formData.notes.length}/1000 caracteres
+								{formData.notes.length}/1000 {t("alertCharactersCount")}
 							</p>
 						</div>
 					</CardContent>
@@ -373,11 +375,11 @@ export function CreateManualAlertView(): React.JSX.Element {
 						onClick={() => navigateTo("/alerts")}
 						disabled={isSaving}
 					>
-						Cancelar
+						{t("cancel")}
 					</Button>
 					<Button type="submit" disabled={!canSubmit} className="gap-2">
 						<Save className="h-4 w-4" />
-						{isSaving ? "Guardando..." : "Crear Alerta"}
+						{isSaving ? t("alertCreating") : t("alertCreateButton")}
 					</Button>
 				</div>
 			</form>

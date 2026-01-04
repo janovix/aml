@@ -9,7 +9,7 @@ import {
 	useState,
 	useCallback,
 } from "react";
-import { Check, ChevronsUpDown, AlertTriangle } from "lucide-react";
+import { Check, ChevronsUpDown, AlertTriangle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -33,6 +33,13 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useJwt } from "@/hooks/useJwt";
 import {
@@ -101,18 +108,17 @@ const defaultRenderOption: OptionRenderer = (rule, isSelected) => {
 	const severityCfg = severityConfig[rule.severity];
 	return (
 		<div className="flex w-full items-center justify-between gap-3">
-			<div className="flex flex-col gap-0.5">
-				<div className="flex items-center gap-2">
+			<div className="flex flex-col gap-0.5 min-w-0">
+				<div className="flex items-start gap-2">
 					<span
-						className={`h-2 w-2 rounded-full shrink-0 ${severityCfg.dotColor}`}
+						className={`h-2 w-2 rounded-full shrink-0 mt-1.5 ${severityCfg.dotColor}`}
 					/>
 					<span className="text-sm font-medium text-foreground">
-						{rule.id} -{" "}
-						{rule.name.length > 60 ? `${rule.name.slice(0, 60)}...` : rule.name}
+						{rule.id} - {rule.name}
 					</span>
 				</div>
 				{rule.description && (
-					<span className="text-xs text-muted-foreground line-clamp-1 ml-4">
+					<span className="text-xs text-muted-foreground line-clamp-2 ml-4">
 						{rule.description}
 					</span>
 				)}
@@ -160,12 +166,16 @@ function AlertRuleSelectorCommandContent({
 	isMobile = false,
 }: AlertRuleSelectorCommandContentProps): React.ReactElement {
 	return (
-		<Command shouldFilter={false}>
+		<Command
+			shouldFilter={false}
+			className={cn(isMobile && "flex flex-col h-full")}
+		>
 			<CommandInput
 				value={searchTerm}
 				onValueChange={onSearchChange}
 				placeholder={searchPlaceholder}
 				autoFocus={autoFocusSearch}
+				className={cn(isMobile && "sticky top-0 z-10")}
 			/>
 
 			{loading && (
@@ -183,7 +193,11 @@ function AlertRuleSelectorCommandContent({
 				<>
 					<CommandList
 						ref={listRef}
-						className={cn(isMobile ? "max-h-[60vh]" : "max-h-[300px]")}
+						className={cn(
+							isMobile
+								? "flex-1 overflow-y-auto overscroll-contain"
+								: "max-h-[300px]",
+						)}
 					>
 						{mappedItems.length === 0 ? (
 							<CommandEmpty>
@@ -203,6 +217,7 @@ function AlertRuleSelectorCommandContent({
 											key={optionValue}
 											value={optionValue}
 											onSelect={() => onSelect(optionValue)}
+											className={cn(isMobile && "py-3")}
 										>
 											{renderOption(rule, isSelected)}
 										</CommandItem>
@@ -214,8 +229,10 @@ function AlertRuleSelectorCommandContent({
 					{shouldShowSummary && (
 						<div
 							className={cn(
-								"sticky bottom-0 border-t px-3 py-2",
-								isMobile ? "bg-background" : "bg-popover",
+								"border-t px-3 py-2",
+								isMobile
+									? "sticky bottom-0 bg-background pb-[env(safe-area-inset-bottom)]"
+									: "bg-popover",
 							)}
 						>
 							<p
@@ -397,7 +414,7 @@ export function AlertRuleSelector({
 			aria-expanded={open}
 			aria-labelledby={label ? labelId : undefined}
 			disabled={disabled}
-			className="w-full justify-between text-left font-normal"
+			className="w-full justify-between text-left font-normal bg-transparent"
 		>
 			<span className="truncate">{selectedLabel || resolvedPlaceholder}</span>
 			<span className="ml-2 flex items-center gap-1 text-xs text-muted-foreground">
@@ -438,23 +455,36 @@ export function AlertRuleSelector({
 			)}
 
 			{isMobile ? (
-				<Sheet open={open} onOpenChange={handleOpenChange}>
-					<SheetTrigger asChild>{triggerButton}</SheetTrigger>
-					<SheetContent
-						side="bottom"
-						className="h-[85vh] flex flex-col p-0 [&>button]:hidden"
+				<Dialog open={open} onOpenChange={handleOpenChange}>
+					<DialogTrigger asChild>{triggerButton}</DialogTrigger>
+					<DialogContent
+						className="h-dvh max-h-dvh w-screen max-w-none m-0 p-0 rounded-none flex flex-col gap-0 border-0 [&>button]:hidden"
+						showCloseButton={false}
 					>
-						<SheetHeader className="px-4 pt-4 pb-2 border-b">
-							<SheetTitle>
-								{label || "Seleccionar regla de alerta"}
-								{required && <span className="ml-1 text-destructive">*</span>}
-							</SheetTitle>
-						</SheetHeader>
-						<div className="flex-1 overflow-hidden">
+						{/* Fixed header with close button */}
+						<DialogHeader className="flex-none px-4 pt-[env(safe-area-inset-top)] pb-2 border-b bg-background">
+							<div className="flex items-center justify-between">
+								<DialogTitle className="text-base font-semibold">
+									{label || "Seleccionar regla de alerta"}
+									{required && <span className="ml-1 text-destructive">*</span>}
+								</DialogTitle>
+								<Button
+									variant="ghost"
+									size="icon"
+									className="h-8 w-8 -mr-2"
+									onClick={() => setOpen(false)}
+								>
+									<X className="h-4 w-4" />
+									<span className="sr-only">Cerrar</span>
+								</Button>
+							</div>
+						</DialogHeader>
+						{/* Flex-grow content area that adapts to keyboard */}
+						<div className="flex-1 min-h-0 overflow-hidden">
 							<AlertRuleSelectorCommandContent {...commandContentProps} />
 						</div>
-					</SheetContent>
-				</Sheet>
+					</DialogContent>
+				</Dialog>
 			) : (
 				<Popover open={open} onOpenChange={handleOpenChange}>
 					<PopoverTrigger asChild>{triggerButton}</PopoverTrigger>

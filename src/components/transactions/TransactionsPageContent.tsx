@@ -8,10 +8,13 @@ import { DollarSign, Calendar, AlertCircle, Receipt, Plus } from "lucide-react";
 import { getTransactionStats, type TransactionStats } from "@/lib/api/stats";
 import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@/lib/api/http";
+import { useLanguage } from "@/components/LanguageProvider";
+import { getLocaleForLanguage } from "@/lib/translations";
 
 export function TransactionsPageContent(): React.ReactElement {
 	const { navigateTo } = useOrgNavigation();
 	const { toast } = useToast();
+	const { t, language } = useLanguage();
 	const [stats, setStats] = useState<TransactionStats | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 
@@ -37,8 +40,8 @@ export function TransactionsPageContent(): React.ReactElement {
 					);
 				}
 				toast({
-					title: "Error",
-					description: "No se pudieron cargar las estadísticas.",
+					title: t("errorGeneric"),
+					description: t("errorLoadingStats"),
 					variant: "destructive",
 				});
 			} finally {
@@ -47,7 +50,7 @@ export function TransactionsPageContent(): React.ReactElement {
 		};
 
 		fetchStats();
-	}, [toast]);
+	}, [toast, t]);
 
 	const formatCurrency = (amount: string): string => {
 		const num = parseFloat(amount);
@@ -58,7 +61,7 @@ export function TransactionsPageContent(): React.ReactElement {
 		if (num >= 1000) {
 			return `$${(num / 1000).toFixed(1)}K`;
 		}
-		return new Intl.NumberFormat("es-MX", {
+		return new Intl.NumberFormat(getLocaleForLanguage(language), {
 			style: "currency",
 			currency: "MXN",
 			minimumFractionDigits: 0,
@@ -68,18 +71,18 @@ export function TransactionsPageContent(): React.ReactElement {
 
 	const heroStats: StatCard[] = [
 		{
-			label: "Transacciones Hoy",
+			label: t("statsTransactionsToday"),
 			value: isLoading ? "..." : (stats?.transactionsToday ?? 0),
 			icon: Calendar,
 		},
 		{
-			label: "Transacciones Sospechosas",
+			label: t("statsSuspiciousTransactions"),
 			value: isLoading ? "..." : (stats?.suspiciousTransactions ?? 0),
 			icon: AlertCircle,
 			variant: "primary",
 		},
 		{
-			label: "Volumen Total",
+			label: t("statsTotalVolume"),
 			value: isLoading
 				? "..."
 				: stats?.totalVolume
@@ -92,11 +95,11 @@ export function TransactionsPageContent(): React.ReactElement {
 	return (
 		<div className="space-y-6">
 			<PageHero
-				title="Transacciones"
-				subtitle="Gestión de transacciones de vehículos"
+				title={t("transactionsTitle")}
+				subtitle={t("transactionsSubtitle")}
 				icon={Receipt}
 				stats={heroStats}
-				ctaLabel="Nueva Transacción"
+				ctaLabel={t("transactionsNew")}
 				ctaIcon={Plus}
 				onCtaClick={() => navigateTo("/transactions/new")}
 			/>

@@ -12,12 +12,14 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface PageProps {
 	params: Promise<{ orgSlug: string }>;
 }
 
 export default function ForbiddenPage({ params }: PageProps) {
+	const { t } = useLanguage();
 	const { orgSlug } = use(params);
 
 	return (
@@ -27,17 +29,14 @@ export default function ForbiddenPage({ params }: PageProps) {
 					<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
 						<ShieldX className="h-8 w-8 text-destructive" />
 					</div>
-					<CardTitle className="text-2xl">Access Denied</CardTitle>
+					<CardTitle className="text-2xl">{t("errorAccessDenied")}</CardTitle>
 					<CardDescription>
-						You don&apos;t have access to the organization{" "}
+						{t("errorAccessDeniedDesc")}{" "}
 						<span className="font-semibold text-foreground">{orgSlug}</span>.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="text-center text-sm text-muted-foreground">
-					<p>
-						This could happen if you followed a shared link to an organization
-						you&apos;re not a member of, or if your access was revoked.
-					</p>
+					<p>{t("errorAccessDeniedReason")}</p>
 				</CardContent>
 				<CardFooter className="flex gap-3">
 					<Button
@@ -46,12 +45,12 @@ export default function ForbiddenPage({ params }: PageProps) {
 						onClick={() => window.history.back()}
 					>
 						<ArrowLeft className="mr-2 h-4 w-4" />
-						Go Back
+						{t("errorGoBack")}
 					</Button>
 					<Button asChild className="flex-1">
 						<Link href="/">
 							<Home className="mr-2 h-4 w-4" />
-							Home
+							{t("errorHome")}
 						</Link>
 					</Button>
 				</CardFooter>

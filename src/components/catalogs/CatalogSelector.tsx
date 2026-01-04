@@ -9,7 +9,7 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { Check, ChevronsUpDown, Plus } from "lucide-react";
+import { Check, ChevronsUpDown, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -33,6 +33,13 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
 import type { CatalogItem } from "@/types/catalog";
 import { useCatalogSearch } from "@/hooks/useCatalogSearch";
 import { fetchCatalogItemById } from "@/lib/catalogs";
@@ -147,12 +154,16 @@ function CatalogSelectorCommandContent({
 	isMobile = false,
 }: CatalogSelectorCommandContentProps): React.ReactElement {
 	return (
-		<Command shouldFilter={false}>
+		<Command
+			shouldFilter={false}
+			className={cn(isMobile && "flex flex-col h-full")}
+		>
 			<CommandInput
 				value={searchTerm}
 				onValueChange={onSearchChange}
 				placeholder={searchPlaceholder}
 				autoFocus={autoFocusSearch}
+				className={cn(isMobile && "sticky top-0 z-10")}
 			/>
 
 			{loading && (
@@ -170,11 +181,15 @@ function CatalogSelectorCommandContent({
 				<>
 					<CommandList
 						ref={listRef}
-						className={cn(isMobile ? "max-h-[60vh]" : "max-h-[300px]")}
+						className={cn(
+							isMobile
+								? "flex-1 overflow-y-auto overscroll-contain"
+								: "max-h-[300px]",
+						)}
 					>
 						{mappedItems.length === 0 ? (
 							<CommandEmpty>
-								<div className="flex flex-col items-center gap-2 py-2">
+								<div className="flex flex-col items-center gap-2 py-2 px-3">
 									<span>{emptyState}</span>
 									{allowNewItems && searchTerm.trim() && (
 										<Button
@@ -182,7 +197,7 @@ function CatalogSelectorCommandContent({
 											variant="outline"
 											size="sm"
 											onClick={onAddNewClick}
-											className="mt-2"
+											className="mt-2 bg-transparent"
 										>
 											<Plus className="mr-2 h-4 w-4" />
 											Agregar &quot;{searchTerm.trim()}&quot;
@@ -205,6 +220,7 @@ function CatalogSelectorCommandContent({
 											key={optionValue}
 											value={optionValue}
 											onSelect={() => onSelect(optionValue)}
+											className={cn(isMobile && "py-3")}
 										>
 											{renderOption(item, isSelected)}
 										</CommandItem>
@@ -215,7 +231,7 @@ function CatalogSelectorCommandContent({
 										key="__add_new__"
 										value="__add_new__"
 										onSelect={onAddNewClick}
-										className="text-primary"
+										className={cn("text-primary", isMobile && "py-3")}
 									>
 										<div className="flex items-center gap-2">
 											<Plus className="h-4 w-4" />
@@ -235,8 +251,10 @@ function CatalogSelectorCommandContent({
 					{shouldShowSummary && (
 						<div
 							className={cn(
-								"sticky bottom-0 border-t px-3 py-2",
-								isMobile ? "bg-background" : "bg-popover",
+								"border-t px-3 py-2",
+								isMobile
+									? "sticky bottom-0 bg-background pb-[env(safe-area-inset-bottom)]"
+									: "bg-popover",
 							)}
 						>
 							<p
@@ -296,6 +314,8 @@ export function CatalogSelector({
 		string | undefined
 	>(value);
 	const [fetchingById, setFetchingById] = useState(false);
+	// Track which value we've already attempted to fetch by ID to prevent infinite loops
+	const fetchedByIdForValueRef = useRef<string | undefined>(undefined);
 
 	const {
 		items,
@@ -330,11 +350,12 @@ export function CatalogSelector({
 		[items, getOptionValue],
 	);
 
-	// Reset search counter when value changes
+	// Reset search counter and fetch-by-ID tracker when value changes
 	useEffect(() => {
 		if (value !== lastSearchedValue) {
 			setPagesSearchedForValue(0);
 			setLastSearchedValue(value);
+			fetchedByIdForValueRef.current = undefined;
 		}
 	}, [value, lastSearchedValue]);
 
@@ -399,10 +420,13 @@ export function CatalogSelector({
 			!loadingMore &&
 			!match &&
 			pagination !== null &&
-			!fetchingById
+			!fetchingById &&
+			fetchedByIdForValueRef.current !== value
 		) {
 			// If we've loaded data but still can't find the item, try fetching by ID directly
 			// This handles cases where the item exists but isn't in the search results
+			// Mark that we've attempted to fetch this value to prevent infinite loops
+			fetchedByIdForValueRef.current = value;
 			setFetchingById(true);
 			fetchCatalogItemById(catalogKey, value)
 				.then((item) => {
@@ -422,6 +446,9 @@ export function CatalogSelector({
 					setFetchingById(false);
 				});
 		}
+		// Note: selectedLabel is intentionally excluded from dependencies
+		// It's only used for comparison to avoid unnecessary updates, not as input
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [
 		isControlled,
 		value,
@@ -434,7 +461,6 @@ export function CatalogSelector({
 		pagesSearchedForValue,
 		pagination,
 		selectedOption,
-		selectedLabel,
 		catalogKey,
 		fetchingById,
 	]);
@@ -586,7 +612,19 @@ export function CatalogSelector({
 		};
 	}, [items, open, hasMore, loadingMore, loading, loadMore]);
 
-	// Set up scroll listener
+	// Use a ref for the scroll handler to avoid constant listener re-attachment
+	const handleScrollRef = useRef(handleScroll);
+	handleScrollRef.current = handleScroll;
+
+	// Stable scroll handler that uses the ref
+	const stableScrollHandler = useCallback(() => {
+		handleScrollRef.current();
+	}, []);
+
+	// Ref to track the scrollable element for cleanup
+	const scrollableElementRef = useRef<HTMLElement | null>(null);
+
+	// Set up scroll listener - only depends on `open` to avoid constant re-attachment
 	useEffect(() => {
 		if (!open) {
 			return;
@@ -606,7 +644,8 @@ export function CatalogSelector({
 				list.querySelector<HTMLElement>("[cmdk-list]") || list;
 
 			if (scrollableElement) {
-				scrollableElement.addEventListener("scroll", handleScroll, {
+				scrollableElementRef.current = scrollableElement;
+				scrollableElement.addEventListener("scroll", stableScrollHandler, {
 					passive: true,
 				});
 			}
@@ -614,16 +653,15 @@ export function CatalogSelector({
 
 		return () => {
 			clearTimeout(timeoutId);
-			// Try to find and remove listener from current DOM state
-			const list = listRef.current;
-			if (list) {
-				const element = list.querySelector<HTMLElement>("[cmdk-list]") || list;
-				if (element) {
-					element.removeEventListener("scroll", handleScroll);
-				}
+			if (scrollableElementRef.current) {
+				scrollableElementRef.current.removeEventListener(
+					"scroll",
+					stableScrollHandler,
+				);
+				scrollableElementRef.current = null;
 			}
 		};
-	}, [handleScroll, open]);
+	}, [open, stableScrollHandler]);
 
 	const resultSummary = useMemo(() => {
 		if (loading) {
@@ -650,7 +688,7 @@ export function CatalogSelector({
 			aria-expanded={open}
 			aria-labelledby={label ? labelId : undefined}
 			disabled={disabled}
-			className="w-full justify-between text-left font-normal"
+			className="w-full justify-between text-left font-normal bg-transparent"
 		>
 			<span className="truncate">{selectedLabel || resolvedPlaceholder}</span>
 			<span className="ml-2 flex items-center gap-1 text-xs text-muted-foreground">
@@ -704,23 +742,36 @@ export function CatalogSelector({
 				))}
 
 			{isMobile ? (
-				<Sheet open={open} onOpenChange={handleOpenChange}>
-					<SheetTrigger asChild>{triggerButton}</SheetTrigger>
-					<SheetContent
-						side="bottom"
-						className="h-[85vh] flex flex-col p-0 [&>button]:hidden"
+				<Dialog open={open} onOpenChange={handleOpenChange}>
+					<DialogTrigger asChild>{triggerButton}</DialogTrigger>
+					<DialogContent
+						className="h-dvh max-h-dvh w-screen max-w-none m-0 p-0 rounded-none flex flex-col gap-0 border-0 [&>button]:hidden"
+						showCloseButton={false}
 					>
-						<SheetHeader className="px-4 pt-4 pb-2 border-b">
-							<SheetTitle>
-								{label || "Seleccionar opción"}
-								{required && <span className="ml-1 text-destructive">*</span>}
-							</SheetTitle>
-						</SheetHeader>
-						<div className="flex-1 overflow-hidden">
+						{/* Fixed header with close button */}
+						<DialogHeader className="flex-none px-4 pt-[env(safe-area-inset-top)] pb-2 border-b bg-background">
+							<div className="flex items-center justify-between">
+								<DialogTitle className="text-base font-semibold">
+									{label || "Seleccionar opción"}
+									{required && <span className="ml-1 text-destructive">*</span>}
+								</DialogTitle>
+								<Button
+									variant="ghost"
+									size="icon"
+									className="h-8 w-8 -mr-2"
+									onClick={() => setOpen(false)}
+								>
+									<X className="h-4 w-4" />
+									<span className="sr-only">Cerrar</span>
+								</Button>
+							</div>
+						</DialogHeader>
+						{/* Flex-grow content area that adapts to keyboard */}
+						<div className="flex-1 min-h-0 overflow-hidden">
 							<CatalogSelectorCommandContent {...commandContentProps} />
 						</div>
-					</SheetContent>
-				</Sheet>
+					</DialogContent>
+				</Dialog>
 			) : (
 				<Popover open={open} onOpenChange={handleOpenChange}>
 					<PopoverTrigger asChild>{triggerButton}</PopoverTrigger>

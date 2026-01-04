@@ -1,7 +1,22 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DashboardLayout } from "./DashboardLayout";
+import { renderWithProviders } from "@/lib/testHelpers";
+
+// Mock cookies module to return Spanish language for tests
+vi.mock("@/lib/cookies", () => ({
+	getCookie: (name: string) => {
+		if (name === "janovix-lang") return "es";
+		return undefined;
+	},
+	setCookie: vi.fn(),
+	deleteCookie: vi.fn(),
+	COOKIE_NAMES: {
+		THEME: "janovix-theme",
+		LANGUAGE: "janovix-lang",
+	},
+}));
 
 const mockPathname = vi.fn(() => "/clients");
 const mockPush = vi.fn();
@@ -32,6 +47,12 @@ vi.mock("@/components/ThemeSwitcher", () => ({
 	ThemeSwitcher: () => <div data-testid="theme-switcher">Theme Switcher</div>,
 }));
 
+vi.mock("@/components/LanguageSwitcher", () => ({
+	LanguageSwitcher: () => (
+		<div data-testid="language-switcher">Language Switcher</div>
+	),
+}));
+
 vi.mock("@/lib/auth/useAuthSession", () => ({
 	useAuthSession: () => ({
 		data: {
@@ -57,7 +78,7 @@ describe("DashboardLayout", () => {
 	});
 
 	it("renders children", () => {
-		render(
+		renderWithProviders(
 			<DashboardLayout>
 				<div>Test Content</div>
 			</DashboardLayout>,
@@ -67,7 +88,7 @@ describe("DashboardLayout", () => {
 	});
 
 	it("renders sidebar with navigation items", () => {
-		render(
+		renderWithProviders(
 			<DashboardLayout>
 				<div>Test</div>
 			</DashboardLayout>,
@@ -79,7 +100,7 @@ describe("DashboardLayout", () => {
 	});
 
 	it("renders sidebar trigger button", () => {
-		render(
+		renderWithProviders(
 			<DashboardLayout>
 				<div>Test</div>
 			</DashboardLayout>,
@@ -91,7 +112,7 @@ describe("DashboardLayout", () => {
 	});
 
 	it("renders theme switcher in header", () => {
-		render(
+		renderWithProviders(
 			<DashboardLayout>
 				<div>Test</div>
 			</DashboardLayout>,
@@ -101,7 +122,7 @@ describe("DashboardLayout", () => {
 	});
 
 	it("renders avatar dropdown", () => {
-		render(
+		renderWithProviders(
 			<DashboardLayout>
 				<div>Test</div>
 			</DashboardLayout>,
@@ -114,7 +135,7 @@ describe("DashboardLayout", () => {
 
 	it("opens avatar dropdown menu when clicked", async () => {
 		const user = userEvent.setup();
-		render(
+		renderWithProviders(
 			<DashboardLayout>
 				<div>Test</div>
 			</DashboardLayout>,
@@ -142,7 +163,7 @@ describe("DashboardLayout", () => {
 
 	it("highlights active navigation item", () => {
 		mockPathname.mockReturnValue("/test-org/clients");
-		render(
+		renderWithProviders(
 			<DashboardLayout>
 				<div>Test</div>
 			</DashboardLayout>,
@@ -157,7 +178,7 @@ describe("DashboardLayout", () => {
 	});
 
 	it("renders sidebar logo", () => {
-		render(
+		renderWithProviders(
 			<DashboardLayout>
 				<div>Test</div>
 			</DashboardLayout>,

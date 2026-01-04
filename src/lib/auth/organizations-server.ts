@@ -1,7 +1,7 @@
-import { getJwt } from "@/lib/auth/getJwt";
-import { fetchJson } from "@/lib/api/http";
+import { cookies } from "next/headers";
 import type { Organization } from "@/lib/org-store";
 import { normalizeOrganization } from "./organizations";
+import { getAuthAppUrl, getAuthServiceUrl } from "./config";
 
 export interface OrganizationsData {
 	organizations: Organization[];
@@ -9,25 +9,49 @@ export interface OrganizationsData {
 }
 
 /**
- * Server-side function to list organizations
+ * Server-side function to list organizations using session cookies.
+ *
+ * Note: Better Auth endpoints use cookie-based session auth, not JWT.
+ * This matches how the middleware fetches organizations.
  */
 export async function listOrganizationsServer(): Promise<OrganizationsData | null> {
 	try {
-		const jwt = await getJwt();
-		if (!jwt) {
+		const cookieStore = await cookies();
+		const cookieHeader = cookieStore.toString();
+
+		// Check for session cookie existence
+		if (
+			!cookieHeader.includes("better-auth.session_token") &&
+			!cookieHeader.includes("__Secure-better-auth.session_token")
+		) {
 			return null;
 		}
 
-		const authAppUrl =
-			process.env.AUTH_APP_URL || "https://auth-svc.example.workers.dev";
-		const result = await fetchJson<unknown>(
-			`${authAppUrl}/api/auth/organization/list`,
+		const authServiceUrl = getAuthServiceUrl();
+		const response = await fetch(
+			`${authServiceUrl}/api/auth/organization/list`,
 			{
-				jwt,
+				headers: {
+					Cookie: cookieHeader,
+					Origin: getAuthAppUrl(),
+					Accept: "application/json",
+				},
+				cache: "no-store",
 			},
 		);
 
-		const payload = result.json as Record<string, unknown> | unknown[] | null;
+		if (!response.ok) {
+			console.error(
+				`Failed to fetch organizations: ${response.status} ${response.statusText}`,
+			);
+			return null;
+		}
+
+		const payload = (await response.json()) as
+			| Record<string, unknown>
+			| unknown[]
+			| null;
+
 		const organizationsRaw = Array.isArray(payload)
 			? payload
 			: ((payload as Record<string, unknown>)?.organizations ?? []);

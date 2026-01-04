@@ -27,6 +27,7 @@ import { CatalogSelector } from "../catalogs/CatalogSelector";
 import { PhoneInput } from "../ui/phone-input";
 import { validateRFC, validateCURP } from "../../lib/utils";
 import { toast as sonnerToast } from "sonner";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface ClientFormData {
 	personType: PersonType;
@@ -65,6 +66,7 @@ export function ClientEditView({
 }: ClientEditViewProps): React.JSX.Element {
 	const { navigateTo } = useOrgNavigation();
 	const { toast } = useToast();
+	const { t } = useLanguage();
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
 	const [client, setClient] = useState<Client | null>(null);
@@ -155,7 +157,7 @@ export function ClientEditView({
 			} catch (error) {
 				console.error("Error fetching client:", error);
 				toast({
-					title: "No se pudo cargar la información del cliente.",
+					title: t("clientLoadError"),
 					variant: "destructive",
 				});
 			} finally {
@@ -198,7 +200,7 @@ export function ClientEditView({
 		// If there are validation errors, show them and prevent submission
 		if (Object.keys(errors).length > 0) {
 			setValidationErrors(errors);
-			sonnerToast.error("Por favor, corrija los errores en el formulario");
+			sonnerToast.error(t("clientValidationError"));
 			return;
 		}
 
@@ -207,7 +209,7 @@ export function ClientEditView({
 
 		if (!currentPersonType) {
 			toast({
-				title: "Tipo de persona no disponible",
+				title: t("clientPersonTypeNotAvailable"),
 				variant: "destructive",
 			});
 			setIsSubmitting(false);
@@ -263,8 +265,8 @@ export function ClientEditView({
 						id: clientId,
 						input: request,
 					}),
-				loading: "Actualizando cliente...",
-				success: "Cliente actualizado exitosamente",
+				loading: t("clientUpdating"),
+				success: t("clientUpdateSuccess"),
 				onSuccess: () => {
 					navigateTo(`/clients/${clientId}`);
 				},
@@ -290,7 +292,7 @@ export function ClientEditView({
 					actionCount={2}
 				/>
 				{/* Form skeleton */}
-				<div className="max-w-4xl space-y-6">
+				<div className="max-w-4xl space-y-6 pb-6">
 					{[1, 2, 3].map((i) => (
 						<Card key={i}>
 							<CardHeader>
@@ -317,11 +319,11 @@ export function ClientEditView({
 		return (
 			<div className="space-y-6">
 				<PageHero
-					title="Cliente no encontrado"
-					subtitle={`El cliente con ID ${clientId} no existe`}
+					title={t("clientNotFound")}
+					subtitle={`${t("clientNotExist")} (ID: ${clientId})`}
 					icon={User}
 					backButton={{
-						label: "Volver a Clientes",
+						label: t("clientBackToClients"),
 						onClick: () => navigateTo("/clients"),
 					}}
 				/>
@@ -336,22 +338,22 @@ export function ClientEditView({
 	return (
 		<div className="space-y-6">
 			<PageHero
-				title="Editar Cliente"
-				subtitle="Modificar información del cliente"
+				title={t("clientEditTitle")}
+				subtitle={t("clientEditSubtitle")}
 				icon={User}
 				backButton={{
-					label: "Volver",
+					label: t("back"),
 					onClick: handleCancel,
 				}}
 				actions={[
 					{
-						label: isSubmitting ? "Guardando..." : "Guardar Cambios",
+						label: isSubmitting ? t("clientSaving") : t("clientSaveButton"),
 						icon: Save,
 						onClick: handleToolbarSubmit,
 						disabled: isSubmitting,
 					},
 					{
-						label: "Cancelar",
+						label: t("cancel"),
 						onClick: handleCancel,
 						variant: "outline",
 					},
@@ -362,7 +364,7 @@ export function ClientEditView({
 				id="client-edit-form"
 				ref={formRef}
 				onSubmit={handleSubmit}
-				className="max-w-4xl space-y-6"
+				className="max-w-4xl space-y-6 pb-6"
 			>
 				<button
 					ref={hiddenSubmitButtonRef}
@@ -415,8 +417,7 @@ export function ClientEditView({
 						</div>
 						<p className="mt-4 text-xs text-muted-foreground flex items-center gap-1.5">
 							<Lock className="h-3 w-3" />
-							El tipo de persona no se puede modificar después de crear el
-							cliente.
+							{t("clientPersonTypeNotModifiable")}
 						</p>
 					</CardContent>
 				</Card>
@@ -425,8 +426,8 @@ export function ClientEditView({
 					<CardHeader>
 						<CardTitle className="text-lg">
 							{formData.personType === "physical"
-								? "Datos Personales"
-								: "Datos de la Empresa"}
+								? t("clientPersonalData")
+								: t("clientCompanyData")}
 						</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-4">
@@ -439,7 +440,7 @@ export function ClientEditView({
 											description={getFieldDescription("firstName")}
 											required
 										>
-											Nombre
+											{t("clientFirstName")}
 										</LabelWithInfo>
 										<Input
 											id="firstName"
@@ -457,7 +458,7 @@ export function ClientEditView({
 											description={getFieldDescription("lastName")}
 											required
 										>
-											Apellido Paterno
+											{t("clientLastName")}
 										</LabelWithInfo>
 										<Input
 											id="lastName"
@@ -474,7 +475,7 @@ export function ClientEditView({
 											htmlFor="secondLastName"
 											description={getFieldDescription("secondLastName")}
 										>
-											Apellido Materno
+											{t("clientSecondLastName")}
 										</LabelWithInfo>
 										<Input
 											id="secondLastName"
@@ -493,7 +494,7 @@ export function ClientEditView({
 											description={getFieldDescription("birthDate")}
 											required
 										>
-											Fecha de Nacimiento
+											{t("clientBirthDate")}
 										</LabelWithInfo>
 										<Input
 											id="birthDate"
@@ -511,7 +512,7 @@ export function ClientEditView({
 											description={getFieldDescription("curp")}
 											required
 										>
-											CURP
+											{t("clientCurp")}
 										</LabelWithInfo>
 										<Input
 											id="curp"
@@ -548,7 +549,7 @@ export function ClientEditView({
 										description={getFieldDescription("businessName")}
 										required
 									>
-										Razón Social
+										{t("clientBusinessName")}
 									</LabelWithInfo>
 									<Input
 										id="businessName"
@@ -566,7 +567,7 @@ export function ClientEditView({
 										description={getFieldDescription("incorporationDate")}
 										required
 									>
-										Fecha de Constitución
+										{t("clientConstitutionDate")}
 									</LabelWithInfo>
 									<Input
 										id="incorporationDate"
@@ -586,7 +587,7 @@ export function ClientEditView({
 								description={getFieldDescription("rfc")}
 								required
 							>
-								RFC
+								{t("clientRfc")}
 							</LabelWithInfo>
 							<Input
 								id="rfc"
@@ -619,18 +620,18 @@ export function ClientEditView({
 							) : (
 								<p className="text-xs text-muted-foreground">
 									{formData.personType === "physical"
-										? "13 caracteres para persona física"
-										: "12 caracteres para persona moral/fideicomiso"}
+										? t("clientRfcHintPhysical")
+										: t("clientRfcHintMoral")}
 								</p>
 							)}
 						</div>
 						{formData.personType === "physical" && (
 							<CatalogSelector
 								catalogKey="countries"
-								label="Nacionalidad"
+								label={t("clientNationality")}
 								labelDescription={getFieldDescription("nationality")}
 								value={formData.nationality}
-								searchPlaceholder="Buscar país..."
+								searchPlaceholder={t("clientSearchCountry")}
 								onChange={(option) =>
 									handleInputChange("nationality", option?.id ?? "")
 								}
@@ -641,7 +642,7 @@ export function ClientEditView({
 
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">Información de Contacto</CardTitle>
+						<CardTitle className="text-lg">{t("clientContactInfo")}</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -651,7 +652,7 @@ export function ClientEditView({
 									description={getFieldDescription("email")}
 									required
 								>
-									Email
+									{t("clientEmail")}
 								</LabelWithInfo>
 								<Input
 									id="email"
@@ -668,7 +669,7 @@ export function ClientEditView({
 									description={getFieldDescription("phone")}
 									required
 								>
-									Teléfono
+									{t("clientPhone")}
 								</LabelWithInfo>
 								<PhoneInput
 									id="phone"
@@ -686,7 +687,7 @@ export function ClientEditView({
 
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">Dirección</CardTitle>
+						<CardTitle className="text-lg">{t("clientAddressInfo")}</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -696,7 +697,7 @@ export function ClientEditView({
 									description={getFieldDescription("street")}
 									required
 								>
-									Calle
+									{t("clientStreet")}
 								</LabelWithInfo>
 								<Input
 									id="street"
@@ -712,7 +713,7 @@ export function ClientEditView({
 									description={getFieldDescription("externalNumber")}
 									required
 								>
-									Número Ext.
+									{t("clientExteriorNumber")}
 								</LabelWithInfo>
 								<Input
 									id="externalNumber"
@@ -731,7 +732,7 @@ export function ClientEditView({
 									htmlFor="internalNumber"
 									description={getFieldDescription("internalNumber")}
 								>
-									Número Int.
+									{t("clientInteriorNumber")}
 								</LabelWithInfo>
 								<Input
 									id="internalNumber"
@@ -748,7 +749,7 @@ export function ClientEditView({
 									description={getFieldDescription("neighborhood")}
 									required
 								>
-									Colonia
+									{t("clientNeighborhood")}
 								</LabelWithInfo>
 								<Input
 									id="neighborhood"
@@ -766,7 +767,7 @@ export function ClientEditView({
 									description={getFieldDescription("postalCode")}
 									required
 								>
-									Código Postal
+									{t("clientPostalCode")}
 								</LabelWithInfo>
 								<Input
 									id="postalCode"
@@ -786,7 +787,7 @@ export function ClientEditView({
 									description={getFieldDescription("city")}
 									required
 								>
-									Ciudad
+									{t("clientCity")}
 								</LabelWithInfo>
 								<Input
 									id="city"
@@ -802,7 +803,7 @@ export function ClientEditView({
 									description={getFieldDescription("municipality")}
 									required
 								>
-									Municipio
+									{t("clientMunicipality")}
 								</LabelWithInfo>
 								<Input
 									id="municipality"
@@ -820,7 +821,7 @@ export function ClientEditView({
 									description={getFieldDescription("stateCode")}
 									required
 								>
-									Estado
+									{t("clientState")}
 								</LabelWithInfo>
 								<Input
 									id="stateCode"
@@ -834,7 +835,7 @@ export function ClientEditView({
 							</div>
 						</div>
 						<div className="space-y-2">
-							<Label htmlFor="reference">Referencia</Label>
+							<Label htmlFor="reference">{t("clientReference")}</Label>
 							<Input
 								id="reference"
 								value={formData.reference}
@@ -847,11 +848,13 @@ export function ClientEditView({
 
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">Notas de Cumplimiento</CardTitle>
+						<CardTitle className="text-lg">
+							{t("clientComplianceNotes")}
+						</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<div className="space-y-2">
-							<Label htmlFor="notes">Observaciones</Label>
+							<Label htmlFor="notes">{t("clientObservations")}</Label>
 							<Textarea
 								id="notes"
 								value={formData.notes}
@@ -859,7 +862,7 @@ export function ClientEditView({
 									handleInputChange("notes", e.target.value)
 								}
 								rows={4}
-								placeholder="Agregue notas relevantes sobre el cliente..."
+								placeholder={t("clientNotesPlaceholder")}
 							/>
 						</div>
 					</CardContent>

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
 import { PageHero } from "./page-hero";
 import {
 	Users,
@@ -12,6 +13,7 @@ import {
 	Save,
 	ArrowLeft,
 } from "lucide-react";
+import { renderWithProviders } from "@/lib/testHelpers";
 
 // Mock useIsMobile hook
 vi.mock("@/hooks/use-mobile", () => ({
@@ -48,7 +50,7 @@ describe("PageHero", () => {
 	});
 
 	it("renders title and subtitle", () => {
-		render(
+		renderWithProviders(
 			<PageHero
 				title="Test Title"
 				subtitle="Test Subtitle"
@@ -62,7 +64,7 @@ describe("PageHero", () => {
 	});
 
 	it("renders page icon", () => {
-		const { container } = render(
+		const { container } = renderWithProviders(
 			<PageHero
 				title="Test Title"
 				subtitle="Test Subtitle"
@@ -76,7 +78,7 @@ describe("PageHero", () => {
 	});
 
 	it("renders all stats cards", () => {
-		render(
+		renderWithProviders(
 			<PageHero
 				title="Test Title"
 				subtitle="Test Subtitle"
@@ -95,7 +97,7 @@ describe("PageHero", () => {
 
 	it("renders CTA button when onCtaClick is provided (legacy)", () => {
 		const handleClick = vi.fn();
-		render(
+		renderWithProviders(
 			<PageHero
 				title="Test Title"
 				subtitle="Test Subtitle"
@@ -109,7 +111,7 @@ describe("PageHero", () => {
 	});
 
 	it("does not render CTA button when onCtaClick is not provided", () => {
-		render(
+		renderWithProviders(
 			<PageHero
 				title="Test Title"
 				subtitle="Test Subtitle"
@@ -125,7 +127,7 @@ describe("PageHero", () => {
 	it("calls onCtaClick when CTA button is clicked (legacy)", async () => {
 		const user = userEvent.setup();
 		const handleClick = vi.fn();
-		render(
+		renderWithProviders(
 			<PageHero
 				title="Test Title"
 				subtitle="Test Subtitle"
@@ -144,7 +146,7 @@ describe("PageHero", () => {
 
 	it("renders custom CTA label (legacy)", () => {
 		const handleClick = vi.fn();
-		render(
+		renderWithProviders(
 			<PageHero
 				title="Test Title"
 				subtitle="Test Subtitle"
@@ -159,7 +161,7 @@ describe("PageHero", () => {
 	});
 
 	it("applies primary variant styling to primary stats", () => {
-		render(
+		renderWithProviders(
 			<PageHero
 				title="Test Title"
 				subtitle="Test Subtitle"
@@ -175,7 +177,7 @@ describe("PageHero", () => {
 	});
 
 	it("applies default variant styling to default stats", () => {
-		render(
+		renderWithProviders(
 			<PageHero
 				title="Test Title"
 				subtitle="Test Subtitle"
@@ -199,7 +201,7 @@ describe("PageHero", () => {
 			},
 		];
 
-		render(
+		renderWithProviders(
 			<PageHero
 				title="Test Title"
 				subtitle="Test Subtitle"
@@ -212,7 +214,7 @@ describe("PageHero", () => {
 	});
 
 	it("applies custom className", () => {
-		const { container } = render(
+		const { container } = renderWithProviders(
 			<PageHero
 				title="Test Title"
 				subtitle="Test Subtitle"
@@ -227,7 +229,7 @@ describe("PageHero", () => {
 	});
 
 	it("handles empty stats array - does not render stats section", () => {
-		const { container } = render(
+		const { container } = renderWithProviders(
 			<PageHero
 				title="Test Title"
 				subtitle="Test Subtitle"
@@ -257,7 +259,7 @@ describe("PageHero", () => {
 			},
 		];
 
-		render(
+		renderWithProviders(
 			<PageHero
 				title="Test Title"
 				subtitle="Test Subtitle"
@@ -276,7 +278,7 @@ describe("PageHero", () => {
 	// New tests for optional stats
 	describe("optional stats", () => {
 		it("renders without stats when stats prop is undefined", () => {
-			const { container } = render(
+			const { container } = renderWithProviders(
 				<PageHero title="Test Title" subtitle="Test Subtitle" icon={Users} />,
 			);
 
@@ -291,7 +293,7 @@ describe("PageHero", () => {
 	describe("multiple actions", () => {
 		it("renders single action on desktop", () => {
 			const handleClick = vi.fn();
-			render(
+			renderWithProviders(
 				<PageHero
 					title="Test Title"
 					subtitle="Test Subtitle"
@@ -308,7 +310,7 @@ describe("PageHero", () => {
 			const handleEdit = vi.fn();
 			const handleDelete = vi.fn();
 
-			render(
+			renderWithProviders(
 				<PageHero
 					title="Test Title"
 					subtitle="Test Subtitle"
@@ -340,7 +342,7 @@ describe("PageHero", () => {
 			const user = userEvent.setup();
 			const handleClick = vi.fn();
 
-			render(
+			renderWithProviders(
 				<PageHero
 					title="Test Title"
 					subtitle="Test Subtitle"
@@ -359,7 +361,7 @@ describe("PageHero", () => {
 		it("disables action button when disabled is true", () => {
 			const handleClick = vi.fn();
 
-			render(
+			renderWithProviders(
 				<PageHero
 					title="Test Title"
 					subtitle="Test Subtitle"
@@ -377,7 +379,7 @@ describe("PageHero", () => {
 		it("renders primary action as default variant", () => {
 			const handleClick = vi.fn();
 
-			render(
+			renderWithProviders(
 				<PageHero
 					title="Test Title"
 					subtitle="Test Subtitle"
@@ -392,7 +394,7 @@ describe("PageHero", () => {
 		});
 
 		it("renders secondary actions with correct variants", () => {
-			render(
+			renderWithProviders(
 				<PageHero
 					title="Test Title"
 					subtitle="Test Subtitle"
@@ -413,7 +415,7 @@ describe("PageHero", () => {
 			mockUseIsMobile.mockReturnValue(true);
 			const user = userEvent.setup();
 
-			render(
+			renderWithProviders(
 				<PageHero
 					title="Test Title"
 					subtitle="Test Subtitle"
@@ -442,7 +444,7 @@ describe("PageHero", () => {
 		it("renders back button when backButton prop is provided", () => {
 			const handleBack = vi.fn();
 
-			render(
+			renderWithProviders(
 				<PageHero
 					title="Test Title"
 					subtitle="Test Subtitle"
@@ -458,7 +460,7 @@ describe("PageHero", () => {
 		it("renders back button with custom label", () => {
 			const handleBack = vi.fn();
 
-			render(
+			renderWithProviders(
 				<PageHero
 					title="Test Title"
 					subtitle="Test Subtitle"
@@ -475,7 +477,7 @@ describe("PageHero", () => {
 			const user = userEvent.setup();
 			const handleBack = vi.fn();
 
-			render(
+			renderWithProviders(
 				<PageHero
 					title="Test Title"
 					subtitle="Test Subtitle"
@@ -497,7 +499,7 @@ describe("PageHero", () => {
 			const user = userEvent.setup();
 			const handleClick = vi.fn();
 
-			render(
+			renderWithProviders(
 				<PageHero
 					title="Test Title"
 					subtitle="Test Subtitle"
@@ -520,7 +522,7 @@ describe("PageHero", () => {
 			const handleLegacy = vi.fn();
 			const handleAction = vi.fn();
 
-			render(
+			renderWithProviders(
 				<PageHero
 					title="Test Title"
 					subtitle="Test Subtitle"

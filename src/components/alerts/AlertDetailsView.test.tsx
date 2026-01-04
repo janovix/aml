@@ -1,12 +1,14 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
 import { AlertDetailsView } from "./AlertDetailsView";
 import * as alertsApi from "@/lib/api/alerts";
 import * as clientsApi from "@/lib/api/clients";
 import * as mutations from "@/lib/mutations";
 import type { Alert } from "@/lib/api/alerts";
 import { mockClients } from "@/data/mockClients";
+import { renderWithProviders } from "@/lib/testHelpers";
 
 const mockNavigateTo = vi.fn();
 const mockOrgPath = vi.fn((path: string) => `/test-org${path}`);
@@ -97,6 +99,7 @@ const mockAlert: Alert = {
 describe("AlertDetailsView", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		vi.restoreAllMocks();
 		mockExecuteMutation.mockImplementation(async ({ mutation, onSuccess }) => {
 			const result = await mutation();
 			if (onSuccess) {
@@ -114,7 +117,7 @@ describe("AlertDetailsView", () => {
 				}),
 		);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		expect(screen.getByTestId("page-hero-skeleton")).toBeInTheDocument();
 	});
@@ -123,7 +126,7 @@ describe("AlertDetailsView", () => {
 		vi.mocked(alertsApi.getAlertById).mockResolvedValue(mockAlert);
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			expect(alertsApi.getAlertById).toHaveBeenCalledWith({
@@ -137,7 +140,7 @@ describe("AlertDetailsView", () => {
 		vi.mocked(alertsApi.getAlertById).mockResolvedValue(mockAlert);
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			const ruleNames = screen.getAllByText(
@@ -151,7 +154,7 @@ describe("AlertDetailsView", () => {
 		vi.mocked(alertsApi.getAlertById).mockResolvedValue(mockAlert);
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Código: 2501/)).toBeInTheDocument();
@@ -162,7 +165,7 @@ describe("AlertDetailsView", () => {
 		vi.mocked(alertsApi.getAlertById).mockResolvedValue(mockAlert);
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Detectada")).toBeInTheDocument();
@@ -173,7 +176,7 @@ describe("AlertDetailsView", () => {
 		vi.mocked(alertsApi.getAlertById).mockResolvedValue(mockAlert);
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Alta")).toBeInTheDocument();
@@ -184,7 +187,7 @@ describe("AlertDetailsView", () => {
 		vi.mocked(alertsApi.getAlertById).mockResolvedValue(mockAlert);
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			expect(
@@ -199,7 +202,7 @@ describe("AlertDetailsView", () => {
 		vi.mocked(alertsApi.getAlertById).mockResolvedValue(mockAlert);
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Automática")).toBeInTheDocument();
@@ -211,7 +214,7 @@ describe("AlertDetailsView", () => {
 		vi.mocked(alertsApi.getAlertById).mockResolvedValue(manualAlert);
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Manual")).toBeInTheDocument();
@@ -222,7 +225,7 @@ describe("AlertDetailsView", () => {
 		vi.mocked(alertsApi.getAlertById).mockResolvedValue(mockAlert);
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			expect(clientsApi.getClientById).toHaveBeenCalledWith({
@@ -239,7 +242,7 @@ describe("AlertDetailsView", () => {
 			new Error("Client not found"),
 		);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/ID del Cliente: /)).toBeInTheDocument();
@@ -250,7 +253,7 @@ describe("AlertDetailsView", () => {
 		vi.mocked(alertsApi.getAlertById).mockResolvedValue(mockAlert);
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Fecha Límite de Envío")).toBeInTheDocument();
@@ -266,7 +269,7 @@ describe("AlertDetailsView", () => {
 		vi.mocked(alertsApi.getAlertById).mockResolvedValue(overdueAlert);
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Vencida/)).toBeInTheDocument();
@@ -281,7 +284,7 @@ describe("AlertDetailsView", () => {
 		vi.mocked(alertsApi.getAlertById).mockResolvedValue(alertWithNotes);
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			expect(
@@ -298,7 +301,7 @@ describe("AlertDetailsView", () => {
 		vi.mocked(alertsApi.getAlertById).mockResolvedValue(alertWithTransaction);
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			expect(
@@ -315,7 +318,7 @@ describe("AlertDetailsView", () => {
 		vi.mocked(alertsApi.getAlertById).mockResolvedValue(alertWithMetadata);
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Metadatos")).toBeInTheDocument();
@@ -332,7 +335,7 @@ describe("AlertDetailsView", () => {
 		vi.mocked(alertsApi.getAlertById).mockResolvedValue(alertWithFile);
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			const fileGeneratedTexts = screen.getAllByText("Archivo Generado");
@@ -351,7 +354,7 @@ describe("AlertDetailsView", () => {
 		vi.mocked(alertsApi.getAlertById).mockResolvedValue(submittedAlert);
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Enviada a SAT")).toBeInTheDocument();
@@ -370,7 +373,7 @@ describe("AlertDetailsView", () => {
 		vi.mocked(alertsApi.getAlertById).mockResolvedValue(cancelledAlert);
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			const cancelledTexts = screen.getAllByText("Cancelada");
@@ -387,7 +390,7 @@ describe("AlertDetailsView", () => {
 		vi.mocked(alertsApi.getAlertById).mockResolvedValue(cancelledAlert);
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			expect(screen.queryByText("Cancelar Alerta")).not.toBeInTheDocument();
@@ -398,7 +401,7 @@ describe("AlertDetailsView", () => {
 		vi.mocked(alertsApi.getAlertById).mockResolvedValue(mockAlert);
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Cancelar Alerta")).toBeInTheDocument();
@@ -410,7 +413,7 @@ describe("AlertDetailsView", () => {
 		vi.mocked(alertsApi.getAlertById).mockResolvedValue(mockAlert);
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Cancelar Alerta")).toBeInTheDocument();
@@ -436,7 +439,7 @@ describe("AlertDetailsView", () => {
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 		vi.mocked(alertsApi.cancelAlert).mockResolvedValue(cancelledAlert);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Cancelar Alerta")).toBeInTheDocument();
@@ -473,7 +476,7 @@ describe("AlertDetailsView", () => {
 		vi.mocked(alertsApi.getAlertById).mockResolvedValue(mockAlert);
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			// PageHero renders the back button, find it by role or text
@@ -492,7 +495,7 @@ describe("AlertDetailsView", () => {
 			new Error("Alert not found"),
 		);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			expect(mockNavigateTo).toHaveBeenCalledWith("/alerts");
@@ -511,7 +514,7 @@ describe("AlertDetailsView", () => {
 			null as unknown as Alert,
 		);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Alerta no encontrada")).toBeInTheDocument();
@@ -530,7 +533,9 @@ describe("AlertDetailsView", () => {
 			vi.mocked(alertsApi.getAlertById).mockResolvedValue(alert);
 			vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-			const { unmount } = render(<AlertDetailsView alertId="alert-1" />);
+			const { unmount } = renderWithProviders(
+				<AlertDetailsView alertId="alert-1" />,
+			);
 
 			await waitFor(() => {
 				const severityLabels: Record<typeof severity, string> = {
@@ -561,7 +566,9 @@ describe("AlertDetailsView", () => {
 			vi.mocked(alertsApi.getAlertById).mockResolvedValue(alert);
 			vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-			const { unmount } = render(<AlertDetailsView alertId="alert-1" />);
+			const { unmount } = renderWithProviders(
+				<AlertDetailsView alertId="alert-1" />,
+			);
 
 			await waitFor(() => {
 				const statusLabels: Record<typeof status, string> = {
@@ -582,7 +589,7 @@ describe("AlertDetailsView", () => {
 		vi.mocked(alertsApi.getAlertById).mockResolvedValue(mockAlert);
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			// Check that created date is displayed (formatted)
@@ -594,7 +601,7 @@ describe("AlertDetailsView", () => {
 		vi.mocked(alertsApi.getAlertById).mockResolvedValue(mockAlert);
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			expect(screen.queryByText("Actualizada")).not.toBeInTheDocument();
@@ -609,10 +616,144 @@ describe("AlertDetailsView", () => {
 		vi.mocked(alertsApi.getAlertById).mockResolvedValue(updatedAlert);
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
-		render(<AlertDetailsView alertId="alert-1" />);
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Actualizada")).toBeInTheDocument();
+		});
+	});
+
+	it("shows download XML button when satFileUrl is available", async () => {
+		const alertWithFile = {
+			...mockAlert,
+			status: "FILE_GENERATED" as const,
+			satFileUrl: "https://example.com/file.xml",
+		};
+		vi.mocked(alertsApi.getAlertById).mockResolvedValue(alertWithFile);
+		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
+
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Descargar XML")).toBeInTheDocument();
+		});
+	});
+
+	it("does not show download XML button when satFileUrl is not available", async () => {
+		vi.mocked(alertsApi.getAlertById).mockResolvedValue(mockAlert);
+		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
+
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Cancelar Alerta")).toBeInTheDocument();
+		});
+
+		expect(screen.queryByText("Descargar XML")).not.toBeInTheDocument();
+	});
+
+	it("triggers download when download XML button is clicked", async () => {
+		const user = userEvent.setup();
+		const mockBlob = new Blob(["<xml></xml>"], { type: "application/xml" });
+		const mockUrl = "blob:https://example.com/mock-blob-url";
+		const alertWithFile = {
+			...mockAlert,
+			status: "FILE_GENERATED" as const,
+			satFileUrl: "https://example.com/file.xml",
+		};
+
+		vi.mocked(alertsApi.getAlertById).mockResolvedValue(alertWithFile);
+		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
+
+		// Mock fetch
+		const mockFetch = vi.fn().mockResolvedValue({
+			ok: true,
+			blob: () => Promise.resolve(mockBlob),
+		});
+		global.fetch = mockFetch;
+
+		// Mock URL.createObjectURL
+		const mockCreateObjectURL = vi.fn().mockReturnValue(mockUrl);
+		const mockRevokeObjectURL = vi.fn();
+		global.URL.createObjectURL = mockCreateObjectURL;
+		global.URL.revokeObjectURL = mockRevokeObjectURL;
+
+		// Render first, then mock document methods for the download action
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Descargar XML")).toBeInTheDocument();
+		});
+
+		// Mock document.createElement and appendChild/removeChild AFTER initial render
+		const mockAnchor = {
+			href: "",
+			download: "",
+			click: vi.fn(),
+		} as unknown as HTMLAnchorElement;
+		const originalCreateElement = document.createElement.bind(document);
+		const createElementSpy = vi
+			.spyOn(document, "createElement")
+			.mockImplementation((tagName) => {
+				if (tagName === "a") return mockAnchor;
+				return originalCreateElement(tagName);
+			});
+		const appendChildSpy = vi
+			.spyOn(document.body, "appendChild")
+			.mockImplementation(() => mockAnchor);
+		const removeChildSpy = vi
+			.spyOn(document.body, "removeChild")
+			.mockImplementation(() => mockAnchor);
+
+		const downloadButton = screen.getByText("Descargar XML");
+		await user.click(downloadButton);
+
+		await waitFor(() => {
+			expect(mockFetch).toHaveBeenCalledWith("https://example.com/file.xml");
+			expect(mockCreateObjectURL).toHaveBeenCalledWith(mockBlob);
+			expect(mockAnchor.click).toHaveBeenCalled();
+			expect(mockAnchor.download).toBe("alerta-2501-alert-1.xml");
+			expect(mockRevokeObjectURL).toHaveBeenCalledWith(mockUrl);
+		});
+
+		// Clean up spies
+		createElementSpy.mockRestore();
+		appendChildSpy.mockRestore();
+		removeChildSpy.mockRestore();
+	});
+
+	it("shows error toast when download fails", async () => {
+		const user = userEvent.setup();
+		const alertWithFile = {
+			...mockAlert,
+			status: "FILE_GENERATED" as const,
+			satFileUrl: "https://example.com/file.xml",
+		};
+
+		vi.mocked(alertsApi.getAlertById).mockResolvedValue(alertWithFile);
+		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
+
+		// Mock fetch to fail
+		global.fetch = vi.fn().mockResolvedValue({
+			ok: false,
+		});
+
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Descargar XML")).toBeInTheDocument();
+		});
+
+		const downloadButton = screen.getByText("Descargar XML");
+		await user.click(downloadButton);
+
+		await waitFor(() => {
+			expect(mockToast).toHaveBeenCalledWith(
+				expect.objectContaining({
+					title: "Error al descargar el archivo XML",
+					variant: "destructive",
+				}),
+			);
 		});
 	});
 });

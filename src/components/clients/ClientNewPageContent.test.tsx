@@ -1,7 +1,22 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ClientNewPageContent } from "./ClientNewPageContent";
+import { renderWithProviders } from "@/lib/testHelpers";
+
+// Mock cookies module to return Spanish language for tests
+vi.mock("@/lib/cookies", () => ({
+	getCookie: (name: string) => {
+		if (name === "janovix-lang") return "es";
+		return undefined;
+	},
+	setCookie: vi.fn(),
+	deleteCookie: vi.fn(),
+	COOKIE_NAMES: {
+		THEME: "janovix-theme",
+		LANGUAGE: "janovix-lang",
+	},
+}));
 
 const mockPush = vi.fn();
 const mockToast = vi.fn();
@@ -25,14 +40,14 @@ describe("ClientNewPageContent", () => {
 	});
 
 	it("renders new client form", () => {
-		render(<ClientNewPageContent />);
+		renderWithProviders(<ClientNewPageContent />);
 
 		expect(screen.getByText("Nuevo Cliente")).toBeInTheDocument();
 		expect(screen.getByLabelText("RFC *")).toBeInTheDocument();
 	});
 
 	it("renders all form sections", () => {
-		render(<ClientNewPageContent />);
+		renderWithProviders(<ClientNewPageContent />);
 
 		const basicInfoElements = screen.getAllByText("Información Básica");
 		const addressElements = screen.getAllByText("Dirección");
@@ -41,7 +56,7 @@ describe("ClientNewPageContent", () => {
 	});
 
 	it("renders all required form fields", () => {
-		render(<ClientNewPageContent />);
+		renderWithProviders(<ClientNewPageContent />);
 
 		expect(screen.getByLabelText("RFC *")).toBeInTheDocument();
 		expect(screen.getByLabelText("Tipo de Persona *")).toBeInTheDocument();
@@ -50,7 +65,7 @@ describe("ClientNewPageContent", () => {
 	});
 
 	it("renders cancel and create buttons", () => {
-		render(<ClientNewPageContent />);
+		renderWithProviders(<ClientNewPageContent />);
 
 		const cancelButtons = screen.getAllByText("Cancelar");
 		const createButtons = screen.getAllByText("Crear Cliente");
@@ -59,7 +74,7 @@ describe("ClientNewPageContent", () => {
 	});
 
 	it("renders address fields", () => {
-		render(<ClientNewPageContent />);
+		renderWithProviders(<ClientNewPageContent />);
 
 		expect(screen.getByLabelText("Calle")).toBeInTheDocument();
 		expect(screen.getByLabelText("Número Exterior")).toBeInTheDocument();
@@ -68,7 +83,7 @@ describe("ClientNewPageContent", () => {
 
 	it("navigates to clients page when cancel is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ClientNewPageContent />);
+		renderWithProviders(<ClientNewPageContent />);
 
 		const cancelButtons = screen.getAllByRole("button", { name: /cancelar/i });
 		await user.click(cancelButtons[0]);
@@ -78,7 +93,7 @@ describe("ClientNewPageContent", () => {
 
 	it("navigates to clients page when back button is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ClientNewPageContent />);
+		renderWithProviders(<ClientNewPageContent />);
 
 		const backButton = screen.getByRole("button", { name: /volver/i });
 		await user.click(backButton);
@@ -88,7 +103,7 @@ describe("ClientNewPageContent", () => {
 
 	it("updates form fields when user types", async () => {
 		const user = userEvent.setup();
-		render(<ClientNewPageContent />);
+		renderWithProviders(<ClientNewPageContent />);
 
 		const rfcInput = screen.getByLabelText("RFC *");
 		await user.type(rfcInput, "ABC123456789");
@@ -98,7 +113,7 @@ describe("ClientNewPageContent", () => {
 
 	it("updates email field when user types", async () => {
 		const user = userEvent.setup();
-		render(<ClientNewPageContent />);
+		renderWithProviders(<ClientNewPageContent />);
 
 		const emailInput = screen.getByLabelText("Email *");
 		await user.type(emailInput, "test@example.com");
@@ -108,7 +123,7 @@ describe("ClientNewPageContent", () => {
 
 	it("updates phone field when user types", async () => {
 		const user = userEvent.setup();
-		render(<ClientNewPageContent />);
+		renderWithProviders(<ClientNewPageContent />);
 
 		const phoneInput = screen.getByLabelText("Teléfono *");
 		await user.type(phoneInput, "1234567890");
@@ -124,7 +139,7 @@ describe("ClientNewPageContent", () => {
 
 	it("shows physical person name fields when physical person type is selected", async () => {
 		const user = userEvent.setup();
-		render(<ClientNewPageContent />);
+		renderWithProviders(<ClientNewPageContent />);
 
 		// Initially, name fields should not be visible
 		expect(screen.queryByLabelText("Nombre *")).not.toBeInTheDocument();
@@ -142,7 +157,7 @@ describe("ClientNewPageContent", () => {
 
 	it("shows business name field when moral person type is selected", async () => {
 		const user = userEvent.setup();
-		render(<ClientNewPageContent />);
+		renderWithProviders(<ClientNewPageContent />);
 
 		// Select moral person type
 		const personTypeSelect = screen.getByLabelText("Tipo de Persona *");
@@ -157,7 +172,7 @@ describe("ClientNewPageContent", () => {
 
 	it("shows business name field when trust person type is selected", async () => {
 		const user = userEvent.setup();
-		render(<ClientNewPageContent />);
+		renderWithProviders(<ClientNewPageContent />);
 
 		// Select trust person type
 		const personTypeSelect = screen.getByLabelText("Tipo de Persona *");
@@ -170,7 +185,7 @@ describe("ClientNewPageContent", () => {
 
 	it("allows entering first name for physical person", async () => {
 		const user = userEvent.setup();
-		render(<ClientNewPageContent />);
+		renderWithProviders(<ClientNewPageContent />);
 
 		// Select physical person type
 		const personTypeSelect = screen.getByLabelText("Tipo de Persona *");
@@ -186,7 +201,7 @@ describe("ClientNewPageContent", () => {
 
 	it("allows entering last names for physical person", async () => {
 		const user = userEvent.setup();
-		render(<ClientNewPageContent />);
+		renderWithProviders(<ClientNewPageContent />);
 
 		// Select physical person type
 		const personTypeSelect = screen.getByLabelText("Tipo de Persona *");
@@ -206,7 +221,7 @@ describe("ClientNewPageContent", () => {
 
 	it("allows entering business name for moral person", async () => {
 		const user = userEvent.setup();
-		render(<ClientNewPageContent />);
+		renderWithProviders(<ClientNewPageContent />);
 
 		// Select moral person type
 		const personTypeSelect = screen.getByLabelText("Tipo de Persona *");
@@ -222,7 +237,7 @@ describe("ClientNewPageContent", () => {
 
 	it("allows entering address fields", async () => {
 		const user = userEvent.setup();
-		render(<ClientNewPageContent />);
+		renderWithProviders(<ClientNewPageContent />);
 
 		const streetInput = screen.getByLabelText("Calle");
 		await user.type(streetInput, "Av. Reforma");
@@ -256,7 +271,7 @@ describe("ClientNewPageContent", () => {
 
 	it("submits form and shows success toast", async () => {
 		const user = userEvent.setup();
-		render(<ClientNewPageContent />);
+		renderWithProviders(<ClientNewPageContent />);
 
 		// Click the submit button
 		const createButtons = screen.getAllByRole("button", {
@@ -282,7 +297,7 @@ describe("ClientNewPageContent", () => {
 
 	it("shows loading state during form submission", async () => {
 		const user = userEvent.setup();
-		render(<ClientNewPageContent />);
+		renderWithProviders(<ClientNewPageContent />);
 
 		// Click the submit button
 		const createButtons = screen.getAllByRole("button", {
@@ -298,7 +313,7 @@ describe("ClientNewPageContent", () => {
 
 	it("submits form via form submit event", async () => {
 		const user = userEvent.setup();
-		render(<ClientNewPageContent />);
+		renderWithProviders(<ClientNewPageContent />);
 
 		// Fill in a required field and submit via the form
 		const rfcInput = screen.getByLabelText("RFC *");

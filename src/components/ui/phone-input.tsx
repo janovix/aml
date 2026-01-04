@@ -5,8 +5,11 @@ import { CheckIcon, ChevronsUpDown } from "lucide-react";
 import * as RPNInput from "react-phone-number-input";
 import type { Country, Value as PhoneValue } from "react-phone-number-input";
 import flags from "react-phone-number-input/flags";
+import esLabels from "react-phone-number-input/locale/es.json";
+import enLabels from "react-phone-number-input/locale/en.json";
 
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/components/LanguageProvider";
 import { Button } from "@/components/ui/button";
 import {
 	Command,
@@ -39,6 +42,13 @@ const PhoneInput = React.forwardRef<
 	React.ElementRef<typeof RPNInput.default>,
 	PhoneInputProps
 >(({ className, onChange, value, ...props }, ref) => {
+	const { language } = useLanguage();
+
+	// Get localized labels based on current language
+	const labels = React.useMemo(() => {
+		return language === "es" ? esLabels : enLabels;
+	}, [language]);
+
 	// Normalize phone value to E.164 format (remove spaces) before passing to library
 	const normalizedValue = React.useMemo(() => {
 		if (!value || typeof value !== "string") {
@@ -59,6 +69,7 @@ const PhoneInput = React.forwardRef<
 			smartCaret={false}
 			defaultCountry="MX"
 			value={normalizedValue}
+			labels={labels}
 			/**
 			 * Handles the onChange event.
 			 *
@@ -102,6 +113,7 @@ const CountrySelect = ({
 	options: countryList,
 	onChange,
 }: CountrySelectProps) => {
+	const { t } = useLanguage();
 	const scrollAreaRef = React.useRef<HTMLDivElement>(null);
 	const [searchValue, setSearchValue] = React.useState("");
 	const [isOpen, setIsOpen] = React.useState(false);
@@ -151,11 +163,11 @@ const CountrySelect = ({
 								}
 							}, 0);
 						}}
-						placeholder="Search country..."
+						placeholder={t("phoneInputSearchCountry")}
 					/>
 					<CommandList>
 						<ScrollArea ref={scrollAreaRef} className="h-72">
-							<CommandEmpty>No country found.</CommandEmpty>
+							<CommandEmpty>{t("phoneInputNoCountryFound")}</CommandEmpty>
 							<CommandGroup>
 								{countryList.map(({ value, label }) =>
 									value ? (

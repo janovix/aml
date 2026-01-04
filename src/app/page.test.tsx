@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
 import IndexPage from "./page";
+import { renderWithProviders, t } from "@/lib/testHelpers";
 
 // Mock next/navigation
 const mockReplace = vi.fn();
@@ -73,16 +75,14 @@ describe("IndexPage", () => {
 		});
 		mockListOrganizations.mockReturnValue(orgsPromise);
 
-		render(<IndexPage />);
+		renderWithProviders(<IndexPage />);
 
 		expect(screen.getAllByTestId("skeleton").length).toBeGreaterThan(0);
 
 		resolveOrgs!({ data: { organizations: [], activeOrganizationId: null } });
 
 		await waitFor(() => {
-			expect(
-				screen.getByText("Create your first organization"),
-			).toBeInTheDocument();
+			expect(screen.getByText(t("orgCreateFirstTitle"))).toBeInTheDocument();
 		});
 	});
 
@@ -91,18 +91,16 @@ describe("IndexPage", () => {
 			data: { organizations: [], activeOrganizationId: null },
 		});
 
-		render(<IndexPage />);
+		renderWithProviders(<IndexPage />);
 
 		await waitFor(() => {
-			expect(
-				screen.getByText("Create your first organization"),
-			).toBeInTheDocument();
+			expect(screen.getByText(t("orgCreateFirstTitle"))).toBeInTheDocument();
 		});
 
-		expect(screen.getByLabelText("Name")).toBeInTheDocument();
-		expect(screen.getByLabelText("Slug (URL identifier)")).toBeInTheDocument();
+		expect(screen.getByLabelText(t("orgNameLabel"))).toBeInTheDocument();
+		expect(screen.getByLabelText(t("orgSlugLabel"))).toBeInTheDocument();
 		expect(
-			screen.getByRole("button", { name: "Create organization" }),
+			screen.getByRole("button", { name: t("orgCreateButton") }),
 		).toBeInTheDocument();
 	});
 
@@ -111,7 +109,7 @@ describe("IndexPage", () => {
 			data: { organizations: [mockOrg1], activeOrganizationId: null },
 		});
 
-		render(<IndexPage />);
+		renderWithProviders(<IndexPage />);
 
 		await waitFor(() => {
 			expect(mockSetActiveOrganization).toHaveBeenCalledWith(mockOrg1.id);
@@ -127,10 +125,10 @@ describe("IndexPage", () => {
 			data: { organizations: [mockOrg1, mockOrg2], activeOrganizationId: null },
 		});
 
-		render(<IndexPage />);
+		renderWithProviders(<IndexPage />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Select an organization")).toBeInTheDocument();
+			expect(screen.getByText(t("orgSelectTitle"))).toBeInTheDocument();
 		});
 
 		expect(screen.getByText(mockOrg1.name)).toBeInTheDocument();
@@ -145,7 +143,7 @@ describe("IndexPage", () => {
 			},
 		});
 
-		render(<IndexPage />);
+		renderWithProviders(<IndexPage />);
 
 		await waitFor(() => {
 			expect(mockReplace).toHaveBeenCalledWith(`/${mockOrg2.slug}/clients`);
@@ -159,10 +157,10 @@ describe("IndexPage", () => {
 			data: { organizations: [mockOrg1, mockOrg2], activeOrganizationId: null },
 		});
 
-		render(<IndexPage />);
+		renderWithProviders(<IndexPage />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Select an organization")).toBeInTheDocument();
+			expect(screen.getByText(t("orgSelectTitle"))).toBeInTheDocument();
 		});
 
 		await user.click(screen.getByText(mockOrg1.name));
@@ -192,17 +190,18 @@ describe("IndexPage", () => {
 
 		mockCreateOrganization.mockResolvedValue({ data: newOrg });
 
-		render(<IndexPage />);
+		renderWithProviders(<IndexPage />);
 
 		await waitFor(() => {
-			expect(
-				screen.getByText("Create your first organization"),
-			).toBeInTheDocument();
+			expect(screen.getByText(t("orgCreateFirstTitle"))).toBeInTheDocument();
 		});
 
-		await user.type(screen.getByLabelText("Name"), "New Organization");
+		await user.type(
+			screen.getByLabelText(t("orgNameLabel")),
+			"New Organization",
+		);
 		await user.click(
-			screen.getByRole("button", { name: "Create organization" }),
+			screen.getByRole("button", { name: t("orgCreateButton") }),
 		);
 
 		await waitFor(() => {
@@ -223,11 +222,11 @@ describe("IndexPage", () => {
 			data: null,
 		});
 
-		render(<IndexPage />);
+		renderWithProviders(<IndexPage />);
 
 		await waitFor(() => {
 			expect(mockToastError).toHaveBeenCalledWith(
-				"Error loading organizations",
+				t("orgErrorLoading"),
 				expect.objectContaining({
 					description: "Network error",
 				}),
@@ -242,15 +241,13 @@ describe("IndexPage", () => {
 			data: { organizations: [], activeOrganizationId: null },
 		});
 
-		render(<IndexPage />);
+		renderWithProviders(<IndexPage />);
 
 		await waitFor(() => {
-			expect(
-				screen.getByText("Create your first organization"),
-			).toBeInTheDocument();
+			expect(screen.getByText(t("orgCreateFirstTitle"))).toBeInTheDocument();
 		});
 
-		await user.type(screen.getByLabelText("Name"), "My Test Org");
+		await user.type(screen.getByLabelText(t("orgNameLabel")), "My Test Org");
 
 		await waitFor(() => {
 			expect(screen.getByText("my-test-org")).toBeInTheDocument();
@@ -264,15 +261,13 @@ describe("IndexPage", () => {
 			data: { organizations: [], activeOrganizationId: null },
 		});
 
-		render(<IndexPage />);
+		renderWithProviders(<IndexPage />);
 
 		await waitFor(() => {
-			expect(
-				screen.getByText("Create your first organization"),
-			).toBeInTheDocument();
+			expect(screen.getByText(t("orgCreateFirstTitle"))).toBeInTheDocument();
 		});
 
-		await user.type(screen.getByLabelText("Slug (URL identifier)"), "custom");
+		await user.type(screen.getByLabelText(t("orgSlugLabel")), "custom");
 
 		await waitFor(() => {
 			expect(screen.getByText("custom")).toBeInTheDocument();
@@ -284,15 +279,13 @@ describe("IndexPage", () => {
 			data: { organizations: [], activeOrganizationId: null },
 		});
 
-		render(<IndexPage />);
+		renderWithProviders(<IndexPage />);
 
 		await waitFor(() => {
-			expect(
-				screen.getByText("Create your first organization"),
-			).toBeInTheDocument();
+			expect(screen.getByText(t("orgCreateFirstTitle"))).toBeInTheDocument();
 		});
 
-		const button = screen.getByRole("button", { name: "Create organization" });
+		const button = screen.getByRole("button", { name: t("orgCreateButton") });
 		expect(button).toBeDisabled();
 	});
 });

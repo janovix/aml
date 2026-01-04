@@ -23,6 +23,7 @@ import { useToast } from "../../hooks/use-toast";
 import { PageHero } from "@/components/page-hero";
 import { PageHeroSkeleton } from "@/components/skeletons";
 import { getPersonTypeStyle } from "../../lib/person-type-icon";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface ClientDetailsViewProps {
 	clientId: string; // Client ID
@@ -33,6 +34,7 @@ export function ClientDetailsView({
 }: ClientDetailsViewProps): React.JSX.Element {
 	const { navigateTo } = useOrgNavigation();
 	const { toast } = useToast();
+	const { t } = useLanguage();
 	const [client, setClient] = useState<Client | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 
@@ -47,8 +49,8 @@ export function ClientDetailsView({
 			} catch (error) {
 				console.error("Error fetching client:", error);
 				toast({
-					title: "Error",
-					description: "No se pudo cargar la información del cliente.",
+					title: t("errorGeneric"),
+					description: t("clientLoadError"),
 					variant: "destructive",
 				});
 			} finally {
@@ -94,11 +96,11 @@ export function ClientDetailsView({
 		return (
 			<div className="space-y-6">
 				<PageHero
-					title="Cliente no encontrado"
-					subtitle={`El cliente con ID ${clientId} no existe`}
+					title={t("clientNotFound")}
+					subtitle={`${t("clientNotExist")} (ID: ${clientId})`}
 					icon={User}
 					backButton={{
-						label: "Volver a Clientes",
+						label: t("clientBackToClients"),
 						onClick: () => navigateTo("/clients"),
 					}}
 				/>
@@ -117,37 +119,37 @@ export function ClientDetailsView({
 	return (
 		<div className="space-y-6">
 			<PageHero
-				title="Detalles del Cliente"
+				title={t("clientDetailsTitle")}
 				subtitle={getClientDisplayName(client)}
 				icon={client.personType === "physical" ? User : Building2}
 				backButton={{
-					label: "Volver a Clientes",
+					label: t("clientBackToClients"),
 					onClick: () => navigateTo("/clients"),
 				}}
 				actions={[
 					{
-						label: "Editar",
+						label: t("edit"),
 						icon: Edit,
 						onClick: () => navigateTo(`/clients/${clientId}/edit`),
 					},
 					{
-						label: "Generar Reporte",
+						label: t("generateReport"),
 						icon: FileText,
 						onClick: () => {
 							toast({
-								title: "Próximamente",
-								description: "Función en desarrollo",
+								title: t("comingSoon"),
+								description: t("featureInDevelopment"),
 							});
 						},
 						variant: "outline",
 					},
 					{
-						label: "Marcar Sospechoso",
+						label: t("markSuspicious"),
 						icon: Flag,
 						onClick: () => {
 							toast({
-								title: "Próximamente",
-								description: "Función en desarrollo",
+								title: t("comingSoon"),
+								description: t("featureInDevelopment"),
 							});
 						},
 						variant: "outline",
@@ -155,7 +157,7 @@ export function ClientDetailsView({
 				]}
 			/>
 
-			<div className="space-y-6">
+			<div className="space-y-6 pb-6">
 				{/* Información General Card - Enhanced with Person Type */}
 				{(() => {
 					const personTypeStyle = getPersonTypeStyle(client.personType);
@@ -213,12 +215,12 @@ export function ClientDetailsView({
 							{client.personType === "physical" ? (
 								<>
 									<User className="h-5 w-5" />
-									Datos Personales
+									{t("clientPersonalData")}
 								</>
 							) : (
 								<>
 									<Building2 className="h-5 w-5" />
-									Datos de la Empresa
+									{t("clientCompanyData")}
 								</>
 							)}
 						</CardTitle>
@@ -227,20 +229,22 @@ export function ClientDetailsView({
 						<dl className="grid grid-cols-1 md:grid-cols-2 gap-6">
 							<div>
 								<dt className="text-sm font-medium text-muted-foreground mb-1">
-									{client.personType === "physical" ? "Nombre" : "Razón Social"}
+									{client.personType === "physical"
+										? t("clientFirstName")
+										: t("clientBusinessName")}
 								</dt>
 								<dd className="text-base">{getClientDisplayName(client)}</dd>
 							</div>
 							<div>
 								<dt className="text-sm font-medium text-muted-foreground mb-1">
-									RFC
+									{t("clientRfc")}
 								</dt>
 								<dd className="text-base font-mono">{client.rfc}</dd>
 							</div>
 							{client.personType === "physical" && client.birthDate && (
 								<div>
 									<dt className="text-sm font-medium text-muted-foreground mb-1">
-										Fecha de Nacimiento
+										{t("clientBirthDate")}
 									</dt>
 									<dd className="text-base">{formatDate(client.birthDate)}</dd>
 								</div>
@@ -250,7 +254,7 @@ export function ClientDetailsView({
 								client.incorporationDate && (
 									<div>
 										<dt className="text-sm font-medium text-muted-foreground mb-1">
-											Fecha de Constitución
+											{t("clientConstitutionDate")}
 										</dt>
 										<dd className="text-base">
 											{formatDate(client.incorporationDate)}
@@ -265,7 +269,7 @@ export function ClientDetailsView({
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2 text-lg">
 							<Phone className="h-5 w-5" />
-							Información de Contacto
+							{t("clientContactInfo")}
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
@@ -273,21 +277,21 @@ export function ClientDetailsView({
 							<div>
 								<dt className="text-sm font-medium text-muted-foreground mb-1 flex items-center gap-2">
 									<Mail className="h-4 w-4" />
-									Email
+									{t("clientEmail")}
 								</dt>
 								<dd className="text-base">{client.email}</dd>
 							</div>
 							<div>
 								<dt className="text-sm font-medium text-muted-foreground mb-1 flex items-center gap-2">
 									<Phone className="h-4 w-4" />
-									Teléfono
+									{t("clientPhone")}
 								</dt>
 								<dd className="text-base">{client.phone}</dd>
 							</div>
 							<div className="md:col-span-2">
 								<dt className="text-sm font-medium text-muted-foreground mb-1 flex items-center gap-2">
 									<MapPin className="h-4 w-4" />
-									Dirección
+									{t("clientAddressInfo")}
 								</dt>
 								<dd className="text-base">
 									{client.street} {client.externalNumber}
@@ -307,20 +311,20 @@ export function ClientDetailsView({
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2 text-lg">
 							<Calendar className="h-5 w-5" />
-							Historial de Transacciones
+							{t("clientTransactionHistory")}
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
 							<div>
 								<dt className="text-sm font-medium text-muted-foreground mb-1">
-									Fecha de Registro
+									{t("clientRegistrationDate")}
 								</dt>
 								<dd className="text-base">{formatDate(client.createdAt)}</dd>
 							</div>
 							<div>
 								<dt className="text-sm font-medium text-muted-foreground mb-1">
-									Última Actualización
+									{t("clientLastUpdate")}
 								</dt>
 								<dd className="text-base">{formatDate(client.updatedAt)}</dd>
 							</div>
@@ -330,15 +334,17 @@ export function ClientDetailsView({
 
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">Notas de Cumplimiento</CardTitle>
+						<CardTitle className="text-lg">
+							{t("clientComplianceNotes")}
+						</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<p className="text-sm text-muted-foreground leading-relaxed">
-							{client.notes || "Sin notas adicionales."}
+							{client.notes || t("clientNoNotes")}
 						</p>
 						<div className="mt-4 pt-4 border-t">
 							<p className="text-sm text-muted-foreground">
-								<span className="font-medium">Última actualización:</span>{" "}
+								<span className="font-medium">{t("clientLastUpdate")}:</span>{" "}
 								{formatDate(client.updatedAt)}
 							</p>
 						</div>

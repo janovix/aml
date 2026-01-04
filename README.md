@@ -42,16 +42,30 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser.
 
+### Local Development with Deployed Auth
+
+For frontend development using the deployed auth service (recommended for most use cases), see **[LOCAL_DEV_SETUP.md](./LOCAL_DEV_SETUP.md)**.
+
+This setup allows you to:
+
+- Run the Next.js frontend locally via `https://aml-local.janovix.workers.dev`
+- Use deployed auth at `auth.janovix.workers.dev` (no local auth setup needed)
+- Optionally use deployed or local `aml-svc` backend
+
 ### Environment Variables
 
-Create a `.dev.vars` file (or set environment variables) with:
+Create a `.env.local` file with:
 
 ```env
-AUTH_SERVICE_URL=https://auth-svc.janovix.workers.dev
-AUTH_APP_URL=https://auth.janovix.com
-AML_SERVICE_URL=https://aml-svc.janovix.workers.dev
-IMPORT_SERVICE_URL=https://import-svc.janovix.workers.dev
+# Auth Configuration (deployed dev environment)
+NEXT_PUBLIC_AUTH_APP_URL=https://auth.janovix.workers.dev
+NEXT_PUBLIC_AUTH_SERVICE_URL=https://auth-svc.janovix.workers.dev
+
+# AML Backend API
+NEXT_PUBLIC_AML_CORE_URL=https://aml-svc.janovix.workers.dev
 ```
+
+See [LOCAL_DEV_SETUP.md](./LOCAL_DEV_SETUP.md) for full configuration options.
 
 ## Project Structure
 

@@ -1,7 +1,22 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ClientsPageContent } from "./ClientsPageContent";
+import { renderWithProviders } from "@/lib/testHelpers";
+
+// Mock cookies module to return Spanish language for tests
+vi.mock("@/lib/cookies", () => ({
+	getCookie: (name: string) => {
+		if (name === "janovix-lang") return "es";
+		return undefined;
+	},
+	setCookie: vi.fn(),
+	deleteCookie: vi.fn(),
+	COOKIE_NAMES: {
+		THEME: "janovix-theme",
+		LANGUAGE: "janovix-lang",
+	},
+}));
 
 const mockPush = vi.fn();
 
@@ -21,7 +36,7 @@ describe("ClientsPageContent", () => {
 	});
 
 	it("renders page header", () => {
-		render(<ClientsPageContent />);
+		renderWithProviders(<ClientsPageContent />);
 
 		const clientesHeaders = screen.getAllByText("Clientes");
 		const gestionTexts = screen.getAllByText("Gestión y monitoreo de clientes");
@@ -30,7 +45,7 @@ describe("ClientsPageContent", () => {
 	});
 
 	it("renders new client button", () => {
-		render(<ClientsPageContent />);
+		renderWithProviders(<ClientsPageContent />);
 
 		const newButtons = screen.getAllByRole("button", {
 			name: /nuevo cliente/i,
@@ -40,7 +55,7 @@ describe("ClientsPageContent", () => {
 
 	it("navigates to new client page when button is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ClientsPageContent />);
+		renderWithProviders(<ClientsPageContent />);
 
 		const newButtons = screen.getAllByRole("button", {
 			name: /nuevo cliente/i,
@@ -51,7 +66,7 @@ describe("ClientsPageContent", () => {
 	});
 
 	it("renders KPI cards", () => {
-		render(<ClientsPageContent />);
+		renderWithProviders(<ClientsPageContent />);
 
 		const alertas = screen.getAllByText("Alertas Abiertas");
 		const total = screen.getAllByText("Total Clientes");
@@ -60,7 +75,7 @@ describe("ClientsPageContent", () => {
 	});
 
 	it("renders clients table with built-in search", () => {
-		render(<ClientsPageContent />);
+		renderWithProviders(<ClientsPageContent />);
 
 		// Check for the DataTable by looking for search placeholder
 		const searchInputs = screen.getAllByPlaceholderText(/buscar/i);

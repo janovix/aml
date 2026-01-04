@@ -14,6 +14,7 @@ import {
 	FileText,
 	User,
 	Plus,
+	Download,
 } from "lucide-react";
 import Link from "next/link";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
@@ -56,6 +57,7 @@ import {
 } from "@/components/data-table";
 import { formatProperNoun } from "@/lib/utils";
 import { PageHero, type StatCard } from "@/components/page-hero";
+import { useLanguage } from "@/components/LanguageProvider";
 
 /**
  * Extended alert row with resolved client and rule names
@@ -72,6 +74,7 @@ interface AlertRow {
 	isOverdue: boolean;
 	notes?: string;
 	createdAt: string;
+	satFileUrl?: string | null;
 }
 
 const statusConfig: Record<
@@ -127,6 +130,7 @@ export function AlertsTable({
 	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const { currentOrg } = useOrgStore();
 	const urlFilters = useDataTableUrlFilters(ALERT_FILTER_IDS);
+	const { t } = useLanguage();
 	const [alerts, setAlerts] = useState<Alert[]>([]);
 	const [clients, setClients] = useState<Map<string, Client>>(new Map());
 	const [isLoading, setIsLoading] = useState(true);
@@ -216,8 +220,8 @@ export function AlertsTable({
 			} catch (error) {
 				console.error("Error fetching alerts:", error);
 				toast({
-					title: "Error",
-					description: "No se pudieron cargar las alertas.",
+					title: t("errorGeneric"),
+					description: t("alertsLoadError"),
 					variant: "destructive",
 				});
 			} finally {
@@ -251,8 +255,8 @@ export function AlertsTable({
 		} catch (error) {
 			console.error("Error loading more alerts:", error);
 			toast({
-				title: "Error",
-				description: "No se pudieron cargar más alertas.",
+				title: t("errorGeneric"),
+				description: t("alertsLoadMoreError"),
 				variant: "destructive",
 			});
 		} finally {
@@ -286,6 +290,7 @@ export function AlertsTable({
 				isOverdue: alert.isOverdue,
 				notes: alert.notes,
 				createdAt: alert.createdAt,
+				satFileUrl: alert.satFileUrl,
 			};
 		});
 	}, [alerts, clients]);
@@ -528,6 +533,48 @@ export function AlertsTable({
 		[],
 	);
 
+	// Handle XML download
+	const handleDownloadXml = async (item: AlertRow): Promise<void> => {
+		if (!item.satFileUrl) {
+			toast({
+				title: t("alertDownloadXmlNoFile"),
+				variant: "destructive",
+			});
+			return;
+		}
+
+		try {
+			toast({
+				title: t("alertDownloadingXml"),
+			});
+
+			const response = await fetch(item.satFileUrl);
+			if (!response.ok) {
+				throw new Error("Failed to download file");
+			}
+
+			const blob = await response.blob();
+			const url = window.URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = `alerta-${item.alertRuleId}-${item.id}.xml`;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			window.URL.revokeObjectURL(url);
+
+			toast({
+				title: t("alertDownloadXmlSuccess"),
+			});
+		} catch (error) {
+			console.error("Error downloading XML:", error);
+			toast({
+				title: t("alertDownloadXmlError"),
+				variant: "destructive",
+			});
+		}
+	};
+
 	// Row actions
 	const renderActions = (item: AlertRow) => (
 		<DropdownMenu>
@@ -554,6 +601,15 @@ export function AlertsTable({
 					<DropdownMenuItem className="gap-2">
 						<Send className="h-4 w-4" />
 						Enviar a SAT
+					</DropdownMenuItem>
+				)}
+				{item.satFileUrl && (
+					<DropdownMenuItem
+						className="gap-2"
+						onClick={() => handleDownloadXml(item)}
+					>
+						<Download className="h-4 w-4" />
+						{t("alertDownloadXml")}
 					</DropdownMenuItem>
 				)}
 				<DropdownMenuSeparator />
@@ -595,37 +651,37 @@ export function AlertsTable({
 
 		return [
 			{
-				label: "Total Alertas",
+				label: t("statsTotalAlerts"),
 				value: totalAlerts,
 				icon: Bell,
 			},
 			{
-				label: "Detectadas",
+				label: t("alertStatusDetected"),
 				value: detectedAlerts,
 				icon: AlertTriangle,
 				variant: "primary",
 			},
 			{
-				label: "Vencidas",
+				label: t("alertStatusOverdue"),
 				value: overdueAlerts,
 				icon: Clock,
 			},
 			{
-				label: "Enviadas",
+				label: t("alertStatusSubmitted"),
 				value: submittedAlerts,
 				icon: Send,
 			},
 		];
-	}, [alertsData]);
+	}, [alertsData, t]);
 
 	return (
 		<div className="space-y-6">
 			<PageHero
-				title="Alertas"
-				subtitle="Monitoreo y gestión de alertas AML"
+				title={t("alertsTitle")}
+				subtitle={t("alertsSubtitle")}
 				icon={Bell}
 				stats={stats}
-				ctaLabel="Nueva Alerta"
+				ctaLabel={t("alertsNew")}
 				ctaIcon={Plus}
 				onCtaClick={() => navigateTo("/alerts/new")}
 			/>
@@ -634,10 +690,10 @@ export function AlertsTable({
 				columns={columns}
 				filters={filterDefs}
 				searchKeys={["ruleName", "clientName", "clientId", "notes"]}
-				searchPlaceholder="Buscar por regla, cliente..."
-				emptyMessage="No se encontraron alertas"
+				searchPlaceholder={t("alertsSearchPlaceholder")}
+				emptyMessage={t("alertNoAlerts")}
 				emptyIcon={Bell}
-				loadingMessage="Cargando alertas..."
+				loadingMessage={t("alertsLoading")}
 				isLoading={isLoading}
 				selectable
 				getId={(item) => item.id}

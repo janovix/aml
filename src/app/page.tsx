@@ -21,7 +21,8 @@ import {
 	setActiveOrganization,
 } from "@/lib/auth/organizations";
 import { executeMutation } from "@/lib/mutations";
-import type { Organization } from "@/lib/org-store";
+import { useOrgStore, type Organization } from "@/lib/org-store";
+import { useLanguage } from "@/components/LanguageProvider";
 
 /**
  * Convert a string to a URL-safe slug
@@ -40,13 +41,13 @@ function slugify(value: string) {
 const DEFAULT_PAGE = "clients";
 
 /**
- * Error messages for query params
+ * Error messages for query params - will be translated in component
  */
-const ERROR_MESSAGES: Record<string, string> = {
-	kicked: "You've been removed from that organization",
-	deleted: "That organization no longer exists",
-	invalid: "Invalid organization",
-	access_denied: "You don't have access to that organization",
+const ERROR_MESSAGE_KEYS: Record<string, string> = {
+	kicked: "orgErrorKicked",
+	deleted: "orgErrorDeleted",
+	invalid: "orgErrorInvalid",
+	access_denied: "orgErrorAccessDenied",
 };
 
 /**
@@ -54,7 +55,7 @@ const ERROR_MESSAGES: Record<string, string> = {
  */
 function IndexSkeleton() {
 	return (
-		<div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted/50 p-4">
+		<div className="flex min-h-full items-center justify-center bg-gradient-to-br from-background to-muted/50 p-4">
 			<Card className="w-full max-w-md">
 				<CardHeader className="text-center">
 					<Skeleton className="mx-auto mb-4 h-16 w-16 rounded-full" />
@@ -110,6 +111,7 @@ function CreateOrgForm({
 }: {
 	onCreated: (org: Organization) => void;
 }) {
+	const { t } = useLanguage();
 	const [nameInput, setNameInput] = useState("");
 	const [slugInput, setSlugInput] = useState("");
 	const [isCreating, setIsCreating] = useState(false);
@@ -134,8 +136,8 @@ function CreateOrgForm({
 					}
 					return result.data;
 				},
-				loading: "Creating organization...",
-				success: (org) => `${org.name} is ready.`,
+				loading: t("orgCreating"),
+				success: (org) => `${org.name} ${t("orgCreateSuccess")}`,
 				onSuccess: (org) => {
 					onCreated(org);
 				},
@@ -148,44 +150,39 @@ function CreateOrgForm({
 	};
 
 	return (
-		<div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted/50 p-4">
+		<div className="flex min-h-full items-center justify-center bg-gradient-to-br from-background to-muted/50 p-4 py-8">
 			<Card className="w-full max-w-md">
 				<CardHeader className="text-center">
 					<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
 						<Building2 className="h-8 w-8 text-primary" />
 					</div>
-					<CardTitle className="text-2xl">
-						Create your first organization
-					</CardTitle>
-					<CardDescription>
-						You need at least one organization to continue. Create your first
-						one to get started.
-					</CardDescription>
+					<CardTitle className="text-2xl">{t("orgCreateFirstTitle")}</CardTitle>
+					<CardDescription>{t("orgCreateFirstDescription")}</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
 					<div className="space-y-2">
 						<label className="text-sm font-medium" htmlFor="org-name">
-							Name
+							{t("orgNameLabel")}
 						</label>
 						<Input
 							id="org-name"
-							placeholder="My Organization"
+							placeholder={t("orgNamePlaceholder")}
 							value={nameInput}
 							onChange={(e) => setNameInput(e.target.value)}
 						/>
 					</div>
 					<div className="space-y-1">
 						<label className="text-sm font-medium" htmlFor="org-slug">
-							Slug (URL identifier)
+							{t("orgSlugLabel")}
 						</label>
 						<Input
 							id="org-slug"
-							placeholder="my-organization"
+							placeholder={t("orgSlugPlaceholder")}
 							value={slugInput}
 							onChange={(e) => setSlugInput(e.target.value)}
 						/>
 						<p className="text-xs text-muted-foreground">
-							Final slug:{" "}
+							{t("orgSlugFinal")}{" "}
 							<span className="font-medium">{derivedSlug || "..."}</span>
 						</p>
 					</div>
@@ -199,10 +196,10 @@ function CreateOrgForm({
 						{isCreating ? (
 							<>
 								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-								Creating...
+								{t("orgCreating")}
 							</>
 						) : (
-							"Create organization"
+							t("orgCreateButton")
 						)}
 					</Button>
 				</CardFooter>
@@ -223,6 +220,7 @@ function OrgPicker({
 	activeOrgId: string | null;
 	onSelect: (org: Organization) => void;
 }) {
+	const { t } = useLanguage();
 	const [isSelecting, setIsSelecting] = useState(false);
 
 	const handleSelect = async (org: Organization) => {
@@ -232,7 +230,7 @@ function OrgPicker({
 			await setActiveOrganization(org.id);
 			onSelect(org);
 		} catch {
-			toast.error("Failed to select organization");
+			toast.error(t("orgSelectFailed"));
 			setIsSelecting(false);
 		}
 	};
@@ -247,16 +245,14 @@ function OrgPicker({
 	}, [organizations, activeOrgId]);
 
 	return (
-		<div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted/50 p-4">
+		<div className="flex min-h-full items-center justify-center bg-gradient-to-br from-background to-muted/50 p-4 py-8">
 			<Card className="w-full max-w-md">
 				<CardHeader className="text-center">
 					<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
 						<Building2 className="h-8 w-8 text-primary" />
 					</div>
-					<CardTitle className="text-2xl">Select an organization</CardTitle>
-					<CardDescription>
-						Choose which organization you want to work with
-					</CardDescription>
+					<CardTitle className="text-2xl">{t("orgSelectTitle")}</CardTitle>
+					<CardDescription>{t("orgSelectDescription")}</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-3">
 					{sortedOrgs.map((org) => (
@@ -285,6 +281,7 @@ function OrgPicker({
  * Also handles error query params with toast notifications (kicked, deleted, etc.)
  */
 export default function IndexPage() {
+	const { t } = useLanguage();
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const [isLoading, setIsLoading] = useState(true);
@@ -294,20 +291,23 @@ export default function IndexPage() {
 	const hasRedirected = useRef(false);
 	const hasFetched = useRef(false);
 
+	// Get organizations from store (populated by OrgBootstrapper from server data)
+	const storeOrganizations = useOrgStore((state) => state.organizations);
+
 	// Show error toast if redirected with error param
 	useEffect(() => {
 		const errorParam = searchParams.get("error");
-		if (errorParam && ERROR_MESSAGES[errorParam]) {
-			toast.error(ERROR_MESSAGES[errorParam]);
+		if (errorParam && ERROR_MESSAGE_KEYS[errorParam]) {
+			toast.error(t(ERROR_MESSAGE_KEYS[errorParam] as any));
 			// Clear the error param from URL
 			const newParams = new URLSearchParams(searchParams.toString());
 			newParams.delete("error");
 			const newUrl = newParams.toString() ? `/?${newParams.toString()}` : "/";
 			router.replace(newUrl);
 		}
-	}, [searchParams, router]);
+	}, [searchParams, router, t]);
 
-	// Fetch organizations on mount
+	// Load organizations on mount - prefer store data, fallback to API
 	useEffect(() => {
 		// Prevent double fetch in React 18 strict mode
 		if (hasFetched.current) return;
@@ -315,20 +315,34 @@ export default function IndexPage() {
 
 		async function fetchOrgs() {
 			setIsLoading(true);
-			const result = await listOrganizations();
 
-			if (result.error || !result.data) {
-				setError(result.error || "Failed to load organizations");
-				toast.error("Error loading organizations", {
-					description: result.error || "Please try again later.",
-				});
-				setIsLoading(false);
-				return;
+			// Use store data if available (populated from server by OrgBootstrapper)
+			let orgs: Organization[];
+			let fetchedActiveOrgId: string | null = null;
+
+			if (storeOrganizations.length > 0) {
+				orgs = storeOrganizations;
+			} else {
+				// Fallback to client-side API call
+				const result = await listOrganizations();
+
+				if (result.error || !result.data) {
+					setError(result.error || t("orgErrorLoading"));
+					toast.error(t("orgErrorLoading"), {
+						description: result.error || t("orgErrorLoadingDesc"),
+					});
+					setIsLoading(false);
+					return;
+				}
+
+				orgs = result.data.organizations;
+				fetchedActiveOrgId = result.data.activeOrganizationId;
 			}
 
-			const orgs = result.data.organizations;
 			setOrganizations(orgs);
-			setActiveOrgId(result.data.activeOrganizationId);
+			if (fetchedActiveOrgId) {
+				setActiveOrgId(fetchedActiveOrgId);
+			}
 
 			// No orgs - will show create form
 			if (orgs.length === 0) {
@@ -344,10 +358,8 @@ export default function IndexPage() {
 			};
 
 			// Priority 1: If user has a previously selected org (activeOrganizationId), use that
-			if (result.data.activeOrganizationId) {
-				const activeOrg = orgs.find(
-					(o) => o.id === result.data?.activeOrganizationId,
-				);
+			if (fetchedActiveOrgId) {
+				const activeOrg = orgs.find((o) => o.id === fetchedActiveOrgId);
 				if (activeOrg) {
 					redirectToOrg(activeOrg);
 					return;
@@ -370,7 +382,7 @@ export default function IndexPage() {
 		}
 
 		fetchOrgs();
-	}, [router]);
+	}, [router, storeOrganizations, t]);
 
 	// Handle org selection
 	const handleOrgSelect = (org: Organization) => {

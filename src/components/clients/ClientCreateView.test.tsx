@@ -1,6 +1,21 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { ClientCreateView } from "./ClientCreateView";
+import { renderWithProviders } from "@/lib/testHelpers";
+
+// Mock cookies module to return Spanish language for tests
+vi.mock("@/lib/cookies", () => ({
+	getCookie: (name: string) => {
+		if (name === "janovix-lang") return "es";
+		return undefined;
+	},
+	setCookie: vi.fn(),
+	deleteCookie: vi.fn(),
+	COOKIE_NAMES: {
+		THEME: "janovix-theme",
+		LANGUAGE: "janovix-lang",
+	},
+}));
 
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
@@ -16,7 +31,7 @@ vi.mock("next/navigation", () => ({
 
 describe("ClientCreateView", () => {
 	it("renders create client header and submit button", () => {
-		render(<ClientCreateView />);
+		renderWithProviders(<ClientCreateView />);
 
 		expect(screen.getByText("Nuevo Cliente")).toBeInTheDocument();
 		expect(

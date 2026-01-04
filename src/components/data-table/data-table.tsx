@@ -404,7 +404,14 @@ export function DataTable<T extends object>({
 				<div
 					className={cn(
 						"overflow-x-auto",
-						isLoading && SKELETON_HEIGHTS.TABLE_MIN,
+						// Apply minimum height for consistent sizing across all states
+						// Only apply min-height when loading, empty, or few items
+						// With infinite scroll and many items, let the table grow naturally
+						(isLoading ||
+							paginatedData.length === 0 ||
+							(paginatedData.length > 0 &&
+								paginatedData.length < itemsPerPage)) &&
+							SKELETON_HEIGHTS.TABLE_MIN,
 					)}
 				>
 					<table className="w-full">
@@ -452,7 +459,7 @@ export function DataTable<T extends object>({
 								{actions && <th className="w-10 p-3" />}
 							</tr>
 						</thead>
-						<tbody>
+						<tbody className="relative">
 							{isLoading
 								? // Skeleton loading rows
 									Array.from({ length: itemsPerPage }).map((_, index) => (
@@ -537,11 +544,15 @@ export function DataTable<T extends object>({
 												</td>
 											</tr>,
 											// Remaining placeholder rows below the empty state
+											// Use SKELETON_HEIGHTS.TABLE_ROW for consistent row height
 											...Array.from({ length: itemsPerPage - 1 }).map(
 												(_, index) => (
 													<tr
 														key={`empty-spacer-${index}`}
-														className="border-b border-border h-12"
+														className={cn(
+															"border-b border-border",
+															SKELETON_HEIGHTS.TABLE_ROW,
+														)}
 													>
 														<td
 															colSpan={
@@ -554,55 +565,81 @@ export function DataTable<T extends object>({
 												),
 											),
 										]
-									: paginatedData.map((item) => {
-											const id = getId(item);
-											return (
-												<tr
-													key={id}
-													onClick={() => onRowClick?.(item)}
-													className={cn(
-														"border-b border-border transition-colors",
-														onRowClick && "cursor-pointer hover:bg-muted/50",
-														selectedRows.has(id) && "bg-primary/5",
-													)}
-												>
-													{selectable && (
-														<td
-															className="p-3"
-															onClick={(e) => e.stopPropagation()}
+									: [
+											// Data rows
+											...paginatedData.map((item) => {
+												const id = getId(item);
+												return (
+													<tr
+														key={id}
+														onClick={() => onRowClick?.(item)}
+														className={cn(
+															"border-b border-border transition-colors",
+															onRowClick && "cursor-pointer hover:bg-muted/50",
+															selectedRows.has(id) && "bg-primary/5",
+														)}
+													>
+														{selectable && (
+															<td
+																className="p-3"
+																onClick={(e) => e.stopPropagation()}
+															>
+																<Checkbox
+																	checked={selectedRows.has(id)}
+																	onCheckedChange={() => toggleRowSelection(id)}
+																/>
+															</td>
+														)}
+														{visibleColumns.map((column) => (
+															<td
+																key={column.id}
+																className={cn("p-3 text-sm", column.className)}
+															>
+																{column.cell
+																	? column.cell(item)
+																	: String(
+																			getNestedValue(
+																				item,
+																				column.accessorKey as string,
+																			) ?? "",
+																		)}
+															</td>
+														))}
+														{actions && (
+															<td
+																className="p-3"
+																onClick={(e) => e.stopPropagation()}
+															>
+																{actions(item)}
+															</td>
+														)}
+													</tr>
+												);
+											}),
+											// Add placeholder rows when we have few items to maintain consistent height
+											...(paginatedData.length > 0 &&
+											paginatedData.length < itemsPerPage
+												? Array.from({
+														length: itemsPerPage - paginatedData.length,
+													}).map((_, index) => (
+														<tr
+															key={`spacer-${index}`}
+															className={cn(
+																"border-b border-border",
+																SKELETON_HEIGHTS.TABLE_ROW,
+															)}
 														>
-															<Checkbox
-																checked={selectedRows.has(id)}
-																onCheckedChange={() => toggleRowSelection(id)}
+															<td
+																colSpan={
+																	visibleColumns.length +
+																	(selectable ? 1 : 0) +
+																	(actions ? 1 : 0)
+																}
 															/>
-														</td>
-													)}
-													{visibleColumns.map((column) => (
-														<td
-															key={column.id}
-															className={cn("p-3 text-sm", column.className)}
-														>
-															{column.cell
-																? column.cell(item)
-																: String(
-																		getNestedValue(
-																			item,
-																			column.accessorKey as string,
-																		) ?? "",
-																	)}
-														</td>
-													))}
-													{actions && (
-														<td
-															className="p-3"
-															onClick={(e) => e.stopPropagation()}
-														>
-															{actions(item)}
-														</td>
-													)}
-												</tr>
-											);
-										})}
+														</tr>
+													))
+												: []),
+										]}
 						</tbody>
 					</table>
 				</div>

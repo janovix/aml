@@ -41,6 +41,7 @@ import { LabelWithInfo } from "../ui/LabelWithInfo";
 import { getFieldDescription } from "../../lib/field-descriptions";
 import { validateVIN } from "../../lib/utils";
 import { getVehicleBrandCatalogKey } from "../../lib/vehicle-utils";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface TransactionEditViewProps {
 	transactionId: string;
@@ -49,6 +50,7 @@ interface TransactionEditViewProps {
 export function TransactionEditView({
 	transactionId,
 }: TransactionEditViewProps): React.JSX.Element {
+	const { t } = useLanguage();
 	const { navigateTo } = useOrgNavigation();
 	const [isLoading, setIsLoading] = useState(true);
 	const [isSaving, setIsSaving] = useState(false);
@@ -318,16 +320,16 @@ export function TransactionEditView({
 	return (
 		<div className="space-y-6">
 			<PageHero
-				title="Editar Transacción"
+				title={t("txnEditTitle")}
 				subtitle={transactionId}
 				icon={Receipt}
 				backButton={{
-					label: "Volver",
+					label: t("back"),
 					onClick: handleCancel,
 				}}
 				actions={[
 					{
-						label: isSaving ? "Guardando..." : "Guardar Cambios",
+						label: isSaving ? t("txnSaving") : t("txnSaveButton"),
 						icon: Save,
 						onClick: () => {
 							void handleSubmit({
@@ -337,7 +339,7 @@ export function TransactionEditView({
 						disabled: isSaveDisabled,
 					},
 					{
-						label: "Cancelar",
+						label: t("cancel"),
 						onClick: handleCancel,
 						variant: "outline",
 					},
@@ -347,17 +349,13 @@ export function TransactionEditView({
 			<form onSubmit={handleSubmit} className="space-y-6">
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">
-							Información de la Transacción
-						</CardTitle>
-						<CardDescription>
-							Detalles básicos de la transacción
-						</CardDescription>
+						<CardTitle className="text-lg">{t("txnInfoTitle")}</CardTitle>
+						<CardDescription>{t("txnInfoDesc")}</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div className="space-y-2">
-								<Label htmlFor="client">Cliente *</Label>
+								<Label htmlFor="client">{t("txnClient")} *</Label>
 								<Select
 									value={formData.clientId}
 									onValueChange={(value) => handleChange("clientId", value)}
@@ -377,7 +375,9 @@ export function TransactionEditView({
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="operation-date">Fecha de operación *</Label>
+								<Label htmlFor="operation-date">
+									{t("txnOperationDate")} *
+								</Label>
 								<Input
 									id="operation-date"
 									type="datetime-local"
@@ -390,7 +390,7 @@ export function TransactionEditView({
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="operation-type">Tipo de operación *</Label>
+								<Label htmlFor="operation-type">{t("transactionType")} *</Label>
 								<Select
 									value={formData.operationType}
 									onValueChange={(value) =>
@@ -402,8 +402,12 @@ export function TransactionEditView({
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="purchase">Compra</SelectItem>
-										<SelectItem value="sale">Venta</SelectItem>
+										<SelectItem value="purchase">
+											{t("txnOperationPurchase")}
+										</SelectItem>
+										<SelectItem value="sale">
+											{t("txnOperationSale")}
+										</SelectItem>
 									</SelectContent>
 								</Select>
 							</div>
@@ -428,14 +432,14 @@ export function TransactionEditView({
 
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">Información del Vehículo</CardTitle>
+						<CardTitle className="text-lg">{t("txnVehicleTitle")}</CardTitle>
 						<CardDescription>
 							Detalles del vehículo involucrado en la transacción
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="space-y-2">
-							<Label htmlFor="vehicle-type">Tipo de vehículo *</Label>
+							<Label htmlFor="vehicle-type">{t("txnVehicleType")} *</Label>
 							<Select
 								value={formData.vehicleType}
 								onValueChange={(value) => handleChange("vehicleType", value)}
@@ -445,9 +449,13 @@ export function TransactionEditView({
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="land">Terrestre</SelectItem>
-									<SelectItem value="marine">Marítimo</SelectItem>
-									<SelectItem value="air">Aéreo</SelectItem>
+									<SelectItem value="land">
+										{t("txnVehicleTypeLand")}
+									</SelectItem>
+									<SelectItem value="marine">
+										{t("txnVehicleTypeMarine")}
+									</SelectItem>
+									<SelectItem value="air">{t("txnVehicleTypeAir")}</SelectItem>
 								</SelectContent>
 							</Select>
 						</div>
@@ -457,7 +465,7 @@ export function TransactionEditView({
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<CatalogSelector
 								catalogKey={getVehicleBrandCatalogKey(formData.vehicleType)}
-								label="Marca"
+								label={t("txnBrand")}
 								labelDescription={getFieldDescription("brand")}
 								value={formData.brand}
 								searchPlaceholder="Buscar marca..."
@@ -466,7 +474,7 @@ export function TransactionEditView({
 							/>
 
 							<div className="space-y-2">
-								<Label htmlFor="model">Modelo *</Label>
+								<Label htmlFor="model">{t("txnModel")} *</Label>
 								<Input
 									id="model"
 									value={formData.model}
@@ -477,7 +485,7 @@ export function TransactionEditView({
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="year">Año *</Label>
+								<Label htmlFor="year">{t("txnYear")} *</Label>
 								<Input
 									id="year"
 									type="number"
@@ -618,7 +626,7 @@ export function TransactionEditView({
 
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">Información de Pago</CardTitle>
+						<CardTitle className="text-lg">{t("txnPaymentTitle")}</CardTitle>
 						<CardDescription>
 							Detalles financieros de la transacción
 						</CardDescription>
@@ -626,7 +634,7 @@ export function TransactionEditView({
 					<CardContent className="space-y-4">
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div className="space-y-2">
-								<Label htmlFor="amount">Monto *</Label>
+								<Label htmlFor="amount">{t("txnTotalAmount")} *</Label>
 								<Input
 									id="amount"
 									type="number"
@@ -641,7 +649,7 @@ export function TransactionEditView({
 
 							<CatalogSelector
 								catalogKey="currencies"
-								label="Moneda"
+								label={t("txnCurrency")}
 								labelDescription={getFieldDescription("currency")}
 								value={formData.currency}
 								required
@@ -652,7 +660,7 @@ export function TransactionEditView({
 							/>
 
 							<div className="space-y-2">
-								<Label htmlFor="payment-date">Fecha de pago *</Label>
+								<Label htmlFor="payment-date">{t("txnPaymentDate")} *</Label>
 								<Input
 									id="payment-date"
 									type="datetime-local"
@@ -667,7 +675,7 @@ export function TransactionEditView({
 
 						<div className="space-y-4">
 							<div className="flex items-center justify-between">
-								<Label>Métodos de Pago *</Label>
+								<Label>{t("txnPaymentMethods")} *</Label>
 								<Button
 									type="button"
 									variant="outline"
@@ -750,11 +758,15 @@ export function TransactionEditView({
 												<SelectValue />
 											</SelectTrigger>
 											<SelectContent>
-												<SelectItem value="EFECTIVO">Efectivo</SelectItem>
+												<SelectItem value="EFECTIVO">
+													{t("txnPaymentMethodCash")}
+												</SelectItem>
 												<SelectItem value="TRANSFERENCIA">
 													Transferencia
 												</SelectItem>
-												<SelectItem value="CHEQUE">Cheque</SelectItem>
+												<SelectItem value="CHEQUE">
+													{t("txnPaymentMethodCheck")}
+												</SelectItem>
 												<SelectItem value="FINANCIAMIENTO">
 													Financiamiento
 												</SelectItem>

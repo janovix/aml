@@ -181,8 +181,13 @@ export function OrgBootstrapper({
 
 	// Initialize and sync org on mount or when URL org changes
 	useEffect(() => {
-		// Skip if no org slug in URL (should be handled by middleware/index)
+		// No org slug in URL (index page for org selection)
+		// Still populate the store with initial organizations so index page can use them
 		if (!urlOrgSlug) {
+			if (initialOrganizations && !initRef.current) {
+				initRef.current = true;
+				setOrganizations(initialOrganizations.organizations);
+			}
 			setIsReady(true);
 			return;
 		}
@@ -273,7 +278,13 @@ export function OrgBootstrapper({
 	]);
 
 	// Show loading skeleton while syncing
-	if (!isReady || !currentOrg) {
+	// When no org slug in URL (index page), don't block on currentOrg - index handles org selection
+	if (!isReady) {
+		return <AppSkeleton />;
+	}
+
+	// Only require currentOrg when we have an org slug in URL
+	if (urlOrgSlug && !currentOrg) {
 		return <AppSkeleton />;
 	}
 

@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { Check, ChevronsUpDown, Plus } from "lucide-react";
+import { Check, ChevronsUpDown, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -27,10 +27,19 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
 import type { Client } from "@/types/client";
 import { useClientSearch } from "@/hooks/useClientSearch";
 import { getClientDisplayName } from "@/types/client";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { getClientById } from "@/lib/api/clients";
+import { useJwt } from "@/hooks/useJwt";
 
 type OptionRenderer = (option: Client, isSelected: boolean) => React.ReactNode;
 
@@ -139,12 +148,16 @@ function ClientSelectorCommandContent({
 	isMobile = false,
 }: ClientSelectorCommandContentProps): React.ReactElement {
 	return (
-		<Command shouldFilter={false}>
+		<Command
+			shouldFilter={false}
+			className={cn(isMobile && "flex flex-col h-full")}
+		>
 			<CommandInput
 				value={searchTerm}
 				onValueChange={onSearchChange}
 				placeholder={searchPlaceholder}
 				autoFocus={autoFocusSearch}
+				className={cn(isMobile && "sticky top-0 z-10")}
 			/>
 
 			{/* Create New Client button - always visible at top */}
@@ -181,18 +194,22 @@ function ClientSelectorCommandContent({
 				<>
 					<CommandList
 						ref={listRef}
-						className={cn(isMobile ? "max-h-[60vh]" : "max-h-[300px]")}
+						className={cn(
+							isMobile
+								? "flex-1 overflow-y-auto overscroll-contain"
+								: "max-h-[300px]",
+						)}
 					>
 						{mappedItems.length === 0 ? (
 							<CommandEmpty>
-								<div className="flex flex-col items-center gap-3 py-2">
+								<div className="flex flex-col items-center gap-3 px-4 py-2 text-center">
 									<span>{emptyState}</span>
 									{onCreateNew && (
 										<Button
 											type="button"
 											variant="outline"
 											size="sm"
-											className="gap-2"
+											className="gap-2 bg-transparent"
 											onClick={onCreateNew}
 										>
 											<Plus className="h-4 w-4" />
@@ -215,6 +232,7 @@ function ClientSelectorCommandContent({
 											key={optionValue}
 											value={optionValue}
 											onSelect={() => onSelect(optionValue)}
+											className={cn(isMobile && "py-3")}
 										>
 											{renderOption(client, isSelected)}
 										</CommandItem>
@@ -226,8 +244,10 @@ function ClientSelectorCommandContent({
 					{shouldShowSummary && (
 						<div
 							className={cn(
-								"sticky bottom-0 border-t px-3 py-2",
-								isMobile ? "bg-background" : "bg-popover",
+								"border-t px-3 py-2",
+								isMobile
+									? "sticky bottom-0 bg-background pb-[env(safe-area-inset-bottom)]"
+									: "bg-popover",
 							)}
 						>
 							<p
@@ -266,15 +286,19 @@ export function ClientSelector({
 	const labelId = useId();
 	const listRef = useRef<HTMLDivElement>(null);
 	const isMobile = useIsMobile();
+	const { jwt } = useJwt();
 	const resolvedPlaceholder =
 		placeholder ??
 		(label ? `Seleccionar ${label.toLowerCase()}` : "Seleccionar cliente");
 	const isControlled = value !== undefined;
 
-	const [selectedLabel, setSelectedLabel] = useState(value ?? "");
+	const [selectedLabel, setSelectedLabel] = useState("");
 	const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 	const [open, setOpen] = useState(false);
 	const [showResults, setShowResults] = useState(false);
+	const [fetchingById, setFetchingById] = useState(false);
+	// Track which value we've already attempted to fetch by ID to prevent infinite loops
+	const fetchedByIdForValueRef = useRef<string | undefined>(undefined);
 
 	const { items, pagination, loading, error, searchTerm, setSearchTerm } =
 		useClientSearch({
@@ -293,24 +317,104 @@ export function ClientSelector({
 		[items, getOptionValue],
 	);
 
+	// Helper to get the value from a client
+	const getOptionValueResolved = (client: Client): string => {
+		return getOptionValue ? getOptionValue(client) : client.id;
+	};
+
 	useEffect(() => {
 		if (!isControlled) {
 			return;
 		}
 
-		setSelectedLabel(value ?? "");
-
 		if (!value) {
+			setSelectedLabel("");
 			setSelectedClient(null);
+			fetchedByIdForValueRef.current = undefined;
 			return;
 		}
 
-		const match = items.find(
-			(client) =>
-				(getOptionValue ? getOptionValue(client) : client.id) === value,
-		);
-		setSelectedClient(match ?? null);
-	}, [isControlled, value, items, getOptionValue]);
+		// Reset fetch tracker when value changes
+		if (
+			fetchedByIdForValueRef.current !== undefined &&
+			fetchedByIdForValueRef.current !== value
+		) {
+			fetchedByIdForValueRef.current = undefined;
+		}
+
+		// If we already have a selectedClient that matches the current value,
+		// preserve it - don't let filtered search results overwrite the label
+		if (selectedClient && getOptionValueResolved(selectedClient) === value) {
+			// Ensure label is set correctly (in case it was empty initially)
+			if (selectedLabel !== getClientDisplayName(selectedClient)) {
+				setSelectedLabel(
+					getClientDisplayName(selectedClient) || selectedClient.rfc,
+				);
+			}
+			return;
+		}
+
+		// If selectedClient exists but doesn't match the value, clear it
+		// This happens when the value prop changes
+		if (selectedClient && getOptionValueResolved(selectedClient) !== value) {
+			setSelectedClient(null);
+			setSelectedLabel("");
+		}
+
+		// Find the item by comparing the value (ID) with the client's ID or computed value
+		const match = items.find((client) => {
+			return getOptionValueResolved(client) === value;
+		});
+
+		if (match) {
+			setSelectedClient(match);
+			setSelectedLabel(getClientDisplayName(match) || match.rfc);
+		} else if (
+			!loading &&
+			!match &&
+			!fetchingById &&
+			jwt &&
+			fetchedByIdForValueRef.current !== value
+		) {
+			// If we've loaded data but still can't find the item, try fetching by ID directly
+			// This handles cases where the item exists but isn't in the search results
+			// Mark that we've attempted to fetch this value to prevent infinite loops
+			fetchedByIdForValueRef.current = value;
+			setFetchingById(true);
+			getClientById({ id: value, jwt })
+				.then((client) => {
+					// Verify the client matches the value (in case getOptionValue is custom)
+					if (getOptionValueResolved(client) === value) {
+						setSelectedClient(client);
+						setSelectedLabel(getClientDisplayName(client) || client.rfc);
+					} else {
+						setSelectedLabel(value);
+					}
+				})
+				.catch(() => {
+					// If fetching by ID fails, fallback to showing the raw value
+					setSelectedLabel(value);
+				})
+				.finally(() => {
+					setFetchingById(false);
+				});
+		} else if (!loading && !match && !jwt) {
+			// If JWT is not available yet, show the raw value temporarily
+			setSelectedLabel(value);
+		}
+		// Note: selectedLabel is intentionally excluded from dependencies
+		// It's only used for comparison to avoid unnecessary updates, not as input
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [
+		isControlled,
+		value,
+		items,
+		getOptionValue,
+		loading,
+		selectedClient,
+		fetchingById,
+		jwt,
+	]);
 
 	const handleSelect = (optionValue: string): void => {
 		const match = mappedItems.find((entry) => entry.value === optionValue);
@@ -373,7 +477,7 @@ export function ClientSelector({
 			aria-expanded={open}
 			aria-labelledby={label ? labelId : undefined}
 			disabled={disabled}
-			className="w-full justify-between text-left font-normal"
+			className="w-full justify-between text-left font-normal bg-transparent"
 		>
 			<span className="truncate">{selectedLabel || resolvedPlaceholder}</span>
 			<span className="ml-2 flex items-center gap-1 text-xs text-muted-foreground">
@@ -416,23 +520,36 @@ export function ClientSelector({
 			)}
 
 			{isMobile ? (
-				<Sheet open={open} onOpenChange={handleOpenChange}>
-					<SheetTrigger asChild>{triggerButton}</SheetTrigger>
-					<SheetContent
-						side="bottom"
-						className="h-[85vh] flex flex-col p-0 [&>button]:hidden"
+				<Dialog open={open} onOpenChange={handleOpenChange}>
+					<DialogTrigger asChild>{triggerButton}</DialogTrigger>
+					<DialogContent
+						className="h-dvh max-h-dvh w-screen max-w-none m-0 p-0 rounded-none flex flex-col gap-0 border-0 [&>button]:hidden"
+						showCloseButton={false}
 					>
-						<SheetHeader className="px-4 pt-4 pb-2 border-b">
-							<SheetTitle>
-								{label || "Seleccionar cliente"}
-								{required && <span className="ml-1 text-destructive">*</span>}
-							</SheetTitle>
-						</SheetHeader>
-						<div className="flex-1 overflow-hidden">
+						{/* Fixed header with close button */}
+						<DialogHeader className="flex-none px-4 pt-[env(safe-area-inset-top)] pb-2 border-b bg-background">
+							<div className="flex items-center justify-between">
+								<DialogTitle className="text-base font-semibold">
+									{label || "Seleccionar cliente"}
+									{required && <span className="ml-1 text-destructive">*</span>}
+								</DialogTitle>
+								<Button
+									variant="ghost"
+									size="icon"
+									className="h-8 w-8 -mr-2"
+									onClick={() => setOpen(false)}
+								>
+									<X className="h-4 w-4" />
+									<span className="sr-only">Cerrar</span>
+								</Button>
+							</div>
+						</DialogHeader>
+						{/* Flex-grow content area that adapts to keyboard */}
+						<div className="flex-1 min-h-0 overflow-hidden">
 							<ClientSelectorCommandContent {...commandContentProps} />
 						</div>
-					</SheetContent>
-				</Sheet>
+					</DialogContent>
+				</Dialog>
 			) : (
 				<Popover open={open} onOpenChange={handleOpenChange}>
 					<PopoverTrigger asChild>{triggerButton}</PopoverTrigger>

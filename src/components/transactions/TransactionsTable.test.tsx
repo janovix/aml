@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TransactionsTable } from "./TransactionsTable";
 import { mockTransactions } from "@/data/mockTransactions";
@@ -7,6 +7,21 @@ import { mockClients } from "@/data/mockClients";
 import { getClientDisplayName } from "@/types/client";
 import * as transactionsApi from "@/lib/api/transactions";
 import * as clientsApi from "@/lib/api/clients";
+import { renderWithProviders } from "@/lib/testHelpers";
+
+// Mock cookies module to return Spanish language for tests
+vi.mock("@/lib/cookies", () => ({
+	getCookie: (name: string) => {
+		if (name === "janovix-lang") return "es";
+		return undefined;
+	},
+	setCookie: vi.fn(),
+	deleteCookie: vi.fn(),
+	COOKIE_NAMES: {
+		THEME: "janovix-theme",
+		LANGUAGE: "janovix-lang",
+	},
+}));
 
 const mockToast = vi.fn();
 
@@ -77,7 +92,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 	});
 
 	it("renders table with transaction data", async () => {
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			// Check that data is loaded by looking for transaction content
@@ -86,7 +101,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 	});
 
 	it("renders all transaction rows", async () => {
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			// Check for some transactions by their brand/model
@@ -97,7 +112,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 
 	it("allows selecting individual transactions", async () => {
 		const user = userEvent.setup();
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -114,7 +129,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 
 	it("allows selecting all transactions", async () => {
 		const user = userEvent.setup();
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -130,7 +145,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 
 	it("toggles individual transaction selection", async () => {
 		const user = userEvent.setup();
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -150,7 +165,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 
 	it("toggles all transactions when select all is clicked twice", async () => {
 		const user = userEvent.setup();
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -169,7 +184,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 
 	it("renders action menu for each transaction", async () => {
 		const user = userEvent.setup();
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -181,7 +196,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 	});
 
 	it("displays formatted currency amounts", async () => {
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -203,7 +218,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 			>,
 		);
 
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		// Should show skeleton loaders instead of text
 		const skeletons = screen.getAllByTestId("skeleton");
@@ -230,12 +245,12 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 			new Error("API error"),
 		);
 
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(mockToast).toHaveBeenCalledWith(
 				expect.objectContaining({
-					title: "Error",
+					title: "Ha ocurrido un error",
 					description: "No se pudieron cargar las transacciones.",
 					variant: "destructive",
 				}),
@@ -244,7 +259,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 	});
 
 	it("navigates to transaction details via link click", async () => {
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -260,7 +275,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 	});
 
 	it("renders transaction links", async () => {
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -273,7 +288,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 
 	it("passes filters to API", async () => {
 		const filters = { operationType: "purchase" as const };
-		render(<TransactionsTable filters={filters} />);
+		renderWithProviders(<TransactionsTable filters={filters} />);
 
 		await waitFor(() => {
 			expect(transactionsApi.listTransactions).toHaveBeenCalledWith(
@@ -286,7 +301,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 
 	it("shows selected count in footer", async () => {
 		const user = userEvent.setup();
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -303,7 +318,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 	});
 
 	it("displays vehicle brand and model", async () => {
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Corolla/i)).toBeInTheDocument();
@@ -312,7 +327,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 	});
 
 	it("displays short transaction IDs", async () => {
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -326,7 +341,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 
 	it("has search functionality", async () => {
 		const user = userEvent.setup();
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -347,7 +362,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 	});
 
 	it("has filter popovers", async () => {
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -363,7 +378,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 	});
 
 	it("renders all vehicle types in column cell renderer", async () => {
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			// Verify all vehicle types are rendered
@@ -374,7 +389,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 	});
 
 	it("renders both operation types in column cell renderer", async () => {
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			// Verify both operation types are rendered (purchase and sale)
@@ -392,7 +407,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 			return mockClients.find((c) => c.id === id)!;
 		});
 
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(
 			() => {
@@ -405,7 +420,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 	});
 
 	it("renders payment method labels correctly", async () => {
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			// Payment methods should be rendered in the table
@@ -419,7 +434,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 	});
 
 	it("renders transaction with client name when client is found", async () => {
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			// Should render client names when clients are fetched successfully
@@ -442,7 +457,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 		// Mock console.error to suppress expected error logs
 		const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		// Wait for transaction data to appear - brand should render regardless of client fetch status
 		await waitFor(
@@ -466,7 +481,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 
 	it("renders all action menu items", async () => {
 		const user = userEvent.setup();
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -492,7 +507,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 
 	it("navigates to transaction detail when Ver detalle is clicked", async () => {
 		const user = userEvent.setup();
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -518,7 +533,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 
 	it("navigates to edit transaction when Editar transacción is clicked", async () => {
 		const user = userEvent.setup();
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -544,7 +559,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 
 	it("navigates to client when Ver cliente is clicked", async () => {
 		const user = userEvent.setup();
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -570,7 +585,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 
 	it("renders transaction link with stopPropagation", async () => {
 		const user = userEvent.setup();
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -593,7 +608,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 	});
 
 	it("loads more transactions when scrolling (infinite scroll)", async () => {
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -609,7 +624,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 	});
 
 	it("handles pagination structure", async () => {
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -620,7 +635,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 	});
 
 	it("does not fetch more when hasMore is false", async () => {
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -632,7 +647,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 
 	it("skips fetching clients that are already fetched", async () => {
 		// Same clientId appearing in multiple transactions should only fetch once
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -644,7 +659,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 
 	it("handles all clients already fetched scenario", async () => {
 		// Mock to verify early return when no new clients to fetch
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -656,7 +671,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 	});
 
 	it("handles mixed payment methods display", async () => {
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -685,7 +700,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 			},
 		});
 
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -697,7 +712,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 	});
 
 	it("renders date and time correctly in operation date column", async () => {
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -710,7 +725,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 
 	it("opens action menu and clicks Generar recibo", async () => {
 		const user = userEvent.setup();
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -742,7 +757,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 			(tx) => tx.operationType === "sale",
 		);
 		if (saleTransaction) {
-			render(<TransactionsTable />);
+			renderWithProviders(<TransactionsTable />);
 
 			await waitFor(() => {
 				expect(screen.getByText(/Honda/i)).toBeInTheDocument();
@@ -755,7 +770,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 	});
 
 	it("renders vehicle year correctly", async () => {
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -777,18 +792,18 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 			},
 		});
 
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("No se encontraron transacciones"),
+				screen.getByText("No hay transacciones registradas"),
 			).toBeInTheDocument();
 		});
 	});
 
 	it("renders tooltip content for operation type icon", async () => {
 		const user = userEvent.setup();
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -802,7 +817,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 
 	it("renders tooltip content for vehicle type icon", async () => {
 		const user = userEvent.setup();
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -814,7 +829,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 	});
 
 	it("handles pagination with multiple pages", async () => {
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -829,7 +844,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 	});
 
 	it("renders filter icons in filter definitions", async () => {
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -841,7 +856,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 	});
 
 	it("handles filter by vehicle type marine", async () => {
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Sea Ray/i)).toBeInTheDocument();
@@ -853,7 +868,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 	});
 
 	it("handles filter by vehicle type air", async () => {
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Cessna/i)).toBeInTheDocument();
@@ -870,7 +885,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 			currentOrg: { id: "org-1", name: "Test Org", slug: "test-org" },
 		});
 
-		const { rerender } = render(<TransactionsTable />);
+		const { rerender } = renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Toyota/i)).toBeInTheDocument();
@@ -896,7 +911,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 	it("displays enriched brand names from backend", async () => {
 		// This test verifies that brand names come from the enriched brandCatalog
 		// field instead of requiring separate catalog fetches
-		render(<TransactionsTable />);
+		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
 			// Brand names should be displayed from the brandCatalog.name field

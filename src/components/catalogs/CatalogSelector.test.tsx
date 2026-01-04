@@ -1122,12 +1122,12 @@ describe("CatalogSelector", () => {
 		}
 	});
 
-	describe("mobile drawer behavior", () => {
+	describe("mobile dialog behavior", () => {
 		beforeEach(() => {
 			mockUseIsMobile.mockReturnValue(true);
 		});
 
-		it("should open drawer on mobile when trigger is clicked", async () => {
+		it("should open fullscreen dialog on mobile when trigger is clicked", async () => {
 			const user = userEvent.setup();
 
 			render(<CatalogSelector catalogKey="vehicle-brands" label="Marca" />);
@@ -1135,17 +1135,17 @@ describe("CatalogSelector", () => {
 			const trigger = screen.getByRole("combobox");
 			await user.click(trigger);
 
-			// On mobile, Sheet should render with dialog role
+			// On mobile, Dialog should render with dialog role
 			await waitFor(() => {
 				expect(screen.getByRole("dialog")).toBeInTheDocument();
 			});
 
-			// Should show the title in the sheet header (h2 element)
+			// Should show the title in the dialog header (h2 element)
 			const dialog = screen.getByRole("dialog");
 			expect(dialog.querySelector("h2")).toHaveTextContent("Marca");
 		});
 
-		it("should show search input in mobile drawer", async () => {
+		it("should show search input in mobile dialog", async () => {
 			const user = userEvent.setup();
 
 			render(<CatalogSelector catalogKey="vehicle-brands" label="Marca" />);
@@ -1160,7 +1160,7 @@ describe("CatalogSelector", () => {
 			});
 		});
 
-		it("should allow selecting option in mobile drawer", async () => {
+		it("should allow selecting option in mobile dialog", async () => {
 			const user = userEvent.setup();
 			const handleChange = vi.fn();
 
@@ -1185,7 +1185,7 @@ describe("CatalogSelector", () => {
 			expect(handleChange).toHaveBeenCalledWith(sampleItems[0]);
 		});
 
-		it("should close drawer after selection on mobile", async () => {
+		it("should close dialog after selection on mobile", async () => {
 			const user = userEvent.setup();
 
 			render(<CatalogSelector catalogKey="vehicle-brands" label="Marca" />);
@@ -1205,7 +1205,7 @@ describe("CatalogSelector", () => {
 			});
 		});
 
-		it("should show required indicator in mobile drawer title", async () => {
+		it("should show required indicator in mobile dialog title", async () => {
 			const user = userEvent.setup();
 
 			render(
@@ -1233,14 +1233,14 @@ describe("CatalogSelector", () => {
 				expect(screen.getByRole("dialog")).toBeInTheDocument();
 			});
 
-			// Check the h2 title in the sheet header
+			// Check the h2 title in the dialog header
 			const dialog = screen.getByRole("dialog");
 			expect(dialog.querySelector("h2")).toHaveTextContent(
 				"Seleccionar opción",
 			);
 		});
 
-		it("should show loading state in mobile drawer", async () => {
+		it("should show loading state in mobile dialog", async () => {
 			const user = userEvent.setup();
 			mockedUseCatalogSearch.mockReturnValue(
 				createHookResult({
@@ -1257,6 +1257,43 @@ describe("CatalogSelector", () => {
 
 			await waitFor(() => {
 				expect(screen.getByText("Buscando resultados…")).toBeInTheDocument();
+			});
+		});
+
+		it("should show close button in mobile dialog header", async () => {
+			const user = userEvent.setup();
+
+			render(<CatalogSelector catalogKey="vehicle-brands" label="Marca" />);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			await waitFor(() => {
+				expect(screen.getByRole("dialog")).toBeInTheDocument();
+			});
+
+			// Should have a close button with "Cerrar" text
+			const closeButton = screen.getByRole("button", { name: /cerrar/i });
+			expect(closeButton).toBeInTheDocument();
+		});
+
+		it("should close dialog when close button is clicked", async () => {
+			const user = userEvent.setup();
+
+			render(<CatalogSelector catalogKey="vehicle-brands" label="Marca" />);
+
+			const trigger = screen.getByRole("combobox");
+			await user.click(trigger);
+
+			await waitFor(() => {
+				expect(screen.getByRole("dialog")).toBeInTheDocument();
+			});
+
+			const closeButton = screen.getByRole("button", { name: /cerrar/i });
+			await user.click(closeButton);
+
+			await waitFor(() => {
+				expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 			});
 		});
 	});
