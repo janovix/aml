@@ -8,7 +8,7 @@ import {
 	AlertTriangle,
 	FileText,
 	Settings,
-	BarChart3,
+	Home,
 	Database,
 	Clock,
 	Briefcase,
@@ -73,9 +73,9 @@ type NavItem = {
 const mainNavItems: NavItem[] = [
 	{
 		titleKey: "navDashboard",
-		href: "/dashboard",
-		icon: BarChart3,
-		available: false,
+		href: "",
+		icon: Home,
+		available: true,
 	},
 	{
 		titleKey: "navClients",
@@ -211,11 +211,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 								router.replace(newPath);
 							} else if (pathSegments.length === 0) {
 								// Navigate to default page for new org
-								router.replace(`/${fullOrg.slug}/clients`);
+								router.replace(`/${fullOrg.slug}`);
 							}
 						} else {
 							// No org in URL, navigate to new org's default page
-							router.replace(`/${fullOrg.slug}/clients`);
+							router.replace(`/${fullOrg.slug}`);
 						}
 					}
 				},

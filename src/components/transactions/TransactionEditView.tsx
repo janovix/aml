@@ -24,6 +24,7 @@ import { Separator } from "@/components/ui/separator";
 import { Save, Plus, Trash2, Receipt } from "lucide-react";
 import { PageHero } from "@/components/page-hero";
 import { PageHeroSkeleton } from "@/components/skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
 	getTransactionById,
 	updateTransaction,
@@ -45,6 +46,42 @@ import { useLanguage } from "@/components/LanguageProvider";
 
 interface TransactionEditViewProps {
 	transactionId: string;
+}
+
+/**
+ * Skeleton component for TransactionEditView
+ * Used when loading the organization to show the appropriate skeleton
+ */
+export function TransactionEditSkeleton(): React.ReactElement {
+	return (
+		<div className="space-y-6">
+			<PageHeroSkeleton
+				showStats={false}
+				showBackButton={true}
+				actionCount={2}
+			/>
+			{/* Form skeleton */}
+			<div className="space-y-6">
+				{[1, 2, 3].map((i) => (
+					<Card key={i}>
+						<CardHeader>
+							<Skeleton className="h-6 w-48" />
+						</CardHeader>
+						<CardContent>
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								{[1, 2, 3, 4].map((j) => (
+									<div key={j} className="space-y-2">
+										<Skeleton className="h-4 w-24" />
+										<Skeleton className="h-10 w-full" />
+									</div>
+								))}
+							</div>
+						</CardContent>
+					</Card>
+				))}
+			</div>
+		</div>
+	);
 }
 
 export function TransactionEditView({
@@ -71,9 +108,7 @@ export function TransactionEditView({
 		flagCountryId: "",
 		amount: "",
 		currency: "MXN",
-		paymentMethods: [
-			{ method: "EFECTIVO", amount: "" },
-		] as PaymentMethodInput[],
+		paymentMethods: [{ method: "", amount: "" }] as PaymentMethodInput[],
 		paymentDate: "",
 	});
 
@@ -263,10 +298,7 @@ export function TransactionEditView({
 	const handleAddPaymentMethod = (): void => {
 		setFormData((prev) => ({
 			...prev,
-			paymentMethods: [
-				...prev.paymentMethods,
-				{ method: "EFECTIVO", amount: "" },
-			],
+			paymentMethods: [...prev.paymentMethods, { method: "", amount: "" }],
 		}));
 	};
 
@@ -286,35 +318,7 @@ export function TransactionEditView({
 		) > (parseFloat(formData.amount) || 0);
 
 	if (isLoading) {
-		return (
-			<div className="space-y-6">
-				<PageHeroSkeleton
-					showStats={false}
-					showBackButton={true}
-					actionCount={2}
-				/>
-				{/* Form skeleton */}
-				<div className="space-y-6">
-					{[1, 2, 3].map((i) => (
-						<Card key={i}>
-							<CardHeader>
-								<div className="h-6 w-48 bg-accent animate-pulse rounded" />
-							</CardHeader>
-							<CardContent>
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-									{[1, 2, 3, 4].map((j) => (
-										<div key={j} className="space-y-2">
-											<div className="h-4 w-24 bg-accent animate-pulse rounded" />
-											<div className="h-10 w-full bg-accent animate-pulse rounded" />
-										</div>
-									))}
-								</div>
-							</CardContent>
-						</Card>
-					))}
-				</div>
-			</div>
-		);
+		return <TransactionEditSkeleton />;
 	}
 
 	return (
@@ -654,9 +658,15 @@ export function TransactionEditView({
 								value={formData.currency}
 								required
 								searchPlaceholder="Buscar moneda..."
-								onChange={(option) =>
-									handleChange("currency", option?.id ?? "")
-								}
+								onChange={(option) => {
+									// Use shortName from metadata for currency code (e.g., "MXN")
+									const metadata = option?.metadata as
+										| { shortName?: string }
+										| null
+										| undefined;
+									const currencyCode = metadata?.shortName ?? option?.id ?? "";
+									handleChange("currency", currencyCode);
+								}}
 							/>
 
 							<div className="space-y-2">
@@ -743,40 +753,24 @@ export function TransactionEditView({
 									key={index}
 									className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-lg"
 								>
-									<div className="space-y-2">
-										<Label htmlFor={`payment-method-${index}`}>
-											Método {index + 1} *
-										</Label>
-										<Select
-											value={pm.method}
-											onValueChange={(value) =>
-												handlePaymentMethodChange(index, "method", value)
-											}
-											required
-										>
-											<SelectTrigger id={`payment-method-${index}`}>
-												<SelectValue />
-											</SelectTrigger>
-											<SelectContent>
-												<SelectItem value="EFECTIVO">
-													{t("txnPaymentMethodCash")}
-												</SelectItem>
-												<SelectItem value="TRANSFERENCIA">
-													Transferencia
-												</SelectItem>
-												<SelectItem value="CHEQUE">
-													{t("txnPaymentMethodCheck")}
-												</SelectItem>
-												<SelectItem value="FINANCIAMIENTO">
-													Financiamiento
-												</SelectItem>
-											</SelectContent>
-										</Select>
-									</div>
+									<CatalogSelector
+										catalogKey="payment-methods"
+										label={`${t("txnPaymentMethodLabel")} ${index + 1}`}
+										value={pm.method}
+										searchPlaceholder={t("search")}
+										required
+										onChange={(option) =>
+											handlePaymentMethodChange(
+												index,
+												"method",
+												option?.name ?? "",
+											)
+										}
+									/>
 
 									<div className="space-y-2">
 										<Label htmlFor={`payment-amount-${index}`}>
-											Monto {index + 1} *
+											{t("txnPaymentAmountLabel")} {index + 1} *
 										</Label>
 										<Input
 											id={`payment-amount-${index}`}
@@ -806,7 +800,7 @@ export function TransactionEditView({
 												className="gap-2 text-destructive"
 											>
 												<Trash2 className="h-4 w-4" />
-												Eliminar
+												{t("delete")}
 											</Button>
 										)}
 									</div>

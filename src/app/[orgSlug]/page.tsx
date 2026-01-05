@@ -1,12 +1,12 @@
-import { redirect } from "next/navigation";
+import type { Metadata } from "next";
+import { DashboardView } from "@/components/dashboard/DashboardView";
 
-interface PageProps {
-	params: Promise<{ orgSlug: string }>;
-}
+export const metadata: Metadata = {
+	title: "Inicio | Plataforma AML",
+	description:
+		"Vista general del sistema AML con estadísticas, valor UMA y métricas clave",
+};
 
-export default async function OrgHomePage({
-	params,
-}: PageProps): Promise<void> {
-	const { orgSlug } = await params;
-	redirect(`/${orgSlug}/clients`);
+export default function OrgHomePage(): React.ReactElement {
+	return <DashboardView />;
 }

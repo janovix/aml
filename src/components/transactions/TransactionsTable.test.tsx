@@ -36,6 +36,15 @@ vi.mock("@/hooks/use-mobile", () => ({
 	useIsMobile: () => false,
 }));
 
+vi.mock("@/hooks/useJwt", () => ({
+	useJwt: () => ({
+		jwt: "test-jwt-token",
+		isLoading: false,
+		error: null,
+		refetch: vi.fn(),
+	}),
+}));
+
 const mockCurrentOrg = { id: "org-1", name: "Test Org", slug: "test-org" };
 
 const mockUseOrgStore = vi.fn(() => ({

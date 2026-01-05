@@ -446,4 +446,133 @@ describe("OrgBootstrapper", () => {
 
 		consoleSpy.mockRestore();
 	});
+
+	it("handles listOrganizations returning null data", async () => {
+		mockListOrganizations.mockResolvedValue({
+			data: null,
+			error: null,
+		});
+
+		render(
+			<OrgBootstrapper>
+				<div>Children Content</div>
+			</OrgBootstrapper>,
+		);
+
+		await waitFor(() => {
+			expect(mockToastError).toHaveBeenCalledWith(
+				"Error loading organizations",
+				expect.anything(),
+			);
+		});
+	});
+
+	it("handles listOrganizations with error", async () => {
+		mockListOrganizations.mockResolvedValue({
+			data: null,
+			error: "API Error",
+		});
+
+		render(
+			<OrgBootstrapper>
+				<div>Children Content</div>
+			</OrgBootstrapper>,
+		);
+
+		await waitFor(() => {
+			expect(mockToastError).toHaveBeenCalledWith(
+				"Error loading organizations",
+				expect.objectContaining({
+					description: "API Error",
+				}),
+			);
+		});
+	});
+
+	it("fetches members when members data is null", async () => {
+		mockListOrganizations.mockResolvedValue({
+			data: {
+				organizations: [mockOrganization],
+				activeOrganizationId: mockOrganization.id,
+			},
+		});
+		mockListMembers.mockResolvedValue({
+			data: null,
+			error: null,
+		});
+
+		render(
+			<OrgBootstrapper>
+				<div>Children Content</div>
+			</OrgBootstrapper>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByText("Children Content")).toBeInTheDocument();
+		});
+
+		expect(mockListMembers).toHaveBeenCalled();
+	});
+
+	it("handles initial organizations matching current org", async () => {
+		mockListMembers.mockResolvedValue({
+			data: [mockMember],
+		});
+
+		render(
+			<OrgBootstrapper
+				initialOrganizations={{
+					organizations: [mockOrganization],
+					activeOrganizationId: mockOrganization.id, // Matches the URL org
+				}}
+			>
+				<div>Children Content</div>
+			</OrgBootstrapper>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByText("Children Content")).toBeInTheDocument();
+		});
+
+		// Should not call setActiveOrganization when activeOrgId matches
+		expect(mockSetActiveOrganization).not.toHaveBeenCalled();
+	});
+
+	it("skips sync when already synced to same org", async () => {
+		mockListOrganizations.mockResolvedValue({
+			data: {
+				organizations: [mockOrganization],
+				activeOrganizationId: mockOrganization.id,
+			},
+		});
+		mockListMembers.mockResolvedValue({
+			data: [mockMember],
+		});
+
+		const { rerender } = render(
+			<OrgBootstrapper>
+				<div>Children Content</div>
+			</OrgBootstrapper>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByText("Children Content")).toBeInTheDocument();
+		});
+
+		const initialCallCount = mockListOrganizations.mock.calls.length;
+
+		// Rerender with same props
+		rerender(
+			<OrgBootstrapper>
+				<div>Updated Children</div>
+			</OrgBootstrapper>,
+		);
+
+		// Should not call listOrganizations again
+		await waitFor(() => {
+			expect(screen.getByText("Updated Children")).toBeInTheDocument();
+		});
+
+		expect(mockListOrganizations.mock.calls.length).toBe(initialCallCount);
+	});
 });

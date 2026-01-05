@@ -13,13 +13,21 @@ import {
 	Edit,
 	FileText,
 	Receipt,
+	Users,
 } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { useDataTableUrlFilters } from "@/hooks/useDataTableUrlFilters";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 
 // Filter IDs for URL persistence
-const TRANSACTION_FILTER_IDS = ["operationType", "vehicleType", "currency"];
+const TRANSACTION_FILTER_IDS = [
+	"operationType",
+	"vehicleType",
+	"currency",
+	"clientId",
+];
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -35,6 +43,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+import { useJwt } from "@/hooks/useJwt";
 import { useOrgStore } from "@/lib/org-store";
 import {
 	listTransactions,
@@ -110,9 +119,31 @@ export function TransactionsTable({
 }: TransactionsTableProps = {}): React.ReactElement {
 	const { navigateTo, orgPath } = useOrgNavigation();
 	const { toast } = useToast();
+	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const { currentOrg } = useOrgStore();
+	const searchParams = useSearchParams();
 	const urlFilters = useDataTableUrlFilters(TRANSACTION_FILTER_IDS);
 	const { t, language } = useLanguage();
+
+	// Parse current clientId filter from URL (reacts to URL changes)
+	const currentClientIdFilter = useMemo(() => {
+		const paramKey = "f_clientId";
+		const rawValue = searchParams.get(paramKey);
+		if (rawValue) {
+			try {
+				if (rawValue.startsWith("[")) {
+					const parsed = JSON.parse(rawValue);
+					if (Array.isArray(parsed) && parsed.length > 0) {
+						return parsed[0];
+					}
+				}
+				return rawValue;
+			} catch {
+				return rawValue;
+			}
+		}
+		return undefined;
+	}, [searchParams]);
 	const [transactions, setTransactions] = useState<Transaction[]>([]);
 	const [clients, setClients] = useState<Map<string, Client>>(new Map());
 	const [isLoading, setIsLoading] = useState(true);
@@ -145,7 +176,10 @@ export function TransactionsTable({
 			// Fetch only missing clients in parallel
 			const clientPromises = missingClientIds.map(async (clientId) => {
 				try {
-					const client = await getClientById({ id: clientId });
+					const client = await getClientById({
+						id: clientId,
+						jwt: jwt ?? undefined,
+					});
 					return { clientId, client };
 				} catch (error) {
 					console.error(`Error fetching client ${clientId}:`, error);
@@ -171,18 +205,35 @@ export function TransactionsTable({
 				});
 			}
 		},
-		[], // No dependencies - uses ref to track fetched clients
+		[jwt],
 	);
 
-	// Initial load - refetch when organization changes
+	// Track if initial load has happened for current org
+	const hasLoadedForOrgRef = useRef<string | null>(null);
+	// Track previous filters to detect changes
+	const prevFiltersRef = useRef<{
+		filters: typeof filters;
+		clientId: string | null;
+	} | null>(null);
+
+	// Initial load - refetch when organization changes (not on JWT refresh)
 	useEffect(() => {
-		// Wait for an organization to be selected
+		// Wait for JWT to be ready and organization to be selected
 		// Without an organization, the API will return 403 "Organization Required"
-		if (!currentOrg?.id) {
-			setTransactions([]);
-			setClients(new Map());
-			fetchedClientIdsRef.current.clear();
-			setIsLoading(false);
+		if (isJwtLoading || !jwt || !currentOrg?.id) {
+			// If no org selected, clear data and stop loading
+			if (!currentOrg?.id && !isJwtLoading) {
+				setTransactions([]);
+				setClients(new Map());
+				fetchedClientIdsRef.current.clear();
+				setIsLoading(false);
+				hasLoadedForOrgRef.current = null;
+			}
+			return;
+		}
+
+		// Skip if we've already loaded for this org (JWT refresh shouldn't trigger reload)
+		if (hasLoadedForOrgRef.current === currentOrg.id) {
 			return;
 		}
 
@@ -199,7 +250,67 @@ export function TransactionsTable({
 				const response = await listTransactions({
 					page: 1,
 					limit: ITEMS_PER_PAGE,
+					jwt,
 					...filters,
+					clientId: currentClientIdFilter,
+				});
+				setTransactions(response.data);
+				setHasMore(response.pagination.page < response.pagination.totalPages);
+				hasLoadedForOrgRef.current = currentOrg.id;
+				await fetchClientsForTransactions(response.data);
+			} catch (error) {
+				console.error("Error fetching transactions:", error);
+				toast({
+					title: t("errorGeneric"),
+					description: t("transactionsLoadError"),
+					variant: "destructive",
+				});
+			} finally {
+				setIsLoading(false);
+			}
+		};
+		fetchTransactions();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [jwt, isJwtLoading, currentOrg?.id]);
+
+	// Refetch when filters change (after initial load, skip first run)
+	useEffect(() => {
+		const currentFilters = { filters, clientId: currentClientIdFilter };
+
+		// Skip if not loaded yet
+		if (!hasLoadedForOrgRef.current || !jwt || !currentOrg?.id) {
+			prevFiltersRef.current = currentFilters;
+			return;
+		}
+
+		// Skip on first run (initial load already fetched)
+		if (prevFiltersRef.current === null) {
+			prevFiltersRef.current = currentFilters;
+			return;
+		}
+
+		// Only refetch if filters actually changed
+		if (
+			JSON.stringify(prevFiltersRef.current) === JSON.stringify(currentFilters)
+		) {
+			return;
+		}
+
+		prevFiltersRef.current = currentFilters;
+
+		const refetchWithFilters = async () => {
+			try {
+				setIsLoading(true);
+				setCurrentPage(1);
+				setTransactions([]);
+				fetchedClientIdsRef.current.clear();
+
+				const response = await listTransactions({
+					page: 1,
+					limit: ITEMS_PER_PAGE,
+					jwt,
+					...filters,
+					clientId: currentClientIdFilter,
 				});
 				setTransactions(response.data);
 				setHasMore(response.pagination.page < response.pagination.totalPages);
@@ -215,13 +326,14 @@ export function TransactionsTable({
 				setIsLoading(false);
 			}
 		};
-		fetchTransactions();
+		refetchWithFilters();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [filters, toast, currentOrg?.id]);
+	}, [filters, currentClientIdFilter]);
 
 	// Load more transactions for infinite scroll
 	const handleLoadMore = useCallback(async () => {
-		if (isLoadingMore || !hasMore || !currentOrg?.id) return;
+		if (isLoadingMore || !hasMore || isJwtLoading || !jwt || !currentOrg?.id)
+			return;
 
 		try {
 			setIsLoadingMore(true);
@@ -229,7 +341,9 @@ export function TransactionsTable({
 			const response = await listTransactions({
 				page: nextPage,
 				limit: ITEMS_PER_PAGE,
+				jwt,
 				...filters,
+				clientId: currentClientIdFilter,
 			});
 
 			setTransactions((prev) => [...prev, ...response.data]);
@@ -247,8 +361,52 @@ export function TransactionsTable({
 		} finally {
 			setIsLoadingMore(false);
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [currentPage, hasMore, isLoadingMore, filters, toast, currentOrg?.id]);
+	}, [
+		currentPage,
+		hasMore,
+		isLoadingMore,
+		isJwtLoading,
+		jwt,
+		filters,
+		toast,
+		fetchClientsForTransactions,
+		currentOrg?.id,
+		currentClientIdFilter,
+	]);
+
+	// Silent refresh for auto-refresh (doesn't show loading state)
+	const silentRefresh = useCallback(async () => {
+		if (!jwt || isJwtLoading || !currentOrg?.id) return;
+
+		try {
+			const response = await listTransactions({
+				page: 1,
+				limit: ITEMS_PER_PAGE,
+				jwt,
+				...filters,
+				clientId: currentClientIdFilter,
+			});
+			setTransactions(response.data);
+			setCurrentPage(1);
+			setHasMore(response.pagination.page < response.pagination.totalPages);
+			await fetchClientsForTransactions(response.data);
+		} catch {
+			// Silently ignore errors for background refresh
+		}
+	}, [
+		jwt,
+		isJwtLoading,
+		filters,
+		fetchClientsForTransactions,
+		currentOrg?.id,
+		currentClientIdFilter,
+	]);
+
+	// Auto-refresh every 30 seconds (only when on first page to avoid disrupting infinite scroll)
+	useAutoRefresh(silentRefresh, {
+		enabled: !isLoading && !!jwt && !!currentOrg?.id && currentPage === 1,
+		interval: 30000,
+	});
 
 	// Transform Transaction to TransactionRow format
 	const transactionsData: TransactionRow[] = useMemo(() => {
@@ -413,8 +571,8 @@ export function TransactionsTable({
 	);
 
 	// Filter definitions
-	const filterDefs: FilterDef[] = useMemo(
-		() => [
+	const filterDefs: FilterDef[] = useMemo(() => {
+		return [
 			{
 				id: "operationType",
 				label: "Operación",
@@ -483,9 +641,14 @@ export function TransactionsTable({
 					{ value: "USD", label: "USD" },
 				],
 			},
-		],
-		[],
-	);
+			{
+				id: "clientId",
+				label: t("transactionClient"),
+				icon: Users,
+				options: [], // Options are loaded dynamically via ClientFilterPopover
+			},
+		];
+	}, [t]);
 
 	// Row actions
 	const renderActions = (item: TransactionRow) => (

@@ -24,6 +24,8 @@ vi.mock("@/lib/cookies", () => ({
 	},
 }));
 
+import * as cookiesModule from "@/lib/cookies";
+
 describe("ThemeProvider", () => {
 	it("renders children when mounted", () => {
 		const { container } = render(
@@ -42,6 +44,62 @@ describe("ThemeProvider", () => {
 	it("renders with theme provider", () => {
 		const { container } = render(
 			<ThemeProvider attribute="data-theme" defaultTheme="dark">
+				<div>Test</div>
+			</ThemeProvider>,
+		);
+
+		const providers = screen.getAllByTestId("theme-provider");
+		const ourProvider = providers.find((p) => container.contains(p));
+		expect(ourProvider).toBeInTheDocument();
+	});
+
+	it("syncs theme from cookie on mount", () => {
+		vi.spyOn(cookiesModule, "getCookie").mockReturnValue("dark");
+
+		const { container } = render(
+			<ThemeProvider>
+				<div>Test</div>
+			</ThemeProvider>,
+		);
+
+		const providers = screen.getAllByTestId("theme-provider");
+		const ourProvider = providers.find((p) => container.contains(p));
+		expect(ourProvider).toBeInTheDocument();
+	});
+
+	it("handles invalid theme value in cookie", () => {
+		vi.spyOn(cookiesModule, "getCookie").mockReturnValue("invalid-theme");
+
+		const { container } = render(
+			<ThemeProvider>
+				<div>Test</div>
+			</ThemeProvider>,
+		);
+
+		const providers = screen.getAllByTestId("theme-provider");
+		const ourProvider = providers.find((p) => container.contains(p));
+		expect(ourProvider).toBeInTheDocument();
+	});
+
+	it("saves theme to cookie when initialized", () => {
+		const setCookieSpy = vi.spyOn(cookiesModule, "setCookie");
+		vi.spyOn(cookiesModule, "getCookie").mockReturnValue(undefined);
+
+		render(
+			<ThemeProvider>
+				<div>Test</div>
+			</ThemeProvider>,
+		);
+
+		// Cookie should be set when initialized
+		expect(setCookieSpy).toHaveBeenCalled();
+	});
+
+	it("does not apply cookie theme when same as current", () => {
+		vi.spyOn(cookiesModule, "getCookie").mockReturnValue("light");
+
+		const { container } = render(
+			<ThemeProvider>
 				<div>Test</div>
 			</ThemeProvider>,
 		);

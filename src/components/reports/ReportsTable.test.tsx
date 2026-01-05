@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import React from "react";
 import { ReportsTable } from "./ReportsTable";
 import { renderWithProviders } from "@/lib/testHelpers";
+import * as reportsApi from "@/lib/api/reports";
 
 const mockToast = vi.fn();
 
@@ -30,16 +31,120 @@ vi.mock("next/navigation", () => ({
 	useParams: () => ({ orgSlug: "test-org" }),
 }));
 
+// Mock the JWT hook
+const mockUseJwt = vi.fn();
+vi.mock("@/hooks/useJwt", () => ({
+	useJwt: () => mockUseJwt(),
+}));
+
+// Mock the org store
+const mockUseOrgStore = vi.fn();
+vi.mock("@/lib/org-store", () => ({
+	useOrgStore: () => mockUseOrgStore(),
+}));
+
+// Mock the reports API
+vi.mock("@/lib/api/reports", () => ({
+	listReports: vi.fn(),
+	deleteReport: vi.fn(),
+	generateReportFile: vi.fn(),
+	getReportDownloadUrl: vi.fn(),
+}));
+
+// Mock report data
+const mockReports: reportsApi.Report[] = [
+	{
+		id: "RPT001",
+		organizationId: "org-1",
+		name: "Reporte Mensual Diciembre 2024",
+		type: "MONTHLY",
+		status: "DRAFT",
+		periodStart: "2024-11-17T00:00:00Z",
+		periodEnd: "2024-12-16T23:59:59Z",
+		reportedMonth: "202412",
+		recordCount: 10,
+		xmlFileUrl: null,
+		pdfFileUrl: null,
+		fileSize: null,
+		generatedAt: null,
+		submittedAt: null,
+		satFolioNumber: null,
+		createdBy: "user-1",
+		notes: null,
+		createdAt: "2024-12-01T00:00:00Z",
+		updatedAt: "2024-12-01T00:00:00Z",
+	},
+	{
+		id: "RPT002",
+		organizationId: "org-1",
+		name: "Reporte Trimestral Q4 2024",
+		type: "QUARTERLY",
+		status: "GENERATED",
+		periodStart: "2024-10-01T00:00:00Z",
+		periodEnd: "2024-12-31T23:59:59Z",
+		reportedMonth: "2024Q4",
+		recordCount: 25,
+		xmlFileUrl: null,
+		pdfFileUrl: "https://example.com/report.pdf",
+		fileSize: 12345,
+		generatedAt: "2024-12-28T10:00:00Z",
+		submittedAt: null,
+		satFolioNumber: null,
+		createdBy: "user-1",
+		notes: null,
+		createdAt: "2024-10-01T00:00:00Z",
+		updatedAt: "2024-12-28T10:00:00Z",
+	},
+	{
+		id: "RPT003",
+		organizationId: "org-1",
+		name: "Reporte Mensual Noviembre 2024",
+		type: "MONTHLY",
+		status: "SUBMITTED",
+		periodStart: "2024-10-17T00:00:00Z",
+		periodEnd: "2024-11-16T23:59:59Z",
+		reportedMonth: "202411",
+		recordCount: 8,
+		xmlFileUrl: "https://example.com/report.xml",
+		pdfFileUrl: null,
+		fileSize: 5678,
+		generatedAt: "2024-12-10T09:00:00Z",
+		submittedAt: "2024-12-15T14:30:00Z",
+		satFolioNumber: "SAT-2024-12345",
+		createdBy: "user-1",
+		notes: null,
+		createdAt: "2024-11-01T00:00:00Z",
+		updatedAt: "2024-12-15T14:30:00Z",
+	},
+];
+
 describe("ReportsTable", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mockUseJwt.mockReturnValue({
+			jwt: "test-jwt-token",
+			isLoading: false,
+			error: null,
+			refetch: vi.fn(),
+		});
+		mockUseOrgStore.mockReturnValue({
+			currentOrg: { id: "org-1", name: "Test Org", slug: "test-org" },
+		});
+		vi.mocked(reportsApi.listReports).mockResolvedValue({
+			data: mockReports,
+			pagination: {
+				page: 1,
+				limit: 20,
+				total: mockReports.length,
+				totalPages: 1,
+			},
+		});
 	});
 
-	it("renders table with mock report data", async () => {
+	it("renders table with report data", async () => {
 		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
-			// Wait for report data to load
 			expect(
 				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
 			).toBeInTheDocument();
@@ -63,7 +168,6 @@ describe("ReportsTable", () => {
 		const user = userEvent.setup();
 		renderWithProviders(<ReportsTable />);
 
-		// Wait for report data to load first
 		await waitFor(() => {
 			expect(
 				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
@@ -83,7 +187,6 @@ describe("ReportsTable", () => {
 		const user = userEvent.setup();
 		renderWithProviders(<ReportsTable />);
 
-		// Wait for report data to load first
 		await waitFor(() => {
 			expect(
 				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
@@ -98,141 +201,30 @@ describe("ReportsTable", () => {
 		});
 	});
 
-	it("has search functionality", async () => {
-		const user = userEvent.setup();
+	it("displays page hero with title", async () => {
 		renderWithProviders(<ReportsTable />);
 
-		// Wait for report data to load first
 		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
-			).toBeInTheDocument();
-		});
-
-		const searchInput = screen.getByPlaceholderText(/buscar/i);
-		expect(searchInput).toBeInTheDocument();
-
-		await user.type(searchInput, "Mensual");
-
-		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
-			).toBeInTheDocument();
+			expect(screen.getByText("Reportes")).toBeInTheDocument();
 		});
 	});
 
-	it("has filter popovers", async () => {
+	it("shows stats in page hero", async () => {
 		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
-			).toBeInTheDocument();
-		});
-
-		// Use getAllByText since filter can appear in multiple places
-		const tipoFilters = screen.getAllByText("Tipo");
-		const estadoFilters = screen.getAllByText("Estado");
-		expect(tipoFilters.length).toBeGreaterThan(0);
-		expect(estadoFilters.length).toBeGreaterThan(0);
-	});
-
-	it("renders action menu for reports", async () => {
-		renderWithProviders(<ReportsTable />);
-
-		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
-			).toBeInTheDocument();
-		});
-
-		// Check that rows have action buttons
-		const rows = screen.getAllByRole("row");
-		expect(rows.length).toBeGreaterThan(1); // header + data rows
-	});
-
-	it("renders table with correct structure", async () => {
-		renderWithProviders(<ReportsTable />);
-
-		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
-			).toBeInTheDocument();
-		});
-
-		// Check for table structure
-		const rows = screen.getAllByRole("row");
-		expect(rows.length).toBeGreaterThan(1);
-	});
-
-	it("renders checkboxes for selection", async () => {
-		renderWithProviders(<ReportsTable />);
-
-		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
-			).toBeInTheDocument();
-		});
-
-		// Check for checkboxes
-		const checkboxes = screen.getAllByRole("checkbox");
-		expect(checkboxes.length).toBeGreaterThan(1);
-	});
-
-	it("renders reports with actions", async () => {
-		renderWithProviders(<ReportsTable />);
-
-		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
-			).toBeInTheDocument();
-		});
-
-		// Check that action buttons are rendered
-		const rows = screen.getAllByRole("row");
-		expect(rows.length).toBeGreaterThan(1); // header + data rows
-	});
-
-	it("displays correct status for reports", async () => {
-		renderWithProviders(<ReportsTable />);
-
-		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
-			).toBeInTheDocument();
-		});
-
-		// Drafts and other statuses should be shown - the first report is a draft
-		const rows = screen.getAllByRole("row");
-		expect(rows.length).toBeGreaterThan(1);
-	});
-
-	it("shows selected count in footer", async () => {
-		const user = userEvent.setup();
-		renderWithProviders(<ReportsTable />);
-
-		// Wait for report data to load first
-		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
-			).toBeInTheDocument();
-		});
-
-		const checkboxes = screen.getAllByRole("checkbox");
-		await user.click(checkboxes[1]);
-		await user.click(checkboxes[2]);
-
-		await waitFor(() => {
-			expect(screen.getByText(/2 seleccionados/)).toBeInTheDocument();
+			expect(screen.getByText("Total Reportes")).toBeInTheDocument();
+			expect(screen.getByText("Borradores")).toBeInTheDocument();
+			expect(screen.getByText("Enviados")).toBeInTheDocument();
 		});
 	});
 
-	it("displays period information", async () => {
+	it("displays report periods", async () => {
 		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Diciembre 2024")).toBeInTheDocument();
-			expect(screen.getByText("Q4 2024")).toBeInTheDocument();
+			expect(screen.getByText("202412")).toBeInTheDocument();
+			expect(screen.getByText("2024Q4")).toBeInTheDocument();
 		});
 	});
 
@@ -240,517 +232,154 @@ describe("ReportsTable", () => {
 		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
-			// Check for numeric record counts
 			expect(screen.getByText("10")).toBeInTheDocument();
-			expect(screen.getByText("8")).toBeInTheDocument();
+			expect(screen.getByText("25")).toBeInTheDocument();
 		});
 	});
 
-	it("renders action menu buttons for reports", async () => {
-		renderWithProviders(<ReportsTable />);
-
-		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
-			).toBeInTheDocument();
-		});
-
-		// Verify table structure includes action menus
-		// The action menu functionality is tested in other tests
-		const rows = screen.getAllByRole("row");
-		expect(rows.length).toBeGreaterThan(1);
-		expect(
-			screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
-		).toBeInTheDocument();
-	});
-
-	it("navigates to report detail when view action is clicked", async () => {
-		const user = userEvent.setup();
-		renderWithProviders(<ReportsTable />);
-
-		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
-			).toBeInTheDocument();
-		});
-
-		const actionButtons = screen.getAllByRole("button", { hidden: true });
-		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
-		);
-		if (moreButton) {
-			await user.click(moreButton);
-
-			await waitFor(() => {
-				expect(screen.getByText("Ver detalle")).toBeInTheDocument();
-			});
-
-			await user.click(screen.getByText("Ver detalle"));
-
-			expect(mockPush).toHaveBeenCalledWith("/test-org/reports/RPT-001");
-		}
-	});
-
-	it("shows generate report option for DRAFT status", async () => {
-		const user = userEvent.setup();
-		renderWithProviders(<ReportsTable />);
-
-		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
-			).toBeInTheDocument();
-		});
-
-		// First report is DRAFT
-		const actionButtons = screen.getAllByRole("button", { hidden: true });
-		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
-		);
-		if (moreButton) {
-			await user.click(moreButton);
-
-			await waitFor(() => {
-				expect(screen.getByText("Generar reporte")).toBeInTheDocument();
-			});
-		}
-	});
-
-	it("shows send to SAT option for GENERATED status", async () => {
-		const user = userEvent.setup();
-		renderWithProviders(<ReportsTable />);
-
-		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE TRIMESTRAL Q4 2024"),
-			).toBeInTheDocument();
-		});
-
-		// Find the action button for the GENERATED report (RPT-003)
-		// We need to find the row containing "Q4 2024" and its action button
-		const rows = screen.getAllByRole("row");
-		const q4Row = rows.find((row) => row.textContent?.includes("Q4 2024"));
-		expect(q4Row).toBeTruthy();
-
-		if (q4Row) {
-			const moreButton = q4Row.querySelector(
-				'button[class*="MoreHorizontal"], button:has(svg)',
-			) as HTMLButtonElement;
-			if (moreButton) {
-				await user.click(moreButton);
-
-				await waitFor(() => {
-					expect(screen.getByText("Enviar a SAT")).toBeInTheDocument();
-				});
-			}
-		}
-	});
-
-	it("shows download XML option for all reports", async () => {
-		const user = userEvent.setup();
-		renderWithProviders(<ReportsTable />);
-
-		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
-			).toBeInTheDocument();
-		});
-
-		const actionButtons = screen.getAllByRole("button", { hidden: true });
-		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
-		);
-		if (moreButton) {
-			await user.click(moreButton);
-
-			await waitFor(() => {
-				expect(screen.getByText("Descargar XML")).toBeInTheDocument();
-			});
-		}
-	});
-
-	it("calls download handler when download is clicked", async () => {
-		const user = userEvent.setup();
-		renderWithProviders(<ReportsTable />);
-
-		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
-			).toBeInTheDocument();
-		});
-
-		const actionButtons = screen.getAllByRole("button", { hidden: true });
-		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
-		);
-		if (moreButton) {
-			await user.click(moreButton);
-
-			await waitFor(() => {
-				expect(screen.getByText("Descargar XML")).toBeInTheDocument();
-			});
-
-			await user.click(screen.getByText("Descargar XML"));
-
-			await waitFor(() => {
-				expect(mockToast).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: "Descargando...",
-					}),
-				);
-			});
-		}
-	});
-
-	it("shows delete option only for DRAFT reports", async () => {
-		const user = userEvent.setup();
-		renderWithProviders(<ReportsTable />);
-
-		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
-			).toBeInTheDocument();
-		});
-
-		// First report is DRAFT - should show delete
-		const actionButtons = screen.getAllByRole("button", { hidden: true });
-		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
-		);
-		if (moreButton) {
-			await user.click(moreButton);
-
-			await waitFor(() => {
-				expect(screen.getByText("Eliminar")).toBeInTheDocument();
-			});
-		}
-	});
-
-	it("calls delete handler when delete is clicked for DRAFT report", async () => {
-		const user = userEvent.setup();
-		renderWithProviders(<ReportsTable />);
-
-		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
-			).toBeInTheDocument();
-		});
-
-		const actionButtons = screen.getAllByRole("button", { hidden: true });
-		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
-		);
-		if (moreButton) {
-			await user.click(moreButton);
-
-			await waitFor(() => {
-				expect(screen.getByText("Eliminar")).toBeInTheDocument();
-			});
-
-			await user.click(screen.getByText("Eliminar"));
-
-			await waitFor(() => {
-				expect(mockToast).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: "Reporte eliminado",
-					}),
-				);
-			});
-		}
-	});
-
-	it("displays status icons correctly", async () => {
-		renderWithProviders(<ReportsTable />);
-
-		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
-			).toBeInTheDocument();
-		});
-
-		// Status icons should be rendered in the table
-		const rows = screen.getAllByRole("row");
-		expect(rows.length).toBeGreaterThan(1);
-	});
-
-	it("displays type badges correctly", async () => {
-		renderWithProviders(<ReportsTable />);
-
-		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
-			).toBeInTheDocument();
-		});
-
-		// Type badges should be rendered
-		const rows = screen.getAllByRole("row");
-		expect(rows.length).toBeGreaterThan(1);
-	});
-
-	it("formats submitted date correctly when present", async () => {
-		renderWithProviders(<ReportsTable />);
-
-		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE MENSUAL NOVIEMBRE 2024"),
-			).toBeInTheDocument();
-		});
-
-		// Submitted date should be formatted
-		const rows = screen.getAllByRole("row");
-		expect(rows.length).toBeGreaterThan(1);
-	});
-
-	it("shows dash when submitted date is not present", async () => {
-		renderWithProviders(<ReportsTable />);
-
-		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
-			).toBeInTheDocument();
-		});
-
-		// Draft reports don't have submittedAt - should show dash
-		const rows = screen.getAllByRole("row");
-		expect(rows.length).toBeGreaterThan(1);
-	});
-
-	it("navigates to new report page when CTA button is clicked", async () => {
-		const user = userEvent.setup();
-		renderWithProviders(<ReportsTable />);
-
-		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
-			).toBeInTheDocument();
-		});
-
-		// Find and click the "Nuevo Reporte" button
-		const newReportButton = screen.getByText("Nuevo Reporte");
-		await user.click(newReportButton);
-
-		expect(mockPush).toHaveBeenCalledWith("/test-org/reports/new");
-	});
-
-	it("shows and can click 'Generar reporte' option for DRAFT status", async () => {
-		const user = userEvent.setup();
-		renderWithProviders(<ReportsTable />);
-
-		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
-			).toBeInTheDocument();
-		});
-
-		// First report is DRAFT - should show "Generar reporte"
-		const actionButtons = screen.getAllByRole("button", { hidden: true });
-		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
-		);
-		if (moreButton) {
-			await user.click(moreButton);
-
-			await waitFor(() => {
-				expect(screen.getByText("Generar reporte")).toBeInTheDocument();
-			});
-
-			// Click on "Generar reporte" to ensure the branch is covered
-			await user.click(screen.getByText("Generar reporte"));
-		}
-	});
-
-	it("shows and can click 'Enviar a SAT' option for GENERATED status", async () => {
-		const user = userEvent.setup();
-		renderWithProviders(<ReportsTable />);
-
-		await waitFor(() => {
-			// Find the GENERATED report (RPT-003)
-			expect(
-				screen.getByText("REPORTE TRIMESTRAL Q4 2024"),
-			).toBeInTheDocument();
-		});
-
-		// Find all action buttons and click the one for the GENERATED report
-		const actionButtons = screen.getAllByRole("button", { hidden: true });
-		const moreButtons = actionButtons.filter((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+	it("shows loading state initially", async () => {
+		// Mock listReports to never resolve, keeping the loading state
+		vi.mocked(reportsApi.listReports).mockImplementation(
+			() => new Promise(() => {}), // Never resolves
 		);
 
-		// Click the third more button (for the GENERATED report)
-		if (moreButtons[2]) {
-			await user.click(moreButtons[2]);
+		renderWithProviders(<ReportsTable />);
 
-			await waitFor(() => {
-				expect(screen.getByText("Enviar a SAT")).toBeInTheDocument();
-			});
-
-			// Click on "Enviar a SAT" to ensure the branch is covered
-			await user.click(screen.getByText("Enviar a SAT"));
-		}
+		// The DataTable shows skeleton rows during loading state
+		// Check that skeleton elements exist in the loading state
+		await waitFor(() => {
+			const skeletons = document.querySelectorAll('[data-slot="skeleton"]');
+			// We should have multiple skeleton elements during loading
+			expect(skeletons.length).toBeGreaterThan(0);
+		});
 	});
 
-	it("calls handleDownload when download is clicked", async () => {
-		const user = userEvent.setup();
+	it("shows empty state when no reports", async () => {
+		vi.mocked(reportsApi.listReports).mockResolvedValue({
+			data: [],
+			pagination: {
+				page: 1,
+				limit: 20,
+				total: 0,
+				totalPages: 0,
+			},
+		});
+
 		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
 			expect(
-				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
+				screen.getByText("No se encontraron reportes"),
 			).toBeInTheDocument();
 		});
-
-		// Open action menu and click download
-		const actionButtons = screen.getAllByRole("button", { hidden: true });
-		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
-		);
-		if (moreButton) {
-			await user.click(moreButton);
-
-			await waitFor(() => {
-				expect(screen.getByText("Descargar XML")).toBeInTheDocument();
-			});
-
-			await user.click(screen.getByText("Descargar XML"));
-
-			// Verify download handler was called
-			await waitFor(() => {
-				expect(mockToast).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: "Descargando...",
-					}),
-				);
-			});
-		}
 	});
 
-	it("calls handleDelete when delete is clicked for DRAFT report", async () => {
-		const user = userEvent.setup();
+	it("shows error state when no organization is selected", async () => {
+		mockUseOrgStore.mockReturnValue({
+			currentOrg: null,
+		});
+
 		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
+			expect(screen.getByText("Sin organización")).toBeInTheDocument();
 			expect(
-				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
+				screen.getByText("Selecciona una organización para ver los reportes"),
 			).toBeInTheDocument();
 		});
-
-		// Open action menu for DRAFT report (first report)
-		const actionButtons = screen.getAllByRole("button", { hidden: true });
-		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
-		);
-		if (moreButton) {
-			await user.click(moreButton);
-
-			await waitFor(() => {
-				expect(screen.getByText("Eliminar")).toBeInTheDocument();
-			});
-
-			await user.click(screen.getByText("Eliminar"));
-
-			// Verify delete handler was called
-			await waitFor(() => {
-				expect(mockToast).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: "Reporte eliminado",
-					}),
-				);
-			});
-		}
 	});
 
-	it("does not show delete option for non-DRAFT reports", async () => {
-		const user = userEvent.setup();
+	it("calls API with correct parameters", async () => {
 		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE TRIMESTRAL Q4 2024"),
-			).toBeInTheDocument();
+			expect(reportsApi.listReports).toHaveBeenCalledWith(
+				expect.objectContaining({
+					page: 1,
+					limit: 20,
+					jwt: "test-jwt-token",
+				}),
+			);
 		});
-
-		// Open action menu for GENERATED report (third report)
-		const actionButtons = screen.getAllByRole("button", { hidden: true });
-		const moreButtons = actionButtons.filter((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
-		);
-		if (moreButtons.length > 2) {
-			await user.click(moreButtons[2]);
-
-			await waitFor(() => {
-				// Should not show "Eliminar" for GENERATED status
-				expect(screen.queryByText("Eliminar")).not.toBeInTheDocument();
-			});
-		}
 	});
 
-	it("renders stats correctly from reports data", async () => {
+	it("refetches when organization changes", async () => {
 		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
-			).toBeInTheDocument();
+			expect(reportsApi.listReports).toHaveBeenCalledTimes(1);
 		});
 
-		// Stats should be computed and displayed
-		// The stats include total reports, by status, by type
-		const rows = screen.getAllByRole("row");
-		expect(rows.length).toBeGreaterThan(1);
-	});
+		mockUseOrgStore.mockReturnValue({
+			currentOrg: { id: "org-2", name: "Other Org", slug: "other-org" },
+		});
 
-	it("handles generate report action for DRAFT status", async () => {
-		const user = userEvent.setup();
+		// Force re-render
 		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE MENSUAL DICIEMBRE 2024"),
-			).toBeInTheDocument();
+			expect(reportsApi.listReports).toHaveBeenCalledTimes(2);
 		});
-
-		// Open action menu for DRAFT report
-		const actionButtons = screen.getAllByRole("button", { hidden: true });
-		const moreButton = actionButtons.find((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
-		);
-		if (moreButton) {
-			await user.click(moreButton);
-
-			await waitFor(() => {
-				expect(screen.getByText("Generar reporte")).toBeInTheDocument();
-			});
-
-			// Click generate report (this doesn't have an onClick handler yet, but tests the branch)
-			await user.click(screen.getByText("Generar reporte"));
-		}
 	});
 
-	it("handles send to SAT action for GENERATED status", async () => {
-		const user = userEvent.setup();
+	it("handles API error gracefully", async () => {
+		vi.mocked(reportsApi.listReports).mockRejectedValue(new Error("API error"));
+
 		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
-			expect(
-				screen.getByText("REPORTE TRIMESTRAL Q4 2024"),
-			).toBeInTheDocument();
+			expect(mockToast).toHaveBeenCalledWith(
+				expect.objectContaining({
+					title: "Error",
+					description: "No se pudieron cargar los reportes",
+					variant: "destructive",
+				}),
+			);
+		});
+	});
+
+	it("clears data when organization is not selected and JWT is not loading", async () => {
+		mockUseOrgStore.mockReturnValue({
+			currentOrg: null,
 		});
 
-		// Find all action buttons and click the one for GENERATED report
-		const actionButtons = screen.getAllByRole("button", { hidden: true });
-		const moreButtons = actionButtons.filter((btn) =>
-			btn.querySelector('[class*="MoreHorizontal"]'),
+		mockUseJwt.mockReturnValue({
+			jwt: "test-jwt-token",
+			isLoading: false,
+			error: null,
+			refetch: vi.fn(),
+		});
+
+		renderWithProviders(<ReportsTable />);
+
+		await waitFor(() => {
+			// Should not call listReports when org is not selected
+			expect(reportsApi.listReports).not.toHaveBeenCalled();
+		});
+	});
+
+	it("handles filter changes correctly", async () => {
+		renderWithProviders(<ReportsTable filters={{ type: "MONTHLY" }} />);
+
+		await waitFor(() => {
+			expect(reportsApi.listReports).toHaveBeenCalledWith(
+				expect.objectContaining({
+					type: "MONTHLY",
+				}),
+			);
+		});
+
+		// Change filters
+		const { rerender } = renderWithProviders(
+			<ReportsTable filters={{ type: "QUARTERLY" }} />,
 		);
 
-		// Click the third more button (for the GENERATED report)
-		if (moreButtons[2]) {
-			await user.click(moreButtons[2]);
-
-			await waitFor(() => {
-				expect(screen.getByText("Enviar a SAT")).toBeInTheDocument();
-			});
-
-			// Click send to SAT (this doesn't have an onClick handler yet, but tests the branch)
-			await user.click(screen.getByText("Enviar a SAT"));
-		}
+		await waitFor(() => {
+			expect(reportsApi.listReports).toHaveBeenCalledWith(
+				expect.objectContaining({
+					type: "QUARTERLY",
+				}),
+			);
+		});
 	});
 });

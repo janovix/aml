@@ -28,7 +28,6 @@ const ROUTE_LABEL_KEYS: Record<string, TranslationKeys> = {
 	reports: "navReports",
 	team: "navTeam",
 	settings: "navSettings",
-	dashboard: "navDashboard",
 	new: "breadcrumbNew",
 	edit: "breadcrumbEdit",
 };
@@ -185,10 +184,7 @@ export function NavBreadcrumb() {
 				{/* Home link */}
 				<BreadcrumbItem className="shrink-0">
 					<BreadcrumbLink asChild>
-						<Link
-							href={`/${orgSlug}/clients`}
-							className="flex items-center gap-1.5"
-						>
+						<Link href={`/${orgSlug}`} className="flex items-center gap-1.5">
 							<Home className="h-4 w-4" />
 							<span className="hidden sm:inline">{t("breadcrumbHome")}</span>
 						</Link>

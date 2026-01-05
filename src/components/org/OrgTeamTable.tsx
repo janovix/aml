@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import {
 	MoreHorizontal,
 	UserPlus,
@@ -80,6 +80,7 @@ import {
 	CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { useLanguage } from "@/components/LanguageProvider";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import type { TranslationKeys } from "@/lib/translations";
 
 const getRoleLabel = (
@@ -165,6 +166,33 @@ export function OrgTeamTable() {
 			cancelled = true;
 		};
 	}, [currentOrg?.id]);
+
+	// Silent refresh for auto-refresh (doesn't show loading state)
+	const silentRefresh = useCallback(async () => {
+		if (!currentOrg) return;
+
+		try {
+			const [membersResult, invitationsResult] = await Promise.all([
+				listMembers(currentOrg.id),
+				listInvitations(currentOrg.id, "pending"),
+			]);
+
+			if (membersResult.data) {
+				setMembers(membersResult.data);
+			}
+			if (invitationsResult.data) {
+				setInvitations(invitationsResult.data);
+			}
+		} catch {
+			// Silently ignore errors for background refresh
+		}
+	}, [currentOrg, setMembers]);
+
+	// Auto-refresh every 30 seconds
+	useAutoRefresh(silentRefresh, {
+		enabled: !isLoading && !!currentOrg,
+		interval: 30000,
+	});
 
 	const filteredMembers = useMemo(() => {
 		const currentMembers = members.filter(

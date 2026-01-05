@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
 	Users,
 	Building2,
@@ -43,6 +43,7 @@ import {
 import { useJwt } from "@/hooks/useJwt";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { useDataTableUrlFilters } from "@/hooks/useDataTableUrlFilters";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { executeMutation } from "@/lib/mutations";
 import { toast } from "sonner";
 import { useOrgStore } from "@/lib/org-store";
@@ -116,7 +117,10 @@ export function ClientsTable(): React.ReactElement {
 	const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
 	const ITEMS_PER_PAGE = 20;
 
-	// Initial load - refetch when organization changes
+	// Track if initial load has happened for current org
+	const hasLoadedForOrgRef = useRef<string | null>(null);
+
+	// Initial load - refetch when organization changes (not on JWT refresh)
 	useEffect(() => {
 		// Wait for JWT to be ready and organization to be selected
 		// Without an organization, the API will return 403
@@ -125,7 +129,13 @@ export function ClientsTable(): React.ReactElement {
 			if (!currentOrg?.id && !isJwtLoading) {
 				setClients([]);
 				setIsLoading(false);
+				hasLoadedForOrgRef.current = null;
 			}
+			return;
+		}
+
+		// Skip if we've already loaded for this org (JWT refresh shouldn't trigger reload)
+		if (hasLoadedForOrgRef.current === currentOrg.id) {
 			return;
 		}
 
@@ -142,6 +152,7 @@ export function ClientsTable(): React.ReactElement {
 				});
 				setClients(response.data);
 				setHasMore(response.pagination.page < response.pagination.totalPages);
+				hasLoadedForOrgRef.current = currentOrg.id;
 			} catch (error) {
 				console.error("Error fetching clients:", error);
 				toast.error(t("clientsLoadError"));
@@ -150,6 +161,7 @@ export function ClientsTable(): React.ReactElement {
 			}
 		};
 		fetchClients();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [jwt, isJwtLoading, currentOrg?.id]);
 
 	// Load more clients for infinite scroll
@@ -176,6 +188,30 @@ export function ClientsTable(): React.ReactElement {
 			setIsLoadingMore(false);
 		}
 	}, [currentPage, hasMore, isLoadingMore, isJwtLoading, jwt, currentOrg?.id]);
+
+	// Silent refresh for auto-refresh (doesn't show loading state)
+	const silentRefresh = useCallback(async () => {
+		if (!jwt || isJwtLoading || !currentOrg?.id) return;
+
+		try {
+			const response = await listClients({
+				page: 1,
+				limit: ITEMS_PER_PAGE,
+				jwt,
+			});
+			setClients(response.data);
+			setCurrentPage(1);
+			setHasMore(response.pagination.page < response.pagination.totalPages);
+		} catch {
+			// Silently ignore errors for background refresh
+		}
+	}, [jwt, isJwtLoading, currentOrg?.id]);
+
+	// Auto-refresh every 30 seconds (only when on first page to avoid disrupting infinite scroll)
+	useAutoRefresh(silentRefresh, {
+		enabled: !isLoading && !!jwt && !!currentOrg?.id && currentPage === 1,
+		interval: 30000,
+	});
 
 	// Transform clients to include display name
 	const clientsData: ClientRow[] = useMemo(() => {

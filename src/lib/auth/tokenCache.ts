@@ -113,6 +113,39 @@ class TokenCache {
 			Date.now() - this.cache.fetchedAt < this.staleTimeout
 		);
 	}
+
+	/**
+	 * Get cached token without organization validation.
+	 * Used for auto-fetch scenarios where we don't have access to the current organization context.
+	 * Returns cached token if valid (not stale), otherwise fetches a new one using the cached org ID.
+	 *
+	 * This method is useful for components that don't use useJwt hook but still need authentication.
+	 * It respects the token cache set by useJwt (which handles org switching).
+	 *
+	 * @returns JWT token or null
+	 */
+	async getCachedToken(): Promise<string | null> {
+		// If cache is valid and not stale, return it regardless of organization
+		if (this.cache && Date.now() - this.cache.fetchedAt < this.staleTimeout) {
+			return this.cache.token;
+		}
+
+		// If there's already a fetch in progress, wait for it
+		if (this.fetchPromise) {
+			return this.fetchPromise;
+		}
+
+		// Start a new fetch using the cached organization ID (or null if no cache)
+		const orgId = this.cache?.organizationId ?? null;
+		this.fetchPromise = this.fetchAndCache(orgId);
+
+		try {
+			const token = await this.fetchPromise;
+			return token;
+		} finally {
+			this.fetchPromise = null;
+		}
+	}
 }
 
 // Export singleton instance

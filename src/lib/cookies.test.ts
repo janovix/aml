@@ -244,4 +244,169 @@ describe("cookies utilities", () => {
 			expect(COOKIE_NAMES.LANGUAGE).toBe("janovix-lang");
 		});
 	});
+
+	describe("additional branch coverage", () => {
+		const originalDocument = global.document;
+		const originalWindow = global.window;
+
+		afterEach(() => {
+			Object.defineProperty(global, "document", {
+				value: originalDocument,
+				writable: true,
+				configurable: true,
+			});
+			Object.defineProperty(global, "window", {
+				value: originalWindow,
+				writable: true,
+				configurable: true,
+			});
+		});
+
+		it("returns production for bare janovix.ai domain", () => {
+			Object.defineProperty(global, "window", {
+				value: {
+					location: { hostname: "janovix.ai" },
+				},
+				writable: true,
+				configurable: true,
+			});
+			expect(detectEnvironment()).toBe("production");
+		});
+
+		it("returns local for unknown hostname", () => {
+			Object.defineProperty(global, "window", {
+				value: {
+					location: { hostname: "unknown.example.com" },
+				},
+				writable: true,
+				configurable: true,
+			});
+			expect(detectEnvironment()).toBe("local");
+		});
+
+		it("setCookie does nothing when document is undefined", () => {
+			// @ts-expect-error - simulating SSR
+			global.document = undefined;
+			// Should not throw
+			expect(() => setCookie("test", "value")).not.toThrow();
+		});
+
+		it("getCookie returns undefined when document is undefined", () => {
+			// @ts-expect-error - simulating SSR
+			global.document = undefined;
+			expect(getCookie("test")).toBeUndefined();
+		});
+
+		it("deleteCookie does nothing when document is undefined", () => {
+			// @ts-expect-error - simulating SSR
+			global.document = undefined;
+			// Should not throw
+			expect(() => deleteCookie("test")).not.toThrow();
+		});
+
+		it("setCookie adds domain for production environment", () => {
+			let setCookieValue = "";
+			Object.defineProperty(global, "document", {
+				value: {
+					get cookie() {
+						return "";
+					},
+					set cookie(value: string) {
+						setCookieValue = value;
+					},
+				},
+				writable: true,
+				configurable: true,
+			});
+
+			Object.defineProperty(global, "window", {
+				value: {
+					location: { hostname: "aml.janovix.ai" },
+				},
+				writable: true,
+				configurable: true,
+			});
+
+			setCookie("test-cookie", "test-value");
+			expect(setCookieValue).toContain("domain=.janovix.ai");
+			expect(setCookieValue).toContain("secure");
+		});
+
+		it("deleteCookie adds domain for production environment", () => {
+			let setCookieValue = "";
+			Object.defineProperty(global, "document", {
+				value: {
+					get cookie() {
+						return "";
+					},
+					set cookie(value: string) {
+						setCookieValue = value;
+					},
+				},
+				writable: true,
+				configurable: true,
+			});
+
+			Object.defineProperty(global, "window", {
+				value: {
+					location: { hostname: "aml.janovix.ai" },
+				},
+				writable: true,
+				configurable: true,
+			});
+
+			deleteCookie("test-cookie");
+			expect(setCookieValue).toContain("domain=.janovix.ai");
+		});
+
+		it("setCookie with custom options", () => {
+			let setCookieValue = "";
+			Object.defineProperty(global, "document", {
+				value: {
+					get cookie() {
+						return "";
+					},
+					set cookie(value: string) {
+						setCookieValue = value;
+					},
+				},
+				writable: true,
+				configurable: true,
+			});
+
+			Object.defineProperty(global, "window", {
+				value: {
+					location: { hostname: "localhost" },
+				},
+				writable: true,
+				configurable: true,
+			});
+
+			setCookie("test-cookie", "test-value", {
+				maxAge: 3600,
+				path: "/app",
+				sameSite: "strict",
+				secure: true,
+			});
+
+			expect(setCookieValue).toContain("max-age=3600");
+			expect(setCookieValue).toContain("path=/app");
+			expect(setCookieValue).toContain("samesite=strict");
+			expect(setCookieValue).toContain("secure");
+		});
+
+		it("getCookie handles empty cookie value", () => {
+			Object.defineProperty(global, "document", {
+				value: {
+					get cookie() {
+						return "test=";
+					},
+				},
+				writable: true,
+				configurable: true,
+			});
+
+			expect(getCookie("test")).toBe("");
+		});
+	});
 });

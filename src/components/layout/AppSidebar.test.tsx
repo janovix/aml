@@ -340,8 +340,8 @@ describe("AppSidebar", () => {
 		renderWithProviders(<AppSidebar />);
 
 		// Unavailable items should show "Pronto" badge
-		// Dashboard, Modelos de Riesgo, Historial are unavailable
-		expect(screen.getByText("Dashboard")).toBeInTheDocument();
+		// Inicio, Modelos de Riesgo, Historial are unavailable
+		expect(screen.getByText("Inicio")).toBeInTheDocument();
 		expect(screen.getByText("Alertas")).toBeInTheDocument();
 		expect(screen.getByText("Reportes")).toBeInTheDocument();
 	});
@@ -363,7 +363,7 @@ describe("AppSidebar", () => {
 		renderWithProviders(<AppSidebar />);
 
 		// Click on an unavailable item (should not trigger handleLinkClick)
-		const dashboardLink = screen.getByText("Dashboard").closest("a");
+		const dashboardLink = screen.getByText("Inicio").closest("a");
 		if (dashboardLink) {
 			await user.click(dashboardLink);
 			// Unavailable items should not trigger onClick
@@ -429,7 +429,7 @@ describe("AppSidebar", () => {
 
 		// Verify all navigation groups are rendered
 		expect(screen.getByText("Clientes")).toBeInTheDocument(); // Main nav
-		expect(screen.getByText("Dashboard")).toBeInTheDocument(); // Main nav
+		expect(screen.getByText("Inicio")).toBeInTheDocument(); // Main nav
 		expect(screen.getByText("Modelos de Riesgo")).toBeInTheDocument(); // Secondary nav
 		expect(screen.getByText("Configuración")).toBeInTheDocument(); // Bottom nav
 	});
@@ -965,5 +965,65 @@ describe("AppSidebar", () => {
 		renderWithProviders(<AppSidebar />);
 
 		expect(screen.getByText("Historial")).toBeInTheDocument();
+	});
+
+	it("handles session user without name", () => {
+		mockUseAuthSession.mockReturnValue({
+			data: {
+				user: {
+					id: "user-1",
+					name: "",
+					email: "test@example.com",
+				},
+			},
+			isPending: false,
+		});
+
+		renderWithProviders(<AppSidebar />);
+
+		expect(screen.getByText("Clientes")).toBeInTheDocument();
+	});
+
+	it("handles session user without email", () => {
+		mockUseAuthSession.mockReturnValue({
+			data: {
+				user: {
+					id: "user-1",
+					name: "Test User",
+					email: "",
+				},
+			},
+			isPending: false,
+		});
+
+		renderWithProviders(<AppSidebar />);
+
+		expect(screen.getByText("Clientes")).toBeInTheDocument();
+	});
+
+	it("handles orgLoading state", () => {
+		mockUseOrgStore.mockReturnValue({
+			currentOrg: { id: "org-1", name: "Test Org", slug: "test-org" },
+			organizations: [{ id: "org-1", name: "Test Org", slug: "test-org" }],
+			setCurrentOrg: mockSetCurrentOrg,
+			isLoading: true,
+		});
+
+		renderWithProviders(<AppSidebar />);
+
+		expect(screen.getByText("Clientes")).toBeInTheDocument();
+	});
+
+	it("handles unavailable nav item click", async () => {
+		const user = userEvent.setup();
+		renderWithProviders(<AppSidebar />);
+
+		// Find an unavailable item (Historial)
+		const historialLink = screen.getByText("Historial").closest("a");
+		if (historialLink) {
+			await user.click(historialLink);
+			// Should not navigate (link is disabled)
+			expect(mockPush).not.toHaveBeenCalled();
+		}
 	});
 });

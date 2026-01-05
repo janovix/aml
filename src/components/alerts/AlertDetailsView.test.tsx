@@ -304,9 +304,60 @@ describe("AlertDetailsView", () => {
 		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
+			expect(screen.getByText("Transacción Relacionada")).toBeInTheDocument();
+			expect(screen.getByText("TRX-2024-001")).toBeInTheDocument();
+		});
+	});
+
+	it("displays all related transactions for N:1 alerts with transactionIds in metadata", async () => {
+		const alertWithMultipleTransactions = {
+			...mockAlert,
+			metadata: {
+				transactionIds: ["TRX-2024-001", "TRX-2024-002", "TRX-2024-003"],
+			},
+		};
+		vi.mocked(alertsApi.getAlertById).mockResolvedValue(
+			alertWithMultipleTransactions,
+		);
+		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
+
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
+
+		await waitFor(() => {
 			expect(
-				screen.getByText(/Ver Transacción TRX-2024-001/),
+				screen.getByText("Transacciones Relacionadas"),
 			).toBeInTheDocument();
+			expect(screen.getByText("TRX-2024-001")).toBeInTheDocument();
+			expect(screen.getByText("TRX-2024-002")).toBeInTheDocument();
+			expect(screen.getByText("TRX-2024-003")).toBeInTheDocument();
+			// Check for count badge
+			expect(screen.getByText("3")).toBeInTheDocument();
+		});
+	});
+
+	it("combines transactionId and metadata transactionIds without duplicates", async () => {
+		const alertWithBoth = {
+			...mockAlert,
+			transactionId: "TRX-2024-001",
+			metadata: {
+				transactionIds: ["TRX-2024-001", "TRX-2024-002"],
+			},
+		};
+		vi.mocked(alertsApi.getAlertById).mockResolvedValue(alertWithBoth);
+		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
+
+		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText("Transacciones Relacionadas"),
+			).toBeInTheDocument();
+			// Should only show each transaction once
+			const transactionIds = screen.getAllByText("TRX-2024-001");
+			expect(transactionIds).toHaveLength(1);
+			expect(screen.getByText("TRX-2024-002")).toBeInTheDocument();
+			// Check for count badge
+			expect(screen.getByText("2")).toBeInTheDocument();
 		});
 	});
 

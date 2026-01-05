@@ -115,7 +115,7 @@ export function ClientCreateView(): React.JSX.Element {
 		curp: "",
 		businessName: "",
 		incorporationDate: "",
-		nationality: "",
+		nationality: "MX", // Default to Mexico
 		email: "",
 		phone: "",
 		stateCode: "",
@@ -281,7 +281,7 @@ export function ClientCreateView(): React.JSX.Element {
 				]}
 			/>
 
-			<form onSubmit={handleSubmit} className="max-w-4xl space-y-6 pb-6">
+			<form onSubmit={handleSubmit} className="max-w-4xl space-y-6">
 				<Card>
 					<CardHeader>
 						<CardTitle className="text-lg">{t("clientPersonType")}</CardTitle>

@@ -505,4 +505,28 @@ describe("isOrganizationRequiredError", () => {
 		});
 		expect(isOrganizationRequiredError(error)).toBe(false);
 	});
+
+	it("returns false for ApiError with null body", () => {
+		const error = new ApiError("Request failed", {
+			status: 403,
+			body: null,
+		});
+		expect(isOrganizationRequiredError(error)).toBe(false);
+	});
+
+	it("returns false for ApiError with body without code property", () => {
+		const error = new ApiError("Request failed", {
+			status: 403,
+			body: { message: "Forbidden" },
+		});
+		expect(isOrganizationRequiredError(error)).toBe(false);
+	});
+
+	it("returns false for ApiError with different error code in body", () => {
+		const error = new ApiError("Request failed", {
+			status: 403,
+			body: { code: "DIFFERENT_ERROR" },
+		});
+		expect(isOrganizationRequiredError(error)).toBe(false);
+	});
 });

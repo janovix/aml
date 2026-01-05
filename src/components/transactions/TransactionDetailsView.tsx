@@ -27,8 +27,43 @@ import type { Transaction } from "../../types/transaction";
 import type { Client } from "@/types/client";
 import { PageHero } from "@/components/page-hero";
 import { PageHeroSkeleton } from "@/components/skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { TranslationKeys } from "@/lib/translations";
+
+/**
+ * Skeleton component for TransactionDetailsView
+ * Used when loading the organization to show the appropriate skeleton
+ */
+export function TransactionDetailsSkeleton(): React.ReactElement {
+	return (
+		<div className="space-y-6">
+			<PageHeroSkeleton
+				showStats={false}
+				showBackButton={true}
+				actionCount={3}
+			/>
+			{/* Content skeleton */}
+			<div className="grid gap-6 md:grid-cols-2">
+				{[1, 2].map((i) => (
+					<Card key={i}>
+						<CardHeader>
+							<Skeleton className="h-6 w-48" />
+						</CardHeader>
+						<CardContent className="space-y-4">
+							{[1, 2, 3].map((j) => (
+								<div key={j} className="space-y-2">
+									<Skeleton className="h-4 w-24" />
+									<Skeleton className="h-5 w-40" />
+								</div>
+							))}
+						</CardContent>
+					</Card>
+				))}
+			</div>
+		</div>
+	);
+}
 
 const getPaymentMethodBadgeVariant = (
 	method: string,
@@ -115,33 +150,7 @@ export function TransactionDetailsView({
 	}, [transactionId]);
 
 	if (isLoading) {
-		return (
-			<div className="space-y-6">
-				<PageHeroSkeleton
-					showStats={false}
-					showBackButton={true}
-					actionCount={3}
-				/>
-				{/* Content skeleton */}
-				<div className="grid gap-6 md:grid-cols-2">
-					{[1, 2].map((i) => (
-						<Card key={i}>
-							<CardHeader>
-								<div className="h-6 w-48 bg-accent animate-pulse rounded" />
-							</CardHeader>
-							<CardContent className="space-y-4">
-								{[1, 2, 3].map((j) => (
-									<div key={j} className="space-y-2">
-										<div className="h-4 w-24 bg-accent animate-pulse rounded" />
-										<div className="h-5 w-40 bg-accent animate-pulse rounded" />
-									</div>
-								))}
-							</CardContent>
-						</Card>
-					))}
-				</div>
-			</div>
-		);
+		return <TransactionDetailsSkeleton />;
 	}
 
 	if (!transaction) {
@@ -235,7 +244,7 @@ export function TransactionDetailsView({
 			/>
 
 			<div className="space-y-6">
-				<div className="grid gap-6 md:grid-cols-2 pb-6">
+				<div className="grid gap-6 md:grid-cols-2">
 					<Card>
 						<CardHeader>
 							<CardTitle>{t("txnInfoTitle")}</CardTitle>

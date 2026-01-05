@@ -1,6 +1,7 @@
 // Fallback example URL - will fail if NEXT_PUBLIC_AML_CORE_URL is not set
 // This helps detect missing environment variable configuration
 const DEFAULT_AML_CORE_URL = "https://aml-svc.janovix.workers.dev";
+const DEFAULT_UMA_SERVICE_URL = "https://uma-aml-svc.janovix.workers.dev";
 export const DEFAULT_API_BASE_URL =
 	"https://backend-template.algtools.workers.dev";
 
@@ -19,6 +20,20 @@ export function getAmlCoreBaseUrl(): string {
 		return envValue.trim().replace(/\/$/, "");
 	}
 	return DEFAULT_AML_CORE_URL;
+}
+
+/**
+ * Base URL for the UMA (Unidad de Medida y Actualización) service.
+ *
+ * Uses NEXT_PUBLIC_UMA_SERVICE_URL environment variable.
+ * Falls back to the default UMA service URL.
+ */
+export function getUmaServiceBaseUrl(): string {
+	const envValue = process.env.NEXT_PUBLIC_UMA_SERVICE_URL;
+	if (envValue && typeof envValue === "string" && envValue.trim().length > 0) {
+		return envValue.trim().replace(/\/$/, "");
+	}
+	return DEFAULT_UMA_SERVICE_URL;
 }
 
 /**

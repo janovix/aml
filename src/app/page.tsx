@@ -36,9 +36,9 @@ function slugify(value: string) {
 }
 
 /**
- * Default page to redirect to after org selection
+ * Default page to redirect to after org selection (empty = org home/dashboard)
  */
-const DEFAULT_PAGE = "clients";
+const DEFAULT_PAGE = "";
 
 /**
  * Error messages for query params - will be translated in component

@@ -22,11 +22,48 @@ import { getClientById } from "../../lib/api/clients";
 import { useToast } from "../../hooks/use-toast";
 import { PageHero } from "@/components/page-hero";
 import { PageHeroSkeleton } from "@/components/skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getPersonTypeStyle } from "../../lib/person-type-icon";
 import { useLanguage } from "@/components/LanguageProvider";
 
 interface ClientDetailsViewProps {
 	clientId: string; // Client ID
+}
+
+/**
+ * Skeleton component for ClientDetailsView
+ * Used when loading the organization to show the appropriate skeleton
+ */
+export function ClientDetailsSkeleton(): React.ReactElement {
+	return (
+		<div className="space-y-6">
+			<PageHeroSkeleton
+				showStats={false}
+				showBackButton={true}
+				actionCount={3}
+			/>
+			{/* Content skeleton */}
+			<div className="space-y-6">
+				{[1, 2, 3, 4].map((i) => (
+					<Card key={i}>
+						<CardHeader>
+							<Skeleton className="h-6 w-48" />
+						</CardHeader>
+						<CardContent>
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+								{[1, 2].map((j) => (
+									<div key={j} className="space-y-2">
+										<Skeleton className="h-4 w-24" />
+										<Skeleton className="h-5 w-40" />
+									</div>
+								))}
+							</div>
+						</CardContent>
+					</Card>
+				))}
+			</div>
+		</div>
+	);
 }
 
 export function ClientDetailsView({
@@ -61,35 +98,7 @@ export function ClientDetailsView({
 	}, [clientId, toast]);
 
 	if (isLoading) {
-		return (
-			<div className="space-y-6">
-				<PageHeroSkeleton
-					showStats={false}
-					showBackButton={true}
-					actionCount={3}
-				/>
-				{/* Content skeleton */}
-				<div className="space-y-6">
-					{[1, 2, 3, 4].map((i) => (
-						<Card key={i}>
-							<CardHeader>
-								<div className="h-6 w-48 bg-accent animate-pulse rounded" />
-							</CardHeader>
-							<CardContent>
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-									{[1, 2].map((j) => (
-										<div key={j} className="space-y-2">
-											<div className="h-4 w-24 bg-accent animate-pulse rounded" />
-											<div className="h-5 w-40 bg-accent animate-pulse rounded" />
-										</div>
-									))}
-								</div>
-							</CardContent>
-						</Card>
-					))}
-				</div>
-			</div>
-		);
+		return <ClientDetailsSkeleton />;
 	}
 
 	if (!client) {
@@ -157,7 +166,7 @@ export function ClientDetailsView({
 				]}
 			/>
 
-			<div className="space-y-6 pb-6">
+			<div className="space-y-6">
 				{/* Información General Card - Enhanced with Person Type */}
 				{(() => {
 					const personTypeStyle = getPersonTypeStyle(client.personType);

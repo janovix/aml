@@ -3396,4 +3396,24 @@ describe("ClientsTable", () => {
 			{ timeout: 5000 },
 		);
 	});
+
+	it("clears data when organization is not selected and JWT is not loading", async () => {
+		mockUseOrgStore.mockReturnValue({
+			currentOrg: null,
+		});
+
+		mockUseJwt.mockReturnValue({
+			jwt: "test-jwt-token",
+			isLoading: false,
+			error: null,
+			refetch: vi.fn(),
+		});
+
+		renderWithProviders(<ClientsTable />);
+
+		await waitFor(() => {
+			// Should not call listClients when org is not selected
+			expect(clientsApi.listClients).not.toHaveBeenCalled();
+		});
+	});
 });

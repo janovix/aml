@@ -489,7 +489,7 @@ export function AlertRuleSelector({
 				<Popover open={open} onOpenChange={handleOpenChange}>
 					<PopoverTrigger asChild>{triggerButton}</PopoverTrigger>
 					<PopoverContent
-						className="w-[--radix-popover-trigger-width] p-0"
+						className="w-[--radix-popover-trigger-width] max-w-lg p-0"
 						align="start"
 					>
 						<AlertRuleSelectorCommandContent {...commandContentProps} />

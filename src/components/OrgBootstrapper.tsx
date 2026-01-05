@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useMemo } from "react";
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { useOrgStore } from "@/lib/org-store";
 import { useAuthSession } from "@/lib/auth/useAuthSession";
 import {
@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeroSkeleton } from "@/components/skeletons/page-hero-skeleton";
 import { TableSkeleton } from "@/components/skeletons/table-skeleton";
+import { getViewSkeleton } from "@/lib/view-skeletons";
 
 // Must match the cookie name in sidebar.tsx
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
@@ -36,14 +37,17 @@ function getSidebarStateFromCookie(): boolean {
 }
 
 /**
- * App skeleton that mimics the dashboard layout structure
- * Shows while loading organization data
- * Uses standardized skeleton components to prevent layout jumping
- * Respects the persisted sidebar state to prevent layout jumps
+ * App skeleton wrapper that includes sidebar and header
+ * Shows the appropriate view skeleton based on the current route
  */
-function AppSkeleton() {
+function AppSkeletonWithView({ pathname }: { pathname: string }) {
 	// Read sidebar state from cookie to match the actual sidebar
 	const isSidebarExpanded = useMemo(() => getSidebarStateFromCookie(), []);
+
+	// Get the view-specific skeleton component
+	// Remove orgSlug from pathname to get the view path
+	const viewPath = pathname.replace(/^\/[^/]+/, "") || "/";
+	const ViewSkeleton = getViewSkeleton(viewPath);
 
 	return (
 		<div className="flex h-screen w-full bg-background">
@@ -112,19 +116,9 @@ function AppSkeleton() {
 					</div>
 				</header>
 
-				{/* Content skeleton - uses standardized components */}
+				{/* Content skeleton - uses view-specific skeleton */}
 				<main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
-					<div className="space-y-6">
-						{/* PageHero skeleton with stats */}
-						<PageHeroSkeleton
-							showStats={true}
-							showActions={true}
-							actionCount={1}
-						/>
-
-						{/* Table skeleton */}
-						<TableSkeleton rows={10} columns={5} />
-					</div>
+					<ViewSkeleton />
 				</main>
 			</div>
 		</div>
@@ -157,6 +151,7 @@ export function OrgBootstrapper({
 }: OrgBootstrapperProps) {
 	const { data: session } = useAuthSession();
 	const params = useParams();
+	const pathname = usePathname();
 	const urlOrgSlug = params?.orgSlug as string | undefined;
 
 	const {
@@ -280,12 +275,12 @@ export function OrgBootstrapper({
 	// Show loading skeleton while syncing
 	// When no org slug in URL (index page), don't block on currentOrg - index handles org selection
 	if (!isReady) {
-		return <AppSkeleton />;
+		return <AppSkeletonWithView pathname={pathname || "/"} />;
 	}
 
 	// Only require currentOrg when we have an org slug in URL
 	if (urlOrgSlug && !currentOrg) {
-		return <AppSkeleton />;
+		return <AppSkeletonWithView pathname={pathname || "/"} />;
 	}
 
 	return <>{children}</>;

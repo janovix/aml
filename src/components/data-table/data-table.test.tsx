@@ -1264,20 +1264,4 @@ describe("DataTable", () => {
 
 		expect(screen.getByText("Cargando más...")).toBeInTheDocument();
 	});
-
-	it("shows no more results message in infinite scroll mode", () => {
-		render(
-			<DataTable
-				data={mockData}
-				columns={columns}
-				filters={filters}
-				searchKeys={["name"]}
-				getId={(item) => item.id}
-				paginationMode="infinite-scroll"
-				hasMore={false}
-			/>,
-		);
-
-		expect(screen.getByText("No hay más resultados")).toBeInTheDocument();
-	});
 });

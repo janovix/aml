@@ -68,6 +68,7 @@ function isTestEnvironment(): boolean {
 
 /**
  * Automatically get JWT token for client-side requests when not provided.
+ * Uses the shared token cache to prevent duplicate token requests.
  * Returns null if not in client-side context or if JWT cannot be retrieved.
  */
 async function getJwtIfNeeded(
@@ -84,10 +85,13 @@ async function getJwtIfNeeded(
 		return null;
 	}
 
-	// Dynamically import to avoid server-side bundling issues
+	// Use the shared token cache to prevent duplicate token requests
+	// The cache handles deduplication of concurrent requests and caching for 5 minutes
 	try {
-		const { getClientJwt } = await import("@/lib/auth/authClient");
-		return await getClientJwt();
+		const { tokenCache } = await import("@/lib/auth/tokenCache");
+		// Use getCachedToken() which doesn't require organization ID
+		// This respects the token cache set by useJwt (which handles org switching)
+		return await tokenCache.getCachedToken();
 	} catch (error) {
 		// Silently fail if JWT cannot be retrieved (e.g., user not logged in)
 		// This allows the request to proceed without auth if needed

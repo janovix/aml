@@ -30,7 +30,7 @@ export const translations = {
 		required: "Requerido",
 
 		// Navigation
-		navDashboard: "Dashboard",
+		navDashboard: "Inicio",
 		navClients: "Clientes",
 		navTransactions: "Transacciones",
 		navAlerts: "Alertas",
@@ -104,6 +104,30 @@ export const translations = {
 		statsActiveAlerts: "Alertas Activas",
 		statsResolvedAlerts: "Alertas Resueltas",
 		statsReportsGenerated: "Reportes Generados",
+
+		// Dashboard
+		dashboardSubtitle: "Vista general del sistema AML y métricas clave",
+		dashboardRefresh: "Actualizar",
+		dashboardUmaTitle: "Valor UMA Activo",
+		dashboardUmaDescription:
+			"Unidad de Medida y Actualización para cálculo de umbrales",
+		dashboardUmaDailyValue: "Valor Diario",
+		dashboardUmaYear: "Año",
+		dashboardUmaThreshold: "Umbral Aviso Obligatorio (6,420 UMA)",
+		dashboardUmaThresholdNote:
+			"Transacciones ≥ este monto requieren aviso al SAT",
+		dashboardUmaEffectiveDate: "Vigente desde:",
+		dashboardUmaNotConfigured: "No hay valor UMA configurado",
+		dashboardUmaNotConfiguredNote:
+			"Contacta al administrador para configurar el valor UMA actual.",
+		dashboardTransactionStats: "Estadísticas de Transacciones",
+		dashboardTransactionStatsDesc: "Resumen de actividad transaccional",
+		dashboardNoTransactionData: "No hay datos de transacciones disponibles",
+		dashboardClientStats: "Estadísticas de Clientes",
+		dashboardClientStatsDesc: "Resumen de clientes y alertas pendientes",
+		dashboardSystemConfig: "Configuración del Sistema",
+		dashboardSystemConfigDesc: "Variables de entorno y URLs de servicios",
+		dashboardLastUpdated: "Última actualización:",
 
 		// Clients
 		clientsTitle: "Clientes",
@@ -576,7 +600,7 @@ export const translations = {
 		required: "Required",
 
 		// Navigation
-		navDashboard: "Dashboard",
+		navDashboard: "Home",
 		navClients: "Clients",
 		navTransactions: "Transactions",
 		navAlerts: "Alerts",
@@ -649,6 +673,30 @@ export const translations = {
 		statsActiveAlerts: "Active Alerts",
 		statsResolvedAlerts: "Resolved Alerts",
 		statsReportsGenerated: "Reports Generated",
+
+		// Dashboard
+		dashboardSubtitle: "AML system overview and key metrics",
+		dashboardRefresh: "Refresh",
+		dashboardUmaTitle: "Active UMA Value",
+		dashboardUmaDescription:
+			"Unit of Measurement and Update for threshold calculations",
+		dashboardUmaDailyValue: "Daily Value",
+		dashboardUmaYear: "Year",
+		dashboardUmaThreshold: "Mandatory Notice Threshold (6,420 UMA)",
+		dashboardUmaThresholdNote:
+			"Transactions ≥ this amount require SAT notification",
+		dashboardUmaEffectiveDate: "Effective since:",
+		dashboardUmaNotConfigured: "No UMA value configured",
+		dashboardUmaNotConfiguredNote:
+			"Contact the administrator to configure the current UMA value.",
+		dashboardTransactionStats: "Transaction Statistics",
+		dashboardTransactionStatsDesc: "Transaction activity summary",
+		dashboardNoTransactionData: "No transaction data available",
+		dashboardClientStats: "Client Statistics",
+		dashboardClientStatsDesc: "Summary of clients and pending alerts",
+		dashboardSystemConfig: "System Configuration",
+		dashboardSystemConfigDesc: "Environment variables and service URLs",
+		dashboardLastUpdated: "Last updated:",
 
 		// Clients
 		clientsTitle: "Clients",
