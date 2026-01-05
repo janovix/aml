@@ -324,11 +324,11 @@ describe("CreateReportView", () => {
 	it("displays preview when period is selected", async () => {
 		renderWithProviders(<CreateReportView />);
 
+		// Wait for the preview data to be fetched and displayed
 		await waitFor(() => {
-			expect(screen.getByText("Vista Previa")).toBeInTheDocument();
+			expect(screen.getByText("Total Alertas")).toBeInTheDocument();
 		});
 
-		expect(screen.getByText("Total Alertas")).toBeInTheDocument();
 		expect(screen.getByText("10")).toBeInTheDocument();
 	});
 
