@@ -1,5 +1,5 @@
-import { getUmaServiceBaseUrl } from "./config";
 import { fetchJson } from "./http";
+import { getAmlCoreBaseUrl } from "./config";
 
 /**
  * UMA (Unidad de Medida y Actualización) value entity.
@@ -36,7 +36,7 @@ export interface UmaOptions {
 export async function getActiveUmaValue(
 	opts?: UmaOptions,
 ): Promise<UmaValue | null> {
-	const baseUrl = opts?.baseUrl ?? getUmaServiceBaseUrl();
+	const baseUrl = opts?.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL("/api/v1/uma-values/active", baseUrl);
 
 	try {

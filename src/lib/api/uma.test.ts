@@ -8,7 +8,7 @@ vi.mock("./config");
 
 describe("api/uma", () => {
 	beforeEach(() => {
-		vi.mocked(config.getUmaServiceBaseUrl).mockReturnValue(
+		vi.mocked(config.getAmlCoreBaseUrl).mockReturnValue(
 			"https://test-api.example.com",
 		);
 	});

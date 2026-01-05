@@ -3,7 +3,6 @@ import {
 	DEFAULT_API_BASE_URL,
 	getUpstreamApiBaseUrl,
 	getAmlCoreBaseUrl,
-	getUmaServiceBaseUrl,
 } from "./config";
 
 const DEFAULT_AML_CORE_URL = "https://aml-svc.janovix.workers.dev";
@@ -123,58 +122,6 @@ describe("api/config", () => {
 			} finally {
 				if (prev === undefined) delete process.env.NEXT_PUBLIC_AML_CORE_URL;
 				else process.env.NEXT_PUBLIC_AML_CORE_URL = prev;
-			}
-		});
-	});
-
-	describe("getUmaServiceBaseUrl", () => {
-		it("uses NEXT_PUBLIC_UMA_SERVICE_URL when set", () => {
-			const prev = process.env.NEXT_PUBLIC_UMA_SERVICE_URL;
-
-			try {
-				process.env.NEXT_PUBLIC_UMA_SERVICE_URL =
-					"https://uma-service.example.com";
-				expect(getUmaServiceBaseUrl()).toBe("https://uma-service.example.com");
-			} finally {
-				if (prev === undefined) delete process.env.NEXT_PUBLIC_UMA_SERVICE_URL;
-				else process.env.NEXT_PUBLIC_UMA_SERVICE_URL = prev;
-			}
-		});
-
-		it("strips trailing slashes from NEXT_PUBLIC_UMA_SERVICE_URL", () => {
-			const prev = process.env.NEXT_PUBLIC_UMA_SERVICE_URL;
-
-			try {
-				process.env.NEXT_PUBLIC_UMA_SERVICE_URL =
-					"https://uma-service.example.com/";
-				expect(getUmaServiceBaseUrl()).toBe("https://uma-service.example.com");
-			} finally {
-				if (prev === undefined) delete process.env.NEXT_PUBLIC_UMA_SERVICE_URL;
-				else process.env.NEXT_PUBLIC_UMA_SERVICE_URL = prev;
-			}
-		});
-
-		it("falls back to DEFAULT_UMA_SERVICE_URL when env var is unset", () => {
-			const prev = process.env.NEXT_PUBLIC_UMA_SERVICE_URL;
-
-			try {
-				delete process.env.NEXT_PUBLIC_UMA_SERVICE_URL;
-				expect(getUmaServiceBaseUrl()).toBe(DEFAULT_UMA_SERVICE_URL);
-			} finally {
-				if (prev === undefined) delete process.env.NEXT_PUBLIC_UMA_SERVICE_URL;
-				else process.env.NEXT_PUBLIC_UMA_SERVICE_URL = prev;
-			}
-		});
-
-		it("falls back to DEFAULT_UMA_SERVICE_URL when env var is empty string", () => {
-			const prev = process.env.NEXT_PUBLIC_UMA_SERVICE_URL;
-
-			try {
-				process.env.NEXT_PUBLIC_UMA_SERVICE_URL = "";
-				expect(getUmaServiceBaseUrl()).toBe(DEFAULT_UMA_SERVICE_URL);
-			} finally {
-				if (prev === undefined) delete process.env.NEXT_PUBLIC_UMA_SERVICE_URL;
-				else process.env.NEXT_PUBLIC_UMA_SERVICE_URL = prev;
 			}
 		});
 	});

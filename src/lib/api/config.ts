@@ -23,20 +23,6 @@ export function getAmlCoreBaseUrl(): string {
 }
 
 /**
- * Base URL for the UMA (Unidad de Medida y Actualización) service.
- *
- * Uses NEXT_PUBLIC_UMA_SERVICE_URL environment variable.
- * Falls back to the default UMA service URL.
- */
-export function getUmaServiceBaseUrl(): string {
-	const envValue = process.env.NEXT_PUBLIC_UMA_SERVICE_URL;
-	if (envValue && typeof envValue === "string" && envValue.trim().length > 0) {
-		return envValue.trim().replace(/\/$/, "");
-	}
-	return DEFAULT_UMA_SERVICE_URL;
-}
-
-/**
  * Base URL for the upstream API (backward compatibility).
  *
  * - Server: prefer `ALGTOOLS_API_BASE_URL`

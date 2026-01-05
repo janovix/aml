@@ -562,11 +562,31 @@ describe("CreateReportView", () => {
 
 	it("fetches preview when period changes", async () => {
 		const user = userEvent.setup();
+		const currentYear = new Date().getFullYear();
+
+		// Make calculateMonthlyPeriod return different values based on month
+		// This ensures the useMemo sees actual changes
+		vi.mocked(reportsApi.calculateMonthlyPeriod).mockImplementation(
+			(year: number, month: number) => ({
+				periodStart: new Date(
+					`${year}-${String(month).padStart(2, "0")}-17T00:00:00Z`,
+				),
+				periodEnd: new Date(
+					`${year}-${String(month + 1).padStart(2, "0")}-16T23:59:59.999Z`,
+				),
+				reportedMonth: `${year}${String(month).padStart(2, "0")}`,
+				displayName: `Month ${month} ${year}`,
+			}),
+		);
+
 		renderWithProviders(<CreateReportView />);
 
 		await waitFor(() => {
 			expect(reportsApi.previewReport).toHaveBeenCalled();
 		});
+
+		// Reset the call count to test the change
+		vi.mocked(reportsApi.previewReport).mockClear();
 
 		// Change month
 		const monthSelect = screen.getByLabelText("Mes");
@@ -582,8 +602,17 @@ describe("CreateReportView", () => {
 		await user.click(screen.getByRole("option", { name: "Febrero" }));
 
 		await waitFor(() => {
-			expect(reportsApi.previewReport).toHaveBeenCalledTimes(2);
+			// Preview should be fetched again after month change
+			expect(reportsApi.previewReport).toHaveBeenCalledTimes(1);
 		});
+
+		// Verify the call was made with February's period
+		expect(reportsApi.previewReport).toHaveBeenCalledWith(
+			expect.objectContaining({
+				type: "MONTHLY",
+				periodStart: expect.stringContaining(`${currentYear}-02-17`),
+			}),
+		);
 	});
 
 	it("handles preview error gracefully", async () => {
@@ -597,9 +626,11 @@ describe("CreateReportView", () => {
 			expect(screen.getByText("Vista Previa")).toBeInTheDocument();
 		});
 
-		// Should show empty state when preview fails
-		expect(
-			screen.getByText("Selecciona un período para ver la vista previa"),
-		).toBeInTheDocument();
+		// Should show empty state when preview fails (wait for async error to be caught)
+		await waitFor(() => {
+			expect(
+				screen.getByText("Selecciona un período para ver la vista previa"),
+			).toBeInTheDocument();
+		});
 	});
 });

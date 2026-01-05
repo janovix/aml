@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { useJwt } from "@/hooks/useJwt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -129,8 +129,8 @@ export function CreateReportView(): React.ReactElement {
 	const [reportName, setReportName] = useState("");
 	const [notes, setNotes] = useState("");
 
-	// Calculate period based on type and selection
-	const getPeriod = () => {
+	// Calculate period based on type and selection (memoized to prevent infinite loops)
+	const period = useMemo(() => {
 		switch (reportType) {
 			case "MONTHLY":
 				return calculateMonthlyPeriod(selectedYear, selectedMonth);
@@ -151,9 +151,14 @@ export function CreateReportView(): React.ReactElement {
 			default:
 				return null;
 		}
-	};
-
-	const period = getPeriod();
+	}, [
+		reportType,
+		selectedYear,
+		selectedMonth,
+		selectedQuarter,
+		customStart,
+		customEnd,
+	]);
 
 	// Auto-generate report name based on type and period
 	useEffect(() => {
@@ -166,15 +171,7 @@ export function CreateReportView(): React.ReactElement {
 			};
 			setReportName(`${typeLabels[reportType]} ${period.displayName}`);
 		}
-	}, [
-		reportType,
-		selectedYear,
-		selectedMonth,
-		selectedQuarter,
-		customStart,
-		customEnd,
-		period,
-	]);
+	}, [reportType, period]);
 
 	// Fetch preview when period changes
 	useEffect(() => {
@@ -199,16 +196,7 @@ export function CreateReportView(): React.ReactElement {
 		};
 
 		fetchPreview();
-	}, [
-		jwt,
-		reportType,
-		selectedYear,
-		selectedMonth,
-		selectedQuarter,
-		customStart,
-		customEnd,
-		period,
-	]);
+	}, [jwt, reportType, period]);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
