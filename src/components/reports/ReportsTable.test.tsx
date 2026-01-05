@@ -164,6 +164,18 @@ describe("ReportsTable", () => {
 		});
 	});
 
+	it("renders report names as links to report details", async () => {
+		renderWithProviders(<ReportsTable />);
+
+		await waitFor(() => {
+			const reportLink = screen.getByRole("link", {
+				name: "REPORTE MENSUAL DICIEMBRE 2024",
+			});
+			expect(reportLink).toBeInTheDocument();
+			expect(reportLink).toHaveAttribute("href", "/test-org/reports/RPT001");
+		});
+	});
+
 	it("allows selecting individual reports", async () => {
 		const user = userEvent.setup();
 		renderWithProviders(<ReportsTable />);

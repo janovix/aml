@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 import {
 	FileText,
 	Calendar,
@@ -99,7 +100,7 @@ interface ReportsTableProps {
 export function ReportsTable({
 	filters,
 }: ReportsTableProps): React.ReactElement {
-	const { navigateTo } = useOrgNavigation();
+	const { navigateTo, orgPath } = useOrgNavigation();
 	const { toast } = useToast();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const { currentOrg } = useOrgStore();
@@ -275,9 +276,12 @@ export function ReportsTable({
 							</TooltipProvider>
 							<div className="flex flex-col min-w-0">
 								<div className="flex items-center gap-2">
-									<span className="font-medium text-foreground truncate">
+									<Link
+										href={orgPath(`/reports/${item.id}`)}
+										className="font-medium text-foreground truncate hover:underline hover:text-primary transition-colors"
+									>
 										{formatProperNoun(item.name)}
-									</span>
+									</Link>
 									<TooltipProvider>
 										<Tooltip>
 											<TooltipTrigger asChild>
@@ -366,7 +370,7 @@ export function ReportsTable({
 				},
 			},
 		],
-		[],
+		[orgPath],
 	);
 
 	// Filter definitions
