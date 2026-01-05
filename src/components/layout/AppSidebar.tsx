@@ -9,8 +9,6 @@ import {
 	FileText,
 	Settings,
 	Home,
-	Database,
-	Clock,
 	Briefcase,
 	UsersRound,
 } from "lucide-react";
@@ -39,7 +37,6 @@ import {
 } from "@/lib/auth/organizations";
 import { useOrgStore, type Organization } from "@/lib/org-store";
 import { executeMutation } from "@/lib/mutations";
-import { toast } from "sonner";
 import {
 	OrganizationSwitcher,
 	type Organization as LegacyOrganization,
@@ -52,7 +49,6 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-	DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,15 +80,15 @@ const mainNavItems: NavItem[] = [
 		available: true,
 	},
 	{
-		titleKey: "navAlerts",
-		href: "/alerts",
-		icon: AlertTriangle,
-		available: true,
-	},
-	{
 		titleKey: "navTransactions",
 		href: "/transactions",
 		icon: Briefcase,
+		available: true,
+	},
+	{
+		titleKey: "navAlerts",
+		href: "/alerts",
+		icon: AlertTriangle,
 		available: true,
 	},
 	{
@@ -100,21 +96,6 @@ const mainNavItems: NavItem[] = [
 		href: "/reports",
 		icon: FileText,
 		available: true,
-	},
-];
-
-const secondaryNavItems: NavItem[] = [
-	{
-		titleKey: "navRiskModels",
-		href: "/modelos",
-		icon: Database,
-		available: false,
-	},
-	{
-		titleKey: "navHistory",
-		href: "/historial",
-		icon: Clock,
-		available: false,
 	},
 ];
 
@@ -167,6 +148,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 		(itemHref: string) => {
 			if (!pathname) return false;
 			const fullPath = orgPath(itemHref);
+			// For root/home (empty href), only match exact path
+			if (itemHref === "") {
+				return pathname === fullPath;
+			}
 			return pathname === fullPath || pathname.startsWith(`${fullPath}/`);
 		},
 		[pathname, orgPath],
@@ -344,50 +329,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 						<SidebarGroupContent>
 							<SidebarMenu>
 								{mainNavItems.map((item) => {
-									const Icon = item.icon;
-									const isActive = isNavActive(item.href);
-									const title = t(item.titleKey);
-
-									return (
-										<SidebarMenuItem key={item.href}>
-											<SidebarMenuButton
-												asChild
-												isActive={isActive}
-												tooltip={title}
-											>
-												<Link
-													href={item.available ? orgPath(item.href) : "#"}
-													aria-disabled={!item.available}
-													className={cn(
-														!item.available && "pointer-events-none opacity-50",
-													)}
-													onClick={item.available ? handleLinkClick : undefined}
-												>
-													<Icon />
-													<span>{title}</span>
-													{!item.available && (
-														<span className="ml-auto text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded group-data-[collapsible=icon]:hidden">
-															{t("navComingSoon")}
-														</span>
-													)}
-												</Link>
-											</SidebarMenuButton>
-										</SidebarMenuItem>
-									);
-								})}
-							</SidebarMenu>
-						</SidebarGroupContent>
-					</SidebarGroup>
-
-					<SidebarSeparator />
-
-					<SidebarGroup>
-						<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
-							{t("navAnalysis")}
-						</SidebarGroupLabel>
-						<SidebarGroupContent>
-							<SidebarMenu>
-								{secondaryNavItems.map((item) => {
 									const Icon = item.icon;
 									const isActive = isNavActive(item.href);
 									const title = t(item.titleKey);

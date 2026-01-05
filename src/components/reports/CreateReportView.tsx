@@ -582,7 +582,7 @@ export function CreateReportView(): React.ReactElement {
 						{/* Output Format Info */}
 						{typeOption && (
 							<Card>
-								<CardContent className="pt-6">
+								<CardContent>
 									<div className="flex items-start gap-3">
 										<span
 											className={cn(

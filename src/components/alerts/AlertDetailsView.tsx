@@ -23,12 +23,6 @@ import {
 	Send,
 	XCircle,
 	AlertCircle,
-	User,
-	FileText,
-	Calendar,
-	Clock,
-	CheckCircle2,
-	Download,
 	Receipt,
 	ExternalLink,
 } from "lucide-react";
@@ -255,48 +249,6 @@ export function AlertDetailsView({
 		}
 	};
 
-	const handleDownloadXml = async (): Promise<void> => {
-		if (!alert?.satFileUrl) {
-			toast({
-				title: t("alertDownloadXmlNoFile"),
-				variant: "destructive",
-			});
-			return;
-		}
-
-		try {
-			toast({
-				title: t("alertDownloadingXml"),
-			});
-
-			const response = await fetch(alert.satFileUrl);
-			if (!response.ok) {
-				throw new Error("Failed to download file");
-			}
-
-			const blob = await response.blob();
-			const url = window.URL.createObjectURL(blob);
-			const a = document.createElement("a");
-			a.href = url;
-			// Create a filename from alertRuleId and alert id
-			a.download = `alerta-${alert.alertRuleId}-${alert.id}.xml`;
-			document.body.appendChild(a);
-			a.click();
-			document.body.removeChild(a);
-			window.URL.revokeObjectURL(url);
-
-			toast({
-				title: t("alertDownloadXmlSuccess"),
-			});
-		} catch (error) {
-			console.error("Error downloading XML:", error);
-			toast({
-				title: t("alertDownloadXmlError"),
-				variant: "destructive",
-			});
-		}
-	};
-
 	const statusCfg = statusConfig[alert.status];
 	const severityCfg = severityConfig[alert.severity];
 
@@ -311,15 +263,6 @@ export function AlertDetailsView({
 					onClick: () => navigateTo("/alerts"),
 				}}
 				actions={[
-					...(alert.satFileUrl
-						? [
-								{
-									label: t("alertDownloadXml"),
-									icon: Download,
-									onClick: handleDownloadXml,
-								},
-							]
-						: []),
 					...(alert.status !== "CANCELLED"
 						? [
 								{

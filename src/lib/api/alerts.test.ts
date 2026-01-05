@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
 	cancelAlert,
-	generateAlertSatFile,
 	getAlertById,
 	listAlerts,
 	updateAlertStatus,
@@ -265,46 +264,6 @@ describe("api/alerts", () => {
 			id: "ALERT123",
 			reason: "Duplicate alert",
 		});
-		expect(fetchSpy).toHaveBeenCalled();
-	});
-
-	it("generateAlertSatFile sends POST to /generate-file endpoint", async () => {
-		const fileResponse = { fileUrl: "https://example.com/files/alert-sat.xml" };
-
-		const fetchSpy = vi.fn(
-			async (url: RequestInfo | URL, init?: RequestInit) => {
-				expect((init?.method ?? "POST").toUpperCase()).toBe("POST");
-				const u = new URL(typeof url === "string" ? url : url.toString());
-				expect(u.origin + u.pathname).toBe(
-					"https://example.com/api/v1/alerts/ALERT123/generate-file",
-				);
-				return new Response(JSON.stringify(fileResponse), {
-					status: 200,
-					headers: { "content-type": "application/json" },
-				});
-			},
-		);
-		vi.stubGlobal("fetch", fetchSpy);
-
-		const res = await generateAlertSatFile({
-			id: "ALERT123",
-			baseUrl: "https://example.com",
-		});
-		expect(res.fileUrl).toBe("https://example.com/files/alert-sat.xml");
-	});
-
-	it("generateAlertSatFile uses default baseUrl when not provided", async () => {
-		const fileResponse = { fileUrl: "https://example.com/files/alert-sat.xml" };
-
-		const fetchSpy = vi.fn(async (url: RequestInfo | URL) => {
-			return new Response(JSON.stringify(fileResponse), {
-				status: 200,
-				headers: { "content-type": "application/json" },
-			});
-		});
-		vi.stubGlobal("fetch", fetchSpy);
-
-		await generateAlertSatFile({ id: "ALERT123" });
 		expect(fetchSpy).toHaveBeenCalled();
 	});
 

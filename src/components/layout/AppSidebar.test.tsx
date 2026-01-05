@@ -430,8 +430,8 @@ describe("AppSidebar", () => {
 		// Verify all navigation groups are rendered
 		expect(screen.getByText("Clientes")).toBeInTheDocument(); // Main nav
 		expect(screen.getByText("Inicio")).toBeInTheDocument(); // Main nav
-		expect(screen.getByText("Modelos de Riesgo")).toBeInTheDocument(); // Secondary nav
-		expect(screen.getByText("Configuración")).toBeInTheDocument(); // Bottom nav
+		expect(screen.getByText("Equipo")).toBeInTheDocument(); // Org nav
+		expect(screen.getByText("Configuración")).toBeInTheDocument(); // Org nav
 	});
 
 	it("handles organization change callback", async () => {
@@ -961,10 +961,15 @@ describe("AppSidebar", () => {
 		expect(screen.getByText("Reportes")).toBeInTheDocument();
 	});
 
-	it("renders Historial navigation item as unavailable", () => {
+	it("renders all main navigation items", () => {
 		renderWithProviders(<AppSidebar />);
 
-		expect(screen.getByText("Historial")).toBeInTheDocument();
+		// All main nav items should be visible
+		expect(screen.getByText("Inicio")).toBeInTheDocument();
+		expect(screen.getByText("Clientes")).toBeInTheDocument();
+		expect(screen.getByText("Transacciones")).toBeInTheDocument();
+		expect(screen.getByText("Alertas")).toBeInTheDocument();
+		expect(screen.getByText("Reportes")).toBeInTheDocument();
 	});
 
 	it("handles session user without name", () => {
@@ -1014,16 +1019,11 @@ describe("AppSidebar", () => {
 		expect(screen.getByText("Clientes")).toBeInTheDocument();
 	});
 
-	it("handles unavailable nav item click", async () => {
-		const user = userEvent.setup();
+	it("renders all org navigation items", () => {
 		renderWithProviders(<AppSidebar />);
 
-		// Find an unavailable item (Historial)
-		const historialLink = screen.getByText("Historial").closest("a");
-		if (historialLink) {
-			await user.click(historialLink);
-			// Should not navigate (link is disabled)
-			expect(mockPush).not.toHaveBeenCalled();
-		}
+		// All org nav items should be visible
+		expect(screen.getByText("Equipo")).toBeInTheDocument();
+		expect(screen.getByText("Configuración")).toBeInTheDocument();
 	});
 });
