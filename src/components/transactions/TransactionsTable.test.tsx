@@ -23,12 +23,13 @@ vi.mock("@/lib/cookies", () => ({
 	},
 }));
 
-const mockToast = vi.fn();
-
-vi.mock("@/hooks/use-toast", () => ({
-	useToast: () => ({
-		toast: mockToast,
-		toasts: [],
+// Mock sonner toast
+const mockToastSuccess = vi.fn();
+const mockToastError = vi.fn();
+vi.mock("sonner", () => ({
+	toast: Object.assign(vi.fn(), {
+		success: (...args: unknown[]) => mockToastSuccess(...args),
+		error: (...args: unknown[]) => mockToastError(...args),
 	}),
 }));
 
@@ -257,13 +258,7 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 		renderWithProviders(<TransactionsTable />);
 
 		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
-				expect.objectContaining({
-					title: "Ha ocurrido un error",
-					description: "No se pudieron cargar las transacciones.",
-					variant: "destructive",
-				}),
-			);
+			expect(mockToastError).toHaveBeenCalled();
 		});
 	});
 

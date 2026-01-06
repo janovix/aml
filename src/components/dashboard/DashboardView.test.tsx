@@ -59,22 +59,6 @@ vi.mock("@/lib/api/stats", () => ({
 	}),
 }));
 
-vi.mock("@/lib/api/uma", () => ({
-	getActiveUmaValue: vi.fn().mockResolvedValue({
-		id: "UMA-001",
-		year: 2025,
-		dailyValue: "113.14",
-		effectiveDate: "2025-01-01T00:00:00Z",
-		endDate: null,
-		approvedBy: null,
-		notes: null,
-		active: true,
-		createdAt: "2024-12-15T10:00:00Z",
-		updatedAt: "2024-12-15T10:00:00Z",
-	}),
-	calculateUmaThreshold: vi.fn().mockReturnValue(726358.8),
-}));
-
 describe("DashboardView", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -100,15 +84,6 @@ describe("DashboardView", () => {
 		});
 	});
 
-	it("renders UMA value card", async () => {
-		renderWithProviders(<DashboardView />);
-
-		await waitFor(() => {
-			const umaTitle = screen.getAllByText(/valor uma activo/i);
-			expect(umaTitle.length).toBeGreaterThan(0);
-		});
-	});
-
 	it("renders transaction stats card", async () => {
 		renderWithProviders(<DashboardView />);
 
@@ -126,6 +101,31 @@ describe("DashboardView", () => {
 		await waitFor(() => {
 			const clientStats = screen.getAllByText(/estadísticas de clientes/i);
 			expect(clientStats.length).toBeGreaterThan(0);
+		});
+	});
+
+	it("renders link to clients page", async () => {
+		renderWithProviders(<DashboardView />);
+
+		await waitFor(() => {
+			const clientLinks = screen.getAllByRole("link", { name: /clientes/i });
+			expect(clientLinks.length).toBeGreaterThan(0);
+			expect(clientLinks[0]).toHaveAttribute("href", "/test-org/clients");
+		});
+	});
+
+	it("renders link to transactions page", async () => {
+		renderWithProviders(<DashboardView />);
+
+		await waitFor(() => {
+			const transactionLinks = screen.getAllByRole("link", {
+				name: /transacciones/i,
+			});
+			expect(transactionLinks.length).toBeGreaterThan(0);
+			expect(transactionLinks[0]).toHaveAttribute(
+				"href",
+				"/test-org/transactions",
+			);
 		});
 	});
 
@@ -151,7 +151,6 @@ describe("DashboardView", () => {
 
 // Additional tests for missing branches
 import * as statsApi from "@/lib/api/stats";
-import * as umaApi from "@/lib/api/uma";
 import * as useJwtModule from "@/hooks/useJwt";
 import * as orgStoreModule from "@/lib/org-store";
 
@@ -231,25 +230,11 @@ describe("DashboardView branch coverage", () => {
 		});
 	});
 
-	it("handles null UMA value", async () => {
-		vi.spyOn(umaApi, "getActiveUmaValue").mockResolvedValue(null as never);
-
-		renderWithProviders(<DashboardView />);
-
-		await waitFor(() => {
-			const dashboardHeaders = screen.getAllByText("Inicio");
-			expect(dashboardHeaders.length).toBeGreaterThan(0);
-		});
-	});
-
 	it("handles API error", async () => {
 		vi.spyOn(statsApi, "getClientStats").mockRejectedValue(
 			new Error("API Error"),
 		);
 		vi.spyOn(statsApi, "getTransactionStats").mockRejectedValue(
-			new Error("API Error"),
-		);
-		vi.spyOn(umaApi, "getActiveUmaValue").mockRejectedValue(
 			new Error("API Error"),
 		);
 
@@ -324,17 +309,6 @@ describe("DashboardView branch coverage", () => {
 
 	it("handles null transaction stats gracefully", async () => {
 		vi.spyOn(statsApi, "getTransactionStats").mockResolvedValue(null as never);
-
-		renderWithProviders(<DashboardView />);
-
-		await waitFor(() => {
-			const dashboardHeaders = screen.getAllByText("Inicio");
-			expect(dashboardHeaders.length).toBeGreaterThan(0);
-		});
-	});
-
-	it("handles null UMA value gracefully", async () => {
-		vi.spyOn(umaApi, "getActiveUmaValue").mockResolvedValue(null as never);
 
 		renderWithProviders(<DashboardView />);
 

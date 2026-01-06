@@ -28,7 +28,8 @@ vi.mock("@/lib/cookies", () => ({
 }));
 
 const mockPush = vi.fn();
-const mockToast = vi.fn();
+const mockToastSuccess = vi.fn();
+const mockToastError = vi.fn();
 const mockGetClientById = vi.fn();
 const mockUpdateClient = vi.fn();
 const originalRequestSubmit = HTMLFormElement.prototype.requestSubmit;
@@ -43,10 +44,11 @@ vi.mock("next/navigation", () => ({
 	useParams: () => ({ orgSlug: "test-org", id: "1" }),
 }));
 
-vi.mock("../../hooks/use-toast", () => ({
-	useToast: () => ({
-		toast: mockToast,
-		toasts: [],
+// Mock sonner toast
+vi.mock("sonner", () => ({
+	toast: Object.assign(vi.fn(), {
+		success: (...args: unknown[]) => mockToastSuccess(...args),
+		error: (...args: unknown[]) => mockToastError(...args),
 	}),
 }));
 
@@ -107,7 +109,8 @@ describe("ClientEditView", () => {
 		vi.clearAllMocks();
 		mockGetClientById.mockReset();
 		mockUpdateClient.mockReset();
-		mockToast.mockReset();
+		mockToastSuccess.mockReset();
+		mockToastError.mockReset();
 		mockPush.mockReset();
 	});
 
@@ -205,13 +208,7 @@ describe("ClientEditView", () => {
 		});
 		await user.click(saveButtons.at(-1)!);
 
-		await waitFor(() =>
-			expect(mockToast).toHaveBeenCalledWith(
-				expect.objectContaining({
-					title: "Tipo de persona no disponible",
-				}),
-			),
-		);
+		await waitFor(() => expect(mockToastError).toHaveBeenCalled());
 		expect(mockUpdateClient).not.toHaveBeenCalled();
 	});
 });

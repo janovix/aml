@@ -86,6 +86,9 @@ const mainNavItems: NavItem[] = [
 		icon: Briefcase,
 		available: true,
 	},
+];
+
+const complianceNavItems: NavItem[] = [
 	{
 		titleKey: "navAlerts",
 		href: "/alerts",
@@ -336,6 +339,48 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 						<SidebarGroupContent>
 							<SidebarMenu>
 								{mainNavItems.map((item) => {
+									const Icon = item.icon;
+									const isActive = isNavActive(item.href);
+									const title = t(item.titleKey);
+
+									return (
+										<SidebarMenuItem key={item.href}>
+											<SidebarMenuButton
+												asChild
+												isActive={isActive}
+												tooltip={title}
+											>
+												<Link
+													href={item.available ? orgPath(item.href) : "#"}
+													aria-disabled={!item.available}
+													className={cn(
+														!item.available && "pointer-events-none opacity-50",
+													)}
+													onClick={item.available ? handleLinkClick : undefined}
+												>
+													<Icon />
+													<span>{title}</span>
+													{!item.available && (
+														<span className="ml-auto text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded group-data-[collapsible=icon]:hidden">
+															{t("navComingSoon")}
+														</span>
+													)}
+												</Link>
+											</SidebarMenuButton>
+										</SidebarMenuItem>
+									);
+								})}
+							</SidebarMenu>
+						</SidebarGroupContent>
+					</SidebarGroup>
+
+					<SidebarGroup>
+						<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
+							{t("navCompliance")}
+						</SidebarGroupLabel>
+						<SidebarGroupContent>
+							<SidebarMenu>
+								{complianceNavItems.map((item) => {
 									const Icon = item.icon;
 									const isActive = isNavActive(item.href);
 									const title = t(item.titleKey);

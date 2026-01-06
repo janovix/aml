@@ -20,7 +20,8 @@ vi.mock("@/lib/cookies", () => ({
 }));
 
 const mockPush = vi.fn();
-const mockToast = vi.fn();
+const mockToastSuccess = vi.fn();
+const mockToastError = vi.fn();
 
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
@@ -32,10 +33,11 @@ vi.mock("next/navigation", () => ({
 	useParams: () => ({ orgSlug: "test-org", id: "test-id" }),
 }));
 
-vi.mock("@/hooks/use-toast", () => ({
-	useToast: () => ({
-		toast: mockToast,
-		toasts: [],
+// Mock sonner toast
+vi.mock("sonner", () => ({
+	toast: Object.assign(vi.fn(), {
+		success: (...args: unknown[]) => mockToastSuccess(...args),
+		error: (...args: unknown[]) => mockToastError(...args),
 	}),
 }));
 
@@ -326,12 +328,7 @@ describe("ClientEditPageContent", () => {
 
 		// Wait for submission to complete
 		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
-				expect.objectContaining({
-					title: "Cliente actualizado",
-					description: "Los cambios se han guardado exitosamente.",
-				}),
-			);
+			expect(mockToastSuccess).toHaveBeenCalled();
 		});
 
 		// Should redirect to client detail page

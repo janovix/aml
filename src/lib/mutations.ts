@@ -63,7 +63,7 @@ function formatValidationMessages(messages: string[]): string {
  * Handles ApiError instances and extracts messages from the API response body.
  * Specifically handles Zod validation errors from aml-svc.
  */
-function extractErrorMessage(error: unknown): string {
+export function extractErrorMessage(error: unknown): string {
 	if (error instanceof ApiError) {
 		// Try to extract message from API response body
 		if (error.body && typeof error.body === "object") {

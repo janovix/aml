@@ -194,4 +194,20 @@ describe("DashboardLayout", () => {
 		// Logo should be present either as full logo, icon, or organization switcher should be visible
 		expect(logoSvg || logoIcon || orgSwitcher).toBeTruthy();
 	});
+
+	it("renders footer with Janovix logo at the bottom", () => {
+		renderWithProviders(
+			<DashboardLayout>
+				<div>Test</div>
+			</DashboardLayout>,
+		);
+
+		// Check for the footer element
+		const footer = document.querySelector("footer");
+		expect(footer).toBeInTheDocument();
+
+		// Check that the footer contains the Janovix text logo (viewBox 0 0 102 16)
+		const footerLogo = footer?.querySelector('svg[viewBox="0 0 102 16"]');
+		expect(footerLogo).toBeInTheDocument();
+	});
 });

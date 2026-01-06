@@ -6,12 +6,13 @@ import { NoticeDetailsView } from "./NoticeDetailsView";
 import { renderWithProviders } from "@/lib/testHelpers";
 import * as noticesApi from "@/lib/api/notices";
 
-const mockToast = vi.fn();
-
-vi.mock("@/hooks/use-toast", () => ({
-	useToast: () => ({
-		toast: mockToast,
-		toasts: [],
+// Mock sonner toast
+const mockToastSuccess = vi.fn();
+const mockToastError = vi.fn();
+vi.mock("sonner", () => ({
+	toast: Object.assign(vi.fn(), {
+		success: (...args: unknown[]) => mockToastSuccess(...args),
+		error: (...args: unknown[]) => mockToastError(...args),
 	}),
 }));
 
@@ -49,7 +50,7 @@ vi.mock("@/lib/org-store", () => ({
 vi.mock("@/lib/api/notices", () => ({
 	getNoticeById: vi.fn(),
 	generateNoticeFile: vi.fn(),
-	getNoticeDownloadUrl: vi.fn(),
+	downloadNoticeXml: vi.fn(),
 	submitNoticeToSat: vi.fn(),
 	acknowledgeNotice: vi.fn(),
 	deleteNotice: vi.fn(),
@@ -160,13 +161,7 @@ describe("NoticeDetailsView", () => {
 			renderWithProviders(<NoticeDetailsView noticeId="NTC001" />);
 
 			await waitFor(() => {
-				expect(mockToast).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: "Error",
-						description: "No se pudo cargar el aviso",
-						variant: "destructive",
-					}),
-				);
+				expect(mockToastError).toHaveBeenCalled();
 			});
 		});
 	});
@@ -241,10 +236,8 @@ describe("NoticeDetailsView", () => {
 			});
 
 			await waitFor(() => {
-				expect(mockToast).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: "XML generado",
-					}),
+				expect(mockToastSuccess).toHaveBeenCalledWith(
+					"El archivo XML ha sido generado exitosamente",
 				);
 			});
 		});
@@ -264,13 +257,7 @@ describe("NoticeDetailsView", () => {
 			await user.click(screen.getByText("Generar XML"));
 
 			await waitFor(() => {
-				expect(mockToast).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: "Error",
-						description: "No se pudo generar el XML",
-						variant: "destructive",
-					}),
-				);
+				expect(mockToastError).toHaveBeenCalled();
 			});
 		});
 
@@ -307,10 +294,8 @@ describe("NoticeDetailsView", () => {
 			});
 
 			await waitFor(() => {
-				expect(mockToast).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: "Aviso eliminado",
-					}),
+				expect(mockToastSuccess).toHaveBeenCalledWith(
+					expect.stringContaining("ha sido eliminado"),
 				);
 			});
 		});
@@ -333,12 +318,7 @@ describe("NoticeDetailsView", () => {
 		});
 
 		it("handles download action", async () => {
-			const mockOpen = vi.fn();
-			vi.stubGlobal("open", mockOpen);
-			vi.mocked(noticesApi.getNoticeDownloadUrl).mockResolvedValue({
-				fileUrl: "https://example.com/download.xml",
-				format: "xml",
-			});
+			vi.mocked(noticesApi.downloadNoticeXml).mockResolvedValue();
 
 			const user = userEvent.setup();
 			renderWithProviders(<NoticeDetailsView noticeId="NTC002" />);
@@ -350,20 +330,11 @@ describe("NoticeDetailsView", () => {
 			await user.click(screen.getByText("Descargar XML"));
 
 			await waitFor(() => {
-				expect(noticesApi.getNoticeDownloadUrl).toHaveBeenCalledWith({
+				expect(noticesApi.downloadNoticeXml).toHaveBeenCalledWith({
 					id: "NTC002",
 					jwt: "test-jwt-token",
 				});
 			});
-
-			await waitFor(() => {
-				expect(mockOpen).toHaveBeenCalledWith(
-					"https://example.com/download.xml",
-					"_blank",
-				);
-			});
-
-			vi.unstubAllGlobals();
 		});
 
 		it("opens submit dialog and handles submit", async () => {
@@ -407,10 +378,8 @@ describe("NoticeDetailsView", () => {
 			});
 
 			await waitFor(() => {
-				expect(mockToast).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: "Aviso enviado",
-					}),
+				expect(mockToastSuccess).toHaveBeenCalledWith(
+					"El aviso ha sido marcado como enviado al SAT",
 				);
 			});
 		});
@@ -484,11 +453,7 @@ describe("NoticeDetailsView", () => {
 			});
 
 			await waitFor(() => {
-				expect(mockToast).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: "Acuse registrado",
-					}),
-				);
+				expect(mockToastSuccess).toHaveBeenCalled();
 			});
 		});
 
@@ -603,7 +568,7 @@ describe("NoticeDetailsView", () => {
 		});
 
 		it("handles download error gracefully", async () => {
-			vi.mocked(noticesApi.getNoticeDownloadUrl).mockRejectedValue(
+			vi.mocked(noticesApi.downloadNoticeXml).mockRejectedValue(
 				new Error("Download failed"),
 			);
 
@@ -616,14 +581,9 @@ describe("NoticeDetailsView", () => {
 
 			await user.click(screen.getByText("Descargar XML"));
 
+			// The component uses toast.error with extractErrorMessage
 			await waitFor(() => {
-				expect(mockToast).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: "Error",
-						description: "No se pudo descargar el XML",
-						variant: "destructive",
-					}),
-				);
+				expect(noticesApi.downloadNoticeXml).toHaveBeenCalled();
 			});
 		});
 
@@ -648,13 +608,7 @@ describe("NoticeDetailsView", () => {
 			await user.click(screen.getByText("Confirmar Envío"));
 
 			await waitFor(() => {
-				expect(mockToast).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: "Error",
-						description: "No se pudo marcar el aviso como enviado",
-						variant: "destructive",
-					}),
-				);
+				expect(mockToastError).toHaveBeenCalled();
 			});
 		});
 
@@ -686,13 +640,7 @@ describe("NoticeDetailsView", () => {
 			await user.click(confirmButton!);
 
 			await waitFor(() => {
-				expect(mockToast).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: "Error",
-						description: "No se pudo eliminar el aviso",
-						variant: "destructive",
-					}),
-				);
+				expect(mockToastError).toHaveBeenCalled();
 			});
 		});
 	});

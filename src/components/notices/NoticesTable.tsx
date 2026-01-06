@@ -35,7 +35,8 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { extractErrorMessage } from "@/lib/mutations";
 import {
 	DataTable,
 	type ColumnDef,
@@ -47,7 +48,7 @@ import {
 	listNotices,
 	deleteNotice,
 	generateNoticeFile,
-	getNoticeDownloadUrl,
+	downloadNoticeXml,
 	type Notice,
 	type NoticeStatus,
 } from "@/lib/api/notices";
@@ -95,7 +96,6 @@ export function NoticesTable({
 	filters,
 }: NoticesTableProps): React.ReactElement {
 	const { navigateTo, orgPath } = useOrgNavigation();
-	const { toast } = useToast();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const { currentOrg } = useOrgStore();
 
@@ -127,11 +127,7 @@ export function NoticesTable({
 			setHasMore(response.pagination.page < response.pagination.totalPages);
 		} catch (error) {
 			console.error("Error fetching notices:", error);
-			toast({
-				title: "Error",
-				description: "No se pudieron cargar los avisos",
-				variant: "destructive",
-			});
+			toast.error(extractErrorMessage(error));
 		} finally {
 			setIsLoading(false);
 		}
@@ -155,11 +151,7 @@ export function NoticesTable({
 			setHasMore(response.pagination.page < response.pagination.totalPages);
 		} catch (error) {
 			console.error("Error loading more notices:", error);
-			toast({
-				title: "Error",
-				description: "No se pudieron cargar más avisos",
-				variant: "destructive",
-			});
+			toast.error(extractErrorMessage(error));
 		} finally {
 			setIsLoadingMore(false);
 		}
@@ -407,33 +399,21 @@ export function NoticesTable({
 		if (!jwt) return;
 		try {
 			const result = await generateNoticeFile({ id: notice.id, jwt });
-			toast({
-				title: "Aviso generado",
-				description: `XML generado con ${result.alertCount} alertas`,
-			});
+			toast.success(`XML generado con ${result.alertCount} alertas`);
 			doFetchNotices(jwt);
 		} catch (error) {
 			console.error("Error generating notice:", error);
-			toast({
-				title: "Error",
-				description: "No se pudo generar el aviso",
-				variant: "destructive",
-			});
+			toast.error(extractErrorMessage(error));
 		}
 	};
 
 	const handleDownload = async (notice: Notice) => {
 		if (!jwt) return;
 		try {
-			const { fileUrl } = await getNoticeDownloadUrl({ id: notice.id, jwt });
-			window.open(fileUrl, "_blank");
+			await downloadNoticeXml({ id: notice.id, jwt });
 		} catch (error) {
 			console.error("Error downloading notice:", error);
-			toast({
-				title: "Error",
-				description: "No se pudo descargar el aviso",
-				variant: "destructive",
-			});
+			toast.error(extractErrorMessage(error));
 		}
 	};
 
@@ -441,18 +421,11 @@ export function NoticesTable({
 		if (!jwt) return;
 		try {
 			await deleteNotice({ id: notice.id, jwt });
-			toast({
-				title: "Aviso eliminado",
-				description: `${notice.name} ha sido eliminado.`,
-			});
+			toast.success(`${notice.name} ha sido eliminado.`);
 			doFetchNotices(jwt);
 		} catch (error) {
 			console.error("Error deleting notice:", error);
-			toast({
-				title: "Error",
-				description: "No se pudo eliminar el aviso",
-				variant: "destructive",
-			});
+			toast.error(extractErrorMessage(error));
 		}
 	};
 

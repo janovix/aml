@@ -6,12 +6,13 @@ import { ReportsTable } from "./ReportsTable";
 import { renderWithProviders } from "@/lib/testHelpers";
 import * as reportsApi from "@/lib/api/reports";
 
-const mockToast = vi.fn();
-
-vi.mock("@/hooks/use-toast", () => ({
-	useToast: () => ({
-		toast: mockToast,
-		toasts: [],
+// Mock sonner toast
+const mockToastError = vi.fn();
+const mockToastSuccess = vi.fn();
+vi.mock("sonner", () => ({
+	toast: Object.assign(vi.fn(), {
+		success: (...args: unknown[]) => mockToastSuccess(...args),
+		error: (...args: unknown[]) => mockToastError(...args),
 	}),
 }));
 
@@ -48,7 +49,7 @@ vi.mock("@/lib/api/reports", () => ({
 	listReports: vi.fn(),
 	deleteReport: vi.fn(),
 	generateReportFile: vi.fn(),
-	getReportDownloadUrl: vi.fn(),
+	downloadReportFile: vi.fn(),
 }));
 
 // Mock report data
@@ -57,7 +58,7 @@ const mockReports: reportsApi.Report[] = [
 		id: "RPT001",
 		organizationId: "org-1",
 		name: "Reporte Mensual Diciembre 2024",
-		type: "MONTHLY",
+		periodType: "MONTHLY",
 		status: "DRAFT",
 		periodStart: "2024-11-17T00:00:00Z",
 		periodEnd: "2024-12-16T23:59:59Z",
@@ -75,7 +76,7 @@ const mockReports: reportsApi.Report[] = [
 		id: "RPT002",
 		organizationId: "org-1",
 		name: "Reporte Trimestral Q4 2024",
-		type: "QUARTERLY",
+		periodType: "QUARTERLY",
 		status: "GENERATED",
 		periodStart: "2024-10-01T00:00:00Z",
 		periodEnd: "2024-12-31T23:59:59Z",
@@ -93,7 +94,7 @@ const mockReports: reportsApi.Report[] = [
 		id: "RPT003",
 		organizationId: "org-1",
 		name: "Reporte Mensual Noviembre 2024",
-		type: "MONTHLY",
+		periodType: "MONTHLY",
 		status: "GENERATED",
 		periodStart: "2024-10-17T00:00:00Z",
 		periodEnd: "2024-11-16T23:59:59Z",
@@ -331,13 +332,7 @@ describe("ReportsTable", () => {
 		renderWithProviders(<ReportsTable />);
 
 		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
-				expect.objectContaining({
-					title: "Error",
-					description: "No se pudieron cargar los reportes",
-					variant: "destructive",
-				}),
-			);
+			expect(mockToastError).toHaveBeenCalled();
 		});
 	});
 
@@ -362,25 +357,25 @@ describe("ReportsTable", () => {
 	});
 
 	it("handles filter changes correctly", async () => {
-		renderWithProviders(<ReportsTable filters={{ type: "MONTHLY" }} />);
+		renderWithProviders(<ReportsTable filters={{ periodType: "MONTHLY" }} />);
 
 		await waitFor(() => {
 			expect(reportsApi.listReports).toHaveBeenCalledWith(
 				expect.objectContaining({
-					type: "MONTHLY",
+					periodType: "MONTHLY",
 				}),
 			);
 		});
 
 		// Change filters
 		const { rerender } = renderWithProviders(
-			<ReportsTable filters={{ type: "QUARTERLY" }} />,
+			<ReportsTable filters={{ periodType: "QUARTERLY" }} />,
 		);
 
 		await waitFor(() => {
 			expect(reportsApi.listReports).toHaveBeenCalledWith(
 				expect.objectContaining({
-					type: "QUARTERLY",
+					periodType: "QUARTERLY",
 				}),
 			);
 		});

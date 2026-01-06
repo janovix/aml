@@ -18,7 +18,8 @@ import type {
 	ClientCreateRequest,
 	Client,
 } from "../../types/client";
-import { useToast } from "../../hooks/use-toast";
+import { toast } from "sonner";
+import { extractErrorMessage } from "@/lib/mutations";
 import { getClientById, updateClient } from "../../lib/api/clients";
 import { executeMutation } from "../../lib/mutations";
 import { getPersonTypeStyle } from "../../lib/person-type-icon";
@@ -102,7 +103,6 @@ export function ClientEditView({
 	clientId,
 }: ClientEditViewProps): React.JSX.Element {
 	const { navigateTo } = useOrgNavigation();
-	const { toast } = useToast();
 	const { t } = useLanguage();
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
@@ -193,10 +193,7 @@ export function ClientEditView({
 				});
 			} catch (error) {
 				console.error("Error fetching client:", error);
-				toast({
-					title: t("clientLoadError"),
-					variant: "destructive",
-				});
+				toast.error(extractErrorMessage(error));
 			} finally {
 				setIsLoading(false);
 			}
@@ -245,10 +242,7 @@ export function ClientEditView({
 		setIsSubmitting(true);
 
 		if (!currentPersonType) {
-			toast({
-				title: t("clientPersonTypeNotAvailable"),
-				variant: "destructive",
-			});
+			toast.error(t("clientPersonTypeNotAvailable"));
 			setIsSubmitting(false);
 			return;
 		}

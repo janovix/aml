@@ -25,7 +25,6 @@ vi.mock("@/lib/cookies", () => ({
 
 const mockPush = vi.fn();
 const mockPathname = vi.fn(() => "/transactions");
-const mockToast = vi.fn();
 
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
@@ -37,10 +36,13 @@ vi.mock("next/navigation", () => ({
 	useParams: () => ({ orgSlug: "test-org" }),
 }));
 
-vi.mock("@/hooks/use-toast", () => ({
-	useToast: () => ({
-		toast: mockToast,
-		toasts: [],
+// Mock sonner toast
+const mockToastError = vi.fn();
+const mockToastSuccess = vi.fn();
+vi.mock("sonner", () => ({
+	toast: Object.assign(vi.fn(), {
+		success: (...args: unknown[]) => mockToastSuccess(...args),
+		error: (...args: unknown[]) => mockToastError(...args),
 	}),
 }));
 
@@ -240,11 +242,7 @@ describe("TransactionsPageContent", () => {
 			{ message: "Internal server error" },
 		);
 
-		expect(mockToast).toHaveBeenCalledWith({
-			title: "Ha ocurrido un error",
-			description: "No se pudieron cargar las estadísticas.",
-			variant: "destructive",
-		});
+		expect(mockToastError).toHaveBeenCalled();
 
 		consoleSpy.mockRestore();
 	});
@@ -268,11 +266,7 @@ describe("TransactionsPageContent", () => {
 			"Network error",
 		);
 
-		expect(mockToast).toHaveBeenCalledWith({
-			title: "Ha ocurrido un error",
-			description: "No se pudieron cargar las estadísticas.",
-			variant: "destructive",
-		});
+		expect(mockToastError).toHaveBeenCalled();
 
 		consoleSpy.mockRestore();
 	});
@@ -416,11 +410,7 @@ describe("TransactionsPageContent", () => {
 			"String error",
 		);
 
-		expect(mockToast).toHaveBeenCalledWith({
-			title: "Ha ocurrido un error",
-			description: "No se pudieron cargar las estadísticas.",
-			variant: "destructive",
-		});
+		expect(mockToastError).toHaveBeenCalled();
 
 		consoleSpy.mockRestore();
 	});

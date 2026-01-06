@@ -26,9 +26,10 @@ import {
 	Receipt,
 	ExternalLink,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { useJwt } from "@/hooks/useJwt";
 import { useLanguage } from "@/components/LanguageProvider";
+import { toast } from "sonner";
+import { extractErrorMessage } from "@/lib/mutations";
 import {
 	getAlertById,
 	cancelAlert,
@@ -135,7 +136,6 @@ export function AlertDetailsView({
 	const [client, setClient] = useState<Client | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const { navigateTo, orgPath } = useOrgNavigation();
-	const { toast } = useToast();
 	const { jwt } = useJwt();
 	const { t } = useLanguage();
 
@@ -162,11 +162,7 @@ export function AlertDetailsView({
 				}
 			} catch (error) {
 				console.error("Error fetching alert:", error);
-				toast({
-					title: "Error",
-					description: "No se pudo cargar la alerta.",
-					variant: "destructive",
-				});
+				toast.error(extractErrorMessage(error));
 				navigateTo("/alerts");
 			} finally {
 				setIsLoading(false);

@@ -47,6 +47,7 @@ import {
 	type ReportPreviewResponse,
 } from "@/lib/api/reports";
 import { toast } from "sonner";
+import { extractErrorMessage } from "@/lib/mutations";
 
 // Report Templates
 interface ReportTemplate {
@@ -277,7 +278,7 @@ export function CreateReportView(): React.ReactElement {
 			setIsLoadingPreview(true);
 			try {
 				const result = await previewReport({
-					type: periodType as ReportType,
+					periodType: periodType as ReportType,
 					periodStart: period.periodStart.toISOString(),
 					periodEnd: period.periodEnd.toISOString(),
 					jwt,
@@ -301,7 +302,7 @@ export function CreateReportView(): React.ReactElement {
 		try {
 			const report = await createReport({
 				name: reportName,
-				type: periodType as ReportType,
+				periodType: periodType as ReportType,
 				periodStart: period.periodStart.toISOString(),
 				periodEnd: period.periodEnd.toISOString(),
 				reportedMonth: period.reportedMonth,
@@ -313,7 +314,7 @@ export function CreateReportView(): React.ReactElement {
 			navigateTo(`/reports/${report.id}`);
 		} catch (error) {
 			console.error("Error creating report:", error);
-			toast.error("Error al crear el reporte");
+			toast.error(extractErrorMessage(error));
 		} finally {
 			setIsSubmitting(false);
 		}

@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { ArrowLeft, Save } from "lucide-react";
 import { mockClients } from "@/data/mockClients";
 import type { Client, PersonType } from "@/types/client";
@@ -25,7 +25,6 @@ export function ClientEditPageContent({
 	clientId,
 }: ClientEditPageContentProps): React.ReactElement {
 	const router = useRouter();
-	const { toast } = useToast();
 	const [client, setClient] = useState<Client | null>(null);
 	const [formData, setFormData] = useState<Partial<Client>>({});
 	const [loading, setLoading] = useState(false);
@@ -63,10 +62,7 @@ export function ClientEditPageContent({
 		// Simulate API call
 		await new Promise((resolve) => setTimeout(resolve, 500));
 
-		toast({
-			title: "Cliente actualizado",
-			description: "Los cambios se han guardado exitosamente.",
-		});
+		toast.success("Los cambios se han guardado exitosamente.");
 
 		setLoading(false);
 		router.push(`/clients/${client?.rfc || clientId}`);

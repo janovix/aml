@@ -6,12 +6,13 @@ import { CreateNoticeView } from "./CreateNoticeView";
 import { renderWithProviders } from "@/lib/testHelpers";
 import * as noticesApi from "@/lib/api/notices";
 
-const mockToast = vi.fn();
-
-vi.mock("@/hooks/use-toast", () => ({
-	useToast: () => ({
-		toast: mockToast,
-		toasts: [],
+// Mock sonner toast
+const mockToastSuccess = vi.fn();
+const mockToastError = vi.fn();
+vi.mock("sonner", () => ({
+	toast: Object.assign(vi.fn(), {
+		success: (...args: unknown[]) => mockToastSuccess(...args),
+		error: (...args: unknown[]) => mockToastError(...args),
 	}),
 }));
 
@@ -389,11 +390,7 @@ describe("CreateNoticeView", () => {
 			});
 
 			await waitFor(() => {
-				expect(mockToast).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: "Aviso creado",
-					}),
-				);
+				expect(mockToastSuccess).toHaveBeenCalled();
 			});
 
 			await waitFor(() => {
@@ -507,13 +504,7 @@ describe("CreateNoticeView", () => {
 			await user.click(screen.getByText("Crear Aviso"));
 
 			await waitFor(() => {
-				expect(mockToast).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: "Error",
-						description: "No se pudo crear el aviso",
-						variant: "destructive",
-					}),
-				);
+				expect(mockToastError).toHaveBeenCalled();
 			});
 		});
 	});
@@ -560,13 +551,7 @@ describe("CreateNoticeView", () => {
 			renderWithProviders(<CreateNoticeView />);
 
 			await waitFor(() => {
-				expect(mockToast).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: "Error",
-						description: "No se pudieron cargar los meses disponibles",
-						variant: "destructive",
-					}),
-				);
+				expect(mockToastError).toHaveBeenCalled();
 			});
 		});
 
