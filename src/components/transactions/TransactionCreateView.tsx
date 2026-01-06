@@ -85,7 +85,7 @@ export function TransactionCreateView(): React.JSX.Element {
 		flagCountryId: "",
 		amount: "", // Calculated from payment methods on submit
 		currency: "MXN",
-		paymentMethods: [{ method: "EFECTIVO", amount: "" }],
+		paymentMethods: [{ method: "", amount: "" }],
 	});
 
 	const [validationErrors, setValidationErrors] = useState<{
@@ -150,10 +150,7 @@ export function TransactionCreateView(): React.JSX.Element {
 	const handleAddPaymentMethod = (): void => {
 		setFormData((prev) => ({
 			...prev,
-			paymentMethods: [
-				...prev.paymentMethods,
-				{ method: "EFECTIVO", amount: "" },
-			],
+			paymentMethods: [...prev.paymentMethods, { method: "", amount: "" }],
 		}));
 	};
 
@@ -591,9 +588,15 @@ export function TransactionCreateView(): React.JSX.Element {
 								value={formData.currency}
 								required
 								searchPlaceholder={t("search")}
-								onChange={(option) =>
-									handleInputChange("currency", option?.id ?? "")
-								}
+								onChange={(option) => {
+									// Use shortName from metadata for currency code (e.g., "MXN")
+									const metadata = option?.metadata as
+										| { shortName?: string }
+										| null
+										| undefined;
+									const currencyCode = metadata?.shortName ?? option?.id ?? "";
+									handleInputChange("currency", currencyCode);
+								}}
 							/>
 						</div>
 
@@ -643,36 +646,20 @@ export function TransactionCreateView(): React.JSX.Element {
 									key={index}
 									className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-lg"
 								>
-									<div className="space-y-2">
-										<Label htmlFor={`payment-method-${index}`}>
-											{t("txnPaymentMethodLabel")} {index + 1} *
-										</Label>
-										<Select
-											value={pm.method}
-											onValueChange={(value) =>
-												handlePaymentMethodChange(index, "method", value)
-											}
-											required
-										>
-											<SelectTrigger id={`payment-method-${index}`}>
-												<SelectValue />
-											</SelectTrigger>
-											<SelectContent>
-												<SelectItem value="EFECTIVO">
-													{t("txnPaymentMethodCash")}
-												</SelectItem>
-												<SelectItem value="TRANSFERENCIA">
-													{t("txnPaymentMethodTransfer")}
-												</SelectItem>
-												<SelectItem value="CHEQUE">
-													{t("txnPaymentMethodCheck")}
-												</SelectItem>
-												<SelectItem value="FINANCIAMIENTO">
-													{t("txnPaymentMethodFinancing")}
-												</SelectItem>
-											</SelectContent>
-										</Select>
-									</div>
+									<CatalogSelector
+										catalogKey="payment-methods"
+										label={`${t("txnPaymentMethodLabel")} ${index + 1}`}
+										value={pm.method}
+										searchPlaceholder={t("search")}
+										required
+										onChange={(option) =>
+											handlePaymentMethodChange(
+												index,
+												"method",
+												option?.name ?? "",
+											)
+										}
+									/>
 
 									<div className="space-y-2">
 										<Label htmlFor={`payment-amount-${index}`}>

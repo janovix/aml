@@ -985,6 +985,31 @@ describe("AlertsTable", () => {
 		expect(clientsApi.getClientById).toHaveBeenCalled();
 	});
 
+	it("handles filter changes correctly", async () => {
+		renderWithProviders(<AlertsTable filters={{ status: "DETECTED" }} />);
+
+		await waitFor(() => {
+			expect(alertsApi.listAlerts).toHaveBeenCalledWith(
+				expect.objectContaining({
+					status: "DETECTED",
+				}),
+			);
+		});
+
+		// Change filters
+		const { rerender } = renderWithProviders(
+			<AlertsTable filters={{ status: "SUBMITTED" }} />,
+		);
+
+		await waitFor(() => {
+			expect(alertsApi.listAlerts).toHaveBeenCalledWith(
+				expect.objectContaining({
+					status: "SUBMITTED",
+				}),
+			);
+		});
+	});
+
 	it("renders alert without alertRule with fallback name", async () => {
 		const alertWithoutRule: Alert = {
 			...mockAlerts[0],

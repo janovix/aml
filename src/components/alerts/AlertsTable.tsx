@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
 	AlertTriangle,
 	Bell,
@@ -14,11 +14,11 @@ import {
 	FileText,
 	User,
 	Plus,
-	Download,
 } from "lucide-react";
 import Link from "next/link";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { useDataTableUrlFilters } from "@/hooks/useDataTableUrlFilters";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 
 // Filter IDs for URL persistence
 const ALERT_FILTER_IDS = ["status", "severity", "isOverdue"];
@@ -74,7 +74,6 @@ interface AlertRow {
 	isOverdue: boolean;
 	notes?: string;
 	createdAt: string;
-	satFileUrl?: string | null;
 }
 
 const statusConfig: Record<
@@ -185,7 +184,12 @@ export function AlertsTable({
 		[jwt, clients],
 	);
 
-	// Initial load - refetch when organization changes
+	// Track if initial load has happened for current org
+	const hasLoadedForOrgRef = useRef<string | null>(null);
+	// Track previous filters to detect changes
+	const prevFiltersRef = useRef<typeof filters | null>(null);
+
+	// Initial load - refetch when organization changes (not on JWT refresh)
 	useEffect(() => {
 		// Wait for JWT to be ready and organization to be selected
 		// Without an organization, the API will return 403 "Organization Required"
@@ -195,7 +199,13 @@ export function AlertsTable({
 				setAlerts([]);
 				setClients(new Map());
 				setIsLoading(false);
+				hasLoadedForOrgRef.current = null;
 			}
+			return;
+		}
+
+		// Skip if we've already loaded for this org (JWT refresh shouldn't trigger reload)
+		if (hasLoadedForOrgRef.current === currentOrg.id) {
 			return;
 		}
 
@@ -215,6 +225,7 @@ export function AlertsTable({
 				});
 				setAlerts(response.data);
 				setHasMore(response.pagination.page < response.pagination.totalPages);
+				hasLoadedForOrgRef.current = currentOrg.id;
 
 				await fetchClientsForAlerts(response.data);
 			} catch (error) {
@@ -230,7 +241,58 @@ export function AlertsTable({
 		};
 		fetchAlerts();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [filters, toast, jwt, isJwtLoading, currentOrg?.id]);
+	}, [jwt, isJwtLoading, currentOrg?.id]);
+
+	// Refetch when filters change (after initial load, skip first run)
+	useEffect(() => {
+		// Skip if not loaded yet
+		if (!hasLoadedForOrgRef.current || !jwt || !currentOrg?.id) {
+			prevFiltersRef.current = filters;
+			return;
+		}
+
+		// Skip on first run (initial load already fetched)
+		if (prevFiltersRef.current === null) {
+			prevFiltersRef.current = filters;
+			return;
+		}
+
+		// Only refetch if filters actually changed
+		if (JSON.stringify(prevFiltersRef.current) === JSON.stringify(filters)) {
+			return;
+		}
+
+		prevFiltersRef.current = filters;
+
+		const refetchWithFilters = async () => {
+			try {
+				setIsLoading(true);
+				setCurrentPage(1);
+				setAlerts([]);
+
+				const response = await listAlerts({
+					page: 1,
+					limit: ITEMS_PER_PAGE,
+					jwt,
+					...filters,
+				});
+				setAlerts(response.data);
+				setHasMore(response.pagination.page < response.pagination.totalPages);
+				await fetchClientsForAlerts(response.data);
+			} catch (error) {
+				console.error("Error fetching alerts:", error);
+				toast({
+					title: t("errorGeneric"),
+					description: t("alertsLoadError"),
+					variant: "destructive",
+				});
+			} finally {
+				setIsLoading(false);
+			}
+		};
+		refetchWithFilters();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [filters]);
 
 	// Load more alerts for infinite scroll
 	const handleLoadMore = useCallback(async () => {
@@ -274,6 +336,32 @@ export function AlertsTable({
 		currentOrg?.id,
 	]);
 
+	// Silent refresh for auto-refresh (doesn't show loading state)
+	const silentRefresh = useCallback(async () => {
+		if (!jwt || isJwtLoading || !currentOrg?.id) return;
+
+		try {
+			const response = await listAlerts({
+				page: 1,
+				limit: ITEMS_PER_PAGE,
+				jwt,
+				...filters,
+			});
+			setAlerts(response.data);
+			setCurrentPage(1);
+			setHasMore(response.pagination.page < response.pagination.totalPages);
+			await fetchClientsForAlerts(response.data);
+		} catch {
+			// Silently ignore errors for background refresh
+		}
+	}, [jwt, isJwtLoading, filters, fetchClientsForAlerts, currentOrg?.id]);
+
+	// Auto-refresh every 30 seconds (only when on first page to avoid disrupting infinite scroll)
+	useAutoRefresh(silentRefresh, {
+		enabled: !isLoading && !!jwt && !!currentOrg?.id && currentPage === 1,
+		interval: 30000,
+	});
+
 	// Transform Alert to AlertRow format
 	const alertsData: AlertRow[] = useMemo(() => {
 		return alerts.map((alert) => {
@@ -290,7 +378,6 @@ export function AlertsTable({
 				isOverdue: alert.isOverdue,
 				notes: alert.notes,
 				createdAt: alert.createdAt,
-				satFileUrl: alert.satFileUrl,
 			};
 		});
 	}, [alerts, clients]);
@@ -533,48 +620,6 @@ export function AlertsTable({
 		[],
 	);
 
-	// Handle XML download
-	const handleDownloadXml = async (item: AlertRow): Promise<void> => {
-		if (!item.satFileUrl) {
-			toast({
-				title: t("alertDownloadXmlNoFile"),
-				variant: "destructive",
-			});
-			return;
-		}
-
-		try {
-			toast({
-				title: t("alertDownloadingXml"),
-			});
-
-			const response = await fetch(item.satFileUrl);
-			if (!response.ok) {
-				throw new Error("Failed to download file");
-			}
-
-			const blob = await response.blob();
-			const url = window.URL.createObjectURL(blob);
-			const a = document.createElement("a");
-			a.href = url;
-			a.download = `alerta-${item.alertRuleId}-${item.id}.xml`;
-			document.body.appendChild(a);
-			a.click();
-			document.body.removeChild(a);
-			window.URL.revokeObjectURL(url);
-
-			toast({
-				title: t("alertDownloadXmlSuccess"),
-			});
-		} catch (error) {
-			console.error("Error downloading XML:", error);
-			toast({
-				title: t("alertDownloadXmlError"),
-				variant: "destructive",
-			});
-		}
-	};
-
 	// Row actions
 	const renderActions = (item: AlertRow) => (
 		<DropdownMenu>
@@ -601,15 +646,6 @@ export function AlertsTable({
 					<DropdownMenuItem className="gap-2">
 						<Send className="h-4 w-4" />
 						Enviar a SAT
-					</DropdownMenuItem>
-				)}
-				{item.satFileUrl && (
-					<DropdownMenuItem
-						className="gap-2"
-						onClick={() => handleDownloadXml(item)}
-					>
-						<Download className="h-4 w-4" />
-						{t("alertDownloadXml")}
 					</DropdownMenuItem>
 				)}
 				<DropdownMenuSeparator />

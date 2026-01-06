@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Save, User, Lock, Hash } from "lucide-react";
 import { PageHero } from "@/components/page-hero";
 import { PageHeroSkeleton } from "@/components/skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 import type {
 	PersonType,
 	ClientCreateRequest,
@@ -59,6 +60,42 @@ interface ClientFormData {
 
 interface ClientEditViewProps {
 	clientId: string;
+}
+
+/**
+ * Skeleton component for ClientEditView
+ * Used when loading the organization to show the appropriate skeleton
+ */
+export function ClientEditSkeleton(): React.ReactElement {
+	return (
+		<div className="space-y-6">
+			<PageHeroSkeleton
+				showStats={false}
+				showBackButton={true}
+				actionCount={2}
+			/>
+			{/* Form skeleton */}
+			<div className="max-w-4xl space-y-6">
+				{[1, 2, 3].map((i) => (
+					<Card key={i}>
+						<CardHeader>
+							<Skeleton className="h-6 w-48" />
+						</CardHeader>
+						<CardContent>
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								{[1, 2, 3, 4].map((j) => (
+									<div key={j} className="space-y-2">
+										<Skeleton className="h-4 w-24" />
+										<Skeleton className="h-10 w-full" />
+									</div>
+								))}
+							</div>
+						</CardContent>
+					</Card>
+				))}
+			</div>
+		</div>
+	);
 }
 
 export function ClientEditView({
@@ -284,35 +321,7 @@ export function ClientEditView({
 	};
 
 	if (isLoading) {
-		return (
-			<div className="space-y-6">
-				<PageHeroSkeleton
-					showStats={false}
-					showBackButton={true}
-					actionCount={2}
-				/>
-				{/* Form skeleton */}
-				<div className="max-w-4xl space-y-6 pb-6">
-					{[1, 2, 3].map((i) => (
-						<Card key={i}>
-							<CardHeader>
-								<div className="h-6 w-48 bg-accent animate-pulse rounded" />
-							</CardHeader>
-							<CardContent>
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-									{[1, 2, 3, 4].map((j) => (
-										<div key={j} className="space-y-2">
-											<div className="h-4 w-24 bg-accent animate-pulse rounded" />
-											<div className="h-10 w-full bg-accent animate-pulse rounded" />
-										</div>
-									))}
-								</div>
-							</CardContent>
-						</Card>
-					))}
-				</div>
-			</div>
-		);
+		return <ClientEditSkeleton />;
 	}
 
 	if (!client) {
@@ -364,7 +373,7 @@ export function ClientEditView({
 				id="client-edit-form"
 				ref={formRef}
 				onSubmit={handleSubmit}
-				className="max-w-4xl space-y-6 pb-6"
+				className="max-w-4xl space-y-6"
 			>
 				<button
 					ref={hiddenSubmitButtonRef}

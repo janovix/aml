@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 import {
 	FileText,
 	Calendar,
@@ -13,8 +14,12 @@ import {
 	Eye,
 	Trash2,
 	Plus,
+	AlertCircle,
 } from "lucide-react";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { useJwt } from "@/hooks/useJwt";
+import { useOrgStore } from "@/lib/org-store";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -37,33 +42,17 @@ import {
 } from "@/components/data-table";
 import { PageHero, type StatCard } from "@/components/page-hero";
 import { formatProperNoun } from "@/lib/utils";
+import {
+	listReports,
+	deleteReport,
+	generateReportFile,
+	getReportDownloadUrl,
+	type Report,
+	type ReportType,
+	type ReportStatus,
+} from "@/lib/api/reports";
 
-/**
- * Report type
- */
-export type ReportType = "MONTHLY" | "QUARTERLY" | "ANNUAL" | "CUSTOM";
-
-/**
- * Report status
- */
-export type ReportStatus = "DRAFT" | "GENERATED" | "SUBMITTED" | "ACKNOWLEDGED";
-
-/**
- * Report entity
- * TODO: Replace with actual API type when reports API is implemented
- */
-export interface Report {
-	id: string;
-	name: string;
-	type: ReportType;
-	status: ReportStatus;
-	period: string;
-	generatedAt?: string;
-	submittedAt?: string;
-	recordCount: number;
-	createdBy: string;
-	createdAt: string;
-}
+const ITEMS_PER_PAGE = 20;
 
 const typeConfig: Record<ReportType, { label: string; bgColor: string }> = {
 	MONTHLY: { label: "Mensual", bgColor: "bg-sky-500/20 text-sky-400" },
@@ -89,103 +78,163 @@ const statusConfig: Record<
 		icon: <FileCheck2 className="h-4 w-4" />,
 		color: "text-sky-400",
 	},
-	SUBMITTED: {
-		label: "Enviado",
-		icon: <Send className="h-4 w-4" />,
-		color: "text-amber-400",
-	},
-	ACKNOWLEDGED: {
-		label: "Acusado",
-		icon: <CheckCircle2 className="h-4 w-4" />,
-		color: "text-emerald-400",
-	},
 };
 
-/**
- * Mock reports data
- * TODO: Replace with API call when reports endpoint is available
- */
-const mockReports: Report[] = [
-	{
-		id: "RPT-001",
-		name: "Reporte Mensual Diciembre 2024",
-		type: "MONTHLY",
-		status: "DRAFT",
-		period: "Diciembre 2024",
-		generatedAt: undefined,
-		submittedAt: undefined,
-		recordCount: 10,
-		createdBy: "Sistema",
-		createdAt: "2024-12-01T00:00:00Z",
-	},
-	{
-		id: "RPT-002",
-		name: "Reporte Mensual Noviembre 2024",
-		type: "MONTHLY",
-		status: "SUBMITTED",
-		period: "Noviembre 2024",
-		generatedAt: "2024-12-10T09:00:00Z",
-		submittedAt: "2024-12-15T14:30:00Z",
-		recordCount: 8,
-		createdBy: "Admin",
-		createdAt: "2024-11-01T00:00:00Z",
-	},
-	{
-		id: "RPT-003",
-		name: "Reporte Trimestral Q4 2024",
-		type: "QUARTERLY",
-		status: "GENERATED",
-		period: "Q4 2024",
-		generatedAt: "2024-12-28T10:00:00Z",
-		submittedAt: undefined,
-		recordCount: 25,
-		createdBy: "Sistema",
-		createdAt: "2024-10-01T00:00:00Z",
-	},
-	{
-		id: "RPT-004",
-		name: "Reporte Anual 2024",
-		type: "ANNUAL",
-		status: "DRAFT",
-		period: "2024",
-		generatedAt: undefined,
-		submittedAt: undefined,
-		recordCount: 0,
-		createdBy: "Sistema",
-		createdAt: "2024-01-01T00:00:00Z",
-	},
-	{
-		id: "RPT-005",
-		name: "Reporte Mensual Octubre 2024",
-		type: "MONTHLY",
-		status: "ACKNOWLEDGED",
-		period: "Octubre 2024",
-		generatedAt: "2024-11-08T11:00:00Z",
-		submittedAt: "2024-11-12T16:00:00Z",
-		recordCount: 12,
-		createdBy: "Admin",
-		createdAt: "2024-10-01T00:00:00Z",
-	},
-	{
-		id: "RPT-006",
-		name: "Auditoría Especial Q3",
-		type: "CUSTOM",
-		status: "SUBMITTED",
-		period: "Jul-Sep 2024",
-		generatedAt: "2024-10-15T09:00:00Z",
-		submittedAt: "2024-10-20T10:30:00Z",
-		recordCount: 18,
-		createdBy: "Auditor",
-		createdAt: "2024-07-01T00:00:00Z",
-	},
-];
+interface ReportsTableProps {
+	filters?: {
+		type?: ReportType;
+		status?: ReportStatus;
+	};
+}
 
-export function ReportsTable(): React.ReactElement {
-	const { navigateTo } = useOrgNavigation();
+export function ReportsTable({
+	filters,
+}: ReportsTableProps): React.ReactElement {
+	const { navigateTo, orgPath } = useOrgNavigation();
 	const { toast } = useToast();
-	// TODO: Replace with API call when reports endpoint is available
-	const [reports] = useState<Report[]>(mockReports);
-	const [isLoading] = useState(false);
+	const { jwt, isLoading: isJwtLoading } = useJwt();
+	const { currentOrg } = useOrgStore();
+
+	const [reports, setReports] = useState<Report[]>([]);
+	const [isLoading, setIsLoading] = useState(true);
+	const [isLoadingMore, setIsLoadingMore] = useState(false);
+	const [hasMore, setHasMore] = useState(false);
+	const [currentPage, setCurrentPage] = useState(1);
+	const [totalReports, setTotalReports] = useState(0);
+
+	// Track if initial load has happened for current org
+	const hasLoadedForOrgRef = useRef<string | null>(null);
+	// Track previous filters to detect changes
+	const prevFiltersRef = useRef<typeof filters | null>(null);
+
+	// Fetch reports from API (internal function, not a callback)
+	const doFetchReports = async (jwtToken: string) => {
+		try {
+			setIsLoading(true);
+			setReports([]);
+
+			const response = await listReports({
+				page: 1,
+				limit: ITEMS_PER_PAGE,
+				jwt: jwtToken,
+				...filters,
+			});
+
+			setReports(response.data);
+			setTotalReports(response.pagination.total);
+			setCurrentPage(1);
+			setHasMore(response.pagination.page < response.pagination.totalPages);
+		} catch (error) {
+			console.error("Error fetching reports:", error);
+			toast({
+				title: "Error",
+				description: "No se pudieron cargar los reportes",
+				variant: "destructive",
+			});
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	// Load more reports for infinite scroll
+	const loadMore = useCallback(async () => {
+		if (!jwt || isLoadingMore || !hasMore) return;
+
+		try {
+			setIsLoadingMore(true);
+			const nextPage = currentPage + 1;
+			const response = await listReports({
+				page: nextPage,
+				limit: ITEMS_PER_PAGE,
+				jwt,
+				...filters,
+			});
+
+			setReports((prev) => [...prev, ...response.data]);
+			setCurrentPage(nextPage);
+			setHasMore(response.pagination.page < response.pagination.totalPages);
+		} catch (error) {
+			console.error("Error loading more reports:", error);
+			toast({
+				title: "Error",
+				description: "No se pudieron cargar más reportes",
+				variant: "destructive",
+			});
+		} finally {
+			setIsLoadingMore(false);
+		}
+	}, [jwt, isLoadingMore, hasMore, currentPage, filters, toast]);
+
+	// Silent refresh for auto-refresh (doesn't show loading state)
+	const silentRefresh = useCallback(async () => {
+		if (!jwt || isJwtLoading || !currentOrg) return;
+
+		try {
+			const response = await listReports({
+				page: 1,
+				limit: ITEMS_PER_PAGE,
+				jwt,
+				...filters,
+			});
+			setReports(response.data);
+			setTotalReports(response.pagination.total);
+			setCurrentPage(1);
+			setHasMore(response.pagination.page < response.pagination.totalPages);
+		} catch {
+			// Silently ignore errors for background refresh
+		}
+	}, [jwt, isJwtLoading, filters, currentOrg]);
+
+	// Auto-refresh every 30 seconds (only when on first page to avoid disrupting infinite scroll)
+	useAutoRefresh(silentRefresh, {
+		enabled: !isLoading && !!jwt && !!currentOrg && currentPage === 1,
+		interval: 30000,
+	});
+
+	// Initial load - refetch when organization changes (not on JWT refresh)
+	useEffect(() => {
+		if (isJwtLoading || !jwt || !currentOrg?.id) {
+			if (!currentOrg?.id && !isJwtLoading) {
+				setReports([]);
+				setIsLoading(false);
+				hasLoadedForOrgRef.current = null;
+			}
+			return;
+		}
+
+		// Skip if we've already loaded for this org (JWT refresh shouldn't trigger reload)
+		if (hasLoadedForOrgRef.current === currentOrg.id) {
+			return;
+		}
+
+		hasLoadedForOrgRef.current = currentOrg.id;
+		doFetchReports(jwt);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [jwt, isJwtLoading, currentOrg?.id]);
+
+	// Refetch when filters change (after initial load, skip first run)
+	useEffect(() => {
+		// Skip if not loaded yet
+		if (!hasLoadedForOrgRef.current || !jwt || !currentOrg?.id) {
+			prevFiltersRef.current = filters;
+			return;
+		}
+
+		// Skip on first run (initial load already fetched)
+		if (prevFiltersRef.current === null) {
+			prevFiltersRef.current = filters;
+			return;
+		}
+
+		// Only refetch if filters actually changed
+		if (JSON.stringify(prevFiltersRef.current) === JSON.stringify(filters)) {
+			return;
+		}
+
+		prevFiltersRef.current = filters;
+		doFetchReports(jwt);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [filters]);
 
 	// Column definitions
 	const columns: ColumnDef<Report>[] = useMemo(
@@ -201,7 +250,6 @@ export function ReportsTable(): React.ReactElement {
 
 					return (
 						<div className="flex items-center gap-3">
-							{/* Type badge */}
 							<TooltipProvider>
 								<Tooltip>
 									<TooltipTrigger asChild>
@@ -218,9 +266,12 @@ export function ReportsTable(): React.ReactElement {
 							</TooltipProvider>
 							<div className="flex flex-col min-w-0">
 								<div className="flex items-center gap-2">
-									<span className="font-medium text-foreground truncate">
+									<Link
+										href={orgPath(`/reports/${item.id}`)}
+										className="font-medium text-foreground truncate hover:underline hover:text-primary transition-colors"
+									>
 										{formatProperNoun(item.name)}
-									</span>
+									</Link>
 									<TooltipProvider>
 										<Tooltip>
 											<TooltipTrigger asChild>
@@ -235,7 +286,7 @@ export function ReportsTable(): React.ReactElement {
 									</TooltipProvider>
 								</div>
 								<span className="text-xs text-muted-foreground">
-									Por: {item.createdBy}
+									ID: {item.id.slice(0, 12)}
 								</span>
 							</div>
 						</div>
@@ -245,14 +296,31 @@ export function ReportsTable(): React.ReactElement {
 			{
 				id: "period",
 				header: "Período",
-				accessorKey: "period",
+				accessorKey: "reportedMonth",
 				hideOnMobile: true,
-				cell: (item) => (
-					<div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-						<Calendar className="h-3.5 w-3.5 flex-shrink-0" />
-						<span>{item.period}</span>
-					</div>
-				),
+				cell: (item) => {
+					const startDate = new Date(item.periodStart);
+					const endDate = new Date(item.periodEnd);
+					return (
+						<div className="flex flex-col">
+							<div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+								<Calendar className="h-3.5 w-3.5 flex-shrink-0" />
+								<span>{item.reportedMonth}</span>
+							</div>
+							<span className="text-xs text-muted-foreground">
+								{startDate.toLocaleDateString("es-MX", {
+									day: "2-digit",
+									month: "short",
+								})}{" "}
+								-{" "}
+								{endDate.toLocaleDateString("es-MX", {
+									day: "2-digit",
+									month: "short",
+								})}
+							</span>
+						</div>
+					);
+				},
 			},
 			{
 				id: "recordCount",
@@ -266,33 +334,8 @@ export function ReportsTable(): React.ReactElement {
 					</span>
 				),
 			},
-			{
-				id: "submittedAt",
-				header: "Envío",
-				accessorKey: "submittedAt",
-				sortable: true,
-				cell: (item) => {
-					if (!item.submittedAt) {
-						return <span className="text-muted-foreground text-sm">—</span>;
-					}
-					const date = new Date(item.submittedAt);
-					return (
-						<div className="flex flex-col">
-							<span className="text-sm text-foreground tabular-nums">
-								{date.toLocaleDateString("es-MX", {
-									day: "2-digit",
-									month: "short",
-								})}
-							</span>
-							<span className="text-xs text-muted-foreground tabular-nums">
-								{date.getFullYear()}
-							</span>
-						</div>
-					);
-				},
-			},
 		],
-		[],
+		[orgPath],
 	);
 
 	// Filter definitions
@@ -356,36 +399,68 @@ export function ReportsTable(): React.ReactElement {
 						label: "Generado",
 						icon: <FileCheck2 className="h-3.5 w-3.5 text-sky-400" />,
 					},
-					{
-						value: "SUBMITTED",
-						label: "Enviado",
-						icon: <Send className="h-3.5 w-3.5 text-amber-400" />,
-					},
-					{
-						value: "ACKNOWLEDGED",
-						label: "Acusado",
-						icon: <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />,
-					},
 				],
 			},
 		],
 		[],
 	);
 
-	const handleDownload = (report: Report) => {
-		// TODO: Implement actual download when API is available
-		toast({
-			title: "Descargando...",
-			description: `Descargando ${report.name}`,
-		});
+	const handleGenerate = async (report: Report) => {
+		if (!jwt) return;
+		try {
+			const result = await generateReportFile({ id: report.id, jwt });
+			const typesStr = result.types.join(" y ");
+			toast({
+				title: "Reporte generado",
+				description: `${typesStr} generado${result.types.length > 1 ? "s" : ""} con ${result.alertCount} alertas`,
+			});
+			doFetchReports(jwt);
+		} catch (error) {
+			console.error("Error generating report:", error);
+			toast({
+				title: "Error",
+				description: "No se pudo generar el reporte",
+				variant: "destructive",
+			});
+		}
 	};
 
-	const handleDelete = (report: Report) => {
-		// TODO: Implement actual delete when API is available
-		toast({
-			title: "Reporte eliminado",
-			description: `${report.name} ha sido eliminado.`,
-		});
+	const handleDownload = async (report: Report, format?: "xml" | "pdf") => {
+		if (!jwt) return;
+		try {
+			const { fileUrl } = await getReportDownloadUrl({
+				id: report.id,
+				format,
+				jwt,
+			});
+			window.open(fileUrl, "_blank");
+		} catch (error) {
+			console.error("Error downloading report:", error);
+			toast({
+				title: "Error",
+				description: "No se pudo descargar el reporte",
+				variant: "destructive",
+			});
+		}
+	};
+
+	const handleDelete = async (report: Report) => {
+		if (!jwt) return;
+		try {
+			await deleteReport({ id: report.id, jwt });
+			toast({
+				title: "Reporte eliminado",
+				description: `${report.name} ha sido eliminado.`,
+			});
+			doFetchReports(jwt);
+		} catch (error) {
+			console.error("Error deleting report:", error);
+			toast({
+				title: "Error",
+				description: "No se pudo eliminar el reporte",
+				variant: "destructive",
+			});
+		}
 	};
 
 	// Row actions
@@ -405,25 +480,51 @@ export function ReportsTable(): React.ReactElement {
 					Ver detalle
 				</DropdownMenuItem>
 				{item.status === "DRAFT" && (
-					<DropdownMenuItem className="gap-2">
+					<DropdownMenuItem
+						className="gap-2"
+						onClick={() => handleGenerate(item)}
+					>
 						<FileCheck2 className="h-4 w-4" />
-						Generar reporte
+						Generar {item.type === "MONTHLY" ? "XML y PDF" : "PDF"}
 					</DropdownMenuItem>
 				)}
-				{item.status === "GENERATED" && (
-					<DropdownMenuItem className="gap-2">
+				{item.status === "GENERATED" && item.type === "MONTHLY" && (
+					<DropdownMenuItem
+						className="gap-2"
+						onClick={() => navigateTo(`/reports/${item.id}`)}
+					>
 						<Send className="h-4 w-4" />
 						Enviar a SAT
 					</DropdownMenuItem>
 				)}
 				<DropdownMenuSeparator />
-				<DropdownMenuItem
-					className="gap-2"
-					onClick={() => handleDownload(item)}
-				>
-					<Download className="h-4 w-4" />
-					Descargar XML
-				</DropdownMenuItem>
+				{item.status !== "DRAFT" && item.type === "MONTHLY" && (
+					<>
+						<DropdownMenuItem
+							className="gap-2"
+							onClick={() => handleDownload(item, "xml")}
+						>
+							<Download className="h-4 w-4" />
+							Descargar XML (SAT)
+						</DropdownMenuItem>
+						<DropdownMenuItem
+							className="gap-2"
+							onClick={() => handleDownload(item, "pdf")}
+						>
+							<Download className="h-4 w-4" />
+							Descargar PDF
+						</DropdownMenuItem>
+					</>
+				)}
+				{item.status !== "DRAFT" && item.type !== "MONTHLY" && (
+					<DropdownMenuItem
+						className="gap-2"
+						onClick={() => handleDownload(item, "pdf")}
+					>
+						<Download className="h-4 w-4" />
+						Descargar PDF
+					</DropdownMenuItem>
+				)}
 				{item.status === "DRAFT" && (
 					<DropdownMenuItem
 						className="gap-2 text-destructive"
@@ -439,10 +540,9 @@ export function ReportsTable(): React.ReactElement {
 
 	// Compute stats from reports data
 	const stats: StatCard[] = useMemo(() => {
-		const totalReports = reports.length;
 		const draftReports = reports.filter((r) => r.status === "DRAFT").length;
-		const submittedReports = reports.filter(
-			(r) => r.status === "SUBMITTED" || r.status === "ACKNOWLEDGED",
+		const generatedReports = reports.filter(
+			(r) => r.status === "GENERATED",
 		).length;
 		const totalRecords = reports.reduce((sum, r) => sum + r.recordCount, 0);
 
@@ -459,9 +559,9 @@ export function ReportsTable(): React.ReactElement {
 				variant: "primary",
 			},
 			{
-				label: "Enviados",
-				value: submittedReports,
-				icon: Send,
+				label: "Generados",
+				value: generatedReports,
+				icon: FileCheck2,
 			},
 			{
 				label: "Total Registros",
@@ -469,7 +569,20 @@ export function ReportsTable(): React.ReactElement {
 				icon: FileCheck2,
 			},
 		];
-	}, [reports]);
+	}, [reports, totalReports]);
+
+	// Show error if no organization selected
+	if (!currentOrg && !isLoading) {
+		return (
+			<div className="flex flex-col items-center justify-center py-12 text-center">
+				<AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+				<h3 className="text-lg font-medium">Sin organización</h3>
+				<p className="text-muted-foreground">
+					Selecciona una organización para ver los reportes
+				</p>
+			</div>
+		);
+	}
 
 	return (
 		<div className="space-y-6">
@@ -486,17 +599,19 @@ export function ReportsTable(): React.ReactElement {
 				data={reports}
 				columns={columns}
 				filters={filterDefs}
-				searchKeys={["id", "name", "period", "createdBy"]}
+				searchKeys={["id", "name", "reportedMonth"]}
 				searchPlaceholder="Buscar por nombre, período..."
 				emptyMessage="No se encontraron reportes"
 				emptyIcon={FileText}
 				loadingMessage="Cargando reportes..."
-				isLoading={isLoading}
+				isLoading={isLoading || isJwtLoading}
 				selectable
 				getId={(item) => item.id}
 				actions={renderActions}
 				paginationMode="infinite-scroll"
-				hasMore={false}
+				hasMore={hasMore}
+				onLoadMore={loadMore}
+				isLoadingMore={isLoadingMore}
 			/>
 		</div>
 	);

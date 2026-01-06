@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
 	cancelAlert,
-	generateAlertSatFile,
 	getAlertById,
 	listAlerts,
 	updateAlertStatus,
@@ -53,6 +52,27 @@ describe("api/alerts", () => {
 		const res = await listAlerts({ baseUrl: "https://example.com" });
 		expect(res.data).toEqual([]);
 		expect(res.pagination.page).toBe(1);
+	});
+
+	it("listAlerts uses default baseUrl when not provided", async () => {
+		const fetchSpy = vi.fn(async (url: RequestInfo | URL) => {
+			const u = new URL(typeof url === "string" ? url : url.toString());
+			// Should use default baseUrl from getAmlCoreBaseUrl()
+			return new Response(
+				JSON.stringify({
+					data: [],
+					pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
+				}),
+				{
+					status: 200,
+					headers: { "content-type": "application/json" },
+				},
+			);
+		});
+		vi.stubGlobal("fetch", fetchSpy);
+
+		await listAlerts();
+		expect(fetchSpy).toHaveBeenCalled();
 	});
 
 	it("listAlerts builds query params correctly", async () => {
@@ -119,6 +139,19 @@ describe("api/alerts", () => {
 		expect(res.clientId).toBe("CLIENT123");
 	});
 
+	it("getAlertById uses default baseUrl when not provided", async () => {
+		const fetchSpy = vi.fn(async (url: RequestInfo | URL) => {
+			return new Response(JSON.stringify(mockAlert), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			});
+		});
+		vi.stubGlobal("fetch", fetchSpy);
+
+		await getAlertById({ id: "ALERT123" });
+		expect(fetchSpy).toHaveBeenCalled();
+	});
+
 	it("updateAlertStatus sends PATCH with correct body", async () => {
 		const updatedAlert: Alert = { ...mockAlert, status: "SUBMITTED" };
 
@@ -150,6 +183,25 @@ describe("api/alerts", () => {
 		});
 		expect(res.id).toBe("ALERT123");
 		expect(res.status).toBe("SUBMITTED");
+	});
+
+	it("updateAlertStatus uses default baseUrl when not provided", async () => {
+		const updatedAlert: Alert = { ...mockAlert, status: "SUBMITTED" };
+
+		const fetchSpy = vi.fn(async (url: RequestInfo | URL) => {
+			return new Response(JSON.stringify(updatedAlert), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			});
+		});
+		vi.stubGlobal("fetch", fetchSpy);
+
+		await updateAlertStatus({
+			id: "ALERT123",
+			status: "SUBMITTED",
+			notes: "Updated notes",
+		});
+		expect(fetchSpy).toHaveBeenCalled();
 	});
 
 	it("cancelAlert sends POST to /cancel endpoint with reason", async () => {
@@ -191,29 +243,28 @@ describe("api/alerts", () => {
 		expect(res.cancellationReason).toBe("Duplicate alert");
 	});
 
-	it("generateAlertSatFile sends POST to /generate-file endpoint", async () => {
-		const fileResponse = { fileUrl: "https://example.com/files/alert-sat.xml" };
+	it("cancelAlert uses default baseUrl when not provided", async () => {
+		const cancelledAlert: Alert = {
+			...mockAlert,
+			status: "CANCELLED",
+			cancelledAt: "2024-01-16T10:00:00Z",
+			cancelledBy: "user-123",
+			cancellationReason: "Duplicate alert",
+		};
 
-		const fetchSpy = vi.fn(
-			async (url: RequestInfo | URL, init?: RequestInit) => {
-				expect((init?.method ?? "POST").toUpperCase()).toBe("POST");
-				const u = new URL(typeof url === "string" ? url : url.toString());
-				expect(u.origin + u.pathname).toBe(
-					"https://example.com/api/v1/alerts/ALERT123/generate-file",
-				);
-				return new Response(JSON.stringify(fileResponse), {
-					status: 200,
-					headers: { "content-type": "application/json" },
-				});
-			},
-		);
+		const fetchSpy = vi.fn(async (url: RequestInfo | URL) => {
+			return new Response(JSON.stringify(cancelledAlert), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			});
+		});
 		vi.stubGlobal("fetch", fetchSpy);
 
-		const res = await generateAlertSatFile({
+		await cancelAlert({
 			id: "ALERT123",
-			baseUrl: "https://example.com",
+			reason: "Duplicate alert",
 		});
-		expect(res.fileUrl).toBe("https://example.com/files/alert-sat.xml");
+		expect(fetchSpy).toHaveBeenCalled();
 	});
 
 	it("createManualAlert sends POST with isManual=true", async () => {
@@ -251,6 +302,32 @@ describe("api/alerts", () => {
 		});
 		expect(res.id).toBe("ALERT456");
 		expect(res.isManual).toBe(true);
+	});
+
+	it("createManualAlert uses default baseUrl when not provided", async () => {
+		const createdAlert: Alert = {
+			...mockAlert,
+			id: "ALERT456",
+			isManual: true,
+		};
+
+		const fetchSpy = vi.fn(async (url: RequestInfo | URL) => {
+			return new Response(JSON.stringify(createdAlert), {
+				status: 201,
+				headers: { "content-type": "application/json" },
+			});
+		});
+		vi.stubGlobal("fetch", fetchSpy);
+
+		await createManualAlert({
+			alertRuleId: "RULE001",
+			clientId: "CLIENT123",
+			severity: "HIGH",
+			idempotencyKey: "manual-key-123",
+			contextHash: "hash-123",
+			metadata: { reason: "Test reason" },
+		});
+		expect(fetchSpy).toHaveBeenCalled();
 	});
 
 	it("listAlertRules fetches alert rules with filters", async () => {
@@ -338,6 +415,32 @@ describe("api/alerts", () => {
 		expect(res.name).toBe("Test Rule");
 	});
 
+	it("getAlertRuleById uses default baseUrl when not provided", async () => {
+		const mockRule: AlertRule = {
+			id: "2501",
+			name: "Test Rule",
+			description: "Test description",
+			active: true,
+			severity: "HIGH",
+			ruleType: null,
+			isManualOnly: true,
+			activityCode: "VEH",
+			createdAt: "2024-01-15T10:00:00Z",
+			updatedAt: "2024-01-15T10:00:00Z",
+		};
+
+		const fetchSpy = vi.fn(async (url: RequestInfo | URL) => {
+			return new Response(JSON.stringify(mockRule), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			});
+		});
+		vi.stubGlobal("fetch", fetchSpy);
+
+		await getAlertRuleById({ id: "2501" });
+		expect(fetchSpy).toHaveBeenCalled();
+	});
+
 	it("listAlerts handles isManual=false correctly", async () => {
 		const fetchSpy = vi.fn(
 			async (url: RequestInfo | URL, init?: RequestInit) => {
@@ -360,6 +463,55 @@ describe("api/alerts", () => {
 		await listAlerts({
 			baseUrl: "https://example.com",
 			isManual: false,
+		});
+	});
+
+	it("listAlerts handles isManual=true correctly", async () => {
+		const fetchSpy = vi.fn(
+			async (url: RequestInfo | URL, init?: RequestInit) => {
+				const u = new URL(typeof url === "string" ? url : url.toString());
+				expect(u.searchParams.get("isManual")).toBe("true");
+				return new Response(
+					JSON.stringify({
+						data: [],
+						pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
+					}),
+					{
+						status: 200,
+						headers: { "content-type": "application/json" },
+					},
+				);
+			},
+		);
+		vi.stubGlobal("fetch", fetchSpy);
+
+		await listAlerts({
+			baseUrl: "https://example.com",
+			isManual: true,
+		});
+	});
+
+	it("listAlerts omits isManual when undefined", async () => {
+		const fetchSpy = vi.fn(
+			async (url: RequestInfo | URL, init?: RequestInit) => {
+				const u = new URL(typeof url === "string" ? url : url.toString());
+				expect(u.searchParams.get("isManual")).toBeNull();
+				return new Response(
+					JSON.stringify({
+						data: [],
+						pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
+					}),
+					{
+						status: 200,
+						headers: { "content-type": "application/json" },
+					},
+				);
+			},
+		);
+		vi.stubGlobal("fetch", fetchSpy);
+
+		await listAlerts({
+			baseUrl: "https://example.com",
 		});
 	});
 
@@ -393,6 +545,81 @@ describe("api/alerts", () => {
 			severity: "HIGH",
 			activityCode: "VEH",
 			isManualOnly: true,
+		});
+	});
+
+	it("listAlertRules handles active=false correctly", async () => {
+		const fetchSpy = vi.fn(
+			async (url: RequestInfo | URL, init?: RequestInit) => {
+				const u = new URL(typeof url === "string" ? url : url.toString());
+				expect(u.searchParams.get("active")).toBe("false");
+				return new Response(
+					JSON.stringify({
+						data: [],
+						pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
+					}),
+					{
+						status: 200,
+						headers: { "content-type": "application/json" },
+					},
+				);
+			},
+		);
+		vi.stubGlobal("fetch", fetchSpy);
+
+		await listAlertRules({
+			baseUrl: "https://example.com",
+			active: false,
+		});
+	});
+
+	it("listAlertRules handles isManualOnly=false correctly", async () => {
+		const fetchSpy = vi.fn(
+			async (url: RequestInfo | URL, init?: RequestInit) => {
+				const u = new URL(typeof url === "string" ? url : url.toString());
+				expect(u.searchParams.get("isManualOnly")).toBe("false");
+				return new Response(
+					JSON.stringify({
+						data: [],
+						pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
+					}),
+					{
+						status: 200,
+						headers: { "content-type": "application/json" },
+					},
+				);
+			},
+		);
+		vi.stubGlobal("fetch", fetchSpy);
+
+		await listAlertRules({
+			baseUrl: "https://example.com",
+			isManualOnly: false,
+		});
+	});
+
+	it("listAlertRules omits active and isManualOnly when undefined", async () => {
+		const fetchSpy = vi.fn(
+			async (url: RequestInfo | URL, init?: RequestInit) => {
+				const u = new URL(typeof url === "string" ? url : url.toString());
+				expect(u.searchParams.get("active")).toBeNull();
+				expect(u.searchParams.get("isManualOnly")).toBeNull();
+				return new Response(
+					JSON.stringify({
+						data: [],
+						pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
+					}),
+					{
+						status: 200,
+						headers: { "content-type": "application/json" },
+					},
+				);
+			},
+		);
+		vi.stubGlobal("fetch", fetchSpy);
+
+		await listAlertRules({
+			baseUrl: "https://example.com",
 		});
 	});
 

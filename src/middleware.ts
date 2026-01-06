@@ -78,11 +78,6 @@ const RESERVED_SUBDOMAINS = [
 const ORG_FREE_ROUTES = ["/invitations"];
 
 /**
- * Default page to redirect to when accessing an org root
- */
-const DEFAULT_PAGE = "clients";
-
-/**
  * Known app routes (non-org-slug path segments)
  * These help disambiguate between org slugs and regular routes
  */
@@ -93,6 +88,7 @@ const KNOWN_ROUTES = [
 	"reports",
 	"team",
 	"settings",
+	"dashboard",
 	"invitations",
 	"forbidden",
 	"not-found",
@@ -376,14 +372,7 @@ export async function middleware(request: NextRequest) {
 			);
 		}
 
-		// If path is just /{orgSlug}, redirect to default page
-		if (pathSegments.length === 1) {
-			return NextResponse.redirect(
-				createExternalUrl(`/${orgSlug}/${DEFAULT_PAGE}`, request),
-			);
-		}
-
-		// Valid org with path - proceed
+		// Valid org access - proceed (org root renders dashboard directly)
 		return NextResponse.next();
 	}
 

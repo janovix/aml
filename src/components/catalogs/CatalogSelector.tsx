@@ -364,6 +364,29 @@ export function CatalogSelector({
 		return getOptionValue ? getOptionValue(option) : (option.id ?? option.name);
 	};
 
+	// Helper to check if an option matches a given value
+	// This handles lookups by ID, shortName (metadata.shortName), or code (metadata.code)
+	const optionMatchesValue = (option: CatalogItem, val: string): boolean => {
+		// Check by ID or custom getOptionValue
+		if (getOptionValueResolved(option) === val) {
+			return true;
+		}
+		// Check by metadata.shortName (e.g., "MXN" for currencies)
+		const metadata = option.metadata as
+			| { shortName?: string; code?: string }
+			| null
+			| undefined;
+		if (metadata?.shortName === val) {
+			return true;
+		}
+		// Check by metadata.code ONLY for 2-letter codes (country codes like "MX")
+		// This prevents matching currency codes like "MXN" against numeric SAT codes
+		if (metadata?.code === val && /^[A-Z]{2}$/.test(val)) {
+			return true;
+		}
+		return false;
+	};
+
 	// Effect to find and set the selected item when value or items change
 	useEffect(() => {
 		if (!isControlled) {
@@ -378,7 +401,7 @@ export function CatalogSelector({
 
 		// If we already have a selectedOption that matches the current value,
 		// preserve it - don't let filtered search results overwrite the label
-		if (selectedOption && getOptionValueResolved(selectedOption) === value) {
+		if (selectedOption && optionMatchesValue(selectedOption, value)) {
 			// Ensure label is set correctly (in case it was empty initially)
 			if (selectedLabel !== selectedOption.name) {
 				setSelectedLabel(selectedOption.name);
@@ -388,15 +411,32 @@ export function CatalogSelector({
 
 		// If selectedOption exists but doesn't match the value, clear it
 		// This happens when the value prop changes
-		if (selectedOption && getOptionValueResolved(selectedOption) !== value) {
+		if (selectedOption && !optionMatchesValue(selectedOption, value)) {
 			setSelectedOption(null);
 			setSelectedLabel("");
 		}
 
-		// Find the item by comparing the value (ID) with the item's ID or computed value
-		const match = items.find((entry) => {
-			return getOptionValueResolved(entry) === value;
-		});
+		// Find items that match the value by ID, shortName, or code
+		// When there are multiple matches (e.g., SAT currencies with duplicate shortNames),
+		// prefer the one with the lowest numeric code (which is the primary entry)
+		const matches = items.filter((entry) => optionMatchesValue(entry, value));
+		let match: CatalogItem | undefined;
+		if (matches.length === 1) {
+			match = matches[0];
+		} else if (matches.length > 1) {
+			// Sort by metadata.code numerically (lowest first) to get the primary entry
+			match = matches.sort((a, b) => {
+				const aCode = parseInt(
+					(a.metadata as { code?: string } | null)?.code ?? "999999",
+					10,
+				);
+				const bCode = parseInt(
+					(b.metadata as { code?: string } | null)?.code ?? "999999",
+					10,
+				);
+				return aCode - bCode;
+			})[0];
+		}
 
 		if (match) {
 			setSelectedOption(match);
@@ -425,18 +465,16 @@ export function CatalogSelector({
 		) {
 			// If we've loaded data but still can't find the item, try fetching by ID directly
 			// This handles cases where the item exists but isn't in the search results
+			// The backend supports lookup by ID, shortName (metadata.shortName), or code (metadata.code)
 			// Mark that we've attempted to fetch this value to prevent infinite loops
 			fetchedByIdForValueRef.current = value;
 			setFetchingById(true);
 			fetchCatalogItemById(catalogKey, value)
 				.then((item) => {
-					// Verify the item matches the value (in case getOptionValue is custom)
-					if (getOptionValueResolved(item) === value) {
-						setSelectedOption(item);
-						setSelectedLabel(item.name);
-					} else {
-						setSelectedLabel(value);
-					}
+					// Backend found the item by ID, shortName, or code - use it
+					// The backend's lookup is authoritative, so we trust the returned item
+					setSelectedOption(item);
+					setSelectedLabel(item.name);
 				})
 				.catch(() => {
 					// If fetching by ID fails, fallback to showing the raw value

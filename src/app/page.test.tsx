@@ -116,7 +116,7 @@ describe("IndexPage", () => {
 		});
 
 		await waitFor(() => {
-			expect(mockReplace).toHaveBeenCalledWith(`/${mockOrg1.slug}/clients`);
+			expect(mockReplace).toHaveBeenCalledWith(`/${mockOrg1.slug}/`);
 		});
 	});
 
@@ -146,7 +146,7 @@ describe("IndexPage", () => {
 		renderWithProviders(<IndexPage />);
 
 		await waitFor(() => {
-			expect(mockReplace).toHaveBeenCalledWith(`/${mockOrg2.slug}/clients`);
+			expect(mockReplace).toHaveBeenCalledWith(`/${mockOrg2.slug}/`);
 		});
 	});
 
@@ -170,7 +170,7 @@ describe("IndexPage", () => {
 		});
 
 		await waitFor(() => {
-			expect(mockReplace).toHaveBeenCalledWith(`/${mockOrg1.slug}/clients`);
+			expect(mockReplace).toHaveBeenCalledWith(`/${mockOrg1.slug}/`);
 		});
 	});
 
@@ -212,7 +212,7 @@ describe("IndexPage", () => {
 		});
 
 		await waitFor(() => {
-			expect(mockReplace).toHaveBeenCalledWith(`/${newOrg.slug}/clients`);
+			expect(mockReplace).toHaveBeenCalledWith(`/${newOrg.slug}/`);
 		});
 	});
 

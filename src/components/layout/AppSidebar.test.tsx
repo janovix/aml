@@ -340,8 +340,8 @@ describe("AppSidebar", () => {
 		renderWithProviders(<AppSidebar />);
 
 		// Unavailable items should show "Pronto" badge
-		// Dashboard, Modelos de Riesgo, Historial are unavailable
-		expect(screen.getByText("Dashboard")).toBeInTheDocument();
+		// Inicio, Modelos de Riesgo, Historial are unavailable
+		expect(screen.getByText("Inicio")).toBeInTheDocument();
 		expect(screen.getByText("Alertas")).toBeInTheDocument();
 		expect(screen.getByText("Reportes")).toBeInTheDocument();
 	});
@@ -363,7 +363,7 @@ describe("AppSidebar", () => {
 		renderWithProviders(<AppSidebar />);
 
 		// Click on an unavailable item (should not trigger handleLinkClick)
-		const dashboardLink = screen.getByText("Dashboard").closest("a");
+		const dashboardLink = screen.getByText("Inicio").closest("a");
 		if (dashboardLink) {
 			await user.click(dashboardLink);
 			// Unavailable items should not trigger onClick
@@ -429,9 +429,9 @@ describe("AppSidebar", () => {
 
 		// Verify all navigation groups are rendered
 		expect(screen.getByText("Clientes")).toBeInTheDocument(); // Main nav
-		expect(screen.getByText("Dashboard")).toBeInTheDocument(); // Main nav
-		expect(screen.getByText("Modelos de Riesgo")).toBeInTheDocument(); // Secondary nav
-		expect(screen.getByText("Configuración")).toBeInTheDocument(); // Bottom nav
+		expect(screen.getByText("Inicio")).toBeInTheDocument(); // Main nav
+		expect(screen.getByText("Equipo")).toBeInTheDocument(); // Org nav
+		expect(screen.getByText("Configuración")).toBeInTheDocument(); // Org nav
 	});
 
 	it("handles organization change callback", async () => {
@@ -961,9 +961,69 @@ describe("AppSidebar", () => {
 		expect(screen.getByText("Reportes")).toBeInTheDocument();
 	});
 
-	it("renders Historial navigation item as unavailable", () => {
+	it("renders all main navigation items", () => {
 		renderWithProviders(<AppSidebar />);
 
-		expect(screen.getByText("Historial")).toBeInTheDocument();
+		// All main nav items should be visible
+		expect(screen.getByText("Inicio")).toBeInTheDocument();
+		expect(screen.getByText("Clientes")).toBeInTheDocument();
+		expect(screen.getByText("Transacciones")).toBeInTheDocument();
+		expect(screen.getByText("Alertas")).toBeInTheDocument();
+		expect(screen.getByText("Reportes")).toBeInTheDocument();
+	});
+
+	it("handles session user without name", () => {
+		mockUseAuthSession.mockReturnValue({
+			data: {
+				user: {
+					id: "user-1",
+					name: "",
+					email: "test@example.com",
+				},
+			},
+			isPending: false,
+		});
+
+		renderWithProviders(<AppSidebar />);
+
+		expect(screen.getByText("Clientes")).toBeInTheDocument();
+	});
+
+	it("handles session user without email", () => {
+		mockUseAuthSession.mockReturnValue({
+			data: {
+				user: {
+					id: "user-1",
+					name: "Test User",
+					email: "",
+				},
+			},
+			isPending: false,
+		});
+
+		renderWithProviders(<AppSidebar />);
+
+		expect(screen.getByText("Clientes")).toBeInTheDocument();
+	});
+
+	it("handles orgLoading state", () => {
+		mockUseOrgStore.mockReturnValue({
+			currentOrg: { id: "org-1", name: "Test Org", slug: "test-org" },
+			organizations: [{ id: "org-1", name: "Test Org", slug: "test-org" }],
+			setCurrentOrg: mockSetCurrentOrg,
+			isLoading: true,
+		});
+
+		renderWithProviders(<AppSidebar />);
+
+		expect(screen.getByText("Clientes")).toBeInTheDocument();
+	});
+
+	it("renders all org navigation items", () => {
+		renderWithProviders(<AppSidebar />);
+
+		// All org nav items should be visible
+		expect(screen.getByText("Equipo")).toBeInTheDocument();
+		expect(screen.getByText("Configuración")).toBeInTheDocument();
 	});
 });

@@ -6,6 +6,7 @@ import {
 } from "./config";
 
 const DEFAULT_AML_CORE_URL = "https://aml-svc.janovix.workers.dev";
+const DEFAULT_UMA_SERVICE_URL = "https://uma-aml-svc.janovix.workers.dev";
 
 describe("api/config", () => {
 	describe("getUpstreamApiBaseUrl", () => {

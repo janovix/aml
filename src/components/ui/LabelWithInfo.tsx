@@ -37,13 +37,13 @@ export function LabelWithInfo({
 			</Label>
 			<Tooltip>
 				<TooltipTrigger asChild>
-					<button
-						type="button"
-						className="inline-flex items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+					<span
+						role="img"
 						aria-label="Información del campo"
+						className="inline-flex items-center justify-center cursor-default"
 					>
 						<Info className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
-					</button>
+					</span>
 				</TooltipTrigger>
 				<TooltipContent
 					side="top"

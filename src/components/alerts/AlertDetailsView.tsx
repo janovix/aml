@@ -23,12 +23,8 @@ import {
 	Send,
 	XCircle,
 	AlertCircle,
-	User,
-	FileText,
-	Calendar,
-	Clock,
-	CheckCircle2,
-	Download,
+	Receipt,
+	ExternalLink,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useJwt } from "@/hooks/useJwt";
@@ -45,6 +41,7 @@ import type { Client } from "@/types/client";
 import { getClientDisplayName } from "@/types/client";
 import { PageHero } from "@/components/page-hero";
 import { PageHeroSkeleton } from "@/components/skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatProperNoun } from "@/lib/utils";
 import { executeMutation } from "@/lib/mutations";
 
@@ -94,6 +91,40 @@ const severityConfig: Record<
 
 interface AlertDetailsViewProps {
 	alertId: string;
+}
+
+/**
+ * Skeleton component for AlertDetailsView
+ * Used when loading the organization to show the appropriate skeleton
+ */
+export function AlertDetailsSkeleton(): React.ReactElement {
+	return (
+		<div className="space-y-6">
+			<PageHeroSkeleton
+				showStats={false}
+				showBackButton={true}
+				actionCount={2}
+			/>
+			{/* Content skeleton */}
+			<div className="grid gap-6 md:grid-cols-2">
+				{[1, 2].map((i) => (
+					<Card key={i}>
+						<CardHeader>
+							<Skeleton className="h-6 w-48" />
+						</CardHeader>
+						<CardContent className="space-y-4">
+							{[1, 2, 3].map((j) => (
+								<div key={j} className="space-y-2">
+									<Skeleton className="h-4 w-24" />
+									<Skeleton className="h-5 w-40" />
+								</div>
+							))}
+						</CardContent>
+					</Card>
+				))}
+			</div>
+		</div>
+	);
 }
 
 export function AlertDetailsView({
@@ -146,33 +177,7 @@ export function AlertDetailsView({
 	}, [alertId, jwt]);
 
 	if (isLoading) {
-		return (
-			<div className="space-y-6">
-				<PageHeroSkeleton
-					showStats={false}
-					showBackButton={true}
-					actionCount={2}
-				/>
-				{/* Content skeleton */}
-				<div className="grid gap-6 md:grid-cols-2">
-					{[1, 2].map((i) => (
-						<Card key={i}>
-							<CardHeader>
-								<div className="h-6 w-48 bg-accent animate-pulse rounded" />
-							</CardHeader>
-							<CardContent className="space-y-4">
-								{[1, 2, 3].map((j) => (
-									<div key={j} className="space-y-2">
-										<div className="h-4 w-24 bg-accent animate-pulse rounded" />
-										<div className="h-5 w-40 bg-accent animate-pulse rounded" />
-									</div>
-								))}
-							</CardContent>
-						</Card>
-					))}
-				</div>
-			</div>
-		);
+		return <AlertDetailsSkeleton />;
 	}
 
 	if (!alert) {
@@ -244,48 +249,6 @@ export function AlertDetailsView({
 		}
 	};
 
-	const handleDownloadXml = async (): Promise<void> => {
-		if (!alert?.satFileUrl) {
-			toast({
-				title: t("alertDownloadXmlNoFile"),
-				variant: "destructive",
-			});
-			return;
-		}
-
-		try {
-			toast({
-				title: t("alertDownloadingXml"),
-			});
-
-			const response = await fetch(alert.satFileUrl);
-			if (!response.ok) {
-				throw new Error("Failed to download file");
-			}
-
-			const blob = await response.blob();
-			const url = window.URL.createObjectURL(blob);
-			const a = document.createElement("a");
-			a.href = url;
-			// Create a filename from alertRuleId and alert id
-			a.download = `alerta-${alert.alertRuleId}-${alert.id}.xml`;
-			document.body.appendChild(a);
-			a.click();
-			document.body.removeChild(a);
-			window.URL.revokeObjectURL(url);
-
-			toast({
-				title: t("alertDownloadXmlSuccess"),
-			});
-		} catch (error) {
-			console.error("Error downloading XML:", error);
-			toast({
-				title: t("alertDownloadXmlError"),
-				variant: "destructive",
-			});
-		}
-	};
-
 	const statusCfg = statusConfig[alert.status];
 	const severityCfg = severityConfig[alert.severity];
 
@@ -300,15 +263,6 @@ export function AlertDetailsView({
 					onClick: () => navigateTo("/alerts"),
 				}}
 				actions={[
-					...(alert.satFileUrl
-						? [
-								{
-									label: t("alertDownloadXml"),
-									icon: Download,
-									onClick: handleDownloadXml,
-								},
-							]
-						: []),
 					...(alert.status !== "CANCELLED"
 						? [
 								{
@@ -565,21 +519,82 @@ export function AlertDetailsView({
 						</Card>
 					)}
 
-					{alert.transactionId && (
-						<Card>
-							<CardHeader>
-								<CardTitle>Transacción Relacionada</CardTitle>
-							</CardHeader>
-							<CardContent>
-								<Link
-									href={orgPath(`/transactions/${alert.transactionId}`)}
-									className="text-base font-medium text-primary hover:underline"
-								>
-									Ver Transacción {alert.transactionId}
-								</Link>
-							</CardContent>
-						</Card>
-					)}
+					{(() => {
+						// Extract all transaction IDs from metadata and transactionId field
+						const transactionIdsFromMetadata = Array.isArray(
+							alert.metadata?.transactionIds,
+						)
+							? (alert.metadata.transactionIds as string[])
+							: [];
+						const singleTransactionId = alert.transactionId
+							? [alert.transactionId]
+							: [];
+
+						// Combine and deduplicate transaction IDs
+						const allTransactionIds = [
+							...new Set([
+								...transactionIdsFromMetadata,
+								...singleTransactionId,
+							]),
+						];
+
+						if (allTransactionIds.length === 0) {
+							return null;
+						}
+
+						const isMultiple = allTransactionIds.length > 1;
+
+						return (
+							<Card>
+								<CardHeader>
+									<div className="flex items-center justify-between">
+										<div className="flex items-center gap-2">
+											<Receipt className="h-5 w-5 text-muted-foreground" />
+											<CardTitle>
+												{isMultiple
+													? "Transacciones Relacionadas"
+													: "Transacción Relacionada"}
+											</CardTitle>
+										</div>
+										{isMultiple && (
+											<Badge variant="secondary" className="font-mono">
+												{allTransactionIds.length}
+											</Badge>
+										)}
+									</div>
+								</CardHeader>
+								<CardContent>
+									<div className="space-y-2">
+										{allTransactionIds.map((txId, index) => (
+											<Link
+												key={txId}
+												href={orgPath(`/transactions/${txId}`)}
+												className="group flex items-center gap-3 rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/50 hover:bg-accent/50"
+											>
+												<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary group-hover:bg-primary/20">
+													<Receipt className="h-4 w-4" />
+												</div>
+												<div className="flex-1 min-w-0">
+													<div className="flex items-center gap-2">
+														<span className="text-sm font-medium text-foreground">
+															{txId}
+														</span>
+														<ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+													</div>
+													{isMultiple && (
+														<p className="text-xs text-muted-foreground mt-0.5">
+															Transacción {index + 1} de{" "}
+															{allTransactionIds.length}
+														</p>
+													)}
+												</div>
+											</Link>
+										))}
+									</div>
+								</CardContent>
+							</Card>
+						);
+					})()}
 
 					{Object.keys(alert.metadata || {}).length > 0 && (
 						<Card className="md:col-span-2">

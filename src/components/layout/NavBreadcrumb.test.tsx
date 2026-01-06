@@ -69,7 +69,7 @@ describe("NavBreadcrumb", () => {
 		// Should have a link to home (anchor tag, not BreadcrumbPage span with role="link")
 		const homeLink = screen.getByRole("link", { name: /inicio/i });
 		expect(homeLink).toBeInTheDocument();
-		expect(homeLink).toHaveAttribute("href", "/test-org/clients");
+		expect(homeLink).toHaveAttribute("href", "/test-org");
 	});
 
 	it("renders current page in breadcrumb", () => {

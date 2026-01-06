@@ -63,7 +63,6 @@ export interface Alert {
 	isManual: boolean; // True if manually created
 	submissionDeadline?: string;
 	fileGeneratedAt?: string;
-	satFileUrl?: string;
 	submittedAt?: string;
 	satAcknowledgmentReceipt?: string;
 	satFolioNumber?: string;
@@ -208,29 +207,6 @@ export async function cancelAlert(opts: {
 		cache: "no-store",
 		headers: { "content-type": "application/json" },
 		body: JSON.stringify({ reason: opts.reason }),
-		signal: opts.signal,
-		jwt: opts.jwt,
-	});
-	return json;
-}
-
-/**
- * Generate SAT file for an alert
- */
-export async function generateAlertSatFile(opts: {
-	id: string;
-	baseUrl?: string;
-	signal?: AbortSignal;
-	/** JWT token for authentication */
-	jwt?: string;
-}): Promise<{ fileUrl: string }> {
-	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
-	const url = new URL(`/api/v1/alerts/${opts.id}/generate-file`, baseUrl);
-
-	const { json } = await fetchJson<{ fileUrl: string }>(url.toString(), {
-		method: "POST",
-		cache: "no-store",
-		headers: { "content-type": "application/json" },
 		signal: opts.signal,
 		jwt: opts.jwt,
 	});

@@ -22,6 +22,7 @@ import { SKELETON_HEIGHTS } from "@/lib/constants/skeleton-heights";
 import type { DataTableProps, SortState, ActiveFilter } from "./types";
 import { FilterDrawer } from "./filter-drawer";
 import { FilterPopover } from "./filter-popover";
+import { ClientFilterPopover } from "./client-filter-popover";
 import { InlineFilterSummary } from "./inline-filter-summary";
 
 const ITEMS_PER_PAGE = 10;
@@ -355,16 +356,32 @@ export function DataTable<T extends object>({
 
 						{/* Desktop: Inline Filter Popovers */}
 						<div className="hidden md:flex items-center gap-1.5">
-							{filters.map((filter) => (
-								<FilterPopover
-									key={filter.id}
-									filter={filter}
-									activeValues={activeFilters[filter.id] || []}
-									onToggleFilter={(value) => toggleFilter(filter.id, value)}
-									onClear={() => clearFilterGroup(filter.id)}
-									clearText={clearText}
-								/>
-							))}
+							{filters.map((filter) => {
+								// Use ClientFilterPopover for clientId filter (searchable)
+								if (filter.id === "clientId") {
+									return (
+										<ClientFilterPopover
+											key={filter.id}
+											activeValues={activeFilters[filter.id] || []}
+											onToggleFilter={(value) => toggleFilter(filter.id, value)}
+											onClear={() => clearFilterGroup(filter.id)}
+											clearText={clearText}
+											label={filter.label}
+										/>
+									);
+								}
+								// Use standard FilterPopover for other filters
+								return (
+									<FilterPopover
+										key={filter.id}
+										filter={filter}
+										activeValues={activeFilters[filter.id] || []}
+										onToggleFilter={(value) => toggleFilter(filter.id, value)}
+										onClear={() => clearFilterGroup(filter.id)}
+										clearText={clearText}
+									/>
+								);
+							})}
 						</div>
 
 						{/* Mobile: Filter Summary Button */}
@@ -644,14 +661,10 @@ export function DataTable<T extends object>({
 					</table>
 				</div>
 
-				{/* Footer with Pagination or Infinite Scroll */}
+				{/* Footer with Pagination or Results Count */}
 				<div className="border-t border-border px-3 py-2 flex items-center justify-between text-sm text-muted-foreground bg-muted/20">
 					<div className="flex items-center gap-2">
-						<span className="tabular-nums">
-							{paginationMode === "infinite-scroll"
-								? `${paginatedData.length} / ${filteredData.length}`
-								: filteredData.length}
-						</span>
+						<span className="tabular-nums">{filteredData.length}</span>
 						<span>{filteredData.length !== 1 ? resultsText : resultText}</span>
 						{selectedRows.size > 0 && (
 							<span className="text-primary">
@@ -697,11 +710,6 @@ export function DataTable<T extends object>({
 							<div className="border-t border-border px-3 py-4 flex items-center justify-center text-sm text-muted-foreground bg-muted/20">
 								<Loader2 className="h-4 w-4 animate-spin mr-2" />
 								<span>Cargando más...</span>
-							</div>
-						)}
-						{!hasMore && paginatedData.length > 0 && (
-							<div className="border-t border-border px-3 py-2 text-center text-sm text-muted-foreground bg-muted/20">
-								<span>No hay más resultados</span>
 							</div>
 						)}
 					</>
