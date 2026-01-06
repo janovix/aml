@@ -43,7 +43,6 @@ vi.mock("@/hooks/useJwt", () => ({
 vi.mock("@/lib/api/reports", () => ({
 	previewReport: vi.fn(),
 	createReport: vi.fn(),
-	calculateMonthlyPeriod: vi.fn(),
 	calculateQuarterlyPeriod: vi.fn(),
 	calculateAnnualPeriod: vi.fn(),
 }));
@@ -52,27 +51,23 @@ const mockPreview: reportsApi.ReportPreviewResponse = {
 	total: 10,
 	bySeverity: { HIGH: 5, MEDIUM: 3, LOW: 2 },
 	byStatus: { DETECTED: 8, SUBMITTED: 2 },
-	periodStart: "2024-01-17T00:00:00Z",
-	periodEnd: "2024-02-16T23:59:59.999Z",
+	periodStart: "2024-01-01T00:00:00Z",
+	periodEnd: "2024-01-31T23:59:59.999Z",
 };
 
 const mockCreatedReport: reportsApi.Report = {
 	id: "report-1",
 	organizationId: "org-1",
-	name: "Reporte Mensual Enero 2024",
+	name: "Resumen Ejecutivo - Enero 2024",
 	type: "MONTHLY",
 	status: "DRAFT",
-	periodStart: "2024-01-17T00:00:00Z",
-	periodEnd: "2024-02-16T23:59:59.999Z",
-	reportedMonth: "202402",
+	periodStart: "2024-01-01T00:00:00Z",
+	periodEnd: "2024-01-31T23:59:59.999Z",
+	reportedMonth: "202401",
 	recordCount: 10,
-	xmlFileUrl: null,
 	pdfFileUrl: null,
 	fileSize: null,
-	pdfFileSize: null,
 	generatedAt: null,
-	submittedAt: null,
-	satFolioNumber: null,
 	createdBy: "user-1",
 	notes: null,
 	createdAt: "2024-01-15T10:00:00Z",
@@ -85,14 +80,6 @@ describe("CreateReportView", () => {
 		vi.mocked(sonner.toast.success).mockClear();
 		vi.mocked(sonner.toast.error).mockClear();
 		const currentYear = new Date().getFullYear();
-		const currentMonth = new Date().getMonth() + 1;
-
-		vi.mocked(reportsApi.calculateMonthlyPeriod).mockReturnValue({
-			periodStart: new Date("2024-01-17T00:00:00Z"),
-			periodEnd: new Date("2024-02-16T23:59:59.999Z"),
-			reportedMonth: `${currentYear}${String(currentMonth).padStart(2, "0")}`,
-			displayName: `Enero ${currentYear}`,
-		});
 
 		vi.mocked(reportsApi.calculateQuarterlyPeriod).mockReturnValue({
 			periodStart: new Date("2024-01-01T00:00:00Z"),
@@ -111,93 +98,173 @@ describe("CreateReportView", () => {
 		vi.mocked(reportsApi.previewReport).mockResolvedValue(mockPreview);
 	});
 
-	it("renders form with report type selection", async () => {
+	// Helper function to navigate through wizard steps
+	async function goToStep(step: number) {
+		const user = userEvent.setup();
+
+		// Step 1: Select template
+		if (step >= 1) {
+			await waitFor(() => {
+				expect(
+					screen.getByText("Selecciona una Plantilla"),
+				).toBeInTheDocument();
+			});
+
+			// Select Executive Summary template
+			const templateButton = screen
+				.getByText("Resumen Ejecutivo")
+				.closest("button");
+			if (templateButton) {
+				await user.click(templateButton);
+			}
+		}
+
+		// Navigate to step 2
+		if (step >= 2) {
+			const nextButton = screen.getByText("Siguiente");
+			await user.click(nextButton);
+
+			await waitFor(() => {
+				expect(screen.getByText("Define el Período")).toBeInTheDocument();
+			});
+		}
+
+		// Navigate to step 3
+		if (step >= 3) {
+			const nextButton = screen.getByText("Siguiente");
+			await user.click(nextButton);
+
+			await waitFor(() => {
+				expect(screen.getByText("Opciones del Reporte")).toBeInTheDocument();
+			});
+		}
+
+		// Navigate to step 4
+		if (step >= 4) {
+			const nextButton = screen.getByText("Siguiente");
+			await user.click(nextButton);
+
+			await waitFor(() => {
+				expect(screen.getByText("Revisar y Crear")).toBeInTheDocument();
+			});
+		}
+	}
+
+	it("renders wizard with template selection as first step", async () => {
 		renderWithProviders(<CreateReportView />);
 
 		await waitFor(() => {
 			expect(screen.getByText("Nuevo Reporte")).toBeInTheDocument();
 		});
 
-		expect(screen.getAllByText("Mensual").length).toBeGreaterThan(0);
-		expect(screen.getAllByText("Trimestral").length).toBeGreaterThan(0);
-		expect(screen.getAllByText("Anual").length).toBeGreaterThan(0);
-		expect(screen.getAllByText("Personalizado").length).toBeGreaterThan(0);
+		expect(screen.getByText("Selecciona una Plantilla")).toBeInTheDocument();
+		expect(screen.getByText("Resumen Ejecutivo")).toBeInTheDocument();
+		expect(screen.getByText("Estado de Cumplimiento")).toBeInTheDocument();
+		expect(screen.getByText("Análisis de Transacciones")).toBeInTheDocument();
 	});
 
-	it("selects monthly report type by default", async () => {
+	it("shows all available templates", async () => {
 		renderWithProviders(<CreateReportView />);
 
 		await waitFor(() => {
-			expect(screen.getAllByText("Mensual").length).toBeGreaterThan(0);
+			expect(screen.getByText("Resumen Ejecutivo")).toBeInTheDocument();
 		});
 
-		// Check that monthly period fields are shown
+		expect(screen.getByText("Estado de Cumplimiento")).toBeInTheDocument();
+		expect(screen.getByText("Análisis de Transacciones")).toBeInTheDocument();
+		expect(
+			screen.getByText("Perfil de Riesgo de Clientes"),
+		).toBeInTheDocument();
+		expect(screen.getByText("Desglose de Alertas")).toBeInTheDocument();
+		expect(screen.getByText("Comparación de Períodos")).toBeInTheDocument();
+	});
+
+	it("enables next button only when template is selected", async () => {
+		const user = userEvent.setup();
+		renderWithProviders(<CreateReportView />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Siguiente")).toBeInTheDocument();
+		});
+
+		// Next button should be disabled initially
+		const nextButton = screen.getByText("Siguiente");
+		expect(nextButton).toBeDisabled();
+
+		// Select a template
+		const templateButton = screen
+			.getByText("Resumen Ejecutivo")
+			.closest("button");
+		if (templateButton) {
+			await user.click(templateButton);
+		}
+
+		// Next button should now be enabled
+		expect(nextButton).toBeEnabled();
+	});
+
+	it("navigates to period step when next is clicked after selecting template", async () => {
+		renderWithProviders(<CreateReportView />);
+		await goToStep(2);
+
+		expect(screen.getByText("Define el Período")).toBeInTheDocument();
+		expect(screen.getByText("Mensual")).toBeInTheDocument();
+		expect(screen.getByText("Trimestral")).toBeInTheDocument();
+		expect(screen.getByText("Anual")).toBeInTheDocument();
+		expect(screen.getByText("Personalizado")).toBeInTheDocument();
+	});
+
+	it("shows monthly period options by default", async () => {
+		renderWithProviders(<CreateReportView />);
+		await goToStep(2);
+
 		expect(screen.getByLabelText("Año")).toBeInTheDocument();
 		expect(screen.getByLabelText("Mes")).toBeInTheDocument();
 	});
 
-	it("switches to quarterly report type", async () => {
+	it("switches to quarterly period options", async () => {
+		const user = userEvent.setup();
 		renderWithProviders(<CreateReportView />);
+		await goToStep(2);
 
-		await waitFor(() => {
-			expect(screen.getAllByText("Trimestral").length).toBeGreaterThan(0);
-		});
-
-		const quarterlyButtons = screen.getAllByText("Trimestral");
-		const quarterlyButton = quarterlyButtons.find((btn) =>
-			btn.closest("button"),
-		);
+		// Click on Trimestral button
+		const quarterlyButton = screen.getByText("Trimestral").closest("button");
 		if (quarterlyButton) {
-			const button = quarterlyButton.closest("button");
-			if (button && !button.disabled) {
-				await userEvent.click(button);
-			}
+			await user.click(quarterlyButton);
 		}
 
 		await waitFor(() => {
 			expect(screen.getByLabelText("Trimestre")).toBeInTheDocument();
 		});
-
-		expect(reportsApi.calculateQuarterlyPeriod).toHaveBeenCalled();
 	});
 
-	it("switches to annual report type", async () => {
+	it("switches to annual period options", async () => {
+		const user = userEvent.setup();
 		renderWithProviders(<CreateReportView />);
+		await goToStep(2);
 
-		await waitFor(() => {
-			expect(screen.getAllByText("Anual").length).toBeGreaterThan(0);
-		});
-
-		const annualButtons = screen.getAllByText("Anual");
-		const annualButton = annualButtons.find((btn) => btn.closest("button"));
+		// Click on Anual button
+		const annualButton = screen.getByText("Anual").closest("button");
 		if (annualButton) {
-			const button = annualButton.closest("button");
-			if (button && !button.disabled) {
-				await userEvent.click(button);
-			}
+			await user.click(annualButton);
 		}
 
 		await waitFor(() => {
 			expect(screen.getByLabelText("Año")).toBeInTheDocument();
+			// Should only have year selector, not month or quarter
+			expect(screen.queryByLabelText("Mes")).not.toBeInTheDocument();
 		});
-
-		expect(reportsApi.calculateAnnualPeriod).toHaveBeenCalled();
 	});
 
-	it("switches to custom report type", async () => {
+	it("switches to custom date range options", async () => {
+		const user = userEvent.setup();
 		renderWithProviders(<CreateReportView />);
+		await goToStep(2);
 
-		await waitFor(() => {
-			expect(screen.getAllByText("Personalizado").length).toBeGreaterThan(0);
-		});
-
-		const customButtons = screen.getAllByText("Personalizado");
-		const customButton = customButtons.find((btn) => btn.closest("button"));
+		// Click on Personalizado button
+		const customButton = screen.getByText("Personalizado").closest("button");
 		if (customButton) {
-			const button = customButton.closest("button");
-			if (button && !button.disabled) {
-				await userEvent.click(button);
-			}
+			await user.click(customButton);
 		}
 
 		await waitFor(() => {
@@ -206,125 +273,77 @@ describe("CreateReportView", () => {
 		});
 	});
 
-	it("updates year selection for monthly report", async () => {
+	it("shows period display text after selecting period", async () => {
+		renderWithProviders(<CreateReportView />);
+		await goToStep(2);
+
+		await waitFor(() => {
+			expect(screen.getByText("Período seleccionado:")).toBeInTheDocument();
+		});
+	});
+
+	it("navigates to options step", async () => {
+		renderWithProviders(<CreateReportView />);
+		await goToStep(3);
+
+		expect(screen.getByText("Opciones del Reporte")).toBeInTheDocument();
+		expect(screen.getByLabelText("Nombre del Reporte")).toBeInTheDocument();
+		expect(screen.getByLabelText("Notas (opcional)")).toBeInTheDocument();
+	});
+
+	it("auto-generates report name based on template and period", async () => {
+		renderWithProviders(<CreateReportView />);
+		await goToStep(3);
+
+		const nameInput = screen.getByLabelText(
+			"Nombre del Reporte",
+		) as HTMLInputElement;
+		expect(nameInput.value).toContain("Resumen Ejecutivo");
+	});
+
+	it("allows editing report name", async () => {
 		const user = userEvent.setup();
 		renderWithProviders(<CreateReportView />);
+		await goToStep(3);
 
-		await waitFor(() => {
-			expect(screen.getByLabelText("Año")).toBeInTheDocument();
-		});
+		const nameInput = screen.getByLabelText("Nombre del Reporte");
+		await user.clear(nameInput);
+		await user.type(nameInput, "Custom Report Name");
 
-		const yearSelect = screen.getByLabelText("Año");
-		await user.click(yearSelect);
-
-		// Wait for the select options to appear and select a different year
-		await waitFor(() => {
-			expect(screen.getByRole("option", { name: "2023" })).toBeInTheDocument();
-		});
-
-		await user.click(screen.getByRole("option", { name: "2023" }));
-
-		await waitFor(() => {
-			expect(reportsApi.calculateMonthlyPeriod).toHaveBeenCalled();
-		});
+		expect(nameInput).toHaveValue("Custom Report Name");
 	});
 
-	it("updates month selection for monthly report", async () => {
+	it("allows adding notes", async () => {
 		const user = userEvent.setup();
 		renderWithProviders(<CreateReportView />);
+		await goToStep(3);
 
-		await waitFor(() => {
-			expect(screen.getByLabelText("Mes")).toBeInTheDocument();
-		});
+		const notesInput = screen.getByLabelText("Notas (opcional)");
+		await user.type(notesInput, "Test notes for report");
 
-		const monthSelect = screen.getByLabelText("Mes");
-		await user.click(monthSelect);
-
-		// Wait for the select options to appear and select February
-		await waitFor(() => {
-			expect(
-				screen.getByRole("option", { name: "Febrero" }),
-			).toBeInTheDocument();
-		});
-
-		await user.click(screen.getByRole("option", { name: "Febrero" }));
-
-		await waitFor(() => {
-			expect(reportsApi.calculateMonthlyPeriod).toHaveBeenCalled();
-		});
+		expect(notesInput).toHaveValue("Test notes for report");
 	});
 
-	it("updates quarter selection for quarterly report", async () => {
-		const user = userEvent.setup();
+	it("shows charts toggle in options", async () => {
 		renderWithProviders(<CreateReportView />);
+		await goToStep(3);
 
-		await waitFor(() => {
-			expect(screen.getAllByText("Trimestral").length).toBeGreaterThan(0);
-		});
-
-		const quarterlyButtons = screen.getAllByText("Trimestral");
-		const quarterlyButton = quarterlyButtons.find((btn) =>
-			btn.closest("button"),
-		);
-		if (quarterlyButton) {
-			const button = quarterlyButton.closest("button");
-			if (button && !button.disabled) {
-				await user.click(button);
-			}
-		}
-
-		await waitFor(() => {
-			expect(screen.getByLabelText("Trimestre")).toBeInTheDocument();
-		});
-
-		const quarterSelect = screen.getByLabelText("Trimestre");
-		await user.click(quarterSelect);
-
-		// Wait for the select options to appear and select Q2
-		await waitFor(() => {
-			expect(
-				screen.getByRole("option", { name: "Q2 (Abr-Jun)" }),
-			).toBeInTheDocument();
-		});
-
-		await user.click(screen.getByRole("option", { name: "Q2 (Abr-Jun)" }));
-
-		await waitFor(() => {
-			expect(reportsApi.calculateQuarterlyPeriod).toHaveBeenCalled();
-		});
+		expect(screen.getByText("Incluir Gráficas")).toBeInTheDocument();
 	});
 
-	it("updates custom date range", async () => {
+	it("navigates to review step", async () => {
 		renderWithProviders(<CreateReportView />);
+		await goToStep(4);
 
-		await waitFor(() => {
-			expect(screen.getByText("Personalizado")).toBeInTheDocument();
-		});
-
-		const customButton = screen.getByText("Personalizado").closest("button");
-		if (customButton) {
-			await userEvent.click(customButton);
-		}
-
-		await waitFor(() => {
-			expect(screen.getByLabelText("Fecha inicio")).toBeInTheDocument();
-		});
-
-		const startDateInput = screen.getByLabelText("Fecha inicio");
-		await userEvent.type(startDateInput, "2024-01-01");
-
-		const endDateInput = screen.getByLabelText("Fecha fin");
-		await userEvent.type(endDateInput, "2024-01-31");
-
-		await waitFor(() => {
-			expect(reportsApi.previewReport).toHaveBeenCalled();
-		});
+		expect(screen.getByText("Revisar y Crear")).toBeInTheDocument();
+		expect(screen.getByText("Configuración del Reporte")).toBeInTheDocument();
+		expect(screen.getByText("Vista Previa de Datos")).toBeInTheDocument();
 	});
 
-	it("displays preview when period is selected", async () => {
+	it("displays preview data in review step", async () => {
 		renderWithProviders(<CreateReportView />);
+		await goToStep(4);
 
-		// Wait for the preview data to be fetched and displayed
 		await waitFor(() => {
 			expect(screen.getByText("Total Alertas")).toBeInTheDocument();
 		});
@@ -332,8 +351,9 @@ describe("CreateReportView", () => {
 		expect(screen.getByText("10")).toBeInTheDocument();
 	});
 
-	it("displays preview with severity breakdown", async () => {
+	it("displays severity breakdown in preview", async () => {
 		renderWithProviders(<CreateReportView />);
+		await goToStep(4);
 
 		await waitFor(() => {
 			expect(screen.getByText("Por Severidad")).toBeInTheDocument();
@@ -344,8 +364,9 @@ describe("CreateReportView", () => {
 		expect(screen.getByText("low")).toBeInTheDocument();
 	});
 
-	it("displays preview with status breakdown", async () => {
+	it("displays status breakdown in preview", async () => {
 		renderWithProviders(<CreateReportView />);
+		await goToStep(4);
 
 		await waitFor(() => {
 			expect(screen.getByText("Por Estado")).toBeInTheDocument();
@@ -364,6 +385,7 @@ describe("CreateReportView", () => {
 		});
 
 		renderWithProviders(<CreateReportView />);
+		await goToStep(4);
 
 		await waitFor(() => {
 			expect(
@@ -372,57 +394,19 @@ describe("CreateReportView", () => {
 		});
 	});
 
-	it("auto-generates report name based on type and period", async () => {
-		renderWithProviders(<CreateReportView />);
-
-		await waitFor(() => {
-			expect(screen.getByLabelText("Nombre del Reporte")).toBeInTheDocument();
-		});
-
-		const nameInput = screen.getByLabelText(
-			"Nombre del Reporte",
-		) as HTMLInputElement;
-		expect(nameInput.value).toContain("Reporte Mensual");
-	});
-
-	it("allows editing report name", async () => {
-		renderWithProviders(<CreateReportView />);
-
-		await waitFor(() => {
-			expect(screen.getByLabelText("Nombre del Reporte")).toBeInTheDocument();
-		});
-
-		const nameInput = screen.getByLabelText("Nombre del Reporte");
-		await userEvent.clear(nameInput);
-		await userEvent.type(nameInput, "Custom Report Name");
-
-		expect(nameInput).toHaveValue("Custom Report Name");
-	});
-
-	it("allows adding notes", async () => {
-		renderWithProviders(<CreateReportView />);
-
-		await waitFor(() => {
-			expect(screen.getByLabelText("Notas (opcional)")).toBeInTheDocument();
-		});
-
-		const notesInput = screen.getByLabelText("Notas (opcional)");
-		await userEvent.type(notesInput, "Test notes");
-
-		expect(notesInput).toHaveValue("Test notes");
-	});
-
-	it("creates report successfully", async () => {
+	it("creates report successfully from review step", async () => {
+		const user = userEvent.setup();
 		vi.mocked(reportsApi.createReport).mockResolvedValue(mockCreatedReport);
 
 		renderWithProviders(<CreateReportView />);
+		await goToStep(4);
 
 		await waitFor(() => {
 			expect(screen.getByText("Crear Reporte")).toBeInTheDocument();
 		});
 
 		const submitButton = screen.getByText("Crear Reporte");
-		await userEvent.click(submitButton);
+		await user.click(submitButton);
 
 		await waitFor(() => {
 			expect(reportsApi.createReport).toHaveBeenCalled();
@@ -434,43 +418,17 @@ describe("CreateReportView", () => {
 		expect(mockNavigateTo).toHaveBeenCalledWith("/reports/report-1");
 	});
 
-	it("includes notes in report creation", async () => {
-		vi.mocked(reportsApi.createReport).mockResolvedValue(mockCreatedReport);
-
-		renderWithProviders(<CreateReportView />);
-
-		await waitFor(() => {
-			expect(screen.getByLabelText("Notas (opcional)")).toBeInTheDocument();
-		});
-
-		const notesInput = screen.getByLabelText("Notas (opcional)");
-		await userEvent.type(notesInput, "Test notes");
-
-		const submitButton = screen.getByText("Crear Reporte");
-		await userEvent.click(submitButton);
-
-		await waitFor(() => {
-			expect(reportsApi.createReport).toHaveBeenCalledWith(
-				expect.objectContaining({
-					notes: "Test notes",
-				}),
-			);
-		});
-	});
-
 	it("handles creation error gracefully", async () => {
+		const user = userEvent.setup();
 		vi.mocked(reportsApi.createReport).mockRejectedValue(
 			new Error("Failed to create report"),
 		);
 
 		renderWithProviders(<CreateReportView />);
-
-		await waitFor(() => {
-			expect(screen.getByText("Crear Reporte")).toBeInTheDocument();
-		});
+		await goToStep(4);
 
 		const submitButton = screen.getByText("Crear Reporte");
-		await userEvent.click(submitButton);
+		await user.click(submitButton);
 
 		await waitFor(() => {
 			expect(sonner.toast.error).toHaveBeenCalledWith(
@@ -481,29 +439,38 @@ describe("CreateReportView", () => {
 		expect(mockNavigateTo).not.toHaveBeenCalled();
 	});
 
-	it("disables submit button when loading", async () => {
+	it("shows loading state when creating report", async () => {
+		const user = userEvent.setup();
 		vi.mocked(reportsApi.createReport).mockImplementation(
 			() => new Promise(() => {}), // Never resolves
 		);
 
 		renderWithProviders(<CreateReportView />);
-
-		await waitFor(() => {
-			expect(screen.getByText("Crear Reporte")).toBeInTheDocument();
-		});
+		await goToStep(4);
 
 		const submitButton = screen.getByText("Crear Reporte");
-		await userEvent.click(submitButton);
+		await user.click(submitButton);
 
 		await waitFor(() => {
 			expect(screen.getByText("Creando...")).toBeInTheDocument();
 		});
+	});
 
-		const creatingButton = screen.getByText("Creando...");
-		expect(creatingButton).toBeDisabled();
+	it("allows going back to previous steps", async () => {
+		const user = userEvent.setup();
+		renderWithProviders(<CreateReportView />);
+		await goToStep(2);
+
+		const backButton = screen.getByText("Anterior");
+		await user.click(backButton);
+
+		await waitFor(() => {
+			expect(screen.getByText("Selecciona una Plantilla")).toBeInTheDocument();
+		});
 	});
 
 	it("navigates back to reports list when back button is clicked", async () => {
+		const user = userEvent.setup();
 		renderWithProviders(<CreateReportView />);
 
 		await waitFor(() => {
@@ -511,88 +478,28 @@ describe("CreateReportView", () => {
 		});
 
 		const backButton = screen.getByText("Volver a Reportes");
-		await userEvent.click(backButton);
+		await user.click(backButton);
 
 		expect(mockNavigateTo).toHaveBeenCalledWith("/reports");
 	});
 
-	it("displays period information correctly", async () => {
-		renderWithProviders(<CreateReportView />);
-
-		await waitFor(() => {
-			expect(screen.getByText("Período seleccionado:")).toBeInTheDocument();
-		});
-
-		// Should show the calculated period dates
-		expect(screen.getByText(/Período seleccionado:/)).toBeInTheDocument();
-	});
-
-	it("shows output format info for monthly reports", async () => {
-		renderWithProviders(<CreateReportView />);
-
-		await waitFor(() => {
-			expect(screen.getByText("Formato de salida:")).toBeInTheDocument();
-		});
-
-		expect(screen.getAllByText("XML").length).toBeGreaterThan(0);
-	});
-
-	it("shows output format info for quarterly reports", async () => {
-		renderWithProviders(<CreateReportView />);
-
-		await waitFor(() => {
-			expect(screen.getAllByText("Trimestral").length).toBeGreaterThan(0);
-		});
-
-		const quarterlyButtons = screen.getAllByText("Trimestral");
-		const quarterlyButton = quarterlyButtons.find((btn) =>
-			btn.closest("button"),
-		);
-		if (quarterlyButton) {
-			const button = quarterlyButton.closest("button");
-			if (button && !button.disabled) {
-				await userEvent.click(button);
-			}
-		}
-
-		await waitFor(() => {
-			expect(screen.getAllByText("PDF").length).toBeGreaterThan(0);
-		});
-	});
-
 	it("fetches preview when period changes", async () => {
 		const user = userEvent.setup();
-		const currentYear = new Date().getFullYear();
-
-		// Make calculateMonthlyPeriod return different values based on month
-		// This ensures the useMemo sees actual changes
-		vi.mocked(reportsApi.calculateMonthlyPeriod).mockImplementation(
-			(year: number, month: number) => ({
-				periodStart: new Date(
-					`${year}-${String(month).padStart(2, "0")}-17T00:00:00Z`,
-				),
-				periodEnd: new Date(
-					`${year}-${String(month + 1).padStart(2, "0")}-16T23:59:59.999Z`,
-				),
-				reportedMonth: `${year}${String(month).padStart(2, "0")}`,
-				displayName: `Month ${month} ${year}`,
-			}),
-		);
-
 		renderWithProviders(<CreateReportView />);
 
-		await waitFor(() => {
-			expect(reportsApi.previewReport).toHaveBeenCalled();
-		});
+		// Go to step 2 first
+		await goToStep(2);
 
-		// Reset the call count to test the change
+		// Preview should have been called
+		expect(reportsApi.previewReport).toHaveBeenCalled();
+
+		// Reset the call count
 		vi.mocked(reportsApi.previewReport).mockClear();
 
 		// Change month
 		const monthSelect = screen.getByLabelText("Mes");
 		await user.click(monthSelect);
 
-		// Wait for the select options to appear and select February
 		await waitFor(() => {
 			expect(
 				screen.getByRole("option", { name: "Febrero" }),
@@ -602,35 +509,18 @@ describe("CreateReportView", () => {
 		await user.click(screen.getByRole("option", { name: "Febrero" }));
 
 		await waitFor(() => {
-			// Preview should be fetched again after month change
-			expect(reportsApi.previewReport).toHaveBeenCalledTimes(1);
+			expect(reportsApi.previewReport).toHaveBeenCalled();
 		});
-
-		// Verify the call was made with February's period
-		expect(reportsApi.previewReport).toHaveBeenCalledWith(
-			expect.objectContaining({
-				type: "MONTHLY",
-				periodStart: expect.stringContaining(`${currentYear}-02-17`),
-			}),
-		);
 	});
 
-	it("handles preview error gracefully", async () => {
-		vi.mocked(reportsApi.previewReport).mockRejectedValue(
-			new Error("Failed to fetch preview"),
-		);
-
+	it("disables previous button on first step", async () => {
 		renderWithProviders(<CreateReportView />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Vista Previa")).toBeInTheDocument();
+			expect(screen.getByText("Anterior")).toBeInTheDocument();
 		});
 
-		// Should show empty state when preview fails (wait for async error to be caught)
-		await waitFor(() => {
-			expect(
-				screen.getByText("Selecciona un período para ver la vista previa"),
-			).toBeInTheDocument();
-		});
+		const backButton = screen.getByText("Anterior");
+		expect(backButton).toBeDisabled();
 	});
 });

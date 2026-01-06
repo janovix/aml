@@ -63,12 +63,9 @@ const mockReports: reportsApi.Report[] = [
 		periodEnd: "2024-12-16T23:59:59Z",
 		reportedMonth: "202412",
 		recordCount: 10,
-		xmlFileUrl: null,
 		pdfFileUrl: null,
 		fileSize: null,
 		generatedAt: null,
-		submittedAt: null,
-		satFolioNumber: null,
 		createdBy: "user-1",
 		notes: null,
 		createdAt: "2024-12-01T00:00:00Z",
@@ -84,12 +81,9 @@ const mockReports: reportsApi.Report[] = [
 		periodEnd: "2024-12-31T23:59:59Z",
 		reportedMonth: "2024Q4",
 		recordCount: 25,
-		xmlFileUrl: null,
 		pdfFileUrl: "https://example.com/report.pdf",
 		fileSize: 12345,
 		generatedAt: "2024-12-28T10:00:00Z",
-		submittedAt: null,
-		satFolioNumber: null,
 		createdBy: "user-1",
 		notes: null,
 		createdAt: "2024-10-01T00:00:00Z",
@@ -100,17 +94,14 @@ const mockReports: reportsApi.Report[] = [
 		organizationId: "org-1",
 		name: "Reporte Mensual Noviembre 2024",
 		type: "MONTHLY",
-		status: "SUBMITTED",
+		status: "GENERATED",
 		periodStart: "2024-10-17T00:00:00Z",
 		periodEnd: "2024-11-16T23:59:59Z",
 		reportedMonth: "202411",
 		recordCount: 8,
-		xmlFileUrl: "https://example.com/report.xml",
-		pdfFileUrl: null,
+		pdfFileUrl: "https://example.com/report.pdf",
 		fileSize: 5678,
 		generatedAt: "2024-12-10T09:00:00Z",
-		submittedAt: "2024-12-15T14:30:00Z",
-		satFolioNumber: "SAT-2024-12345",
 		createdBy: "user-1",
 		notes: null,
 		createdAt: "2024-11-01T00:00:00Z",
@@ -227,7 +218,7 @@ describe("ReportsTable", () => {
 		await waitFor(() => {
 			expect(screen.getByText("Total Reportes")).toBeInTheDocument();
 			expect(screen.getByText("Borradores")).toBeInTheDocument();
-			expect(screen.getByText("Enviados")).toBeInTheDocument();
+			expect(screen.getByText("Generados")).toBeInTheDocument();
 		});
 	});
 

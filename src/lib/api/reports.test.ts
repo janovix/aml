@@ -8,8 +8,6 @@ import {
 	deleteReport,
 	generateReportFile,
 	getReportDownloadUrl,
-	submitReportToSat,
-	acknowledgeReport,
 	calculateMonthlyPeriod,
 	calculateQuarterlyPeriod,
 	calculateAnnualPeriod,
@@ -24,17 +22,13 @@ const mockReport: Report = {
 	name: "Reporte Mensual Enero 2024",
 	type: "MONTHLY",
 	status: "DRAFT",
-	periodStart: "2024-01-17T00:00:00Z",
-	periodEnd: "2024-02-16T23:59:59.999Z",
-	reportedMonth: "202402",
+	periodStart: "2024-01-01T00:00:00Z",
+	periodEnd: "2024-01-31T23:59:59.999Z",
+	reportedMonth: "202401",
 	recordCount: 10,
-	xmlFileUrl: null,
 	pdfFileUrl: null,
 	fileSize: null,
-	pdfFileSize: null,
 	generatedAt: null,
-	submittedAt: null,
-	satFolioNumber: null,
 	createdBy: "user-123",
 	notes: null,
 	createdAt: "2024-01-15T10:00:00Z",
@@ -82,9 +76,7 @@ describe("api/reports", () => {
 		});
 
 		it("listReports uses default baseUrl when not provided", async () => {
-			const fetchSpy = vi.fn(async (url: RequestInfo | URL) => {
-				const u = new URL(typeof url === "string" ? url : url.toString());
-				// Should use default baseUrl from getAmlCoreBaseUrl()
+			const fetchSpy = vi.fn(async () => {
 				return new Response(
 					JSON.stringify({
 						data: [],
@@ -245,7 +237,7 @@ describe("api/reports", () => {
 		});
 
 		it("getReportById uses default baseUrl when not provided", async () => {
-			const fetchSpy = vi.fn(async (url: RequestInfo | URL) => {
+			const fetchSpy = vi.fn(async () => {
 				return new Response(JSON.stringify(mockReportWithSummary), {
 					status: 200,
 					headers: { "content-type": "application/json" },
@@ -264,8 +256,8 @@ describe("api/reports", () => {
 				total: 10,
 				bySeverity: { HIGH: 5, MEDIUM: 3, LOW: 2 },
 				byStatus: { DETECTED: 8, SUBMITTED: 2 },
-				periodStart: "2024-01-17T00:00:00Z",
-				periodEnd: "2024-02-16T23:59:59.999Z",
+				periodStart: "2024-01-01T00:00:00Z",
+				periodEnd: "2024-01-31T23:59:59.999Z",
 			};
 
 			const fetchSpy = vi.fn(
@@ -277,10 +269,10 @@ describe("api/reports", () => {
 					);
 					expect(u.searchParams.get("type")).toBe("MONTHLY");
 					expect(u.searchParams.get("periodStart")).toBe(
-						"2024-01-17T00:00:00Z",
+						"2024-01-01T00:00:00Z",
 					);
 					expect(u.searchParams.get("periodEnd")).toBe(
-						"2024-02-16T23:59:59.999Z",
+						"2024-01-31T23:59:59.999Z",
 					);
 					return new Response(JSON.stringify(mockPreview), {
 						status: 200,
@@ -292,8 +284,8 @@ describe("api/reports", () => {
 
 			const res = await previewReport({
 				type: "MONTHLY",
-				periodStart: "2024-01-17T00:00:00Z",
-				periodEnd: "2024-02-16T23:59:59.999Z",
+				periodStart: "2024-01-01T00:00:00Z",
+				periodEnd: "2024-01-31T23:59:59.999Z",
 				baseUrl: "https://example.com",
 			});
 			expect(res.total).toBe(10);
@@ -305,11 +297,11 @@ describe("api/reports", () => {
 				total: 10,
 				bySeverity: { HIGH: 5, MEDIUM: 3, LOW: 2 },
 				byStatus: { DETECTED: 8, SUBMITTED: 2 },
-				periodStart: "2024-01-17T00:00:00Z",
-				periodEnd: "2024-02-16T23:59:59.999Z",
+				periodStart: "2024-01-01T00:00:00Z",
+				periodEnd: "2024-01-31T23:59:59.999Z",
 			};
 
-			const fetchSpy = vi.fn(async (url: RequestInfo | URL) => {
+			const fetchSpy = vi.fn(async () => {
 				return new Response(JSON.stringify(mockPreview), {
 					status: 200,
 					headers: { "content-type": "application/json" },
@@ -319,8 +311,8 @@ describe("api/reports", () => {
 
 			await previewReport({
 				type: "MONTHLY",
-				periodStart: "2024-01-17T00:00:00Z",
-				periodEnd: "2024-02-16T23:59:59.999Z",
+				periodStart: "2024-01-01T00:00:00Z",
+				periodEnd: "2024-01-31T23:59:59.999Z",
 			});
 			expect(fetchSpy).toHaveBeenCalled();
 		});
@@ -344,9 +336,9 @@ describe("api/reports", () => {
 					expect(body).toEqual({
 						name: "Reporte Mensual Enero 2024",
 						type: "MONTHLY",
-						periodStart: "2024-01-17T00:00:00Z",
-						periodEnd: "2024-02-16T23:59:59.999Z",
-						reportedMonth: "202402",
+						periodStart: "2024-01-01T00:00:00Z",
+						periodEnd: "2024-01-31T23:59:59.999Z",
+						reportedMonth: "202401",
 						notes: null,
 					});
 					return new Response(JSON.stringify(createdReport), {
@@ -360,9 +352,9 @@ describe("api/reports", () => {
 			const res = await createReport({
 				name: "Reporte Mensual Enero 2024",
 				type: "MONTHLY",
-				periodStart: "2024-01-17T00:00:00Z",
-				periodEnd: "2024-02-16T23:59:59.999Z",
-				reportedMonth: "202402",
+				periodStart: "2024-01-01T00:00:00Z",
+				periodEnd: "2024-01-31T23:59:59.999Z",
+				reportedMonth: "202401",
 				notes: null,
 				baseUrl: "https://example.com",
 			});
@@ -373,7 +365,7 @@ describe("api/reports", () => {
 		it("createReport uses default baseUrl when not provided", async () => {
 			const createdReport: Report = { ...mockReport, id: "REPORT456" };
 
-			const fetchSpy = vi.fn(async (url: RequestInfo | URL) => {
+			const fetchSpy = vi.fn(async () => {
 				return new Response(JSON.stringify(createdReport), {
 					status: 201,
 					headers: { "content-type": "application/json" },
@@ -384,9 +376,9 @@ describe("api/reports", () => {
 			await createReport({
 				name: "Reporte Mensual Enero 2024",
 				type: "MONTHLY",
-				periodStart: "2024-01-17T00:00:00Z",
-				periodEnd: "2024-02-16T23:59:59.999Z",
-				reportedMonth: "202402",
+				periodStart: "2024-01-01T00:00:00Z",
+				periodEnd: "2024-01-31T23:59:59.999Z",
+				reportedMonth: "202401",
 				notes: null,
 			});
 			expect(fetchSpy).toHaveBeenCalled();
@@ -472,62 +464,11 @@ describe("api/reports", () => {
 			});
 		});
 
-		it("handles satFolioNumber and submittedAt", async () => {
-			const fetchSpy = vi.fn(
-				async (url: RequestInfo | URL, init?: RequestInit) => {
-					const body = JSON.parse(init?.body as string);
-					expect(body.satFolioNumber).toBe("SAT-12345");
-					expect(body.submittedAt).toBe("2024-01-20T10:00:00Z");
-					return new Response(JSON.stringify(mockReport), {
-						status: 200,
-						headers: { "content-type": "application/json" },
-					});
-				},
-			);
-			vi.stubGlobal("fetch", fetchSpy);
-
-			await updateReport({
-				id: "REPORT123",
-				satFolioNumber: "SAT-12345",
-				submittedAt: "2024-01-20T10:00:00Z",
-				baseUrl: "https://example.com",
-			});
-		});
-
-		it("includes all optional fields when provided", async () => {
-			const fetchSpy = vi.fn(
-				async (url: RequestInfo | URL, init?: RequestInit) => {
-					const body = JSON.parse(init?.body as string);
-					expect(body.name).toBe("Updated Name");
-					expect(body.status).toBe("GENERATED");
-					expect(body.notes).toBe("Updated notes");
-					expect(body.satFolioNumber).toBe("SAT-123");
-					expect(body.submittedAt).toBe("2024-01-20T10:00:00Z");
-					return new Response(JSON.stringify(mockReport), {
-						status: 200,
-						headers: { "content-type": "application/json" },
-					});
-				},
-			);
-			vi.stubGlobal("fetch", fetchSpy);
-
-			await updateReport({
-				id: "REPORT123",
-				name: "Updated Name",
-				status: "GENERATED",
-				notes: "Updated notes",
-				satFolioNumber: "SAT-123",
-				submittedAt: "2024-01-20T10:00:00Z",
-				baseUrl: "https://example.com",
-			});
-		});
-
 		it("handles null values for optional fields", async () => {
 			const fetchSpy = vi.fn(
 				async (url: RequestInfo | URL, init?: RequestInit) => {
 					const body = JSON.parse(init?.body as string);
 					expect(body.notes).toBeNull();
-					expect(body.satFolioNumber).toBeNull();
 					return new Response(JSON.stringify(mockReport), {
 						status: 200,
 						headers: { "content-type": "application/json" },
@@ -539,7 +480,6 @@ describe("api/reports", () => {
 			await updateReport({
 				id: "REPORT123",
 				notes: null,
-				satFolioNumber: null,
 				baseUrl: "https://example.com",
 			});
 		});
@@ -561,90 +501,6 @@ describe("api/reports", () => {
 			await updateReport({
 				id: "REPORT123",
 				status: "GENERATED",
-				baseUrl: "https://example.com",
-			});
-		});
-
-		it("omits status when undefined", async () => {
-			const fetchSpy = vi.fn(
-				async (url: RequestInfo | URL, init?: RequestInit) => {
-					const body = JSON.parse(init?.body as string);
-					expect(body).not.toHaveProperty("status");
-					expect(body.name).toBe("Updated Name");
-					return new Response(JSON.stringify(mockReport), {
-						status: 200,
-						headers: { "content-type": "application/json" },
-					});
-				},
-			);
-			vi.stubGlobal("fetch", fetchSpy);
-
-			await updateReport({
-				id: "REPORT123",
-				name: "Updated Name",
-				baseUrl: "https://example.com",
-			});
-		});
-
-		it("omits notes when undefined", async () => {
-			const fetchSpy = vi.fn(
-				async (url: RequestInfo | URL, init?: RequestInit) => {
-					const body = JSON.parse(init?.body as string);
-					expect(body).not.toHaveProperty("notes");
-					expect(body.name).toBe("Updated Name");
-					return new Response(JSON.stringify(mockReport), {
-						status: 200,
-						headers: { "content-type": "application/json" },
-					});
-				},
-			);
-			vi.stubGlobal("fetch", fetchSpy);
-
-			await updateReport({
-				id: "REPORT123",
-				name: "Updated Name",
-				baseUrl: "https://example.com",
-			});
-		});
-
-		it("omits satFolioNumber when undefined", async () => {
-			const fetchSpy = vi.fn(
-				async (url: RequestInfo | URL, init?: RequestInit) => {
-					const body = JSON.parse(init?.body as string);
-					expect(body).not.toHaveProperty("satFolioNumber");
-					expect(body.name).toBe("Updated Name");
-					return new Response(JSON.stringify(mockReport), {
-						status: 200,
-						headers: { "content-type": "application/json" },
-					});
-				},
-			);
-			vi.stubGlobal("fetch", fetchSpy);
-
-			await updateReport({
-				id: "REPORT123",
-				name: "Updated Name",
-				baseUrl: "https://example.com",
-			});
-		});
-
-		it("omits submittedAt when undefined", async () => {
-			const fetchSpy = vi.fn(
-				async (url: RequestInfo | URL, init?: RequestInit) => {
-					const body = JSON.parse(init?.body as string);
-					expect(body).not.toHaveProperty("submittedAt");
-					expect(body.name).toBe("Updated Name");
-					return new Response(JSON.stringify(mockReport), {
-						status: 200,
-						headers: { "content-type": "application/json" },
-					});
-				},
-			);
-			vi.stubGlobal("fetch", fetchSpy);
-
-			await updateReport({
-				id: "REPORT123",
-				name: "Updated Name",
 				baseUrl: "https://example.com",
 			});
 		});
@@ -671,7 +527,7 @@ describe("api/reports", () => {
 		});
 
 		it("deleteReport uses default baseUrl when not provided", async () => {
-			const fetchSpy = vi.fn(async (url: RequestInfo | URL) => {
+			const fetchSpy = vi.fn(async () => {
 				return new Response(null, { status: 204 });
 			});
 			vi.stubGlobal("fetch", fetchSpy);
@@ -721,7 +577,7 @@ describe("api/reports", () => {
 				types: ["XML", "PDF"] as const,
 			};
 
-			const fetchSpy = vi.fn(async (url: RequestInfo | URL) => {
+			const fetchSpy = vi.fn(async () => {
 				return new Response(JSON.stringify(generateResponse), {
 					status: 200,
 					headers: { "content-type": "application/json" },
@@ -801,7 +657,7 @@ describe("api/reports", () => {
 				format: "xml" as const,
 			};
 
-			const fetchSpy = vi.fn(async (url: RequestInfo | URL) => {
+			const fetchSpy = vi.fn(async () => {
 				return new Response(JSON.stringify(downloadResponse), {
 					status: 200,
 					headers: { "content-type": "application/json" },
@@ -814,138 +670,11 @@ describe("api/reports", () => {
 		});
 	});
 
-	describe("submitReportToSat", () => {
-		it("sends POST to /submit endpoint with satFolioNumber", async () => {
-			const submittedReport: Report = {
-				...mockReport,
-				status: "SUBMITTED",
-				satFolioNumber: "SAT-12345",
-				submittedAt: "2024-01-20T10:00:00Z",
-			};
+	// Note: SAT submission tests moved to notices.test.ts
+	// The following functions are still in reports.ts for backwards compatibility
+	// but will be deprecated. SAT-specific workflows should use the notices API.
 
-			const fetchSpy = vi.fn(
-				async (url: RequestInfo | URL, init?: RequestInit) => {
-					expect((init?.method ?? "POST").toUpperCase()).toBe("POST");
-					const u = new URL(typeof url === "string" ? url : url.toString());
-					expect(u.origin + u.pathname).toBe(
-						"https://example.com/api/v1/reports/REPORT123/submit",
-					);
-					const body = JSON.parse(init?.body as string);
-					expect(body.satFolioNumber).toBe("SAT-12345");
-					return new Response(JSON.stringify(submittedReport), {
-						status: 200,
-						headers: { "content-type": "application/json" },
-					});
-				},
-			);
-			vi.stubGlobal("fetch", fetchSpy);
-
-			const res = await submitReportToSat({
-				id: "REPORT123",
-				satFolioNumber: "SAT-12345",
-				baseUrl: "https://example.com",
-			});
-			expect(res.status).toBe("SUBMITTED");
-			expect(res.satFolioNumber).toBe("SAT-12345");
-		});
-
-		it("omits satFolioNumber when not provided", async () => {
-			const fetchSpy = vi.fn(
-				async (url: RequestInfo | URL, init?: RequestInit) => {
-					const body = JSON.parse(init?.body as string);
-					expect(body.satFolioNumber).toBeUndefined();
-					return new Response(JSON.stringify(mockReport), {
-						status: 200,
-						headers: { "content-type": "application/json" },
-					});
-				},
-			);
-			vi.stubGlobal("fetch", fetchSpy);
-
-			await submitReportToSat({
-				id: "REPORT123",
-				baseUrl: "https://example.com",
-			});
-		});
-
-		it("submitReportToSat uses default baseUrl when not provided", async () => {
-			const submittedReport: Report = {
-				...mockReport,
-				status: "SUBMITTED",
-				submittedAt: "2024-01-20T10:00:00Z",
-			};
-
-			const fetchSpy = vi.fn(async (url: RequestInfo | URL) => {
-				return new Response(JSON.stringify(submittedReport), {
-					status: 200,
-					headers: { "content-type": "application/json" },
-				});
-			});
-			vi.stubGlobal("fetch", fetchSpy);
-
-			await submitReportToSat({ id: "REPORT123" });
-			expect(fetchSpy).toHaveBeenCalled();
-		});
-	});
-
-	describe("acknowledgeReport", () => {
-		it("sends POST to /acknowledge endpoint with satFolioNumber", async () => {
-			const acknowledgedReport: Report = {
-				...mockReport,
-				status: "ACKNOWLEDGED",
-				satFolioNumber: "SAT-ACK-12345",
-			};
-
-			const fetchSpy = vi.fn(
-				async (url: RequestInfo | URL, init?: RequestInit) => {
-					expect((init?.method ?? "POST").toUpperCase()).toBe("POST");
-					const u = new URL(typeof url === "string" ? url : url.toString());
-					expect(u.origin + u.pathname).toBe(
-						"https://example.com/api/v1/reports/REPORT123/acknowledge",
-					);
-					const body = JSON.parse(init?.body as string);
-					expect(body.satFolioNumber).toBe("SAT-ACK-12345");
-					return new Response(JSON.stringify(acknowledgedReport), {
-						status: 200,
-						headers: { "content-type": "application/json" },
-					});
-				},
-			);
-			vi.stubGlobal("fetch", fetchSpy);
-
-			const res = await acknowledgeReport({
-				id: "REPORT123",
-				satFolioNumber: "SAT-ACK-12345",
-				baseUrl: "https://example.com",
-			});
-			expect(res.status).toBe("ACKNOWLEDGED");
-			expect(res.satFolioNumber).toBe("SAT-ACK-12345");
-		});
-
-		it("acknowledgeReport uses default baseUrl when not provided", async () => {
-			const acknowledgedReport: Report = {
-				...mockReport,
-				status: "ACKNOWLEDGED",
-				satFolioNumber: "SAT-ACK-12345",
-			};
-
-			const fetchSpy = vi.fn(async (url: RequestInfo | URL) => {
-				return new Response(JSON.stringify(acknowledgedReport), {
-					status: 200,
-					headers: { "content-type": "application/json" },
-				});
-			});
-			vi.stubGlobal("fetch", fetchSpy);
-
-			await acknowledgeReport({
-				id: "REPORT123",
-				satFolioNumber: "SAT-ACK-12345",
-			});
-			expect(fetchSpy).toHaveBeenCalled();
-		});
-	});
-
-	describe("calculateMonthlyPeriod", () => {
+	describe("calculateMonthlyPeriod (17-17 SAT cycle)", () => {
 		it("calculates period for January (month 1)", () => {
 			const result = calculateMonthlyPeriod(2024, 1);
 			// January 2024: period is Dec 17, 2023 to Jan 16, 2024

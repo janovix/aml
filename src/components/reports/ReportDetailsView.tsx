@@ -1,34 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { useJwt } from "@/hooks/useJwt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
 import {
 	FileText,
 	Calendar,
 	ArrowLeft,
 	Download,
-	Send,
-	CheckCircle2,
 	Clock,
 	FileCheck2,
 	Loader2,
 	AlertTriangle,
 	FileType,
-	Users,
 	AlertCircle,
+	TrendingUp,
+	TrendingDown,
+	Minus,
+	BarChart3,
+	PieChart as PieChartIcon,
+	Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageHero, type StatCard } from "@/components/page-hero";
@@ -38,12 +31,17 @@ import {
 	getReportById,
 	generateReportFile,
 	getReportDownloadUrl,
-	submitReportToSat,
-	acknowledgeReport,
 	type ReportWithAlertSummary,
 	type ReportStatus,
 } from "@/lib/api/reports";
 import { toast } from "sonner";
+import {
+	DonutChart,
+	BarChart,
+	MetricCard,
+	SEVERITY_COLORS,
+	STATUS_COLORS,
+} from "./ReportCharts";
 
 interface ReportDetailsViewProps {
 	reportId: string;
@@ -51,7 +49,6 @@ interface ReportDetailsViewProps {
 
 /**
  * Skeleton component for ReportDetailsView
- * Used when loading the organization to show the appropriate skeleton
  */
 export function ReportDetailsSkeleton(): React.ReactElement {
 	return (
@@ -59,9 +56,8 @@ export function ReportDetailsSkeleton(): React.ReactElement {
 			<PageHeroSkeleton
 				showStats={false}
 				showBackButton={true}
-				actionCount={3}
+				actionCount={2}
 			/>
-			{/* Content skeleton */}
 			<div className="grid gap-6 md:grid-cols-2">
 				{[1, 2].map((i) => (
 					<Card key={i}>
@@ -96,28 +92,22 @@ const statusConfig: Record<
 	GENERATED: {
 		label: "Generado",
 		icon: <FileCheck2 className="h-4 w-4" />,
-		color: "text-sky-400",
-		bgColor: "bg-sky-500/20",
-	},
-	SUBMITTED: {
-		label: "Enviado",
-		icon: <Send className="h-4 w-4" />,
-		color: "text-amber-400",
-		bgColor: "bg-amber-500/20",
-	},
-	ACKNOWLEDGED: {
-		label: "Acusado",
-		icon: <CheckCircle2 className="h-4 w-4" />,
 		color: "text-emerald-400",
 		bgColor: "bg-emerald-500/20",
 	},
 };
 
-const typeLabels = {
+const typeLabels: Record<string, string> = {
 	MONTHLY: "Mensual",
 	QUARTERLY: "Trimestral",
 	ANNUAL: "Anual",
 	CUSTOM: "Personalizado",
+	EXECUTIVE_SUMMARY: "Resumen Ejecutivo",
+	COMPLIANCE_STATUS: "Estado de Cumplimiento",
+	TRANSACTION_ANALYSIS: "Análisis de Transacciones",
+	CLIENT_RISK_PROFILE: "Perfil de Riesgo",
+	ALERT_BREAKDOWN: "Desglose de Alertas",
+	PERIOD_COMPARISON: "Comparación de Períodos",
 };
 
 export function ReportDetailsView({
@@ -129,10 +119,6 @@ export function ReportDetailsView({
 	const [report, setReport] = useState<ReportWithAlertSummary | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isGenerating, setIsGenerating] = useState(false);
-	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [showSubmitDialog, setShowSubmitDialog] = useState(false);
-	const [showAcknowledgeDialog, setShowAcknowledgeDialog] = useState(false);
-	const [satFolioNumber, setSatFolioNumber] = useState("");
 
 	// Fetch report data
 	useEffect(() => {
@@ -161,7 +147,6 @@ export function ReportDetailsView({
 		try {
 			await generateReportFile({ id: report.id, jwt });
 			toast.success("Reporte generado exitosamente");
-			// Refresh report data
 			const updated = await getReportById({ id: reportId, jwt });
 			setReport(updated);
 		} catch (error) {
@@ -172,13 +157,13 @@ export function ReportDetailsView({
 		}
 	};
 
-	const handleDownload = async (format?: "xml" | "pdf") => {
+	const handleDownload = async () => {
 		if (!jwt || !report) return;
 
 		try {
 			const { fileUrl } = await getReportDownloadUrl({
 				id: report.id,
-				format,
+				format: "pdf",
 				jwt,
 			});
 			window.open(fileUrl, "_blank");
@@ -188,51 +173,47 @@ export function ReportDetailsView({
 		}
 	};
 
-	const handleSubmit = async () => {
-		if (!jwt || !report) return;
+	// Prepare chart data
+	const severityChartData = useMemo(() => {
+		if (!report) return [];
+		return Object.entries(report.alertSummary.bySeverity).map(
+			([severity, count]) => ({
+				label: severity.charAt(0) + severity.slice(1).toLowerCase(),
+				value: count,
+				color: SEVERITY_COLORS[severity] || "#6b7280",
+			}),
+		);
+	}, [report]);
 
-		setIsSubmitting(true);
-		try {
-			await submitReportToSat({
-				id: report.id,
-				satFolioNumber: satFolioNumber || undefined,
-				jwt,
-			});
-			toast.success("Reporte marcado como enviado");
-			setShowSubmitDialog(false);
-			// Refresh report data
-			const updated = await getReportById({ id: reportId, jwt });
-			setReport(updated);
-		} catch (error) {
-			console.error("Error submitting report:", error);
-			toast.error("Error al marcar el reporte como enviado");
-		} finally {
-			setIsSubmitting(false);
-		}
-	};
+	const statusChartData = useMemo(() => {
+		if (!report) return [];
+		return Object.entries(report.alertSummary.byStatus).map(
+			([status, count]) => ({
+				label: status.replace("_", " "),
+				value: count,
+				color: STATUS_COLORS[status] || "#6b7280",
+			}),
+		);
+	}, [report]);
 
-	const handleAcknowledge = async () => {
-		if (!jwt || !report || !satFolioNumber) return;
+	const ruleChartData = useMemo(() => {
+		if (!report) return [];
+		return report.alertSummary.byRule.slice(0, 8).map((rule) => ({
+			label: rule.ruleName.substring(0, 12),
+			value: rule.count,
+		}));
+	}, [report]);
 
-		setIsSubmitting(true);
-		try {
-			await acknowledgeReport({
-				id: report.id,
-				satFolioNumber,
-				jwt,
-			});
-			toast.success("Acuse de SAT registrado");
-			setShowAcknowledgeDialog(false);
-			// Refresh report data
-			const updated = await getReportById({ id: reportId, jwt });
-			setReport(updated);
-		} catch (error) {
-			console.error("Error acknowledging report:", error);
-			toast.error("Error al registrar el acuse");
-		} finally {
-			setIsSubmitting(false);
-		}
-	};
+	// Calculate compliance score (simplified example)
+	const complianceScore = useMemo(() => {
+		if (!report) return 0;
+		const total = report.alertSummary.total || 1;
+		const critical = report.alertSummary.bySeverity.CRITICAL || 0;
+		const high = report.alertSummary.bySeverity.HIGH || 0;
+		// Simple formula: lower severity alerts = higher score
+		const score = Math.max(0, 100 - (critical * 10 + high * 5));
+		return Math.min(100, score);
+	}, [report]);
 
 	if (isLoading || isJwtLoading) {
 		return <ReportDetailsSkeleton />;
@@ -257,10 +238,9 @@ export function ReportDetailsView({
 		);
 	}
 
-	const status = statusConfig[report.status];
-	const isMonthly = report.type === "MONTHLY";
-	// MONTHLY reports generate both XML (for SAT) and PDF (for internal use)
-	const fileTypes = isMonthly ? "XML y PDF" : "PDF";
+	const status = statusConfig[report.status] || statusConfig.DRAFT;
+	const criticalCount = report.alertSummary.bySeverity.CRITICAL || 0;
+	const highCount = report.alertSummary.bySeverity.HIGH || 0;
 
 	const stats: StatCard[] = [
 		{
@@ -270,11 +250,9 @@ export function ReportDetailsView({
 		},
 		{
 			label: "Alta/Crítica",
-			value:
-				(report.alertSummary.bySeverity["HIGH"] || 0) +
-				(report.alertSummary.bySeverity["CRITICAL"] || 0),
+			value: criticalCount + highCount,
 			icon: AlertCircle,
-			variant: "primary",
+			variant: criticalCount + highCount > 0 ? "primary" : undefined,
 		},
 		{
 			label: "Reglas Activadas",
@@ -282,9 +260,9 @@ export function ReportDetailsView({
 			icon: FileType,
 		},
 		{
-			label: "Estado",
-			value: status.label,
-			icon: CheckCircle2,
+			label: "Score",
+			value: `${complianceScore}%`,
+			icon: Shield,
 		},
 	];
 
@@ -292,12 +270,11 @@ export function ReportDetailsView({
 		<div className="space-y-6">
 			<PageHero
 				title={report.name}
-				subtitle={`${typeLabels[report.type]} | ${report.reportedMonth}`}
+				subtitle={`${typeLabels[report.type] || report.type} | ${report.reportedMonth || "Personalizado"}`}
 				icon={FileText}
 				stats={stats}
 			/>
 
-			{/* Back button */}
 			<Button
 				variant="ghost"
 				onClick={() => navigateTo("/reports")}
@@ -308,48 +285,95 @@ export function ReportDetailsView({
 			</Button>
 
 			<div className="grid gap-6 lg:grid-cols-3">
-				{/* Left column - Details */}
+				{/* Left column - Charts & Details */}
 				<div className="lg:col-span-2 space-y-6">
-					{/* Report Info */}
+					{/* Key Metrics */}
+					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+						<MetricCard
+							label="Alertas Totales"
+							value={report.alertSummary.total}
+							icon={<AlertTriangle className="h-4 w-4" />}
+						/>
+						<MetricCard
+							label="Críticas"
+							value={criticalCount}
+							icon={
+								criticalCount > 0 ? (
+									<TrendingUp className="h-4 w-4 text-red-500" />
+								) : (
+									<Minus className="h-4 w-4" />
+								)
+							}
+							color={criticalCount > 0 ? "text-red-500" : undefined}
+						/>
+						<MetricCard
+							label="Reglas"
+							value={report.alertSummary.byRule.length}
+							icon={<BarChart3 className="h-4 w-4" />}
+						/>
+						<MetricCard
+							label="Cumplimiento"
+							value={`${complianceScore}%`}
+							icon={
+								complianceScore >= 80 ? (
+									<TrendingUp className="h-4 w-4 text-emerald-500" />
+								) : complianceScore >= 60 ? (
+									<Minus className="h-4 w-4 text-amber-500" />
+								) : (
+									<TrendingDown className="h-4 w-4 text-red-500" />
+								)
+							}
+							color={
+								complianceScore >= 80
+									? "text-emerald-500"
+									: complianceScore >= 60
+										? "text-amber-500"
+										: "text-red-500"
+							}
+						/>
+					</div>
+
+					{/* Charts */}
 					<Card>
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2">
-								<FileText className="h-5 w-5" />
-								Información del Reporte
+								<PieChartIcon className="h-5 w-5" />
+								Visualización de Alertas
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<div className="grid gap-4 sm:grid-cols-2">
-								<div className="space-y-1">
-									<p className="text-sm text-muted-foreground">ID</p>
-									<p className="font-mono text-sm">{report.id}</p>
-								</div>
-								<div className="space-y-1">
-									<p className="text-sm text-muted-foreground">Tipo</p>
-									<p className="font-medium">{typeLabels[report.type]}</p>
-								</div>
-								<div className="space-y-1">
-									<p className="text-sm text-muted-foreground">Estado</p>
-									<div className="flex items-center gap-2">
-										<span
-											className={cn(
-												"flex items-center justify-center h-6 w-6 rounded",
-												status.bgColor,
-												status.color,
-											)}
-										>
-											{status.icon}
-										</span>
-										<span className="font-medium">{status.label}</span>
-									</div>
-								</div>
-								<div className="space-y-1">
-									<p className="text-sm text-muted-foreground">
-										Formato de Salida
-									</p>
-									<p className="font-medium">{fileTypes}</p>
-								</div>
+							<div className="grid gap-6 md:grid-cols-2">
+								{severityChartData.length > 0 && (
+									<DonutChart
+										data={severityChartData}
+										title="Por Severidad"
+										width={180}
+										height={180}
+										centerValue={report.alertSummary.total}
+										centerLabel="Total"
+									/>
+								)}
+								{statusChartData.length > 0 && (
+									<DonutChart
+										data={statusChartData}
+										title="Por Estado"
+										width={180}
+										height={180}
+									/>
+								)}
 							</div>
+
+							{ruleChartData.length > 0 && (
+								<div className="mt-6 pt-6 border-t">
+									<BarChart
+										data={ruleChartData}
+										title="Por Tipo de Alerta"
+										width={500}
+										height={200}
+										horizontal
+									/>
+								</div>
+							)}
 						</CardContent>
 					</Card>
 
@@ -384,27 +408,25 @@ export function ReportDetailsView({
 									</p>
 								</div>
 								<div className="space-y-1">
-									<p className="text-sm text-muted-foreground">
-										Mes Reportado (SAT)
+									<p className="text-sm text-muted-foreground">Tipo</p>
+									<p className="font-medium">
+										{typeLabels[report.type] || report.type}
 									</p>
-									<p className="font-mono">{report.reportedMonth}</p>
 								</div>
 								<div className="space-y-1">
-									<p className="text-sm text-muted-foreground">
-										Registros Incluidos
-									</p>
+									<p className="text-sm text-muted-foreground">Registros</p>
 									<p className="font-medium">{report.recordCount}</p>
 								</div>
 							</div>
 						</CardContent>
 					</Card>
 
-					{/* Alert Summary */}
+					{/* Alert Summary Table */}
 					<Card>
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2">
 								<AlertTriangle className="h-5 w-5" />
-								Resumen de Alertas
+								Desglose Detallado
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
@@ -419,9 +441,18 @@ export function ReportDetailsView({
 												key={severity}
 												className="flex items-center justify-between text-sm"
 											>
-												<span className="capitalize">
-													{severity.toLowerCase()}
-												</span>
+												<div className="flex items-center gap-2">
+													<span
+														className="w-2 h-2 rounded-full"
+														style={{
+															backgroundColor:
+																SEVERITY_COLORS[severity] || "#6b7280",
+														}}
+													/>
+													<span className="capitalize">
+														{severity.toLowerCase()}
+													</span>
+												</div>
 												<span className="font-medium tabular-nums">
 													{count}
 												</span>
@@ -439,9 +470,18 @@ export function ReportDetailsView({
 												key={status}
 												className="flex items-center justify-between text-sm"
 											>
-												<span className="capitalize">
-													{status.toLowerCase().replace("_", " ")}
-												</span>
+												<div className="flex items-center gap-2">
+													<span
+														className="w-2 h-2 rounded-full"
+														style={{
+															backgroundColor:
+																STATUS_COLORS[status] || "#6b7280",
+														}}
+													/>
+													<span className="capitalize">
+														{status.toLowerCase().replace("_", " ")}
+													</span>
+												</div>
 												<span className="font-medium tabular-nums">
 													{count}
 												</span>
@@ -473,28 +513,38 @@ export function ReportDetailsView({
 							)}
 						</CardContent>
 					</Card>
-
-					{/* Notes */}
-					{report.notes && (
-						<Card>
-							<CardHeader>
-								<CardTitle className="flex items-center gap-2">
-									<Users className="h-5 w-5" />
-									Notas
-								</CardTitle>
-							</CardHeader>
-							<CardContent>
-								<p className="text-sm text-muted-foreground whitespace-pre-wrap">
-									{report.notes}
-								</p>
-							</CardContent>
-						</Card>
-					)}
 				</div>
 
-				{/* Right column - Actions */}
+				{/* Right column - Actions & Timeline */}
 				<div className="space-y-6">
-					{/* Status Timeline */}
+					{/* Status Card */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="flex items-center gap-2">
+								<FileText className="h-5 w-5" />
+								Estado del Reporte
+							</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+								<span
+									className={cn(
+										"flex items-center justify-center h-10 w-10 rounded-lg",
+										status.bgColor,
+										status.color,
+									)}
+								>
+									{status.icon}
+								</span>
+								<div>
+									<p className="font-medium">{status.label}</p>
+									<p className="text-sm text-muted-foreground">Formato: PDF</p>
+								</div>
+							</div>
+						</CardContent>
+					</Card>
+
+					{/* Timeline */}
 					<Card>
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2">
@@ -523,7 +573,7 @@ export function ReportDetailsView({
 
 							{report.generatedAt && (
 								<div className="flex items-start gap-3">
-									<div className="flex items-center justify-center h-8 w-8 rounded-full bg-sky-500/20 text-sky-400">
+									<div className="flex items-center justify-center h-8 w-8 rounded-full bg-emerald-500/20 text-emerald-400">
 										<FileCheck2 className="h-4 w-4" />
 									</div>
 									<div>
@@ -539,43 +589,6 @@ export function ReportDetailsView({
 													minute: "2-digit",
 												},
 											)}
-										</p>
-									</div>
-								</div>
-							)}
-
-							{report.submittedAt && (
-								<div className="flex items-start gap-3">
-									<div className="flex items-center justify-center h-8 w-8 rounded-full bg-amber-500/20 text-amber-400">
-										<Send className="h-4 w-4" />
-									</div>
-									<div>
-										<p className="font-medium">Enviado a SAT</p>
-										<p className="text-sm text-muted-foreground">
-											{new Date(report.submittedAt).toLocaleDateString(
-												"es-MX",
-												{
-													day: "numeric",
-													month: "short",
-													year: "numeric",
-													hour: "2-digit",
-													minute: "2-digit",
-												},
-											)}
-										</p>
-									</div>
-								</div>
-							)}
-
-							{report.satFolioNumber && (
-								<div className="flex items-start gap-3">
-									<div className="flex items-center justify-center h-8 w-8 rounded-full bg-emerald-500/20 text-emerald-400">
-										<CheckCircle2 className="h-4 w-4" />
-									</div>
-									<div>
-										<p className="font-medium">Acuse SAT</p>
-										<p className="text-sm text-muted-foreground font-mono">
-											{report.satFolioNumber}
 										</p>
 									</div>
 								</div>
@@ -603,154 +616,46 @@ export function ReportDetailsView({
 									) : (
 										<>
 											<FileCheck2 className="h-4 w-4" />
-											Generar {fileTypes}
+											Generar PDF
 										</>
 									)}
 								</Button>
 							)}
 
-							{/* Download buttons - MONTHLY has both XML and PDF */}
-							{report.status !== "DRAFT" && isMonthly && (
-								<>
-									<Button
-										variant="outline"
-										className="w-full gap-2"
-										onClick={() => handleDownload("xml")}
-									>
-										<Download className="h-4 w-4" />
-										Descargar XML (SAT)
-									</Button>
-									<Button
-										variant="outline"
-										className="w-full gap-2"
-										onClick={() => handleDownload("pdf")}
-									>
-										<Download className="h-4 w-4" />
-										Descargar PDF
-									</Button>
-								</>
-							)}
-
-							{/* Download button - non-MONTHLY reports only have PDF */}
-							{report.status !== "DRAFT" && !isMonthly && (
+							{report.status === "GENERATED" && (
 								<Button
 									variant="outline"
 									className="w-full gap-2"
-									onClick={() => handleDownload("pdf")}
+									onClick={handleDownload}
 								>
 									<Download className="h-4 w-4" />
 									Descargar PDF
 								</Button>
 							)}
 
-							{report.status === "GENERATED" && isMonthly && (
-								<Button
-									className="w-full gap-2"
-									onClick={() => setShowSubmitDialog(true)}
-								>
-									<Send className="h-4 w-4" />
-									Marcar como Enviado a SAT
-								</Button>
-							)}
-
-							{report.status === "SUBMITTED" && isMonthly && (
-								<Button
-									variant="outline"
-									className="w-full gap-2"
-									onClick={() => setShowAcknowledgeDialog(true)}
-								>
-									<CheckCircle2 className="h-4 w-4" />
-									Registrar Acuse SAT
-								</Button>
+							{report.recordCount === 0 && report.status === "DRAFT" && (
+								<p className="text-sm text-amber-500 text-center">
+									No hay alertas para generar
+								</p>
 							)}
 						</CardContent>
 					</Card>
+
+					{/* Notes */}
+					{report.notes && (
+						<Card>
+							<CardHeader>
+								<CardTitle>Notas</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<p className="text-sm text-muted-foreground whitespace-pre-wrap">
+									{report.notes}
+								</p>
+							</CardContent>
+						</Card>
+					)}
 				</div>
 			</div>
-
-			{/* Submit Dialog */}
-			<Dialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Marcar como Enviado a SAT</DialogTitle>
-						<DialogDescription>
-							Confirma que has enviado este reporte al SAT. Opcionalmente puedes
-							ingresar el número de folio recibido.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-4 py-4">
-						<div className="space-y-2">
-							<Label htmlFor="satFolio">Número de Folio (opcional)</Label>
-							<Input
-								id="satFolio"
-								value={satFolioNumber}
-								onChange={(e) => setSatFolioNumber(e.target.value)}
-								placeholder="Ej: SAT-2024-12345"
-							/>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button
-							variant="outline"
-							onClick={() => setShowSubmitDialog(false)}
-						>
-							Cancelar
-						</Button>
-						<Button onClick={handleSubmit} disabled={isSubmitting}>
-							{isSubmitting ? (
-								<Loader2 className="h-4 w-4 animate-spin" />
-							) : (
-								"Confirmar Envío"
-							)}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-
-			{/* Acknowledge Dialog */}
-			<Dialog
-				open={showAcknowledgeDialog}
-				onOpenChange={setShowAcknowledgeDialog}
-			>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Registrar Acuse del SAT</DialogTitle>
-						<DialogDescription>
-							Ingresa el número de folio del acuse recibido del SAT.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-4 py-4">
-						<div className="space-y-2">
-							<Label htmlFor="acknowledgefolio">Número de Folio *</Label>
-							<Input
-								id="acknowledgefolio"
-								value={satFolioNumber}
-								onChange={(e) => setSatFolioNumber(e.target.value)}
-								placeholder="Ej: SAT-ACK-2024-12345"
-								required
-							/>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button
-							variant="outline"
-							onClick={() => setShowAcknowledgeDialog(false)}
-						>
-							Cancelar
-						</Button>
-						<Button
-							onClick={handleAcknowledge}
-							disabled={isSubmitting || !satFolioNumber}
-						>
-							{isSubmitting ? (
-								<Loader2 className="h-4 w-4 animate-spin" />
-							) : (
-								"Registrar Acuse"
-							)}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
 		</div>
 	);
 }

@@ -27,6 +27,7 @@ const ROUTE_LABEL_KEYS: Record<string, TranslationKeys> = {
 	clients: "navClients",
 	transactions: "navTransactions",
 	alerts: "navAlerts",
+	notices: "navNotices",
 	reports: "navReports",
 	team: "navTeam",
 	settings: "navSettings",

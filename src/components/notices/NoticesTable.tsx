@@ -15,6 +15,7 @@ import {
 	Trash2,
 	Plus,
 	AlertCircle,
+	FileWarning,
 } from "lucide-react";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
@@ -43,92 +44,92 @@ import {
 import { PageHero, type StatCard } from "@/components/page-hero";
 import { formatProperNoun } from "@/lib/utils";
 import {
-	listReports,
-	deleteReport,
-	generateReportFile,
-	getReportDownloadUrl,
-	type Report,
-	type ReportType,
-	type ReportStatus,
-} from "@/lib/api/reports";
+	listNotices,
+	deleteNotice,
+	generateNoticeFile,
+	getNoticeDownloadUrl,
+	type Notice,
+	type NoticeStatus,
+} from "@/lib/api/notices";
 
 const ITEMS_PER_PAGE = 20;
 
-const typeConfig: Record<ReportType, { label: string; bgColor: string }> = {
-	MONTHLY: { label: "Mensual", bgColor: "bg-sky-500/20 text-sky-400" },
-	QUARTERLY: {
-		label: "Trimestral",
-		bgColor: "bg-violet-500/20 text-violet-400",
-	},
-	ANNUAL: { label: "Anual", bgColor: "bg-amber-500/20 text-amber-400" },
-	CUSTOM: { label: "Personalizado", bgColor: "bg-zinc-500/20 text-zinc-400" },
-};
-
 const statusConfig: Record<
-	ReportStatus,
-	{ label: string; icon: React.ReactNode; color: string }
+	NoticeStatus,
+	{ label: string; icon: React.ReactNode; color: string; bgColor: string }
 > = {
 	DRAFT: {
 		label: "Borrador",
 		icon: <Clock className="h-4 w-4" />,
 		color: "text-zinc-400",
+		bgColor: "bg-zinc-500/20",
 	},
 	GENERATED: {
 		label: "Generado",
 		icon: <FileCheck2 className="h-4 w-4" />,
-		color: "text-sky-400",
+		color: "text-blue-400",
+		bgColor: "bg-blue-500/20",
+	},
+	SUBMITTED: {
+		label: "Enviado",
+		icon: <Send className="h-4 w-4" />,
+		color: "text-amber-400",
+		bgColor: "bg-amber-500/20",
+	},
+	ACKNOWLEDGED: {
+		label: "Acusado",
+		icon: <CheckCircle2 className="h-4 w-4" />,
+		color: "text-emerald-400",
+		bgColor: "bg-emerald-500/20",
 	},
 };
 
-interface ReportsTableProps {
+interface NoticesTableProps {
 	filters?: {
-		type?: ReportType;
-		status?: ReportStatus;
+		status?: NoticeStatus;
+		year?: number;
 	};
 }
 
-export function ReportsTable({
+export function NoticesTable({
 	filters,
-}: ReportsTableProps): React.ReactElement {
+}: NoticesTableProps): React.ReactElement {
 	const { navigateTo, orgPath } = useOrgNavigation();
 	const { toast } = useToast();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const { currentOrg } = useOrgStore();
 
-	const [reports, setReports] = useState<Report[]>([]);
+	const [notices, setNotices] = useState<Notice[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isLoadingMore, setIsLoadingMore] = useState(false);
 	const [hasMore, setHasMore] = useState(false);
 	const [currentPage, setCurrentPage] = useState(1);
-	const [totalReports, setTotalReports] = useState(0);
+	const [totalNotices, setTotalNotices] = useState(0);
 
-	// Track if initial load has happened for current org
 	const hasLoadedForOrgRef = useRef<string | null>(null);
-	// Track previous filters to detect changes
 	const prevFiltersRef = useRef<typeof filters | null>(null);
 
-	// Fetch reports from API (internal function, not a callback)
-	const doFetchReports = async (jwtToken: string) => {
+	const doFetchNotices = async (jwtToken: string) => {
 		try {
 			setIsLoading(true);
-			setReports([]);
+			setNotices([]);
 
-			const response = await listReports({
+			const response = await listNotices({
 				page: 1,
 				limit: ITEMS_PER_PAGE,
 				jwt: jwtToken,
 				...filters,
 			});
 
-			setReports(response.data);
-			setTotalReports(response.pagination.total);
+			setNotices(response.data);
+			setTotalNotices(response.pagination.total);
 			setCurrentPage(1);
 			setHasMore(response.pagination.page < response.pagination.totalPages);
 		} catch (error) {
-			console.error("Error fetching reports:", error);
+			console.error("Error fetching notices:", error);
 			toast({
 				title: "Error",
-				description: "No se pudieron cargar los reportes",
+				description: "No se pudieron cargar los avisos",
 				variant: "destructive",
 			});
 		} finally {
@@ -136,28 +137,27 @@ export function ReportsTable({
 		}
 	};
 
-	// Load more reports for infinite scroll
 	const loadMore = useCallback(async () => {
 		if (!jwt || isLoadingMore || !hasMore) return;
 
 		try {
 			setIsLoadingMore(true);
 			const nextPage = currentPage + 1;
-			const response = await listReports({
+			const response = await listNotices({
 				page: nextPage,
 				limit: ITEMS_PER_PAGE,
 				jwt,
 				...filters,
 			});
 
-			setReports((prev) => [...prev, ...response.data]);
+			setNotices((prev) => [...prev, ...response.data]);
 			setCurrentPage(nextPage);
 			setHasMore(response.pagination.page < response.pagination.totalPages);
 		} catch (error) {
-			console.error("Error loading more reports:", error);
+			console.error("Error loading more notices:", error);
 			toast({
 				title: "Error",
-				description: "No se pudieron cargar más reportes",
+				description: "No se pudieron cargar más avisos",
 				variant: "destructive",
 			});
 		} finally {
@@ -165,19 +165,18 @@ export function ReportsTable({
 		}
 	}, [jwt, isLoadingMore, hasMore, currentPage, filters, toast]);
 
-	// Silent refresh for auto-refresh (doesn't show loading state)
 	const silentRefresh = useCallback(async () => {
 		if (!jwt || isJwtLoading || !currentOrg) return;
 
 		try {
-			const response = await listReports({
+			const response = await listNotices({
 				page: 1,
 				limit: ITEMS_PER_PAGE,
 				jwt,
 				...filters,
 			});
-			setReports(response.data);
-			setTotalReports(response.pagination.total);
+			setNotices(response.data);
+			setTotalNotices(response.pagination.total);
 			setCurrentPage(1);
 			setHasMore(response.pagination.page < response.pagination.totalPages);
 		} catch {
@@ -185,67 +184,58 @@ export function ReportsTable({
 		}
 	}, [jwt, isJwtLoading, filters, currentOrg]);
 
-	// Auto-refresh every 30 seconds (only when on first page to avoid disrupting infinite scroll)
 	useAutoRefresh(silentRefresh, {
 		enabled: !isLoading && !!jwt && !!currentOrg && currentPage === 1,
 		interval: 30000,
 	});
 
-	// Initial load - refetch when organization changes (not on JWT refresh)
 	useEffect(() => {
 		if (isJwtLoading || !jwt || !currentOrg?.id) {
 			if (!currentOrg?.id && !isJwtLoading) {
-				setReports([]);
+				setNotices([]);
 				setIsLoading(false);
 				hasLoadedForOrgRef.current = null;
 			}
 			return;
 		}
 
-		// Skip if we've already loaded for this org (JWT refresh shouldn't trigger reload)
 		if (hasLoadedForOrgRef.current === currentOrg.id) {
 			return;
 		}
 
 		hasLoadedForOrgRef.current = currentOrg.id;
-		doFetchReports(jwt);
+		doFetchNotices(jwt);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [jwt, isJwtLoading, currentOrg?.id]);
 
-	// Refetch when filters change (after initial load, skip first run)
 	useEffect(() => {
-		// Skip if not loaded yet
 		if (!hasLoadedForOrgRef.current || !jwt || !currentOrg?.id) {
 			prevFiltersRef.current = filters;
 			return;
 		}
 
-		// Skip on first run (initial load already fetched)
 		if (prevFiltersRef.current === null) {
 			prevFiltersRef.current = filters;
 			return;
 		}
 
-		// Only refetch if filters actually changed
 		if (JSON.stringify(prevFiltersRef.current) === JSON.stringify(filters)) {
 			return;
 		}
 
 		prevFiltersRef.current = filters;
-		doFetchReports(jwt);
+		doFetchNotices(jwt);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [filters]);
 
-	// Column definitions
-	const columns: ColumnDef<Report>[] = useMemo(
+	const columns: ColumnDef<Notice>[] = useMemo(
 		() => [
 			{
-				id: "report",
-				header: "Reporte",
+				id: "notice",
+				header: "Aviso",
 				accessorKey: "name",
 				sortable: true,
 				cell: (item) => {
-					const typeCfg = typeConfig[item.type];
 					const statusCfg = statusConfig[item.status];
 
 					return (
@@ -254,20 +244,20 @@ export function ReportsTable({
 								<Tooltip>
 									<TooltipTrigger asChild>
 										<span
-											className={`flex items-center justify-center h-8 w-8 rounded-lg ${typeCfg.bgColor}`}
+											className={`flex items-center justify-center h-8 w-8 rounded-lg ${statusCfg.bgColor} ${statusCfg.color}`}
 										>
-											<FileText className="h-4 w-4" />
+											<FileWarning className="h-4 w-4" />
 										</span>
 									</TooltipTrigger>
 									<TooltipContent side="right">
-										<p>{typeCfg.label}</p>
+										<p>Aviso SAT</p>
 									</TooltipContent>
 								</Tooltip>
 							</TooltipProvider>
 							<div className="flex flex-col min-w-0">
 								<div className="flex items-center gap-2">
 									<Link
-										href={orgPath(`/reports/${item.id}`)}
+										href={orgPath(`/notices/${item.id}`)}
 										className="font-medium text-foreground truncate hover:underline hover:text-primary transition-colors"
 									>
 										{formatProperNoun(item.name)}
@@ -295,7 +285,7 @@ export function ReportsTable({
 			},
 			{
 				id: "period",
-				header: "Período",
+				header: "Período SAT",
 				accessorKey: "reportedMonth",
 				hideOnMobile: true,
 				cell: (item) => {
@@ -324,7 +314,7 @@ export function ReportsTable({
 			},
 			{
 				id: "recordCount",
-				header: "Registros",
+				header: "Alertas",
 				accessorKey: "recordCount",
 				sortable: true,
 				className: "text-center",
@@ -334,56 +324,54 @@ export function ReportsTable({
 					</span>
 				),
 			},
+			{
+				id: "status",
+				header: "Estado",
+				accessorKey: "status",
+				sortable: true,
+				cell: (item) => {
+					const statusCfg = statusConfig[item.status];
+					return (
+						<span
+							className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${statusCfg.bgColor} ${statusCfg.color}`}
+						>
+							{statusCfg.icon}
+							{statusCfg.label}
+						</span>
+					);
+				},
+			},
+			{
+				id: "submittedAt",
+				header: "Enviado",
+				accessorKey: "submittedAt",
+				sortable: true,
+				cell: (item) => {
+					if (!item.submittedAt) {
+						return <span className="text-muted-foreground text-sm">—</span>;
+					}
+					const date = new Date(item.submittedAt);
+					return (
+						<div className="flex flex-col">
+							<span className="text-sm text-foreground tabular-nums">
+								{date.toLocaleDateString("es-MX", {
+									day: "2-digit",
+									month: "short",
+								})}
+							</span>
+							<span className="text-xs text-muted-foreground tabular-nums">
+								{date.getFullYear()}
+							</span>
+						</div>
+					);
+				},
+			},
 		],
 		[orgPath],
 	);
 
-	// Filter definitions
 	const filterDefs: FilterDef[] = useMemo(
 		() => [
-			{
-				id: "type",
-				label: "Tipo",
-				icon: FileText,
-				options: [
-					{
-						value: "MONTHLY",
-						label: "Mensual",
-						icon: (
-							<span className="flex items-center justify-center h-5 w-5 rounded bg-sky-500/20 text-sky-400">
-								<FileText className="h-3 w-3" />
-							</span>
-						),
-					},
-					{
-						value: "QUARTERLY",
-						label: "Trimestral",
-						icon: (
-							<span className="flex items-center justify-center h-5 w-5 rounded bg-violet-500/20 text-violet-400">
-								<FileText className="h-3 w-3" />
-							</span>
-						),
-					},
-					{
-						value: "ANNUAL",
-						label: "Anual",
-						icon: (
-							<span className="flex items-center justify-center h-5 w-5 rounded bg-amber-500/20 text-amber-400">
-								<FileText className="h-3 w-3" />
-							</span>
-						),
-					},
-					{
-						value: "CUSTOM",
-						label: "Personalizado",
-						icon: (
-							<span className="flex items-center justify-center h-5 w-5 rounded bg-zinc-500/20 text-zinc-400">
-								<FileText className="h-3 w-3" />
-							</span>
-						),
-					},
-				],
-			},
 			{
 				id: "status",
 				label: "Estado",
@@ -397,7 +385,17 @@ export function ReportsTable({
 					{
 						value: "GENERATED",
 						label: "Generado",
-						icon: <FileCheck2 className="h-3.5 w-3.5 text-sky-400" />,
+						icon: <FileCheck2 className="h-3.5 w-3.5 text-blue-400" />,
+					},
+					{
+						value: "SUBMITTED",
+						label: "Enviado",
+						icon: <Send className="h-3.5 w-3.5 text-amber-400" />,
+					},
+					{
+						value: "ACKNOWLEDGED",
+						label: "Acusado",
+						icon: <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />,
 					},
 				],
 			},
@@ -405,66 +403,60 @@ export function ReportsTable({
 		[],
 	);
 
-	const handleGenerate = async (report: Report) => {
+	const handleGenerate = async (notice: Notice) => {
 		if (!jwt) return;
 		try {
-			const result = await generateReportFile({ id: report.id, jwt });
-			const typesStr = result.types.join(" y ");
+			const result = await generateNoticeFile({ id: notice.id, jwt });
 			toast({
-				title: "Reporte generado",
-				description: `${typesStr} generado${result.types.length > 1 ? "s" : ""} con ${result.alertCount} alertas`,
+				title: "Aviso generado",
+				description: `XML generado con ${result.alertCount} alertas`,
 			});
-			doFetchReports(jwt);
+			doFetchNotices(jwt);
 		} catch (error) {
-			console.error("Error generating report:", error);
+			console.error("Error generating notice:", error);
 			toast({
 				title: "Error",
-				description: "No se pudo generar el reporte",
+				description: "No se pudo generar el aviso",
 				variant: "destructive",
 			});
 		}
 	};
 
-	const handleDownload = async (report: Report, format?: "xml" | "pdf") => {
+	const handleDownload = async (notice: Notice) => {
 		if (!jwt) return;
 		try {
-			const { fileUrl } = await getReportDownloadUrl({
-				id: report.id,
-				format,
-				jwt,
-			});
+			const { fileUrl } = await getNoticeDownloadUrl({ id: notice.id, jwt });
 			window.open(fileUrl, "_blank");
 		} catch (error) {
-			console.error("Error downloading report:", error);
+			console.error("Error downloading notice:", error);
 			toast({
 				title: "Error",
-				description: "No se pudo descargar el reporte",
+				description: "No se pudo descargar el aviso",
 				variant: "destructive",
 			});
 		}
 	};
 
-	const handleDelete = async (report: Report) => {
+	const handleDelete = async (notice: Notice) => {
 		if (!jwt) return;
 		try {
-			await deleteReport({ id: report.id, jwt });
+			await deleteNotice({ id: notice.id, jwt });
 			toast({
-				title: "Reporte eliminado",
-				description: `${report.name} ha sido eliminado.`,
+				title: "Aviso eliminado",
+				description: `${notice.name} ha sido eliminado.`,
 			});
-			doFetchReports(jwt);
+			doFetchNotices(jwt);
 		} catch (error) {
-			console.error("Error deleting report:", error);
+			console.error("Error deleting notice:", error);
 			toast({
 				title: "Error",
-				description: "No se pudo eliminar el reporte",
+				description: "No se pudo eliminar el aviso",
 				variant: "destructive",
 			});
 		}
 	};
 
-	// Row actions
-	const renderActions = (item: Report) => (
+	const renderActions = (item: Notice) => (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
 				<Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -474,7 +466,7 @@ export function ReportsTable({
 			<DropdownMenuContent align="end" className="w-48">
 				<DropdownMenuItem
 					className="gap-2"
-					onClick={() => navigateTo(`/reports/${item.id}`)}
+					onClick={() => navigateTo(`/notices/${item.id}`)}
 				>
 					<Eye className="h-4 w-4" />
 					Ver detalle
@@ -485,44 +477,26 @@ export function ReportsTable({
 						onClick={() => handleGenerate(item)}
 					>
 						<FileCheck2 className="h-4 w-4" />
-						Generar {item.type === "MONTHLY" ? "XML y PDF" : "PDF"}
+						Generar XML
 					</DropdownMenuItem>
 				)}
-				{item.status === "GENERATED" && item.type === "MONTHLY" && (
+				{item.status === "GENERATED" && (
 					<DropdownMenuItem
 						className="gap-2"
-						onClick={() => navigateTo(`/reports/${item.id}`)}
+						onClick={() => navigateTo(`/notices/${item.id}`)}
 					>
 						<Send className="h-4 w-4" />
 						Enviar a SAT
 					</DropdownMenuItem>
 				)}
 				<DropdownMenuSeparator />
-				{item.status !== "DRAFT" && item.type === "MONTHLY" && (
-					<>
-						<DropdownMenuItem
-							className="gap-2"
-							onClick={() => handleDownload(item, "xml")}
-						>
-							<Download className="h-4 w-4" />
-							Descargar XML (SAT)
-						</DropdownMenuItem>
-						<DropdownMenuItem
-							className="gap-2"
-							onClick={() => handleDownload(item, "pdf")}
-						>
-							<Download className="h-4 w-4" />
-							Descargar PDF
-						</DropdownMenuItem>
-					</>
-				)}
-				{item.status !== "DRAFT" && item.type !== "MONTHLY" && (
+				{item.status !== "DRAFT" && (
 					<DropdownMenuItem
 						className="gap-2"
-						onClick={() => handleDownload(item, "pdf")}
+						onClick={() => handleDownload(item)}
 					>
 						<Download className="h-4 w-4" />
-						Descargar PDF
+						Descargar XML
 					</DropdownMenuItem>
 				)}
 				{item.status === "DRAFT" && (
@@ -538,47 +512,48 @@ export function ReportsTable({
 		</DropdownMenu>
 	);
 
-	// Compute stats from reports data
 	const stats: StatCard[] = useMemo(() => {
-		const draftReports = reports.filter((r) => r.status === "DRAFT").length;
-		const generatedReports = reports.filter(
-			(r) => r.status === "GENERATED",
+		const draftNotices = notices.filter((n) => n.status === "DRAFT").length;
+		const pendingSubmission = notices.filter(
+			(n) => n.status === "GENERATED",
 		).length;
-		const totalRecords = reports.reduce((sum, r) => sum + r.recordCount, 0);
+		const submittedNotices = notices.filter(
+			(n) => n.status === "SUBMITTED" || n.status === "ACKNOWLEDGED",
+		).length;
+		const totalAlerts = notices.reduce((sum, n) => sum + n.recordCount, 0);
 
 		return [
 			{
-				label: "Total Reportes",
-				value: totalReports,
-				icon: FileText,
+				label: "Total Avisos",
+				value: totalNotices,
+				icon: FileWarning,
 			},
 			{
-				label: "Borradores",
-				value: draftReports,
+				label: "Pendientes",
+				value: draftNotices + pendingSubmission,
 				icon: Clock,
 				variant: "primary",
 			},
 			{
-				label: "Generados",
-				value: generatedReports,
-				icon: FileCheck2,
+				label: "Enviados",
+				value: submittedNotices,
+				icon: Send,
 			},
 			{
-				label: "Total Registros",
-				value: totalRecords,
+				label: "Total Alertas",
+				value: totalAlerts,
 				icon: FileCheck2,
 			},
 		];
-	}, [reports, totalReports]);
+	}, [notices, totalNotices]);
 
-	// Show error if no organization selected
 	if (!currentOrg && !isLoading) {
 		return (
 			<div className="flex flex-col items-center justify-center py-12 text-center">
 				<AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
 				<h3 className="text-lg font-medium">Sin organización</h3>
 				<p className="text-muted-foreground">
-					Selecciona una organización para ver los reportes
+					Selecciona una organización para ver los avisos
 				</p>
 			</div>
 		);
@@ -587,23 +562,23 @@ export function ReportsTable({
 	return (
 		<div className="space-y-6">
 			<PageHero
-				title="Reportes"
-				subtitle="Gestión y seguimiento de reportes AML"
-				icon={FileText}
+				title="Avisos SAT"
+				subtitle="Gestión de avisos y envío al portal SAT"
+				icon={FileWarning}
 				stats={stats}
-				ctaLabel="Nuevo Reporte"
+				ctaLabel="Nuevo Aviso"
 				ctaIcon={Plus}
-				onCtaClick={() => navigateTo("/reports/new")}
+				onCtaClick={() => navigateTo("/notices/new")}
 			/>
 			<DataTable
-				data={reports}
+				data={notices}
 				columns={columns}
 				filters={filterDefs}
 				searchKeys={["id", "name", "reportedMonth"]}
 				searchPlaceholder="Buscar por nombre, período..."
-				emptyMessage="No se encontraron reportes"
-				emptyIcon={FileText}
-				loadingMessage="Cargando reportes..."
+				emptyMessage="No se encontraron avisos"
+				emptyIcon={FileWarning}
+				loadingMessage="Cargando avisos..."
 				isLoading={isLoading || isJwtLoading}
 				selectable
 				getId={(item) => item.id}

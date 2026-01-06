@@ -7,6 +7,7 @@ import {
 	Users,
 	AlertTriangle,
 	FileText,
+	FileWarning,
 	Settings,
 	Home,
 	Briefcase,
@@ -89,6 +90,12 @@ const mainNavItems: NavItem[] = [
 		titleKey: "navAlerts",
 		href: "/alerts",
 		icon: AlertTriangle,
+		available: true,
+	},
+	{
+		titleKey: "navNotices",
+		href: "/notices",
+		icon: FileWarning,
 		available: true,
 	},
 	{

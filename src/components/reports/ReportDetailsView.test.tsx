@@ -44,8 +44,6 @@ vi.mock("@/lib/api/reports", () => ({
 	getReportById: vi.fn(),
 	generateReportFile: vi.fn(),
 	getReportDownloadUrl: vi.fn(),
-	submitReportToSat: vi.fn(),
-	acknowledgeReport: vi.fn(),
 }));
 
 vi.mock("@/components/skeletons", () => ({
@@ -60,17 +58,13 @@ const mockReport: reportsApi.ReportWithAlertSummary = {
 	name: "Reporte Mensual Enero 2024",
 	type: "MONTHLY",
 	status: "DRAFT",
-	periodStart: "2024-01-17T00:00:00Z",
-	periodEnd: "2024-02-16T23:59:59.999Z",
-	reportedMonth: "202402",
+	periodStart: "2024-01-01T00:00:00Z",
+	periodEnd: "2024-01-31T23:59:59.999Z",
+	reportedMonth: "202401",
 	recordCount: 10,
-	xmlFileUrl: null,
 	pdfFileUrl: null,
 	fileSize: null,
-	pdfFileSize: null,
 	generatedAt: null,
-	submittedAt: null,
-	satFolioNumber: null,
 	createdBy: "user-1",
 	notes: null,
 	createdAt: "2024-01-15T10:00:00Z",
@@ -115,7 +109,6 @@ describe("ReportDetailsView", () => {
 			).toBeInTheDocument();
 		});
 
-		expect(screen.getByText("report-1")).toBeInTheDocument();
 		expect(screen.getByText("Mensual")).toBeInTheDocument();
 		expect(screen.getByText("Borrador")).toBeInTheDocument();
 	});
@@ -150,16 +143,16 @@ describe("ReportDetailsView", () => {
 			message: "Report generated",
 			reportId: "report-1",
 			alertCount: 10,
-			types: ["XML", "PDF"],
+			types: ["PDF"],
 		});
 
 		renderWithProviders(<ReportDetailsView reportId="report-1" />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Generar XML y PDF")).toBeInTheDocument();
+			expect(screen.getByText("Generar PDF")).toBeInTheDocument();
 		});
 
-		const generateButton = screen.getByText("Generar XML y PDF");
+		const generateButton = screen.getByText("Generar PDF");
 		await userEvent.click(generateButton);
 
 		await waitFor(() => {
@@ -174,44 +167,7 @@ describe("ReportDetailsView", () => {
 		);
 	});
 
-	it("downloads XML file when download XML button is clicked", async () => {
-		const generatedReport = {
-			...mockReport,
-			status: "GENERATED" as const,
-			generatedAt: "2024-01-20T10:00:00Z",
-		};
-
-		vi.mocked(reportsApi.getReportById).mockResolvedValue(generatedReport);
-		vi.mocked(reportsApi.getReportDownloadUrl).mockResolvedValue({
-			fileUrl: "https://example.com/report.xml",
-			fileSize: 1024,
-			format: "xml",
-		});
-
-		renderWithProviders(<ReportDetailsView reportId="report-1" />);
-
-		await waitFor(() => {
-			expect(screen.getByText("Descargar XML (SAT)")).toBeInTheDocument();
-		});
-
-		const downloadButton = screen.getByText("Descargar XML (SAT)");
-		await userEvent.click(downloadButton);
-
-		await waitFor(() => {
-			expect(reportsApi.getReportDownloadUrl).toHaveBeenCalledWith({
-				id: "report-1",
-				format: "xml",
-				jwt: "test-jwt-token",
-			});
-		});
-
-		expect(global.window.open).toHaveBeenCalledWith(
-			"https://example.com/report.xml",
-			"_blank",
-		);
-	});
-
-	it("downloads PDF file when download PDF button is clicked", async () => {
+	it("downloads PDF file when download button is clicked", async () => {
 		const generatedReport = {
 			...mockReport,
 			status: "GENERATED" as const,
@@ -248,191 +204,21 @@ describe("ReportDetailsView", () => {
 		);
 	});
 
-	it("opens submit dialog when submit button is clicked", async () => {
-		const user = userEvent.setup();
-		const generatedReport = {
-			...mockReport,
-			status: "GENERATED" as const,
-			generatedAt: "2024-01-20T10:00:00Z",
-		};
-
-		vi.mocked(reportsApi.getReportById).mockResolvedValue(generatedReport);
-
-		renderWithProviders(<ReportDetailsView reportId="report-1" />);
-
-		await waitFor(() => {
-			expect(screen.getByText("Marcar como Enviado a SAT")).toBeInTheDocument();
-		});
-
-		const submitButton = screen.getByText("Marcar como Enviado a SAT");
-		await user.click(submitButton);
-
-		// Wait for dialog to open - check for the input field which confirms dialog is open
-		await waitFor(() => {
-			expect(
-				screen.getByLabelText("Número de Folio (opcional)"),
-			).toBeInTheDocument();
-		});
-
-		// Verify dialog title is visible (appears in dialog header)
-		expect(
-			screen.getAllByText("Marcar como Enviado a SAT").length,
-		).toBeGreaterThan(1);
-
-		// Verify cancel button is present
-		expect(screen.getByText("Cancelar")).toBeInTheDocument();
-	});
-
-	it("submits report to SAT with folio number", async () => {
-		const generatedReport = {
-			...mockReport,
-			status: "GENERATED" as const,
-			generatedAt: "2024-01-20T10:00:00Z",
-		};
-
-		const submittedReport = {
-			...generatedReport,
-			status: "SUBMITTED" as const,
-			submittedAt: "2024-01-21T10:00:00Z",
-			satFolioNumber: "SAT-12345",
-		};
-
-		vi.mocked(reportsApi.getReportById)
-			.mockResolvedValueOnce(generatedReport)
-			.mockResolvedValueOnce(submittedReport);
-		vi.mocked(reportsApi.submitReportToSat).mockResolvedValue(submittedReport);
-
-		renderWithProviders(<ReportDetailsView reportId="report-1" />);
-
-		await waitFor(() => {
-			expect(screen.getByText("Marcar como Enviado a SAT")).toBeInTheDocument();
-		});
-
-		const submitButton = screen.getByText("Marcar como Enviado a SAT");
-		await userEvent.click(submitButton);
-
-		await waitFor(() => {
-			expect(
-				screen.getByLabelText("Número de Folio (opcional)"),
-			).toBeInTheDocument();
-		});
-
-		const folioInput = screen.getByLabelText("Número de Folio (opcional)");
-		await userEvent.type(folioInput, "SAT-12345");
-
-		const confirmButton = screen.getByText("Confirmar Envío");
-		await userEvent.click(confirmButton);
-
-		await waitFor(() => {
-			expect(reportsApi.submitReportToSat).toHaveBeenCalledWith({
-				id: "report-1",
-				satFolioNumber: "SAT-12345",
-				jwt: "test-jwt-token",
-			});
-		});
-
-		expect(sonner.toast.success).toHaveBeenCalledWith(
-			"Reporte marcado como enviado",
-		);
-	});
-
-	it("opens acknowledge dialog when acknowledge button is clicked", async () => {
-		const submittedReport = {
-			...mockReport,
-			status: "SUBMITTED" as const,
-			submittedAt: "2024-01-21T10:00:00Z",
-			satFolioNumber: "SAT-12345",
-		};
-
-		vi.mocked(reportsApi.getReportById).mockResolvedValue(submittedReport);
-
-		renderWithProviders(<ReportDetailsView reportId="report-1" />);
-
-		await waitFor(() => {
-			expect(screen.getByText("Registrar Acuse SAT")).toBeInTheDocument();
-		});
-
-		const acknowledgeButton = screen.getByText("Registrar Acuse SAT");
-		await userEvent.click(acknowledgeButton);
-
-		await waitFor(() => {
-			expect(screen.getByText("Registrar Acuse del SAT")).toBeInTheDocument();
-		});
-
-		expect(
-			screen.getByText(
-				"Ingresa el número de folio del acuse recibido del SAT.",
-			),
-		).toBeInTheDocument();
-	});
-
-	it("acknowledges report with folio number", async () => {
-		const submittedReport = {
-			...mockReport,
-			status: "SUBMITTED" as const,
-			submittedAt: "2024-01-21T10:00:00Z",
-			satFolioNumber: "SAT-12345",
-		};
-
-		const acknowledgedReport = {
-			...submittedReport,
-			status: "ACKNOWLEDGED" as const,
-			satFolioNumber: "SAT-ACK-12345",
-		};
-
-		vi.mocked(reportsApi.getReportById)
-			.mockResolvedValueOnce(submittedReport)
-			.mockResolvedValueOnce(acknowledgedReport);
-		vi.mocked(reportsApi.acknowledgeReport).mockResolvedValue(
-			acknowledgedReport,
-		);
-
-		renderWithProviders(<ReportDetailsView reportId="report-1" />);
-
-		await waitFor(() => {
-			expect(screen.getByText("Registrar Acuse SAT")).toBeInTheDocument();
-		});
-
-		const acknowledgeButton = screen.getByText("Registrar Acuse SAT");
-		await userEvent.click(acknowledgeButton);
-
-		await waitFor(() => {
-			expect(screen.getByLabelText("Número de Folio *")).toBeInTheDocument();
-		});
-
-		const folioInput = screen.getByLabelText("Número de Folio *");
-		await userEvent.type(folioInput, "SAT-ACK-12345");
-
-		const confirmButton = screen.getByText("Registrar Acuse");
-		await userEvent.click(confirmButton);
-
-		await waitFor(() => {
-			expect(reportsApi.acknowledgeReport).toHaveBeenCalledWith({
-				id: "report-1",
-				satFolioNumber: "SAT-ACK-12345",
-				jwt: "test-jwt-token",
-			});
-		});
-
-		expect(sonner.toast.success).toHaveBeenCalledWith(
-			"Acuse de SAT registrado",
-		);
-	});
-
 	it("displays alert summary correctly", async () => {
 		vi.mocked(reportsApi.getReportById).mockResolvedValue(mockReport);
 
 		renderWithProviders(<ReportDetailsView reportId="report-1" />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Resumen de Alertas")).toBeInTheDocument();
+			expect(screen.getByText("Desglose Detallado")).toBeInTheDocument();
 		});
 
 		expect(screen.getByText("high")).toBeInTheDocument();
 		expect(screen.getByText("medium")).toBeInTheDocument();
 		expect(screen.getByText("low")).toBeInTheDocument();
-		expect(screen.getByText("Rule 1")).toBeInTheDocument();
-		expect(screen.getByText("Rule 2")).toBeInTheDocument();
+		// Use getAllByText since rules may appear in multiple places (charts and table)
+		expect(screen.getAllByText("Rule 1").length).toBeGreaterThan(0);
+		expect(screen.getAllByText("Rule 2").length).toBeGreaterThan(0);
 	});
 
 	it("displays notes when present", async () => {
@@ -467,10 +253,10 @@ describe("ReportDetailsView", () => {
 		renderWithProviders(<ReportDetailsView reportId="report-1" />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Descargar XML (SAT)")).toBeInTheDocument();
+			expect(screen.getByText("Descargar PDF")).toBeInTheDocument();
 		});
 
-		const downloadButton = screen.getByText("Descargar XML (SAT)");
+		const downloadButton = screen.getByText("Descargar PDF");
 		await userEvent.click(downloadButton);
 
 		await waitFor(() => {
@@ -491,10 +277,10 @@ describe("ReportDetailsView", () => {
 		renderWithProviders(<ReportDetailsView reportId="report-1" />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Generar XML y PDF")).toBeInTheDocument();
+			expect(screen.getByText("Generar PDF")).toBeInTheDocument();
 		});
 
-		const generateButton = screen.getByText("Generar XML y PDF");
+		const generateButton = screen.getByText("Generar PDF");
 		expect(generateButton).toBeDisabled();
 	});
 
@@ -513,7 +299,7 @@ describe("ReportDetailsView", () => {
 		expect(mockNavigateTo).toHaveBeenCalledWith("/reports");
 	});
 
-	it("shows non-monthly report download button correctly", async () => {
+	it("shows quarterly report correctly", async () => {
 		const quarterlyReport = {
 			...mockReport,
 			type: "QUARTERLY" as const,
@@ -526,10 +312,9 @@ describe("ReportDetailsView", () => {
 		renderWithProviders(<ReportDetailsView reportId="report-1" />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Descargar PDF")).toBeInTheDocument();
+			expect(screen.getByText("Trimestral")).toBeInTheDocument();
 		});
 
-		// Should not show XML download button for non-monthly reports
-		expect(screen.queryByText("Descargar XML (SAT)")).not.toBeInTheDocument();
+		expect(screen.getByText("Descargar PDF")).toBeInTheDocument();
 	});
 });
