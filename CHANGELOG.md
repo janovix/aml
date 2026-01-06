@@ -1,3 +1,16 @@
+# [1.1.0-rc.22](https://github.com/janovix/aml/compare/v1.1.0-rc.21...v1.1.0-rc.22) (2026-01-06)
+
+
+### Bug Fixes
+
+* fixed uma dashboard view, fixed fetch issues in CreateReportView ([e45faae](https://github.com/janovix/aml/commit/e45faae4595dcb846cc2d09e6b909bbe7aa685bf))
+
+
+### Features
+
+* add Notices management functionality with CRUD operations and UI components ([f422102](https://github.com/janovix/aml/commit/f4221025b623e3f8d1170a64c0c391220f236eab))
+* enhance NavBreadcrumb and ReportsTable components to support report entity handling and improve navigation links ([247fba5](https://github.com/janovix/aml/commit/247fba53d3426824132ee216ff66f03c8cc500dc))
+
 # [1.1.0-rc.21](https://github.com/janovix/aml/compare/v1.1.0-rc.20...v1.1.0-rc.21) (2026-01-04)
 
 
