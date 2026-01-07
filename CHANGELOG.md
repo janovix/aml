@@ -1,3 +1,10 @@
+# [1.1.0-rc.23](https://github.com/janovix/aml/compare/v1.1.0-rc.22...v1.1.0-rc.23) (2026-01-07)
+
+
+### Features
+
+* Add favicon and manifest files ([18bb39d](https://github.com/janovix/aml/commit/18bb39d4b420949419282e8bbb5909ab16e6f3ce))
+
 # [1.1.0-rc.22](https://github.com/janovix/aml/compare/v1.1.0-rc.21...v1.1.0-rc.22) (2026-01-06)
 
 
