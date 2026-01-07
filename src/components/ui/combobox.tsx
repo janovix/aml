@@ -105,6 +105,10 @@ function ComboboxContent({
 
 	React.useEffect(() => {
 		if (!open) return;
+		// This is a client component, but in tests the environment can be torn down
+		// before delayed callbacks run. Guarding avoids "window is not defined"
+		// unhandled errors after cleanup.
+		if (typeof window === "undefined") return;
 
 		// Find the trigger element for this specific combobox
 		const trigger = document.querySelector(
@@ -112,8 +116,16 @@ function ComboboxContent({
 		) as HTMLElement;
 		if (!trigger) return;
 
+		const timeouts: Array<ReturnType<typeof setTimeout>> = [];
+		const schedule = (fn: () => void, ms: number) => {
+			const id = setTimeout(fn, ms);
+			timeouts.push(id);
+			return id;
+		};
+
 		const updatePosition = () => {
 			if (!trigger) return;
+			if (typeof window === "undefined") return;
 
 			const rect = trigger.getBoundingClientRect();
 			// For fixed positioning, use viewport-relative coordinates from getBoundingClientRect
@@ -188,10 +200,10 @@ function ComboboxContent({
 		};
 
 		// Initial position calculation with small delay to ensure DOM is ready
-		const timeoutId = setTimeout(() => {
+		schedule(() => {
 			updatePosition();
 			// Recalculate position after content renders to get actual height
-			setTimeout(() => {
+			schedule(() => {
 				updatePosition();
 			}, 50);
 		}, 0);
@@ -199,7 +211,7 @@ function ComboboxContent({
 		// Use ResizeObserver to recalculate when content size changes
 		let resizeObserver: ResizeObserver | null = null;
 		// Set up ResizeObserver after a delay to ensure content is rendered
-		const observerTimeoutId = setTimeout(() => {
+		schedule(() => {
 			if (contentRef.current && typeof ResizeObserver !== "undefined") {
 				resizeObserver = new ResizeObserver(() => {
 					updatePosition();
@@ -235,8 +247,7 @@ function ComboboxContent({
 		document.addEventListener("keydown", handleEscape);
 
 		return () => {
-			clearTimeout(timeoutId);
-			clearTimeout(observerTimeoutId);
+			for (const id of timeouts) clearTimeout(id);
 			if (resizeObserver) {
 				resizeObserver.disconnect();
 			}
