@@ -19,7 +19,8 @@ import {
 import type { Client } from "../../types/client";
 import { getClientDisplayName } from "../../types/client";
 import { getClientById } from "../../lib/api/clients";
-import { useToast } from "../../hooks/use-toast";
+import { toast } from "sonner";
+import { extractErrorMessage } from "@/lib/mutations";
 import { PageHero } from "@/components/page-hero";
 import { PageHeroSkeleton } from "@/components/skeletons";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -70,7 +71,6 @@ export function ClientDetailsView({
 	clientId,
 }: ClientDetailsViewProps): React.JSX.Element {
 	const { navigateTo } = useOrgNavigation();
-	const { toast } = useToast();
 	const { t } = useLanguage();
 	const [client, setClient] = useState<Client | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
@@ -85,11 +85,7 @@ export function ClientDetailsView({
 				setClient(data);
 			} catch (error) {
 				console.error("Error fetching client:", error);
-				toast({
-					title: t("errorGeneric"),
-					description: t("clientLoadError"),
-					variant: "destructive",
-				});
+				toast.error(extractErrorMessage(error));
 			} finally {
 				setIsLoading(false);
 			}
@@ -145,10 +141,7 @@ export function ClientDetailsView({
 						label: t("generateReport"),
 						icon: FileText,
 						onClick: () => {
-							toast({
-								title: t("comingSoon"),
-								description: t("featureInDevelopment"),
-							});
+							toast.info(t("comingSoon"));
 						},
 						variant: "outline",
 					},
@@ -156,10 +149,7 @@ export function ClientDetailsView({
 						label: t("markSuspicious"),
 						icon: Flag,
 						onClick: () => {
-							toast({
-								title: t("comingSoon"),
-								description: t("featureInDevelopment"),
-							});
+							toast.info(t("comingSoon"));
 						},
 						variant: "outline",
 					},

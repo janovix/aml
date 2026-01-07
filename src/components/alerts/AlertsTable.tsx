@@ -36,8 +36,9 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useToast } from "@/hooks/use-toast";
 import { useJwt } from "@/hooks/useJwt";
+import { toast } from "sonner";
+import { extractErrorMessage } from "@/lib/mutations";
 import { useOrgStore } from "@/lib/org-store";
 import {
 	listAlerts,
@@ -125,7 +126,6 @@ export function AlertsTable({
 	filters,
 }: AlertsTableProps = {}): React.ReactElement {
 	const { navigateTo, orgPath } = useOrgNavigation();
-	const { toast } = useToast();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const { currentOrg } = useOrgStore();
 	const urlFilters = useDataTableUrlFilters(ALERT_FILTER_IDS);
@@ -230,11 +230,7 @@ export function AlertsTable({
 				await fetchClientsForAlerts(response.data);
 			} catch (error) {
 				console.error("Error fetching alerts:", error);
-				toast({
-					title: t("errorGeneric"),
-					description: t("alertsLoadError"),
-					variant: "destructive",
-				});
+				toast.error(extractErrorMessage(error));
 			} finally {
 				setIsLoading(false);
 			}
@@ -281,11 +277,7 @@ export function AlertsTable({
 				await fetchClientsForAlerts(response.data);
 			} catch (error) {
 				console.error("Error fetching alerts:", error);
-				toast({
-					title: t("errorGeneric"),
-					description: t("alertsLoadError"),
-					variant: "destructive",
-				});
+				toast.error(extractErrorMessage(error));
 			} finally {
 				setIsLoading(false);
 			}
@@ -316,11 +308,7 @@ export function AlertsTable({
 			await fetchClientsForAlerts(response.data);
 		} catch (error) {
 			console.error("Error loading more alerts:", error);
-			toast({
-				title: t("errorGeneric"),
-				description: t("alertsLoadMoreError"),
-				variant: "destructive",
-			});
+			toast.error(extractErrorMessage(error));
 		} finally {
 			setIsLoadingMore(false);
 		}
@@ -331,7 +319,6 @@ export function AlertsTable({
 		isJwtLoading,
 		jwt,
 		filters,
-		toast,
 		fetchClientsForAlerts,
 		currentOrg?.id,
 	]);

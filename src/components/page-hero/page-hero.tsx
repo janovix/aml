@@ -1,6 +1,7 @@
 "use client";
 import type { LucideIcon } from "lucide-react";
 import { Plus, ArrowLeft, MoreHorizontal } from "lucide-react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -240,16 +241,8 @@ export function PageHero({
 						const StatIcon = stat.icon;
 						const isPrimary = stat.variant === "primary";
 
-						return (
-							<div
-								key={stat.label}
-								className={cn(
-									"group relative flex items-center justify-between gap-4 rounded-xl border p-4 transition-all",
-									isPrimary
-										? "border-primary/30 bg-primary/5"
-										: "border-border/50 bg-card/50 hover:border-border hover:bg-card",
-								)}
-							>
+						const cardContent = (
+							<>
 								<div className="flex flex-col gap-1 min-w-0">
 									<span className="text-xs font-medium text-muted-foreground uppercase tracking-wider truncate">
 										{stat.label}
@@ -273,6 +266,28 @@ export function PageHero({
 								>
 									<StatIcon className="h-5 w-5" />
 								</div>
+							</>
+						);
+
+						const cardClasses = cn(
+							"group relative flex items-center justify-between gap-4 rounded-xl border p-4 transition-all",
+							isPrimary
+								? "border-primary/30 bg-primary/5"
+								: "border-border/50 bg-card/50 hover:border-border hover:bg-card",
+							stat.href && "cursor-pointer",
+						);
+
+						if (stat.href) {
+							return (
+								<Link key={stat.label} href={stat.href} className={cardClasses}>
+									{cardContent}
+								</Link>
+							);
+						}
+
+						return (
+							<div key={stat.label} className={cardClasses}>
+								{cardContent}
 							</div>
 						);
 					})}

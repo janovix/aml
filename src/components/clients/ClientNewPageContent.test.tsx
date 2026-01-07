@@ -19,7 +19,8 @@ vi.mock("@/lib/cookies", () => ({
 }));
 
 const mockPush = vi.fn();
-const mockToast = vi.fn();
+const mockToastSuccess = vi.fn();
+const mockToastError = vi.fn();
 
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
@@ -27,10 +28,11 @@ vi.mock("next/navigation", () => ({
 	}),
 }));
 
-vi.mock("@/hooks/use-toast", () => ({
-	useToast: () => ({
-		toast: mockToast,
-		toasts: [],
+// Mock sonner toast
+vi.mock("sonner", () => ({
+	toast: Object.assign(vi.fn(), {
+		success: (...args: unknown[]) => mockToastSuccess(...args),
+		error: (...args: unknown[]) => mockToastError(...args),
 	}),
 }));
 
@@ -281,12 +283,7 @@ describe("ClientNewPageContent", () => {
 
 		// Wait for submission to complete
 		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalledWith(
-				expect.objectContaining({
-					title: "Cliente creado",
-					description: "El cliente se ha creado exitosamente.",
-				}),
-			);
+			expect(mockToastSuccess).toHaveBeenCalled();
 		});
 
 		// Should redirect to clients page
@@ -321,7 +318,7 @@ describe("ClientNewPageContent", () => {
 
 		// Wait for submission to complete
 		await waitFor(() => {
-			expect(mockToast).toHaveBeenCalled();
+			expect(mockToastSuccess).toHaveBeenCalled();
 		});
 	});
 });

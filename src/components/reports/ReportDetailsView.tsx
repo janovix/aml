@@ -30,11 +30,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
 	getReportById,
 	generateReportFile,
-	getReportDownloadUrl,
+	downloadReportFile,
 	type ReportWithAlertSummary,
 	type ReportStatus,
 } from "@/lib/api/reports";
 import { toast } from "sonner";
+import { extractErrorMessage } from "@/lib/mutations";
 import {
 	DonutChart,
 	BarChart,
@@ -131,7 +132,7 @@ export function ReportDetailsView({
 				setReport(data);
 			} catch (error) {
 				console.error("Error fetching report:", error);
-				toast.error("Error al cargar el reporte");
+				toast.error(extractErrorMessage(error));
 			} finally {
 				setIsLoading(false);
 			}
@@ -151,7 +152,7 @@ export function ReportDetailsView({
 			setReport(updated);
 		} catch (error) {
 			console.error("Error generating report:", error);
-			toast.error("Error al generar el reporte");
+			toast.error(extractErrorMessage(error));
 		} finally {
 			setIsGenerating(false);
 		}
@@ -161,15 +162,13 @@ export function ReportDetailsView({
 		if (!jwt || !report) return;
 
 		try {
-			const { fileUrl } = await getReportDownloadUrl({
+			await downloadReportFile({
 				id: report.id,
-				format: "pdf",
 				jwt,
 			});
-			window.open(fileUrl, "_blank");
 		} catch (error) {
 			console.error("Error downloading report:", error);
-			toast.error("Error al descargar el reporte");
+			toast.error(extractErrorMessage(error));
 		}
 	};
 
@@ -270,7 +269,7 @@ export function ReportDetailsView({
 		<div className="space-y-6">
 			<PageHero
 				title={report.name}
-				subtitle={`${typeLabels[report.type] || report.type} | ${report.reportedMonth || "Personalizado"}`}
+				subtitle={`${typeLabels[report.periodType] || report.periodType} | ${report.reportedMonth || "Personalizado"}`}
 				icon={FileText}
 				stats={stats}
 			/>
@@ -410,7 +409,7 @@ export function ReportDetailsView({
 								<div className="space-y-1">
 									<p className="text-sm text-muted-foreground">Tipo</p>
 									<p className="font-medium">
-										{typeLabels[report.type] || report.type}
+										{typeLabels[report.periodType] || report.periodType}
 									</p>
 								</div>
 								<div className="space-y-1">

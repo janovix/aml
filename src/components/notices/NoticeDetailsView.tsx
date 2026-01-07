@@ -29,11 +29,12 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { extractErrorMessage } from "@/lib/mutations";
 import {
 	getNoticeById,
 	generateNoticeFile,
-	getNoticeDownloadUrl,
+	downloadNoticeXml,
 	submitNoticeToSat,
 	acknowledgeNotice,
 	deleteNotice,
@@ -80,7 +81,6 @@ export function NoticeDetailsView({
 }: NoticeDetailsViewProps): React.ReactElement {
 	const router = useRouter();
 	const { navigateTo } = useOrgNavigation();
-	const { toast } = useToast();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
 
 	const [notice, setNotice] = useState<NoticeWithAlertSummary | null>(null);
@@ -103,11 +103,7 @@ export function NoticeDetailsView({
 			setNotice(data);
 		} catch (error) {
 			console.error("Error loading notice:", error);
-			toast({
-				title: "Error",
-				description: "No se pudo cargar el aviso",
-				variant: "destructive",
-			});
+			toast.error(extractErrorMessage(error));
 		} finally {
 			setIsLoading(false);
 		}
@@ -124,18 +120,11 @@ export function NoticeDetailsView({
 		try {
 			setIsGenerating(true);
 			await generateNoticeFile({ id: notice.id, jwt });
-			toast({
-				title: "XML generado",
-				description: "El archivo XML ha sido generado exitosamente",
-			});
+			toast.success("El archivo XML ha sido generado exitosamente");
 			loadNotice();
 		} catch (error) {
 			console.error("Error generating notice:", error);
-			toast({
-				title: "Error",
-				description: "No se pudo generar el XML",
-				variant: "destructive",
-			});
+			toast.error(extractErrorMessage(error));
 		} finally {
 			setIsGenerating(false);
 		}
@@ -144,15 +133,10 @@ export function NoticeDetailsView({
 	const handleDownload = async () => {
 		if (!jwt || !notice) return;
 		try {
-			const { fileUrl } = await getNoticeDownloadUrl({ id: notice.id, jwt });
-			window.open(fileUrl, "_blank");
+			await downloadNoticeXml({ id: notice.id, jwt });
 		} catch (error) {
 			console.error("Error downloading notice:", error);
-			toast({
-				title: "Error",
-				description: "No se pudo descargar el XML",
-				variant: "destructive",
-			});
+			toast.error(extractErrorMessage(error));
 		}
 	};
 
@@ -165,20 +149,13 @@ export function NoticeDetailsView({
 				satFolioNumber: satFolioNumber || undefined,
 				jwt,
 			});
-			toast({
-				title: "Aviso enviado",
-				description: "El aviso ha sido marcado como enviado al SAT",
-			});
+			toast.success("El aviso ha sido marcado como enviado al SAT");
 			setShowSubmitDialog(false);
 			setSatFolioNumber("");
 			loadNotice();
 		} catch (error) {
 			console.error("Error submitting notice:", error);
-			toast({
-				title: "Error",
-				description: "No se pudo marcar el aviso como enviado",
-				variant: "destructive",
-			});
+			toast.error(extractErrorMessage(error));
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -193,20 +170,13 @@ export function NoticeDetailsView({
 				satFolioNumber,
 				jwt,
 			});
-			toast({
-				title: "Acuse registrado",
-				description: "El acuse del SAT ha sido registrado",
-			});
+			toast.success("El acuse del SAT ha sido registrado");
 			setShowAcknowledgeDialog(false);
 			setSatFolioNumber("");
 			loadNotice();
 		} catch (error) {
 			console.error("Error acknowledging notice:", error);
-			toast({
-				title: "Error",
-				description: "No se pudo registrar el acuse",
-				variant: "destructive",
-			});
+			toast.error(extractErrorMessage(error));
 		} finally {
 			setIsAcknowledging(false);
 		}
@@ -217,18 +187,11 @@ export function NoticeDetailsView({
 		try {
 			setIsDeleting(true);
 			await deleteNotice({ id: notice.id, jwt });
-			toast({
-				title: "Aviso eliminado",
-				description: `${notice.name} ha sido eliminado`,
-			});
+			toast.success(`${notice.name} ha sido eliminado`);
 			navigateTo("/notices");
 		} catch (error) {
 			console.error("Error deleting notice:", error);
-			toast({
-				title: "Error",
-				description: "No se pudo eliminar el aviso",
-				variant: "destructive",
-			});
+			toast.error(extractErrorMessage(error));
 		} finally {
 			setIsDeleting(false);
 			setShowDeleteDialog(false);

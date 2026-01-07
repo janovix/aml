@@ -16,7 +16,8 @@ import {
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Edit, Download, Trash2, Receipt } from "lucide-react";
-import { useToast } from "../../hooks/use-toast";
+import { toast } from "sonner";
+import { extractErrorMessage } from "@/lib/mutations";
 import {
 	getTransactionById,
 	deleteTransaction,
@@ -95,7 +96,6 @@ export function TransactionDetailsView({
 	const [client, setClient] = useState<Client | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const { navigateTo } = useOrgNavigation();
-	const { toast } = useToast();
 
 	// Translation helper for labels
 	const operationTypeLabels: Record<Transaction["operationType"], string> = {
@@ -135,11 +135,7 @@ export function TransactionDetailsView({
 				}
 			} catch (error) {
 				console.error("Error fetching transaction:", error);
-				toast({
-					title: "Error",
-					description: t("txnLoadError"),
-					variant: "destructive",
-				});
+				toast.error(extractErrorMessage(error));
 				navigateTo("/transactions");
 			} finally {
 				setIsLoading(false);
@@ -187,28 +183,17 @@ export function TransactionDetailsView({
 	};
 
 	const handleExport = (): void => {
-		toast({
-			title: t("txnExportSuccess"),
-			description: t("txnExportSuccessDesc"),
-		});
+		toast.success(t("txnExportSuccess"));
 	};
 
 	const handleDelete = async (): Promise<void> => {
 		try {
 			await deleteTransaction({ id: transactionId });
-			toast({
-				title: t("txnDeletedSuccess"),
-				description: t("txnDeletedSuccessDesc"),
-				variant: "destructive",
-			});
+			toast.success(t("txnDeletedSuccess"));
 			navigateTo("/transactions");
 		} catch (error) {
 			console.error("Error deleting transaction:", error);
-			toast({
-				title: "Error",
-				description: t("txnDeleteError"),
-				variant: "destructive",
-			});
+			toast.error(extractErrorMessage(error));
 		}
 	};
 

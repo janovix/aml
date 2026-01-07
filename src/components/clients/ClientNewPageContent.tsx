@@ -15,7 +15,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { ArrowLeft, Save } from "lucide-react";
 import type { PersonType } from "@/types/client";
 import { validateRFC } from "@/lib/utils";
@@ -23,7 +23,6 @@ import { toast as sonnerToast } from "sonner";
 
 export function ClientNewPageContent(): React.ReactElement {
 	const router = useRouter();
-	const { toast } = useToast();
 	const [formData, setFormData] = useState<{
 		rfc: string;
 		personType: PersonType | "";
@@ -73,10 +72,7 @@ export function ClientNewPageContent(): React.ReactElement {
 		// Simulate API call
 		await new Promise((resolve) => setTimeout(resolve, 500));
 
-		toast({
-			title: "Cliente creado",
-			description: "El cliente se ha creado exitosamente.",
-		});
+		toast.success("El cliente se ha creado exitosamente.");
 
 		setLoading(false);
 		router.push("/clients");

@@ -6,14 +6,14 @@ import { TransactionsTable } from "@/components/transactions/TransactionsTable";
 import { PageHero, type StatCard } from "@/components/page-hero";
 import { DollarSign, Calendar, AlertCircle, Receipt, Plus } from "lucide-react";
 import { getTransactionStats, type TransactionStats } from "@/lib/api/stats";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { extractErrorMessage } from "@/lib/mutations";
 import { ApiError } from "@/lib/api/http";
 import { useLanguage } from "@/components/LanguageProvider";
 import { getLocaleForLanguage } from "@/lib/translations";
 
 export function TransactionsPageContent(): React.ReactElement {
 	const { navigateTo } = useOrgNavigation();
-	const { toast } = useToast();
 	const { t, language } = useLanguage();
 	const [stats, setStats] = useState<TransactionStats | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
@@ -39,18 +39,14 @@ export function TransactionsPageContent(): React.ReactElement {
 						error instanceof Error ? error.message : error,
 					);
 				}
-				toast({
-					title: t("errorGeneric"),
-					description: t("errorLoadingStats"),
-					variant: "destructive",
-				});
+				toast.error(extractErrorMessage(error));
 			} finally {
 				setIsLoading(false);
 			}
 		};
 
 		fetchStats();
-	}, [toast, t]);
+	}, [t]);
 
 	const formatCurrency = (amount: string): string => {
 		const num = parseFloat(amount);

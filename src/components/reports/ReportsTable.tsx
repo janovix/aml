@@ -34,7 +34,8 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { extractErrorMessage } from "@/lib/mutations";
 import {
 	DataTable,
 	type ColumnDef,
@@ -46,7 +47,7 @@ import {
 	listReports,
 	deleteReport,
 	generateReportFile,
-	getReportDownloadUrl,
+	downloadReportFile,
 	type Report,
 	type ReportType,
 	type ReportStatus,
@@ -82,7 +83,7 @@ const statusConfig: Record<
 
 interface ReportsTableProps {
 	filters?: {
-		type?: ReportType;
+		periodType?: ReportType;
 		status?: ReportStatus;
 	};
 }
@@ -91,7 +92,6 @@ export function ReportsTable({
 	filters,
 }: ReportsTableProps): React.ReactElement {
 	const { navigateTo, orgPath } = useOrgNavigation();
-	const { toast } = useToast();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const { currentOrg } = useOrgStore();
 
@@ -126,11 +126,7 @@ export function ReportsTable({
 			setHasMore(response.pagination.page < response.pagination.totalPages);
 		} catch (error) {
 			console.error("Error fetching reports:", error);
-			toast({
-				title: "Error",
-				description: "No se pudieron cargar los reportes",
-				variant: "destructive",
-			});
+			toast.error(extractErrorMessage(error));
 		} finally {
 			setIsLoading(false);
 		}
@@ -155,11 +151,7 @@ export function ReportsTable({
 			setHasMore(response.pagination.page < response.pagination.totalPages);
 		} catch (error) {
 			console.error("Error loading more reports:", error);
-			toast({
-				title: "Error",
-				description: "No se pudieron cargar más reportes",
-				variant: "destructive",
-			});
+			toast.error(extractErrorMessage(error));
 		} finally {
 			setIsLoadingMore(false);
 		}
@@ -245,7 +237,7 @@ export function ReportsTable({
 				accessorKey: "name",
 				sortable: true,
 				cell: (item) => {
-					const typeCfg = typeConfig[item.type];
+					const typeCfg = typeConfig[item.periodType];
 					const statusCfg = statusConfig[item.status];
 
 					return (
@@ -410,37 +402,26 @@ export function ReportsTable({
 		try {
 			const result = await generateReportFile({ id: report.id, jwt });
 			const typesStr = result.types.join(" y ");
-			toast({
-				title: "Reporte generado",
-				description: `${typesStr} generado${result.types.length > 1 ? "s" : ""} con ${result.alertCount} alertas`,
-			});
+			toast.success(
+				`${typesStr} generado${result.types.length > 1 ? "s" : ""} con ${result.alertCount} alertas`,
+			);
 			doFetchReports(jwt);
 		} catch (error) {
 			console.error("Error generating report:", error);
-			toast({
-				title: "Error",
-				description: "No se pudo generar el reporte",
-				variant: "destructive",
-			});
+			toast.error(extractErrorMessage(error));
 		}
 	};
 
-	const handleDownload = async (report: Report, format?: "xml" | "pdf") => {
+	const handleDownload = async (report: Report) => {
 		if (!jwt) return;
 		try {
-			const { fileUrl } = await getReportDownloadUrl({
+			await downloadReportFile({
 				id: report.id,
-				format,
 				jwt,
 			});
-			window.open(fileUrl, "_blank");
 		} catch (error) {
 			console.error("Error downloading report:", error);
-			toast({
-				title: "Error",
-				description: "No se pudo descargar el reporte",
-				variant: "destructive",
-			});
+			toast.error(extractErrorMessage(error));
 		}
 	};
 
@@ -448,18 +429,11 @@ export function ReportsTable({
 		if (!jwt) return;
 		try {
 			await deleteReport({ id: report.id, jwt });
-			toast({
-				title: "Reporte eliminado",
-				description: `${report.name} ha sido eliminado.`,
-			});
+			toast.success(`${report.name} ha sido eliminado.`);
 			doFetchReports(jwt);
 		} catch (error) {
 			console.error("Error deleting report:", error);
-			toast({
-				title: "Error",
-				description: "No se pudo eliminar el reporte",
-				variant: "destructive",
-			});
+			toast.error(extractErrorMessage(error));
 		}
 	};
 
@@ -485,10 +459,10 @@ export function ReportsTable({
 						onClick={() => handleGenerate(item)}
 					>
 						<FileCheck2 className="h-4 w-4" />
-						Generar {item.type === "MONTHLY" ? "XML y PDF" : "PDF"}
+						Generar {item.periodType === "MONTHLY" ? "XML y PDF" : "PDF"}
 					</DropdownMenuItem>
 				)}
-				{item.status === "GENERATED" && item.type === "MONTHLY" && (
+				{item.status === "GENERATED" && item.periodType === "MONTHLY" && (
 					<DropdownMenuItem
 						className="gap-2"
 						onClick={() => navigateTo(`/reports/${item.id}`)}
@@ -498,31 +472,13 @@ export function ReportsTable({
 					</DropdownMenuItem>
 				)}
 				<DropdownMenuSeparator />
-				{item.status !== "DRAFT" && item.type === "MONTHLY" && (
-					<>
-						<DropdownMenuItem
-							className="gap-2"
-							onClick={() => handleDownload(item, "xml")}
-						>
-							<Download className="h-4 w-4" />
-							Descargar XML (SAT)
-						</DropdownMenuItem>
-						<DropdownMenuItem
-							className="gap-2"
-							onClick={() => handleDownload(item, "pdf")}
-						>
-							<Download className="h-4 w-4" />
-							Descargar PDF
-						</DropdownMenuItem>
-					</>
-				)}
-				{item.status !== "DRAFT" && item.type !== "MONTHLY" && (
+				{item.status !== "DRAFT" && (
 					<DropdownMenuItem
 						className="gap-2"
-						onClick={() => handleDownload(item, "pdf")}
+						onClick={() => handleDownload(item)}
 					>
 						<Download className="h-4 w-4" />
-						Descargar PDF
+						Descargar Reporte
 					</DropdownMenuItem>
 				)}
 				{item.status === "DRAFT" && (

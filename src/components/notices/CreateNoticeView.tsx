@@ -25,7 +25,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { extractErrorMessage } from "@/lib/mutations";
 import {
 	createNotice,
 	previewNotice,
@@ -38,7 +39,6 @@ import {
 export function CreateNoticeView(): React.ReactElement {
 	const router = useRouter();
 	const { navigateTo, orgPath } = useOrgNavigation();
-	const { toast } = useToast();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
 
 	const [isLoading, setIsLoading] = useState(true);
@@ -69,18 +69,14 @@ export function CreateNoticeView(): React.ReactElement {
 				}
 			} catch (error) {
 				console.error("Error loading available months:", error);
-				toast({
-					title: "Error",
-					description: "No se pudieron cargar los meses disponibles",
-					variant: "destructive",
-				});
+				toast.error(extractErrorMessage(error));
 			} finally {
 				setIsLoading(false);
 			}
 		};
 
 		loadAvailableMonths();
-	}, [jwt, isJwtLoading, toast]);
+	}, [jwt, isJwtLoading]);
 
 	// Load preview when month changes
 	useEffect(() => {
@@ -133,19 +129,13 @@ export function CreateNoticeView(): React.ReactElement {
 				jwt,
 			});
 
-			toast({
-				title: "Aviso creado",
-				description: `${notice.name} ha sido creado con ${notice.recordCount} alertas`,
-			});
-
+			toast.success(
+				`${notice.name} ha sido creado con ${notice.recordCount} alertas`,
+			);
 			navigateTo(`/notices/${notice.id}`);
 		} catch (error) {
 			console.error("Error creating notice:", error);
-			toast({
-				title: "Error",
-				description: "No se pudo crear el aviso",
-				variant: "destructive",
-			});
+			toast.error(extractErrorMessage(error));
 		} finally {
 			setIsSubmitting(false);
 		}

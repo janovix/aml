@@ -8,6 +8,7 @@ import {
 	deleteReport,
 	generateReportFile,
 	getReportDownloadUrl,
+	downloadReportFile,
 	calculateMonthlyPeriod,
 	calculateQuarterlyPeriod,
 	calculateAnnualPeriod,
@@ -20,7 +21,7 @@ const mockReport: Report = {
 	id: "REPORT123",
 	organizationId: "ORG123",
 	name: "Reporte Mensual Enero 2024",
-	type: "MONTHLY",
+	periodType: "MONTHLY",
 	status: "DRAFT",
 	periodStart: "2024-01-01T00:00:00Z",
 	periodEnd: "2024-01-31T23:59:59.999Z",
@@ -104,7 +105,7 @@ describe("api/reports", () => {
 					);
 					expect(u.searchParams.get("page")).toBe("2");
 					expect(u.searchParams.get("limit")).toBe("20");
-					expect(u.searchParams.get("type")).toBe("MONTHLY");
+					expect(u.searchParams.get("periodType")).toBe("MONTHLY");
 					expect(u.searchParams.get("status")).toBe("DRAFT");
 					return new Response(
 						JSON.stringify({
@@ -124,7 +125,7 @@ describe("api/reports", () => {
 				baseUrl: "https://example.com",
 				page: 2,
 				limit: 20,
-				type: "MONTHLY",
+				periodType: "MONTHLY",
 				status: "DRAFT",
 			});
 			expect(res.pagination.page).toBe(2);
@@ -137,7 +138,7 @@ describe("api/reports", () => {
 				const u = new URL(typeof url === "string" ? url : url.toString());
 				expect(u.searchParams.get("page")).toBe("3");
 				expect(u.searchParams.get("limit")).toBeNull();
-				expect(u.searchParams.get("type")).toBeNull();
+				expect(u.searchParams.get("periodType")).toBeNull();
 				expect(u.searchParams.get("status")).toBeNull();
 				return new Response(
 					JSON.stringify({
@@ -158,10 +159,10 @@ describe("api/reports", () => {
 			});
 		});
 
-		it("only includes type when provided", async () => {
+		it("only includes periodType when provided", async () => {
 			const fetchSpy = vi.fn(async (url: RequestInfo | URL) => {
 				const u = new URL(typeof url === "string" ? url : url.toString());
-				expect(u.searchParams.get("type")).toBe("QUARTERLY");
+				expect(u.searchParams.get("periodType")).toBe("QUARTERLY");
 				expect(u.searchParams.get("page")).toBeNull();
 				expect(u.searchParams.get("limit")).toBeNull();
 				expect(u.searchParams.get("status")).toBeNull();
@@ -180,7 +181,7 @@ describe("api/reports", () => {
 
 			await listReports({
 				baseUrl: "https://example.com",
-				type: "QUARTERLY",
+				periodType: "QUARTERLY",
 			});
 		});
 
@@ -190,7 +191,7 @@ describe("api/reports", () => {
 				expect(u.searchParams.get("status")).toBe("GENERATED");
 				expect(u.searchParams.get("page")).toBeNull();
 				expect(u.searchParams.get("limit")).toBeNull();
-				expect(u.searchParams.get("type")).toBeNull();
+				expect(u.searchParams.get("periodType")).toBeNull();
 				return new Response(
 					JSON.stringify({
 						data: [],
@@ -267,7 +268,7 @@ describe("api/reports", () => {
 					expect(u.origin + u.pathname).toBe(
 						"https://example.com/api/v1/reports/preview",
 					);
-					expect(u.searchParams.get("type")).toBe("MONTHLY");
+					expect(u.searchParams.get("periodType")).toBe("MONTHLY");
 					expect(u.searchParams.get("periodStart")).toBe(
 						"2024-01-01T00:00:00Z",
 					);
@@ -283,7 +284,7 @@ describe("api/reports", () => {
 			vi.stubGlobal("fetch", fetchSpy);
 
 			const res = await previewReport({
-				type: "MONTHLY",
+				periodType: "MONTHLY",
 				periodStart: "2024-01-01T00:00:00Z",
 				periodEnd: "2024-01-31T23:59:59.999Z",
 				baseUrl: "https://example.com",
@@ -310,7 +311,7 @@ describe("api/reports", () => {
 			vi.stubGlobal("fetch", fetchSpy);
 
 			await previewReport({
-				type: "MONTHLY",
+				periodType: "MONTHLY",
 				periodStart: "2024-01-01T00:00:00Z",
 				periodEnd: "2024-01-31T23:59:59.999Z",
 			});
@@ -335,7 +336,7 @@ describe("api/reports", () => {
 					const body = JSON.parse(init?.body as string);
 					expect(body).toEqual({
 						name: "Reporte Mensual Enero 2024",
-						type: "MONTHLY",
+						periodType: "MONTHLY",
 						periodStart: "2024-01-01T00:00:00Z",
 						periodEnd: "2024-01-31T23:59:59.999Z",
 						reportedMonth: "202401",
@@ -351,7 +352,7 @@ describe("api/reports", () => {
 
 			const res = await createReport({
 				name: "Reporte Mensual Enero 2024",
-				type: "MONTHLY",
+				periodType: "MONTHLY",
 				periodStart: "2024-01-01T00:00:00Z",
 				periodEnd: "2024-01-31T23:59:59.999Z",
 				reportedMonth: "202401",
@@ -359,7 +360,7 @@ describe("api/reports", () => {
 				baseUrl: "https://example.com",
 			});
 			expect(res.id).toBe("REPORT456");
-			expect(res.type).toBe("MONTHLY");
+			expect(res.periodType).toBe("MONTHLY");
 		});
 
 		it("createReport uses default baseUrl when not provided", async () => {
@@ -375,7 +376,7 @@ describe("api/reports", () => {
 
 			await createReport({
 				name: "Reporte Mensual Enero 2024",
-				type: "MONTHLY",
+				periodType: "MONTHLY",
 				periodStart: "2024-01-01T00:00:00Z",
 				periodEnd: "2024-01-31T23:59:59.999Z",
 				reportedMonth: "202401",
@@ -399,7 +400,7 @@ describe("api/reports", () => {
 
 			await createReport({
 				name: "Test Report",
-				type: "QUARTERLY",
+				periodType: "QUARTERLY",
 				periodStart: "2024-01-01T00:00:00Z",
 				periodEnd: "2024-03-31T23:59:59.999Z",
 				reportedMonth: "2024Q1",
@@ -667,6 +668,206 @@ describe("api/reports", () => {
 
 			await getReportDownloadUrl({ id: "REPORT123" });
 			expect(fetchSpy).toHaveBeenCalled();
+		});
+	});
+
+	describe("downloadReportFile", () => {
+		it("downloads file and triggers browser download", async () => {
+			const htmlContent = "<html><body>Report</body></html>";
+			const blob = new Blob([htmlContent], { type: "text/html" });
+
+			const fetchSpy = vi.fn(async () => {
+				return new Response(blob, {
+					status: 200,
+					headers: {
+						"Content-Type": "text/html",
+						"Content-Disposition": 'attachment; filename="report_2024.html"',
+					},
+				});
+			});
+			vi.stubGlobal("fetch", fetchSpy);
+
+			// Mock DOM methods
+			const mockLink = {
+				href: "",
+				download: "",
+				click: vi.fn(),
+			};
+			const createElementSpy = vi
+				.spyOn(document, "createElement")
+				.mockReturnValue(mockLink as unknown as HTMLAnchorElement);
+			const appendChildSpy = vi
+				.spyOn(document.body, "appendChild")
+				.mockReturnValue(mockLink as unknown as Node);
+			const removeChildSpy = vi
+				.spyOn(document.body, "removeChild")
+				.mockReturnValue(mockLink as unknown as Node);
+			const createObjectURLSpy = vi
+				.spyOn(URL, "createObjectURL")
+				.mockReturnValue("blob:http://localhost/test");
+			const revokeObjectURLSpy = vi
+				.spyOn(URL, "revokeObjectURL")
+				.mockReturnValue();
+
+			await downloadReportFile({
+				id: "REPORT123",
+				baseUrl: "https://example.com",
+			});
+
+			expect(fetchSpy).toHaveBeenCalled();
+			expect(createElementSpy).toHaveBeenCalledWith("a");
+			expect(mockLink.download).toBe("report_2024.html");
+			expect(mockLink.click).toHaveBeenCalled();
+			expect(appendChildSpy).toHaveBeenCalled();
+			expect(removeChildSpy).toHaveBeenCalled();
+			expect(createObjectURLSpy).toHaveBeenCalled();
+			expect(revokeObjectURLSpy).toHaveBeenCalled();
+
+			createElementSpy.mockRestore();
+			appendChildSpy.mockRestore();
+			removeChildSpy.mockRestore();
+			createObjectURLSpy.mockRestore();
+			revokeObjectURLSpy.mockRestore();
+		});
+
+		it("throws error on non-OK response with message", async () => {
+			const fetchSpy = vi.fn(async () => {
+				return new Response(JSON.stringify({ message: "Report not found" }), {
+					status: 404,
+					headers: { "Content-Type": "application/json" },
+				});
+			});
+			vi.stubGlobal("fetch", fetchSpy);
+
+			await expect(
+				downloadReportFile({
+					id: "REPORT123",
+					baseUrl: "https://example.com",
+				}),
+			).rejects.toThrow("Report not found");
+		});
+
+		it("throws error with status when JSON response has no message", async () => {
+			const fetchSpy = vi.fn(async () => {
+				return new Response(JSON.stringify({}), {
+					status: 500,
+					headers: { "Content-Type": "application/json" },
+				});
+			});
+			vi.stubGlobal("fetch", fetchSpy);
+
+			await expect(
+				downloadReportFile({
+					id: "REPORT123",
+					baseUrl: "https://example.com",
+				}),
+			).rejects.toThrow("Download failed: 500");
+		});
+
+		it("throws error with status for non-JSON error response", async () => {
+			const fetchSpy = vi.fn(async () => {
+				return new Response("Server Error", {
+					status: 500,
+					statusText: "Internal Server Error",
+					headers: { "Content-Type": "text/plain" },
+				});
+			});
+			vi.stubGlobal("fetch", fetchSpy);
+
+			await expect(
+				downloadReportFile({
+					id: "REPORT123",
+					baseUrl: "https://example.com",
+				}),
+			).rejects.toThrow("Download failed: 500 Internal Server Error");
+		});
+
+		it("uses default filename when no Content-Disposition header", async () => {
+			const htmlContent = "<html><body>Report</body></html>";
+			const blob = new Blob([htmlContent], { type: "text/html" });
+
+			const fetchSpy = vi.fn(async () => {
+				return new Response(blob, {
+					status: 200,
+					headers: { "Content-Type": "text/html" },
+				});
+			});
+			vi.stubGlobal("fetch", fetchSpy);
+
+			const mockLink = {
+				href: "",
+				download: "",
+				click: vi.fn(),
+			};
+			const createElementSpy = vi
+				.spyOn(document, "createElement")
+				.mockReturnValue(mockLink as unknown as HTMLAnchorElement);
+			vi.spyOn(document.body, "appendChild").mockReturnValue(
+				mockLink as unknown as Node,
+			);
+			vi.spyOn(document.body, "removeChild").mockReturnValue(
+				mockLink as unknown as Node,
+			);
+			vi.spyOn(URL, "createObjectURL").mockReturnValue(
+				"blob:http://localhost/test",
+			);
+			vi.spyOn(URL, "revokeObjectURL").mockReturnValue();
+
+			await downloadReportFile({
+				id: "REPORT123",
+				baseUrl: "https://example.com",
+			});
+
+			expect(mockLink.download).toBe("report_REPORT123.html");
+
+			vi.restoreAllMocks();
+		});
+
+		it("includes JWT in authorization header when provided", async () => {
+			const htmlContent = "<html><body>Report</body></html>";
+			const blob = new Blob([htmlContent], { type: "text/html" });
+
+			const fetchSpy = vi.fn(
+				async (url: RequestInfo | URL, init?: RequestInit) => {
+					expect(init?.headers).toHaveProperty(
+						"Authorization",
+						"Bearer test-token",
+					);
+					return new Response(blob, {
+						status: 200,
+						headers: { "Content-Type": "text/html" },
+					});
+				},
+			);
+			vi.stubGlobal("fetch", fetchSpy);
+
+			const mockLink = {
+				href: "",
+				download: "",
+				click: vi.fn(),
+			};
+			vi.spyOn(document, "createElement").mockReturnValue(
+				mockLink as unknown as HTMLAnchorElement,
+			);
+			vi.spyOn(document.body, "appendChild").mockReturnValue(
+				mockLink as unknown as Node,
+			);
+			vi.spyOn(document.body, "removeChild").mockReturnValue(
+				mockLink as unknown as Node,
+			);
+			vi.spyOn(URL, "createObjectURL").mockReturnValue(
+				"blob:http://localhost/test",
+			);
+			vi.spyOn(URL, "revokeObjectURL").mockReturnValue();
+
+			await downloadReportFile({
+				id: "REPORT123",
+				jwt: "test-token",
+				baseUrl: "https://example.com",
+			});
+
+			expect(fetchSpy).toHaveBeenCalled();
+			vi.restoreAllMocks();
 		});
 	});
 

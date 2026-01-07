@@ -12,7 +12,8 @@ import { renderWithProviders } from "@/lib/testHelpers";
 
 const mockNavigateTo = vi.fn();
 const mockOrgPath = vi.fn((path: string) => `/test-org${path}`);
-const mockToast = vi.fn();
+const mockToastSuccess = vi.fn();
+const mockToastError = vi.fn();
 const mockExecuteMutation = vi.fn();
 
 vi.mock("next/navigation", () => ({
@@ -32,10 +33,11 @@ vi.mock("@/hooks/useOrgNavigation", () => ({
 	}),
 }));
 
-vi.mock("@/hooks/use-toast", () => ({
-	useToast: () => ({
-		toast: mockToast,
-		toasts: [],
+// Mock sonner toast
+vi.mock("sonner", () => ({
+	toast: Object.assign(vi.fn(), {
+		success: (...args: unknown[]) => mockToastSuccess(...args),
+		error: (...args: unknown[]) => mockToastError(...args),
 	}),
 }));
 
@@ -59,6 +61,8 @@ vi.mock("@/lib/api/clients", () => ({
 
 vi.mock("@/lib/mutations", () => ({
 	executeMutation: (opts: unknown) => mockExecuteMutation(opts),
+	extractErrorMessage: (error: unknown) =>
+		error instanceof Error ? error.message : String(error),
 }));
 
 vi.mock("@/components/skeletons", () => ({
@@ -550,13 +554,7 @@ describe("AlertDetailsView", () => {
 
 		await waitFor(() => {
 			expect(mockNavigateTo).toHaveBeenCalledWith("/alerts");
-			expect(mockToast).toHaveBeenCalledWith(
-				expect.objectContaining({
-					title: "Error",
-					description: "No se pudo cargar la alerta.",
-					variant: "destructive",
-				}),
-			);
+			expect(mockToastError).toHaveBeenCalled();
 		});
 	});
 

@@ -11,6 +11,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { AppSidebar } from "./AppSidebar";
 import { NavBreadcrumb } from "./NavBreadcrumb";
+import { Logo } from "./Logo";
+import { UmaBadge } from "./UmaBadge";
 
 interface DashboardLayoutProps {
 	children: React.ReactNode;
@@ -25,6 +27,7 @@ function Navbar() {
 				<NavBreadcrumb />
 			</div>
 			<div className="flex shrink-0 items-center gap-2">
+				<UmaBadge />
 				<LanguageSwitcher />
 				<ThemeSwitcher />
 			</div>
@@ -42,6 +45,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 					<div className="flex flex-1 flex-col p-4 pb-8 md:p-6 md:pb-12 lg:p-8 lg:pb-16">
 						{children}
 					</div>
+					<footer className="flex shrink-0 items-center justify-center py-6 opacity-40">
+						<Logo variant="logo" />
+					</footer>
 				</main>
 			</SidebarInset>
 		</SidebarProvider>

@@ -42,8 +42,9 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useToast } from "@/hooks/use-toast";
 import { useJwt } from "@/hooks/useJwt";
+import { toast } from "sonner";
+import { extractErrorMessage } from "@/lib/mutations";
 import { useOrgStore } from "@/lib/org-store";
 import {
 	listTransactions,
@@ -118,7 +119,6 @@ export function TransactionsTable({
 	filters,
 }: TransactionsTableProps = {}): React.ReactElement {
 	const { navigateTo, orgPath } = useOrgNavigation();
-	const { toast } = useToast();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const { currentOrg } = useOrgStore();
 	const searchParams = useSearchParams();
@@ -260,11 +260,7 @@ export function TransactionsTable({
 				await fetchClientsForTransactions(response.data);
 			} catch (error) {
 				console.error("Error fetching transactions:", error);
-				toast({
-					title: t("errorGeneric"),
-					description: t("transactionsLoadError"),
-					variant: "destructive",
-				});
+				toast.error(extractErrorMessage(error));
 			} finally {
 				setIsLoading(false);
 			}
@@ -317,11 +313,7 @@ export function TransactionsTable({
 				await fetchClientsForTransactions(response.data);
 			} catch (error) {
 				console.error("Error fetching transactions:", error);
-				toast({
-					title: t("errorGeneric"),
-					description: t("transactionsLoadError"),
-					variant: "destructive",
-				});
+				toast.error(extractErrorMessage(error));
 			} finally {
 				setIsLoading(false);
 			}
@@ -353,11 +345,7 @@ export function TransactionsTable({
 			await fetchClientsForTransactions(response.data);
 		} catch (error) {
 			console.error("Error loading more transactions:", error);
-			toast({
-				title: t("errorGeneric"),
-				description: t("transactionsLoadMoreError"),
-				variant: "destructive",
-			});
+			toast.error(extractErrorMessage(error));
 		} finally {
 			setIsLoadingMore(false);
 		}
@@ -368,7 +356,6 @@ export function TransactionsTable({
 		isJwtLoading,
 		jwt,
 		filters,
-		toast,
 		fetchClientsForTransactions,
 		currentOrg?.id,
 		currentClientIdFilter,

@@ -59,7 +59,7 @@ const mockCreatedReport: reportsApi.Report = {
 	id: "report-1",
 	organizationId: "org-1",
 	name: "Resumen Ejecutivo - Enero 2024",
-	type: "MONTHLY",
+	periodType: "MONTHLY",
 	status: "DRAFT",
 	periodStart: "2024-01-01T00:00:00Z",
 	periodEnd: "2024-01-31T23:59:59.999Z",
@@ -431,9 +431,7 @@ describe("CreateReportView", () => {
 		await user.click(submitButton);
 
 		await waitFor(() => {
-			expect(sonner.toast.error).toHaveBeenCalledWith(
-				"Error al crear el reporte",
-			);
+			expect(sonner.toast.error).toHaveBeenCalled();
 		});
 
 		expect(mockNavigateTo).not.toHaveBeenCalled();

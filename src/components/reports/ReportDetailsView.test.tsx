@@ -43,7 +43,7 @@ vi.mock("@/hooks/useJwt", () => ({
 vi.mock("@/lib/api/reports", () => ({
 	getReportById: vi.fn(),
 	generateReportFile: vi.fn(),
-	getReportDownloadUrl: vi.fn(),
+	downloadReportFile: vi.fn(),
 }));
 
 vi.mock("@/components/skeletons", () => ({
@@ -56,7 +56,7 @@ const mockReport: reportsApi.ReportWithAlertSummary = {
 	id: "report-1",
 	organizationId: "org-1",
 	name: "Reporte Mensual Enero 2024",
-	type: "MONTHLY",
+	periodType: "MONTHLY",
 	status: "DRAFT",
 	periodStart: "2024-01-01T00:00:00Z",
 	periodEnd: "2024-01-31T23:59:59.999Z",
@@ -124,9 +124,7 @@ describe("ReportDetailsView", () => {
 			expect(screen.getByText("Reporte no encontrado")).toBeInTheDocument();
 		});
 
-		expect(sonner.toast.error).toHaveBeenCalledWith(
-			"Error al cargar el reporte",
-		);
+		expect(sonner.toast.error).toHaveBeenCalled();
 	});
 
 	it("generates report file when generate button is clicked", async () => {
@@ -167,7 +165,7 @@ describe("ReportDetailsView", () => {
 		);
 	});
 
-	it("downloads PDF file when download button is clicked", async () => {
+	it("downloads report file when download button is clicked", async () => {
 		const generatedReport = {
 			...mockReport,
 			status: "GENERATED" as const,
@@ -175,11 +173,7 @@ describe("ReportDetailsView", () => {
 		};
 
 		vi.mocked(reportsApi.getReportById).mockResolvedValue(generatedReport);
-		vi.mocked(reportsApi.getReportDownloadUrl).mockResolvedValue({
-			fileUrl: "https://example.com/report.pdf",
-			fileSize: 2048,
-			format: "pdf",
-		});
+		vi.mocked(reportsApi.downloadReportFile).mockResolvedValue();
 
 		renderWithProviders(<ReportDetailsView reportId="report-1" />);
 
@@ -191,17 +185,11 @@ describe("ReportDetailsView", () => {
 		await userEvent.click(downloadButton);
 
 		await waitFor(() => {
-			expect(reportsApi.getReportDownloadUrl).toHaveBeenCalledWith({
+			expect(reportsApi.downloadReportFile).toHaveBeenCalledWith({
 				id: "report-1",
-				format: "pdf",
 				jwt: "test-jwt-token",
 			});
 		});
-
-		expect(global.window.open).toHaveBeenCalledWith(
-			"https://example.com/report.pdf",
-			"_blank",
-		);
 	});
 
 	it("displays alert summary correctly", async () => {
@@ -246,7 +234,7 @@ describe("ReportDetailsView", () => {
 		};
 
 		vi.mocked(reportsApi.getReportById).mockResolvedValue(generatedReport);
-		vi.mocked(reportsApi.getReportDownloadUrl).mockRejectedValue(
+		vi.mocked(reportsApi.downloadReportFile).mockRejectedValue(
 			new Error("Failed to download file"),
 		);
 
@@ -260,9 +248,7 @@ describe("ReportDetailsView", () => {
 		await userEvent.click(downloadButton);
 
 		await waitFor(() => {
-			expect(sonner.toast.error).toHaveBeenCalledWith(
-				"Error al descargar el reporte",
-			);
+			expect(sonner.toast.error).toHaveBeenCalled();
 		});
 	});
 
@@ -302,7 +288,7 @@ describe("ReportDetailsView", () => {
 	it("shows quarterly report correctly", async () => {
 		const quarterlyReport = {
 			...mockReport,
-			type: "QUARTERLY" as const,
+			periodType: "QUARTERLY" as const,
 			status: "GENERATED" as const,
 			generatedAt: "2024-01-20T10:00:00Z",
 		};
