@@ -89,6 +89,13 @@ export function DashboardView(): React.ReactElement {
 	const formatCurrency = React.useCallback(
 		(value: string | number): string => {
 			const numValue = typeof value === "string" ? parseFloat(value) : value;
+			if (isNaN(numValue)) return "$0";
+			if (numValue >= 1000000) {
+				return `$${(numValue / 1000000).toFixed(1)}M`;
+			}
+			if (numValue >= 1000) {
+				return `$${(numValue / 1000).toFixed(1)}K`;
+			}
 			return new Intl.NumberFormat(locale, {
 				style: "currency",
 				currency: "MXN",
