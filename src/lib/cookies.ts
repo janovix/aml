@@ -11,7 +11,7 @@ const COOKIE_DOMAIN_BY_ENV: Record<JanovixEnvironment, string | undefined> = {
 	local: undefined, // localhost doesn't use domain
 	preview: ".janovix.workers.dev",
 	dev: ".janovix.workers.dev",
-	production: ".janovix.ai",
+	production: ".janovix.com",
 };
 
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year in seconds
@@ -31,7 +31,7 @@ export function detectEnvironment(): JanovixEnvironment {
 		return "local";
 	}
 
-	if (hostname.endsWith(".janovix.ai") || hostname === "janovix.ai") {
+	if (hostname.endsWith(".janovix.com") || hostname === "janovix.com") {
 		return "production";
 	}
 
