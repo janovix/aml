@@ -6,9 +6,11 @@ import Link from "next/link";
 import {
 	Home,
 	Users,
+	User,
+	Building2,
 	Briefcase,
-	AlertTriangle,
 	Clock,
+	AlertTriangle,
 	RefreshCw,
 } from "lucide-react";
 
@@ -158,17 +160,17 @@ export function DashboardView(): React.ReactElement {
 				label: t("statsTotalClients"),
 				value: formatNumber(data.clientStats.totalClients),
 				icon: Users,
+				variant: "primary",
 				href: routes.clients.list(),
 			});
 		}
 
 		if (data.clientStats) {
 			result.push({
-				label: t("statsOpenAlerts"),
-				value: formatNumber(data.clientStats.openAlerts),
-				icon: AlertTriangle,
-				variant: data.clientStats.openAlerts > 0 ? "primary" : "default",
-				href: routes.alerts.list(),
+				label: t("statsPhysicalClients"),
+				value: formatNumber(data.clientStats.physicalClients),
+				icon: User,
+				href: routes.clients.list(),
 			});
 		}
 
@@ -315,51 +317,38 @@ export function DashboardView(): React.ReactElement {
 							</CardHeader>
 							<CardContent>
 								{data.clientStats ? (
-									<div className="space-y-4">
-										<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-											<div className="rounded-lg border bg-muted/50 p-4">
-												<div className="flex items-center gap-3">
-													<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10">
-														<Users className="h-5 w-5 text-blue-500" />
-													</div>
-													<div>
-														<div className="text-sm font-medium text-muted-foreground">
-															{t("statsTotalClients")}
-														</div>
-														<div className="text-xl font-bold tabular-nums">
-															{formatNumber(data.clientStats.totalClients)}
-														</div>
-													</div>
-												</div>
+									<div className="grid grid-cols-3 gap-4">
+										<div className="flex flex-col items-center text-center rounded-lg border bg-muted/50 p-4">
+											<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10 mb-3">
+												<Users className="h-5 w-5 text-blue-500" />
 											</div>
-											<div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
-												<div className="flex items-center gap-3">
-													<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/10">
-														<AlertTriangle className="h-5 w-5 text-amber-500" />
-													</div>
-													<div>
-														<div className="text-sm font-medium text-muted-foreground">
-															{t("statsOpenAlerts")}
-														</div>
-														<div className="text-xl font-bold tabular-nums text-amber-600 dark:text-amber-400">
-															{formatNumber(data.clientStats.openAlerts)}
-														</div>
-													</div>
-												</div>
+											<div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+												{t("statsTotalClients")}
+											</div>
+											<div className="text-2xl font-bold tabular-nums mt-1 text-blue-500">
+												{formatNumber(data.clientStats.totalClients)}
 											</div>
 										</div>
-
-										<div className="flex items-center gap-4 rounded-lg border border-red-500/20 bg-red-500/5 p-4">
-											<div className="flex h-12 w-12 items-center justify-center rounded-lg bg-red-500/10">
-												<Clock className="h-6 w-6 text-red-500" />
+										<div className="flex flex-col items-center text-center rounded-lg border bg-muted/50 p-4">
+											<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 mb-3">
+												<User className="h-5 w-5 text-emerald-500" />
 											</div>
-											<div>
-												<div className="text-sm font-medium text-muted-foreground">
-													{t("statsUrgentReviews")}
-												</div>
-												<div className="text-2xl font-bold tabular-nums text-red-600 dark:text-red-400">
-													{formatNumber(data.clientStats.urgentReviews)}
-												</div>
+											<div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+												{t("statsPhysicalClients")}
+											</div>
+											<div className="text-2xl font-bold tabular-nums mt-1 text-emerald-500">
+												{formatNumber(data.clientStats.physicalClients)}
+											</div>
+										</div>
+										<div className="flex flex-col items-center text-center rounded-lg border bg-muted/50 p-4">
+											<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/10 mb-3">
+												<Building2 className="h-5 w-5 text-purple-500" />
+											</div>
+											<div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+												{t("statsMoralClients")}
+											</div>
+											<div className="text-2xl font-bold tabular-nums mt-1 text-purple-500">
+												{formatNumber(data.clientStats.moralClients)}
 											</div>
 										</div>
 									</div>

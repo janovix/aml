@@ -68,10 +68,12 @@ describe("ClientsPageContent", () => {
 	it("renders KPI cards", () => {
 		renderWithProviders(<ClientsPageContent />);
 
-		const alertas = screen.getAllByText("Alertas Abiertas");
 		const total = screen.getAllByText("Total Clientes");
-		expect(alertas.length).toBeGreaterThan(0);
+		const physical = screen.getAllByText("Personas Físicas");
+		const moral = screen.getAllByText("Personas Morales");
 		expect(total.length).toBeGreaterThan(0);
+		expect(physical.length).toBeGreaterThan(0);
+		expect(moral.length).toBeGreaterThan(0);
 	});
 
 	it("renders clients table with built-in search", () => {

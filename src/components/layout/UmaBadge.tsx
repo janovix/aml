@@ -34,8 +34,8 @@ export function UmaBadge(): React.ReactElement | null {
 			return new Intl.NumberFormat(locale, {
 				style: "currency",
 				currency: "MXN",
-				minimumFractionDigits: 0,
-				maximumFractionDigits: 0,
+				minimumFractionDigits: 2,
+				maximumFractionDigits: 2,
 				...(compact && { notation: "compact" }),
 			}).format(value);
 		},
@@ -97,8 +97,29 @@ export function UmaBadge(): React.ReactElement | null {
 				</TooltipTrigger>
 				<TooltipContent
 					side="bottom"
-					className="max-w-xs bg-popover text-popover-foreground border shadow-md"
+					hideArrow
+					className="max-w-xs bg-popover text-popover-foreground border shadow-md relative"
+					sideOffset={8}
 				>
+					{/* Custom triangle arrow pointing up to the badge */}
+					<svg
+						className="custom-arrow absolute -top-2 left-1/2 -translate-x-1/2 z-10 pointer-events-none"
+						width="12"
+						height="8"
+						viewBox="0 0 12 8"
+						fill="none"
+						xmlns="http://www.w3.org/2000/svg"
+					>
+						{/* Border triangle */}
+						<path
+							d="M6 0.5L0.5 7.5h11L6 0.5z"
+							className="stroke-border"
+							strokeWidth="1"
+							fill="none"
+						/>
+						{/* Fill triangle */}
+						<path d="M6 1L1 7.5h10L6 1z" className="fill-popover" />
+					</svg>
 					<div className="space-y-2">
 						<div>
 							<p className="text-xs text-muted-foreground">

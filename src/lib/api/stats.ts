@@ -3,8 +3,8 @@ import { fetchJson } from "./http";
 
 export interface ClientStats {
 	totalClients: number;
-	openAlerts: number;
-	urgentReviews: number;
+	physicalClients: number;
+	moralClients: number;
 }
 
 export interface TransactionStats {
