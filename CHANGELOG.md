@@ -1,3 +1,10 @@
+# [1.2.0-rc.2](https://github.com/janovix/aml/compare/v1.2.0-rc.1...v1.2.0-rc.2) (2026-01-09)
+
+
+### Features
+
+* integrate sentry for error tracking and performance monitoring ([9085a2e](https://github.com/janovix/aml/commit/9085a2ef1853edc41ed4e92aae3358be14fa3b89))
+
 # [1.2.0-rc.1](https://github.com/janovix/aml/compare/v1.1.0...v1.2.0-rc.1) (2026-01-09)
 
 
