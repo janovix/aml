@@ -87,7 +87,7 @@ describe("org-url", () => {
 		it("returns false for reserved subdomain 'app'", () => {
 			Object.defineProperty(window, "location", {
 				value: {
-					hostname: "app.janovix.ai",
+					hostname: "app.janovix.com",
 				},
 				writable: true,
 			});
@@ -98,7 +98,7 @@ describe("org-url", () => {
 		it("returns false for reserved subdomain 'aml'", () => {
 			Object.defineProperty(window, "location", {
 				value: {
-					hostname: "aml.janovix.ai",
+					hostname: "aml.janovix.com",
 				},
 				writable: true,
 			});
@@ -109,7 +109,7 @@ describe("org-url", () => {
 		it("returns false for reserved subdomain 'www'", () => {
 			Object.defineProperty(window, "location", {
 				value: {
-					hostname: "www.janovix.ai",
+					hostname: "www.janovix.com",
 				},
 				writable: true,
 			});
@@ -120,7 +120,7 @@ describe("org-url", () => {
 		it("returns true for vanity domain with org subdomain", () => {
 			Object.defineProperty(window, "location", {
 				value: {
-					hostname: "acme.janovix.ai",
+					hostname: "acme.janovix.com",
 				},
 				writable: true,
 			});
@@ -199,7 +199,7 @@ describe("org-url", () => {
 		it("extracts org slug from path for reserved subdomain", () => {
 			Object.defineProperty(window, "location", {
 				value: {
-					hostname: "app.janovix.ai",
+					hostname: "app.janovix.com",
 					pathname: "/org-slug/alerts",
 				},
 				writable: true,
@@ -211,7 +211,7 @@ describe("org-url", () => {
 		it("extracts org slug from subdomain in vanity mode", () => {
 			Object.defineProperty(window, "location", {
 				value: {
-					hostname: "acme.janovix.ai",
+					hostname: "acme.janovix.com",
 					pathname: "/clients",
 				},
 				writable: true,
@@ -223,7 +223,7 @@ describe("org-url", () => {
 		it("handles subdomain case insensitivity", () => {
 			Object.defineProperty(window, "location", {
 				value: {
-					hostname: "ACME.janovix.ai",
+					hostname: "ACME.janovix.com",
 					pathname: "/clients",
 				},
 				writable: true,
@@ -261,7 +261,7 @@ describe("org-url", () => {
 
 		it("generates vanity URL when forceVanity is true", () => {
 			const url = getOrgUrl("acme", "/clients", { forceVanity: true });
-			expect(url).toBe("https://acme.janovix.ai/clients");
+			expect(url).toBe("https://acme.janovix.com/clients");
 		});
 
 		it("generates absolute URL when absolute is true", () => {
@@ -272,13 +272,13 @@ describe("org-url", () => {
 		it("generates vanity URL when vanity mode is available", () => {
 			Object.defineProperty(window, "location", {
 				value: {
-					hostname: "acme.janovix.ai",
+					hostname: "acme.janovix.com",
 				},
 				writable: true,
 			});
 
 			const url = getOrgUrl("acme", "/clients");
-			expect(url).toBe("https://acme.janovix.ai/clients");
+			expect(url).toBe("https://acme.janovix.com/clients");
 		});
 
 		it("generates vanity URL with absolute when both options are set", () => {
@@ -286,7 +286,7 @@ describe("org-url", () => {
 				absolute: true,
 				forceVanity: true,
 			});
-			expect(url).toBe("https://acme.janovix.ai/clients");
+			expect(url).toBe("https://acme.janovix.com/clients");
 		});
 
 		it("handles complex paths", () => {
@@ -308,36 +308,36 @@ describe("org-url", () => {
 
 		it("generates vanity URL with absolute", () => {
 			const url = getShareableOrgUrl("acme", "/clients");
-			expect(url).toBe("https://acme.janovix.ai/clients");
+			expect(url).toBe("https://acme.janovix.com/clients");
 		});
 
 		it("handles empty path", () => {
 			const url = getShareableOrgUrl("acme", "");
-			expect(url).toBe("https://acme.janovix.ai/");
+			expect(url).toBe("https://acme.janovix.com/");
 		});
 	});
 
 	describe("parseOrgUrl", () => {
 		it("parses vanity URL correctly", () => {
-			const result = parseOrgUrl("https://acme.janovix.ai/clients");
+			const result = parseOrgUrl("https://acme.janovix.com/clients");
 			expect(result.orgSlug).toBe("acme");
 			expect(result.path).toBe("/clients");
 		});
 
 		it("parses vanity URL with nested path", () => {
-			const result = parseOrgUrl("https://acme.janovix.ai/clients/123/edit");
+			const result = parseOrgUrl("https://acme.janovix.com/clients/123/edit");
 			expect(result.orgSlug).toBe("acme");
 			expect(result.path).toBe("/clients/123/edit");
 		});
 
 		it("parses vanity URL with root path", () => {
-			const result = parseOrgUrl("https://acme.janovix.ai/");
+			const result = parseOrgUrl("https://acme.janovix.com/");
 			expect(result.orgSlug).toBe("acme");
 			expect(result.path).toBe("/");
 		});
 
 		it("does not parse reserved subdomain as org slug in vanity mode", () => {
-			const result = parseOrgUrl("https://app.janovix.ai/clients");
+			const result = parseOrgUrl("https://app.janovix.com/clients");
 			// Reserved subdomains are treated as path-based, so the first path segment becomes org slug
 			expect(result.orgSlug).toBe("clients");
 			expect(result.path).toBe("/");
@@ -388,7 +388,7 @@ describe("org-url", () => {
 		});
 
 		it("handles case-insensitive subdomain", () => {
-			const result = parseOrgUrl("https://ACME.janovix.ai/clients");
+			const result = parseOrgUrl("https://ACME.janovix.com/clients");
 			expect(result.orgSlug).toBe("acme");
 			expect(result.path).toBe("/clients");
 		});

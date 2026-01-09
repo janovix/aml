@@ -23,7 +23,7 @@ const RESERVED_SUBDOMAINS = [
 /**
  * Production domain for vanity URLs
  */
-const VANITY_DOMAIN = "janovix.ai";
+const VANITY_DOMAIN = "janovix.com";
 
 /**
  * Check if the current environment supports vanity subdomain URLs.
@@ -103,7 +103,7 @@ export function getCurrentOrgSlug(): string | null {
 
 /**
  * Generate an org-scoped URL.
- * In vanity mode: returns subdomain URL (https://acme.janovix.ai/clients)
+ * In vanity mode: returns subdomain URL (https://acme.janovix.com/clients)
  * In path mode: returns path-based URL (/acme/clients)
  *
  * @param orgSlug - The organization slug
@@ -132,7 +132,7 @@ export function getOrgUrl(
 	const useVanity = options.forceVanity || isVanityModeAvailable();
 
 	if (useVanity) {
-		// Vanity URL: https://acme.janovix.ai/clients
+		// Vanity URL: https://acme.janovix.com/clients
 		const protocol = typeof window !== "undefined" ? "https:" : "https:";
 		return `${protocol}//${orgSlug}.${VANITY_DOMAIN}${normalizedPath}`;
 	}

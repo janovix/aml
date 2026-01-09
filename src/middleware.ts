@@ -104,8 +104,8 @@ function isValidOrgSlug(segment: string): boolean {
 
 /**
  * Determine if the request is in vanity subdomain mode.
- * Vanity mode: subdomain IS the org slug (e.g., acme.janovix.ai)
- * Path mode: org slug is in the path (e.g., app.janovix.ai/acme/...)
+ * Vanity mode: subdomain IS the org slug (e.g., acme.janovix.com)
+ * Path mode: org slug is in the path (e.g., app.janovix.com/acme/...)
  *
  * Path-based mode is used for:
  * - Reserved subdomains (app, aml, aml-local, etc.)
