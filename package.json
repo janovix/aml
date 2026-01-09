@@ -1,6 +1,6 @@
 {
 	"name": "aml",
-	"version": "1.1.0-rc.23",
+  "version": "1.1.0-rc.23",
 	"packageManager": "pnpm@10.0.0",
 	"description": "Build a full-stack web application with Next.js.",
 	"cloudflare": {
