@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Save, Plus, Trash2, Receipt } from "lucide-react";
+import { VehicleTypePicker } from "./VehicleTypePicker";
 import { PageHero } from "@/components/page-hero";
 import { PageHeroSkeleton } from "@/components/skeletons";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -444,24 +445,11 @@ export function TransactionEditView({
 					<CardContent className="space-y-4">
 						<div className="space-y-2">
 							<Label htmlFor="vehicle-type">{t("txnVehicleType")} *</Label>
-							<Select
+							<VehicleTypePicker
+								id="vehicle-type"
 								value={formData.vehicleType}
-								onValueChange={(value) => handleChange("vehicleType", value)}
-								required
-							>
-								<SelectTrigger id="vehicle-type">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="land">
-										{t("txnVehicleTypeLand")}
-									</SelectItem>
-									<SelectItem value="marine">
-										{t("txnVehicleTypeMarine")}
-									</SelectItem>
-									<SelectItem value="air">{t("txnVehicleTypeAir")}</SelectItem>
-								</SelectContent>
-							</Select>
+								onChange={(value) => handleChange("vehicleType", value)}
+							/>
 						</div>
 
 						<Separator />

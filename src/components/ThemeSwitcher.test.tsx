@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ThemeSwitcher } from "./ThemeSwitcher";
+import * as nextThemes from "next-themes";
 
 const mockSetTheme = vi.fn();
 
@@ -17,20 +18,50 @@ describe("ThemeSwitcher", () => {
 		vi.clearAllMocks();
 	});
 
-	it("renders theme toggle button", () => {
+	it("renders all theme option buttons", () => {
 		render(<ThemeSwitcher />);
 
-		const buttons = screen.getAllByRole("button", { name: /toggle theme/i });
-		expect(buttons.length).toBeGreaterThan(0);
+		expect(screen.getByRole("button", { name: /system theme/i })).toBeDefined();
+		expect(screen.getByRole("button", { name: /light theme/i })).toBeDefined();
+		expect(screen.getByRole("button", { name: /dark theme/i })).toBeDefined();
 	});
 
-	it("calls setTheme when clicked", async () => {
+	it("calls setTheme with dark when dark button is clicked", async () => {
 		const user = userEvent.setup();
 		render(<ThemeSwitcher />);
 
-		const buttons = screen.getAllByRole("button", { name: /toggle theme/i });
-		await user.click(buttons[0]);
+		const darkButton = screen.getByRole("button", { name: /dark theme/i });
+		await user.click(darkButton);
 
 		expect(mockSetTheme).toHaveBeenCalledWith("dark");
+	});
+
+	it("calls setTheme with light when light button is clicked from dark mode", async () => {
+		vi.mocked(nextThemes.useTheme).mockReturnValue({
+			theme: "dark",
+			setTheme: mockSetTheme,
+			themes: [],
+			forcedTheme: undefined,
+			resolvedTheme: "dark",
+			systemTheme: undefined,
+		});
+
+		const user = userEvent.setup();
+		render(<ThemeSwitcher />);
+
+		const lightButton = screen.getByRole("button", { name: /light theme/i });
+		await user.click(lightButton);
+
+		expect(mockSetTheme).toHaveBeenCalledWith("light");
+	});
+
+	it("calls setTheme with system when system button is clicked", async () => {
+		const user = userEvent.setup();
+		render(<ThemeSwitcher />);
+
+		const systemButton = screen.getByRole("button", { name: /system theme/i });
+		await user.click(systemButton);
+
+		expect(mockSetTheme).toHaveBeenCalledWith("system");
 	});
 });

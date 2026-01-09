@@ -7,21 +7,33 @@ const meta: Meta<typeof ThemeSwitcher> = {
 	component: ThemeSwitcher,
 	decorators: [
 		(Story) => (
-			<ThemeProvider
-				attribute="class"
-				defaultTheme="light"
-				enableSystem={false}
-			>
+			<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
 				<div className="p-4">
 					<Story />
 				</div>
 			</ThemeProvider>
 		),
 	],
+	parameters: {
+		docs: {
+			description: {
+				component:
+					"A ternary theme switcher with system, light, and dark options. Uses animated transitions between states.",
+			},
+		},
+	},
 };
 
 export default meta;
 
 type Story = StoryObj<typeof ThemeSwitcher>;
 
-export const Default: Story = {};
+export const Default: Story = {
+	parameters: {
+		docs: {
+			description: {
+				story: "Default theme switcher with system, light, and dark options.",
+			},
+		},
+	},
+};

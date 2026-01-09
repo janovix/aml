@@ -20,8 +20,8 @@ describe("api/stats", () => {
 	describe("getClientStats", () => {
 		const mockClientStats = {
 			totalClients: 150,
-			openAlerts: 5,
-			urgentReviews: 2,
+			physicalClients: 100,
+			moralClients: 50,
 		};
 
 		it("fetches client stats from the API", async () => {
