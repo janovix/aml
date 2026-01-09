@@ -19,6 +19,8 @@ export default defineConfig({
 				"src/test/**",
 				"src/stories/**",
 				"src/components/ui/**",
+				// Sentry instrumentation files
+				"src/instrumentation*.ts",
 				// View-level components are mostly composition/markup; keep coverage focused
 				// on shared logic/components.
 				"src/components/clients/*View.tsx",
