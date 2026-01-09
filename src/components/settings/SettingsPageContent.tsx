@@ -1,44 +1,113 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import {
-	Button,
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-	Input,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@algtools/ui";
-import { Save } from "lucide-react";
-import { useToast } from "../../hooks/use-toast";
+} from "@/components/ui/select";
+import { Save, Building2, AlertCircle, Settings } from "lucide-react";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
 import {
 	getFieldDescription,
 	getFieldDescriptionByXmlTag,
 } from "../../lib/field-descriptions";
+import { fetchJson, isOrganizationRequiredError } from "@/lib/api/http";
+import { getAmlCoreBaseUrl } from "@/lib/api/config";
+import { validateRFC } from "../../lib/utils";
+import { executeMutation } from "@/lib/mutations";
+import { toast } from "sonner";
+import { useJwt } from "@/hooks/useJwt";
 
-interface OrganizationData {
-	organizationRfc: string;
-	vulnerableActivity: string;
+interface OrganizationSettingsData {
+	obligatedSubjectKey: string;
+	activityKey: string;
 }
 
 export function SettingsPageContent(): React.JSX.Element {
-	const { toast } = useToast();
+	const { jwt, isLoading: isJwtLoading } = useJwt();
+	const [isLoading, setIsLoading] = useState(true);
 	const [isSaving, setIsSaving] = useState(false);
-	const [formData, setFormData] = useState<OrganizationData>({
-		organizationRfc: "",
-		vulnerableActivity: "VEH",
+	const [hasNoOrganization, setHasNoOrganization] = useState(false);
+	const [formData, setFormData] = useState<OrganizationSettingsData>({
+		obligatedSubjectKey: "",
+		activityKey: "VEH",
 	});
 
+	const [validationErrors, setValidationErrors] = useState<{
+		rfc?: string;
+	}>({});
+
+	// Fetch existing organization settings on mount and when organization changes
+	// jwt changes when organization changes, so we use it as a dependency
+	useEffect(() => {
+		// Wait for JWT to be ready
+		if (isJwtLoading) {
+			return;
+		}
+
+		// No JWT means no organization selected
+		if (!jwt) {
+			setHasNoOrganization(true);
+			setIsLoading(false);
+			return;
+		}
+
+		const fetchSettings = async () => {
+			setIsLoading(true);
+			setHasNoOrganization(false);
+
+			try {
+				const baseUrl = getAmlCoreBaseUrl();
+				const { json: data } = await fetchJson<{
+					obligatedSubjectKey?: string;
+					activityKey?: string;
+				}>(`${baseUrl}/api/v1/organization-settings`, { jwt });
+
+				setFormData({
+					obligatedSubjectKey: data.obligatedSubjectKey || "",
+					activityKey: data.activityKey || "VEH",
+				});
+			} catch (error: unknown) {
+				// Check for organization required error (409)
+				if (isOrganizationRequiredError(error)) {
+					setHasNoOrganization(true);
+					return;
+				}
+
+				// Check error status for specific handling
+				const apiError = error as { status?: number };
+				if (apiError.status === 404) {
+					// No settings found, that's okay for first-time setup
+					console.log("No organization settings found, using defaults");
+				} else if (apiError.status === 403) {
+					// Legacy check for organization required (now 409)
+					setHasNoOrganization(true);
+				} else {
+					console.error("Error fetching organization settings:", error);
+				}
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
+		fetchSettings();
+	}, [jwt, isJwtLoading]);
+
 	const handleInputChange = (
-		field: keyof OrganizationData,
+		field: keyof OrganizationSettingsData,
 		value: string,
 	): void => {
 		setFormData((prev) => ({ ...prev, [field]: value }));
@@ -46,44 +115,113 @@ export function SettingsPageContent(): React.JSX.Element {
 
 	const handleSubmit = async (e: React.FormEvent): Promise<void> => {
 		e.preventDefault();
+
+		// Client-side validation for RFC
+		const rfcValidation = validateRFC(formData.obligatedSubjectKey, "moral");
+		if (!rfcValidation.isValid) {
+			setValidationErrors({ rfc: rfcValidation.error });
+			toast.error("Por favor, corrija los errores en el formulario");
+			return;
+		}
+
+		setValidationErrors({});
 		setIsSaving(true);
 
 		try {
-			// TODO: Implement API call to save organization settings
-			// await saveOrganizationSettings({ input: formData });
-
-			// Simulate API call
-			await new Promise((resolve) => setTimeout(resolve, 500));
-
-			toast({
-				title: "Configuración guardada",
-				description:
-					"Los datos de la organización se han guardado exitosamente.",
+			await executeMutation({
+				mutation: async () => {
+					const baseUrl = getAmlCoreBaseUrl();
+					return fetchJson(`${baseUrl}/api/v1/organization-settings`, {
+						method: "PUT",
+						headers: {
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({
+							obligatedSubjectKey: formData.obligatedSubjectKey.toUpperCase(),
+							activityKey: formData.activityKey,
+						}),
+					});
+				},
+				loading: "Guardando configuración...",
+				success: "Los datos de la organización se han guardado exitosamente.",
 			});
-		} catch (error) {
-			console.error("Error saving organization settings:", error);
-			toast({
-				title: "Error",
-				description: "No se pudo guardar la configuración.",
-				variant: "destructive",
-			});
+		} catch {
+			// Error is already handled by executeMutation via Sonner
 		} finally {
 			setIsSaving(false);
 		}
 	};
 
+	// Consistent page header component
+	const PageHeader = () => (
+		<div className="flex items-start gap-3 min-w-0">
+			<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+				<Settings className="h-5 w-5" />
+			</div>
+			<div className="min-w-0">
+				<h1 className="text-2xl font-semibold text-foreground tracking-tight">
+					Configuración
+				</h1>
+				<p className="text-sm text-muted-foreground mt-0.5">
+					Gestión de datos de la organización
+				</p>
+			</div>
+		</div>
+	);
+
+	if (isLoading) {
+		return (
+			<div className="space-y-6">
+				<PageHeader />
+				<Card>
+					<CardContent className="p-6">
+						<div className="animate-pulse space-y-4">
+							<div className="h-4 w-1/3 bg-muted rounded" />
+							<div className="h-10 w-full bg-muted rounded" />
+							<div className="h-4 w-1/3 bg-muted rounded" />
+							<div className="h-10 w-full bg-muted rounded" />
+						</div>
+					</CardContent>
+				</Card>
+			</div>
+		);
+	}
+
+	if (hasNoOrganization) {
+		return (
+			<div className="space-y-6">
+				<PageHeader />
+				<Card>
+					<CardContent className="p-8">
+						<div className="flex flex-col items-center justify-center text-center space-y-4">
+							<div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+								<Building2 className="h-6 w-6 text-muted-foreground" />
+							</div>
+							<div className="space-y-2">
+								<h3 className="text-lg font-medium">
+									No hay organización activa
+								</h3>
+								<p className="text-sm text-muted-foreground max-w-sm">
+									Debes seleccionar o crear una organización antes de poder
+									configurar los datos de cumplimiento.
+								</p>
+							</div>
+							<div className="flex items-center gap-2 text-amber-600 bg-amber-50 dark:bg-amber-950/20 px-4 py-2 rounded-lg">
+								<AlertCircle className="h-4 w-4" />
+								<span className="text-sm">
+									Selecciona una organización desde el menú lateral
+								</span>
+							</div>
+						</div>
+					</CardContent>
+				</Card>
+			</div>
+		);
+	}
+
 	return (
 		<div className="space-y-6">
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div>
-					<h1 className="text-xl font-semibold text-foreground">
-						Configuración
-					</h1>
-					<p className="text-sm text-muted-foreground">
-						Gestión de datos de la organización
-					</p>
-				</div>
-			</div>
+			<PageHeader />
 
 			<form onSubmit={handleSubmit} className="space-y-6">
 				<Card>
@@ -105,18 +243,33 @@ export function SettingsPageContent(): React.JSX.Element {
 								</LabelWithInfo>
 								<Input
 									id="organization-rfc"
-									value={formData.organizationRfc}
-									onChange={(e) =>
-										handleInputChange("organizationRfc", e.target.value)
-									}
+									value={formData.obligatedSubjectKey}
+									onChange={(e) => {
+										handleInputChange("obligatedSubjectKey", e.target.value);
+										// Clear error when user starts typing
+										if (validationErrors.rfc) {
+											setValidationErrors((prev) => ({
+												...prev,
+												rfc: undefined,
+											}));
+										}
+									}}
 									placeholder="ABC850101AAA"
-									className="font-mono uppercase"
+									className={`font-mono uppercase ${
+										validationErrors.rfc ? "border-destructive" : ""
+									}`}
 									maxLength={12}
 									required
 								/>
-								<p className="text-xs text-muted-foreground">
-									12 caracteres para persona moral
-								</p>
+								{validationErrors.rfc ? (
+									<p className="text-xs text-destructive">
+										{validationErrors.rfc}
+									</p>
+								) : (
+									<p className="text-xs text-muted-foreground">
+										12 caracteres para persona moral
+									</p>
+								)}
 							</div>
 
 							<div className="space-y-2">
@@ -128,9 +281,9 @@ export function SettingsPageContent(): React.JSX.Element {
 									Actividad Vulnerable
 								</LabelWithInfo>
 								<Select
-									value={formData.vulnerableActivity}
+									value={formData.activityKey}
 									onValueChange={(value) =>
-										handleInputChange("vulnerableActivity", value)
+										handleInputChange("activityKey", value)
 									}
 									disabled
 									required

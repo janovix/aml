@@ -1,3 +1,5 @@
+import type { EnrichedCatalogItem } from "./catalog";
+
 export type TransactionOperationType = "purchase" | "sale";
 export type TransactionVehicleType = "land" | "marine" | "air";
 
@@ -38,6 +40,11 @@ export interface Transaction {
 	createdAt: string; // date-time format
 	updatedAt: string; // date-time format
 	deletedAt?: string | null; // date-time format
+	// Enriched catalog items (optional, populated by backend enrichment)
+	brandCatalog?: EnrichedCatalogItem | null;
+	flagCountryCatalog?: EnrichedCatalogItem | null;
+	operationTypeCatalog?: EnrichedCatalogItem | null;
+	currencyCatalog?: EnrichedCatalogItem | null;
 }
 
 export interface TransactionCreateRequest {

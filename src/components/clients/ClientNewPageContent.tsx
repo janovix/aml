@@ -15,13 +15,14 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { ArrowLeft, Save } from "lucide-react";
 import type { PersonType } from "@/types/client";
+import { validateRFC } from "@/lib/utils";
+import { toast as sonnerToast } from "sonner";
 
 export function ClientNewPageContent(): React.ReactElement {
 	const router = useRouter();
-	const { toast } = useToast();
 	const [formData, setFormData] = useState<{
 		rfc: string;
 		personType: PersonType | "";
@@ -45,18 +46,33 @@ export function ClientNewPageContent(): React.ReactElement {
 		phone: "",
 	});
 	const [loading, setLoading] = useState(false);
+	const [validationErrors, setValidationErrors] = useState<{
+		rfc?: string;
+	}>({});
 
 	const handleSubmit = async (e?: React.FormEvent): Promise<void> => {
 		e?.preventDefault();
+
+		// Client-side validation for RFC
+		if (formData.personType) {
+			const rfcValidation = validateRFC(
+				formData.rfc,
+				formData.personType as "physical" | "moral" | "trust",
+			);
+			if (!rfcValidation.isValid) {
+				setValidationErrors({ rfc: rfcValidation.error });
+				sonnerToast.error("Por favor, corrija los errores en el formulario");
+				return;
+			}
+		}
+
+		setValidationErrors({});
 		setLoading(true);
 
 		// Simulate API call
 		await new Promise((resolve) => setTimeout(resolve, 500));
 
-		toast({
-			title: "Cliente creado",
-			description: "El cliente se ha creado exitosamente.",
-		});
+		toast.success("El cliente se ha creado exitosamente.");
 
 		setLoading(false);
 		router.push("/clients");
@@ -126,9 +142,26 @@ export function ClientNewPageContent(): React.ReactElement {
 										<Input
 											id="rfc"
 											value={formData.rfc}
-											onChange={(e) => handleChange("rfc", e.target.value)}
+											onChange={(e) => {
+												handleChange("rfc", e.target.value);
+												// Clear error when user starts typing
+												if (validationErrors.rfc) {
+													setValidationErrors((prev) => ({
+														...prev,
+														rfc: undefined,
+													}));
+												}
+											}}
+											className={
+												validationErrors.rfc ? "border-destructive" : ""
+											}
 											required
 										/>
+										{validationErrors.rfc && (
+											<p className="text-xs text-destructive">
+												{validationErrors.rfc}
+											</p>
+										)}
 									</div>
 									<div className="space-y-2">
 										<Label htmlFor="personType">Tipo de Persona *</Label>

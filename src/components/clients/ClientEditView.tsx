@@ -2,33 +2,34 @@
 
 import type React from "react";
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import {
-	Badge,
-	Button,
-	Card,
-	CardContent,
-	CardHeader,
-	CardTitle,
-	Input,
-	Label,
-	Separator,
-	Textarea,
-} from "@algtools/ui";
-import { ArrowLeft, Save } from "lucide-react";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Save, User, Lock, Hash } from "lucide-react";
+import { PageHero } from "@/components/page-hero";
+import { PageHeroSkeleton } from "@/components/skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 import type {
 	PersonType,
 	ClientCreateRequest,
 	Client,
 } from "../../types/client";
-import { useToast } from "../../hooks/use-toast";
-import { getClientByRfc, updateClient } from "../../lib/api/clients";
+import { toast } from "sonner";
+import { extractErrorMessage } from "@/lib/mutations";
+import { getClientById, updateClient } from "../../lib/api/clients";
 import { executeMutation } from "../../lib/mutations";
-import { getPersonTypeDisplay } from "../../lib/person-type";
+import { getPersonTypeStyle } from "../../lib/person-type-icon";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
 import { getFieldDescription } from "../../lib/field-descriptions";
 import { CatalogSelector } from "../catalogs/CatalogSelector";
 import { PhoneInput } from "../ui/phone-input";
+import { validateRFC, validateCURP } from "../../lib/utils";
+import { toast as sonnerToast } from "sonner";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface ClientFormData {
 	personType: PersonType;
@@ -62,11 +63,47 @@ interface ClientEditViewProps {
 	clientId: string;
 }
 
+/**
+ * Skeleton component for ClientEditView
+ * Used when loading the organization to show the appropriate skeleton
+ */
+export function ClientEditSkeleton(): React.ReactElement {
+	return (
+		<div className="space-y-6">
+			<PageHeroSkeleton
+				showStats={false}
+				showBackButton={true}
+				actionCount={2}
+			/>
+			{/* Form skeleton */}
+			<div className="max-w-4xl space-y-6">
+				{[1, 2, 3].map((i) => (
+					<Card key={i}>
+						<CardHeader>
+							<Skeleton className="h-6 w-48" />
+						</CardHeader>
+						<CardContent>
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								{[1, 2, 3, 4].map((j) => (
+									<div key={j} className="space-y-2">
+										<Skeleton className="h-4 w-24" />
+										<Skeleton className="h-10 w-full" />
+									</div>
+								))}
+							</div>
+						</CardContent>
+					</Card>
+				))}
+			</div>
+		</div>
+	);
+}
+
 export function ClientEditView({
 	clientId,
 }: ClientEditViewProps): React.JSX.Element {
-	const router = useRouter();
-	const { toast } = useToast();
+	const { navigateTo } = useOrgNavigation();
+	const { t } = useLanguage();
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
 	const [client, setClient] = useState<Client | null>(null);
@@ -108,12 +145,17 @@ export function ClientEditView({
 		notes: "",
 	});
 
+	const [validationErrors, setValidationErrors] = useState<{
+		rfc?: string;
+		curp?: string;
+	}>({});
+
 	useEffect(() => {
 		const fetchClient = async () => {
 			try {
 				setIsLoading(true);
-				const data = await getClientByRfc({
-					rfc: clientId,
+				const data = await getClientById({
+					id: clientId,
 				});
 				setClient(data);
 
@@ -151,10 +193,7 @@ export function ClientEditView({
 				});
 			} catch (error) {
 				console.error("Error fetching client:", error);
-				toast({
-					title: "No se pudo cargar la información del cliente.",
-					variant: "destructive",
-				});
+				toast.error(extractErrorMessage(error));
 			} finally {
 				setIsLoading(false);
 			}
@@ -172,15 +211,38 @@ export function ClientEditView({
 	const handleSubmit = async (e: React.FormEvent): Promise<void> => {
 		e.preventDefault();
 		if (isSubmitting) return;
-		setIsSubmitting(true);
 
 		const currentPersonType = client?.personType ?? formData.personType;
 
+		// Client-side validation
+		const errors: { rfc?: string; curp?: string } = {};
+
+		// Validate RFC
+		const rfcValidation = validateRFC(formData.rfc, currentPersonType);
+		if (!rfcValidation.isValid) {
+			errors.rfc = rfcValidation.error;
+		}
+
+		// Validate CURP (only for physical persons)
+		if (currentPersonType === "physical" && formData.curp) {
+			const curpValidation = validateCURP(formData.curp);
+			if (!curpValidation.isValid) {
+				errors.curp = curpValidation.error;
+			}
+		}
+
+		// If there are validation errors, show them and prevent submission
+		if (Object.keys(errors).length > 0) {
+			setValidationErrors(errors);
+			sonnerToast.error(t("clientValidationError"));
+			return;
+		}
+
+		setValidationErrors({});
+		setIsSubmitting(true);
+
 		if (!currentPersonType) {
-			toast({
-				title: "Tipo de persona no disponible",
-				variant: "destructive",
-			});
+			toast.error(t("clientPersonTypeNotAvailable"));
 			setIsSubmitting(false);
 			return;
 		}
@@ -231,13 +293,13 @@ export function ClientEditView({
 			await executeMutation({
 				mutation: () =>
 					updateClient({
-						rfc: clientId,
+						id: clientId,
 						input: request,
 					}),
-				loading: "Actualizando cliente...",
-				success: "Cliente actualizado exitosamente",
+				loading: t("clientUpdating"),
+				success: t("clientUpdateSuccess"),
 				onSuccess: () => {
-					router.push(`/clients/${clientId}`);
+					navigateTo(`/clients/${clientId}`);
 				},
 			});
 		} catch (error) {
@@ -249,98 +311,57 @@ export function ClientEditView({
 	};
 
 	const handleCancel = (): void => {
-		router.push(`/clients/${clientId}`);
+		navigateTo(`/clients/${clientId}`);
 	};
 
 	if (isLoading) {
-		return (
-			<div className="space-y-6">
-				<div className="flex items-center gap-4">
-					<Button variant="ghost" size="icon" onClick={handleCancel}>
-						<ArrowLeft className="h-5 w-5" />
-					</Button>
-					<div>
-						<h1 className="text-3xl font-bold tracking-tight">
-							Editar Cliente
-						</h1>
-						<p className="text-muted-foreground">
-							Cargando información del cliente...
-						</p>
-					</div>
-				</div>
-			</div>
-		);
+		return <ClientEditSkeleton />;
 	}
 
 	if (!client) {
 		return (
 			<div className="space-y-6">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="icon"
-						onClick={() => router.push("/clients")}
-					>
-						<ArrowLeft className="h-5 w-5" />
-					</Button>
-					<div>
-						<h1 className="text-3xl font-bold tracking-tight">
-							Cliente no encontrado
-						</h1>
-						<p className="text-muted-foreground">
-							El cliente con ID {clientId} no existe.
-						</p>
-					</div>
-				</div>
+				<PageHero
+					title={t("clientNotFound")}
+					subtitle={`${t("clientNotExist")} (ID: ${clientId})`}
+					icon={User}
+					backButton={{
+						label: t("clientBackToClients"),
+						onClick: () => navigateTo("/clients"),
+					}}
+				/>
 			</div>
 		);
 	}
 
 	const lockedPersonType = formData.personType ?? client.personType;
-	const { label: personTypeLabel, helper: personTypeHelper } =
-		getPersonTypeDisplay(lockedPersonType);
+	const personTypeStyle = getPersonTypeStyle(lockedPersonType);
+	const PersonTypeIcon = personTypeStyle.icon;
 
 	return (
 		<div className="space-y-6">
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="sm"
-						className="gap-2"
-						onClick={handleCancel}
-					>
-						<ArrowLeft className="h-4 w-4" />
-						<span className="hidden sm:inline">Volver</span>
-					</Button>
-					<Separator orientation="vertical" className="hidden h-6 sm:block" />
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							Editar Cliente
-						</h1>
-						<p className="text-sm text-muted-foreground">
-							Modificar información del cliente
-						</p>
-					</div>
-				</div>
-				<div className="flex items-center gap-2">
-					<Button variant="outline" size="sm" onClick={handleCancel}>
-						Cancelar
-					</Button>
-					<Button
-						size="sm"
-						className="gap-2"
-						type="button"
-						onClick={handleToolbarSubmit}
-						disabled={isSubmitting}
-					>
-						<Save className="h-4 w-4" />
-						<span className="hidden sm:inline">
-							{isSubmitting ? "Guardando..." : "Guardar Cambios"}
-						</span>
-					</Button>
-				</div>
-			</div>
+			<PageHero
+				title={t("clientEditTitle")}
+				subtitle={t("clientEditSubtitle")}
+				icon={User}
+				backButton={{
+					label: t("back"),
+					onClick: handleCancel,
+				}}
+				actions={[
+					{
+						label: isSubmitting ? t("clientSaving") : t("clientSaveButton"),
+						icon: Save,
+						onClick: handleToolbarSubmit,
+						disabled: isSubmitting,
+					},
+					{
+						label: t("cancel"),
+						onClick: handleCancel,
+						variant: "outline",
+					},
+				]}
+			/>
 
 			<form
 				id="client-edit-form"
@@ -356,24 +377,51 @@ export function ClientEditView({
 					className="sr-only"
 				/>
 				<Card>
-					<CardHeader>
-						<CardTitle className="text-lg">Tipo de Persona</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-4">
-						<div className="space-y-2">
-							<Label className="text-sm font-medium leading-none">Tipo *</Label>
-							<div className="flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-muted bg-muted/60 p-3">
-								<Badge
-									variant="outline"
-									className="px-3 py-1 text-sm font-medium"
+					<CardContent className="p-6">
+						<div className="flex flex-col sm:flex-row sm:items-center gap-6">
+							{/* Person Type Section - Locked */}
+							<div
+								className={`flex items-center gap-4 rounded-xl border ${personTypeStyle.borderColor} ${personTypeStyle.bgColor} p-4 sm:min-w-[240px]`}
+							>
+								<div
+									className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg ${personTypeStyle.bgColor}`}
 								>
-									{personTypeLabel}
-								</Badge>
-								<p className="text-sm text-muted-foreground">
-									{personTypeHelper}
-								</p>
+									<PersonTypeIcon
+										className={`h-6 w-6 ${personTypeStyle.iconColor}`}
+									/>
+								</div>
+								<div className="min-w-0 flex-1">
+									<div className="flex items-center gap-2">
+										<p className={`font-semibold ${personTypeStyle.iconColor}`}>
+											{personTypeStyle.label}
+										</p>
+										<Lock className="h-3.5 w-3.5 text-muted-foreground" />
+									</div>
+									<p className="text-xs text-muted-foreground">
+										{personTypeStyle.description}
+									</p>
+								</div>
+							</div>
+
+							{/* RFC Section */}
+							<div className="flex items-center gap-4 rounded-xl border border-border bg-muted/30 p-4 flex-1">
+								<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-muted">
+									<Hash className="h-6 w-6 text-muted-foreground" />
+								</div>
+								<div className="min-w-0 flex-1">
+									<p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+										RFC
+									</p>
+									<p className="font-mono text-lg font-semibold tracking-wide">
+										{formData.rfc}
+									</p>
+								</div>
 							</div>
 						</div>
+						<p className="mt-4 text-xs text-muted-foreground flex items-center gap-1.5">
+							<Lock className="h-3 w-3" />
+							{t("clientPersonTypeNotModifiable")}
+						</p>
 					</CardContent>
 				</Card>
 
@@ -381,8 +429,8 @@ export function ClientEditView({
 					<CardHeader>
 						<CardTitle className="text-lg">
 							{formData.personType === "physical"
-								? "Datos Personales"
-								: "Datos de la Empresa"}
+								? t("clientPersonalData")
+								: t("clientCompanyData")}
 						</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-4">
@@ -395,7 +443,7 @@ export function ClientEditView({
 											description={getFieldDescription("firstName")}
 											required
 										>
-											Nombre
+											{t("clientFirstName")}
 										</LabelWithInfo>
 										<Input
 											id="firstName"
@@ -413,7 +461,7 @@ export function ClientEditView({
 											description={getFieldDescription("lastName")}
 											required
 										>
-											Apellido Paterno
+											{t("clientLastName")}
 										</LabelWithInfo>
 										<Input
 											id="lastName"
@@ -430,7 +478,7 @@ export function ClientEditView({
 											htmlFor="secondLastName"
 											description={getFieldDescription("secondLastName")}
 										>
-											Apellido Materno
+											{t("clientSecondLastName")}
 										</LabelWithInfo>
 										<Input
 											id="secondLastName"
@@ -449,7 +497,7 @@ export function ClientEditView({
 											description={getFieldDescription("birthDate")}
 											required
 										>
-											Fecha de Nacimiento
+											{t("clientBirthDate")}
 										</LabelWithInfo>
 										<Input
 											id="birthDate"
@@ -467,17 +515,32 @@ export function ClientEditView({
 											description={getFieldDescription("curp")}
 											required
 										>
-											CURP
+											{t("clientCurp")}
 										</LabelWithInfo>
 										<Input
 											id="curp"
 											value={formData.curp}
-											onChange={(e) =>
-												handleInputChange("curp", e.target.value)
-											}
+											onChange={(e) => {
+												handleInputChange("curp", e.target.value);
+												// Clear error when user starts typing
+												if (validationErrors.curp) {
+													setValidationErrors((prev) => ({
+														...prev,
+														curp: undefined,
+													}));
+												}
+											}}
 											placeholder="PECJ850615HDFRRN09"
+											className={
+												validationErrors.curp ? "border-destructive" : ""
+											}
 											required
 										/>
+										{validationErrors.curp && (
+											<p className="text-xs text-destructive">
+												{validationErrors.curp}
+											</p>
+										)}
 									</div>
 								</div>
 							</>
@@ -489,7 +552,7 @@ export function ClientEditView({
 										description={getFieldDescription("businessName")}
 										required
 									>
-										Razón Social
+										{t("clientBusinessName")}
 									</LabelWithInfo>
 									<Input
 										id="businessName"
@@ -507,7 +570,7 @@ export function ClientEditView({
 										description={getFieldDescription("incorporationDate")}
 										required
 									>
-										Fecha de Constitución
+										{t("clientConstitutionDate")}
 									</LabelWithInfo>
 									<Input
 										id="incorporationDate"
@@ -527,13 +590,24 @@ export function ClientEditView({
 								description={getFieldDescription("rfc")}
 								required
 							>
-								RFC
+								{t("clientRfc")}
 							</LabelWithInfo>
 							<Input
 								id="rfc"
 								value={formData.rfc}
-								onChange={(e) => handleInputChange("rfc", e.target.value)}
-								className="font-mono uppercase"
+								onChange={(e) => {
+									handleInputChange("rfc", e.target.value);
+									// Clear error when user starts typing
+									if (validationErrors.rfc) {
+										setValidationErrors((prev) => ({
+											...prev,
+											rfc: undefined,
+										}));
+									}
+								}}
+								className={`font-mono uppercase ${
+									validationErrors.rfc ? "border-destructive" : ""
+								}`}
 								placeholder={
 									formData.personType === "physical"
 										? "PECJ850615E56"
@@ -542,19 +616,25 @@ export function ClientEditView({
 								maxLength={formData.personType === "physical" ? 13 : 12}
 								required
 							/>
-							<p className="text-xs text-muted-foreground">
-								{formData.personType === "physical"
-									? "13 caracteres para persona física"
-									: "12 caracteres para persona moral/fideicomiso"}
-							</p>
+							{validationErrors.rfc ? (
+								<p className="text-xs text-destructive">
+									{validationErrors.rfc}
+								</p>
+							) : (
+								<p className="text-xs text-muted-foreground">
+									{formData.personType === "physical"
+										? t("clientRfcHintPhysical")
+										: t("clientRfcHintMoral")}
+								</p>
+							)}
 						</div>
 						{formData.personType === "physical" && (
 							<CatalogSelector
 								catalogKey="countries"
-								label="Nacionalidad"
+								label={t("clientNationality")}
 								labelDescription={getFieldDescription("nationality")}
 								value={formData.nationality}
-								searchPlaceholder="Buscar país..."
+								searchPlaceholder={t("clientSearchCountry")}
 								onChange={(option) =>
 									handleInputChange("nationality", option?.id ?? "")
 								}
@@ -565,7 +645,7 @@ export function ClientEditView({
 
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">Información de Contacto</CardTitle>
+						<CardTitle className="text-lg">{t("clientContactInfo")}</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -575,7 +655,7 @@ export function ClientEditView({
 									description={getFieldDescription("email")}
 									required
 								>
-									Email
+									{t("clientEmail")}
 								</LabelWithInfo>
 								<Input
 									id="email"
@@ -592,7 +672,7 @@ export function ClientEditView({
 									description={getFieldDescription("phone")}
 									required
 								>
-									Teléfono
+									{t("clientPhone")}
 								</LabelWithInfo>
 								<PhoneInput
 									id="phone"
@@ -610,7 +690,7 @@ export function ClientEditView({
 
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">Dirección</CardTitle>
+						<CardTitle className="text-lg">{t("clientAddressInfo")}</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -620,7 +700,7 @@ export function ClientEditView({
 									description={getFieldDescription("street")}
 									required
 								>
-									Calle
+									{t("clientStreet")}
 								</LabelWithInfo>
 								<Input
 									id="street"
@@ -636,7 +716,7 @@ export function ClientEditView({
 									description={getFieldDescription("externalNumber")}
 									required
 								>
-									Número Ext.
+									{t("clientExteriorNumber")}
 								</LabelWithInfo>
 								<Input
 									id="externalNumber"
@@ -655,7 +735,7 @@ export function ClientEditView({
 									htmlFor="internalNumber"
 									description={getFieldDescription("internalNumber")}
 								>
-									Número Int.
+									{t("clientInteriorNumber")}
 								</LabelWithInfo>
 								<Input
 									id="internalNumber"
@@ -672,7 +752,7 @@ export function ClientEditView({
 									description={getFieldDescription("neighborhood")}
 									required
 								>
-									Colonia
+									{t("clientNeighborhood")}
 								</LabelWithInfo>
 								<Input
 									id="neighborhood"
@@ -690,7 +770,7 @@ export function ClientEditView({
 									description={getFieldDescription("postalCode")}
 									required
 								>
-									Código Postal
+									{t("clientPostalCode")}
 								</LabelWithInfo>
 								<Input
 									id="postalCode"
@@ -710,7 +790,7 @@ export function ClientEditView({
 									description={getFieldDescription("city")}
 									required
 								>
-									Ciudad
+									{t("clientCity")}
 								</LabelWithInfo>
 								<Input
 									id="city"
@@ -726,7 +806,7 @@ export function ClientEditView({
 									description={getFieldDescription("municipality")}
 									required
 								>
-									Municipio
+									{t("clientMunicipality")}
 								</LabelWithInfo>
 								<Input
 									id="municipality"
@@ -744,7 +824,7 @@ export function ClientEditView({
 									description={getFieldDescription("stateCode")}
 									required
 								>
-									Estado
+									{t("clientState")}
 								</LabelWithInfo>
 								<Input
 									id="stateCode"
@@ -758,7 +838,7 @@ export function ClientEditView({
 							</div>
 						</div>
 						<div className="space-y-2">
-							<Label htmlFor="reference">Referencia</Label>
+							<Label htmlFor="reference">{t("clientReference")}</Label>
 							<Input
 								id="reference"
 								value={formData.reference}
@@ -771,11 +851,13 @@ export function ClientEditView({
 
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">Notas de Cumplimiento</CardTitle>
+						<CardTitle className="text-lg">
+							{t("clientComplianceNotes")}
+						</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<div className="space-y-2">
-							<Label htmlFor="notes">Observaciones</Label>
+							<Label htmlFor="notes">{t("clientObservations")}</Label>
 							<Textarea
 								id="notes"
 								value={formData.notes}
@@ -783,7 +865,7 @@ export function ClientEditView({
 									handleInputChange("notes", e.target.value)
 								}
 								rows={4}
-								placeholder="Agregue notas relevantes sobre el cliente..."
+								placeholder={t("clientNotesPlaceholder")}
 							/>
 						</div>
 					</CardContent>

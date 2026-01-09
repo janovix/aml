@@ -1,63 +1,168 @@
-# Next.js Framework Starter
+# Janovix AML Platform
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/algtools/next-template)
+A comprehensive Anti-Money Laundering (AML) management platform built with Next.js and deployed on Cloudflare Workers.
 
-<!-- dash-content-start -->
+## Features
 
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app). It's deployed on Cloudflare Workers as a [static website](https://developers.cloudflare.com/workers/static-assets/).
+- **Multi-tenant Organization Support**: Full multi-organization architecture with URL-based routing (`/[orgSlug]/...`)
+- **Client Management**: Track and manage clients with detailed profiles, documents, and addresses
+- **Transaction Monitoring**: Monitor and analyze financial transactions for suspicious activity
+- **Alert System**: Automated alert generation and manual review workflows
+- **Report Generation**: Generate regulatory compliance reports
+- **Team Management**: Invite and manage team members with role-based access control
+- **Shareable URLs**: Organization context and table filters are persisted in the URL for easy sharing
 
-This template uses [OpenNext](https://opennext.js.org/) via the [OpenNext Cloudflare adapter](https://opennext.js.org/cloudflare), which works by taking the Next.js build output and transforming it, so that it can run in Cloudflare Workers.
+## Tech Stack
 
-<!-- dash-content-end -->
-
-Outside of this repo, you can start a new project with this template using [C3](https://developers.cloudflare.com/pages/get-started/c3/) (the `create-cloudflare` CLI):
-
-```bash
-npm create cloudflare@latest -- --template=cloudflare/templates/next-starter-template
-```
-
-A live public deployment of this template is available at [https://next-starter-template.templates.workers.dev](https://next-starter-template.templates.workers.dev)
+- **Framework**: [Next.js 15](https://nextjs.org/) with App Router
+- **Deployment**: [Cloudflare Workers](https://workers.cloudflare.com/) via [OpenNext](https://opennext.js.org/)
+- **UI Components**: [shadcn/ui](https://ui.shadcn.com/) + Tailwind CSS
+- **State Management**: [Zustand](https://zustand-demo.pmnd.rs/) with persistence
+- **Authentication**: [better-auth](https://www.better-auth.com/) integration with `auth-svc`
+- **API Client**: Custom fetch utilities with JWT injection
 
 ## Getting Started
 
-First, run:
+### Prerequisites
+
+- Node.js 18+
+- pnpm (preferred) or npm
+
+### Installation
 
 ```bash
-npm install
-# or
-yarn install
-# or
 pnpm install
-# or
-bun install
 ```
 
-Then run the development server (using the package manager of your choice):
+### Development
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Local Development with Deployed Auth
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+For frontend development using the deployed auth service (recommended for most use cases), see **[LOCAL_DEV_SETUP.md](./LOCAL_DEV_SETUP.md)**.
 
-## Deploying To Production
+This setup allows you to:
 
-| Command                           | Action                                       |
-| :-------------------------------- | :------------------------------------------- |
-| `npm run build`                   | Build your production site                   |
-| `npm run preview`                 | Preview your build locally, before deploying |
-| `npm run build && npm run deploy` | Deploy your production site to Cloudflare    |
-| `npm wrangler tail`               | View real-time logs for all Workers          |
+- Run the Next.js frontend locally via `https://aml-local.janovix.workers.dev`
+- Use deployed auth at `auth.janovix.workers.dev` (no local auth setup needed)
+- Optionally use deployed or local `aml-svc` backend
 
-## Learn More
+### Environment Variables
 
-To learn more about Next.js, take a look at the following resources:
+Create a `.env.local` file with:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```env
+# Auth Configuration (deployed dev environment)
+NEXT_PUBLIC_AUTH_APP_URL=https://auth.janovix.workers.dev
+NEXT_PUBLIC_AUTH_SERVICE_URL=https://auth-svc.janovix.workers.dev
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+# AML Backend API
+NEXT_PUBLIC_AML_CORE_URL=https://aml-svc.janovix.workers.dev
+```
+
+See [LOCAL_DEV_SETUP.md](./LOCAL_DEV_SETUP.md) for full configuration options.
+
+## Project Structure
+
+```
+src/
+├── app/                    # Next.js App Router pages
+│   └── [orgSlug]/          # Organization-scoped routes
+│       ├── clients/        # Client management pages
+│       ├── transactions/   # Transaction pages
+│       ├── alerts/         # Alert management
+│       ├── reports/        # Report generation
+│       ├── team/           # Team management
+│       └── settings/       # Organization settings
+├── components/
+│   ├── ui/                 # shadcn/ui components
+│   ├── layout/             # Layout components (sidebar, navbar)
+│   ├── clients/            # Client-related components
+│   ├── transactions/       # Transaction components
+│   ├── alerts/             # Alert components
+│   ├── reports/            # Report components
+│   ├── data-table/         # Generic data table with filters
+│   └── org/                # Organization management
+├── hooks/                  # Custom React hooks
+├── lib/
+│   ├── api/                # API client utilities
+│   ├── auth/               # Authentication utilities
+│   └── org-store.ts        # Organization state management
+└── types/                  # TypeScript type definitions
+```
+
+## URL-Based Organization Routing
+
+The application uses URL-based organization routing for shareable URLs:
+
+- URLs follow the pattern: `/{orgSlug}/{page}`
+- Example: `/acme-corp/clients`, `/acme-corp/transactions`
+- When a URL with an org slug is shared, the recipient will switch to that organization (if they have access)
+- If access is denied, a forbidden page is displayed
+
+## URL Filter Persistence
+
+Table filters and search queries are persisted in the URL:
+
+- Filters: `?f.status=active&f.type=individual`
+- Search: `?q=search-term`
+- Sort: `?sort=createdAt&dir=desc`
+
+This allows sharing filtered views with teammates.
+
+## Scripts
+
+| Command                   | Description                      |
+| ------------------------- | -------------------------------- |
+| `pnpm dev`                | Start development server         |
+| `pnpm build`              | Build for production             |
+| `pnpm preview`            | Preview production build locally |
+| `pnpm deploy`             | Deploy to Cloudflare Workers     |
+| `pnpm test`               | Run tests with coverage          |
+| `pnpm lint`               | Run ESLint                       |
+| `pnpm typecheck`          | Run TypeScript type checking     |
+| `pnpm prettier --check .` | Check code formatting            |
+
+## Testing
+
+```bash
+# Run all tests
+pnpm test
+
+# Run tests in watch mode
+pnpm test:watch
+
+# Run specific test file
+pnpm test src/components/OrgBootstrapper.test.tsx
+```
+
+Coverage thresholds are enforced at 80% for statements, branches, functions, and lines.
+
+## Deployment
+
+Build and deploy to Cloudflare Workers:
+
+```bash
+pnpm build && pnpm deploy
+```
+
+View real-time logs:
+
+```bash
+pnpm wrangler tail
+```
+
+## Related Services
+
+- **auth-svc**: Authentication service handling user sessions and JWT tokens
+- **aml-svc**: Backend API for AML data (clients, transactions, alerts, reports)
+- **import-svc**: Service for bulk data imports
+
+## License
+
+Proprietary - Janovix

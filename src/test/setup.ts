@@ -1,6 +1,23 @@
 import "@testing-library/jest-dom/vitest";
-import { afterEach, beforeAll } from "vitest";
+import { afterEach, beforeAll, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
+
+// Mock next/navigation
+vi.mock("next/navigation", () => ({
+	useRouter: () => ({
+		push: vi.fn(),
+		replace: vi.fn(),
+		back: vi.fn(),
+		forward: vi.fn(),
+		refresh: vi.fn(),
+		prefetch: vi.fn(),
+	}),
+	usePathname: () => "/test-org/clients",
+	useSearchParams: () => new URLSearchParams(),
+	useParams: () => ({ orgSlug: "test-org" }),
+	redirect: vi.fn(),
+	notFound: vi.fn(),
+}));
 
 // Mock ResizeObserver for cmdk/Command component
 class ResizeObserverMock {
@@ -9,10 +26,24 @@ class ResizeObserverMock {
 	disconnect() {}
 }
 
+// Mock IntersectionObserver for infinite scroll
+class IntersectionObserverMock {
+	observe() {}
+	unobserve() {}
+	disconnect() {}
+	constructor() {}
+}
+
 // Mock window.matchMedia
 beforeAll(() => {
 	// Add ResizeObserver mock
 	global.ResizeObserver = ResizeObserverMock;
+
+	// Add IntersectionObserver mock
+	global.IntersectionObserver =
+		IntersectionObserverMock as unknown as typeof IntersectionObserver;
+	window.IntersectionObserver =
+		IntersectionObserverMock as unknown as typeof IntersectionObserver;
 
 	// Add scrollIntoView mock for cmdk/Command component
 	Element.prototype.scrollIntoView = () => {};

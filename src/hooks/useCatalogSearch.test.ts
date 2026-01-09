@@ -3,18 +3,22 @@ import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import type { CatalogItem, CatalogResponse } from "@/types/catalog";
 import { useCatalogSearch } from "./useCatalogSearch";
 
-const buildResponse = (data: CatalogItem[]): CatalogResponse => ({
+const buildResponse = (
+	data: CatalogItem[],
+	options?: { allowNewItems?: boolean; page?: number; totalPages?: number },
+): CatalogResponse => ({
 	catalog: {
 		id: "cat-1",
 		key: "vehicle-brands",
 		name: "Vehicle Brands",
+		allowNewItems: options?.allowNewItems ?? false,
 	},
 	data,
 	pagination: {
-		page: 1,
+		page: options?.page ?? 1,
 		pageSize: 25,
 		total: data.length,
-		totalPages: 1,
+		totalPages: options?.totalPages ?? 1,
 	},
 });
 
@@ -367,5 +371,241 @@ describe("useCatalogSearch", () => {
 		await waitFor(() => expect(result.current.loadingMore).toBe(false));
 		expect(result.current.error).toContain("Network error");
 		expect(result.current.items).toHaveLength(2); // Should not have added items
+	});
+
+	it("returns catalog info with allowNewItems flag", async () => {
+		mockFetch.mockResolvedValue(
+			new Response(
+				JSON.stringify(buildResponse(sampleItems, { allowNewItems: true })),
+				{
+					status: 200,
+					headers: { "content-type": "application/json" },
+				},
+			),
+		);
+
+		const { result } = renderHook(() =>
+			useCatalogSearch({ catalogKey: "vehicle-brands", debounceMs: 0 }),
+		);
+
+		await waitFor(() => expect(result.current.loading).toBe(false));
+
+		expect(result.current.catalog).not.toBeNull();
+		expect(result.current.catalog?.allowNewItems).toBe(true);
+		expect(result.current.catalog?.key).toBe("vehicle-brands");
+	});
+
+	it("returns catalog info with allowNewItems false by default", async () => {
+		mockFetch.mockResolvedValue(
+			new Response(JSON.stringify(buildResponse(sampleItems)), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			}),
+		);
+
+		const { result } = renderHook(() =>
+			useCatalogSearch({ catalogKey: "vehicle-brands", debounceMs: 0 }),
+		);
+
+		await waitFor(() => expect(result.current.loading).toBe(false));
+
+		expect(result.current.catalog).not.toBeNull();
+		expect(result.current.catalog?.allowNewItems).toBe(false);
+	});
+
+	it("does not fetch when enabled is false", async () => {
+		const { result } = renderHook(() =>
+			useCatalogSearch({
+				catalogKey: "vehicle-brands",
+				debounceMs: 0,
+				enabled: false,
+			}),
+		);
+
+		// Wait a bit to make sure no fetch is made
+		await new Promise((resolve) => setTimeout(resolve, 100));
+
+		expect(mockFetch).not.toHaveBeenCalled();
+		expect(result.current.loading).toBe(false);
+		expect(result.current.items).toHaveLength(0);
+	});
+
+	it("does not update when search term is same after trim", async () => {
+		mockFetch.mockResolvedValue(
+			new Response(JSON.stringify(buildResponse(sampleItems)), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			}),
+		);
+
+		const { result } = renderHook(() =>
+			useCatalogSearch({
+				catalogKey: "vehicle-brands",
+				debounceMs: 0,
+				initialSearch: "test",
+			}),
+		);
+
+		await waitFor(() => expect(result.current.loading).toBe(false));
+
+		const initialCallCount = mockFetch.mock.calls.length;
+
+		// Set same search term with spaces - should not trigger new fetch
+		act(() => {
+			result.current.setSearchTerm("  test  ");
+		});
+
+		await new Promise((resolve) => setTimeout(resolve, 100));
+
+		// Should not have made additional calls
+		expect(mockFetch.mock.calls.length).toBe(initialCallCount);
+	});
+
+	it("handles non-Error exception in loadMore", async () => {
+		mockFetch
+			.mockResolvedValueOnce(
+				new Response(
+					JSON.stringify({
+						...buildResponse(sampleItems),
+						pagination: {
+							page: 1,
+							pageSize: 2,
+							total: 4,
+							totalPages: 2,
+						},
+					}),
+					{
+						status: 200,
+						headers: { "content-type": "application/json" },
+					},
+				),
+			)
+			.mockRejectedValueOnce("String error");
+
+		const { result } = renderHook(() =>
+			useCatalogSearch({ catalogKey: "vehicle-brands", debounceMs: 0 }),
+		);
+
+		await waitFor(() => expect(result.current.loading).toBe(false));
+
+		await act(async () => {
+			await result.current.loadMore();
+		});
+
+		await waitFor(() => expect(result.current.loadingMore).toBe(false));
+		expect(result.current.error).toBeTruthy();
+	});
+
+	it("does not load more when already loading", async () => {
+		mockFetch.mockResolvedValue(
+			new Response(
+				JSON.stringify({
+					...buildResponse(sampleItems),
+					pagination: {
+						page: 1,
+						pageSize: 2,
+						total: 4,
+						totalPages: 2,
+					},
+				}),
+				{
+					status: 200,
+					headers: { "content-type": "application/json" },
+				},
+			),
+		);
+
+		const { result } = renderHook(() =>
+			useCatalogSearch({ catalogKey: "vehicle-brands", debounceMs: 0 }),
+		);
+
+		// Call loadMore while still loading initial data
+		await act(async () => {
+			await result.current.loadMore();
+		});
+
+		// Should only have the initial fetch call
+		await waitFor(() => expect(result.current.loading).toBe(false));
+		expect(mockFetch).toHaveBeenCalledTimes(1);
+	});
+
+	it("triggers reload correctly", async () => {
+		mockFetch.mockResolvedValue(
+			new Response(JSON.stringify(buildResponse(sampleItems)), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			}),
+		);
+
+		const { result } = renderHook(() =>
+			useCatalogSearch({ catalogKey: "vehicle-brands", debounceMs: 0 }),
+		);
+
+		await waitFor(() => expect(result.current.loading).toBe(false));
+
+		const initialCallCount = mockFetch.mock.calls.length;
+
+		act(() => {
+			result.current.reload();
+		});
+
+		await waitFor(() => expect(result.current.loading).toBe(false));
+
+		// Should have made an additional fetch call
+		expect(mockFetch.mock.calls.length).toBeGreaterThan(initialCallCount);
+	});
+
+	it("handles fetch error with no message", async () => {
+		mockFetch.mockRejectedValueOnce({});
+
+		const { result } = renderHook(() =>
+			useCatalogSearch({ catalogKey: "vehicle-brands", debounceMs: 0 }),
+		);
+
+		await waitFor(() => expect(result.current.loading).toBe(false));
+
+		expect(result.current.error).toContain("catálogo");
+		expect(result.current.items).toHaveLength(0);
+	});
+
+	it("handles abort error gracefully", async () => {
+		const abortError = new Error("Aborted");
+		abortError.name = "AbortError";
+		mockFetch.mockRejectedValueOnce(abortError);
+
+		const { result, unmount } = renderHook(() =>
+			useCatalogSearch({ catalogKey: "vehicle-brands", debounceMs: 0 }),
+		);
+
+		// Unmount immediately to trigger abort
+		unmount();
+
+		// The error should not be set for abort errors
+		expect(result.current.error).toBeNull();
+	});
+
+	it("does not load more when pagination is null", async () => {
+		mockFetch.mockResolvedValue(
+			new Response(JSON.stringify(buildResponse([])), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			}),
+		);
+
+		const { result } = renderHook(() =>
+			useCatalogSearch({ catalogKey: "vehicle-brands", debounceMs: 0 }),
+		);
+
+		await waitFor(() => expect(result.current.loading).toBe(false));
+
+		const initialCallCount = mockFetch.mock.calls.length;
+
+		await act(async () => {
+			await result.current.loadMore();
+		});
+
+		// Should not have made additional calls
+		expect(mockFetch.mock.calls.length).toBe(initialCallCount);
+		expect(result.current.hasMore).toBe(false);
 	});
 });

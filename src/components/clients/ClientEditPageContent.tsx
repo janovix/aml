@@ -9,11 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { ArrowLeft, Save } from "lucide-react";
 import { mockClients } from "@/data/mockClients";
 import type { Client, PersonType } from "@/types/client";
 import { getPersonTypeDisplay } from "@/lib/person-type";
+import { validateRFC } from "@/lib/utils";
+import { toast as sonnerToast } from "sonner";
 
 interface ClientEditPageContentProps {
 	clientId: string;
@@ -23,10 +25,12 @@ export function ClientEditPageContent({
 	clientId,
 }: ClientEditPageContentProps): React.ReactElement {
 	const router = useRouter();
-	const { toast } = useToast();
 	const [client, setClient] = useState<Client | null>(null);
 	const [formData, setFormData] = useState<Partial<Client>>({});
 	const [loading, setLoading] = useState(false);
+	const [validationErrors, setValidationErrors] = useState<{
+		rfc?: string;
+	}>({});
 
 	useEffect(() => {
 		const foundClient = mockClients.find((c) => c.rfc === clientId);
@@ -38,15 +42,27 @@ export function ClientEditPageContent({
 
 	const handleSubmit = async (e?: React.FormEvent): Promise<void> => {
 		e?.preventDefault();
+
+		// Client-side validation for RFC
+		if (formData.personType && formData.rfc) {
+			const rfcValidation = validateRFC(
+				formData.rfc,
+				formData.personType as "physical" | "moral" | "trust",
+			);
+			if (!rfcValidation.isValid) {
+				setValidationErrors({ rfc: rfcValidation.error });
+				sonnerToast.error("Por favor, corrija los errores en el formulario");
+				return;
+			}
+		}
+
+		setValidationErrors({});
 		setLoading(true);
 
 		// Simulate API call
 		await new Promise((resolve) => setTimeout(resolve, 500));
 
-		toast({
-			title: "Cliente actualizado",
-			description: "Los cambios se han guardado exitosamente.",
-		});
+		toast.success("Los cambios se han guardado exitosamente.");
 
 		setLoading(false);
 		router.push(`/clients/${client?.rfc || clientId}`);
@@ -147,9 +163,26 @@ export function ClientEditPageContent({
 										<Input
 											id="rfc"
 											value={formData.rfc || ""}
-											onChange={(e) => handleChange("rfc", e.target.value)}
+											onChange={(e) => {
+												handleChange("rfc", e.target.value);
+												// Clear error when user starts typing
+												if (validationErrors.rfc) {
+													setValidationErrors((prev) => ({
+														...prev,
+														rfc: undefined,
+													}));
+												}
+											}}
+											className={
+												validationErrors.rfc ? "border-destructive" : ""
+											}
 											required
 										/>
+										{validationErrors.rfc && (
+											<p className="text-xs text-destructive">
+												{validationErrors.rfc}
+											</p>
+										)}
 									</div>
 									<div className="space-y-2">
 										<p className="text-sm font-medium leading-none">

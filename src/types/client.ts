@@ -71,9 +71,14 @@ export interface ClientsListResponse {
 	pagination: Pagination;
 }
 
+import { formatProperNoun } from "@/lib/utils";
+
 export function getClientDisplayName(client: Client): string {
 	if (client.personType === "physical") {
-		return `${client.firstName || ""} ${client.lastName || ""} ${client.secondLastName || ""}`.trim();
+		const firstName = formatProperNoun(client.firstName);
+		const lastName = formatProperNoun(client.lastName);
+		const secondLastName = formatProperNoun(client.secondLastName);
+		return `${firstName} ${lastName} ${secondLastName}`.trim();
 	}
-	return client.businessName || "";
+	return formatProperNoun(client.businessName);
 }

@@ -30,4 +30,17 @@ describe("field-descriptions helpers", () => {
 		expect(uiFieldMapping.firstName).toBe("nombre");
 		expect(fieldDescriptions.nombre?.name).toBe("Nombre(s)");
 	});
+
+	it("handles multiple field mappings", () => {
+		expect(getFieldDescription("lastName")).toBeDefined();
+		expect(getFieldDescription("email")).toBeDefined();
+		expect(getFieldDescription("phone")).toBeDefined();
+		expect(getFieldDescription("rfc")).toBeDefined();
+	});
+
+	it("returns field name for various fields", () => {
+		expect(getFieldName("firstName")).toBe("Nombre(s)");
+		expect(getFieldName("lastName")).toBeDefined();
+		expect(getFieldName("email")).toBeDefined();
+	});
 });

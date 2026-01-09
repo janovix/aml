@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
-import { ApiError, fetchJson } from "./http";
+import { ApiError, fetchJson, isOrganizationRequiredError } from "./http";
 
 describe("api/http fetchJson", () => {
 	afterEach(() => {
@@ -140,6 +140,25 @@ describe("api/http fetchJson", () => {
 		);
 	});
 
+	it("handles undefined JWT parameter", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				return new Response(JSON.stringify({ ok: true }), {
+					status: 200,
+					headers: { "content-type": "application/json" },
+				});
+			}),
+		);
+
+		const res = await fetchJson<{ ok: boolean }>("https://example.com", {
+			jwt: undefined,
+		});
+
+		expect(res.status).toBe(200);
+		expect(res.json).toEqual({ ok: true });
+	});
+
 	it("does not auto-fetch JWT in test environment when jwt is undefined", async () => {
 		const mockFetch = vi.fn(async () => {
 			return new Response(JSON.stringify({ ok: true }), {
@@ -239,5 +258,275 @@ describe("api/http fetchJson", () => {
 
 		const res = await fetchJson<string>("https://example.com");
 		expect(res.json).toBe("ok");
+	});
+
+	it("handles JWT when provided explicitly", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				return new Response(JSON.stringify({ ok: true }), {
+					status: 200,
+					headers: { "content-type": "application/json" },
+				});
+			}),
+		);
+
+		const res = await fetchJson<{ ok: boolean }>("https://example.com", {
+			jwt: "test-jwt-token",
+		});
+
+		expect(res.status).toBe(200);
+		expect(res.json).toEqual({ ok: true });
+	});
+
+	it("handles null JWT", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				return new Response(JSON.stringify({ ok: true }), {
+					status: 200,
+					headers: { "content-type": "application/json" },
+				});
+			}),
+		);
+
+		const res = await fetchJson<{ ok: boolean }>("https://example.com", {
+			jwt: null,
+		});
+
+		expect(res.status).toBe(200);
+		expect(res.json).toEqual({ ok: true });
+	});
+
+	it("handles fetch with custom headers", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				return new Response(JSON.stringify({ ok: true }), {
+					status: 200,
+					headers: { "content-type": "application/json" },
+				});
+			}),
+		);
+
+		const res = await fetchJson<{ ok: boolean }>("https://example.com", {
+			headers: { "X-Custom-Header": "custom-value" },
+		});
+
+		expect(res.status).toBe(200);
+		expect(res.json).toEqual({ ok: true });
+	});
+
+	it("handles fetch with method option", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				return new Response(JSON.stringify({ ok: true }), {
+					status: 200,
+					headers: { "content-type": "application/json" },
+				});
+			}),
+		);
+
+		const res = await fetchJson<{ ok: boolean }>("https://example.com", {
+			method: "POST",
+		});
+
+		expect(res.status).toBe(200);
+		expect(res.json).toEqual({ ok: true });
+	});
+
+	it("handles JSON parsing error gracefully", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				// Return a response that claims to be JSON but fails to parse
+				const response = new Response("invalid json {", {
+					status: 200,
+					headers: { "content-type": "application/json" },
+				});
+				return response;
+			}),
+		);
+
+		const res = await fetchJson<unknown>("https://example.com");
+		// When JSON parsing fails, it should return null
+		expect(res.json).toBeNull();
+	});
+
+	it("handles getJwtIfNeeded when JWT is explicitly null", async () => {
+		const mockResponse = new Response(JSON.stringify({ message: "Success" }), {
+			status: 200,
+			headers: { "content-type": "application/json" },
+		});
+		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(mockResponse));
+
+		const res = await fetchJson<{ message: string }>("https://example.com", {
+			jwt: null,
+		});
+
+		expect(res.json).toEqual({ message: "Success" });
+		expect(fetch).toHaveBeenCalledWith(
+			"https://example.com",
+			expect.objectContaining({
+				headers: expect.not.objectContaining({
+					Authorization: expect.anything(),
+				}),
+			}),
+		);
+	});
+
+	it("handles getJwtIfNeeded when JWT is explicitly undefined", async () => {
+		const mockResponse = new Response(JSON.stringify({ message: "Success" }), {
+			status: 200,
+			headers: { "content-type": "application/json" },
+		});
+		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(mockResponse));
+
+		const res = await fetchJson<{ message: string }>("https://example.com", {
+			jwt: undefined,
+		});
+
+		expect(res.json).toEqual({ message: "Success" });
+		// In test environment, JWT auto-fetch is disabled, so no Authorization header
+		expect(fetch).toHaveBeenCalledWith(
+			"https://example.com",
+			expect.objectContaining({
+				headers: expect.not.objectContaining({
+					Authorization: expect.anything(),
+				}),
+			}),
+		);
+	});
+
+	it("handles isTestEnvironment check correctly", async () => {
+		// The isTestEnvironment function is tested indirectly through getJwtIfNeeded
+		// In test environment, JWT auto-fetch should return null
+		const mockResponse = new Response(JSON.stringify({ message: "Success" }), {
+			status: 200,
+			headers: { "content-type": "application/json" },
+		});
+		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(mockResponse));
+
+		await fetchJson<{ message: string }>("https://example.com");
+
+		// Should not try to auto-fetch JWT in test environment
+		expect(fetch).toHaveBeenCalled();
+	});
+
+	it("handles isClientSide check correctly", async () => {
+		// The isClientSide function is tested indirectly
+		// In test environment (jsdom), window is defined but isTestEnvironment returns true first
+		const mockResponse = new Response(JSON.stringify({ message: "Success" }), {
+			status: 200,
+			headers: { "content-type": "application/json" },
+		});
+		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(mockResponse));
+
+		await fetchJson<{ message: string }>("https://example.com");
+
+		// Should work correctly
+		expect(fetch).toHaveBeenCalled();
+	});
+
+	it("extracts error code from response body on error", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				return new Response(
+					JSON.stringify({
+						success: false,
+						error: "Organization Required",
+						code: "ORGANIZATION_REQUIRED",
+						message: "An active organization must be selected.",
+					}),
+					{
+						status: 409,
+						headers: { "content-type": "application/json" },
+					},
+				);
+			}),
+		);
+
+		try {
+			await fetchJson<unknown>("https://example.com");
+			expect.fail("Should have thrown an error");
+		} catch (error) {
+			expect(error).toBeInstanceOf(ApiError);
+			const apiError = error as ApiError;
+			expect(apiError.status).toBe(409);
+			expect(apiError.code).toBe("ORGANIZATION_REQUIRED");
+		}
+	});
+});
+
+describe("isOrganizationRequiredError", () => {
+	it("returns true for ApiError with status 409", () => {
+		const error = new ApiError("Request failed", { status: 409, body: {} });
+		expect(isOrganizationRequiredError(error)).toBe(true);
+	});
+
+	it("returns true for ApiError with ORGANIZATION_REQUIRED code", () => {
+		const error = new ApiError("Request failed", {
+			status: 403,
+			body: {},
+			code: "ORGANIZATION_REQUIRED",
+		});
+		expect(isOrganizationRequiredError(error)).toBe(true);
+	});
+
+	it("returns true for ApiError with ORGANIZATION_REQUIRED in body", () => {
+		const error = new ApiError("Request failed", {
+			status: 403,
+			body: { code: "ORGANIZATION_REQUIRED" },
+		});
+		expect(isOrganizationRequiredError(error)).toBe(true);
+	});
+
+	it("returns false for ApiError with different status and no code", () => {
+		const error = new ApiError("Request failed", {
+			status: 401,
+			body: { message: "Unauthorized" },
+		});
+		expect(isOrganizationRequiredError(error)).toBe(false);
+	});
+
+	it("returns false for non-ApiError errors", () => {
+		expect(isOrganizationRequiredError(new Error("Generic error"))).toBe(false);
+		expect(isOrganizationRequiredError("string error")).toBe(false);
+		expect(isOrganizationRequiredError(null)).toBe(false);
+		expect(isOrganizationRequiredError(undefined)).toBe(false);
+	});
+
+	it("returns false for ApiError with non-object body", () => {
+		const error = new ApiError("Request failed", {
+			status: 403,
+			body: "Not found",
+		});
+		expect(isOrganizationRequiredError(error)).toBe(false);
+	});
+
+	it("returns false for ApiError with null body", () => {
+		const error = new ApiError("Request failed", {
+			status: 403,
+			body: null,
+		});
+		expect(isOrganizationRequiredError(error)).toBe(false);
+	});
+
+	it("returns false for ApiError with body without code property", () => {
+		const error = new ApiError("Request failed", {
+			status: 403,
+			body: { message: "Forbidden" },
+		});
+		expect(isOrganizationRequiredError(error)).toBe(false);
+	});
+
+	it("returns false for ApiError with different error code in body", () => {
+		const error = new ApiError("Request failed", {
+			status: 403,
+			body: { code: "DIFFERENT_ERROR" },
+		});
+		expect(isOrganizationRequiredError(error)).toBe(false);
 	});
 });

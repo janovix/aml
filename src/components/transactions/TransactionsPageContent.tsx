@@ -1,30 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { TransactionsTable } from "@/components/transactions/TransactionsTable";
 import { PageHero, type StatCard } from "@/components/page-hero";
-import {
-	DollarSign,
-	Package,
-	Calendar,
-	AlertCircle,
-	Receipt,
-	Plus,
-} from "lucide-react";
-import { getTransactionStats } from "@/lib/api/stats";
-import { useToast } from "@/hooks/use-toast";
+import { DollarSign, Calendar, AlertCircle, Receipt, Plus } from "lucide-react";
+import { getTransactionStats, type TransactionStats } from "@/lib/api/stats";
+import { toast } from "sonner";
+import { extractErrorMessage } from "@/lib/mutations";
 import { ApiError } from "@/lib/api/http";
+import { useLanguage } from "@/components/LanguageProvider";
+import { getLocaleForLanguage } from "@/lib/translations";
 
 export function TransactionsPageContent(): React.ReactElement {
-	const router = useRouter();
-	const { toast } = useToast();
-	const [stats, setStats] = useState<{
-		transactionsToday: number;
-		suspiciousTransactions: number;
-		totalVolume: string;
-		totalVehicles: number;
-	} | null>(null);
+	const { navigateTo } = useOrgNavigation();
+	const { t, language } = useLanguage();
+	const [stats, setStats] = useState<TransactionStats | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 
 	useEffect(() => {
@@ -48,18 +39,14 @@ export function TransactionsPageContent(): React.ReactElement {
 						error instanceof Error ? error.message : error,
 					);
 				}
-				toast({
-					title: "Error",
-					description: "No se pudieron cargar las estadísticas.",
-					variant: "destructive",
-				});
+				toast.error(extractErrorMessage(error));
 			} finally {
 				setIsLoading(false);
 			}
 		};
 
 		fetchStats();
-	}, [toast]);
+	}, [t]);
 
 	const formatCurrency = (amount: string): string => {
 		const num = parseFloat(amount);
@@ -70,7 +57,7 @@ export function TransactionsPageContent(): React.ReactElement {
 		if (num >= 1000) {
 			return `$${(num / 1000).toFixed(1)}K`;
 		}
-		return new Intl.NumberFormat("es-MX", {
+		return new Intl.NumberFormat(getLocaleForLanguage(language), {
 			style: "currency",
 			currency: "MXN",
 			minimumFractionDigits: 0,
@@ -78,24 +65,20 @@ export function TransactionsPageContent(): React.ReactElement {
 		}).format(num);
 	};
 
-	const formatNumber = (num: number): string => {
-		return new Intl.NumberFormat("es-MX").format(num);
-	};
-
 	const heroStats: StatCard[] = [
 		{
-			label: "Transacciones Hoy",
+			label: t("statsTransactionsToday"),
 			value: isLoading ? "..." : (stats?.transactionsToday ?? 0),
 			icon: Calendar,
 		},
 		{
-			label: "Transacciones Sospechosas",
+			label: t("statsSuspiciousTransactions"),
 			value: isLoading ? "..." : (stats?.suspiciousTransactions ?? 0),
 			icon: AlertCircle,
 			variant: "primary",
 		},
 		{
-			label: "Volumen Total",
+			label: t("statsTotalVolume"),
 			value: isLoading
 				? "..."
 				: stats?.totalVolume
@@ -103,27 +86,18 @@ export function TransactionsPageContent(): React.ReactElement {
 					: "$0",
 			icon: DollarSign,
 		},
-		{
-			label: "Total Vehículos",
-			value: isLoading
-				? "..."
-				: stats?.totalVehicles
-					? formatNumber(stats.totalVehicles)
-					: "0",
-			icon: Package,
-		},
 	];
 
 	return (
 		<div className="space-y-6">
 			<PageHero
-				title="Transacciones"
-				subtitle="Gestión de transacciones de vehículos"
+				title={t("transactionsTitle")}
+				subtitle={t("transactionsSubtitle")}
 				icon={Receipt}
 				stats={heroStats}
-				ctaLabel="Nueva Transacción"
+				ctaLabel={t("transactionsNew")}
 				ctaIcon={Plus}
-				onCtaClick={() => router.push("/transactions/new")}
+				onCtaClick={() => navigateTo("/transactions/new")}
 			/>
 
 			<TransactionsTable />

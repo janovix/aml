@@ -57,8 +57,15 @@ export function useClientSearch({
 	}, [searchTerm, debouncedSearch, debounceMs, enabled]);
 
 	useEffect(() => {
-		// Wait for JWT to be ready
-		if (!enabled || isJwtLoading) {
+		// Wait for JWT to be ready and valid (requires organization to be selected)
+		// Without a valid JWT, API calls will fail with 403 "Organization Required"
+		if (!enabled || isJwtLoading || !jwt) {
+			// Clear results when JWT is not available
+			if (!isJwtLoading && !jwt) {
+				setItems([]);
+				setPagination(null);
+				setLoading(false);
+			}
 			return;
 		}
 
@@ -73,7 +80,7 @@ export function useClientSearch({
 			page: 1,
 			limit: pageSize,
 			signal: controller.signal,
-			jwt: jwt ?? undefined,
+			jwt,
 		})
 			.then((response: ClientsListResponse) => {
 				if (isCancelled) {

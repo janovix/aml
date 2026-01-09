@@ -1,21 +1,28 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import {
 	Search,
 	X,
 	ArrowUpDown,
 	ChevronLeft,
 	ChevronRight,
+	Loader2,
+	SearchX,
+	Plus,
 } from "lucide-react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { SKELETON_HEIGHTS } from "@/lib/constants/skeleton-heights";
 import type { DataTableProps, SortState, ActiveFilter } from "./types";
 import { FilterDrawer } from "./filter-drawer";
 import { FilterPopover } from "./filter-popover";
+import { ClientFilterPopover } from "./client-filter-popover";
 import { InlineFilterSummary } from "./inline-filter-summary";
 
 const ITEMS_PER_PAGE = 10;
@@ -27,6 +34,10 @@ export function DataTable<T extends object>({
 	searchKeys,
 	searchPlaceholder = "Buscar...",
 	emptyMessage = "No se encontraron resultados",
+	emptyIcon: EmptyIcon = SearchX,
+	emptyActionLabel,
+	emptyActionHref,
+	onEmptyAction,
 	onRowClick,
 	actions,
 	selectable = false,
@@ -47,19 +58,30 @@ export function DataTable<T extends object>({
 	activeText = "activo",
 	activePluralText = "activos",
 	clearSearchAriaLabel = "Limpiar búsqueda",
+	paginationMode = "pagination",
+	itemsPerPage = ITEMS_PER_PAGE,
+	onLoadMore,
+	hasMore = false,
+	isLoadingMore = false,
+	initialFilters,
+	onFiltersChange,
+	initialSearch,
+	onSearchChange,
+	initialSort,
+	onSortChange,
 }: DataTableProps<T>) {
 	const isMobile = useIsMobile();
-	const [searchQuery, setSearchQuery] = useState("");
+	const [searchQuery, setSearchQuery] = useState(initialSearch ?? "");
 	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 	const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>(
-		{},
+		initialFilters ?? {},
 	);
-	const [sortState, setSortState] = useState<SortState>({
-		field: null,
-		direction: "desc",
-	});
+	const [sortState, setSortState] = useState<SortState>(
+		initialSort ?? { field: null, direction: "desc" },
+	);
 	const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
 	const [currentPage, setCurrentPage] = useState(1);
+	const scrollSentinelRef = useRef<HTMLDivElement>(null);
 
 	// Calculate active filter count
 	const activeFilterCount = useMemo(
@@ -118,6 +140,37 @@ export function DataTable<T extends object>({
 		}));
 		setCurrentPage(1);
 	}, []);
+
+	// Notify parent of filter changes for URL persistence
+	const prevFiltersRef = useRef(activeFilters);
+	useEffect(() => {
+		if (onFiltersChange && prevFiltersRef.current !== activeFilters) {
+			// Only include non-empty filter arrays
+			const cleanFilters = Object.fromEntries(
+				Object.entries(activeFilters).filter(([, v]) => v.length > 0),
+			);
+			onFiltersChange(cleanFilters);
+		}
+		prevFiltersRef.current = activeFilters;
+	}, [activeFilters, onFiltersChange]);
+
+	// Notify parent of search changes for URL persistence
+	const prevSearchRef = useRef(searchQuery);
+	useEffect(() => {
+		if (onSearchChange && prevSearchRef.current !== searchQuery) {
+			onSearchChange(searchQuery);
+		}
+		prevSearchRef.current = searchQuery;
+	}, [searchQuery, onSearchChange]);
+
+	// Notify parent of sort changes for URL persistence
+	const prevSortRef = useRef(sortState);
+	useEffect(() => {
+		if (onSortChange && prevSortRef.current !== sortState) {
+			onSortChange(sortState);
+		}
+		prevSortRef.current = sortState;
+	}, [sortState, onSortChange]);
 
 	// Toggle sort
 	const toggleSort = useCallback((field: string) => {
@@ -209,12 +262,49 @@ export function DataTable<T extends object>({
 		return result;
 	}, [data, searchQuery, searchKeys, activeFilters, sortState]);
 
-	// Pagination
-	const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+	// Pagination or Infinite Scroll
+	const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 	const paginatedData = useMemo(() => {
-		const start = (currentPage - 1) * ITEMS_PER_PAGE;
-		return filteredData.slice(start, start + ITEMS_PER_PAGE);
-	}, [filteredData, currentPage]);
+		if (paginationMode === "infinite-scroll") {
+			// For infinite scroll, show all filtered data (parent manages loading more)
+			return filteredData;
+		}
+		const start = (currentPage - 1) * itemsPerPage;
+		return filteredData.slice(start, start + itemsPerPage);
+	}, [filteredData, currentPage, paginationMode, itemsPerPage]);
+
+	// Infinite scroll: Intersection Observer
+	useEffect(() => {
+		if (
+			paginationMode !== "infinite-scroll" ||
+			!onLoadMore ||
+			!hasMore ||
+			isLoadingMore
+		) {
+			return;
+		}
+
+		const sentinel = scrollSentinelRef.current;
+		if (!sentinel) return;
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				const [entry] = entries;
+				if (entry?.isIntersecting && hasMore && !isLoadingMore) {
+					onLoadMore();
+				}
+			},
+			{
+				rootMargin: "100px",
+			},
+		);
+
+		observer.observe(sentinel);
+
+		return () => {
+			observer.disconnect();
+		};
+	}, [paginationMode, onLoadMore, hasMore, isLoadingMore]);
 
 	// Filter visible columns for mobile
 	const visibleColumns = useMemo(() => {
@@ -226,9 +316,20 @@ export function DataTable<T extends object>({
 
 	return (
 		<>
-			<div className="rounded-lg border border-border bg-card overflow-hidden">
+			<div
+				className={cn(
+					"rounded-lg border border-border bg-card overflow-hidden",
+					paginationMode === "infinite-scroll" && "relative",
+				)}
+			>
 				{/* Header with Search and Filters */}
-				<div className="border-b border-border bg-muted/20">
+				<div
+					className={cn(
+						"border-b border-border bg-muted/20",
+						paginationMode === "infinite-scroll" &&
+							"sticky top-0 z-10 bg-card/95 backdrop-blur-sm shadow-sm",
+					)}
+				>
 					<div className="flex items-center gap-2 p-3">
 						{/* Search Input */}
 						<div className="relative flex-1 max-w-sm">
@@ -255,16 +356,32 @@ export function DataTable<T extends object>({
 
 						{/* Desktop: Inline Filter Popovers */}
 						<div className="hidden md:flex items-center gap-1.5">
-							{filters.map((filter) => (
-								<FilterPopover
-									key={filter.id}
-									filter={filter}
-									activeValues={activeFilters[filter.id] || []}
-									onToggleFilter={(value) => toggleFilter(filter.id, value)}
-									onClear={() => clearFilterGroup(filter.id)}
-									clearText={clearText}
-								/>
-							))}
+							{filters.map((filter) => {
+								// Use ClientFilterPopover for clientId filter (searchable)
+								if (filter.id === "clientId") {
+									return (
+										<ClientFilterPopover
+											key={filter.id}
+											activeValues={activeFilters[filter.id] || []}
+											onToggleFilter={(value) => toggleFilter(filter.id, value)}
+											onClear={() => clearFilterGroup(filter.id)}
+											clearText={clearText}
+											label={filter.label}
+										/>
+									);
+								}
+								// Use standard FilterPopover for other filters
+								return (
+									<FilterPopover
+										key={filter.id}
+										filter={filter}
+										activeValues={activeFilters[filter.id] || []}
+										onToggleFilter={(value) => toggleFilter(filter.id, value)}
+										onClear={() => clearFilterGroup(filter.id)}
+										clearText={clearText}
+									/>
+								);
+							})}
 						</div>
 
 						{/* Mobile: Filter Summary Button */}
@@ -301,7 +418,19 @@ export function DataTable<T extends object>({
 				</div>
 
 				{/* Table */}
-				<div className="overflow-x-auto">
+				<div
+					className={cn(
+						"overflow-x-auto",
+						// Apply minimum height for consistent sizing across all states
+						// Only apply min-height when loading, empty, or few items
+						// With infinite scroll and many items, let the table grow naturally
+						(isLoading ||
+							paginatedData.length === 0 ||
+							(paginatedData.length > 0 &&
+								paginatedData.length < itemsPerPage)) &&
+							SKELETON_HEIGHTS.TABLE_MIN,
+					)}
+				>
 					<table className="w-full">
 						<thead>
 							<tr className="border-b border-border bg-muted/30">
@@ -347,89 +476,192 @@ export function DataTable<T extends object>({
 								{actions && <th className="w-10 p-3" />}
 							</tr>
 						</thead>
-						<tbody>
-							{isLoading ? (
-								<tr>
-									<td
-										colSpan={
-											visibleColumns.length +
-											(selectable ? 1 : 0) +
-											(actions ? 1 : 0)
-										}
-										className="p-8 text-center text-muted-foreground"
-									>
-										{loadingMessage}
-									</td>
-								</tr>
-							) : paginatedData.length === 0 ? (
-								<tr>
-									<td
-										colSpan={
-											visibleColumns.length +
-											(selectable ? 1 : 0) +
-											(actions ? 1 : 0)
-										}
-										className="p-8 text-center text-muted-foreground"
-									>
-										{emptyMessage}
-									</td>
-								</tr>
-							) : (
-								paginatedData.map((item) => {
-									const id = getId(item);
-									return (
+						<tbody className="relative">
+							{isLoading
+								? // Skeleton loading rows
+									Array.from({ length: itemsPerPage }).map((_, index) => (
 										<tr
-											key={id}
-											onClick={() => onRowClick?.(item)}
-											className={cn(
-												"border-b border-border transition-colors",
-												onRowClick && "cursor-pointer hover:bg-muted/50",
-												selectedRows.has(id) && "bg-primary/5",
-											)}
+											key={`skeleton-${index}`}
+											className="border-b border-border"
 										>
 											{selectable && (
-												<td
-													className="p-3"
-													onClick={(e) => e.stopPropagation()}
-												>
-													<Checkbox
-														checked={selectedRows.has(id)}
-														onCheckedChange={() => toggleRowSelection(id)}
-													/>
+												<td className="p-3">
+													<Skeleton className="h-4 w-4 rounded" />
 												</td>
 											)}
 											{visibleColumns.map((column) => (
 												<td
 													key={column.id}
-													className={cn("p-3 text-sm", column.className)}
+													className={cn("p-3", column.className)}
 												>
-													{column.cell
-														? column.cell(item)
-														: String(
-																getNestedValue(
-																	item,
-																	column.accessorKey as string,
-																) ?? "",
-															)}
+													<Skeleton
+														className={cn(
+															"h-4 w-full",
+															index % 3 === 0 && "w-3/4",
+															index % 3 === 1 && "w-full",
+															index % 3 === 2 && "w-5/6",
+														)}
+													/>
 												</td>
 											))}
 											{actions && (
-												<td
-													className="p-3"
-													onClick={(e) => e.stopPropagation()}
-												>
-													{actions(item)}
+												<td className="p-3">
+													<Skeleton className="h-8 w-8 rounded" />
 												</td>
 											)}
 										</tr>
-									);
-								})
-							)}
+									))
+								: paginatedData.length === 0
+									? // Empty state: icon/message/CTA at top, placeholder rows below
+										[
+											// First row: empty state content spanning multiple rows
+											<tr
+												key="empty-content"
+												className="border-b border-border"
+											>
+												<td
+													colSpan={
+														visibleColumns.length +
+														(selectable ? 1 : 0) +
+														(actions ? 1 : 0)
+													}
+													className="p-8"
+												>
+													<div className="flex flex-col items-center justify-center gap-4 text-center">
+														<div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+															<EmptyIcon className="h-8 w-8 text-muted-foreground" />
+														</div>
+														<div className="space-y-1">
+															<p className="text-sm font-medium text-foreground">
+																{emptyMessage}
+															</p>
+															<p className="text-xs text-muted-foreground">
+																Intenta ajustar los filtros o la búsqueda
+															</p>
+														</div>
+														{(emptyActionHref || onEmptyAction) &&
+															emptyActionLabel && (
+																<div>
+																	{emptyActionHref ? (
+																		<Button asChild size="sm">
+																			<Link href={emptyActionHref}>
+																				<Plus className="mr-2 h-4 w-4" />
+																				{emptyActionLabel}
+																			</Link>
+																		</Button>
+																	) : (
+																		<Button size="sm" onClick={onEmptyAction}>
+																			<Plus className="mr-2 h-4 w-4" />
+																			{emptyActionLabel}
+																		</Button>
+																	)}
+																</div>
+															)}
+													</div>
+												</td>
+											</tr>,
+											// Remaining placeholder rows below the empty state
+											// Use SKELETON_HEIGHTS.TABLE_ROW for consistent row height
+											...Array.from({ length: itemsPerPage - 1 }).map(
+												(_, index) => (
+													<tr
+														key={`empty-spacer-${index}`}
+														className={cn(
+															"border-b border-border",
+															SKELETON_HEIGHTS.TABLE_ROW,
+														)}
+													>
+														<td
+															colSpan={
+																visibleColumns.length +
+																(selectable ? 1 : 0) +
+																(actions ? 1 : 0)
+															}
+														/>
+													</tr>
+												),
+											),
+										]
+									: [
+											// Data rows
+											...paginatedData.map((item) => {
+												const id = getId(item);
+												return (
+													<tr
+														key={id}
+														onClick={() => onRowClick?.(item)}
+														className={cn(
+															"border-b border-border transition-colors",
+															onRowClick && "cursor-pointer hover:bg-muted/50",
+															selectedRows.has(id) && "bg-primary/5",
+														)}
+													>
+														{selectable && (
+															<td
+																className="p-3"
+																onClick={(e) => e.stopPropagation()}
+															>
+																<Checkbox
+																	checked={selectedRows.has(id)}
+																	onCheckedChange={() => toggleRowSelection(id)}
+																/>
+															</td>
+														)}
+														{visibleColumns.map((column) => (
+															<td
+																key={column.id}
+																className={cn("p-3 text-sm", column.className)}
+															>
+																{column.cell
+																	? column.cell(item)
+																	: String(
+																			getNestedValue(
+																				item,
+																				column.accessorKey as string,
+																			) ?? "",
+																		)}
+															</td>
+														))}
+														{actions && (
+															<td
+																className="p-3"
+																onClick={(e) => e.stopPropagation()}
+															>
+																{actions(item)}
+															</td>
+														)}
+													</tr>
+												);
+											}),
+											// Add placeholder rows when we have few items to maintain consistent height
+											...(paginatedData.length > 0 &&
+											paginatedData.length < itemsPerPage
+												? Array.from({
+														length: itemsPerPage - paginatedData.length,
+													}).map((_, index) => (
+														<tr
+															key={`spacer-${index}`}
+															className={cn(
+																"border-b border-border",
+																SKELETON_HEIGHTS.TABLE_ROW,
+															)}
+														>
+															<td
+																colSpan={
+																	visibleColumns.length +
+																	(selectable ? 1 : 0) +
+																	(actions ? 1 : 0)
+																}
+															/>
+														</tr>
+													))
+												: []),
+										]}
 						</tbody>
 					</table>
 				</div>
 
-				{/* Footer with Pagination */}
+				{/* Footer with Pagination or Results Count */}
 				<div className="border-t border-border px-3 py-2 flex items-center justify-between text-sm text-muted-foreground bg-muted/20">
 					<div className="flex items-center gap-2">
 						<span className="tabular-nums">{filteredData.length}</span>
@@ -441,7 +673,7 @@ export function DataTable<T extends object>({
 							</span>
 						)}
 					</div>
-					{totalPages > 1 && (
+					{paginationMode === "pagination" && totalPages > 1 && (
 						<div className="flex items-center gap-1">
 							<Button
 								variant="ghost"
@@ -469,6 +701,19 @@ export function DataTable<T extends object>({
 						</div>
 					)}
 				</div>
+
+				{/* Infinite Scroll Sentinel and Loading Indicator */}
+				{paginationMode === "infinite-scroll" && (
+					<>
+						<div ref={scrollSentinelRef} className="h-1" />
+						{isLoadingMore && (
+							<div className="border-t border-border px-3 py-4 flex items-center justify-center text-sm text-muted-foreground bg-muted/20">
+								<Loader2 className="h-4 w-4 animate-spin mr-2" />
+								<span>Cargando más...</span>
+							</div>
+						)}
+					</>
+				)}
 			</div>
 
 			{/* Mobile Filter Drawer */}

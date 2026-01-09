@@ -12,7 +12,7 @@ describe("useViewportHeight", () => {
 		vi.clearAllMocks();
 	});
 
-	it("returns window.innerHeight when visualViewport is not available", () => {
+	it("returns window.innerHeight and offsetTop 0 when visualViewport is not available", () => {
 		// Mock window.innerHeight
 		Object.defineProperty(window, "innerHeight", {
 			writable: true,
@@ -22,13 +22,15 @@ describe("useViewportHeight", () => {
 
 		const { result } = renderHook(() => useViewportHeight());
 
-		expect(result.current).toBe(800);
+		expect(result.current.height).toBe(800);
+		expect(result.current.offsetTop).toBe(0);
 	});
 
-	it("returns visualViewport.height when available", () => {
+	it("returns visualViewport.height and offsetTop when available", () => {
 		// Mock visualViewport
 		const mockVisualViewport = {
 			height: 750,
+			offsetTop: 50,
 			addEventListener: vi.fn(),
 			removeEventListener: vi.fn(),
 		};
@@ -41,7 +43,8 @@ describe("useViewportHeight", () => {
 
 		const { result } = renderHook(() => useViewportHeight());
 
-		expect(result.current).toBe(750);
+		expect(result.current.height).toBe(750);
+		expect(result.current.offsetTop).toBe(50);
 		expect(mockVisualViewport.addEventListener).toHaveBeenCalledWith(
 			"resize",
 			expect.any(Function),
@@ -52,11 +55,12 @@ describe("useViewportHeight", () => {
 		);
 	});
 
-	it("updates height when visualViewport resize event fires", async () => {
+	it("updates dimensions when visualViewport resize event fires", async () => {
 		const resizeHandlers: Array<() => void> = [];
 
 		const mockVisualViewport = {
 			height: 750,
+			offsetTop: 0,
 			addEventListener: vi.fn((event: string, handler: () => void) => {
 				if (event === "resize") {
 					resizeHandlers.push(handler);
@@ -73,16 +77,19 @@ describe("useViewportHeight", () => {
 
 		const { result } = renderHook(() => useViewportHeight());
 
-		expect(result.current).toBe(750);
+		expect(result.current.height).toBe(750);
+		expect(result.current.offsetTop).toBe(0);
 
-		// Simulate resize
+		// Simulate resize (keyboard opens)
 		if (resizeHandlers.length > 0) {
-			mockVisualViewport.height = 600;
+			mockVisualViewport.height = 400;
+			mockVisualViewport.offsetTop = 100;
 			const handler = resizeHandlers[0];
 			handler();
 
 			await waitFor(() => {
-				expect(result.current).toBe(600);
+				expect(result.current.height).toBe(400);
+				expect(result.current.offsetTop).toBe(100);
 			});
 		}
 	});
@@ -90,6 +97,7 @@ describe("useViewportHeight", () => {
 	it("cleans up event listeners on unmount", () => {
 		const mockVisualViewport = {
 			height: 750,
+			offsetTop: 0,
 			addEventListener: vi.fn(),
 			removeEventListener: vi.fn(),
 		};
@@ -107,15 +115,18 @@ describe("useViewportHeight", () => {
 		expect(mockVisualViewport.removeEventListener).toHaveBeenCalled();
 	});
 
-	it("handles SSR gracefully by returning 0 initially", () => {
+	it("handles SSR gracefully by returning dimensions object", () => {
 		// The hook checks typeof window === "undefined" in initial state
-		// In a real SSR scenario, the hook would return 0 initially
+		// In a real SSR scenario, the hook would return { height: 0, offsetTop: 0 }
 		// This test verifies the initial state logic
 		const { result } = renderHook(() => useViewportHeight());
 
 		// In test environment, window exists, so it should return a value
-		// But the hook is designed to return 0 if window is undefined
-		expect(typeof result.current).toBe("number");
-		expect(result.current).toBeGreaterThanOrEqual(0);
+		// But the hook is designed to return dimensions object
+		expect(typeof result.current).toBe("object");
+		expect(typeof result.current.height).toBe("number");
+		expect(typeof result.current.offsetTop).toBe("number");
+		expect(result.current.height).toBeGreaterThanOrEqual(0);
+		expect(result.current.offsetTop).toBeGreaterThanOrEqual(0);
 	});
 });

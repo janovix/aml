@@ -1,18 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
-	Button,
-	Card,
-	CardContent,
-	CardHeader,
-	CardTitle,
-	Badge,
-	Separator,
-} from "@algtools/ui";
-import {
-	ArrowLeft,
 	Edit,
 	Flag,
 	FileText,
@@ -22,21 +14,64 @@ import {
 	Mail,
 	Calendar,
 	User,
+	Hash,
 } from "lucide-react";
 import type { Client } from "../../types/client";
 import { getClientDisplayName } from "../../types/client";
-import { getClientByRfc } from "../../lib/api/clients";
-import { useToast } from "../../hooks/use-toast";
+import { getClientById } from "../../lib/api/clients";
+import { toast } from "sonner";
+import { extractErrorMessage } from "@/lib/mutations";
+import { PageHero } from "@/components/page-hero";
+import { PageHeroSkeleton } from "@/components/skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
+import { getPersonTypeStyle } from "../../lib/person-type-icon";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface ClientDetailsViewProps {
-	clientId: string; // RFC is passed as clientId
+	clientId: string; // Client ID
+}
+
+/**
+ * Skeleton component for ClientDetailsView
+ * Used when loading the organization to show the appropriate skeleton
+ */
+export function ClientDetailsSkeleton(): React.ReactElement {
+	return (
+		<div className="space-y-6">
+			<PageHeroSkeleton
+				showStats={false}
+				showBackButton={true}
+				actionCount={3}
+			/>
+			{/* Content skeleton */}
+			<div className="space-y-6">
+				{[1, 2, 3, 4].map((i) => (
+					<Card key={i}>
+						<CardHeader>
+							<Skeleton className="h-6 w-48" />
+						</CardHeader>
+						<CardContent>
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+								{[1, 2].map((j) => (
+									<div key={j} className="space-y-2">
+										<Skeleton className="h-4 w-24" />
+										<Skeleton className="h-5 w-40" />
+									</div>
+								))}
+							</div>
+						</CardContent>
+					</Card>
+				))}
+			</div>
+		</div>
+	);
 }
 
 export function ClientDetailsView({
 	clientId,
 }: ClientDetailsViewProps): React.JSX.Element {
-	const router = useRouter();
-	const { toast } = useToast();
+	const { navigateTo } = useOrgNavigation();
+	const { t } = useLanguage();
 	const [client, setClient] = useState<Client | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 
@@ -44,17 +79,13 @@ export function ClientDetailsView({
 		const fetchClient = async () => {
 			try {
 				setIsLoading(true);
-				const data = await getClientByRfc({
-					rfc: clientId,
+				const data = await getClientById({
+					id: clientId,
 				});
 				setClient(data);
 			} catch (error) {
 				console.error("Error fetching client:", error);
-				toast({
-					title: "Error",
-					description: "No se pudo cargar la información del cliente.",
-					variant: "destructive",
-				});
+				toast.error(extractErrorMessage(error));
 			} finally {
 				setIsLoading(false);
 			}
@@ -63,47 +94,21 @@ export function ClientDetailsView({
 	}, [clientId, toast]);
 
 	if (isLoading) {
-		return (
-			<div className="space-y-6">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="sm"
-						className="gap-2"
-						onClick={() => router.push("/clients")}
-					>
-						<ArrowLeft className="h-4 w-4" />
-						Volver
-					</Button>
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							Cargando cliente...
-						</h1>
-					</div>
-				</div>
-			</div>
-		);
+		return <ClientDetailsSkeleton />;
 	}
 
 	if (!client) {
 		return (
 			<div className="space-y-6">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="sm"
-						className="gap-2"
-						onClick={() => router.push("/clients")}
-					>
-						<ArrowLeft className="h-4 w-4" />
-						Volver
-					</Button>
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							Cliente no encontrado
-						</h1>
-					</div>
-				</div>
+				<PageHero
+					title={t("clientNotFound")}
+					subtitle={`${t("clientNotExist")} (ID: ${clientId})`}
+					icon={User}
+					backButton={{
+						label: t("clientBackToClients"),
+						onClick: () => navigateTo("/clients"),
+					}}
+				/>
 			</div>
 		);
 	}
@@ -118,66 +123,90 @@ export function ClientDetailsView({
 
 	return (
 		<div className="space-y-6">
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="sm"
-						className="gap-2"
-						onClick={() => router.push("/clients")}
-					>
-						<ArrowLeft className="h-4 w-4" />
-						<span className="hidden sm:inline">Volver</span>
-					</Button>
-					<Separator orientation="vertical" className="hidden h-6 sm:block" />
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							Detalles del Cliente
-						</h1>
-						<p className="text-sm text-muted-foreground">
-							{getClientDisplayName(client)}
-						</p>
-					</div>
-				</div>
-				<div className="flex items-center gap-2">
-					<Button variant="outline" size="sm" className="gap-2 hidden sm:flex">
-						<FileText className="h-4 w-4" />
-						Generar Reporte
-					</Button>
-					<Button variant="outline" size="sm" className="gap-2 hidden sm:flex">
-						<Flag className="h-4 w-4" />
-						Marcar Sospechoso
-					</Button>
-					<Button
-						size="sm"
-						className="gap-2"
-						onClick={() => router.push(`/clients/${clientId}/edit`)}
-					>
-						<Edit className="h-4 w-4" />
-						<span className="hidden sm:inline">Editar</span>
-					</Button>
-				</div>
-			</div>
+			<PageHero
+				title={t("clientDetailsTitle")}
+				subtitle={getClientDisplayName(client)}
+				icon={client.personType === "physical" ? User : Building2}
+				backButton={{
+					label: t("clientBackToClients"),
+					onClick: () => navigateTo("/clients"),
+				}}
+				actions={[
+					{
+						label: t("edit"),
+						icon: Edit,
+						onClick: () => navigateTo(`/clients/${clientId}/edit`),
+					},
+					{
+						label: t("generateReport"),
+						icon: FileText,
+						onClick: () => {
+							toast.info(t("comingSoon"));
+						},
+						variant: "outline",
+					},
+					{
+						label: t("markSuspicious"),
+						icon: Flag,
+						onClick: () => {
+							toast.info(t("comingSoon"));
+						},
+						variant: "outline",
+					},
+				]}
+			/>
 
 			<div className="space-y-6">
-				<Card>
-					<CardHeader>
-						<CardTitle className="text-lg">Información General</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-6">
-						<div className="flex flex-wrap gap-4">
-							<div className="flex items-center gap-2">
-								<span className="text-sm text-muted-foreground">RFC:</span>
-								<Badge
-									variant="outline"
-									className="font-medium text-sm font-mono"
-								>
-									{client.rfc}
-								</Badge>
-							</div>
-						</div>
-					</CardContent>
-				</Card>
+				{/* Información General Card - Enhanced with Person Type */}
+				{(() => {
+					const personTypeStyle = getPersonTypeStyle(client.personType);
+					const PersonTypeIcon = personTypeStyle.icon;
+					return (
+						<Card>
+							<CardContent className="p-6">
+								<div className="flex flex-col sm:flex-row sm:items-center gap-6">
+									{/* Person Type Section */}
+									<div
+										className={`flex items-center gap-4 rounded-xl border ${personTypeStyle.borderColor} ${personTypeStyle.bgColor} p-4 sm:min-w-[200px]`}
+									>
+										<div
+											className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg ${personTypeStyle.bgColor}`}
+										>
+											<PersonTypeIcon
+												className={`h-6 w-6 ${personTypeStyle.iconColor}`}
+											/>
+										</div>
+										<div className="min-w-0">
+											<p
+												className={`font-semibold ${personTypeStyle.iconColor}`}
+											>
+												{personTypeStyle.label}
+											</p>
+											<p className="text-xs text-muted-foreground">
+												{personTypeStyle.description}
+											</p>
+										</div>
+									</div>
+
+									{/* RFC Section */}
+									<div className="flex items-center gap-4 rounded-xl border border-border bg-muted/30 p-4 flex-1">
+										<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-muted">
+											<Hash className="h-6 w-6 text-muted-foreground" />
+										</div>
+										<div className="min-w-0">
+											<p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+												RFC
+											</p>
+											<p className="font-mono text-lg font-semibold tracking-wide">
+												{client.rfc}
+											</p>
+										</div>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+					);
+				})()}
 
 				<Card>
 					<CardHeader>
@@ -185,12 +214,12 @@ export function ClientDetailsView({
 							{client.personType === "physical" ? (
 								<>
 									<User className="h-5 w-5" />
-									Datos Personales
+									{t("clientPersonalData")}
 								</>
 							) : (
 								<>
 									<Building2 className="h-5 w-5" />
-									Datos de la Empresa
+									{t("clientCompanyData")}
 								</>
 							)}
 						</CardTitle>
@@ -199,20 +228,22 @@ export function ClientDetailsView({
 						<dl className="grid grid-cols-1 md:grid-cols-2 gap-6">
 							<div>
 								<dt className="text-sm font-medium text-muted-foreground mb-1">
-									{client.personType === "physical" ? "Nombre" : "Razón Social"}
+									{client.personType === "physical"
+										? t("clientFirstName")
+										: t("clientBusinessName")}
 								</dt>
 								<dd className="text-base">{getClientDisplayName(client)}</dd>
 							</div>
 							<div>
 								<dt className="text-sm font-medium text-muted-foreground mb-1">
-									RFC
+									{t("clientRfc")}
 								</dt>
 								<dd className="text-base font-mono">{client.rfc}</dd>
 							</div>
 							{client.personType === "physical" && client.birthDate && (
 								<div>
 									<dt className="text-sm font-medium text-muted-foreground mb-1">
-										Fecha de Nacimiento
+										{t("clientBirthDate")}
 									</dt>
 									<dd className="text-base">{formatDate(client.birthDate)}</dd>
 								</div>
@@ -222,7 +253,7 @@ export function ClientDetailsView({
 								client.incorporationDate && (
 									<div>
 										<dt className="text-sm font-medium text-muted-foreground mb-1">
-											Fecha de Constitución
+											{t("clientConstitutionDate")}
 										</dt>
 										<dd className="text-base">
 											{formatDate(client.incorporationDate)}
@@ -237,7 +268,7 @@ export function ClientDetailsView({
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2 text-lg">
 							<Phone className="h-5 w-5" />
-							Información de Contacto
+							{t("clientContactInfo")}
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
@@ -245,21 +276,21 @@ export function ClientDetailsView({
 							<div>
 								<dt className="text-sm font-medium text-muted-foreground mb-1 flex items-center gap-2">
 									<Mail className="h-4 w-4" />
-									Email
+									{t("clientEmail")}
 								</dt>
 								<dd className="text-base">{client.email}</dd>
 							</div>
 							<div>
 								<dt className="text-sm font-medium text-muted-foreground mb-1 flex items-center gap-2">
 									<Phone className="h-4 w-4" />
-									Teléfono
+									{t("clientPhone")}
 								</dt>
 								<dd className="text-base">{client.phone}</dd>
 							</div>
 							<div className="md:col-span-2">
 								<dt className="text-sm font-medium text-muted-foreground mb-1 flex items-center gap-2">
 									<MapPin className="h-4 w-4" />
-									Dirección
+									{t("clientAddressInfo")}
 								</dt>
 								<dd className="text-base">
 									{client.street} {client.externalNumber}
@@ -279,20 +310,20 @@ export function ClientDetailsView({
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2 text-lg">
 							<Calendar className="h-5 w-5" />
-							Historial de Transacciones
+							{t("clientTransactionHistory")}
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
 							<div>
 								<dt className="text-sm font-medium text-muted-foreground mb-1">
-									Fecha de Registro
+									{t("clientRegistrationDate")}
 								</dt>
 								<dd className="text-base">{formatDate(client.createdAt)}</dd>
 							</div>
 							<div>
 								<dt className="text-sm font-medium text-muted-foreground mb-1">
-									Última Actualización
+									{t("clientLastUpdate")}
 								</dt>
 								<dd className="text-base">{formatDate(client.updatedAt)}</dd>
 							</div>
@@ -302,15 +333,17 @@ export function ClientDetailsView({
 
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">Notas de Cumplimiento</CardTitle>
+						<CardTitle className="text-lg">
+							{t("clientComplianceNotes")}
+						</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<p className="text-sm text-muted-foreground leading-relaxed">
-							{client.notes || "Sin notas adicionales."}
+							{client.notes || t("clientNoNotes")}
 						</p>
 						<div className="mt-4 pt-4 border-t">
 							<p className="text-sm text-muted-foreground">
-								<span className="font-medium">Última actualización:</span>{" "}
+								<span className="font-medium">{t("clientLastUpdate")}:</span>{" "}
 								{formatDate(client.updatedAt)}
 							</p>
 						</div>

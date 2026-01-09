@@ -1,5 +1,50 @@
-# [1.1.0](https://github.com/janovix/aml/compare/v1.0.0...v1.1.0) (2025-12-30)
+# [1.2.0-rc.1](https://github.com/janovix/aml/compare/v1.1.0...v1.2.0-rc.1) (2026-01-09)
 
+
+### Bug Fixes
+
+* adjust layout of Navbar and NavBreadcrumb components for improved responsiveness and visual consistency ([2ec5844](https://github.com/janovix/aml/commit/2ec5844c9043282122ecb2ce3f69f108471d8a7e))
+* fixed uma dashboard view, fixed fetch issues in CreateReportView ([e45faae](https://github.com/janovix/aml/commit/e45faae4595dcb846cc2d09e6b909bbe7aa685bf))
+* improve DataTable component layout for loading and empty states, ensuring consistent row heights and placeholder rows ([053ee16](https://github.com/janovix/aml/commit/053ee16fee914c44e9edef8f0055b3d2c141e28e))
+
+
+### Features
+
+* add AddCatalogItemDialog component and integrate with CatalogSelector ([a5309e6](https://github.com/janovix/aml/commit/a5309e65cf472b14f3e7d965fc9e59f8f824a511))
+* add Alertas and Reportes pages with corresponding tests and integrate infinite scroll functionality in tables ([73ef335](https://github.com/janovix/aml/commit/73ef335123e9260fdd14ca4287fa45ba7d92759d))
+* add AlertDetailsView component and related navigation enhancements for detailed alert management ([590ac48](https://github.com/janovix/aml/commit/590ac4850def3900f02e611c747141b17d5911ab))
+* add Caddyfile for local development setup and create LOCAL_DEV_SETUP.md for guidance on using deployed auth service ([8000aae](https://github.com/janovix/aml/commit/8000aaec3e90e98d872024b46a741776c55d3fc5))
+* add CreateManualAlertView and AlertRuleSelector components with corresponding tests for manual alert creation functionality ([f490c39](https://github.com/janovix/aml/commit/f490c3964a226ce8eb4bdeb4c472a4ed1358044c))
+* Add favicon and manifest files ([18bb39d](https://github.com/janovix/aml/commit/18bb39d4b420949419282e8bbb5909ab16e6f3ce))
+* add global 404 Not Found page with user-friendly navigation options ([b124c9a](https://github.com/janovix/aml/commit/b124c9a07a617f323c356776bf761f1d7b40da15))
+* add Notices management functionality with CRUD operations and UI components ([f422102](https://github.com/janovix/aml/commit/f4221025b623e3f8d1170a64c0c391220f236eab))
+* add organization invitation acceptance page and integrate zustand for state management ([d47c343](https://github.com/janovix/aml/commit/d47c3437958139e6aaf8e9d3e3b1715653139de5))
+* add unit tests for NotFound component and enhance empty state handling in DataTable and various tables with action options ([35c47b2](https://github.com/janovix/aml/commit/35c47b2cd2ddabfa34e15065bcc5a15d130ac71d))
+* enhance ClientSelector to fetch client by ID when not found in search results, improving selection accuracy and user experience ([6832122](https://github.com/janovix/aml/commit/683212251c467f10db397ba4bba2cdc71bcd7ae2))
+* enhance empty state presentation in DataTable with improved layout and action options ([fe639d6](https://github.com/janovix/aml/commit/fe639d6cd9c56abf183cb40e4847c449f5731876))
+* enhance multilingual support, improving accessibility ([0f72161](https://github.com/janovix/aml/commit/0f7216121b844cc5ac6d578c8d4a9d7b3d41b06e))
+* enhance NavBreadcrumb and ReportsTable components to support report entity handling and improve navigation links ([247fba5](https://github.com/janovix/aml/commit/247fba53d3426824132ee216ff66f03c8cc500dc))
+* enhance organization handling in AlertsTable, ClientsTable, and TransactionsTable components to prevent API calls when no organization is selected ([c5682ff](https://github.com/janovix/aml/commit/c5682ffef6875b6bcde206b44bdca61496d80e65))
+* enhance Team and Settings pages with consistent page header components and improved layout ([edc7dc2](https://github.com/janovix/aml/commit/edc7dc2b2c23f3aaca9f42f23f67442d0f2a6770))
+* enhance UI components with PageHero for consistent navigation and loading states across various views ([92d03af](https://github.com/janovix/aml/commit/92d03aff03a27d5d1a42aa9163d0d10727be82d6))
+* implement AppSkeleton component in OrgBootstrapper for improved loading state visualization ([5618647](https://github.com/janovix/aml/commit/561864750e140de94849bfd7791ee9b3a2c07b07))
+* implement fetchCatalogItemById function with caching and error handling, and enhance CatalogSelector tests for item fetching scenarios ([961b876](https://github.com/janovix/aml/commit/961b87697bc8ca9e38d6b607b869cfafb4c5001c))
+* implement LanguageProvider and LanguageSwitcher components for multilingual support, enhancing user experience with language selection and translations ([cca4223](https://github.com/janovix/aml/commit/cca4223f95b956442f69370dec0ba631954a1a63))
+* implement mobile drawer behavior for CatalogSelector and ClientSelector components with corresponding unit tests ([29fe121](https://github.com/janovix/aml/commit/29fe12196c9d47d7f651883e89acece6d96deb9d))
+* implement organization change handling in AlertsTable, ClientsTable, and TransactionsTable components to refetch data on organization switch ([34ab3a3](https://github.com/janovix/aml/commit/34ab3a35d3bfb52bb915eb016c54b8b9a457dd0e))
+* implement organization URL utilities for enhanced routing and URL generation across components ([db99b15](https://github.com/janovix/aml/commit/db99b15f0ca3665210f2e4627f2a20aca5b4c4e5))
+* implement organization-aware routing and navigation utilities for improved URL handling across components ([1d28264](https://github.com/janovix/aml/commit/1d282648eef7f6f00fd10102aac12b83b448b887))
+* implement ScrollRestoration component for improved navigation experience and add unit tests for its functionality ([12d9ab4](https://github.com/janovix/aml/commit/12d9ab44531c340c7aeaef97c3426ac19409f2a2))
+* implement TeamPage and OrgTeamTable components with associated tests ([7632636](https://github.com/janovix/aml/commit/7632636981be3bc6cf1ce8b0f954c76d8d373868))
+* implement XML download functionality in AlertDetailsView and AlertsTable components ([d59a140](https://github.com/janovix/aml/commit/d59a140754b3c00fac182cbb75954179cec4f3e9))
+* optimize organization fetching and redirection logic to prevent duplicate requests and improve user experience ([3f8709a](https://github.com/janovix/aml/commit/3f8709a0df438f95336c1f722d71f655af0efead))
+* Set default country to Mexico for phone input ([faeb2a2](https://github.com/janovix/aml/commit/faeb2a217fb4447eacd8a20b873201cc04bde12a))
+* synchronize auth session with selected organization in OrgBootstrapper and handle organization accessibility checks ([0758f21](https://github.com/janovix/aml/commit/0758f21062c9a27cb6cb6c125faf6467c9278906))
+* transition mobile drawer to dialog for CatalogSelector, ClientSelector, and AlertRuleSelector components, enhancing mobile user experience with close button functionality ([4cfff22](https://github.com/janovix/aml/commit/4cfff22332938807d469a77f010f2c525cc8f020))
+* update README and enhance organization switcher UI with improved logo handling and loading states ([49c5226](https://github.com/janovix/aml/commit/49c52267782ddda7c1899c2f0878e6c206b43db8))
+* update useJwt hook to refetch JWT token on organization change, ensuring the token includes organizationId claim ([26b6bec](https://github.com/janovix/aml/commit/26b6bec35f88a0d480990128d5ad76f8ea90ba7d))
+
+# [1.1.0](https://github.com/janovix/aml/compare/v1.0.0...v1.1.0) (2025-12-30)
 
 ### Bug Fixes
 
@@ -40,6 +85,100 @@
 * replace client dropdown with ClientSelector in transaction creation ([63a6d22](https://github.com/janovix/aml/commit/63a6d22d4389b669e590ce313aa4f0c823059c2e))
 * Specify pnpm as package manager ([d2662aa](https://github.com/janovix/aml/commit/d2662aaf96376dfd372ec247ce35bcfeb4baef44))
 * update transactions to support multiple payment methods and remove serialNumber ([d871748](https://github.com/janovix/aml/commit/d8717480de630717f53b76efe8cea96bb2fa213c))
+
+# [1.1.0-rc.23](https://github.com/janovix/aml/compare/v1.1.0-rc.22...v1.1.0-rc.23) (2026-01-07)
+
+
+### Features
+
+* Add favicon and manifest files ([18bb39d](https://github.com/janovix/aml/commit/18bb39d4b420949419282e8bbb5909ab16e6f3ce))
+
+# [1.1.0-rc.22](https://github.com/janovix/aml/compare/v1.1.0-rc.21...v1.1.0-rc.22) (2026-01-06)
+
+
+### Bug Fixes
+
+* fixed uma dashboard view, fixed fetch issues in CreateReportView ([e45faae](https://github.com/janovix/aml/commit/e45faae4595dcb846cc2d09e6b909bbe7aa685bf))
+
+
+### Features
+
+* add Notices management functionality with CRUD operations and UI components ([f422102](https://github.com/janovix/aml/commit/f4221025b623e3f8d1170a64c0c391220f236eab))
+* enhance NavBreadcrumb and ReportsTable components to support report entity handling and improve navigation links ([247fba5](https://github.com/janovix/aml/commit/247fba53d3426824132ee216ff66f03c8cc500dc))
+
+# [1.1.0-rc.21](https://github.com/janovix/aml/compare/v1.1.0-rc.20...v1.1.0-rc.21) (2026-01-04)
+
+
+### Bug Fixes
+
+* adjust layout of Navbar and NavBreadcrumb components for improved responsiveness and visual consistency ([2ec5844](https://github.com/janovix/aml/commit/2ec5844c9043282122ecb2ce3f69f108471d8a7e))
+* improve DataTable component layout for loading and empty states, ensuring consistent row heights and placeholder rows ([053ee16](https://github.com/janovix/aml/commit/053ee16fee914c44e9edef8f0055b3d2c141e28e))
+
+
+### Features
+
+* add Caddyfile for local development setup and create LOCAL_DEV_SETUP.md for guidance on using deployed auth service ([8000aae](https://github.com/janovix/aml/commit/8000aaec3e90e98d872024b46a741776c55d3fc5))
+* enhance ClientSelector to fetch client by ID when not found in search results, improving selection accuracy and user experience ([6832122](https://github.com/janovix/aml/commit/683212251c467f10db397ba4bba2cdc71bcd7ae2))
+* enhance multilingual support, improving accessibility ([0f72161](https://github.com/janovix/aml/commit/0f7216121b844cc5ac6d578c8d4a9d7b3d41b06e))
+* implement LanguageProvider and LanguageSwitcher components for multilingual support, enhancing user experience with language selection and translations ([cca4223](https://github.com/janovix/aml/commit/cca4223f95b956442f69370dec0ba631954a1a63))
+* implement XML download functionality in AlertDetailsView and AlertsTable components ([d59a140](https://github.com/janovix/aml/commit/d59a140754b3c00fac182cbb75954179cec4f3e9))
+* transition mobile drawer to dialog for CatalogSelector, ClientSelector, and AlertRuleSelector components, enhancing mobile user experience with close button functionality ([4cfff22](https://github.com/janovix/aml/commit/4cfff22332938807d469a77f010f2c525cc8f020))
+
+# [1.1.0-rc.20](https://github.com/janovix/aml/compare/v1.1.0-rc.19...v1.1.0-rc.20) (2026-01-03)
+
+
+### Features
+
+* add AlertDetailsView component and related navigation enhancements for detailed alert management ([590ac48](https://github.com/janovix/aml/commit/590ac4850def3900f02e611c747141b17d5911ab))
+* add CreateManualAlertView and AlertRuleSelector components with corresponding tests for manual alert creation functionality ([f490c39](https://github.com/janovix/aml/commit/f490c3964a226ce8eb4bdeb4c472a4ed1358044c))
+* implement fetchCatalogItemById function with caching and error handling, and enhance CatalogSelector tests for item fetching scenarios ([961b876](https://github.com/janovix/aml/commit/961b87697bc8ca9e38d6b607b869cfafb4c5001c))
+
+# [1.1.0-rc.19](https://github.com/janovix/aml/compare/v1.1.0-rc.18...v1.1.0-rc.19) (2025-12-31)
+
+
+### Features
+
+* add global 404 Not Found page with user-friendly navigation options ([b124c9a](https://github.com/janovix/aml/commit/b124c9a07a617f323c356776bf761f1d7b40da15))
+* add unit tests for NotFound component and enhance empty state handling in DataTable and various tables with action options ([35c47b2](https://github.com/janovix/aml/commit/35c47b2cd2ddabfa34e15065bcc5a15d130ac71d))
+* enhance empty state presentation in DataTable with improved layout and action options ([fe639d6](https://github.com/janovix/aml/commit/fe639d6cd9c56abf183cb40e4847c449f5731876))
+* enhance UI components with PageHero for consistent navigation and loading states across various views ([92d03af](https://github.com/janovix/aml/commit/92d03aff03a27d5d1a42aa9163d0d10727be82d6))
+* implement mobile drawer behavior for CatalogSelector and ClientSelector components with corresponding unit tests ([29fe121](https://github.com/janovix/aml/commit/29fe12196c9d47d7f651883e89acece6d96deb9d))
+* implement organization URL utilities for enhanced routing and URL generation across components ([db99b15](https://github.com/janovix/aml/commit/db99b15f0ca3665210f2e4627f2a20aca5b4c4e5))
+* implement organization-aware routing and navigation utilities for improved URL handling across components ([1d28264](https://github.com/janovix/aml/commit/1d282648eef7f6f00fd10102aac12b83b448b887))
+* implement ScrollRestoration component for improved navigation experience and add unit tests for its functionality ([12d9ab4](https://github.com/janovix/aml/commit/12d9ab44531c340c7aeaef97c3426ac19409f2a2))
+* optimize organization fetching and redirection logic to prevent duplicate requests and improve user experience ([3f8709a](https://github.com/janovix/aml/commit/3f8709a0df438f95336c1f722d71f655af0efead))
+* update README and enhance organization switcher UI with improved logo handling and loading states ([49c5226](https://github.com/janovix/aml/commit/49c52267782ddda7c1899c2f0878e6c206b43db8))
+
+# [1.1.0-rc.18](https://github.com/janovix/aml/compare/v1.1.0-rc.17...v1.1.0-rc.18) (2025-12-31)
+
+
+### Features
+
+* enhance Team and Settings pages with consistent page header components and improved layout ([edc7dc2](https://github.com/janovix/aml/commit/edc7dc2b2c23f3aaca9f42f23f67442d0f2a6770))
+* implement AppSkeleton component in OrgBootstrapper for improved loading state visualization ([5618647](https://github.com/janovix/aml/commit/561864750e140de94849bfd7791ee9b3a2c07b07))
+* synchronize auth session with selected organization in OrgBootstrapper and handle organization accessibility checks ([0758f21](https://github.com/janovix/aml/commit/0758f21062c9a27cb6cb6c125faf6467c9278906))
+
+# [1.1.0-rc.17](https://github.com/janovix/aml/compare/v1.1.0-rc.16...v1.1.0-rc.17) (2025-12-31)
+
+
+### Features
+
+* add AddCatalogItemDialog component and integrate with CatalogSelector ([a5309e6](https://github.com/janovix/aml/commit/a5309e65cf472b14f3e7d965fc9e59f8f824a511))
+* add Alertas and Reportes pages with corresponding tests and integrate infinite scroll functionality in tables ([73ef335](https://github.com/janovix/aml/commit/73ef335123e9260fdd14ca4287fa45ba7d92759d))
+* add organization invitation acceptance page and integrate zustand for state management ([d47c343](https://github.com/janovix/aml/commit/d47c3437958139e6aaf8e9d3e3b1715653139de5))
+* enhance organization handling in AlertsTable, ClientsTable, and TransactionsTable components to prevent API calls when no organization is selected ([c5682ff](https://github.com/janovix/aml/commit/c5682ffef6875b6bcde206b44bdca61496d80e65))
+* implement organization change handling in AlertsTable, ClientsTable, and TransactionsTable components to refetch data on organization switch ([34ab3a3](https://github.com/janovix/aml/commit/34ab3a35d3bfb52bb915eb016c54b8b9a457dd0e))
+* implement TeamPage and OrgTeamTable components with associated tests ([7632636](https://github.com/janovix/aml/commit/7632636981be3bc6cf1ce8b0f954c76d8d373868))
+* update useJwt hook to refetch JWT token on organization change, ensuring the token includes organizationId claim ([26b6bec](https://github.com/janovix/aml/commit/26b6bec35f88a0d480990128d5ad76f8ea90ba7d))
+
+# [1.1.0-rc.16](https://github.com/janovix/aml/compare/v1.1.0-rc.15...v1.1.0-rc.16) (2025-12-30)
+
+
+### Features
+
+* Set default country to Mexico for phone input ([faeb2a2](https://github.com/janovix/aml/commit/faeb2a217fb4447eacd8a20b873201cc04bde12a))
+
+
 
 # [1.1.0-rc.15](https://github.com/janovix/aml/compare/v1.1.0-rc.14...v1.1.0-rc.15) (2025-12-30)
 

@@ -2,24 +2,28 @@
 
 import type React from "react";
 import { useState, useEffect } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
+import { Button } from "@/components/ui/button";
 import {
-	Button,
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-	Input,
-	Label,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-	Separator,
-} from "@algtools/ui";
-import { ArrowLeft, Save, Plus, Trash2 } from "lucide-react";
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Save, Plus, Trash2, ReceiptText } from "lucide-react";
+import { PageHero } from "@/components/page-hero";
 import { toast } from "sonner";
 import { createTransaction } from "../../lib/api/transactions";
 import { executeMutation } from "../../lib/mutations";
@@ -33,6 +37,9 @@ import { CatalogSelector } from "../catalogs/CatalogSelector";
 import { ClientSelector } from "../clients/ClientSelector";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
 import { getFieldDescription } from "../../lib/field-descriptions";
+import { validateVIN } from "../../lib/utils";
+import { getVehicleBrandCatalogKey } from "../../lib/vehicle-utils";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface TransactionFormData {
 	clientId: string;
@@ -55,7 +62,8 @@ interface TransactionFormData {
 }
 
 export function TransactionCreateView(): React.JSX.Element {
-	const router = useRouter();
+	const { t } = useLanguage();
+	const { navigateTo, orgPath } = useOrgNavigation();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 	const [isSaving, setIsSaving] = useState(false);
@@ -77,8 +85,12 @@ export function TransactionCreateView(): React.JSX.Element {
 		flagCountryId: "",
 		amount: "", // Calculated from payment methods on submit
 		currency: "MXN",
-		paymentMethods: [{ method: "EFECTIVO", amount: "" }],
+		paymentMethods: [{ method: "", amount: "" }],
 	});
+
+	const [validationErrors, setValidationErrors] = useState<{
+		vin?: string;
+	}>({});
 
 	// Auto-select client from URL params (after returning from client creation)
 	useEffect(() => {
@@ -90,14 +102,34 @@ export function TransactionCreateView(): React.JSX.Element {
 
 	const handleCreateNewClient = (): void => {
 		const returnUrl = encodeURIComponent(pathname);
-		router.push(`/clients/new?returnUrl=${returnUrl}`);
+		navigateTo(`/clients/new?returnUrl=${returnUrl}`);
 	};
 
 	const handleInputChange = (
 		field: keyof TransactionFormData,
 		value: string | PaymentMethodInput[],
 	): void => {
-		setFormData((prev) => ({ ...prev, [field]: value }));
+		setFormData((prev) => {
+			// When vehicle type changes, reset the brand since catalogs are different
+			if (
+				field === "vehicleType" &&
+				typeof value === "string" &&
+				prev.vehicleType !== value
+			) {
+				return {
+					...prev,
+					vehicleType: value as TransactionVehicleType,
+					brand: "",
+				};
+			}
+			if (field === "paymentMethods" && Array.isArray(value)) {
+				return { ...prev, paymentMethods: value };
+			}
+			if (typeof value === "string") {
+				return { ...prev, [field]: value };
+			}
+			return prev;
+		});
 	};
 
 	const handlePaymentMethodChange = (
@@ -118,10 +150,7 @@ export function TransactionCreateView(): React.JSX.Element {
 	const handleAddPaymentMethod = (): void => {
 		setFormData((prev) => ({
 			...prev,
-			paymentMethods: [
-				...prev.paymentMethods,
-				{ method: "EFECTIVO", amount: "" },
-			],
+			paymentMethods: [...prev.paymentMethods, { method: "", amount: "" }],
 		}));
 	};
 
@@ -161,6 +190,16 @@ export function TransactionCreateView(): React.JSX.Element {
 			const hasVIN = formData.vin && formData.vin.trim().length > 0;
 			const hasEngineNumber =
 				formData.engineNumber && formData.engineNumber.trim().length > 0;
+
+			// Validate VIN format if provided
+			if (hasVIN) {
+				const vinValidation = validateVIN(formData.vin || "");
+				if (!vinValidation.isValid) {
+					setValidationErrors({ vin: vinValidation.error });
+					toast.error(vinValidation.error);
+					return false;
+				}
+			}
 
 			if (!hasPlates && !hasVIN && !hasEngineNumber) {
 				toast.error(
@@ -222,7 +261,7 @@ export function TransactionCreateView(): React.JSX.Element {
 				loading: "Creando transacción...",
 				success: "Transacción creada exitosamente",
 				onSuccess: () => {
-					router.push("/transactions");
+					navigateTo("/transactions");
 				},
 			});
 		} catch (error) {
@@ -234,68 +273,52 @@ export function TransactionCreateView(): React.JSX.Element {
 	};
 
 	const handleCancel = (): void => {
-		router.push("/transactions");
+		navigateTo("/transactions");
 	};
 
 	return (
 		<div className="space-y-6">
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="sm"
-						className="gap-2"
-						onClick={handleCancel}
-					>
-						<ArrowLeft className="h-4 w-4" />
-						<span className="hidden sm:inline">Volver</span>
-					</Button>
-					<Separator orientation="vertical" className="hidden h-6 sm:block" />
-					<div>
-						<h1 className="text-xl font-semibold text-foreground">
-							Nueva Transacción
-						</h1>
-						<p className="text-sm text-muted-foreground">
-							Registrar una nueva transacción
-						</p>
-					</div>
-				</div>
-				<div className="flex items-center gap-2">
-					<Button variant="outline" size="sm" onClick={handleCancel}>
-						Cancelar
-					</Button>
-					<Button
-						size="sm"
-						className="gap-2"
-						onClick={handleSubmit}
-						disabled={isSaving}
-					>
-						<Save className="h-4 w-4" />
-						<span className="hidden sm:inline">
-							{isSaving ? "Creando..." : "Crear Transacción"}
-						</span>
-					</Button>
-				</div>
-			</div>
+			<PageHero
+				title={t("txnNewTitle")}
+				subtitle={t("txnNewSubtitle")}
+				icon={ReceiptText}
+				backButton={{
+					label: t("back"),
+					onClick: handleCancel,
+				}}
+				actions={[
+					{
+						label: isSaving ? t("txnCreating") : t("txnCreateButton"),
+						icon: Save,
+						onClick: () => {
+							void handleSubmit({
+								preventDefault: () => {},
+							} as React.FormEvent);
+						},
+						disabled: isSaving,
+					},
+					{
+						label: t("cancel"),
+						onClick: handleCancel,
+						variant: "outline",
+					},
+				]}
+			/>
 
 			<form onSubmit={handleSubmit} className="space-y-6">
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">
-							Información de la Transacción
-						</CardTitle>
-						<CardDescription>
-							Detalles básicos de la transacción
-						</CardDescription>
+						<CardTitle className="text-lg">{t("txnInfoTitle")}</CardTitle>
+						<CardDescription>{t("txnInfoDesc")}</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div className="space-y-2">
 								<ClientSelector
-									label="Cliente"
+									label={t("txnClient")}
 									value={formData.clientId}
-									placeholder="Seleccionar cliente"
-									searchPlaceholder="Buscar cliente por nombre o RFC..."
+									placeholder={t("txnClientPlaceholder")}
+									searchPlaceholder={t("txnClientSearch")}
 									onValueChange={(value) =>
 										handleInputChange("clientId", value || "")
 									}
@@ -310,7 +333,7 @@ export function TransactionCreateView(): React.JSX.Element {
 									description={getFieldDescription("operationDate")}
 									required
 								>
-									Fecha de operación
+									{t("txnOperationDate")}
 								</LabelWithInfo>
 								<Input
 									id="operation-date"
@@ -329,7 +352,7 @@ export function TransactionCreateView(): React.JSX.Element {
 									description={getFieldDescription("branchPostalCode")}
 									required
 								>
-									Código Postal Sucursal
+									{t("txnBranchPostalCode")}
 								</LabelWithInfo>
 								<Input
 									id="branch-postal-code"
@@ -347,10 +370,8 @@ export function TransactionCreateView(): React.JSX.Element {
 
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">Información del Vehículo</CardTitle>
-						<CardDescription>
-							Detalles del vehículo involucrado en la transacción
-						</CardDescription>
+						<CardTitle className="text-lg">{t("txnVehicleTitle")}</CardTitle>
+						<CardDescription>{t("txnVehicleDesc")}</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="space-y-2">
@@ -359,7 +380,7 @@ export function TransactionCreateView(): React.JSX.Element {
 								description={getFieldDescription("vehicleType")}
 								required
 							>
-								Tipo de vehículo
+								{t("txnVehicleType")}
 							</LabelWithInfo>
 							<Select
 								value={formData.vehicleType}
@@ -369,12 +390,16 @@ export function TransactionCreateView(): React.JSX.Element {
 								required
 							>
 								<SelectTrigger id="vehicle-type">
-									<SelectValue placeholder="Seleccionar tipo" />
+									<SelectValue placeholder={t("txnVehicleTypePlaceholder")} />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="land">Terrestre</SelectItem>
-									<SelectItem value="marine">Marítimo</SelectItem>
-									<SelectItem value="air">Aéreo</SelectItem>
+									<SelectItem value="land">
+										{t("txnVehicleTypeLand")}
+									</SelectItem>
+									<SelectItem value="marine">
+										{t("txnVehicleTypeMarine")}
+									</SelectItem>
+									<SelectItem value="air">{t("txnVehicleTypeAir")}</SelectItem>
 								</SelectContent>
 							</Select>
 						</div>
@@ -382,22 +407,18 @@ export function TransactionCreateView(): React.JSX.Element {
 						<Separator />
 
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<div className="space-y-2">
-								<LabelWithInfo
-									htmlFor="brand"
-									description={getFieldDescription("brand")}
-									required
-								>
-									Marca
-								</LabelWithInfo>
-								<Input
-									id="brand"
-									value={formData.brand}
-									onChange={(e) => handleInputChange("brand", e.target.value)}
-									placeholder="Toyota, Honda, BMW, etc."
-									required
-								/>
-							</div>
+							<CatalogSelector
+								catalogKey={getVehicleBrandCatalogKey(formData.vehicleType)}
+								label={t("txnBrand")}
+								labelDescription={getFieldDescription("brand")}
+								value={formData.brand}
+								searchPlaceholder={t("txnBrandSearch")}
+								required
+								disabled={!formData.vehicleType}
+								onChange={(option) =>
+									handleInputChange("brand", option?.id ?? "")
+								}
+							/>
 
 							<div className="space-y-2">
 								<LabelWithInfo
@@ -405,7 +426,7 @@ export function TransactionCreateView(): React.JSX.Element {
 									description={getFieldDescription("model")}
 									required
 								>
-									Modelo
+									{t("txnModel")}
 								</LabelWithInfo>
 								<Input
 									id="model"
@@ -422,7 +443,7 @@ export function TransactionCreateView(): React.JSX.Element {
 									description={getFieldDescription("year")}
 									required
 								>
-									Año
+									{t("txnYear")}
 								</LabelWithInfo>
 								<Input
 									id="year"
@@ -443,22 +464,43 @@ export function TransactionCreateView(): React.JSX.Element {
 											htmlFor="vin"
 											description={getFieldDescription("vin")}
 										>
-											VIN (Número de Identificación Vehicular)
+											{t("txnVin")}
 										</LabelWithInfo>
 										<Input
 											id="vin"
 											value={formData.vin}
-											onChange={(e) => handleInputChange("vin", e.target.value)}
+											onChange={(e) => {
+												handleInputChange("vin", e.target.value);
+												// Clear error when user starts typing
+												if (validationErrors.vin) {
+													setValidationErrors((prev) => ({
+														...prev,
+														vin: undefined,
+													}));
+												}
+											}}
 											placeholder="17 caracteres"
 											maxLength={17}
+											className={
+												validationErrors.vin ? "border-destructive" : ""
+											}
 										/>
+										{validationErrors.vin ? (
+											<p className="text-xs text-destructive">
+												{validationErrors.vin}
+											</p>
+										) : (
+											<p className="text-xs text-muted-foreground">
+												17 caracteres alfanuméricos (excluyendo I, O, Q)
+											</p>
+										)}
 									</div>
 									<div className="space-y-2">
 										<LabelWithInfo
 											htmlFor="plates"
 											description={getFieldDescription("plates")}
 										>
-											Placas
+											{t("txnPlates")}
 										</LabelWithInfo>
 										<Input
 											id="plates"
@@ -474,7 +516,7 @@ export function TransactionCreateView(): React.JSX.Element {
 											htmlFor="engine-number"
 											description={getFieldDescription("engineNumber")}
 										>
-											Número de motor
+											{t("txnEngineNumber")}
 										</LabelWithInfo>
 										<Input
 											id="engine-number"
@@ -504,7 +546,7 @@ export function TransactionCreateView(): React.JSX.Element {
 											description={getFieldDescription("registrationNumber")}
 											required
 										>
-											Número de registro
+											{t("txnRegistrationNumber")}
 										</LabelWithInfo>
 										<Input
 											id="registration-number"
@@ -518,10 +560,10 @@ export function TransactionCreateView(): React.JSX.Element {
 									</div>
 									<CatalogSelector
 										catalogKey="countries"
-										label="País de bandera"
+										label={t("txnFlagCountry")}
 										labelDescription={getFieldDescription("flagCountryId")}
 										value={formData.flagCountryId}
-										searchPlaceholder="Buscar país..."
+										searchPlaceholder={t("search")}
 										onChange={(option) =>
 											handleInputChange("flagCountryId", option?.id ?? "")
 										}
@@ -534,23 +576,27 @@ export function TransactionCreateView(): React.JSX.Element {
 
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">Información de Pago</CardTitle>
-						<CardDescription>
-							Detalles financieros de la transacción
-						</CardDescription>
+						<CardTitle className="text-lg">{t("txnPaymentTitle")}</CardTitle>
+						<CardDescription>{t("txnPaymentDesc")}</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<CatalogSelector
 								catalogKey="currencies"
-								label="Moneda"
+								label={t("txnCurrency")}
 								labelDescription={getFieldDescription("currency")}
 								value={formData.currency}
 								required
-								searchPlaceholder="Buscar moneda..."
-								onChange={(option) =>
-									handleInputChange("currency", option?.id ?? "")
-								}
+								searchPlaceholder={t("search")}
+								onChange={(option) => {
+									// Use shortName from metadata for currency code (e.g., "MXN")
+									const metadata = option?.metadata as
+										| { shortName?: string }
+										| null
+										| undefined;
+									const currencyCode = metadata?.shortName ?? option?.id ?? "";
+									handleInputChange("currency", currencyCode);
+								}}
 							/>
 						</div>
 
@@ -558,7 +604,7 @@ export function TransactionCreateView(): React.JSX.Element {
 
 						<div className="space-y-4">
 							<div className="flex items-center justify-between">
-								<Label>Métodos de Pago *</Label>
+								<Label>{t("txnPaymentMethods")} *</Label>
 								<Button
 									type="button"
 									variant="outline"
@@ -567,7 +613,7 @@ export function TransactionCreateView(): React.JSX.Element {
 									className="gap-2"
 								>
 									<Plus className="h-4 w-4" />
-									Agregar Método
+									{t("txnAddPaymentMethod")}
 								</Button>
 							</div>
 
@@ -600,36 +646,24 @@ export function TransactionCreateView(): React.JSX.Element {
 									key={index}
 									className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-lg"
 								>
-									<div className="space-y-2">
-										<Label htmlFor={`payment-method-${index}`}>
-											Método {index + 1} *
-										</Label>
-										<Select
-											value={pm.method}
-											onValueChange={(value) =>
-												handlePaymentMethodChange(index, "method", value)
-											}
-											required
-										>
-											<SelectTrigger id={`payment-method-${index}`}>
-												<SelectValue />
-											</SelectTrigger>
-											<SelectContent>
-												<SelectItem value="EFECTIVO">Efectivo</SelectItem>
-												<SelectItem value="TRANSFERENCIA">
-													Transferencia
-												</SelectItem>
-												<SelectItem value="CHEQUE">Cheque</SelectItem>
-												<SelectItem value="FINANCIAMIENTO">
-													Financiamiento
-												</SelectItem>
-											</SelectContent>
-										</Select>
-									</div>
+									<CatalogSelector
+										catalogKey="payment-methods"
+										label={`${t("txnPaymentMethodLabel")} ${index + 1}`}
+										value={pm.method}
+										searchPlaceholder={t("search")}
+										required
+										onChange={(option) =>
+											handlePaymentMethodChange(
+												index,
+												"method",
+												option?.name ?? "",
+											)
+										}
+									/>
 
 									<div className="space-y-2">
 										<Label htmlFor={`payment-amount-${index}`}>
-											Monto {index + 1} *
+											{t("txnPaymentAmountLabel")} {index + 1} *
 										</Label>
 										<Input
 											id={`payment-amount-${index}`}
@@ -659,7 +693,7 @@ export function TransactionCreateView(): React.JSX.Element {
 												className="gap-2 text-destructive"
 											>
 												<Trash2 className="h-4 w-4" />
-												Eliminar
+												{t("delete")}
 											</Button>
 										)}
 									</div>

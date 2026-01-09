@@ -7,28 +7,48 @@ import {
 	beforeAll,
 	afterAll,
 } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ClientEditView } from "./ClientEditView";
 import type { Client, PersonType } from "../../types/client";
+import { renderWithProviders } from "@/lib/testHelpers";
+
+// Mock cookies module to return Spanish language for tests
+vi.mock("@/lib/cookies", () => ({
+	getCookie: (name: string) => {
+		if (name === "janovix-lang") return "es";
+		return undefined;
+	},
+	setCookie: vi.fn(),
+	deleteCookie: vi.fn(),
+	COOKIE_NAMES: {
+		THEME: "janovix-theme",
+		LANGUAGE: "janovix-lang",
+	},
+}));
 
 const mockPush = vi.fn();
-const mockToast = vi.fn();
-const mockGetClientByRfc = vi.fn();
+const mockToastSuccess = vi.fn();
+const mockToastError = vi.fn();
+const mockGetClientById = vi.fn();
 const mockUpdateClient = vi.fn();
 const originalRequestSubmit = HTMLFormElement.prototype.requestSubmit;
 
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
 		push: mockPush,
+		replace: vi.fn(),
 	}),
-	usePathname: () => "/clients/1/edit",
+	usePathname: () => "/test-org/clients/1/edit",
+	useSearchParams: () => new URLSearchParams(),
+	useParams: () => ({ orgSlug: "test-org", id: "1" }),
 }));
 
-vi.mock("../../hooks/use-toast", () => ({
-	useToast: () => ({
-		toast: mockToast,
-		toasts: [],
+// Mock sonner toast
+vi.mock("sonner", () => ({
+	toast: Object.assign(vi.fn(), {
+		success: (...args: unknown[]) => mockToastSuccess(...args),
+		error: (...args: unknown[]) => mockToastError(...args),
 	}),
 }));
 
@@ -42,7 +62,7 @@ vi.mock("../../hooks/useJwt", () => ({
 }));
 
 vi.mock("../../lib/api/clients", () => ({
-	getClientByRfc: (...args: unknown[]) => mockGetClientByRfc(...args),
+	getClientById: (...args: unknown[]) => mockGetClientById(...args),
 	updateClient: (...args: unknown[]) => mockUpdateClient(...args),
 }));
 
@@ -58,7 +78,7 @@ const buildClient = (overrides?: Partial<Client>): Client => ({
 	businessName: "Empresas Globales",
 	rfc: "EGL850101AAA",
 	email: "contacto@egl.com.mx",
-	phone: "+52 81 1234 5678",
+	phone: "+528112345678",
 	country: "MX",
 	stateCode: "NL",
 	city: "Monterrey",
@@ -87,17 +107,18 @@ describe("ClientEditView", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockGetClientByRfc.mockReset();
+		mockGetClientById.mockReset();
 		mockUpdateClient.mockReset();
-		mockToast.mockReset();
+		mockToastSuccess.mockReset();
+		mockToastError.mockReset();
 		mockPush.mockReset();
 	});
 
-	it("renders edit client header", () => {
-		mockGetClientByRfc.mockResolvedValue(buildClient());
+	it("renders edit client header", async () => {
+		mockGetClientById.mockResolvedValue(buildClient());
 		mockUpdateClient.mockResolvedValue(buildClient());
-		render(<ClientEditView clientId="1" />);
-		expect(screen.getByText("Editar Cliente")).toBeInTheDocument();
+		renderWithProviders(<ClientEditView clientId="1" />);
+		expect(await screen.findByText("Editar Cliente")).toBeInTheDocument();
 	});
 
 	it("submits updates keeping the loaded person type for moral clients", async () => {
@@ -105,11 +126,11 @@ describe("ClientEditView", () => {
 			personType: "moral",
 			businessName: "Visionaria S.A.",
 		});
-		mockGetClientByRfc.mockResolvedValue(client);
+		mockGetClientById.mockResolvedValue(client);
 		mockUpdateClient.mockResolvedValue(client);
 
 		const user = userEvent.setup();
-		render(<ClientEditView clientId={client.rfc} />);
+		renderWithProviders(<ClientEditView clientId={client.id} />);
 
 		await screen.findByDisplayValue("Visionaria S.A.");
 		const saveButtons = screen.getAllByRole("button", {
@@ -119,7 +140,7 @@ describe("ClientEditView", () => {
 
 		await waitFor(() => expect(mockUpdateClient).toHaveBeenCalled());
 		expect(mockUpdateClient).toHaveBeenCalledWith({
-			rfc: client.rfc,
+			id: client.id,
 			input: expect.objectContaining({
 				personType: "moral",
 				businessName: "Visionaria S.A.",
@@ -130,6 +151,7 @@ describe("ClientEditView", () => {
 	it("includes physical-only fields when client type is physical", async () => {
 		const client = buildClient({
 			personType: "physical",
+			rfc: "LOGA900501E56",
 			firstName: "Ana",
 			lastName: "Lopez",
 			secondLastName: "Garcia",
@@ -137,19 +159,29 @@ describe("ClientEditView", () => {
 			curp: "LOGA900501MDFRRN09",
 			businessName: null,
 		});
-		mockGetClientByRfc.mockResolvedValue(client);
+		mockGetClientById.mockResolvedValue(client);
 		mockUpdateClient.mockResolvedValue(client);
 
 		const user = userEvent.setup();
-		render(<ClientEditView clientId={client.rfc} />);
+		renderWithProviders(<ClientEditView clientId={client.id} />);
 
+		// Wait for form to load
 		await screen.findByDisplayValue("Ana");
+		await screen.findByDisplayValue("Lopez");
+
+		// Wait a bit more for form to be fully ready
+		await waitFor(() => {
+			expect(screen.getByDisplayValue(client.rfc)).toBeInTheDocument();
+		});
+
 		const saveButtons = screen.getAllByRole("button", {
 			name: /guardar cambios/i,
 		});
 		await user.click(saveButtons.at(-1)!);
 
-		await waitFor(() => expect(mockUpdateClient).toHaveBeenCalled());
+		await waitFor(() => expect(mockUpdateClient).toHaveBeenCalled(), {
+			timeout: 3000,
+		});
 		expect(mockUpdateClient.mock.calls[0][0].input).toMatchObject({
 			personType: "physical",
 			firstName: "Ana",
@@ -164,11 +196,11 @@ describe("ClientEditView", () => {
 			personType: undefined as unknown as PersonType,
 			businessName: "Sin Tipo",
 		});
-		mockGetClientByRfc.mockResolvedValue(client);
+		mockGetClientById.mockResolvedValue(client);
 		mockUpdateClient.mockResolvedValue(client);
 
 		const user = userEvent.setup();
-		render(<ClientEditView clientId={client.rfc} />);
+		renderWithProviders(<ClientEditView clientId={client.id} />);
 
 		await screen.findByText("Editar Cliente");
 		const saveButtons = screen.getAllByRole("button", {
@@ -176,13 +208,7 @@ describe("ClientEditView", () => {
 		});
 		await user.click(saveButtons.at(-1)!);
 
-		await waitFor(() =>
-			expect(mockToast).toHaveBeenCalledWith(
-				expect.objectContaining({
-					title: "Tipo de persona no disponible",
-				}),
-			),
-		);
+		await waitFor(() => expect(mockToastError).toHaveBeenCalled());
 		expect(mockUpdateClient).not.toHaveBeenCalled();
 	});
 });

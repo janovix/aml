@@ -1,6 +1,7 @@
 import ClientLayout from "@/components/ClientLayout";
 import { getServerSession } from "@/lib/auth/getServerSession";
 import { SessionHydrator } from "@/lib/auth/useAuthSession";
+import { listOrganizationsServer } from "@/lib/auth/organizations-server";
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -13,6 +14,21 @@ const inter = Inter({
 export const metadata: Metadata = {
 	title: "Plataforma AML",
 	description: "Sistema de gestión y análisis Anti-Lavado de Dinero",
+	manifest: "/site.webmanifest",
+	icons: {
+		icon: [
+			{ url: "/favicon.ico" },
+			{ url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+			{ url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+		],
+		apple: [
+			{
+				url: "/apple-touch-icon.png",
+				sizes: "180x180",
+				type: "image/png",
+			},
+		],
+	},
 };
 
 export const viewport: Viewport = {
@@ -21,6 +37,8 @@ export const viewport: Viewport = {
 	initialScale: 1,
 	maximumScale: 5,
 	userScalable: true,
+	viewportFit: "cover",
+	interactiveWidget: "resizes-content",
 };
 
 export default async function RootLayout({
@@ -29,12 +47,15 @@ export default async function RootLayout({
 	children: React.ReactNode;
 }>) {
 	const session = await getServerSession();
+	const initialOrganizations = await listOrganizationsServer();
 
 	return (
 		<html lang="es" suppressHydrationWarning>
 			<body className={`${inter.variable} antialiased`}>
 				<SessionHydrator serverSession={session}>
-					<ClientLayout>{children}</ClientLayout>
+					<ClientLayout initialOrganizations={initialOrganizations}>
+						{children}
+					</ClientLayout>
 				</SessionHydrator>
 			</body>
 		</html>

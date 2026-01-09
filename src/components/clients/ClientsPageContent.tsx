@@ -1,17 +1,20 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { useEffect, useState } from "react";
 import { ClientsTable } from "@/components/clients/ClientsTable";
 import { PageHero, type StatCard } from "@/components/page-hero";
 import { Users, AlertTriangle, Clock, Plus } from "lucide-react";
 import { getClientStats } from "@/lib/api/stats";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { extractErrorMessage } from "@/lib/mutations";
 import { ApiError } from "@/lib/api/http";
+import { useLanguage } from "@/components/LanguageProvider";
+import { getLocaleForLanguage } from "@/lib/translations";
 
 export function ClientsPageContent(): React.ReactElement {
-	const router = useRouter();
-	const { toast } = useToast();
+	const { navigateTo } = useOrgNavigation();
+	const { t, language } = useLanguage();
 	const [stats, setStats] = useState<{
 		openAlerts: number;
 		urgentReviews: number;
@@ -40,37 +43,33 @@ export function ClientsPageContent(): React.ReactElement {
 						error instanceof Error ? error.message : error,
 					);
 				}
-				toast({
-					title: "Error",
-					description: "No se pudieron cargar las estadísticas.",
-					variant: "destructive",
-				});
+				toast.error(extractErrorMessage(error));
 			} finally {
 				setIsLoading(false);
 			}
 		};
 
 		fetchStats();
-	}, [toast]);
+	}, [t]);
 
 	const formatNumber = (num: number): string => {
-		return new Intl.NumberFormat("es-MX").format(num);
+		return new Intl.NumberFormat(getLocaleForLanguage(language)).format(num);
 	};
 
 	const heroStats: StatCard[] = [
 		{
-			label: "Avisos Abiertos",
+			label: t("statsOpenAlerts"),
 			value: isLoading ? "..." : (stats?.openAlerts ?? 0),
 			icon: AlertTriangle,
 			variant: "primary",
 		},
 		{
-			label: "Revisiones Urgentes",
+			label: t("statsUrgentReviews"),
 			value: isLoading ? "..." : (stats?.urgentReviews ?? 0),
 			icon: Clock,
 		},
 		{
-			label: "Total Clientes",
+			label: t("statsTotalClients"),
 			value: isLoading
 				? "..."
 				: stats?.totalClients
@@ -83,13 +82,13 @@ export function ClientsPageContent(): React.ReactElement {
 	return (
 		<div className="space-y-6">
 			<PageHero
-				title="Clientes"
-				subtitle="Gestión y monitoreo de clientes"
+				title={t("clientsTitle")}
+				subtitle={t("clientsSubtitle")}
 				icon={Users}
 				stats={heroStats}
-				ctaLabel="Nuevo Cliente"
+				ctaLabel={t("clientsNew")}
 				ctaIcon={Plus}
-				onCtaClick={() => router.push("/clients/new")}
+				onCtaClick={() => navigateTo("/clients/new")}
 			/>
 
 			<ClientsTable />
