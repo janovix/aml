@@ -44,6 +44,8 @@ const personTypeOptions = {
 			icon: "text-sky-500 dark:text-sky-400",
 			iconSelected: "text-sky-600 dark:text-sky-300",
 			ring: "ring-sky-400/30 dark:ring-sky-500/30",
+			focusRing:
+				"focus-visible:ring-sky-400/30 dark:focus-visible:ring-sky-500/30",
 			checkBg: "bg-sky-500",
 		},
 	},
@@ -59,6 +61,8 @@ const personTypeOptions = {
 			icon: "text-violet-500 dark:text-violet-400",
 			iconSelected: "text-violet-600 dark:text-violet-300",
 			ring: "ring-violet-400/30 dark:ring-violet-500/30",
+			focusRing:
+				"focus-visible:ring-violet-400/30 dark:focus-visible:ring-violet-500/30",
 			checkBg: "bg-violet-500",
 		},
 	},
@@ -74,6 +78,8 @@ const personTypeOptions = {
 			icon: "text-amber-500 dark:text-amber-400",
 			iconSelected: "text-amber-600 dark:text-amber-300",
 			ring: "ring-amber-400/30 dark:ring-amber-500/30",
+			focusRing:
+				"focus-visible:ring-amber-400/30 dark:focus-visible:ring-amber-500/30",
 			checkBg: "bg-amber-500",
 		},
 	},
@@ -140,7 +146,7 @@ export function PersonTypePicker({
 								colors.border,
 								colors.background,
 								"hover:shadow-md",
-								`focus-visible:${colors.ring}`,
+								colors.focusRing,
 							],
 
 							// Selected state

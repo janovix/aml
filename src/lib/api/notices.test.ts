@@ -527,7 +527,7 @@ describe("api/notices", () => {
 			expect(mockLink.download).toBe("aviso_NOTICE123.xml");
 		});
 
-		it("uses provided filename over Content-Disposition", async () => {
+		it("Content-Disposition overrides provided filename", async () => {
 			const { downloadNoticeXml } = await import("./notices");
 
 			const mockBlob = new Blob(["<xml>content</xml>"], {

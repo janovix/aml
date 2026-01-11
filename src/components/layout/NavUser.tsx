@@ -141,7 +141,10 @@ export function NavUser({ user, isLoading = false, onLogout }: NavUserProps) {
 							</DropdownMenuItem>
 						</DropdownMenuGroup>
 						<DropdownMenuSeparator />
-						<DropdownMenuItem className="gap-2" onClick={onLogout}>
+						<DropdownMenuItem
+							className="gap-2 text-destructive focus:text-destructive"
+							onClick={onLogout}
+						>
 							<LogOut className="size-4" />
 							{t("sidebarLogout")}
 						</DropdownMenuItem>

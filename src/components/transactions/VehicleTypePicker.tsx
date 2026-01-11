@@ -28,6 +28,8 @@ const vehicleOptions = {
 			icon: "text-sky-400 dark:text-sky-500",
 			iconSelected: "text-sky-500 dark:text-sky-400",
 			ring: "ring-sky-400/30 dark:ring-sky-500/30",
+			focusRing:
+				"focus-visible:ring-sky-400/30 dark:focus-visible:ring-sky-500/30",
 			checkBg: "bg-sky-500",
 		},
 	},
@@ -41,6 +43,8 @@ const vehicleOptions = {
 			icon: "text-teal-400 dark:text-teal-500",
 			iconSelected: "text-teal-500 dark:text-teal-400",
 			ring: "ring-teal-400/30 dark:ring-teal-500/30",
+			focusRing:
+				"focus-visible:ring-teal-400/30 dark:focus-visible:ring-teal-500/30",
 			checkBg: "bg-teal-500",
 		},
 	},
@@ -54,6 +58,8 @@ const vehicleOptions = {
 			icon: "text-amber-400 dark:text-amber-500",
 			iconSelected: "text-amber-500 dark:text-amber-400",
 			ring: "ring-amber-400/30 dark:ring-amber-500/30",
+			focusRing:
+				"focus-visible:ring-amber-400/30 dark:focus-visible:ring-amber-500/30",
 			checkBg: "bg-amber-500",
 		},
 	},
@@ -120,7 +126,7 @@ export function VehicleTypePicker({
 								colors.border,
 								colors.background,
 								"hover:shadow-md",
-								`focus-visible:${colors.ring}`,
+								colors.focusRing,
 							],
 
 							// Selected state
