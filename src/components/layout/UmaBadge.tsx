@@ -70,7 +70,7 @@ export function UmaBadge(): React.ReactElement | null {
 	}
 
 	if (isLoading) {
-		return <Skeleton className="h-6 w-20 rounded-full" />;
+		return <Skeleton className="h-6 w-16 rounded-full sm:w-24" />;
 	}
 
 	if (!umaValue) {
@@ -86,13 +86,11 @@ export function UmaBadge(): React.ReactElement | null {
 				<TooltipTrigger asChild>
 					<Badge
 						variant="outline"
-						className="gap-1.5 px-2.5 py-1 font-medium text-xs cursor-default border-muted-foreground/30 bg-muted/50 text-muted-foreground hover:bg-muted"
+						className="gap-1 px-1.5 py-1 font-medium text-xs cursor-default border-muted-foreground/30 bg-muted/50 text-muted-foreground hover:bg-muted sm:gap-1.5 sm:px-2.5"
 					>
-						<TrendingUp className="h-3 w-3" />
-						<span>
-							UMA:{" "}
-							<span className="tabular-nums">{formatCurrency(dailyValue)}</span>
-						</span>
+						<TrendingUp className="h-3 w-3 shrink-0" />
+						<span className="hidden sm:inline">UMA:</span>
+						<span className="tabular-nums">{formatCurrency(dailyValue)}</span>
 					</Badge>
 				</TooltipTrigger>
 				<TooltipContent
