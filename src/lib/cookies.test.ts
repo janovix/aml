@@ -48,10 +48,10 @@ describe("cookies utilities", () => {
 			expect(detectEnvironment()).toBe("local");
 		});
 
-		it("returns production for janovix.ai", () => {
+		it("returns production for janovix.com", () => {
 			Object.defineProperty(global, "window", {
 				value: {
-					location: { hostname: "aml.janovix.ai" },
+					location: { hostname: "aml.janovix.com" },
 				},
 				writable: true,
 				configurable: true,
@@ -109,15 +109,15 @@ describe("cookies utilities", () => {
 			expect(getCookieDomain()).toBe(".janovix.workers.dev");
 		});
 
-		it("returns .janovix.ai for production environment", () => {
+		it("returns .janovix.com for production environment", () => {
 			Object.defineProperty(global, "window", {
 				value: {
-					location: { hostname: "aml.janovix.ai" },
+					location: { hostname: "aml.janovix.com" },
 				},
 				writable: true,
 				configurable: true,
 			});
-			expect(getCookieDomain()).toBe(".janovix.ai");
+			expect(getCookieDomain()).toBe(".janovix.com");
 		});
 	});
 
@@ -262,10 +262,10 @@ describe("cookies utilities", () => {
 			});
 		});
 
-		it("returns production for bare janovix.ai domain", () => {
+		it("returns production for bare janovix.com domain", () => {
 			Object.defineProperty(global, "window", {
 				value: {
-					location: { hostname: "janovix.ai" },
+					location: { hostname: "janovix.com" },
 				},
 				writable: true,
 				configurable: true,
@@ -321,14 +321,14 @@ describe("cookies utilities", () => {
 
 			Object.defineProperty(global, "window", {
 				value: {
-					location: { hostname: "aml.janovix.ai" },
+					location: { hostname: "aml.janovix.com" },
 				},
 				writable: true,
 				configurable: true,
 			});
 
 			setCookie("test-cookie", "test-value");
-			expect(setCookieValue).toContain("domain=.janovix.ai");
+			expect(setCookieValue).toContain("domain=.janovix.com");
 			expect(setCookieValue).toContain("secure");
 		});
 
@@ -349,14 +349,14 @@ describe("cookies utilities", () => {
 
 			Object.defineProperty(global, "window", {
 				value: {
-					location: { hostname: "aml.janovix.ai" },
+					location: { hostname: "aml.janovix.com" },
 				},
 				writable: true,
 				configurable: true,
 			});
 
 			deleteCookie("test-cookie");
-			expect(setCookieValue).toContain("domain=.janovix.ai");
+			expect(setCookieValue).toContain("domain=.janovix.com");
 		});
 
 		it("setCookie with custom options", () => {
