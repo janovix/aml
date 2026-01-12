@@ -582,6 +582,25 @@ export const translations = {
 			"Esto puede suceder si la organización fue eliminada, la URL es incorrecta o seguiste un enlace desactualizado.",
 		errorGoBack: "Volver",
 		errorHome: "Inicio",
+
+		// Subscription banner
+		"subscription.banner.freeTier": "Plan Gratuito",
+		"subscription.banner.freeTierDesc":
+			"Estás usando el plan gratuito con funciones limitadas.",
+		"subscription.banner.nearLimit": "Cerca del límite",
+		"subscription.banner.nearLimitDesc":
+			"Te estás acercando al límite de {metrics}.",
+		"subscription.banner.limitReached": "Límite alcanzado",
+		"subscription.banner.limitReachedDesc":
+			"Has alcanzado el límite de {metrics}. Mejora tu plan para continuar.",
+		"subscription.banner.upgrade": "Mejorar plan",
+		"subscription.metrics.notices": "avisos",
+		"subscription.metrics.users": "usuarios",
+		"subscription.metrics.alerts": "alertas",
+		"subscription.metrics.transactions": "transacciones",
+
+		// Common additions
+		"common.dismiss": "Descartar",
 	},
 	en: {
 		// Common
@@ -1153,6 +1172,25 @@ export const translations = {
 			"This could happen if the organization was deleted, the URL is incorrect, or you followed an outdated link.",
 		errorGoBack: "Go Back",
 		errorHome: "Home",
+
+		// Subscription banner
+		"subscription.banner.freeTier": "Free Plan",
+		"subscription.banner.freeTierDesc":
+			"You're using the free plan with limited features.",
+		"subscription.banner.nearLimit": "Near limit",
+		"subscription.banner.nearLimitDesc":
+			"You're approaching your {metrics} limit.",
+		"subscription.banner.limitReached": "Limit reached",
+		"subscription.banner.limitReachedDesc":
+			"You've reached your {metrics} limit. Upgrade to continue.",
+		"subscription.banner.upgrade": "Upgrade plan",
+		"subscription.metrics.notices": "notices",
+		"subscription.metrics.users": "users",
+		"subscription.metrics.alerts": "alerts",
+		"subscription.metrics.transactions": "transactions",
+
+		// Common additions
+		"common.dismiss": "Dismiss",
 	},
 } as const;
 

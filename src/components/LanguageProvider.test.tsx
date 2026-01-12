@@ -12,7 +12,14 @@ vi.mock("@/lib/cookies", () => ({
 	},
 }));
 
+// Mock the settings module
+vi.mock("@/lib/settings", () => ({
+	getResolvedSettings: vi.fn(),
+	updateUserSettings: vi.fn(),
+}));
+
 import { getCookie, setCookie } from "@/lib/cookies";
+import { getResolvedSettings, updateUserSettings } from "@/lib/settings";
 
 // Test component that uses the hook
 function TestComponent() {
@@ -41,6 +48,12 @@ describe("LanguageProvider", () => {
 			writable: true,
 			configurable: true,
 		});
+
+		// Default mock: API rejects (not logged in)
+		vi.mocked(getResolvedSettings).mockRejectedValue(
+			new Error("Not authenticated"),
+		);
+		vi.mocked(updateUserSettings).mockResolvedValue({} as never);
 	});
 
 	afterEach(() => {
@@ -175,5 +188,72 @@ describe("LanguageProvider", () => {
 		}).toThrow("useLanguage must be used within a LanguageProvider");
 
 		consoleSpy.mockRestore();
+	});
+
+	it("should sync with API when available", async () => {
+		vi.mocked(getCookie).mockReturnValue("es");
+		vi.mocked(getResolvedSettings).mockResolvedValue({
+			language: "en",
+			theme: "light",
+			timezone: "UTC",
+			dateFormat: "DD/MM/YYYY",
+			avatarUrl: null,
+			sources: {
+				language: "user",
+				theme: "default",
+				timezone: "default",
+				dateFormat: "default",
+			},
+		});
+
+		const { container } = render(
+			<LanguageProvider>
+				<TestComponent />
+			</LanguageProvider>,
+		);
+
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 200));
+		});
+
+		// Should update to API value
+		const languageElement = container.querySelector('[data-testid="language"]');
+		expect(languageElement).toHaveTextContent("en");
+		// Should sync cookie with API value
+		expect(setCookie).toHaveBeenCalledWith("janovix-lang", "en");
+	});
+
+	it("should call API when language changes after sync", async () => {
+		vi.mocked(getCookie).mockReturnValue("es");
+		vi.mocked(getResolvedSettings).mockResolvedValue({
+			language: "es",
+			theme: "light",
+			timezone: "UTC",
+			dateFormat: "DD/MM/YYYY",
+			avatarUrl: null,
+			sources: {
+				language: "user",
+				theme: "default",
+				timezone: "default",
+				dateFormat: "default",
+			},
+		});
+
+		render(
+			<LanguageProvider>
+				<TestComponent />
+			</LanguageProvider>,
+		);
+
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 200));
+		});
+
+		const englishButton = screen.getByText("Set English");
+		await act(async () => {
+			fireEvent.click(englishButton);
+		});
+
+		expect(updateUserSettings).toHaveBeenCalledWith({ language: "en" });
 	});
 });
