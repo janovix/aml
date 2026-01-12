@@ -36,6 +36,7 @@ import {
 	setActiveOrganization,
 	createOrganization,
 } from "@/lib/auth/organizations";
+import { getAuthAppUrl } from "@/lib/auth/config";
 import { useOrgStore, type Organization } from "@/lib/org-store";
 import { executeMutation } from "@/lib/mutations";
 import {
@@ -65,6 +66,7 @@ type NavItem = {
 	href: string;
 	icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 	available: boolean;
+	externalUrl?: string; // If set, links to external URL instead of internal href
 };
 
 const mainNavItems: NavItem[] = [
@@ -115,6 +117,7 @@ const orgNavItems: NavItem[] = [
 		href: "/team",
 		icon: UsersRound,
 		available: true,
+		externalUrl: `${getAuthAppUrl()}/settings/team`,
 	},
 	{
 		titleKey: "navSettings",
@@ -428,6 +431,34 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 									const Icon = item.icon;
 									const isActive = isNavActive(item.href);
 									const title = t(item.titleKey);
+
+									// Use external URL if provided, otherwise use internal orgPath
+									if (item.externalUrl) {
+										return (
+											<SidebarMenuItem key={item.href}>
+												<SidebarMenuButton
+													asChild
+													isActive={isActive}
+													tooltip={title}
+												>
+													<a
+														href={item.available ? item.externalUrl : "#"}
+														aria-disabled={!item.available}
+														className={cn(
+															!item.available &&
+																"pointer-events-none opacity-50",
+														)}
+														onClick={
+															item.available ? handleLinkClick : undefined
+														}
+													>
+														<Icon />
+														<span>{title}</span>
+													</a>
+												</SidebarMenuButton>
+											</SidebarMenuItem>
+										);
+									}
 
 									return (
 										<SidebarMenuItem key={item.href}>

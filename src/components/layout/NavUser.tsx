@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { LogOut, Settings, User, ChevronsUpDown } from "lucide-react";
+import { getAuthAppUrl } from "@/lib/auth/config";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -120,31 +120,28 @@ export function NavUser({ user, isLoading = false, onLogout }: NavUserProps) {
 						<DropdownMenuSeparator />
 						<DropdownMenuGroup>
 							<DropdownMenuItem asChild>
-								<Link
-									href="/settings"
+								<a
+									href={`${getAuthAppUrl()}/settings`}
 									className="flex items-center gap-2"
 									onClick={handleLinkClick}
 								>
 									<Settings className="size-4" />
 									{t("navSettings")}
-								</Link>
+								</a>
 							</DropdownMenuItem>
 							<DropdownMenuItem asChild>
-								<Link
-									href="/settings/profile"
+								<a
+									href={`${getAuthAppUrl()}/settings`}
 									className="flex items-center gap-2"
 									onClick={handleLinkClick}
 								>
 									<User className="size-4" />
 									{t("sidebarProfile")}
-								</Link>
+								</a>
 							</DropdownMenuItem>
 						</DropdownMenuGroup>
 						<DropdownMenuSeparator />
-						<DropdownMenuItem
-							className="gap-2 text-destructive focus:text-destructive"
-							onClick={onLogout}
-						>
+						<DropdownMenuItem className="gap-2" onClick={onLogout}>
 							<LogOut className="size-4" />
 							{t("sidebarLogout")}
 						</DropdownMenuItem>

@@ -111,7 +111,7 @@ describe("NavUser", () => {
 		expect(mockLogout).toHaveBeenCalledTimes(1);
 	});
 
-	it("renders settings and profile links", async () => {
+	it("renders settings and profile links pointing to auth app", async () => {
 		const mockUser = {
 			name: "Test User",
 			email: "test@example.com",
@@ -129,12 +129,22 @@ describe("NavUser", () => {
 		expect(userName).toBeInTheDocument();
 		await user.click(userName);
 
-		// Check for links in the dropdown
+		// Check for links in the dropdown pointing to auth app
 		const configLink = await screen.findByText("Configuración");
 		const profileLink = await screen.findByText("Perfil");
 
 		expect(configLink).toBeInTheDocument();
 		expect(profileLink).toBeInTheDocument();
+
+		// Verify they are external links to auth app
+		expect(configLink.closest("a")).toHaveAttribute(
+			"href",
+			expect.stringContaining("/settings"),
+		);
+		expect(profileLink.closest("a")).toHaveAttribute(
+			"href",
+			expect.stringContaining("/settings"),
+		);
 	});
 
 	it("renders user with single name", () => {

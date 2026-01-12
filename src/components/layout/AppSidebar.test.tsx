@@ -856,12 +856,20 @@ describe("AppSidebar", () => {
 		});
 	});
 
-	it("renders team navigation item", () => {
+	it("renders team navigation item as external link to auth app", () => {
 		mockUsePathname.mockReturnValue("/team");
 
 		renderWithProviders(<AppSidebar />);
 
-		expect(screen.getByText("Equipo")).toBeInTheDocument();
+		const teamLink = screen.getByText("Equipo");
+		expect(teamLink).toBeInTheDocument();
+
+		// Team link should be an external link to auth app's team settings
+		const linkElement = teamLink.closest("a");
+		expect(linkElement).toHaveAttribute(
+			"href",
+			expect.stringContaining("/settings/team"),
+		);
 	});
 
 	it("handles org with logo in legacy format", () => {
