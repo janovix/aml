@@ -18,6 +18,24 @@ vi.mock("@/lib/cookies", () => ({
 	},
 }));
 
+// Mock the org store
+vi.mock("@/lib/org-store", () => ({
+	useOrgStore: () => ({
+		currentOrg: { id: "org-123", slug: "test-org", name: "Test Org" },
+		organizations: [],
+		setCurrentOrg: vi.fn(),
+	}),
+}));
+
+// Mock the API calls
+vi.mock("@/lib/api/stats", () => ({
+	getClientStats: vi.fn().mockResolvedValue({
+		totalClients: 100,
+		physicalClients: 70,
+		moralClients: 30,
+	}),
+}));
+
 const mockPush = vi.fn();
 
 vi.mock("next/navigation", () => ({
@@ -68,10 +86,12 @@ describe("ClientsPageContent", () => {
 	it("renders KPI cards", () => {
 		renderWithProviders(<ClientsPageContent />);
 
-		const alertas = screen.getAllByText("Alertas Abiertas");
 		const total = screen.getAllByText("Total Clientes");
-		expect(alertas.length).toBeGreaterThan(0);
+		const physical = screen.getAllByText("Personas Físicas");
+		const moral = screen.getAllByText("Personas Morales");
 		expect(total.length).toBeGreaterThan(0);
+		expect(physical.length).toBeGreaterThan(0);
+		expect(moral.length).toBeGreaterThan(0);
 	});
 
 	it("renders clients table with built-in search", () => {

@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Save, Plus, Trash2, ReceiptText } from "lucide-react";
+import { VehicleTypePicker } from "./VehicleTypePicker";
 import { PageHero } from "@/components/page-hero";
 import { toast } from "sonner";
 import { createTransaction } from "../../lib/api/transactions";
@@ -382,26 +383,11 @@ export function TransactionCreateView(): React.JSX.Element {
 							>
 								{t("txnVehicleType")}
 							</LabelWithInfo>
-							<Select
+							<VehicleTypePicker
+								id="vehicle-type"
 								value={formData.vehicleType}
-								onValueChange={(value) =>
-									handleInputChange("vehicleType", value)
-								}
-								required
-							>
-								<SelectTrigger id="vehicle-type">
-									<SelectValue placeholder={t("txnVehicleTypePlaceholder")} />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="land">
-										{t("txnVehicleTypeLand")}
-									</SelectItem>
-									<SelectItem value="marine">
-										{t("txnVehicleTypeMarine")}
-									</SelectItem>
-									<SelectItem value="air">{t("txnVehicleTypeAir")}</SelectItem>
-								</SelectContent>
-							</Select>
+								onChange={(value) => handleInputChange("vehicleType", value)}
+							/>
 						</div>
 
 						<Separator />

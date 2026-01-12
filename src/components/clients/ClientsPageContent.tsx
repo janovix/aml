@@ -4,7 +4,7 @@ import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { useEffect, useState } from "react";
 import { ClientsTable } from "@/components/clients/ClientsTable";
 import { PageHero, type StatCard } from "@/components/page-hero";
-import { Users, AlertTriangle, Clock, Plus } from "lucide-react";
+import { Users, User, Building2, Plus } from "lucide-react";
 import { getClientStats } from "@/lib/api/stats";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/lib/mutations";
@@ -16,9 +16,9 @@ export function ClientsPageContent(): React.ReactElement {
 	const { navigateTo } = useOrgNavigation();
 	const { t, language } = useLanguage();
 	const [stats, setStats] = useState<{
-		openAlerts: number;
-		urgentReviews: number;
 		totalClients: number;
+		physicalClients: number;
+		moralClients: number;
 	} | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 
@@ -58,17 +58,6 @@ export function ClientsPageContent(): React.ReactElement {
 
 	const heroStats: StatCard[] = [
 		{
-			label: t("statsOpenAlerts"),
-			value: isLoading ? "..." : (stats?.openAlerts ?? 0),
-			icon: AlertTriangle,
-			variant: "primary",
-		},
-		{
-			label: t("statsUrgentReviews"),
-			value: isLoading ? "..." : (stats?.urgentReviews ?? 0),
-			icon: Clock,
-		},
-		{
 			label: t("statsTotalClients"),
 			value: isLoading
 				? "..."
@@ -76,6 +65,25 @@ export function ClientsPageContent(): React.ReactElement {
 					? formatNumber(stats.totalClients)
 					: "0",
 			icon: Users,
+			variant: "primary",
+		},
+		{
+			label: t("statsPhysicalClients"),
+			value: isLoading
+				? "..."
+				: stats?.physicalClients
+					? formatNumber(stats.physicalClients)
+					: "0",
+			icon: User,
+		},
+		{
+			label: t("statsMoralClients"),
+			value: isLoading
+				? "..."
+				: stats?.moralClients
+					? formatNumber(stats.moralClients)
+					: "0",
+			icon: Building2,
 		},
 	];
 

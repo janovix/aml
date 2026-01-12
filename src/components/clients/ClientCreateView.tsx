@@ -8,10 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Save, UserPlus, User, Building2, Landmark, Check } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Save, UserPlus } from "lucide-react";
 import { PageHero } from "@/components/page-hero";
 import type { PersonType, ClientCreateRequest } from "../../types/client";
+import { PersonTypePicker } from "./PersonTypePicker";
 import { createClient } from "../../lib/api/clients";
 import { executeMutation } from "../../lib/mutations";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
@@ -21,48 +21,6 @@ import { PhoneInput } from "../ui/phone-input";
 import { validateRFC, validateCURP } from "../../lib/utils";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/LanguageProvider";
-import type { TranslationKeys } from "@/lib/translations";
-
-interface PersonTypeOption {
-	value: PersonType;
-	labelKey: TranslationKeys;
-	descriptionKey: TranslationKeys;
-	icon: typeof User;
-	iconBg: string;
-	iconColor: string;
-	ringColor: string;
-}
-
-const personTypeOptionsConfig: PersonTypeOption[] = [
-	{
-		value: "physical",
-		labelKey: "clientPersonPhysical",
-		descriptionKey: "clientPersonPhysicalDesc",
-		icon: User,
-		iconBg: "bg-sky-500/20",
-		iconColor: "text-sky-500",
-		ringColor: "ring-sky-500",
-	},
-	{
-		value: "moral",
-		labelKey: "clientPersonMoral",
-		descriptionKey: "clientPersonMoralDesc",
-		icon: Building2,
-		iconBg: "bg-violet-500/20",
-		iconColor: "text-violet-500",
-		ringColor: "ring-violet-500",
-	},
-	{
-		value: "trust",
-		labelKey: "clientTrust",
-		descriptionKey: "clientTrustDesc",
-		icon: Landmark,
-		iconBg: "bg-amber-500/20",
-		iconColor: "text-amber-500",
-		ringColor: "ring-amber-500",
-	},
-];
-
 interface ClientFormData {
 	personType: PersonType;
 	// Physical person fields
@@ -97,13 +55,6 @@ export function ClientCreateView(): React.JSX.Element {
 	const searchParams = useSearchParams();
 	const returnUrl = searchParams.get("returnUrl");
 	const [isSubmitting, setIsSubmitting] = useState(false);
-
-	// Build person type options with translations
-	const personTypeOptions = personTypeOptionsConfig.map((opt) => ({
-		...opt,
-		label: t(opt.labelKey),
-		description: t(opt.descriptionKey),
-	}));
 
 	const [formData, setFormData] = useState<ClientFormData>({
 		personType: "moral",
@@ -287,77 +238,10 @@ export function ClientCreateView(): React.JSX.Element {
 						<CardTitle className="text-lg">{t("clientPersonType")}</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<fieldset>
-							<legend className="sr-only">{t("clientPersonTypeSelect")}</legend>
-							<div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-								{personTypeOptions.map((option) => {
-									const isSelected = formData.personType === option.value;
-									const Icon = option.icon;
-									return (
-										<label
-											key={option.value}
-											className={cn(
-												"relative flex cursor-pointer rounded-xl border-2 p-4 transition-all duration-200",
-												"hover:border-muted-foreground/30 hover:bg-muted/50",
-												"focus-within:ring-2 focus-within:ring-offset-2",
-												isSelected
-													? `border-current ${option.iconColor} bg-muted/30 ${option.ringColor}`
-													: "border-border bg-background",
-											)}
-										>
-											<input
-												type="radio"
-												name="personType"
-												value={option.value}
-												checked={isSelected}
-												onChange={(e) =>
-													handleInputChange(
-														"personType",
-														e.target.value as PersonType,
-													)
-												}
-												className="sr-only"
-											/>
-											<div className="flex w-full items-start gap-3">
-												<div
-													className={cn(
-														"flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
-														option.iconBg,
-														option.iconColor,
-													)}
-												>
-													<Icon className="h-5 w-5" />
-												</div>
-												<div className="flex-1 min-w-0">
-													<span
-														className={cn(
-															"block text-sm font-semibold",
-															isSelected ? option.iconColor : "text-foreground",
-														)}
-													>
-														{option.label}
-													</span>
-													<span className="block text-xs text-muted-foreground mt-0.5 leading-tight">
-														{option.description}
-													</span>
-												</div>
-												{isSelected && (
-													<div
-														className={cn(
-															"flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
-															option.iconBg,
-															option.iconColor,
-														)}
-													>
-														<Check className="h-3 w-3" strokeWidth={3} />
-													</div>
-												)}
-											</div>
-										</label>
-									);
-								})}
-							</div>
-						</fieldset>
+						<PersonTypePicker
+							value={formData.personType}
+							onChange={(value) => handleInputChange("personType", value)}
+						/>
 					</CardContent>
 				</Card>
 
