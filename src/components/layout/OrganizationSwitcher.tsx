@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronsUpDown, Plus, Building2 } from "lucide-react";
+import { ChevronsUpDown, Plus, Settings } from "lucide-react";
 
 import {
 	DropdownMenu,
@@ -17,8 +17,13 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from "@/components/ui/sidebar";
-import { Logo } from "./Logo";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { formatProperNoun } from "@/lib/utils";
+import { getAuthAppUrl } from "@/lib/auth/config";
 
 export interface Organization {
 	id: string;
@@ -33,6 +38,74 @@ interface OrganizationSwitcherProps {
 	onOrganizationChange: (organization: Organization) => void;
 	onCreateOrganization?: () => void;
 	isLoading?: boolean;
+	organizationsOwned?: number;
+	organizationsLimit?: number;
+}
+
+// Small circular progress indicator
+function CircularProgress({
+	value,
+	max,
+	size = 20,
+}: {
+	value: number;
+	max: number;
+	size?: number;
+}) {
+	const percentage = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+	const strokeWidth = 2.5;
+	const radius = (size - strokeWidth) / 2;
+	const circumference = 2 * Math.PI * radius;
+	const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+	// Color based on usage
+	const getColor = () => {
+		if (percentage >= 100) return "text-destructive";
+		if (percentage >= 80) return "text-yellow-500";
+		return "text-primary";
+	};
+
+	return (
+		<svg
+			width={size}
+			height={size}
+			className={`-rotate-90 ${getColor()}`}
+			viewBox={`0 0 ${size} ${size}`}
+		>
+			{/* Background circle */}
+			<circle
+				cx={size / 2}
+				cy={size / 2}
+				r={radius}
+				fill="none"
+				stroke="currentColor"
+				strokeWidth={strokeWidth}
+				className="opacity-20"
+			/>
+			{/* Progress circle */}
+			<circle
+				cx={size / 2}
+				cy={size / 2}
+				r={radius}
+				fill="none"
+				stroke="currentColor"
+				strokeWidth={strokeWidth}
+				strokeDasharray={circumference}
+				strokeDashoffset={strokeDashoffset}
+				strokeLinecap="round"
+			/>
+		</svg>
+	);
+}
+
+function getOrgInitials(name: string): string {
+	const parts = name.split(" ").filter(Boolean);
+	if (parts.length === 0) return "?";
+	if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+	return (
+		parts[0].charAt(0).toUpperCase() +
+		parts[parts.length - 1].charAt(0).toUpperCase()
+	);
 }
 
 export function OrganizationSwitcher({
@@ -41,6 +114,8 @@ export function OrganizationSwitcher({
 	onOrganizationChange,
 	onCreateOrganization,
 	isLoading = false,
+	organizationsOwned = 0,
+	organizationsLimit = 0,
 }: OrganizationSwitcherProps) {
 	const { isMobile, state } = useSidebar();
 	const isCollapsed = state === "collapsed";
@@ -61,7 +136,7 @@ export function OrganizationSwitcher({
 		);
 	}
 
-	// If collapsed, show just the org icon with dropdown
+	// If collapsed, show just the org avatar with dropdown
 	if (isCollapsed) {
 		return (
 			<SidebarMenu>
@@ -77,10 +152,14 @@ export function OrganizationSwitcher({
 										<img
 											src={activeOrganization.logo}
 											alt={activeOrganization.name}
-											className="size-8 rounded-lg object-contain"
+											className="size-8 rounded-lg object-cover"
 										/>
 									) : (
-										<Logo variant="icon" width={32} height={32} />
+										<div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-semibold">
+											{activeOrganization
+												? getOrgInitials(activeOrganization.name)
+												: "?"}
+										</div>
 									)}
 								</div>
 							</SidebarMenuButton>
@@ -91,34 +170,60 @@ export function OrganizationSwitcher({
 							side="right"
 							sideOffset={4}
 						>
-							<DropdownMenuLabel className="text-xs text-muted-foreground">
-								Organizaciones
+							<DropdownMenuLabel className="flex items-center justify-between text-xs text-muted-foreground">
+								<span>Organizaciones</span>
+								{organizationsLimit > 0 && (
+									<div className="flex items-center gap-1.5">
+										<CircularProgress
+											value={organizationsOwned}
+											max={organizationsLimit}
+											size={16}
+										/>
+										<span className="tabular-nums">
+											{organizationsOwned}/{organizationsLimit}
+										</span>
+									</div>
+								)}
 							</DropdownMenuLabel>
 							{organizations.map((org) => (
 								<DropdownMenuItem
 									key={org.id}
 									onClick={() => onOrganizationChange(org)}
-									className="gap-2 p-2"
+									className="gap-2 p-2 group/org"
 								>
 									{org.logo ? (
-										<div className="flex size-6 items-center justify-center rounded-md border overflow-hidden">
-											<img
-												src={org.logo}
-												alt={org.name}
-												className="size-4 rounded"
-											/>
-										</div>
+										<img
+											src={org.logo}
+											alt={org.name}
+											className="size-6 rounded-md object-cover"
+										/>
 									) : (
-										<Building2 className="size-4 text-muted-foreground" />
+										<div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground text-xs font-semibold">
+											{getOrgInitials(org.name)}
+										</div>
 									)}
 									<span className="flex-1 truncate">
 										{formatProperNoun(org.name)}
 									</span>
 									{activeOrganization?.id === org.id && (
-										<span className="text-xs text-muted-foreground">
+										<span className="text-xs text-muted-foreground group-hover/org:hidden">
 											Activa
 										</span>
 									)}
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<a
+												href={`${getAuthAppUrl()}/settings/organization?org=${org.slug}`}
+												onClick={(e) => e.stopPropagation()}
+												className="p-1 rounded hover:bg-muted hidden group-hover/org:block"
+												target="_blank"
+												rel="noopener noreferrer"
+											>
+												<Settings className="size-3.5 text-muted-foreground" />
+											</a>
+										</TooltipTrigger>
+										<TooltipContent side="right">Configuración</TooltipContent>
+									</Tooltip>
 								</DropdownMenuItem>
 							))}
 							{onCreateOrganization && (
@@ -181,10 +286,14 @@ export function OrganizationSwitcher({
 									<img
 										src={activeOrganization.logo}
 										alt={activeOrganization.name}
-										className="size-8 rounded-lg object-contain"
+										className="size-8 rounded-lg object-cover"
 									/>
 								) : (
-									<Logo variant="icon" width={32} height={32} />
+									<div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-semibold">
+										{activeOrganization
+											? getOrgInitials(activeOrganization.name)
+											: "?"}
+									</div>
 								)}
 							</div>
 							<div className="grid flex-1 text-left text-sm leading-tight">
@@ -206,32 +315,60 @@ export function OrganizationSwitcher({
 						side={isMobile ? "bottom" : "right"}
 						sideOffset={4}
 					>
-						<DropdownMenuLabel className="text-xs text-muted-foreground">
-							Organizaciones
+						<DropdownMenuLabel className="flex items-center justify-between text-xs text-muted-foreground">
+							<span>Organizaciones</span>
+							{organizationsLimit > 0 && (
+								<div className="flex items-center gap-1.5">
+									<CircularProgress
+										value={organizationsOwned}
+										max={organizationsLimit}
+										size={16}
+									/>
+									<span className="tabular-nums">
+										{organizationsOwned}/{organizationsLimit}
+									</span>
+								</div>
+							)}
 						</DropdownMenuLabel>
 						{organizations.map((org) => (
 							<DropdownMenuItem
 								key={org.id}
 								onClick={() => onOrganizationChange(org)}
-								className="gap-2 p-2"
+								className="gap-2 p-2 group/org"
 							>
 								{org.logo ? (
-									<div className="flex size-6 items-center justify-center rounded-md border overflow-hidden">
-										<img
-											src={org.logo}
-											alt={org.name}
-											className="size-4 rounded"
-										/>
-									</div>
+									<img
+										src={org.logo}
+										alt={org.name}
+										className="size-6 rounded-md object-cover"
+									/>
 								) : (
-									<Building2 className="size-4 text-muted-foreground" />
+									<div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground text-xs font-semibold">
+										{getOrgInitials(org.name)}
+									</div>
 								)}
 								<span className="flex-1 truncate">
 									{formatProperNoun(org.name)}
 								</span>
 								{activeOrganization?.id === org.id && (
-									<span className="text-xs text-muted-foreground">Activa</span>
+									<span className="text-xs text-muted-foreground group-hover/org:hidden">
+										Activa
+									</span>
 								)}
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<a
+											href={`${getAuthAppUrl()}/settings/organization?org=${org.slug}`}
+											onClick={(e) => e.stopPropagation()}
+											className="p-1 rounded hover:bg-muted hidden group-hover/org:block"
+											target="_blank"
+											rel="noopener noreferrer"
+										>
+											<Settings className="size-3.5 text-muted-foreground" />
+										</a>
+									</TooltipTrigger>
+									<TooltipContent side="right">Configuración</TooltipContent>
+								</Tooltip>
 							</DropdownMenuItem>
 						))}
 						{onCreateOrganization && (

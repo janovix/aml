@@ -117,20 +117,6 @@ describe("NavBreadcrumb", () => {
 		expect(screen.getByText("Reportes")).toBeInTheDocument();
 	});
 
-	it("renders team route", () => {
-		mockPathname.mockReturnValue("/test-org/team");
-		renderWithProviders(<NavBreadcrumb />);
-
-		expect(screen.getByText("Equipo")).toBeInTheDocument();
-	});
-
-	it("renders settings route", () => {
-		mockPathname.mockReturnValue("/test-org/settings");
-		renderWithProviders(<NavBreadcrumb />);
-
-		expect(screen.getByText("Configuración")).toBeInTheDocument();
-	});
-
 	it("renders new client route", () => {
 		mockPathname.mockReturnValue("/test-org/clients/new");
 		renderWithProviders(<NavBreadcrumb />);

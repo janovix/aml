@@ -9,7 +9,16 @@ import { getAuthServiceUrl } from "../auth/config";
 
 const getBaseUrl = () => getAuthServiceUrl();
 
-export type PlanTier = "none" | "free" | "business" | "pro" | "enterprise";
+export type PlanTier =
+	| "none"
+	| "free"
+	| "watchlist"
+	| "business"
+	| "pro"
+	| "ultra"
+	| "business"
+	| "pro"
+	| "enterprise";
 
 export interface UsageCheckResult {
 	allowed: boolean;
@@ -43,6 +52,8 @@ export interface SubscriptionStatus {
 	} | null;
 	features: string[];
 	stripeCustomerId: string;
+	organizationsOwned: number;
+	organizationsLimit: number;
 }
 
 interface ApiResponse<T> {
@@ -120,4 +131,49 @@ export function isNearLimit(usage: UsageCheckResult): boolean {
 export function isAtLimit(usage: UsageCheckResult): boolean {
 	const percentage = getUsagePercentage(usage);
 	return percentage >= 100;
+}
+
+/**
+ * Product feature types
+ */
+export type ProductFeature = "product_aml" | "product_watchlist";
+
+/**
+ * Check if user has access to a specific product
+ * @param subscription - Current subscription status
+ * @param product - Product feature to check ("product_aml" or "product_watchlist")
+ * @returns true if user has access to the product
+ */
+export function hasProductAccess(
+	subscription: SubscriptionStatus | null,
+	product: ProductFeature,
+): boolean {
+	if (!subscription) return false;
+	if (!subscription.hasSubscription) return false;
+
+	// Check if subscription is active or trialing
+	if (subscription.status !== "active" && subscription.status !== "trialing") {
+		return false;
+	}
+
+	// Check if the product feature is in the features array
+	return subscription.features.includes(product);
+}
+
+/**
+ * Check if user has AML access
+ * Requires product_aml feature (included in business, pro, ultra plans)
+ */
+export function hasAMLAccess(subscription: SubscriptionStatus | null): boolean {
+	return hasProductAccess(subscription, "product_aml");
+}
+
+/**
+ * Check if user has Watchlist access
+ * Requires product_watchlist feature (included in all plans)
+ */
+export function hasWatchlistAccess(
+	subscription: SubscriptionStatus | null,
+): boolean {
+	return hasProductAccess(subscription, "product_watchlist");
 }

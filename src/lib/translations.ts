@@ -45,6 +45,8 @@ export const translations = {
 		navRiskModels: "Modelos de Riesgo",
 		navHistory: "Historial",
 		navAnalysis: "Análisis",
+		navWatchlist: "Lista de Vigilancia",
+		navProducts: "Productos",
 
 		// Breadcrumbs
 		breadcrumbHome: "Inicio",
@@ -582,6 +584,21 @@ export const translations = {
 			"Esto puede suceder si la organización fue eliminada, la URL es incorrecta o seguiste un enlace desactualizado.",
 		errorGoBack: "Volver",
 		errorHome: "Inicio",
+		errorTryAgain: "Intentar de nuevo",
+		errorSignIn: "Iniciar sesión",
+		errorNotFoundTitle: "Página no encontrada",
+		errorNotFoundDescription:
+			"La página que buscas no existe o fue movida. Verifica la URL o vuelve a un lugar seguro.",
+		errorServerTitle: "Algo salió mal",
+		errorServerDescription:
+			"Se produjo un error inesperado al cargar esta página.",
+		errorServerHelp:
+			"Intenta nuevamente o vuelve al inicio si el problema continúa.",
+		errorUnauthorizedTitle: "Inicio de sesión requerido",
+		errorUnauthorizedDescription:
+			"Necesitas iniciar sesión para acceder a esta página.",
+		errorUnauthorizedReason:
+			"Si llegaste aquí desde un enlace compartido o un marcador, inicia sesión e inténtalo de nuevo.",
 
 		// Subscription banner
 		"subscription.banner.freeTier": "Plan Gratuito",
@@ -598,6 +615,13 @@ export const translations = {
 		"subscription.metrics.users": "usuarios",
 		"subscription.metrics.alerts": "alertas",
 		"subscription.metrics.transactions": "transacciones",
+		"subscription.noAmlAccess.title": "Acceso AML No Disponible",
+		"subscription.noAmlAccess.description":
+			"Tu suscripción actual no incluye acceso al producto AML.",
+		"subscription.noAmlAccess.upgradePrompt":
+			"Para acceder a funciones de cumplimiento AML, informes y más, mejora a un plan que incluya AML.",
+		"subscription.noAmlAccess.upgradeCta": "Ver planes disponibles",
+		"subscription.noAmlAccess.backToSettings": "Ir a configuración",
 
 		// Common additions
 		"common.dismiss": "Descartar",
@@ -639,6 +663,8 @@ export const translations = {
 		navRiskModels: "Risk Models",
 		navHistory: "History",
 		navAnalysis: "Analysis",
+		navWatchlist: "Watchlist",
+		navProducts: "Products",
 
 		// Breadcrumbs
 		breadcrumbHome: "Home",
@@ -1172,6 +1198,19 @@ export const translations = {
 			"This could happen if the organization was deleted, the URL is incorrect, or you followed an outdated link.",
 		errorGoBack: "Go Back",
 		errorHome: "Home",
+		errorTryAgain: "Try again",
+		errorSignIn: "Sign in",
+		errorNotFoundTitle: "Page not found",
+		errorNotFoundDescription:
+			"The page you're looking for doesn't exist or has been moved. Check the URL or navigate back to safety.",
+		errorServerTitle: "Something went wrong",
+		errorServerDescription:
+			"We hit an unexpected error while loading this page.",
+		errorServerHelp: "Try again, or return home if the problem persists.",
+		errorUnauthorizedTitle: "Sign in required",
+		errorUnauthorizedDescription: "You need to sign in to access this page.",
+		errorUnauthorizedReason:
+			"If you arrived here from a bookmark or shared link, sign in and try again.",
 
 		// Subscription banner
 		"subscription.banner.freeTier": "Free Plan",
@@ -1188,6 +1227,13 @@ export const translations = {
 		"subscription.metrics.users": "users",
 		"subscription.metrics.alerts": "alerts",
 		"subscription.metrics.transactions": "transactions",
+		"subscription.noAmlAccess.title": "AML Access Not Available",
+		"subscription.noAmlAccess.description":
+			"Your current subscription does not include access to the AML product.",
+		"subscription.noAmlAccess.upgradePrompt":
+			"To access AML compliance features, reports, and more, upgrade to a plan that includes AML.",
+		"subscription.noAmlAccess.upgradeCta": "View available plans",
+		"subscription.noAmlAccess.backToSettings": "Go to settings",
 
 		// Common additions
 		"common.dismiss": "Dismiss",

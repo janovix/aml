@@ -88,6 +88,8 @@ describe("SubscriptionBanner", () => {
 		},
 		features: [],
 		stripeCustomerId: "",
+		organizationsOwned: 0,
+		organizationsLimit: 0,
 		...overrides,
 	});
 

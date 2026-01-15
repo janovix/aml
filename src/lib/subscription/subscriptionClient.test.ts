@@ -59,6 +59,8 @@ describe("subscriptionClient", () => {
 				},
 				features: ["feature1", "feature2"],
 				stripeCustomerId: "cus_123",
+				organizationsOwned: 1,
+				organizationsLimit: 3,
 			};
 
 			vi.mocked(global.fetch).mockResolvedValueOnce({
@@ -147,6 +149,8 @@ describe("subscriptionClient", () => {
 				usage: null,
 				features: [],
 				stripeCustomerId: "",
+				organizationsOwned: 0,
+				organizationsLimit: 0,
 			};
 
 			expect(isFreeTier(subscription)).toBe(true);
@@ -165,6 +169,8 @@ describe("subscriptionClient", () => {
 				usage: null,
 				features: [],
 				stripeCustomerId: "cus_123",
+				organizationsOwned: 0,
+				organizationsLimit: 0,
 			};
 
 			expect(isFreeTier(subscription)).toBe(true);
@@ -183,6 +189,8 @@ describe("subscriptionClient", () => {
 				usage: null,
 				features: [],
 				stripeCustomerId: "cus_123",
+				organizationsOwned: 1,
+				organizationsLimit: 3,
 			};
 
 			expect(isFreeTier(subscription)).toBe(false);
@@ -207,6 +215,8 @@ describe("subscriptionClient", () => {
 				usage: null,
 				features: [],
 				stripeCustomerId: "cus_123",
+				organizationsOwned: 1,
+				organizationsLimit: 3,
 			};
 
 			expect(hasPaidSubscription(subscription)).toBe(true);
@@ -225,6 +235,8 @@ describe("subscriptionClient", () => {
 				usage: null,
 				features: [],
 				stripeCustomerId: "cus_123",
+				organizationsOwned: 2,
+				organizationsLimit: 5,
 			};
 
 			expect(hasPaidSubscription(subscription)).toBe(true);
@@ -243,6 +255,8 @@ describe("subscriptionClient", () => {
 				usage: null,
 				features: [],
 				stripeCustomerId: "",
+				organizationsOwned: 0,
+				organizationsLimit: 0,
 			};
 
 			expect(hasPaidSubscription(subscription)).toBe(false);
@@ -261,6 +275,8 @@ describe("subscriptionClient", () => {
 				usage: null,
 				features: [],
 				stripeCustomerId: "",
+				organizationsOwned: 0,
+				organizationsLimit: 0,
 			};
 
 			expect(hasPaidSubscription(subscription)).toBe(false);
@@ -279,6 +295,8 @@ describe("subscriptionClient", () => {
 				usage: null,
 				features: [],
 				stripeCustomerId: "",
+				organizationsOwned: 0,
+				organizationsLimit: 0,
 			};
 
 			expect(hasPaidSubscription(subscription)).toBe(false);

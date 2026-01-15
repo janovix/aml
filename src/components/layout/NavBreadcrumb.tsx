@@ -29,8 +29,6 @@ const ROUTE_LABEL_KEYS: Record<string, TranslationKeys> = {
 	alerts: "navAlerts",
 	notices: "navNotices",
 	reports: "navReports",
-	team: "navTeam",
-	settings: "navSettings",
 	new: "breadcrumbNew",
 	edit: "breadcrumbEdit",
 };

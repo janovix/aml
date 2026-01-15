@@ -8,9 +8,13 @@ export {
 	isNearLimit,
 	isAtLimit,
 	getUsagePercentage,
+	hasProductAccess,
+	hasAMLAccess,
+	hasWatchlistAccess,
 	type SubscriptionStatus,
 	type UsageCheckResult,
 	type PlanTier,
+	type ProductFeature,
 } from "./subscriptionClient";
 
 export {

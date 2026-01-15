@@ -92,6 +92,8 @@ describe("useSubscription", () => {
 			},
 			features: [],
 			stripeCustomerId: "cus_123",
+			organizationsOwned: 1,
+			organizationsLimit: 3,
 		};
 
 		vi.mocked(subscriptionClient.getSubscriptionStatus).mockResolvedValueOnce(
@@ -147,6 +149,8 @@ describe("useSubscription", () => {
 			},
 			features: [],
 			stripeCustomerId: "",
+			organizationsOwned: 0,
+			organizationsLimit: 0,
 		};
 
 		vi.mocked(subscriptionClient.getSubscriptionStatus).mockResolvedValueOnce(
@@ -196,6 +200,8 @@ describe("useSubscription", () => {
 			},
 			features: [],
 			stripeCustomerId: "cus_123",
+			organizationsOwned: 1,
+			organizationsLimit: 3,
 		};
 
 		vi.mocked(subscriptionClient.getSubscriptionStatus).mockResolvedValueOnce(
@@ -226,6 +232,8 @@ describe("useSubscription", () => {
 			usage: null,
 			features: [],
 			stripeCustomerId: "cus_123",
+			organizationsOwned: 1,
+			organizationsLimit: 3,
 		};
 
 		vi.mocked(subscriptionClient.getSubscriptionStatus).mockResolvedValueOnce(
@@ -258,6 +266,8 @@ describe("useSubscription", () => {
 			usage: null,
 			features: [],
 			stripeCustomerId: "cus_123",
+			organizationsOwned: 1,
+			organizationsLimit: 3,
 		};
 
 		vi.mocked(subscriptionClient.getSubscriptionStatus)
@@ -363,6 +373,8 @@ describe("useSubscription", () => {
 			},
 			features: [],
 			stripeCustomerId: "cus_123",
+			organizationsOwned: 1,
+			organizationsLimit: 3,
 		};
 
 		vi.mocked(subscriptionClient.getSubscriptionStatus).mockResolvedValueOnce(

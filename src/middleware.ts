@@ -69,7 +69,9 @@ function redirectToLogin(request: NextRequest): NextResponse {
 function redirectToOnboarding(request: NextRequest): NextResponse {
 	const authAppUrl = getAuthAppUrl();
 	const returnUrl = encodeURIComponent(getExternalUrl(request));
-	return NextResponse.redirect(`${authAppUrl}/onboarding?redirect_to=${returnUrl}`);
+	return NextResponse.redirect(
+		`${authAppUrl}/onboarding?redirect_to=${returnUrl}`,
+	);
 }
 
 /**
@@ -84,7 +86,9 @@ function needsProfileOnboarding(user: { name?: string | null }): boolean {
  * Check if user has any organization membership.
  * This is checked via the organizations list from auth service.
  */
-function hasOrganizationMembership(organizations: Array<{ id: string }> | null): boolean {
+function hasOrganizationMembership(
+	organizations: Array<{ id: string }> | null,
+): boolean {
 	return organizations !== null && organizations.length > 0;
 }
 
@@ -259,7 +263,10 @@ export async function middleware(request: NextRequest) {
 	const sessionCookie = getSessionCookie(request);
 
 	// DEBUG: Log session cookie status
-	console.log("[AML Middleware] Session cookie:", sessionCookie ? "EXISTS" : "NULL");
+	console.log(
+		"[AML Middleware] Session cookie:",
+		sessionCookie ? "EXISTS" : "NULL",
+	);
 	console.log("[AML Middleware] Auth Service URL:", getAuthServiceUrl());
 	console.log("[AML Middleware] Auth App URL (Origin):", getAuthAppUrl());
 
@@ -305,13 +312,17 @@ export async function middleware(request: NextRequest) {
 		console.log("[AML Middleware] Session data:", JSON.stringify(sessionData));
 
 		if (!sessionData?.session || !sessionData?.user) {
-			console.log("[AML Middleware] No session/user in response, redirecting to login");
+			console.log(
+				"[AML Middleware] No session/user in response, redirecting to login",
+			);
 			return redirectToLogin(request);
 		}
 
 		// Check if user needs profile onboarding (no name set)
 		if (needsProfileOnboarding(sessionData.user)) {
-			console.log("[AML Middleware] User needs profile onboarding, redirecting");
+			console.log(
+				"[AML Middleware] User needs profile onboarding, redirecting",
+			);
 			return redirectToOnboarding(request);
 		}
 
@@ -321,7 +332,9 @@ export async function middleware(request: NextRequest) {
 
 		// Check if user has any organization membership
 		if (!hasOrganizationMembership(userOrganizations)) {
-			console.log("[AML Middleware] User has no organization membership, redirecting to onboarding");
+			console.log(
+				"[AML Middleware] User has no organization membership, redirecting to onboarding",
+			);
 			return redirectToOnboarding(request);
 		}
 	} catch (error) {

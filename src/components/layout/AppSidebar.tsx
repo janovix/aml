@@ -10,6 +10,8 @@ import {
 	FileWarning,
 	Home,
 	Briefcase,
+	Settings,
+	Search,
 } from "lucide-react";
 
 import {
@@ -33,12 +35,14 @@ import { logout } from "@/lib/auth/actions";
 import { setActiveOrganization } from "@/lib/auth/organizations";
 import { useOrgStore, type Organization } from "@/lib/org-store";
 import { executeMutation } from "@/lib/mutations";
+import { useSubscriptionSafe } from "@/lib/subscription";
 import {
 	OrganizationSwitcher,
 	type Organization as LegacyOrganization,
 } from "./OrganizationSwitcher";
 import { NavUser } from "./NavUser";
-import { getAuthAppUrl } from "@/lib/auth/config";
+import { Logo } from "./Logo";
+import { getAuthAppUrl, getWatchlistAppUrl } from "@/lib/auth/config";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { TranslationKeys } from "@/lib/translations";
 
@@ -92,6 +96,24 @@ const complianceNavItems: NavItem[] = [
 	},
 ];
 
+// Products nav items (links to other apps)
+const getProductsNavItems = (): NavItem[] => [
+	{
+		titleKey: "navWatchlist",
+		href: "/",
+		icon: Search,
+		available: true,
+		externalUrl: getWatchlistAppUrl(),
+	},
+	{
+		titleKey: "navSettings",
+		href: "/settings",
+		icon: Settings,
+		available: true,
+		externalUrl: getAuthAppUrl(),
+	},
+];
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	const { t } = useLanguage();
 	const pathname = usePathname();
@@ -108,6 +130,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 		setCurrentOrg,
 		isLoading: orgLoading,
 	} = useOrgStore();
+
+	// Get subscription data for org limits
+	const subscriptionData = useSubscriptionSafe();
+	const organizationsOwned =
+		subscriptionData?.subscription?.organizationsOwned ?? 0;
+	const organizationsLimit =
+		subscriptionData?.subscription?.organizationsLimit ?? 0;
 
 	// Get org slug from current org or URL
 	const orgSlug = currentOrg?.slug || urlOrgSlug;
@@ -223,13 +252,31 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
 	return (
 		<Sidebar collapsible="icon" {...props}>
-			<SidebarHeader className="h-16 border-b border-sidebar-border justify-center">
+			<SidebarHeader className="border-b border-sidebar-border">
+				{/* Logo */}
+				<div className="flex h-12 items-center px-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+					<Logo
+						variant="logo"
+						width={120}
+						height={28}
+						className="group-data-[collapsible=icon]:hidden"
+					/>
+					<Logo
+						variant="icon"
+						width={32}
+						height={32}
+						className="hidden group-data-[collapsible=icon]:block"
+					/>
+				</div>
+				{/* Organization Switcher */}
 				<OrganizationSwitcher
 					organizations={legacyOrganizations}
 					activeOrganization={legacyActiveOrg}
 					onOrganizationChange={handleOrganizationChange}
 					onCreateOrganization={handleCreateOrganization}
 					isLoading={isPending || orgLoading}
+					organizationsOwned={organizationsOwned}
+					organizationsLimit={organizationsLimit}
 				/>
 			</SidebarHeader>
 
@@ -310,6 +357,38 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 													</span>
 												)}
 											</Link>
+										</SidebarMenuButton>
+									</SidebarMenuItem>
+								);
+							})}
+						</SidebarMenu>
+					</SidebarGroupContent>
+				</SidebarGroup>
+
+				<SidebarSeparator />
+
+				<SidebarGroup>
+					<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
+						{t("navProducts")}
+					</SidebarGroupLabel>
+					<SidebarGroupContent>
+						<SidebarMenu>
+							{getProductsNavItems().map((item) => {
+								const Icon = item.icon;
+								const title = t(item.titleKey);
+
+								return (
+									<SidebarMenuItem key={item.titleKey}>
+										<SidebarMenuButton asChild tooltip={title}>
+											<a
+												href={item.externalUrl}
+												onClick={handleLinkClick}
+												target="_blank"
+												rel="noopener noreferrer"
+											>
+												<Icon />
+												<span>{title}</span>
+											</a>
 										</SidebarMenuButton>
 									</SidebarMenuItem>
 								);

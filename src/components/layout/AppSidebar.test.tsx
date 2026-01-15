@@ -71,8 +71,12 @@ vi.mock("@/lib/auth/organizations", () => ({
 }));
 
 const mockGetAuthAppUrl = vi.fn().mockReturnValue("https://auth.test.com");
+const mockGetWatchlistAppUrl = vi
+	.fn()
+	.mockReturnValue("https://watchlist.test.com");
 vi.mock("@/lib/auth/config", () => ({
 	getAuthAppUrl: () => mockGetAuthAppUrl(),
+	getWatchlistAppUrl: () => mockGetWatchlistAppUrl(),
 }));
 
 const mockSetCurrentOrg = vi.fn();
@@ -597,6 +601,9 @@ describe("AppSidebar", () => {
 		expect(screen.getByText("Transacciones")).toBeInTheDocument();
 		expect(screen.getByText("Alertas")).toBeInTheDocument();
 		expect(screen.getByText("Reportes")).toBeInTheDocument();
+		// Products section items
+		expect(screen.getByText("Lista de Vigilancia")).toBeInTheDocument();
+		expect(screen.getByText("Configuración")).toBeInTheDocument();
 	});
 
 	it("handles session user without name", () => {

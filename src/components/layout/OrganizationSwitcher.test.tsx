@@ -39,7 +39,7 @@ describe("OrganizationSwitcher", () => {
 		expect(loadingElements.length).toBeGreaterThan(0);
 	});
 
-	it("renders collapsed state with org icon when sidebar is collapsed", () => {
+	it("renders collapsed state with org avatar when sidebar is collapsed", () => {
 		render(
 			<SidebarProvider defaultOpen={false}>
 				<OrganizationSwitcher
@@ -51,9 +51,8 @@ describe("OrganizationSwitcher", () => {
 			</SidebarProvider>,
 		);
 
-		// When collapsed, it should show the Janovix logo icon (interactive org picker)
-		const logoSvg = document.querySelector('svg[viewBox="0 0 200 200"]');
-		expect(logoSvg).toBeInTheDocument();
+		// When collapsed with no active org, it should show a "?" placeholder
+		expect(screen.getByText("?")).toBeInTheDocument();
 	});
 
 	it("renders create organization button when no organizations", () => {

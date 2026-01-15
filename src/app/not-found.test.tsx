@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import NotFound from "./not-found";
+import { LanguageProvider } from "@/components/LanguageProvider";
 
 // Mock next/link
 vi.mock("next/link", () => ({
@@ -21,25 +22,29 @@ Object.defineProperty(window, "history", {
 	writable: true,
 });
 
+const renderWithProvider = (ui: React.ReactElement) => {
+	return render(<LanguageProvider defaultLanguage="en">{ui}</LanguageProvider>);
+};
+
 describe("NotFound (global 404 page)", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 	});
 
 	it("renders 404 title", () => {
-		render(<NotFound />);
+		renderWithProvider(<NotFound />);
 
 		expect(screen.getByText("404")).toBeInTheDocument();
 	});
 
 	it("renders page not found description", () => {
-		render(<NotFound />);
+		renderWithProvider(<NotFound />);
 
 		expect(screen.getByText("Page not found")).toBeInTheDocument();
 	});
 
 	it("renders explanation text", () => {
-		render(<NotFound />);
+		renderWithProvider(<NotFound />);
 
 		expect(
 			screen.getByText(/doesn't exist or has been moved/),
@@ -47,7 +52,7 @@ describe("NotFound (global 404 page)", () => {
 	});
 
 	it("renders Go Back button", () => {
-		render(<NotFound />);
+		renderWithProvider(<NotFound />);
 
 		expect(
 			screen.getByRole("button", { name: /Go Back/i }),
@@ -55,7 +60,7 @@ describe("NotFound (global 404 page)", () => {
 	});
 
 	it("renders Home link pointing to root", () => {
-		render(<NotFound />);
+		renderWithProvider(<NotFound />);
 
 		const homeLink = screen.getByRole("link", { name: /Home/i });
 		expect(homeLink).toBeInTheDocument();
@@ -64,7 +69,7 @@ describe("NotFound (global 404 page)", () => {
 
 	it("calls history.back when Go Back button is clicked", async () => {
 		const user = userEvent.setup();
-		render(<NotFound />);
+		renderWithProvider(<NotFound />);
 
 		const backButton = screen.getByRole("button", { name: /Go Back/i });
 		await user.click(backButton);
@@ -73,7 +78,7 @@ describe("NotFound (global 404 page)", () => {
 	});
 
 	it("renders the FileQuestion icon container", () => {
-		render(<NotFound />);
+		renderWithProvider(<NotFound />);
 
 		// The icon is inside a rounded container
 		const container = document.querySelector(".rounded-full.bg-muted");
