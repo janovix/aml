@@ -1,5 +1,6 @@
 "use client";
 
+import type React from "react";
 import {
 	CircleCheckIcon,
 	InfoIcon,
@@ -10,12 +11,15 @@ import {
 import { useTheme } from "next-themes";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 
-const Toaster = ({ ...props }: ToasterProps) => {
+const Toaster = ({ position = "top-right", ...props }: ToasterProps) => {
 	const { theme = "system" } = useTheme();
 
 	return (
 		<Sonner
 			theme={theme as ToasterProps["theme"]}
+			position={position}
+			richColors
+			closeButton
 			className="toaster group"
 			icons={{
 				success: <CircleCheckIcon className="size-4" />,

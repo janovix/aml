@@ -2,6 +2,9 @@
 
 import { useParams, notFound } from "next/navigation";
 import { createContext, useContext, type ReactNode } from "react";
+import { useSubscriptionSafe } from "@/lib/subscription";
+import { hasAMLAccess } from "@/lib/subscription";
+import { NoAMLAccess } from "@/components/subscription";
 
 interface OrgSlugContextValue {
 	orgSlug: string;
@@ -49,6 +52,7 @@ function validateOrgSlug(rawOrgSlug: string | string[] | undefined): string {
 
 export default function OrgSlugLayout({ children }: { children: ReactNode }) {
 	const params = useParams();
+	const subscription = useSubscriptionSafe();
 
 	// Defensive validation of params
 	if (!params) {
@@ -60,6 +64,17 @@ export default function OrgSlugLayout({ children }: { children: ReactNode }) {
 		orgSlug = validateOrgSlug(params.orgSlug);
 	} catch {
 		notFound();
+	}
+
+	// Check AML product access
+	// Show loading state while subscription is being fetched
+	if (subscription?.isLoading) {
+		return <NoAMLAccess isLoading />;
+	}
+
+	// If subscription is loaded but user doesn't have AML access, show blocker
+	if (subscription && !hasAMLAccess(subscription.subscription)) {
+		return <NoAMLAccess />;
 	}
 
 	return (

@@ -1,88 +1,91 @@
-import { describe, expect, it, vi } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi, beforeEach, type Mock } from "vitest";
+import { renderHook, act } from "@testing-library/react";
+import { toast as sonnerToast } from "sonner";
 import { useToast } from "./use-toast";
 
+type ToastMock = Mock & {
+	success: Mock;
+	error: Mock;
+	warning: Mock;
+	info: Mock;
+	loading: Mock;
+};
+
+const toastMock = vi.hoisted(() => {
+	const mock = vi.fn() as ToastMock;
+	mock.success = vi.fn();
+	mock.error = vi.fn();
+	mock.warning = vi.fn();
+	mock.info = vi.fn();
+	mock.loading = vi.fn();
+	return mock;
+});
+
+vi.mock("sonner", () => ({ toast: toastMock }));
+
 describe("useToast", () => {
-	it("initializes with empty toasts array", () => {
-		const { result } = renderHook(() => useToast());
-
-		expect(result.current.toasts).toEqual([]);
-		expect(typeof result.current.toast).toBe("function");
+	beforeEach(() => {
+		toastMock.mockClear();
+		toastMock.success.mockClear();
+		toastMock.error.mockClear();
+		toastMock.warning.mockClear();
+		toastMock.info.mockClear();
+		toastMock.loading.mockClear();
 	});
 
-	it("adds a toast when toast function is called", () => {
+	it("uses default toast when no variant is provided", () => {
 		const { result } = renderHook(() => useToast());
 
 		act(() => {
-			result.current.toast({
-				title: "Test Title",
-				description: "Test Description",
-			});
+			result.current.toast({ title: "Default", description: "Hello" });
 		});
 
-		expect(result.current.toasts).toHaveLength(1);
-		expect(result.current.toasts[0]).toEqual({
-			title: "Test Title",
-			description: "Test Description",
+		expect(sonnerToast).toHaveBeenCalledWith("Default", {
+			description: "Hello",
 		});
 	});
 
-	it("adds multiple toasts", () => {
+	it("maps success, warning, info, and loading variants", () => {
 		const { result } = renderHook(() => useToast());
 
 		act(() => {
-			result.current.toast({ title: "First" });
-			result.current.toast({ title: "Second" });
+			result.current.toast({ title: "Success", variant: "success" });
+			result.current.toast({ title: "Warning", variant: "warning" });
+			result.current.toast({ title: "Info", variant: "info" });
+			result.current.toast({ title: "Loading", variant: "loading" });
 		});
 
-		expect(result.current.toasts).toHaveLength(2);
-	});
-
-	it("handles toast without description", () => {
-		const { result } = renderHook(() => useToast());
-
-		act(() => {
-			result.current.toast({ title: "Title Only" });
+		expect(sonnerToast.success).toHaveBeenCalledWith("Success", {
+			description: undefined,
 		});
-
-		expect(result.current.toasts[0]).toEqual({
-			title: "Title Only",
+		expect(sonnerToast.warning).toHaveBeenCalledWith("Warning", {
+			description: undefined,
 		});
-	});
-
-	it("handles destructive variant", () => {
-		const { result } = renderHook(() => useToast());
-
-		act(() => {
-			result.current.toast({
-				title: "Error",
-				variant: "destructive",
-			});
+		expect(sonnerToast.info).toHaveBeenCalledWith("Info", {
+			description: undefined,
 		});
-
-		expect(result.current.toasts[0]).toEqual({
-			title: "Error",
-			variant: "destructive",
+		expect(sonnerToast.loading).toHaveBeenCalledWith("Loading", {
+			description: undefined,
 		});
 	});
 
-	it("removes toast after 3 seconds", () => {
-		vi.useFakeTimers();
+	it("maps destructive, error, and failure variants to error", () => {
 		const { result } = renderHook(() => useToast());
 
 		act(() => {
-			result.current.toast({ title: "Temporary" });
+			result.current.toast({ title: "Destructive", variant: "destructive" });
+			result.current.toast({ title: "Error", variant: "error" });
+			result.current.toast({ title: "Failure", variant: "failure" });
 		});
 
-		expect(result.current.toasts).toHaveLength(1);
-
-		act(() => {
-			vi.advanceTimersByTime(3000);
+		expect(sonnerToast.error).toHaveBeenCalledWith("Destructive", {
+			description: undefined,
 		});
-
-		// After advancing timers, the toast should be removed
-		expect(result.current.toasts).toHaveLength(0);
-
-		vi.useRealTimers();
+		expect(sonnerToast.error).toHaveBeenCalledWith("Error", {
+			description: undefined,
+		});
+		expect(sonnerToast.error).toHaveBeenCalledWith("Failure", {
+			description: undefined,
+		});
 	});
 });

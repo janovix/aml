@@ -1,24 +1,57 @@
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
+import { toast as sonnerToast } from "sonner";
 
-interface ToastProps {
-	title: string;
+export interface ToastProps {
+	title?: string;
 	description?: string;
-	variant?: "default" | "destructive";
+	variant?:
+		| "default"
+		| "success"
+		| "warning"
+		| "error"
+		| "info"
+		| "loading"
+		| "destructive"
+		| "failure";
 }
 
 export function useToast() {
-	const [toasts, setToasts] = useState<ToastProps[]>([]);
-
 	const toast = useCallback((props: ToastProps) => {
-		// For now, just add to state
-		// In a real app, this would integrate with a toast notification system (e.g., sonner)
-		setToasts((prev) => [...prev, props]);
+		const { title, description, variant = "default" } = props;
 
-		// Auto-remove after 3 seconds
-		setTimeout(() => {
-			setToasts((prev) => prev.slice(1));
-		}, 3000);
+		if (
+			variant === "destructive" ||
+			variant === "error" ||
+			variant === "failure"
+		) {
+			sonnerToast.error(title, { description });
+			return;
+		}
+
+		if (variant === "success") {
+			sonnerToast.success(title, { description });
+			return;
+		}
+
+		if (variant === "warning") {
+			sonnerToast.warning(title, { description });
+			return;
+		}
+
+		if (variant === "info") {
+			sonnerToast.info(title, { description });
+			return;
+		}
+
+		if (variant === "loading") {
+			sonnerToast.loading(title, { description });
+			return;
+		}
+
+		sonnerToast(title, { description });
 	}, []);
 
-	return { toast, toasts };
+	return { toast };
 }
+
+export { toast as sonnerToast } from "sonner";

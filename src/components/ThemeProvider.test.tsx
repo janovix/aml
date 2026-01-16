@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, act } from "@testing-library/react";
 import { ThemeProvider } from "./ThemeProvider";
 
 vi.mock("next-themes", () => ({
@@ -24,15 +24,40 @@ vi.mock("@/lib/cookies", () => ({
 	},
 }));
 
+// Mock the settings module
+vi.mock("@/lib/settings", () => ({
+	getResolvedSettings: vi.fn(),
+	updateUserSettings: vi.fn(),
+}));
+
 import * as cookiesModule from "@/lib/cookies";
+import { getResolvedSettings, updateUserSettings } from "@/lib/settings";
 
 describe("ThemeProvider", () => {
-	it("renders children when mounted", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		// Default mock: API rejects (not logged in)
+		vi.mocked(getResolvedSettings).mockRejectedValue(
+			new Error("Not authenticated"),
+		);
+		vi.mocked(updateUserSettings).mockResolvedValue({} as never);
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("renders children when mounted", async () => {
+		vi.spyOn(cookiesModule, "getCookie").mockReturnValue(undefined);
 		const { container } = render(
 			<ThemeProvider>
 				<div>Test Content</div>
 			</ThemeProvider>,
 		);
+
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 100));
+		});
 
 		// Component uses useEffect to set mounted, so initially may not render
 		// But the structure should be there
@@ -41,19 +66,25 @@ describe("ThemeProvider", () => {
 		expect(ourProvider).toBeInTheDocument();
 	});
 
-	it("renders with theme provider", () => {
+	it("renders with theme provider", async () => {
+		vi.spyOn(cookiesModule, "getCookie").mockReturnValue(undefined);
+
 		const { container } = render(
 			<ThemeProvider attribute="data-theme" defaultTheme="dark">
 				<div>Test</div>
 			</ThemeProvider>,
 		);
 
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 100));
+		});
+
 		const providers = screen.getAllByTestId("theme-provider");
 		const ourProvider = providers.find((p) => container.contains(p));
 		expect(ourProvider).toBeInTheDocument();
 	});
 
-	it("syncs theme from cookie on mount", () => {
+	it("syncs theme from cookie on mount", async () => {
 		vi.spyOn(cookiesModule, "getCookie").mockReturnValue("dark");
 
 		const { container } = render(
@@ -62,12 +93,16 @@ describe("ThemeProvider", () => {
 			</ThemeProvider>,
 		);
 
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 100));
+		});
+
 		const providers = screen.getAllByTestId("theme-provider");
 		const ourProvider = providers.find((p) => container.contains(p));
 		expect(ourProvider).toBeInTheDocument();
 	});
 
-	it("handles invalid theme value in cookie", () => {
+	it("handles invalid theme value in cookie", async () => {
 		vi.spyOn(cookiesModule, "getCookie").mockReturnValue("invalid-theme");
 
 		const { container } = render(
@@ -76,14 +111,33 @@ describe("ThemeProvider", () => {
 			</ThemeProvider>,
 		);
 
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 100));
+		});
+
 		const providers = screen.getAllByTestId("theme-provider");
 		const ourProvider = providers.find((p) => container.contains(p));
 		expect(ourProvider).toBeInTheDocument();
 	});
 
-	it("saves theme to cookie when initialized", () => {
+	it("syncs cookie when API returns different theme", async () => {
 		const setCookieSpy = vi.spyOn(cookiesModule, "setCookie");
-		vi.spyOn(cookiesModule, "getCookie").mockReturnValue(undefined);
+		vi.spyOn(cookiesModule, "getCookie").mockReturnValue("light");
+		vi.mocked(getResolvedSettings).mockResolvedValue({
+			theme: "dark",
+			language: "es",
+			timezone: "UTC",
+			dateFormat: "DD/MM/YYYY",
+			clockFormat: "12h",
+			avatarUrl: null,
+			sources: {
+				theme: "user",
+				language: "default",
+				timezone: "default",
+				dateFormat: "default",
+				clockFormat: "default",
+			},
+		});
 
 		render(
 			<ThemeProvider>
@@ -91,11 +145,15 @@ describe("ThemeProvider", () => {
 			</ThemeProvider>,
 		);
 
-		// Cookie should be set when initialized
-		expect(setCookieSpy).toHaveBeenCalled();
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 200));
+		});
+
+		// Cookie should be set when API returns different theme
+		expect(setCookieSpy).toHaveBeenCalledWith("janovix-theme", "dark");
 	});
 
-	it("does not apply cookie theme when same as current", () => {
+	it("does not apply cookie theme when same as current", async () => {
 		vi.spyOn(cookiesModule, "getCookie").mockReturnValue("light");
 
 		const { container } = render(
@@ -104,8 +162,50 @@ describe("ThemeProvider", () => {
 			</ThemeProvider>,
 		);
 
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 100));
+		});
+
 		const providers = screen.getAllByTestId("theme-provider");
 		const ourProvider = providers.find((p) => container.contains(p));
 		expect(ourProvider).toBeInTheDocument();
+	});
+
+	it("syncs with API when available", async () => {
+		vi.spyOn(cookiesModule, "getCookie").mockReturnValue("light");
+		vi.mocked(getResolvedSettings).mockResolvedValue({
+			theme: "dark",
+			language: "es",
+			timezone: "UTC",
+			dateFormat: "DD/MM/YYYY",
+			clockFormat: "12h",
+			avatarUrl: null,
+			sources: {
+				theme: "user",
+				language: "default",
+				timezone: "default",
+				dateFormat: "default",
+				clockFormat: "default",
+			},
+		});
+
+		const { container } = render(
+			<ThemeProvider>
+				<div>Test</div>
+			</ThemeProvider>,
+		);
+
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 200));
+		});
+
+		const providers = screen.getAllByTestId("theme-provider");
+		const ourProvider = providers.find((p) => container.contains(p));
+		expect(ourProvider).toBeInTheDocument();
+		// Should sync cookie with API value
+		expect(cookiesModule.setCookie).toHaveBeenCalledWith(
+			"janovix-theme",
+			"dark",
+		);
 	});
 });

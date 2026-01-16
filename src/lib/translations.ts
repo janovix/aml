@@ -45,11 +45,17 @@ export const translations = {
 		navRiskModels: "Modelos de Riesgo",
 		navHistory: "Historial",
 		navAnalysis: "Análisis",
+		navWatchlist: "Lista de Vigilancia",
+		navProducts: "Productos",
 
 		// Breadcrumbs
 		breadcrumbHome: "Inicio",
 		breadcrumbNew: "Nuevo",
 		breadcrumbEdit: "Editar",
+		breadcrumbNotFound: "No encontrado",
+		breadcrumbError: "Error",
+		breadcrumbForbidden: "Prohibido",
+		breadcrumbUnauthorized: "No autorizado",
 
 		// Sidebar
 		sidebarOrganizations: "Organizaciones",
@@ -57,6 +63,27 @@ export const translations = {
 		sidebarProfile: "Perfil",
 		sidebarLogout: "Cerrar sesión",
 		sidebarUser: "Usuario",
+
+		// App Switcher
+		appSwitcherTitle: "Apps de Janovix",
+		appSwitcherHomepage: "Página Principal",
+		appSwitcherHomepageDescription: "Sitio web principal",
+		appSwitcherAml: "Plataforma AML",
+		appSwitcherAmlDescription: "Anti-lavado de dinero",
+		appSwitcherWatchlist: "Lista de Vigilancia",
+		appSwitcherWatchlistDescription: "Servicio de screening",
+		appSwitcherSettings: "Configuración",
+		appSwitcherSettingsDescription: "Cuenta y organización",
+		appSwitcherCurrentApp: "Actual",
+
+		// Mobile Sidebar
+		mobileSidebarClose: "Cerrar menú",
+		mobileSidebarNavigation: "Navegación",
+
+		// Organization Switcher
+		organizations: "Organizaciones",
+		createOrganization: "Crear organización",
+		orgSettings: "Configuración",
 
 		// Organization Dialog
 		orgNewTitle: "Nueva organización",
@@ -89,9 +116,12 @@ export const translations = {
 		orgErrorLoadingDesc: "Por favor, intenta de nuevo más tarde.",
 
 		// Theme
+		themeLabel: "Tema",
 		themeLight: "Claro",
 		themeDark: "Oscuro",
 		themeSystem: "Sistema",
+		// Language
+		languageLabel: "Idioma",
 
 		// Language
 		languageSpanish: "Español",
@@ -582,6 +612,59 @@ export const translations = {
 			"Esto puede suceder si la organización fue eliminada, la URL es incorrecta o seguiste un enlace desactualizado.",
 		errorGoBack: "Volver",
 		errorHome: "Inicio",
+		errorTryAgain: "Intentar de nuevo",
+		errorSignIn: "Iniciar sesión",
+		errorNotFoundTitle: "Página no encontrada",
+		errorNotFoundDescription:
+			"La página que buscas no existe o fue movida. Verifica la URL o vuelve a un lugar seguro.",
+		errorServerTitle: "Algo salió mal",
+		errorServerDescription:
+			"Se produjo un error inesperado al cargar esta página.",
+		errorServerHelp:
+			"Intenta nuevamente o vuelve al inicio si el problema continúa.",
+		errorUnauthorizedTitle: "Inicio de sesión requerido",
+		errorUnauthorizedDescription:
+			"Necesitas iniciar sesión para acceder a esta página.",
+		errorUnauthorizedReason:
+			"Si llegaste aquí desde un enlace compartido o un marcador, inicia sesión e inténtalo de nuevo.",
+
+		// Subscription banner
+		"subscription.banner.freeTier": "Plan Gratuito",
+		"subscription.banner.freeTierDesc":
+			"Estás usando el plan gratuito con funciones limitadas.",
+		"subscription.banner.nearLimit": "Cerca del límite",
+		"subscription.banner.nearLimitDesc":
+			"Te estás acercando al límite de {metrics}.",
+		"subscription.banner.limitReached": "Límite alcanzado",
+		"subscription.banner.limitReachedDesc":
+			"Has alcanzado el límite de {metrics}. Mejora tu plan para continuar.",
+		"subscription.banner.upgrade": "Mejorar plan",
+		"subscription.metrics.notices": "avisos",
+		"subscription.metrics.users": "usuarios",
+		"subscription.metrics.alerts": "alertas",
+		"subscription.metrics.transactions": "transacciones",
+		"subscription.noAmlAccess.title": "Acceso AML No Disponible",
+		"subscription.noAmlAccess.description":
+			"Tu suscripción actual no incluye acceso al producto AML.",
+		"subscription.noAmlAccess.upgradePrompt":
+			"Para acceder a funciones de cumplimiento AML, informes y más, mejora a un plan que incluya AML.",
+		"subscription.noAmlAccess.upgradeCta": "Ver planes disponibles",
+		"subscription.noAmlAccess.backToSettings": "Ir a configuración",
+
+		// Common additions
+		"common.dismiss": "Descartar",
+
+		// Navbar clock
+		clockClickForInfo: "Clic para ver información de zona horaria",
+		clockTimezoneInfo: "Información de zona horaria",
+		clockSwitchTo: "Cambiar a",
+		clockAppTimezone: "Zona horaria de la app",
+		clockYourTimezone: "Tu zona horaria",
+		clockLocal: "Local",
+		clockDetecting: "Detectando...",
+		clockTimezoneMismatch: "Diferencia de zona horaria",
+		clockDifference: "Diferencia",
+		clockTimezonesMatch: "Las zonas horarias coinciden",
 	},
 	en: {
 		// Common
@@ -620,11 +703,17 @@ export const translations = {
 		navRiskModels: "Risk Models",
 		navHistory: "History",
 		navAnalysis: "Analysis",
+		navWatchlist: "Watchlist",
+		navProducts: "Products",
 
 		// Breadcrumbs
 		breadcrumbHome: "Home",
 		breadcrumbNew: "New",
 		breadcrumbEdit: "Edit",
+		breadcrumbNotFound: "Not Found",
+		breadcrumbError: "Error",
+		breadcrumbForbidden: "Forbidden",
+		breadcrumbUnauthorized: "Unauthorized",
 
 		// Sidebar
 		sidebarOrganizations: "Organizations",
@@ -632,6 +721,27 @@ export const translations = {
 		sidebarProfile: "Profile",
 		sidebarLogout: "Log out",
 		sidebarUser: "User",
+
+		// App Switcher
+		appSwitcherTitle: "Janovix Apps",
+		appSwitcherHomepage: "Homepage",
+		appSwitcherHomepageDescription: "Main website",
+		appSwitcherAml: "AML Platform",
+		appSwitcherAmlDescription: "Anti-money laundering",
+		appSwitcherWatchlist: "Watchlist",
+		appSwitcherWatchlistDescription: "Screening service",
+		appSwitcherSettings: "Settings",
+		appSwitcherSettingsDescription: "Account & organization",
+		appSwitcherCurrentApp: "Current",
+
+		// Mobile Sidebar
+		mobileSidebarClose: "Close menu",
+		mobileSidebarNavigation: "Navigation",
+
+		// Organization Switcher
+		organizations: "Organizations",
+		createOrganization: "Create organization",
+		orgSettings: "Settings",
 
 		// Organization Dialog
 		orgNewTitle: "New organization",
@@ -663,9 +773,12 @@ export const translations = {
 		orgErrorLoadingDesc: "Please try again later.",
 
 		// Theme
+		themeLabel: "Theme",
 		themeLight: "Light",
 		themeDark: "Dark",
 		themeSystem: "System",
+		// Language
+		languageLabel: "Language",
 
 		// Language
 		languageSpanish: "Español",
@@ -1153,6 +1266,57 @@ export const translations = {
 			"This could happen if the organization was deleted, the URL is incorrect, or you followed an outdated link.",
 		errorGoBack: "Go Back",
 		errorHome: "Home",
+		errorTryAgain: "Try again",
+		errorSignIn: "Sign in",
+		errorNotFoundTitle: "Page not found",
+		errorNotFoundDescription:
+			"The page you're looking for doesn't exist or has been moved. Check the URL or navigate back to safety.",
+		errorServerTitle: "Something went wrong",
+		errorServerDescription:
+			"We hit an unexpected error while loading this page.",
+		errorServerHelp: "Try again, or return home if the problem persists.",
+		errorUnauthorizedTitle: "Sign in required",
+		errorUnauthorizedDescription: "You need to sign in to access this page.",
+		errorUnauthorizedReason:
+			"If you arrived here from a bookmark or shared link, sign in and try again.",
+
+		// Subscription banner
+		"subscription.banner.freeTier": "Free Plan",
+		"subscription.banner.freeTierDesc":
+			"You're using the free plan with limited features.",
+		"subscription.banner.nearLimit": "Near limit",
+		"subscription.banner.nearLimitDesc":
+			"You're approaching your {metrics} limit.",
+		"subscription.banner.limitReached": "Limit reached",
+		"subscription.banner.limitReachedDesc":
+			"You've reached your {metrics} limit. Upgrade to continue.",
+		"subscription.banner.upgrade": "Upgrade plan",
+		"subscription.metrics.notices": "notices",
+		"subscription.metrics.users": "users",
+		"subscription.metrics.alerts": "alerts",
+		"subscription.metrics.transactions": "transactions",
+		"subscription.noAmlAccess.title": "AML Access Not Available",
+		"subscription.noAmlAccess.description":
+			"Your current subscription does not include access to the AML product.",
+		"subscription.noAmlAccess.upgradePrompt":
+			"To access AML compliance features, reports, and more, upgrade to a plan that includes AML.",
+		"subscription.noAmlAccess.upgradeCta": "View available plans",
+		"subscription.noAmlAccess.backToSettings": "Go to settings",
+
+		// Common additions
+		"common.dismiss": "Dismiss",
+
+		// Navbar clock
+		clockClickForInfo: "Click for timezone info",
+		clockTimezoneInfo: "Timezone Information",
+		clockSwitchTo: "Switch to",
+		clockAppTimezone: "App timezone",
+		clockYourTimezone: "Your timezone",
+		clockLocal: "Local",
+		clockDetecting: "Detecting...",
+		clockTimezoneMismatch: "Timezone mismatch",
+		clockDifference: "Difference",
+		clockTimezonesMatch: "Timezones match",
 	},
 } as const;
 

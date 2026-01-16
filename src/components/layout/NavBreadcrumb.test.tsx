@@ -2,6 +2,10 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import { NavBreadcrumb } from "./NavBreadcrumb";
 import { renderWithProviders } from "@/lib/testHelpers";
+import {
+	useSetPageStatus,
+	type PageStatus,
+} from "@/components/PageStatusProvider";
 
 // Mock cookies module to return Spanish language for tests
 vi.mock("@/lib/cookies", () => ({
@@ -115,20 +119,6 @@ describe("NavBreadcrumb", () => {
 		renderWithProviders(<NavBreadcrumb />);
 
 		expect(screen.getByText("Reportes")).toBeInTheDocument();
-	});
-
-	it("renders team route", () => {
-		mockPathname.mockReturnValue("/test-org/team");
-		renderWithProviders(<NavBreadcrumb />);
-
-		expect(screen.getByText("Equipo")).toBeInTheDocument();
-	});
-
-	it("renders settings route", () => {
-		mockPathname.mockReturnValue("/test-org/settings");
-		renderWithProviders(<NavBreadcrumb />);
-
-		expect(screen.getByText("Configuración")).toBeInTheDocument();
 	});
 
 	it("renders new client route", () => {
@@ -269,6 +259,71 @@ describe("NavBreadcrumb", () => {
 
 			// Should not call getClientById for transaction IDs
 			expect(mockGetClientById).not.toHaveBeenCalled();
+		});
+	});
+
+	describe("page status handling", () => {
+		// Note: These tests verify that the breadcrumb responds to page status changes.
+		// Since the page status is managed via context, and renderWithProviders
+		// includes PageStatusProvider, we need a component wrapper to set the status.
+
+		// Helper component that sets page status and renders NavBreadcrumb
+		const StatusSetterWithBreadcrumb = ({ status }: { status: PageStatus }) => {
+			useSetPageStatus(status);
+			return <NavBreadcrumb />;
+		};
+
+		it("displays 'Not Found' when page status is not-found", async () => {
+			mockPathname.mockReturnValue("/test-org/invalid-page");
+
+			renderWithProviders(<StatusSetterWithBreadcrumb status="not-found" />);
+
+			await waitFor(() => {
+				expect(screen.getByText("No encontrado")).toBeInTheDocument();
+			});
+		});
+
+		it("displays 'Error' when page status is error", async () => {
+			mockPathname.mockReturnValue("/test-org/some-page");
+
+			renderWithProviders(<StatusSetterWithBreadcrumb status="error" />);
+
+			await waitFor(() => {
+				expect(screen.getByText("Error")).toBeInTheDocument();
+			});
+		});
+
+		it("displays 'Forbidden' when page status is forbidden", async () => {
+			mockPathname.mockReturnValue("/test-org/restricted");
+
+			renderWithProviders(<StatusSetterWithBreadcrumb status="forbidden" />);
+
+			await waitFor(() => {
+				expect(screen.getByText("Prohibido")).toBeInTheDocument();
+			});
+		});
+
+		it("displays 'Unauthorized' when page status is unauthorized", async () => {
+			mockPathname.mockReturnValue("/test-org/private");
+
+			renderWithProviders(<StatusSetterWithBreadcrumb status="unauthorized" />);
+
+			await waitFor(() => {
+				expect(screen.getByText("No autorizado")).toBeInTheDocument();
+			});
+		});
+
+		it("keeps parent segments as links when showing error status", async () => {
+			mockPathname.mockReturnValue("/test-org/clients/invalid-id");
+
+			renderWithProviders(<StatusSetterWithBreadcrumb status="not-found" />);
+
+			await waitFor(() => {
+				// "Clientes" should be a link, not just text
+				const clientsLink = screen.getByRole("link", { name: /clientes/i });
+				expect(clientsLink).toBeInTheDocument();
+				expect(clientsLink).toHaveAttribute("href", "/test-org/clients");
+			});
 		});
 	});
 });

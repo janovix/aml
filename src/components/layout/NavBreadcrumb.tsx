@@ -3,7 +3,13 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
-import { Home } from "lucide-react";
+import {
+	AlertTriangle,
+	FileQuestion,
+	Home,
+	Lock,
+	ShieldOff,
+} from "lucide-react";
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -17,6 +23,10 @@ import { getClientById } from "@/lib/api/clients";
 import { getClientDisplayName } from "@/types/client";
 import { getReportById } from "@/lib/api/reports";
 import { useLanguage } from "@/components/LanguageProvider";
+import {
+	usePageStatus,
+	type PageStatus,
+} from "@/components/PageStatusProvider";
 import { useJwt } from "@/hooks/useJwt";
 import type { TranslationKeys } from "@/lib/translations";
 
@@ -29,10 +39,31 @@ const ROUTE_LABEL_KEYS: Record<string, TranslationKeys> = {
 	alerts: "navAlerts",
 	notices: "navNotices",
 	reports: "navReports",
-	team: "navTeam",
-	settings: "navSettings",
 	new: "breadcrumbNew",
 	edit: "breadcrumbEdit",
+};
+
+/**
+ * Page status to translation key mapping
+ */
+const STATUS_LABELS: Record<Exclude<PageStatus, "normal">, TranslationKeys> = {
+	"not-found": "breadcrumbNotFound",
+	error: "breadcrumbError",
+	forbidden: "breadcrumbForbidden",
+	unauthorized: "breadcrumbUnauthorized",
+};
+
+/**
+ * Page status to icon mapping
+ */
+const STATUS_ICONS: Record<
+	Exclude<PageStatus, "normal">,
+	React.ComponentType<{ className?: string }>
+> = {
+	"not-found": FileQuestion,
+	error: AlertTriangle,
+	forbidden: ShieldOff,
+	unauthorized: Lock,
 };
 
 /**
@@ -76,11 +107,17 @@ export function NavBreadcrumb() {
 	const orgSlug = (params?.orgSlug as string) || currentOrg?.slug;
 	const { t } = useLanguage();
 	const { jwt } = useJwt();
+	const { status } = usePageStatus();
 
 	// Store fetched entity names (e.g., client names, report names)
 	const [entityNames, setEntityNames] = React.useState<Record<string, string>>(
 		{},
 	);
+
+	// Get error status display info if not in normal state
+	const isErrorPage = status !== "normal";
+	const StatusIcon = isErrorPage ? STATUS_ICONS[status] : null;
+	const statusLabel = isErrorPage ? t(STATUS_LABELS[status]) : null;
 
 	const segments = React.useMemo((): BreadcrumbSegment[] => {
 		if (!pathname || !orgSlug) return [];
@@ -201,14 +238,29 @@ export function NavBreadcrumb() {
 				<BreadcrumbList>
 					<BreadcrumbItem>
 						<BreadcrumbPage className="flex items-center gap-1.5">
-							<Home className="h-4 w-4" />
-							<span className="hidden sm:inline">{t("breadcrumbHome")}</span>
+							{isErrorPage && StatusIcon ? (
+								<>
+									<StatusIcon className="h-4 w-4" />
+									<span className="hidden sm:inline">{statusLabel}</span>
+								</>
+							) : (
+								<>
+									<Home className="h-4 w-4" />
+									<span className="hidden sm:inline">
+										{t("breadcrumbHome")}
+									</span>
+								</>
+							)}
 						</BreadcrumbPage>
 					</BreadcrumbItem>
 				</BreadcrumbList>
 			</Breadcrumb>
 		);
 	}
+
+	// When in error state, replace the last segment with error status
+	// and make all other segments links (since the last segment is the error)
+	const displaySegments = isErrorPage ? segments.slice(0, -1) : segments;
 
 	return (
 		<Breadcrumb className="min-w-0 flex-1">
@@ -223,11 +275,11 @@ export function NavBreadcrumb() {
 					</BreadcrumbLink>
 				</BreadcrumbItem>
 
-				{segments.map((segment) => (
+				{displaySegments.map((segment) => (
 					<React.Fragment key={segment.href}>
 						<BreadcrumbSeparator className="shrink-0" />
 						<BreadcrumbItem className="shrink-0">
-							{segment.isCurrentPage ? (
+							{segment.isCurrentPage && !isErrorPage ? (
 								<BreadcrumbPage>{getDisplayLabel(segment)}</BreadcrumbPage>
 							) : (
 								<BreadcrumbLink asChild>
@@ -237,6 +289,19 @@ export function NavBreadcrumb() {
 						</BreadcrumbItem>
 					</React.Fragment>
 				))}
+
+				{/* Error status segment - shown when page is in error state */}
+				{isErrorPage && StatusIcon && statusLabel && (
+					<>
+						<BreadcrumbSeparator className="shrink-0" />
+						<BreadcrumbItem className="shrink-0">
+							<BreadcrumbPage className="flex items-center gap-1.5 text-muted-foreground">
+								<StatusIcon className="h-4 w-4" />
+								{statusLabel}
+							</BreadcrumbPage>
+						</BreadcrumbItem>
+					</>
+				)}
 			</BreadcrumbList>
 		</Breadcrumb>
 	);

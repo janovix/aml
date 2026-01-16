@@ -1,8 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import * as nextThemes from "next-themes";
+import { renderWithProviders } from "@/lib/testHelpers";
 
 const mockSetTheme = vi.fn();
 
@@ -19,18 +20,18 @@ describe("ThemeSwitcher", () => {
 	});
 
 	it("renders all theme option buttons", () => {
-		render(<ThemeSwitcher />);
+		renderWithProviders(<ThemeSwitcher />, { language: "en" });
 
-		expect(screen.getByRole("button", { name: /system theme/i })).toBeDefined();
-		expect(screen.getByRole("button", { name: /light theme/i })).toBeDefined();
-		expect(screen.getByRole("button", { name: /dark theme/i })).toBeDefined();
+		expect(screen.getByRole("button", { name: /system/i })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: /light/i })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: /dark/i })).toBeInTheDocument();
 	});
 
 	it("calls setTheme with dark when dark button is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ThemeSwitcher />);
+		renderWithProviders(<ThemeSwitcher />, { language: "en" });
 
-		const darkButton = screen.getByRole("button", { name: /dark theme/i });
+		const darkButton = screen.getByRole("button", { name: /dark/i });
 		await user.click(darkButton);
 
 		expect(mockSetTheme).toHaveBeenCalledWith("dark");
@@ -47,9 +48,9 @@ describe("ThemeSwitcher", () => {
 		});
 
 		const user = userEvent.setup();
-		render(<ThemeSwitcher />);
+		renderWithProviders(<ThemeSwitcher />, { language: "en" });
 
-		const lightButton = screen.getByRole("button", { name: /light theme/i });
+		const lightButton = screen.getByRole("button", { name: /light/i });
 		await user.click(lightButton);
 
 		expect(mockSetTheme).toHaveBeenCalledWith("light");
@@ -57,9 +58,9 @@ describe("ThemeSwitcher", () => {
 
 	it("calls setTheme with system when system button is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ThemeSwitcher />);
+		renderWithProviders(<ThemeSwitcher />, { language: "en" });
 
-		const systemButton = screen.getByRole("button", { name: /system theme/i });
+		const systemButton = screen.getByRole("button", { name: /system/i });
 		await user.click(systemButton);
 
 		expect(mockSetTheme).toHaveBeenCalledWith("system");
