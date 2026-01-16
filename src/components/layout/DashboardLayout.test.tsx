@@ -118,7 +118,8 @@ describe("DashboardLayout", () => {
 			</DashboardLayout>,
 		);
 
-		expect(screen.getByTestId("theme-switcher")).toBeInTheDocument();
+		const themeSwitchers = screen.getAllByTestId("theme-switcher");
+		expect(themeSwitchers.length).toBeGreaterThan(0);
 	});
 
 	it("renders avatar dropdown", () => {

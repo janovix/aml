@@ -52,6 +52,10 @@ export const translations = {
 		breadcrumbHome: "Inicio",
 		breadcrumbNew: "Nuevo",
 		breadcrumbEdit: "Editar",
+		breadcrumbNotFound: "No encontrado",
+		breadcrumbError: "Error",
+		breadcrumbForbidden: "Prohibido",
+		breadcrumbUnauthorized: "No autorizado",
 
 		// Sidebar
 		sidebarOrganizations: "Organizaciones",
@@ -59,6 +63,27 @@ export const translations = {
 		sidebarProfile: "Perfil",
 		sidebarLogout: "Cerrar sesión",
 		sidebarUser: "Usuario",
+
+		// App Switcher
+		appSwitcherTitle: "Apps de Janovix",
+		appSwitcherHomepage: "Página Principal",
+		appSwitcherHomepageDescription: "Sitio web principal",
+		appSwitcherAml: "Plataforma AML",
+		appSwitcherAmlDescription: "Anti-lavado de dinero",
+		appSwitcherWatchlist: "Lista de Vigilancia",
+		appSwitcherWatchlistDescription: "Servicio de screening",
+		appSwitcherSettings: "Configuración",
+		appSwitcherSettingsDescription: "Cuenta y organización",
+		appSwitcherCurrentApp: "Actual",
+
+		// Mobile Sidebar
+		mobileSidebarClose: "Cerrar menú",
+		mobileSidebarNavigation: "Navegación",
+
+		// Organization Switcher
+		organizations: "Organizaciones",
+		createOrganization: "Crear organización",
+		orgSettings: "Configuración",
 
 		// Organization Dialog
 		orgNewTitle: "Nueva organización",
@@ -91,9 +116,12 @@ export const translations = {
 		orgErrorLoadingDesc: "Por favor, intenta de nuevo más tarde.",
 
 		// Theme
+		themeLabel: "Tema",
 		themeLight: "Claro",
 		themeDark: "Oscuro",
 		themeSystem: "Sistema",
+		// Language
+		languageLabel: "Idioma",
 
 		// Language
 		languageSpanish: "Español",
@@ -625,6 +653,18 @@ export const translations = {
 
 		// Common additions
 		"common.dismiss": "Descartar",
+
+		// Navbar clock
+		clockClickForInfo: "Clic para ver información de zona horaria",
+		clockTimezoneInfo: "Información de zona horaria",
+		clockSwitchTo: "Cambiar a",
+		clockAppTimezone: "Zona horaria de la app",
+		clockYourTimezone: "Tu zona horaria",
+		clockLocal: "Local",
+		clockDetecting: "Detectando...",
+		clockTimezoneMismatch: "Diferencia de zona horaria",
+		clockDifference: "Diferencia",
+		clockTimezonesMatch: "Las zonas horarias coinciden",
 	},
 	en: {
 		// Common
@@ -670,6 +710,10 @@ export const translations = {
 		breadcrumbHome: "Home",
 		breadcrumbNew: "New",
 		breadcrumbEdit: "Edit",
+		breadcrumbNotFound: "Not Found",
+		breadcrumbError: "Error",
+		breadcrumbForbidden: "Forbidden",
+		breadcrumbUnauthorized: "Unauthorized",
 
 		// Sidebar
 		sidebarOrganizations: "Organizations",
@@ -677,6 +721,27 @@ export const translations = {
 		sidebarProfile: "Profile",
 		sidebarLogout: "Log out",
 		sidebarUser: "User",
+
+		// App Switcher
+		appSwitcherTitle: "Janovix Apps",
+		appSwitcherHomepage: "Homepage",
+		appSwitcherHomepageDescription: "Main website",
+		appSwitcherAml: "AML Platform",
+		appSwitcherAmlDescription: "Anti-money laundering",
+		appSwitcherWatchlist: "Watchlist",
+		appSwitcherWatchlistDescription: "Screening service",
+		appSwitcherSettings: "Settings",
+		appSwitcherSettingsDescription: "Account & organization",
+		appSwitcherCurrentApp: "Current",
+
+		// Mobile Sidebar
+		mobileSidebarClose: "Close menu",
+		mobileSidebarNavigation: "Navigation",
+
+		// Organization Switcher
+		organizations: "Organizations",
+		createOrganization: "Create organization",
+		orgSettings: "Settings",
 
 		// Organization Dialog
 		orgNewTitle: "New organization",
@@ -708,9 +773,12 @@ export const translations = {
 		orgErrorLoadingDesc: "Please try again later.",
 
 		// Theme
+		themeLabel: "Theme",
 		themeLight: "Light",
 		themeDark: "Dark",
 		themeSystem: "System",
+		// Language
+		languageLabel: "Language",
 
 		// Language
 		languageSpanish: "Español",
@@ -1237,6 +1305,18 @@ export const translations = {
 
 		// Common additions
 		"common.dismiss": "Dismiss",
+
+		// Navbar clock
+		clockClickForInfo: "Click for timezone info",
+		clockTimezoneInfo: "Timezone Information",
+		clockSwitchTo: "Switch to",
+		clockAppTimezone: "App timezone",
+		clockYourTimezone: "Your timezone",
+		clockLocal: "Local",
+		clockDetecting: "Detecting...",
+		clockTimezoneMismatch: "Timezone mismatch",
+		clockDifference: "Difference",
+		clockTimezonesMatch: "Timezones match",
 	},
 } as const;
 

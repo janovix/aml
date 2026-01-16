@@ -26,7 +26,6 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 	SidebarRail,
-	SidebarSeparator,
 	useSidebar,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
@@ -41,7 +40,9 @@ import {
 	type Organization as LegacyOrganization,
 } from "./OrganizationSwitcher";
 import { NavUser } from "./NavUser";
-import { Logo } from "./Logo";
+import { AppSwitcher } from "./AppSwitcher";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { getAuthAppUrl, getWatchlistAppUrl } from "@/lib/auth/config";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { TranslationKeys } from "@/lib/translations";
@@ -252,35 +253,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
 	return (
 		<Sidebar collapsible="icon" {...props}>
-			<SidebarHeader className="border-b border-sidebar-border">
-				{/* Logo */}
-				<div className="flex h-12 items-center px-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
-					<Logo
-						variant="logo"
-						width={120}
-						height={28}
-						className="group-data-[collapsible=icon]:hidden"
-					/>
-					<Logo
-						variant="icon"
-						width={32}
-						height={32}
-						className="hidden group-data-[collapsible=icon]:block"
-					/>
-				</div>
-				{/* Organization Switcher */}
-				<OrganizationSwitcher
-					organizations={legacyOrganizations}
-					activeOrganization={legacyActiveOrg}
-					onOrganizationChange={handleOrganizationChange}
-					onCreateOrganization={handleCreateOrganization}
-					isLoading={isPending || orgLoading}
-					organizationsOwned={organizationsOwned}
-					organizationsLimit={organizationsLimit}
-				/>
+			<SidebarHeader className="h-16 border-b border-sidebar-border flex items-center justify-center">
+				{/* App Switcher (replaces static Logo) */}
+				<AppSwitcher />
 			</SidebarHeader>
 
 			<SidebarContent>
+				{/* Organization Switcher */}
+				<div className="p-2 border-b border-sidebar-border">
+					<OrganizationSwitcher
+						organizations={legacyOrganizations}
+						activeOrganization={legacyActiveOrg}
+						onOrganizationChange={handleOrganizationChange}
+						onCreateOrganization={handleCreateOrganization}
+						isLoading={isPending || orgLoading}
+						organizationsOwned={organizationsOwned}
+						organizationsLimit={organizationsLimit}
+					/>
+				</div>
+
 				<SidebarGroup>
 					<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
 						{t("navTransaction")}
@@ -365,8 +356,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 					</SidebarGroupContent>
 				</SidebarGroup>
 
-				<SidebarSeparator />
-
 				<SidebarGroup>
 					<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
 						{t("navProducts")}
@@ -399,6 +388,42 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 			</SidebarContent>
 
 			<SidebarFooter className="border-t border-sidebar-border">
+				{/* Language and Theme Switchers */}
+				<div className="flex items-center justify-between px-2 py-2 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-1">
+					<LanguageSwitcher
+						variant="default"
+						size="sm"
+						shape="rounded"
+						showIcon
+						side="right"
+						align="start"
+						className="group-data-[collapsible=icon]:hidden"
+					/>
+					<LanguageSwitcher
+						variant="mini"
+						size="sm"
+						shape="rounded"
+						side="right"
+						align="center"
+						className="hidden group-data-[collapsible=icon]:flex"
+					/>
+					<ThemeSwitcher
+						variant="default"
+						size="sm"
+						shape="rounded"
+						side="right"
+						align="start"
+						className="group-data-[collapsible=icon]:hidden"
+					/>
+					<ThemeSwitcher
+						variant="mini"
+						size="sm"
+						shape="rounded"
+						side="right"
+						align="center"
+						className="hidden group-data-[collapsible=icon]:flex"
+					/>
+				</div>
 				<NavUser user={user} isLoading={isPending} onLogout={handleLogout} />
 			</SidebarFooter>
 

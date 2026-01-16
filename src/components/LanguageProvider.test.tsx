@@ -197,12 +197,14 @@ describe("LanguageProvider", () => {
 			theme: "light",
 			timezone: "UTC",
 			dateFormat: "DD/MM/YYYY",
+			clockFormat: "12h",
 			avatarUrl: null,
 			sources: {
 				language: "user",
 				theme: "default",
 				timezone: "default",
 				dateFormat: "default",
+				clockFormat: "default",
 			},
 		});
 
@@ -230,12 +232,14 @@ describe("LanguageProvider", () => {
 			theme: "light",
 			timezone: "UTC",
 			dateFormat: "DD/MM/YYYY",
+			clockFormat: "12h",
 			avatarUrl: null,
 			sources: {
 				language: "user",
 				theme: "default",
 				timezone: "default",
 				dateFormat: "default",
+				clockFormat: "default",
 			},
 		});
 

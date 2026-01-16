@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/tooltip";
 import { formatProperNoun } from "@/lib/utils";
 import { getAuthAppUrl } from "@/lib/auth/config";
+import { useLanguage } from "@/components/LanguageProvider";
 
 export interface Organization {
 	id: string;
@@ -119,6 +120,7 @@ export function OrganizationSwitcher({
 }: OrganizationSwitcherProps) {
 	const { isMobile, state } = useSidebar();
 	const isCollapsed = state === "collapsed";
+	const { t } = useLanguage();
 
 	if (isLoading) {
 		return (
@@ -136,8 +138,8 @@ export function OrganizationSwitcher({
 		);
 	}
 
-	// If collapsed, show just the org avatar with dropdown
-	if (isCollapsed) {
+	// If collapsed (and not on mobile), show just the org avatar with dropdown
+	if (isCollapsed && !isMobile) {
 		return (
 			<SidebarMenu>
 				<SidebarMenuItem>
@@ -171,7 +173,7 @@ export function OrganizationSwitcher({
 							sideOffset={4}
 						>
 							<DropdownMenuLabel className="flex items-center justify-between text-xs text-muted-foreground">
-								<span>Organizaciones</span>
+								<span>{t("organizations")}</span>
 								{organizationsLimit > 0 && (
 									<div className="flex items-center gap-1.5">
 										<CircularProgress
@@ -189,7 +191,7 @@ export function OrganizationSwitcher({
 								<DropdownMenuItem
 									key={org.id}
 									onClick={() => onOrganizationChange(org)}
-									className="gap-2 p-2 group/org"
+									className="gap-2 p-2"
 								>
 									{org.logo ? (
 										<img
@@ -205,24 +207,19 @@ export function OrganizationSwitcher({
 									<span className="flex-1 truncate">
 										{formatProperNoun(org.name)}
 									</span>
-									{activeOrganization?.id === org.id && (
-										<span className="text-xs text-muted-foreground group-hover/org:hidden">
-											Activa
-										</span>
-									)}
 									<Tooltip>
 										<TooltipTrigger asChild>
 											<a
 												href={`${getAuthAppUrl()}/settings/organization?org=${org.slug}`}
 												onClick={(e) => e.stopPropagation()}
-												className="p-1 rounded hover:bg-muted hidden group-hover/org:block"
-												target="_blank"
-												rel="noopener noreferrer"
+												className="p-1 rounded hover:bg-muted"
 											>
 												<Settings className="size-3.5 text-muted-foreground" />
 											</a>
 										</TooltipTrigger>
-										<TooltipContent side="right">Configuración</TooltipContent>
+										<TooltipContent side="right">
+											{t("orgSettings")}
+										</TooltipContent>
 									</Tooltip>
 								</DropdownMenuItem>
 							))}
@@ -235,7 +232,7 @@ export function OrganizationSwitcher({
 									>
 										<Plus className="size-4" />
 										<span className="text-muted-foreground font-medium">
-											Crear organización
+											{t("createOrganization")}
 										</span>
 									</DropdownMenuItem>
 								</>
@@ -261,9 +258,8 @@ export function OrganizationSwitcher({
 							<Plus className="size-4" />
 						</div>
 						<div className="grid flex-1 text-left text-sm leading-tight">
-							<span className="truncate font-medium">Crear organización</span>
-							<span className="truncate text-xs text-muted-foreground">
-								Configura tu empresa
+							<span className="truncate font-medium">
+								{t("createOrganization")}
 							</span>
 						</div>
 					</SidebarMenuButton>
@@ -300,10 +296,10 @@ export function OrganizationSwitcher({
 								<span className="truncate font-medium">
 									{activeOrganization?.name
 										? formatProperNoun(activeOrganization.name)
-										: "Seleccionar"}
+										: t("organizations")}
 								</span>
 								<span className="truncate text-xs text-muted-foreground">
-									{activeOrganization?.slug ?? "organización"}
+									{activeOrganization?.slug ?? "organization"}
 								</span>
 							</div>
 							<ChevronsUpDown className="ml-auto size-4" />
@@ -316,7 +312,7 @@ export function OrganizationSwitcher({
 						sideOffset={4}
 					>
 						<DropdownMenuLabel className="flex items-center justify-between text-xs text-muted-foreground">
-							<span>Organizaciones</span>
+							<span>{t("organizations")}</span>
 							{organizationsLimit > 0 && (
 								<div className="flex items-center gap-1.5">
 									<CircularProgress
@@ -334,7 +330,7 @@ export function OrganizationSwitcher({
 							<DropdownMenuItem
 								key={org.id}
 								onClick={() => onOrganizationChange(org)}
-								className="gap-2 p-2 group/org"
+								className="gap-2 p-2"
 							>
 								{org.logo ? (
 									<img
@@ -350,24 +346,19 @@ export function OrganizationSwitcher({
 								<span className="flex-1 truncate">
 									{formatProperNoun(org.name)}
 								</span>
-								{activeOrganization?.id === org.id && (
-									<span className="text-xs text-muted-foreground group-hover/org:hidden">
-										Activa
-									</span>
-								)}
 								<Tooltip>
 									<TooltipTrigger asChild>
 										<a
 											href={`${getAuthAppUrl()}/settings/organization?org=${org.slug}`}
 											onClick={(e) => e.stopPropagation()}
-											className="p-1 rounded hover:bg-muted hidden group-hover/org:block"
-											target="_blank"
-											rel="noopener noreferrer"
+											className="p-1 rounded hover:bg-muted"
 										>
 											<Settings className="size-3.5 text-muted-foreground" />
 										</a>
 									</TooltipTrigger>
-									<TooltipContent side="right">Configuración</TooltipContent>
+									<TooltipContent side="right">
+										{t("orgSettings")}
+									</TooltipContent>
 								</Tooltip>
 							</DropdownMenuItem>
 						))}
@@ -380,7 +371,7 @@ export function OrganizationSwitcher({
 								>
 									<Plus className="size-4" />
 									<span className="text-muted-foreground font-medium">
-										Crear organización
+										{t("createOrganization")}
 									</span>
 								</DropdownMenuItem>
 							</>

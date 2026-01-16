@@ -12,6 +12,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { useLanguage } from "@/components/LanguageProvider";
+import { useSetPageStatus } from "@/components/PageStatusProvider";
 
 /**
  * Global 404 Not Found page
@@ -19,6 +20,9 @@ import { useLanguage } from "@/components/LanguageProvider";
  */
 export default function NotFound() {
 	const { t } = useLanguage();
+
+	// Set page status for breadcrumb display
+	useSetPageStatus("not-found");
 
 	return (
 		<div className="flex flex-1 items-center justify-center bg-linear-to-br from-background to-muted/50 p-4">

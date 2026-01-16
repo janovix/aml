@@ -268,3 +268,24 @@ main {
 .scrollbar-hide::-webkit-scrollbar {
 	display: none; /* Chrome, Safari and Opera */
 }
+
+/* Mobile sidebar dropdown styles - larger touch targets */
+.mobile-sidebar-open [data-slot="dropdown-menu-content"] {
+	@apply rounded-xl border-white/10 bg-background/95 backdrop-blur-xl;
+}
+
+.mobile-sidebar-open [data-slot="dropdown-menu-item"] {
+	@apply min-h-14 rounded-xl px-4 py-3 text-base gap-3;
+}
+
+.mobile-sidebar-open [data-slot="dropdown-menu-item"] svg {
+	@apply size-5;
+}
+
+.mobile-sidebar-open [data-slot="dropdown-menu-label"] {
+	@apply px-4 py-3 text-sm;
+}
+
+.mobile-sidebar-open [data-slot="dropdown-menu-separator"] {
+	@apply my-2 bg-white/10;
+}

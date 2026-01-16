@@ -74,9 +74,11 @@ const mockGetAuthAppUrl = vi.fn().mockReturnValue("https://auth.test.com");
 const mockGetWatchlistAppUrl = vi
 	.fn()
 	.mockReturnValue("https://watchlist.test.com");
+const mockGetHomepageUrl = vi.fn().mockReturnValue("https://aml.test.com");
 vi.mock("@/lib/auth/config", () => ({
 	getAuthAppUrl: () => mockGetAuthAppUrl(),
 	getWatchlistAppUrl: () => mockGetWatchlistAppUrl(),
+	getHomepageUrl: () => mockGetHomepageUrl(),
 }));
 
 const mockSetCurrentOrg = vi.fn();

@@ -2,6 +2,7 @@ import { render, type RenderOptions } from "@testing-library/react";
 import type { ReactElement } from "react";
 import React from "react";
 import { LanguageProvider } from "@/components/LanguageProvider";
+import { PageStatusProvider } from "@/components/PageStatusProvider";
 import {
 	translations,
 	type Language,
@@ -30,7 +31,9 @@ export function renderWithProviders(
 	const { language = "es", ...renderOptions } = options ?? {};
 	return render(ui, {
 		wrapper: ({ children }) => (
-			<LanguageProvider defaultLanguage={language}>{children}</LanguageProvider>
+			<LanguageProvider defaultLanguage={language}>
+				<PageStatusProvider>{children}</PageStatusProvider>
+			</LanguageProvider>
 		),
 		...renderOptions,
 	});

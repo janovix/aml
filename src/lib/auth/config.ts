@@ -17,3 +17,13 @@ export const getWatchlistAppUrl = (): string => {
 		"https://watchlist.janovix.workers.dev"
 	);
 };
+
+export const getHomepageUrl = (): string => {
+	return process.env.NEXT_PUBLIC_HOMEPAGE_URL || "https://www.janovix.com";
+};
+
+export const getAmlAppUrl = (): string => {
+	return (
+		process.env.NEXT_PUBLIC_AML_APP_URL || "https://aml.janovix.workers.dev"
+	);
+};

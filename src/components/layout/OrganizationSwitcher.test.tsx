@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
 	OrganizationSwitcher,
 	type Organization,
 } from "./OrganizationSwitcher";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { renderWithProviders } from "@/lib/testHelpers";
 
 describe("OrganizationSwitcher", () => {
 	const mockOrganizations: Organization[] = [
@@ -24,7 +25,7 @@ describe("OrganizationSwitcher", () => {
 	];
 
 	it("renders loading state when isLoading is true", () => {
-		render(
+		renderWithProviders(
 			<SidebarProvider defaultOpen={true}>
 				<OrganizationSwitcher
 					organizations={[]}
@@ -40,7 +41,7 @@ describe("OrganizationSwitcher", () => {
 	});
 
 	it("renders collapsed state with org avatar when sidebar is collapsed", () => {
-		render(
+		renderWithProviders(
 			<SidebarProvider defaultOpen={false}>
 				<OrganizationSwitcher
 					organizations={[]}
@@ -57,7 +58,7 @@ describe("OrganizationSwitcher", () => {
 
 	it("renders create organization button when no organizations", () => {
 		const mockOnCreate = vi.fn();
-		render(
+		renderWithProviders(
 			<SidebarProvider defaultOpen={true}>
 				<OrganizationSwitcher
 					organizations={[]}
@@ -70,11 +71,10 @@ describe("OrganizationSwitcher", () => {
 		);
 
 		expect(screen.getByText("Crear organización")).toBeInTheDocument();
-		expect(screen.getByText("Configura tu empresa")).toBeInTheDocument();
 	});
 
 	it("renders organization dropdown when organizations exist", () => {
-		render(
+		renderWithProviders(
 			<SidebarProvider defaultOpen={true}>
 				<OrganizationSwitcher
 					organizations={mockOrganizations}
@@ -93,7 +93,7 @@ describe("OrganizationSwitcher", () => {
 		const mockOnChange = vi.fn();
 		const user = userEvent.setup();
 
-		render(
+		renderWithProviders(
 			<SidebarProvider defaultOpen={true}>
 				<OrganizationSwitcher
 					organizations={mockOrganizations}
@@ -119,7 +119,7 @@ describe("OrganizationSwitcher", () => {
 		const mockOnCreate = vi.fn();
 		const user = userEvent.setup();
 
-		render(
+		renderWithProviders(
 			<SidebarProvider defaultOpen={true}>
 				<OrganizationSwitcher
 					organizations={[]}
@@ -138,7 +138,7 @@ describe("OrganizationSwitcher", () => {
 	});
 
 	it("renders organization with logo when provided", () => {
-		render(
+		renderWithProviders(
 			<SidebarProvider defaultOpen={true}>
 				<OrganizationSwitcher
 					organizations={mockOrganizations}
@@ -158,7 +158,7 @@ describe("OrganizationSwitcher", () => {
 		const mockOnCreate = vi.fn();
 		const user = userEvent.setup();
 
-		render(
+		renderWithProviders(
 			<SidebarProvider defaultOpen={true}>
 				<OrganizationSwitcher
 					organizations={mockOrganizations}
@@ -181,10 +181,10 @@ describe("OrganizationSwitcher", () => {
 		expect(mockOnCreate).toHaveBeenCalledTimes(1);
 	});
 
-	it("shows Activa label for current organization in dropdown", async () => {
+	it("shows organizations in dropdown when opened", async () => {
 		const user = userEvent.setup();
 
-		render(
+		renderWithProviders(
 			<SidebarProvider defaultOpen={true}>
 				<OrganizationSwitcher
 					organizations={mockOrganizations}
@@ -199,15 +199,16 @@ describe("OrganizationSwitcher", () => {
 		const orgButton = screen.getByText("ORG 1");
 		await user.click(orgButton);
 
-		// Check for "Activa" label
-		expect(await screen.findByText("Activa")).toBeInTheDocument();
+		// Check that organizations are shown in dropdown
+		expect(await screen.findByText("Organizaciones")).toBeInTheDocument();
+		expect(await screen.findByText("ORG 2")).toBeInTheDocument();
 	});
 
 	it("renders collapsed state with organizations and opens dropdown on click", async () => {
 		const mockOnChange = vi.fn();
 		const user = userEvent.setup();
 
-		render(
+		renderWithProviders(
 			<SidebarProvider defaultOpen={false}>
 				<OrganizationSwitcher
 					organizations={mockOrganizations}
@@ -230,7 +231,7 @@ describe("OrganizationSwitcher", () => {
 	});
 
 	it("renders active organization with logo in collapsed state", () => {
-		render(
+		renderWithProviders(
 			<SidebarProvider defaultOpen={false}>
 				<OrganizationSwitcher
 					organizations={mockOrganizations}
@@ -246,8 +247,8 @@ describe("OrganizationSwitcher", () => {
 		expect(logo).toBeInTheDocument();
 	});
 
-	it("displays Seleccionar when no active organization", () => {
-		render(
+	it("displays Organizaciones when no active organization", () => {
+		renderWithProviders(
 			<SidebarProvider defaultOpen={true}>
 				<OrganizationSwitcher
 					organizations={mockOrganizations}
@@ -258,14 +259,13 @@ describe("OrganizationSwitcher", () => {
 			</SidebarProvider>,
 		);
 
-		expect(screen.getByText("Seleccionar")).toBeInTheDocument();
-		expect(screen.getByText("organización")).toBeInTheDocument();
+		expect(screen.getByText("Organizaciones")).toBeInTheDocument();
 	});
 
 	it("renders organization logo in dropdown items when available", async () => {
 		const user = userEvent.setup();
 
-		render(
+		renderWithProviders(
 			<SidebarProvider defaultOpen={true}>
 				<OrganizationSwitcher
 					organizations={mockOrganizations}
