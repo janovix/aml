@@ -221,7 +221,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	// Redirect to auth settings to create a new organization
 	const handleCreateOrganization = () => {
 		const authBaseUrl = getAuthAppUrl();
-		window.location.href = `${authBaseUrl}/settings/organizations/create`;
+		window.location.href = `${authBaseUrl}/settings/organization/new`;
 	};
 
 	// Convert org-store organizations to legacy format for OrganizationSwitcher

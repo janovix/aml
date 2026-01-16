@@ -259,7 +259,7 @@ describe("AppSidebar", () => {
 
 		// Should redirect to auth settings org create page
 		expect(window.location.href).toBe(
-			"https://auth.test.com/settings/organizations/create",
+			"https://auth.test.com/settings/organization/new",
 		);
 
 		// Restore window.location
