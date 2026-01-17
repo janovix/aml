@@ -48,6 +48,16 @@ vi.mock("next/navigation", () => ({
 	useParams: () => ({ orgSlug: "test-org" }),
 }));
 
+// Mock useJwt to return a valid JWT
+vi.mock("@/hooks/useJwt", () => ({
+	useJwt: () => ({
+		jwt: "mock-jwt-token",
+		isLoading: false,
+		error: null,
+		refetch: vi.fn(),
+	}),
+}));
+
 describe("ClientsPageContent", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();

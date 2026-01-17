@@ -234,9 +234,13 @@ export function OrgBootstrapper({
 			// Set as current org
 			setCurrentOrg(targetOrg);
 
+			// Always clear token cache when entering org context
+			// This ensures a fresh JWT is fetched with the current organizationId claim
+			// Even if activeOrgId matches, the cached token might be stale
+			tokenCache.clear();
+
 			// Sync activeOrganizationId if different
 			if (activeOrgId !== targetOrg.id) {
-				tokenCache.clear();
 				const syncResult = await setActiveOrganization(targetOrg.id);
 				if (syncResult.error) {
 					console.error(

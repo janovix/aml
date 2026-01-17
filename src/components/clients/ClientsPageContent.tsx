@@ -1,20 +1,22 @@
 "use client";
 
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ClientsTable } from "@/components/clients/ClientsTable";
 import { PageHero, type StatCard } from "@/components/page-hero";
 import { Users, User, Building2, Plus } from "lucide-react";
 import { getClientStats } from "@/lib/api/stats";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/lib/mutations";
-import { ApiError } from "@/lib/api/http";
+import { ApiError, isOrganizationRequiredError } from "@/lib/api/http";
 import { useLanguage } from "@/components/LanguageProvider";
 import { getLocaleForLanguage } from "@/lib/translations";
+import { useJwt } from "@/hooks/useJwt";
 
 export function ClientsPageContent(): React.ReactElement {
 	const { navigateTo } = useOrgNavigation();
 	const { t, language } = useLanguage();
+	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const [stats, setStats] = useState<{
 		totalClients: number;
 		physicalClients: number;
@@ -22,35 +24,55 @@ export function ClientsPageContent(): React.ReactElement {
 	} | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 
-	useEffect(() => {
-		const fetchStats = async () => {
-			try {
-				setIsLoading(true);
-				const data = await getClientStats();
-				setStats(data);
-			} catch (error) {
-				if (error instanceof ApiError) {
-					console.error(
-						"[ClientsPageContent] API error fetching client stats:",
-						`status=${error.status}`,
-						`message=${error.message}`,
-						"body=",
-						error.body,
-					);
-				} else {
-					console.error(
-						"[ClientsPageContent] Error fetching client stats:",
-						error instanceof Error ? error.message : error,
-					);
-				}
-				toast.error(extractErrorMessage(error));
-			} finally {
-				setIsLoading(false);
-			}
-		};
+	const fetchStats = useCallback(async () => {
+		// Wait for JWT to be available (which means org is synced)
+		if (!jwt) {
+			setIsLoading(false);
+			return;
+		}
 
-		fetchStats();
-	}, [t]);
+		try {
+			setIsLoading(true);
+			const data = await getClientStats({ jwt });
+			setStats(data);
+		} catch (error) {
+			// Silently handle org-required errors - this can happen during org switching
+			if (isOrganizationRequiredError(error)) {
+				console.debug(
+					"[ClientsPageContent] Organization required error - org may be syncing",
+				);
+				return;
+			}
+
+			if (error instanceof ApiError) {
+				console.error(
+					"[ClientsPageContent] API error fetching client stats:",
+					`status=${error.status}`,
+					`message=${error.message}`,
+					"body=",
+					error.body,
+				);
+			} else {
+				console.error(
+					"[ClientsPageContent] Error fetching client stats:",
+					error instanceof Error ? error.message : error,
+				);
+			}
+			toast.error(extractErrorMessage(error));
+		} finally {
+			setIsLoading(false);
+		}
+	}, [jwt]);
+
+	useEffect(() => {
+		// Only fetch when JWT is ready (which means org is ready)
+		if (!isJwtLoading && jwt) {
+			fetchStats();
+		} else if (!isJwtLoading && !jwt) {
+			// No JWT available (no org selected)
+			setIsLoading(false);
+		}
+	}, [fetchStats, isJwtLoading, jwt]);
 
 	const formatNumber = (num: number): string => {
 		return new Intl.NumberFormat(getLocaleForLanguage(language)).format(num);

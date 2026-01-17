@@ -64,6 +64,16 @@ vi.mock("@/hooks/use-mobile", () => ({
 	useIsMobile: () => false,
 }));
 
+// Mock useJwt to return a valid JWT
+vi.mock("@/hooks/useJwt", () => ({
+	useJwt: () => ({
+		jwt: "mock-jwt-token",
+		isLoading: false,
+		error: null,
+		refetch: vi.fn(),
+	}),
+}));
+
 describe("TransactionsPageContent", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();

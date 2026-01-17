@@ -179,7 +179,11 @@ export function NavBreadcrumb() {
 	}, [pathname, orgSlug]);
 
 	// Fetch entity names (clients, reports) for ID segments
+	// Wait for JWT to be available (which means org is synced) to avoid 409 errors
 	React.useEffect(() => {
+		// Don't fetch until JWT is ready (ensures org context is available)
+		if (!jwt) return;
+
 		const entitySegments = segments.filter(
 			(s) => s.entityType && s.entityId && !entityNames[s.entityId],
 		);
@@ -191,7 +195,11 @@ export function NavBreadcrumb() {
 			if (!segment.entityId) continue;
 
 			if (segment.entityType === "client") {
-				getClientById({ id: segment.entityId, signal: controller.signal })
+				getClientById({
+					id: segment.entityId,
+					signal: controller.signal,
+					jwt,
+				})
 					.then((client) => {
 						setEntityNames((prev) => ({
 							...prev,
@@ -201,7 +209,7 @@ export function NavBreadcrumb() {
 					.catch(() => {
 						// Silently fail - keep showing truncated ID
 					});
-			} else if (segment.entityType === "report" && jwt) {
+			} else if (segment.entityType === "report") {
 				getReportById({ id: segment.entityId, signal: controller.signal, jwt })
 					.then((report) => {
 						setEntityNames((prev) => ({

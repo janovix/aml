@@ -41,6 +41,16 @@ vi.mock("@/lib/api/clients", () => ({
 	getClientById: (opts: { id: string }) => mockGetClientById(opts),
 }));
 
+// Mock useJwt to return a valid JWT
+vi.mock("@/hooks/useJwt", () => ({
+	useJwt: () => ({
+		jwt: "mock-jwt-token",
+		isLoading: false,
+		error: null,
+		refetch: vi.fn(),
+	}),
+}));
+
 describe("NavBreadcrumb", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
