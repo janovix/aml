@@ -122,7 +122,50 @@ export function DashboardView(): React.ReactElement {
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
-	const fetchData = React.useCallback(async () => {
+	// Fetch data when JWT and org are ready
+	useEffect(() => {
+		// Still waiting for JWT
+		if (isJwtLoading) {
+			return;
+		}
+
+		// No JWT available (no org selected or auth issue)
+		if (!jwt) {
+			setIsLoading(false);
+			return;
+		}
+
+		// No org selected
+		if (!currentOrg?.id) {
+			setIsLoading(false);
+			return;
+		}
+
+		// All conditions met - fetch data
+		const fetchData = async () => {
+			setIsLoading(true);
+			setError(null);
+
+			try {
+				const [clientStats, transactionStats] = await Promise.all([
+					getClientStats({ jwt }).catch(() => null),
+					getTransactionStats({ jwt }).catch(() => null),
+				]);
+
+				setData({ clientStats, transactionStats });
+			} catch (err) {
+				console.error("Error fetching dashboard data:", err);
+				setError(t("errorLoadingData"));
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
+		fetchData();
+	}, [isJwtLoading, jwt, currentOrg?.id, t]);
+
+	// Manual refresh function for the refresh button
+	const handleRefresh = React.useCallback(async () => {
 		if (!jwt || !currentOrg?.id) return;
 
 		setIsLoading(true);
@@ -142,14 +185,6 @@ export function DashboardView(): React.ReactElement {
 			setIsLoading(false);
 		}
 	}, [jwt, currentOrg?.id, t]);
-
-	useEffect(() => {
-		if (!isJwtLoading && jwt && currentOrg?.id) {
-			fetchData();
-		} else if (!currentOrg?.id && !isJwtLoading) {
-			setIsLoading(false);
-		}
-	}, [fetchData, isJwtLoading, jwt, currentOrg?.id]);
 
 	// Build stats array for PageHero
 	const stats: StatCard[] = useMemo(() => {
@@ -200,7 +235,7 @@ export function DashboardView(): React.ReactElement {
 					{
 						label: t("dashboardRefresh"),
 						icon: RefreshCw,
-						onClick: fetchData,
+						onClick: handleRefresh,
 						variant: "outline",
 						disabled: isLoading,
 					},

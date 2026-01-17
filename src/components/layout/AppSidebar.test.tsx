@@ -604,8 +604,7 @@ describe("AppSidebar", () => {
 		expect(screen.getByText("Alertas")).toBeInTheDocument();
 		expect(screen.getByText("Reportes")).toBeInTheDocument();
 		// Products section items
-		expect(screen.getByText("Lista de Vigilancia")).toBeInTheDocument();
-		expect(screen.getByText("Configuración")).toBeInTheDocument();
+		expect(screen.getByText("Watchlist")).toBeInTheDocument();
 	});
 
 	it("handles session user without name", () => {

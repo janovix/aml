@@ -45,7 +45,7 @@ export const translations = {
 		navRiskModels: "Modelos de Riesgo",
 		navHistory: "Historial",
 		navAnalysis: "Análisis",
-		navWatchlist: "Lista de Vigilancia",
+		navWatchlist: "Watchlist",
 		navProducts: "Productos",
 
 		// Breadcrumbs
@@ -70,7 +70,7 @@ export const translations = {
 		appSwitcherHomepageDescription: "Sitio web principal",
 		appSwitcherAml: "Plataforma AML",
 		appSwitcherAmlDescription: "Anti-lavado de dinero",
-		appSwitcherWatchlist: "Lista de Vigilancia",
+		appSwitcherWatchlist: "Watchlist",
 		appSwitcherWatchlistDescription: "Servicio de screening",
 		appSwitcherSettings: "Configuración",
 		appSwitcherSettingsDescription: "Cuenta y organización",

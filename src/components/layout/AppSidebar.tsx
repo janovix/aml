@@ -106,13 +106,6 @@ const getProductsNavItems = (): NavItem[] => [
 		available: true,
 		externalUrl: getWatchlistAppUrl(),
 	},
-	{
-		titleKey: "navSettings",
-		href: "/settings",
-		icon: Settings,
-		available: true,
-		externalUrl: getAuthAppUrl(),
-	},
 ];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
