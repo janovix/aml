@@ -1,3 +1,27 @@
+# [1.3.0-rc.1](https://github.com/janovix/aml/compare/v1.2.0...v1.3.0-rc.1) (2026-01-17)
+
+
+### Bug Fixes
+
+* adjust Skeleton width and Badge styling in UmaBadge component for improved layout and responsiveness ([0495432](https://github.com/janovix/aml/commit/0495432acb511a61a27bb92b8fd3dd90d116cca9))
+* update organization creation redirect URL in AppSidebar component ([6ed6e37](https://github.com/janovix/aml/commit/6ed6e370ac4d0ebb30453f5a4d3a8d65fd892ee3))
+
+
+### Features
+
+* add focus ring styles to PersonTypePicker and VehicleTypePicker components, enhance DashboardView layout, and update NavUser logout item styling ([6e09409](https://github.com/janovix/aml/commit/6e0940945ab6f93e7be761fb7abe28c652c55714))
+* add framer-motion dependency and implement sidebar settings management with new hooks and components ([6c25b5a](https://github.com/janovix/aml/commit/6c25b5a38286e0b25fdf958b9f976eedfb109bf7))
+* add new dependencies and update middleware for improved auth service handling ([08f863b](https://github.com/janovix/aml/commit/08f863b65ddb8d062b609d0fae34ac06cb6ec0ed))
+* enhance Button, Input, PageHero, and Table components with additional stories and improved layout parameters for better documentation and usability ([2fb5088](https://github.com/janovix/aml/commit/2fb5088766475926213c74e517eb9a139872d7a9))
+* enhance CreateNoticeView and related tests to manage notice states and improve month selection logic ([3d3f2f1](https://github.com/janovix/aml/commit/3d3f2f1b8edc9833a98f7fa3403a2039b1bc3339))
+* enhance global error and not found pages with improved UI components and translations ([920ed94](https://github.com/janovix/aml/commit/920ed94e332c7df3d338fa6b28a1884f9fcffdee))
+* implement JWT handling in ClientsPageContent and TransactionsPageContent components for improved organization context management ([15995ba](https://github.com/janovix/aml/commit/15995ba53d47e17acbab4f740c7b9cd0346c76e0))
+* implement new ThemeSwitcher component with controllable state and animated transitions for theme selection ([6f2972c](https://github.com/janovix/aml/commit/6f2972cff52214aef84b379dfe066b26f1ecf65d))
+* implement PersonTypePicker and VehicleTypePicker components for client and transaction forms, enhancing user selection experience ([d73ea05](https://github.com/janovix/aml/commit/d73ea0591fe8ebce20e2d394a4b954c19f0626d2))
+* implement SubscriptionBanner component and related settings API client for subscription management ([68b9a38](https://github.com/janovix/aml/commit/68b9a38561d2cbf1e305d7ffc92e2951c65d6aa2))
+* integrate sentry for error tracking and performance monitoring ([3ba1737](https://github.com/janovix/aml/commit/3ba17370ac95d7a5b3888ca047003a5892566fbc))
+* update AppSidebar and NavUser components to use external links for auth app settings ([845aacc](https://github.com/janovix/aml/commit/845aacc998b537148d4d90ec3f95adff9737924e))
+
 # [1.3.0-rc.1](https://github.com/janovix/aml/compare/v1.2.0...v1.3.0-rc.1) (2026-01-16)
 
 
