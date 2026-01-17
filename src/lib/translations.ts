@@ -47,6 +47,8 @@ export const translations = {
 		navAnalysis: "Análisis",
 		navWatchlist: "Watchlist",
 		navProducts: "Productos",
+		navImport: "Importar Datos",
+		navDataManagement: "Gestión de Datos",
 
 		// Breadcrumbs
 		breadcrumbHome: "Inicio",
@@ -705,6 +707,8 @@ export const translations = {
 		navAnalysis: "Analysis",
 		navWatchlist: "Watchlist",
 		navProducts: "Products",
+		navImport: "Import Data",
+		navDataManagement: "Data Management",
 
 		// Breadcrumbs
 		breadcrumbHome: "Home",

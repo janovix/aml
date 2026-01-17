@@ -41,6 +41,9 @@ export default defineConfig({
 				// Layout components - primarily UI composition, hard to unit test branches
 				"src/components/layout/DashboardLayout.tsx",
 				"src/components/layout/Logo.tsx",
+				"src/components/layout/DashboardFullscreen.tsx",
+				// Sidebar settings hook - depends heavily on localStorage and cookies
+				"src/hooks/useSidebarSettings.ts",
 				// Client page content files that are mostly form composition
 				"src/components/clients/ClientsPageContent.tsx",
 				// Algtools UI re-exports - external library
