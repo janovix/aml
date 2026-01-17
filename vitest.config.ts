@@ -59,6 +59,11 @@ export default defineConfig({
 				"src/components/**/index.ts",
 				// Type definition files - no runtime code
 				"src/components/data-table/types.ts",
+				// Import feature - integration tested via worker tests
+				"src/lib/api/imports.ts",
+				"src/hooks/useImportSSE.ts",
+				"src/components/import/**",
+				"src/types/import.ts",
 			],
 			thresholds: {
 				lines: 80,
