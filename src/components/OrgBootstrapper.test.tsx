@@ -534,8 +534,9 @@ describe("OrgBootstrapper", () => {
 			expect(screen.getByText("Children Content")).toBeInTheDocument();
 		});
 
-		// Should not call setActiveOrganization when activeOrgId matches
-		expect(mockSetActiveOrganization).not.toHaveBeenCalled();
+		// Should always call setActiveOrganization to ensure session is synced
+		// This is critical on initial load/redirect to ensure JWT has org ID
+		expect(mockSetActiveOrganization).toHaveBeenCalledWith(mockOrganization.id);
 	});
 
 	it("skips sync when already synced to same org", async () => {

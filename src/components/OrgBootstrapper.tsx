@@ -236,18 +236,17 @@ export function OrgBootstrapper({
 
 			// Always clear token cache when entering org context
 			// This ensures a fresh JWT is fetched with the current organizationId claim
-			// Even if activeOrgId matches, the cached token might be stale
 			tokenCache.clear();
 
-			// Sync activeOrganizationId if different
-			if (activeOrgId !== targetOrg.id) {
-				const syncResult = await setActiveOrganization(targetOrg.id);
-				if (syncResult.error) {
-					console.error(
-						"[OrgBootstrapper] Failed to sync active org:",
-						syncResult.error,
-					);
-				}
+			// Always sync activeOrganizationId to ensure the session is up to date
+			// This is critical on initial load/redirect when the session might not have the org ID
+			// even if initialOrganizations says it does (the data could be stale)
+			const syncResult = await setActiveOrganization(targetOrg.id);
+			if (syncResult.error) {
+				console.error(
+					"[OrgBootstrapper] Failed to sync active org:",
+					syncResult.error,
+				);
 			}
 
 			// Fetch members
