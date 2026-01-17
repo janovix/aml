@@ -83,6 +83,14 @@ function OrgCard({
 	onSelect: (org: Organization) => void;
 	isSelecting: boolean;
 }) {
+	// Get initials from org name for fallback
+	const initials = org.name
+		.split(" ")
+		.map((word) => word[0])
+		.join("")
+		.slice(0, 2)
+		.toUpperCase();
+
 	return (
 		<button
 			onClick={() => onSelect(org)}
@@ -90,8 +98,18 @@ function OrgCard({
 			className="flex w-full items-center justify-between rounded-lg border bg-card p-4 text-left transition-colors hover:bg-accent disabled:opacity-50"
 		>
 			<div className="flex items-center gap-3">
-				<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-					<Building2 className="h-5 w-5 text-primary" />
+				<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 overflow-hidden">
+					{org.logo ? (
+						<img
+							src={org.logo}
+							alt={org.name}
+							className="h-full w-full object-cover"
+						/>
+					) : (
+						<span className="text-sm font-semibold text-primary">
+							{initials}
+						</span>
+					)}
 				</div>
 				<div>
 					<div className="font-medium">{org.name}</div>
