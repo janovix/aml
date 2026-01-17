@@ -231,16 +231,12 @@ export function OrgBootstrapper({
 				return;
 			}
 
-			// Set as current org
-			setCurrentOrg(targetOrg);
-
-			// Always clear token cache when entering org context
-			// This ensures a fresh JWT is fetched with the current organizationId claim
-			tokenCache.clear();
-
-			// Always sync activeOrganizationId to ensure the session is up to date
-			// This is critical on initial load/redirect when the session might not have the org ID
-			// even if initialOrganizations says it does (the data could be stale)
+			// IMPORTANT: Sync activeOrganizationId BEFORE setting currentOrg in the store.
+			// This ensures the session's activeOrganizationId is updated in the database
+			// BEFORE useJwt hook fetches a new JWT. Otherwise, there's a race condition
+			// where the JWT is fetched with organizationId: null because setCurrentOrg
+			// triggers useJwt to fetch immediately, before setActiveOrganization completes.
+			// This is critical on first organization creation when redirecting from auth app.
 			const syncResult = await setActiveOrganization(targetOrg.id);
 			if (syncResult.error) {
 				console.error(
@@ -248,6 +244,13 @@ export function OrgBootstrapper({
 					syncResult.error,
 				);
 			}
+
+			// Clear token cache AFTER session is updated, so fresh JWT includes organizationId
+			tokenCache.clear();
+
+			// Now set the current org in the store - this triggers useJwt to fetch JWT
+			// The session is already updated, so the JWT will have the correct organizationId
+			setCurrentOrg(targetOrg);
 
 			// Fetch members
 			const membersResult = await listMembers(targetOrg.id);
