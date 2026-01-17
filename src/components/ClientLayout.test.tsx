@@ -21,6 +21,18 @@ vi.mock("./OrgBootstrapper", () => ({
 	),
 }));
 
+// Mock the LanguageProvider to prevent async getResolvedSettings() calls during test cleanup
+vi.mock("./LanguageProvider", () => ({
+	LanguageProvider: ({ children }: { children: React.ReactNode }) => (
+		<div data-testid="language-provider">{children}</div>
+	),
+	useLanguage: () => ({
+		language: "en",
+		setLanguage: () => {},
+		t: (key: string) => key,
+	}),
+}));
+
 describe("ClientLayout", () => {
 	it("renders children", async () => {
 		render(
