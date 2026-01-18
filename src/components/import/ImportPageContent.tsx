@@ -1,87 +1,48 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { FileUploader } from "./FileUploader";
-import { CatastrophicError } from "./CatastrophicError";
-import { useJwt } from "@/hooks/useJwt";
-import { useOrgNavigation } from "@/hooks/useOrgNavigation";
-import { createImport } from "@/lib/api/imports";
-import type {
-	ImportEntityType,
-	CatastrophicError as CatastrophicErrorType,
-} from "@/types/import";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ImportsTable } from "./ImportsTable";
+import { CreateImportDialog } from "./CreateImportDialog";
 
 export function ImportPageContent() {
-	const { jwt, isLoading: isJwtLoading } = useJwt();
-	const { navigateTo } = useOrgNavigation();
-	const [isUploading, setIsUploading] = useState(false);
-	const [error, setError] = useState<CatastrophicErrorType | null>(null);
+	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+	const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-	const handleFileUpload = useCallback(
-		async (file: File, entityType: ImportEntityType) => {
-			if (!jwt) {
-				setError({
-					type: "AUTH_ERROR",
-					message: "Authentication required. Please sign in again.",
-					timestamp: new Date().toISOString(),
-				});
-				return;
-			}
-
-			setIsUploading(true);
-			setError(null);
-
-			try {
-				const result = await createImport({ file, entityType, jwt });
-
-				// Redirect to the import view page
-				navigateTo(`/import/${result.data.id}`);
-			} catch (err) {
-				const errorMessage =
-					err instanceof Error ? err.message : "Error desconocido";
-				setError({
-					type: "UPLOAD_ERROR",
-					message: errorMessage,
-					timestamp: new Date().toISOString(),
-				});
-				setIsUploading(false);
-			}
-		},
-		[jwt, navigateTo],
-	);
-
-	const handleReset = useCallback(() => {
-		setError(null);
-		setIsUploading(false);
+	const handleImportSuccess = useCallback(() => {
+		setRefreshTrigger((prev) => prev + 1);
 	}, []);
-
-	const handleRetry = useCallback(() => {
-		handleReset();
-	}, [handleReset]);
-
-	if (error) {
-		return (
-			<div className="h-full flex flex-col overflow-hidden bg-background">
-				<div className="flex-1 overflow-auto p-4">
-					<CatastrophicError
-						error={error}
-						onRetry={handleRetry}
-						onReset={handleReset}
-					/>
-				</div>
-			</div>
-		);
-	}
 
 	return (
 		<div className="h-full flex flex-col overflow-hidden bg-background">
-			<div className="flex-1 overflow-auto p-4">
-				<FileUploader
-					onFileUpload={handleFileUpload}
-					isUploading={isUploading}
-					disabled={isJwtLoading || !jwt}
-				/>
+			{/* Header */}
+			<div className="flex-shrink-0 p-4 border-b border-border">
+				<div className="flex items-center justify-between">
+					<div>
+						<h1 className="text-2xl font-bold tracking-tight">Importaciones</h1>
+						<p className="text-muted-foreground">
+							Importa clientes y transacciones de forma masiva
+						</p>
+					</div>
+					<Button onClick={() => setIsCreateDialogOpen(true)}>
+						<Plus className="h-4 w-4 mr-2" />
+						Nueva Importación
+					</Button>
+				</div>
 			</div>
+
+			{/* Content */}
+			<div className="flex-1 overflow-auto p-4">
+				<ImportsTable refreshTrigger={refreshTrigger} />
+			</div>
+
+			{/* Create dialog */}
+			<CreateImportDialog
+				open={isCreateDialogOpen}
+				onOpenChange={setIsCreateDialogOpen}
+				onSuccess={handleImportSuccess}
+			/>
 		</div>
 	);
 }
