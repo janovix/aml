@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { ImportPageContent } from "@/components/import";
 
 export const metadata: Metadata = {
@@ -7,5 +8,15 @@ export const metadata: Metadata = {
 };
 
 export default function ImportPage(): React.ReactElement {
-	return <ImportPageContent />;
+	return (
+		<Suspense
+			fallback={
+				<div className="h-full flex items-center justify-center">
+					Cargando...
+				</div>
+			}
+		>
+			<ImportPageContent />
+		</Suspense>
+	);
 }

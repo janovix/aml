@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { FileUploader } from "./FileUploader";
 import { ImportProgress } from "./ImportProgress";
 import { RowStatusTable } from "./RowStatusTable";
@@ -30,7 +31,109 @@ const initialState: ImportState = {
 
 export function ImportPageContent() {
 	const { jwt, isLoading: isJwtLoading } = useJwt();
+	const searchParams = useSearchParams();
+	const router = useRouter();
+	const pathname = usePathname();
 	const [state, setState] = useState<ImportState>(initialState);
+	const [isLoadingExisting, setIsLoadingExisting] = useState(false);
+
+	// Get import ID from URL
+	const urlImportId = searchParams.get("id");
+
+	// Update URL when import ID changes
+	const updateUrl = useCallback(
+		(importId: string | null) => {
+			const params = new URLSearchParams(searchParams.toString());
+			if (importId) {
+				params.set("id", importId);
+			} else {
+				params.delete("id");
+			}
+			router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+		},
+		[pathname, router, searchParams],
+	);
+
+	// Load existing import from URL on mount
+	useEffect(() => {
+		async function loadExistingImport() {
+			if (!urlImportId || !jwt || state.importId === urlImportId) {
+				return;
+			}
+
+			setIsLoadingExisting(true);
+			try {
+				const importData = await getImport({ id: urlImportId, jwt });
+
+				// Parse row results
+				const rows: RowDisplayData[] = (importData.rowResults || []).map(
+					(row) => {
+						let parsedData: Record<string, string> = {};
+						try {
+							parsedData = JSON.parse(row.rawData);
+						} catch {
+							parsedData = { raw: row.rawData };
+						}
+
+						let parsedErrors: string[] | null = null;
+						if (row.errors) {
+							try {
+								parsedErrors = JSON.parse(row.errors);
+							} catch {
+								parsedErrors = [row.errors];
+							}
+						}
+
+						return {
+							rowNumber: row.rowNumber,
+							data: parsedData,
+							status: row.status,
+							message: row.message,
+							errors: parsedErrors,
+							entityId: row.entityId,
+						};
+					},
+				);
+
+				const isFinished =
+					importData.status === "COMPLETED" || importData.status === "FAILED";
+
+				setState({
+					status: isFinished
+						? importData.status === "COMPLETED"
+							? "completed"
+							: "failed"
+						: "processing",
+					importId: importData.id,
+					fileName: importData.fileName,
+					entityType: importData.entityType as ImportEntityType,
+					totalRows: importData.totalRows,
+					processedRows: importData.processedRows,
+					successCount: importData.successCount,
+					warningCount: importData.warningCount,
+					errorCount: importData.errorCount,
+					rows,
+					error: importData.errorMessage
+						? {
+								type: "IMPORT_FAILED",
+								message: importData.errorMessage,
+								timestamp: importData.completedAt || new Date().toISOString(),
+							}
+						: null,
+				});
+			} catch (err) {
+				console.error("Failed to load import:", err);
+				// Clear invalid import ID from URL
+				updateUrl(null);
+			} finally {
+				setIsLoadingExisting(false);
+			}
+		}
+
+		if (!isJwtLoading && jwt && urlImportId) {
+			loadExistingImport();
+		}
+	}, [urlImportId, jwt, isJwtLoading, state.importId, updateUrl]);
 
 	// Use SSE for real-time updates when an import is in progress
 	const { progress, rowUpdates, connectionStatus, isComplete, error } =
@@ -155,6 +258,9 @@ export function ImportPageContent() {
 			try {
 				const result = await createImport({ file, entityType, jwt });
 
+				// Update URL with import ID
+				updateUrl(result.data.id);
+
 				setState((prev) => ({
 					...prev,
 					status: "processing",
@@ -218,17 +324,32 @@ export function ImportPageContent() {
 				}));
 			}
 		},
-		[jwt],
+		[jwt, updateUrl],
 	);
 
 	const handleReset = useCallback(() => {
 		setState(initialState);
-	}, []);
+		updateUrl(null);
+	}, [updateUrl]);
 
 	const handleRetry = useCallback(async () => {
 		// For now, just reset - in the future, could re-upload the same file
 		handleReset();
 	}, [handleReset]);
+
+	// Show loading when loading existing import from URL
+	if (isLoadingExisting) {
+		return (
+			<div className="h-full flex items-center justify-center bg-background">
+				<div className="flex flex-col items-center gap-3">
+					<div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+					<p className="text-sm text-muted-foreground">
+						Cargando importación...
+					</p>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="h-full flex flex-col overflow-hidden bg-background">
@@ -241,7 +362,7 @@ export function ImportPageContent() {
 							onReset={handleReset}
 						/>
 					</div>
-				) : state.status === "idle" ? (
+				) : state.status === "idle" && !urlImportId ? (
 					<div className="h-full overflow-auto p-4">
 						<FileUploader
 							onFileUpload={handleFileUpload}
