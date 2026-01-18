@@ -25,12 +25,15 @@ import { getTemplateUrl } from "@/lib/api/imports";
 interface FileUploaderProps {
 	onFileUpload: (file: File, entityType: ImportEntityType) => void;
 	isUploading?: boolean;
+	disabled?: boolean;
 }
 
 export function FileUploader({
 	onFileUpload,
 	isUploading = false,
+	disabled = false,
 }: FileUploaderProps) {
+	const isDisabled = isUploading || disabled;
 	const [isDragging, setIsDragging] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [selectedEntityType, setSelectedEntityType] =
@@ -156,7 +159,7 @@ export function FileUploader({
 					<div
 						className={cn(
 							"relative border-2 border-dashed rounded-xl p-12 transition-all duration-200 cursor-pointer",
-							isUploading && "opacity-50 pointer-events-none",
+							isDisabled && "opacity-50 pointer-events-none",
 							isDragging
 								? "border-primary bg-primary/5"
 								: "border-border hover:border-primary/50 hover:bg-secondary/50",
@@ -170,7 +173,7 @@ export function FileUploader({
 							accept=".xlsx,.xls,.csv"
 							onChange={handleFileChange}
 							className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-							disabled={isUploading}
+							disabled={isDisabled}
 						/>
 						<div className="flex flex-col items-center gap-4">
 							<div

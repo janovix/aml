@@ -6,6 +6,7 @@ import { ImportProgress } from "./ImportProgress";
 import { RowStatusTable } from "./RowStatusTable";
 import { CatastrophicError } from "./CatastrophicError";
 import { useImportSSE } from "@/hooks/useImportSSE";
+import { useJwt } from "@/hooks/useJwt";
 import { createImport, getImport } from "@/lib/api/imports";
 import type {
 	ImportState,
@@ -28,6 +29,7 @@ const initialState: ImportState = {
 };
 
 export function ImportPageContent() {
+	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const [state, setState] = useState<ImportState>(initialState);
 
 	// Use SSE for real-time updates when an import is in progress
@@ -129,6 +131,19 @@ export function ImportPageContent() {
 
 	const handleFileUpload = useCallback(
 		async (file: File, entityType: ImportEntityType) => {
+			if (!jwt) {
+				setState((prev) => ({
+					...prev,
+					status: "failed",
+					error: {
+						type: "AUTH_ERROR",
+						message: "Authentication required. Please sign in again.",
+						timestamp: new Date().toISOString(),
+					},
+				}));
+				return;
+			}
+
 			setState((prev) => ({
 				...prev,
 				status: "uploading",
@@ -138,7 +153,7 @@ export function ImportPageContent() {
 			}));
 
 			try {
-				const result = await createImport({ file, entityType });
+				const result = await createImport({ file, entityType, jwt });
 
 				setState((prev) => ({
 					...prev,
@@ -149,7 +164,7 @@ export function ImportPageContent() {
 
 				// Load initial row data if available
 				if (result.data.id) {
-					const importData = await getImport({ id: result.data.id });
+					const importData = await getImport({ id: result.data.id, jwt });
 					if (importData.rowResults) {
 						const rows: RowDisplayData[] = importData.rowResults.map((row) => {
 							let parsedData: Record<string, string> = {};
@@ -203,7 +218,7 @@ export function ImportPageContent() {
 				}));
 			}
 		},
-		[],
+		[jwt],
 	);
 
 	const handleReset = useCallback(() => {
@@ -228,7 +243,10 @@ export function ImportPageContent() {
 					</div>
 				) : state.status === "idle" ? (
 					<div className="h-full overflow-auto p-4">
-						<FileUploader onFileUpload={handleFileUpload} />
+						<FileUploader
+							onFileUpload={handleFileUpload}
+							disabled={isJwtLoading || !jwt}
+						/>
 					</div>
 				) : (
 					<div className="h-full flex flex-col">
