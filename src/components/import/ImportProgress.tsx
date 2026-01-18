@@ -8,16 +8,89 @@ import {
 	FileSpreadsheet,
 	RotateCcw,
 	X,
+	Users,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import type { ImportState } from "@/types/import";
 
 interface ImportProgressProps {
 	state: ImportState;
 	onReset: () => void;
+}
+
+/**
+ * Circular Progress component
+ */
+function CircularProgress({
+	progress,
+	isComplete,
+	isFailed,
+	size = 80,
+	strokeWidth = 6,
+}: {
+	progress: number;
+	isComplete: boolean;
+	isFailed: boolean;
+	size?: number;
+	strokeWidth?: number;
+}) {
+	const radius = (size - strokeWidth) / 2;
+	const circumference = radius * 2 * Math.PI;
+	const offset = circumference - (progress / 100) * circumference;
+
+	return (
+		<div className="relative" style={{ width: size, height: size }}>
+			{/* Background circle */}
+			<svg className="transform -rotate-90" width={size} height={size}>
+				<circle
+					cx={size / 2}
+					cy={size / 2}
+					r={radius}
+					stroke="currentColor"
+					strokeWidth={strokeWidth}
+					fill="none"
+					className="text-muted/30"
+				/>
+				{/* Progress circle */}
+				<circle
+					cx={size / 2}
+					cy={size / 2}
+					r={radius}
+					stroke="currentColor"
+					strokeWidth={strokeWidth}
+					fill="none"
+					strokeLinecap="round"
+					strokeDasharray={circumference}
+					strokeDashoffset={offset}
+					className={cn(
+						"transition-all duration-500 ease-out",
+						isFailed
+							? "text-destructive"
+							: isComplete
+								? "text-green-500"
+								: "text-primary",
+					)}
+				/>
+			</svg>
+			{/* Center content */}
+			<div className="absolute inset-0 flex items-center justify-center">
+				<span
+					className={cn(
+						"text-lg font-bold tabular-nums",
+						isFailed
+							? "text-destructive"
+							: isComplete
+								? "text-green-500"
+								: "text-foreground",
+					)}
+				>
+					{Math.round(progress)}%
+				</span>
+			</div>
+		</div>
+	);
 }
 
 export function ImportProgress({ state, onReset }: ImportProgressProps) {
@@ -32,29 +105,33 @@ export function ImportProgress({ state, onReset }: ImportProgressProps) {
 		{
 			value: state.successCount,
 			icon: CheckCircle2,
-			color: "text-success",
-			bgColor: "bg-success/10",
+			color: "text-green-500",
+			bgColor: "bg-green-500/10",
+			borderColor: "border-green-500/20",
 			label: "Exitosos",
 		},
 		{
 			value: state.warningCount,
 			icon: AlertTriangle,
-			color: "text-warning",
-			bgColor: "bg-warning/10",
+			color: "text-amber-500",
+			bgColor: "bg-amber-500/10",
+			borderColor: "border-amber-500/20",
 			label: "Advertencias",
 		},
 		{
 			value: state.errorCount,
 			icon: XCircle,
-			color: "text-destructive",
-			bgColor: "bg-destructive/10",
+			color: "text-red-500",
+			bgColor: "bg-red-500/10",
+			borderColor: "border-red-500/20",
 			label: "Errores",
 		},
 		{
 			value: state.totalRows - state.processedRows,
 			icon: Clock,
 			color: "text-muted-foreground",
-			bgColor: "bg-muted",
+			bgColor: "bg-muted/50",
+			borderColor: "border-muted",
 			label: "Pendientes",
 		},
 	];
@@ -63,113 +140,109 @@ export function ImportProgress({ state, onReset }: ImportProgressProps) {
 		if (isFailed) return "Importación fallida";
 		if (isComplete) return "Importación completada";
 		if (state.status === "processing")
-			return `Fila ${state.processedRows} de ${state.totalRows}`;
+			return `Procesando fila ${state.processedRows} de ${state.totalRows}`;
 		if (state.status === "uploading") return "Subiendo archivo...";
 		return "Preparando...";
 	};
 
+	const EntityIcon =
+		state.entityType === "TRANSACTION" ? FileSpreadsheet : Users;
+
 	return (
-		<div className="space-y-3">
-			{/* Progress Card */}
-			<Card className="bg-card border-border">
-				<CardContent className="p-3">
-					<div className="flex items-center justify-between gap-3 mb-3">
-						<div className="flex items-center gap-2 min-w-0 flex-1">
+		<Card className="bg-card border-border overflow-hidden">
+			<CardContent className="p-4">
+				<div className="flex items-start gap-4">
+					{/* Left: Circular Progress */}
+					<div className="flex-shrink-0">
+						<CircularProgress
+							progress={progress}
+							isComplete={isComplete}
+							isFailed={isFailed}
+						/>
+					</div>
+
+					{/* Middle: Info */}
+					<div className="flex-1 min-w-0 py-1">
+						<div className="flex items-center gap-2 mb-1">
 							<div
 								className={cn(
-									"p-1.5 rounded-lg flex-shrink-0",
+									"p-1.5 rounded-md",
 									isComplete
-										? "bg-success/10"
+										? "bg-green-500/10"
 										: isFailed
 											? "bg-destructive/10"
 											: "bg-primary/10",
 								)}
 							>
-								<FileSpreadsheet
+								<EntityIcon
 									className={cn(
 										"h-4 w-4",
 										isComplete
-											? "text-success"
+											? "text-green-500"
 											: isFailed
 												? "text-destructive"
 												: "text-primary",
 									)}
 								/>
 							</div>
-							<div className="min-w-0 flex-1">
-								<h3 className="font-medium text-foreground text-sm truncate">
-									{state.fileName}
-								</h3>
-								<p className="text-xs text-muted-foreground">
-									{getStatusText()}
-								</p>
-							</div>
+							<h3 className="font-semibold text-foreground truncate">
+								{state.fileName}
+							</h3>
 						</div>
+						<p className="text-sm text-muted-foreground mb-3">
+							{getStatusText()}
+						</p>
 
-						<div className="flex items-center gap-1 flex-shrink-0">
-							{isComplete && (
-								<Button
-									variant="outline"
-									size="sm"
-									onClick={onReset}
-									className="gap-1 bg-transparent text-xs h-7 hidden sm:flex"
+						{/* Stats grid */}
+						<div className="grid grid-cols-4 gap-2">
+							{statItems.map((item, idx) => (
+								<div
+									key={idx}
+									className={cn(
+										"flex flex-col items-center justify-center py-2 px-1 rounded-lg border",
+										item.bgColor,
+										item.borderColor,
+									)}
 								>
-									<RotateCcw className="h-3 w-3" />
-									<span>Nuevo</span>
-								</Button>
-							)}
+									<item.icon className={cn("h-4 w-4 mb-1", item.color)} />
+									<span
+										className={cn("text-lg font-bold tabular-nums", item.color)}
+									>
+										{item.value}
+									</span>
+									<span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+										{item.label}
+									</span>
+								</div>
+							))}
+						</div>
+					</div>
+
+					{/* Right: Actions */}
+					<div className="flex-shrink-0 flex flex-col gap-1">
+						{isComplete && (
 							<Button
-								variant="ghost"
-								size="icon"
+								variant="outline"
+								size="sm"
 								onClick={onReset}
-								className="text-muted-foreground hover:text-foreground h-7 w-7"
+								className="gap-1.5"
 							>
-								<X className="h-4 w-4" />
-								<span className="sr-only">Cancelar</span>
+								<RotateCcw className="h-3.5 w-3.5" />
+								Nuevo
 							</Button>
-						</div>
+						)}
+						<Button
+							variant="ghost"
+							size="icon"
+							onClick={onReset}
+							className="text-muted-foreground hover:text-foreground h-8 w-8"
+						>
+							<X className="h-4 w-4" />
+							<span className="sr-only">Cerrar</span>
+						</Button>
 					</div>
-
-					<div className="space-y-1">
-						<div className="flex items-center justify-between text-xs">
-							<span className="text-muted-foreground">Progreso</span>
-							<span className="font-medium text-foreground">
-								{Math.round(progress)}%
-							</span>
-						</div>
-						<Progress
-							value={progress}
-							className={cn(
-								"h-1.5 bg-secondary",
-								!isComplete && !isFailed && "animate-pulse",
-							)}
-						/>
-					</div>
-				</CardContent>
-			</Card>
-
-			{/* Stats Bar */}
-			<Card className="bg-card border-border">
-				<CardContent className="p-2">
-					<div className="flex items-center justify-between gap-1">
-						{statItems.map((item, idx) => (
-							<div
-								key={idx}
-								className={cn(
-									"flex items-center gap-1.5 px-2 py-1.5 rounded-md flex-1 justify-center",
-									item.bgColor,
-								)}
-								title={item.label}
-							>
-								<item.icon className={cn("h-3.5 w-3.5", item.color)} />
-								<span className={cn("text-sm font-semibold", item.color)}>
-									{item.value}
-								</span>
-							</div>
-						))}
-					</div>
-				</CardContent>
-			</Card>
-		</div>
+				</div>
+			</CardContent>
+		</Card>
 	);
 }
