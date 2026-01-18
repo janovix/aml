@@ -47,6 +47,8 @@ export const translations = {
 		navAnalysis: "Análisis",
 		navWatchlist: "Watchlist",
 		navProducts: "Productos",
+		navImport: "Importar Datos",
+		navDataManagement: "Gestión de Datos",
 
 		// Breadcrumbs
 		breadcrumbHome: "Inicio",
@@ -150,6 +152,7 @@ export const translations = {
 		dashboardUmaThreshold: "Umbral Aviso Obligatorio (6,420 UMA)",
 		dashboardUmaThresholdNote:
 			"Transacciones ≥ este monto requieren aviso al SAT",
+		dashboardUmaClickForInfo: "Clic para ver información de UMA",
 		dashboardUmaEffectiveDate: "Vigente desde:",
 		dashboardUmaNotConfigured: "No hay valor UMA configurado",
 		dashboardUmaNotConfiguredNote:
@@ -705,6 +708,8 @@ export const translations = {
 		navAnalysis: "Analysis",
 		navWatchlist: "Watchlist",
 		navProducts: "Products",
+		navImport: "Import Data",
+		navDataManagement: "Data Management",
 
 		// Breadcrumbs
 		breadcrumbHome: "Home",
@@ -807,6 +812,7 @@ export const translations = {
 		dashboardUmaThreshold: "Mandatory Notice Threshold (6,420 UMA)",
 		dashboardUmaThresholdNote:
 			"Transactions ≥ this amount require SAT notification",
+		dashboardUmaClickForInfo: "Click for UMA information",
 		dashboardUmaEffectiveDate: "Effective since:",
 		dashboardUmaNotConfigured: "No UMA value configured",
 		dashboardUmaNotConfiguredNote:
