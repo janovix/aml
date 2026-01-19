@@ -4,6 +4,7 @@ import type React from "react";
 import { useState, useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
+import { useSessionStorageForm } from "@/hooks/useSessionStorageForm";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -62,6 +63,26 @@ interface TransactionFormData {
 	paymentMethods: PaymentMethodInput[];
 }
 
+const getInitialTransactionFormData = (): TransactionFormData => ({
+	clientId: "",
+	operationDate: new Date().toISOString().slice(0, 10), // Date only (YYYY-MM-DD)
+	operationType: "sale", // Default to "Venta"
+	branchPostalCode: "",
+	vehicleType: "",
+	brand: "",
+	model: "",
+	year: "",
+	vin: "",
+	repuve: "",
+	plates: "",
+	engineNumber: "",
+	registrationNumber: "",
+	flagCountryId: "",
+	amount: "", // Calculated from payment methods on submit
+	currency: "MXN",
+	paymentMethods: [{ method: "", amount: "" }],
+});
+
 export function TransactionCreateView(): React.JSX.Element {
 	const { t } = useLanguage();
 	const { navigateTo, orgPath } = useOrgNavigation();
@@ -69,25 +90,11 @@ export function TransactionCreateView(): React.JSX.Element {
 	const searchParams = useSearchParams();
 	const [isSaving, setIsSaving] = useState(false);
 
-	const [formData, setFormData] = useState<TransactionFormData>({
-		clientId: "",
-		operationDate: new Date().toISOString().slice(0, 10), // Date only (YYYY-MM-DD)
-		operationType: "sale", // Default to "Venta"
-		branchPostalCode: "",
-		vehicleType: "",
-		brand: "",
-		model: "",
-		year: "",
-		vin: "",
-		repuve: "",
-		plates: "",
-		engineNumber: "",
-		registrationNumber: "",
-		flagCountryId: "",
-		amount: "", // Calculated from payment methods on submit
-		currency: "MXN",
-		paymentMethods: [{ method: "", amount: "" }],
-	});
+	const [formData, setFormData, clearFormStorage] =
+		useSessionStorageForm<TransactionFormData>(
+			"transaction_create",
+			getInitialTransactionFormData(),
+		);
 
 	const [validationErrors, setValidationErrors] = useState<{
 		vin?: string;
@@ -262,6 +269,8 @@ export function TransactionCreateView(): React.JSX.Element {
 				loading: "Creando transacción...",
 				success: "Transacción creada exitosamente",
 				onSuccess: () => {
+					// Clear session storage on successful submission
+					clearFormStorage();
 					navigateTo("/transactions");
 				},
 			});

@@ -4,6 +4,7 @@ import type React from "react";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
+import { useSessionStorageForm } from "@/hooks/useSessionStorageForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,6 +50,31 @@ interface ClientFormData {
 	notes?: string;
 }
 
+const INITIAL_CLIENT_FORM_DATA: ClientFormData = {
+	personType: "moral",
+	rfc: "",
+	firstName: "",
+	lastName: "",
+	secondLastName: "",
+	birthDate: "",
+	curp: "",
+	businessName: "",
+	incorporationDate: "",
+	nationality: "MX", // Default to Mexico
+	email: "",
+	phone: "",
+	stateCode: "",
+	city: "",
+	municipality: "",
+	neighborhood: "",
+	street: "",
+	externalNumber: "",
+	internalNumber: "",
+	postalCode: "",
+	reference: "",
+	notes: "",
+};
+
 export function ClientCreateView(): React.JSX.Element {
 	const { t } = useLanguage();
 	const { navigateTo, orgPath } = useOrgNavigation();
@@ -56,30 +82,11 @@ export function ClientCreateView(): React.JSX.Element {
 	const returnUrl = searchParams.get("returnUrl");
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	const [formData, setFormData] = useState<ClientFormData>({
-		personType: "moral",
-		rfc: "",
-		firstName: "",
-		lastName: "",
-		secondLastName: "",
-		birthDate: "",
-		curp: "",
-		businessName: "",
-		incorporationDate: "",
-		nationality: "MX", // Default to Mexico
-		email: "",
-		phone: "",
-		stateCode: "",
-		city: "",
-		municipality: "",
-		neighborhood: "",
-		street: "",
-		externalNumber: "",
-		internalNumber: "",
-		postalCode: "",
-		reference: "",
-		notes: "",
-	});
+	const [formData, setFormData, clearFormStorage] =
+		useSessionStorageForm<ClientFormData>(
+			"client_create",
+			INITIAL_CLIENT_FORM_DATA,
+		);
 
 	const [validationErrors, setValidationErrors] = useState<{
 		rfc?: string;
@@ -171,6 +178,8 @@ export function ClientCreateView(): React.JSX.Element {
 				loading: "Creando cliente...",
 				success: "Cliente creado exitosamente",
 				onSuccess: (client) => {
+					// Clear session storage on successful submission
+					clearFormStorage();
 					if (returnUrl) {
 						// Append client ID to return URL for auto-selection
 						const separator = returnUrl.includes("?") ? "&" : "?";
