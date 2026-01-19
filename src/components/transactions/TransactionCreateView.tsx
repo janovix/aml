@@ -551,7 +551,10 @@ export function TransactionCreateView(): React.JSX.Element {
 										value={formData.flagCountryId}
 										searchPlaceholder={t("search")}
 										onChange={(option) =>
-											handleInputChange("flagCountryId", option?.id ?? "")
+											handleInputChange(
+												"flagCountryId",
+												(option?.metadata?.code as string) ?? "",
+											)
 										}
 									/>
 								</>
