@@ -607,7 +607,10 @@ export function TransactionEditView({
 										value={formData.flagCountryId}
 										searchPlaceholder="Buscar país..."
 										onChange={(option) =>
-											handleChange("flagCountryId", option?.id ?? "")
+											handleChange(
+												"flagCountryId",
+												(option?.metadata?.code as string) ?? "",
+											)
 										}
 									/>
 								</>
