@@ -693,6 +693,7 @@ export const translations = {
 		chatImportTransactions: "Importar transacciones",
 		chatImportPlaceholder:
 			"Describe cómo procesar el archivo o presiona enviar para importar...",
+		chatThinking: "Pensando...",
 	},
 	en: {
 		// Common
@@ -1373,6 +1374,7 @@ export const translations = {
 		chatImportTransactions: "Import transactions",
 		chatImportPlaceholder:
 			"Describe how to process the file or press send to import...",
+		chatThinking: "Thinking...",
 	},
 } as const;
 
