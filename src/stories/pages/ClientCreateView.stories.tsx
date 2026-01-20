@@ -10,7 +10,7 @@ const meta = {
 		docs: {
 			description: {
 				component:
-					"View component for creating a new client. Provides form fields for entering client information including business details, risk assessment, contact information, and compliance notes. Includes create and cancel actions.",
+					"View component for creating a new client. Provides form fields for entering client information including person type (physical, moral, trust), business details, contact information, address, and compliance notes. Includes session storage for form persistence and validation for RFC, CURP, and phone. Includes create and cancel actions.",
 			},
 		},
 		nextjs: {
@@ -50,6 +50,15 @@ export const Tablet: Story = {
 	parameters: {
 		viewport: {
 			defaultViewport: "tablet",
+		},
+	},
+};
+
+export const Desktop: Story = {
+	args: {},
+	parameters: {
+		viewport: {
+			defaultViewport: "desktop",
 		},
 	},
 };

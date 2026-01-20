@@ -4,6 +4,160 @@
 ### Bug Fixes
 
 * adjust Skeleton width and Badge styling in UmaBadge component for improved layout and responsiveness ([0495432](https://github.com/janovix/aml/commit/0495432acb511a61a27bb92b8fd3dd90d116cca9))
+* **chat:** update SIMPLE_NEUTRAL face description and adjust pixel data for improved visual representation ([45cda29](https://github.com/janovix/aml/commit/45cda29c7b52d5bd6ecbd79d65adbc8dac8367a4))
+* **middleware:** update matcher to exclude monitoring from middleware processing ([6420998](https://github.com/janovix/aml/commit/642099886edd60b9f10326c0c60e2a0963f46dbc))
+* **OrgBootstrapper:** ensure active organization is always synced on initial load and context change ([2778182](https://github.com/janovix/aml/commit/2778182bad6bf87e4caea36304299a77170a5fc8))
+* update organization creation redirect URL in AppSidebar component ([6ed6e37](https://github.com/janovix/aml/commit/6ed6e370ac4d0ebb30453f5a4d3a8d65fd892ee3))
+
+
+### Features
+
+* add focus ring styles to PersonTypePicker and VehicleTypePicker components, enhance DashboardView layout, and update NavUser logout item styling ([6e09409](https://github.com/janovix/aml/commit/6e0940945ab6f93e7be761fb7abe28c652c55714))
+* add framer-motion dependency and implement sidebar settings management with new hooks and components ([6c25b5a](https://github.com/janovix/aml/commit/6c25b5a38286e0b25fdf958b9f976eedfb109bf7))
+* add new dependencies and update middleware for improved auth service handling ([08f863b](https://github.com/janovix/aml/commit/08f863b65ddb8d062b609d0fae34ac06cb6ec0ed))
+* **chat:** implement AI chat feature with multi-provider support, including ChatDrawer, ChatInput, and ChatMessages components, and enhance import functionality with new translations ([7b19709](https://github.com/janovix/aml/commit/7b1970924ace14607ed42e63eae75f2a655cb242))
+* **client:** add phone number validation to ClientCreateView and implement validatePhone utility with tests ([1979fdb](https://github.com/janovix/aml/commit/1979fdb8ac10d6aed7fecc2ad76984eb49966ed5))
+* enhance Button, Input, PageHero, and Table components with additional stories and improved layout parameters for better documentation and usability ([2fb5088](https://github.com/janovix/aml/commit/2fb5088766475926213c74e517eb9a139872d7a9))
+* enhance CreateNoticeView and related tests to manage notice states and improve month selection logic ([3d3f2f1](https://github.com/janovix/aml/commit/3d3f2f1b8edc9833a98f7fa3403a2039b1bc3339))
+* enhance global error and not found pages with improved UI components and translations ([920ed94](https://github.com/janovix/aml/commit/920ed94e332c7df3d338fa6b28a1884f9fcffdee))
+* **forms:** implement useSessionStorageForm hook for persistent form data management in ClientCreateView and TransactionCreateView ([dc617ae](https://github.com/janovix/aml/commit/dc617ae6c078e6aedc942c552ff258e641677d8e))
+* implement JWT handling in ClientsPageContent and TransactionsPageContent components for improved organization context management ([15995ba](https://github.com/janovix/aml/commit/15995ba53d47e17acbab4f740c7b9cd0346c76e0))
+* implement new ThemeSwitcher component with controllable state and animated transitions for theme selection ([6f2972c](https://github.com/janovix/aml/commit/6f2972cff52214aef84b379dfe066b26f1ecf65d))
+* implement PersonTypePicker and VehicleTypePicker components for client and transaction forms, enhancing user selection experience ([d73ea05](https://github.com/janovix/aml/commit/d73ea0591fe8ebce20e2d394a4b954c19f0626d2))
+* implement SubscriptionBanner component and related settings API client for subscription management ([68b9a38](https://github.com/janovix/aml/commit/68b9a38561d2cbf1e305d7ffc92e2951c65d6aa2))
+* **import:** add CreateImportDialog and ImportsTable components for enhanced import functionality and user experience ([2e66a6f](https://github.com/janovix/aml/commit/2e66a6f6a9d5b6181d283d9bcade4d9c050c2594))
+* **import:** add import functionality with file uploader, progress tracking, and error handling components ([cac3bbd](https://github.com/janovix/aml/commit/cac3bbd8c0a79ab5941a1725e6bd974db40b30bf))
+* **import:** add storybook stories for CatastrophicError, FileUploader, ImportProgress, and RowStatusTable components ([7ce0120](https://github.com/janovix/aml/commit/7ce01209767b63e34b99e47dd52643fabebaa553))
+* **import:** enhance AppSidebar with data management navigation and add import translations ([f7aa957](https://github.com/janovix/aml/commit/f7aa9575dad63dd9c53454dcd7d2c8b783c644bf))
+* **import:** enhance FileUploader and ImportPageContent components with JWT handling and upload state management ([0b0677c](https://github.com/janovix/aml/commit/0b0677c2dc2e55a026ebb9a00a9ad6c52b3eac21))
+* **import:** enhance ImportProgress component with CircularProgress for visual feedback and improve layout in ImportViewContent and RowStatusTable ([1fe0c35](https://github.com/janovix/aml/commit/1fe0c357cd8c7f83fbf7f4075c306eed95593585))
+* **import:** integrate Suspense for loading state and enhance ImportPageContent with URL import ID handling ([9427a45](https://github.com/janovix/aml/commit/9427a45a8e4766a246ae0b5a7e46a1e99ae0f903))
+* **import:** simplify ImportPage by removing Suspense and add ImportViewPage for detailed import tracking ([5301b62](https://github.com/janovix/aml/commit/5301b629561daaa13caf358fdd0770f8cc3370a7))
+* integrate sentry for error tracking and performance monitoring ([3ba1737](https://github.com/janovix/aml/commit/3ba17370ac95d7a5b3888ca047003a5892566fbc))
+* **OrgCard:** add fallback initials for organization logo display ([6c4f942](https://github.com/janovix/aml/commit/6c4f942ee9afdb1d090f04120269f9c9df97d146))
+* update AppSidebar and NavUser components to use external links for auth app settings ([845aacc](https://github.com/janovix/aml/commit/845aacc998b537148d4d90ec3f95adff9737924e))
+
+# [1.3.0-rc.1](https://github.com/janovix/aml/compare/v1.2.0...v1.3.0-rc.1) (2026-01-20)
+
+
+### Bug Fixes
+
+* adjust Skeleton width and Badge styling in UmaBadge component for improved layout and responsiveness ([0495432](https://github.com/janovix/aml/commit/0495432acb511a61a27bb92b8fd3dd90d116cca9))
+* **chat:** update SIMPLE_NEUTRAL face description and adjust pixel data for improved visual representation ([45cda29](https://github.com/janovix/aml/commit/45cda29c7b52d5bd6ecbd79d65adbc8dac8367a4))
+* **middleware:** update matcher to exclude monitoring from middleware processing ([6420998](https://github.com/janovix/aml/commit/642099886edd60b9f10326c0c60e2a0963f46dbc))
+* **OrgBootstrapper:** ensure active organization is always synced on initial load and context change ([2778182](https://github.com/janovix/aml/commit/2778182bad6bf87e4caea36304299a77170a5fc8))
+* update organization creation redirect URL in AppSidebar component ([6ed6e37](https://github.com/janovix/aml/commit/6ed6e370ac4d0ebb30453f5a4d3a8d65fd892ee3))
+
+
+### Features
+
+* add focus ring styles to PersonTypePicker and VehicleTypePicker components, enhance DashboardView layout, and update NavUser logout item styling ([6e09409](https://github.com/janovix/aml/commit/6e0940945ab6f93e7be761fb7abe28c652c55714))
+* add framer-motion dependency and implement sidebar settings management with new hooks and components ([6c25b5a](https://github.com/janovix/aml/commit/6c25b5a38286e0b25fdf958b9f976eedfb109bf7))
+* add new dependencies and update middleware for improved auth service handling ([08f863b](https://github.com/janovix/aml/commit/08f863b65ddb8d062b609d0fae34ac06cb6ec0ed))
+* **chat:** implement AI chat feature with multi-provider support, including ChatDrawer, ChatInput, and ChatMessages components, and enhance import functionality with new translations ([7b19709](https://github.com/janovix/aml/commit/7b1970924ace14607ed42e63eae75f2a655cb242))
+* **client:** add phone number validation to ClientCreateView and implement validatePhone utility with tests ([1979fdb](https://github.com/janovix/aml/commit/1979fdb8ac10d6aed7fecc2ad76984eb49966ed5))
+* enhance Button, Input, PageHero, and Table components with additional stories and improved layout parameters for better documentation and usability ([2fb5088](https://github.com/janovix/aml/commit/2fb5088766475926213c74e517eb9a139872d7a9))
+* enhance CreateNoticeView and related tests to manage notice states and improve month selection logic ([3d3f2f1](https://github.com/janovix/aml/commit/3d3f2f1b8edc9833a98f7fa3403a2039b1bc3339))
+* enhance global error and not found pages with improved UI components and translations ([920ed94](https://github.com/janovix/aml/commit/920ed94e332c7df3d338fa6b28a1884f9fcffdee))
+* **forms:** implement useSessionStorageForm hook for persistent form data management in ClientCreateView and TransactionCreateView ([dc617ae](https://github.com/janovix/aml/commit/dc617ae6c078e6aedc942c552ff258e641677d8e))
+* implement JWT handling in ClientsPageContent and TransactionsPageContent components for improved organization context management ([15995ba](https://github.com/janovix/aml/commit/15995ba53d47e17acbab4f740c7b9cd0346c76e0))
+* implement new ThemeSwitcher component with controllable state and animated transitions for theme selection ([6f2972c](https://github.com/janovix/aml/commit/6f2972cff52214aef84b379dfe066b26f1ecf65d))
+* implement PersonTypePicker and VehicleTypePicker components for client and transaction forms, enhancing user selection experience ([d73ea05](https://github.com/janovix/aml/commit/d73ea0591fe8ebce20e2d394a4b954c19f0626d2))
+* implement SubscriptionBanner component and related settings API client for subscription management ([68b9a38](https://github.com/janovix/aml/commit/68b9a38561d2cbf1e305d7ffc92e2951c65d6aa2))
+* **import:** add CreateImportDialog and ImportsTable components for enhanced import functionality and user experience ([2e66a6f](https://github.com/janovix/aml/commit/2e66a6f6a9d5b6181d283d9bcade4d9c050c2594))
+* **import:** add import functionality with file uploader, progress tracking, and error handling components ([cac3bbd](https://github.com/janovix/aml/commit/cac3bbd8c0a79ab5941a1725e6bd974db40b30bf))
+* **import:** add storybook stories for CatastrophicError, FileUploader, ImportProgress, and RowStatusTable components ([7ce0120](https://github.com/janovix/aml/commit/7ce01209767b63e34b99e47dd52643fabebaa553))
+* **import:** enhance AppSidebar with data management navigation and add import translations ([f7aa957](https://github.com/janovix/aml/commit/f7aa9575dad63dd9c53454dcd7d2c8b783c644bf))
+* **import:** enhance FileUploader and ImportPageContent components with JWT handling and upload state management ([0b0677c](https://github.com/janovix/aml/commit/0b0677c2dc2e55a026ebb9a00a9ad6c52b3eac21))
+* **import:** enhance ImportProgress component with CircularProgress for visual feedback and improve layout in ImportViewContent and RowStatusTable ([1fe0c35](https://github.com/janovix/aml/commit/1fe0c357cd8c7f83fbf7f4075c306eed95593585))
+* **import:** integrate Suspense for loading state and enhance ImportPageContent with URL import ID handling ([9427a45](https://github.com/janovix/aml/commit/9427a45a8e4766a246ae0b5a7e46a1e99ae0f903))
+* **import:** simplify ImportPage by removing Suspense and add ImportViewPage for detailed import tracking ([5301b62](https://github.com/janovix/aml/commit/5301b629561daaa13caf358fdd0770f8cc3370a7))
+* integrate sentry for error tracking and performance monitoring ([3ba1737](https://github.com/janovix/aml/commit/3ba17370ac95d7a5b3888ca047003a5892566fbc))
+* **OrgCard:** add fallback initials for organization logo display ([6c4f942](https://github.com/janovix/aml/commit/6c4f942ee9afdb1d090f04120269f9c9df97d146))
+* update AppSidebar and NavUser components to use external links for auth app settings ([845aacc](https://github.com/janovix/aml/commit/845aacc998b537148d4d90ec3f95adff9737924e))
+
+# [1.3.0-rc.1](https://github.com/janovix/aml/compare/v1.2.0...v1.3.0-rc.1) (2026-01-20)
+
+
+### Bug Fixes
+
+* adjust Skeleton width and Badge styling in UmaBadge component for improved layout and responsiveness ([0495432](https://github.com/janovix/aml/commit/0495432acb511a61a27bb92b8fd3dd90d116cca9))
+* **chat:** update SIMPLE_NEUTRAL face description and adjust pixel data for improved visual representation ([45cda29](https://github.com/janovix/aml/commit/45cda29c7b52d5bd6ecbd79d65adbc8dac8367a4))
+* **middleware:** update matcher to exclude monitoring from middleware processing ([6420998](https://github.com/janovix/aml/commit/642099886edd60b9f10326c0c60e2a0963f46dbc))
+* **OrgBootstrapper:** ensure active organization is always synced on initial load and context change ([2778182](https://github.com/janovix/aml/commit/2778182bad6bf87e4caea36304299a77170a5fc8))
+* update organization creation redirect URL in AppSidebar component ([6ed6e37](https://github.com/janovix/aml/commit/6ed6e370ac4d0ebb30453f5a4d3a8d65fd892ee3))
+
+
+### Features
+
+* add focus ring styles to PersonTypePicker and VehicleTypePicker components, enhance DashboardView layout, and update NavUser logout item styling ([6e09409](https://github.com/janovix/aml/commit/6e0940945ab6f93e7be761fb7abe28c652c55714))
+* add framer-motion dependency and implement sidebar settings management with new hooks and components ([6c25b5a](https://github.com/janovix/aml/commit/6c25b5a38286e0b25fdf958b9f976eedfb109bf7))
+* add new dependencies and update middleware for improved auth service handling ([08f863b](https://github.com/janovix/aml/commit/08f863b65ddb8d062b609d0fae34ac06cb6ec0ed))
+* **chat:** implement AI chat feature with multi-provider support, including ChatDrawer, ChatInput, and ChatMessages components, and enhance import functionality with new translations ([7b19709](https://github.com/janovix/aml/commit/7b1970924ace14607ed42e63eae75f2a655cb242))
+* enhance Button, Input, PageHero, and Table components with additional stories and improved layout parameters for better documentation and usability ([2fb5088](https://github.com/janovix/aml/commit/2fb5088766475926213c74e517eb9a139872d7a9))
+* enhance CreateNoticeView and related tests to manage notice states and improve month selection logic ([3d3f2f1](https://github.com/janovix/aml/commit/3d3f2f1b8edc9833a98f7fa3403a2039b1bc3339))
+* enhance global error and not found pages with improved UI components and translations ([920ed94](https://github.com/janovix/aml/commit/920ed94e332c7df3d338fa6b28a1884f9fcffdee))
+* **forms:** implement useSessionStorageForm hook for persistent form data management in ClientCreateView and TransactionCreateView ([dc617ae](https://github.com/janovix/aml/commit/dc617ae6c078e6aedc942c552ff258e641677d8e))
+* implement JWT handling in ClientsPageContent and TransactionsPageContent components for improved organization context management ([15995ba](https://github.com/janovix/aml/commit/15995ba53d47e17acbab4f740c7b9cd0346c76e0))
+* implement new ThemeSwitcher component with controllable state and animated transitions for theme selection ([6f2972c](https://github.com/janovix/aml/commit/6f2972cff52214aef84b379dfe066b26f1ecf65d))
+* implement PersonTypePicker and VehicleTypePicker components for client and transaction forms, enhancing user selection experience ([d73ea05](https://github.com/janovix/aml/commit/d73ea0591fe8ebce20e2d394a4b954c19f0626d2))
+* implement SubscriptionBanner component and related settings API client for subscription management ([68b9a38](https://github.com/janovix/aml/commit/68b9a38561d2cbf1e305d7ffc92e2951c65d6aa2))
+* **import:** add CreateImportDialog and ImportsTable components for enhanced import functionality and user experience ([2e66a6f](https://github.com/janovix/aml/commit/2e66a6f6a9d5b6181d283d9bcade4d9c050c2594))
+* **import:** add import functionality with file uploader, progress tracking, and error handling components ([cac3bbd](https://github.com/janovix/aml/commit/cac3bbd8c0a79ab5941a1725e6bd974db40b30bf))
+* **import:** add storybook stories for CatastrophicError, FileUploader, ImportProgress, and RowStatusTable components ([7ce0120](https://github.com/janovix/aml/commit/7ce01209767b63e34b99e47dd52643fabebaa553))
+* **import:** enhance AppSidebar with data management navigation and add import translations ([f7aa957](https://github.com/janovix/aml/commit/f7aa9575dad63dd9c53454dcd7d2c8b783c644bf))
+* **import:** enhance FileUploader and ImportPageContent components with JWT handling and upload state management ([0b0677c](https://github.com/janovix/aml/commit/0b0677c2dc2e55a026ebb9a00a9ad6c52b3eac21))
+* **import:** enhance ImportProgress component with CircularProgress for visual feedback and improve layout in ImportViewContent and RowStatusTable ([1fe0c35](https://github.com/janovix/aml/commit/1fe0c357cd8c7f83fbf7f4075c306eed95593585))
+* **import:** integrate Suspense for loading state and enhance ImportPageContent with URL import ID handling ([9427a45](https://github.com/janovix/aml/commit/9427a45a8e4766a246ae0b5a7e46a1e99ae0f903))
+* **import:** simplify ImportPage by removing Suspense and add ImportViewPage for detailed import tracking ([5301b62](https://github.com/janovix/aml/commit/5301b629561daaa13caf358fdd0770f8cc3370a7))
+* integrate sentry for error tracking and performance monitoring ([3ba1737](https://github.com/janovix/aml/commit/3ba17370ac95d7a5b3888ca047003a5892566fbc))
+* **OrgCard:** add fallback initials for organization logo display ([6c4f942](https://github.com/janovix/aml/commit/6c4f942ee9afdb1d090f04120269f9c9df97d146))
+* update AppSidebar and NavUser components to use external links for auth app settings ([845aacc](https://github.com/janovix/aml/commit/845aacc998b537148d4d90ec3f95adff9737924e))
+
+# [1.3.0-rc.1](https://github.com/janovix/aml/compare/v1.2.0...v1.3.0-rc.1) (2026-01-20)
+
+
+### Bug Fixes
+
+* adjust Skeleton width and Badge styling in UmaBadge component for improved layout and responsiveness ([0495432](https://github.com/janovix/aml/commit/0495432acb511a61a27bb92b8fd3dd90d116cca9))
+* **chat:** update SIMPLE_NEUTRAL face description and adjust pixel data for improved visual representation ([45cda29](https://github.com/janovix/aml/commit/45cda29c7b52d5bd6ecbd79d65adbc8dac8367a4))
+* **middleware:** update matcher to exclude monitoring from middleware processing ([6420998](https://github.com/janovix/aml/commit/642099886edd60b9f10326c0c60e2a0963f46dbc))
+* **OrgBootstrapper:** ensure active organization is always synced on initial load and context change ([2778182](https://github.com/janovix/aml/commit/2778182bad6bf87e4caea36304299a77170a5fc8))
+* update organization creation redirect URL in AppSidebar component ([6ed6e37](https://github.com/janovix/aml/commit/6ed6e370ac4d0ebb30453f5a4d3a8d65fd892ee3))
+
+
+### Features
+
+* add focus ring styles to PersonTypePicker and VehicleTypePicker components, enhance DashboardView layout, and update NavUser logout item styling ([6e09409](https://github.com/janovix/aml/commit/6e0940945ab6f93e7be761fb7abe28c652c55714))
+* add framer-motion dependency and implement sidebar settings management with new hooks and components ([6c25b5a](https://github.com/janovix/aml/commit/6c25b5a38286e0b25fdf958b9f976eedfb109bf7))
+* add new dependencies and update middleware for improved auth service handling ([08f863b](https://github.com/janovix/aml/commit/08f863b65ddb8d062b609d0fae34ac06cb6ec0ed))
+* **chat:** implement AI chat feature with multi-provider support, including ChatDrawer, ChatInput, and ChatMessages components, and enhance import functionality with new translations ([7b19709](https://github.com/janovix/aml/commit/7b1970924ace14607ed42e63eae75f2a655cb242))
+* enhance Button, Input, PageHero, and Table components with additional stories and improved layout parameters for better documentation and usability ([2fb5088](https://github.com/janovix/aml/commit/2fb5088766475926213c74e517eb9a139872d7a9))
+* enhance CreateNoticeView and related tests to manage notice states and improve month selection logic ([3d3f2f1](https://github.com/janovix/aml/commit/3d3f2f1b8edc9833a98f7fa3403a2039b1bc3339))
+* enhance global error and not found pages with improved UI components and translations ([920ed94](https://github.com/janovix/aml/commit/920ed94e332c7df3d338fa6b28a1884f9fcffdee))
+* **forms:** implement useSessionStorageForm hook for persistent form data management in ClientCreateView and TransactionCreateView ([dc617ae](https://github.com/janovix/aml/commit/dc617ae6c078e6aedc942c552ff258e641677d8e))
+* implement JWT handling in ClientsPageContent and TransactionsPageContent components for improved organization context management ([15995ba](https://github.com/janovix/aml/commit/15995ba53d47e17acbab4f740c7b9cd0346c76e0))
+* implement new ThemeSwitcher component with controllable state and animated transitions for theme selection ([6f2972c](https://github.com/janovix/aml/commit/6f2972cff52214aef84b379dfe066b26f1ecf65d))
+* implement PersonTypePicker and VehicleTypePicker components for client and transaction forms, enhancing user selection experience ([d73ea05](https://github.com/janovix/aml/commit/d73ea0591fe8ebce20e2d394a4b954c19f0626d2))
+* implement SubscriptionBanner component and related settings API client for subscription management ([68b9a38](https://github.com/janovix/aml/commit/68b9a38561d2cbf1e305d7ffc92e2951c65d6aa2))
+* **import:** add CreateImportDialog and ImportsTable components for enhanced import functionality and user experience ([2e66a6f](https://github.com/janovix/aml/commit/2e66a6f6a9d5b6181d283d9bcade4d9c050c2594))
+* **import:** add import functionality with file uploader, progress tracking, and error handling components ([cac3bbd](https://github.com/janovix/aml/commit/cac3bbd8c0a79ab5941a1725e6bd974db40b30bf))
+* **import:** add storybook stories for CatastrophicError, FileUploader, ImportProgress, and RowStatusTable components ([7ce0120](https://github.com/janovix/aml/commit/7ce01209767b63e34b99e47dd52643fabebaa553))
+* **import:** enhance AppSidebar with data management navigation and add import translations ([f7aa957](https://github.com/janovix/aml/commit/f7aa9575dad63dd9c53454dcd7d2c8b783c644bf))
+* **import:** enhance FileUploader and ImportPageContent components with JWT handling and upload state management ([0b0677c](https://github.com/janovix/aml/commit/0b0677c2dc2e55a026ebb9a00a9ad6c52b3eac21))
+* **import:** enhance ImportProgress component with CircularProgress for visual feedback and improve layout in ImportViewContent and RowStatusTable ([1fe0c35](https://github.com/janovix/aml/commit/1fe0c357cd8c7f83fbf7f4075c306eed95593585))
+* **import:** integrate Suspense for loading state and enhance ImportPageContent with URL import ID handling ([9427a45](https://github.com/janovix/aml/commit/9427a45a8e4766a246ae0b5a7e46a1e99ae0f903))
+* **import:** simplify ImportPage by removing Suspense and add ImportViewPage for detailed import tracking ([5301b62](https://github.com/janovix/aml/commit/5301b629561daaa13caf358fdd0770f8cc3370a7))
+* integrate sentry for error tracking and performance monitoring ([3ba1737](https://github.com/janovix/aml/commit/3ba17370ac95d7a5b3888ca047003a5892566fbc))
+* **OrgCard:** add fallback initials for organization logo display ([6c4f942](https://github.com/janovix/aml/commit/6c4f942ee9afdb1d090f04120269f9c9df97d146))
+* update AppSidebar and NavUser components to use external links for auth app settings ([845aacc](https://github.com/janovix/aml/commit/845aacc998b537148d4d90ec3f95adff9737924e))
+
+# [1.3.0-rc.1](https://github.com/janovix/aml/compare/v1.2.0...v1.3.0-rc.1) (2026-01-20)
+
+
+### Bug Fixes
+
+* adjust Skeleton width and Badge styling in UmaBadge component for improved layout and responsiveness ([0495432](https://github.com/janovix/aml/commit/0495432acb511a61a27bb92b8fd3dd90d116cca9))
 * **middleware:** update matcher to exclude monitoring from middleware processing ([6420998](https://github.com/janovix/aml/commit/642099886edd60b9f10326c0c60e2a0963f46dbc))
 * **OrgBootstrapper:** ensure active organization is always synced on initial load and context change ([2778182](https://github.com/janovix/aml/commit/2778182bad6bf87e4caea36304299a77170a5fc8))
 * update organization creation redirect URL in AppSidebar component ([6ed6e37](https://github.com/janovix/aml/commit/6ed6e370ac4d0ebb30453f5a4d3a8d65fd892ee3))

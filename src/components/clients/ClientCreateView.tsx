@@ -22,6 +22,8 @@ import { PhoneInput } from "../ui/phone-input";
 import { validateRFC, validateCURP } from "../../lib/utils";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/LanguageProvider";
+import { validatePhone } from "@/lib/validators/validate-phone";
+
 interface ClientFormData {
 	personType: PersonType;
 	// Physical person fields
@@ -91,6 +93,7 @@ export function ClientCreateView(): React.JSX.Element {
 	const [validationErrors, setValidationErrors] = useState<{
 		rfc?: string;
 		curp?: string;
+		phone?: string;
 	}>({});
 
 	const handleInputChange = (
@@ -104,7 +107,7 @@ export function ClientCreateView(): React.JSX.Element {
 		e.preventDefault();
 
 		// Client-side validation
-		const errors: { rfc?: string; curp?: string } = {};
+		const errors: { rfc?: string; curp?: string; phone?: string } = {};
 
 		// Validate RFC
 		const rfcValidation = validateRFC(formData.rfc, formData.personType);
@@ -118,6 +121,12 @@ export function ClientCreateView(): React.JSX.Element {
 			if (!curpValidation.isValid) {
 				errors.curp = curpValidation.error;
 			}
+		}
+
+		// Validate phone
+		const phoneValidation = validatePhone(formData.phone);
+		if (!phoneValidation.isValid) {
+			errors.phone = phoneValidation.error;
 		}
 
 		// If there are validation errors, show them and prevent submission
@@ -506,12 +515,23 @@ export function ClientCreateView(): React.JSX.Element {
 								<PhoneInput
 									id="phone"
 									value={formData.phone || undefined}
-									onChange={(value: string | undefined) =>
-										handleInputChange("phone", value || "")
-									}
+									onChange={(value: string | undefined) => {
+										handleInputChange("phone", value || "");
+										if (validationErrors.phone) {
+											setValidationErrors((prev) => ({
+												...prev,
+												phone: undefined,
+											}));
+										}
+									}}
 									placeholder="+52 55 1234 5678"
 									required
 								/>
+								{validationErrors.phone && (
+									<p className="text-xs text-destructive">
+										{validationErrors.phone}
+									</p>
+								)}
 							</div>
 						</div>
 					</CardContent>
