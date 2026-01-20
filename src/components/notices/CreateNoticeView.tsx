@@ -175,7 +175,7 @@ export function CreateNoticeView(): React.ReactElement {
 				</div>
 			</div>
 
-			<form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-2">
+			<form onSubmit={handleSubmit} className="grid gap-6 @xl/main:grid-cols-2">
 				<Card>
 					<CardHeader>
 						<CardTitle className="text-lg">Configuración del Aviso</CardTitle>

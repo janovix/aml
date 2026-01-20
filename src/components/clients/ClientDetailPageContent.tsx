@@ -130,7 +130,7 @@ export function ClientDetailPageContent({
 							</div>
 						</CardHeader>
 						<CardContent>
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
 								<div className="flex items-center gap-3">
 									<Mail className="h-5 w-5 text-muted-foreground" />
 									<div>
@@ -207,7 +207,7 @@ export function ClientDetailPageContent({
 							<CardTitle className="text-lg">Información Adicional</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
 								<div>
 									<p className="text-sm text-muted-foreground mb-1">
 										Tipo de Persona

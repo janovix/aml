@@ -16,7 +16,6 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/components/LanguageProvider";
 
 export interface StatCard {
@@ -72,7 +71,6 @@ export function PageHero({
 	className,
 }: PageHeroProps) {
 	const { t } = useLanguage();
-	const isMobile = useIsMobile();
 
 	// Convert legacy CTA prop to actions array for backward compatibility
 	const resolvedActions: PageHeroAction[] =
@@ -131,112 +129,109 @@ export function PageHero({
 					</div>
 				</div>
 
-				{/* Actions */}
+				{/* Actions - uses container queries for responsive behavior */}
 				{resolvedActions.length > 0 && (
 					<div className="flex items-center gap-2 shrink-0">
-						{/* Mobile: primary action + dropdown for secondary */}
-						{isMobile ? (
-							<>
-								{primaryAction && (
-									<TooltipProvider>
-										<Tooltip>
-											<TooltipTrigger asChild>
-												<Button
-													onClick={primaryAction.onClick}
-													variant={primaryAction.variant ?? "default"}
-													size="icon"
-													disabled={primaryAction.disabled}
-													aria-label={primaryAction.label}
-												>
-													{primaryAction.icon ? (
-														<primaryAction.icon className="h-4 w-4" />
-													) : (
-														<Plus className="h-4 w-4" />
-													)}
-												</Button>
-											</TooltipTrigger>
-											<TooltipContent side="left">
-												<p>{primaryAction.tooltip ?? primaryAction.label}</p>
-											</TooltipContent>
-										</Tooltip>
-									</TooltipProvider>
-								)}
-								{secondaryActions.length > 0 && (
-									<DropdownMenu>
-										<DropdownMenuTrigger asChild>
+						{/* Compact view (narrow container): icon buttons + dropdown */}
+						<div className="flex items-center gap-2 @md/main:hidden">
+							{primaryAction && (
+								<TooltipProvider>
+									<Tooltip>
+										<TooltipTrigger asChild>
 											<Button
-												variant="outline"
+												onClick={primaryAction.onClick}
+												variant={primaryAction.variant ?? "default"}
 												size="icon"
-												aria-label={t("pageHeroMoreActions")}
+												disabled={primaryAction.disabled}
+												aria-label={primaryAction.label}
 											>
-												<MoreHorizontal className="h-4 w-4" />
+												{primaryAction.icon ? (
+													<primaryAction.icon className="h-4 w-4" />
+												) : (
+													<Plus className="h-4 w-4" />
+												)}
 											</Button>
-										</DropdownMenuTrigger>
-										<DropdownMenuContent align="end">
-											{secondaryActions.map((action) => {
-												const ActionIcon = action.icon;
-												return (
-													<DropdownMenuItem
-														key={action.label}
-														onClick={action.onClick}
-														disabled={action.disabled}
-														variant={
-															action.variant === "destructive"
-																? "destructive"
-																: "default"
-														}
-													>
-														{ActionIcon && <ActionIcon className="h-4 w-4" />}
-														{action.label}
-													</DropdownMenuItem>
-												);
-											})}
-										</DropdownMenuContent>
-									</DropdownMenu>
-								)}
-							</>
-						) : (
-							// Desktop: show all actions as buttons
-							<>
-								{/* Secondary actions first (left side) */}
-								{secondaryActions.map((action) => {
-									const ActionIcon = action.icon;
-									return (
+										</TooltipTrigger>
+										<TooltipContent side="left">
+											<p>{primaryAction.tooltip ?? primaryAction.label}</p>
+										</TooltipContent>
+									</Tooltip>
+								</TooltipProvider>
+							)}
+							{secondaryActions.length > 0 && (
+								<DropdownMenu>
+									<DropdownMenuTrigger asChild>
 										<Button
-											key={action.label}
-											onClick={action.onClick}
-											variant={action.variant ?? "outline"}
-											disabled={action.disabled}
-											className="gap-2"
+											variant="outline"
+											size="icon"
+											aria-label={t("pageHeroMoreActions")}
 										>
-											{ActionIcon && <ActionIcon className="h-4 w-4" />}
-											<span>{action.label}</span>
+											<MoreHorizontal className="h-4 w-4" />
 										</Button>
-									);
-								})}
-								{/* Primary action last (right side) */}
-								{primaryAction && (
+									</DropdownMenuTrigger>
+									<DropdownMenuContent align="end">
+										{secondaryActions.map((action) => {
+											const ActionIcon = action.icon;
+											return (
+												<DropdownMenuItem
+													key={action.label}
+													onClick={action.onClick}
+													disabled={action.disabled}
+													variant={
+														action.variant === "destructive"
+															? "destructive"
+															: "default"
+													}
+												>
+													{ActionIcon && <ActionIcon className="h-4 w-4" />}
+													{action.label}
+												</DropdownMenuItem>
+											);
+										})}
+									</DropdownMenuContent>
+								</DropdownMenu>
+							)}
+						</div>
+						{/* Full view (wide container): show all actions as buttons */}
+						<div className="hidden @md/main:flex items-center gap-2">
+							{/* Secondary actions first (left side) */}
+							{secondaryActions.map((action) => {
+								const ActionIcon = action.icon;
+								return (
 									<Button
-										onClick={primaryAction.onClick}
-										variant={primaryAction.variant ?? "default"}
-										disabled={primaryAction.disabled}
+										key={action.label}
+										onClick={action.onClick}
+										variant={action.variant ?? "outline"}
+										disabled={action.disabled}
 										className="gap-2"
 									>
-										{primaryAction.icon && (
-											<primaryAction.icon className="h-4 w-4" />
-										)}
-										<span>{primaryAction.label}</span>
+										{ActionIcon && <ActionIcon className="h-4 w-4" />}
+										<span>{action.label}</span>
 									</Button>
-								)}
-							</>
-						)}
+								);
+							})}
+							{/* Primary action last (right side) */}
+							{primaryAction && (
+								<Button
+									onClick={primaryAction.onClick}
+									variant={primaryAction.variant ?? "default"}
+									disabled={primaryAction.disabled}
+									className="gap-2"
+								>
+									{primaryAction.icon && (
+										<primaryAction.icon className="h-4 w-4" />
+									)}
+									<span>{primaryAction.label}</span>
+								</Button>
+							)}
+						</div>
 					</div>
 				)}
 			</div>
 
 			{/* Stats cards - only render if stats are provided */}
 			{hasStats && (
-				<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+				<div className="grid grid-cols-1 gap-3 @md/main:grid-cols-2 @2xl/main:grid-cols-3">
 					{stats.slice(0, 3).map((stat) => {
 						const StatIcon = stat.icon;
 						const isPrimary = stat.variant === "primary";

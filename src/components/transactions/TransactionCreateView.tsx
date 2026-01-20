@@ -322,7 +322,7 @@ export function TransactionCreateView(): React.JSX.Element {
 						<CardDescription>{t("txnInfoDesc")}</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
 							<div className="space-y-2">
 								<ClientSelector
 									label={t("txnClient")}
@@ -401,7 +401,7 @@ export function TransactionCreateView(): React.JSX.Element {
 
 						<Separator />
 
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
 							<CatalogSelector
 								catalogKey={getVehicleBrandCatalogKey(formData.vehicleType)}
 								label={t("txnBrand")}
@@ -578,7 +578,7 @@ export function TransactionCreateView(): React.JSX.Element {
 						<CardDescription>{t("txnPaymentDesc")}</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
 							<CatalogSelector
 								catalogKey="currencies"
 								label={t("txnCurrency")}
@@ -642,7 +642,7 @@ export function TransactionCreateView(): React.JSX.Element {
 							{formData.paymentMethods.map((pm, index) => (
 								<div
 									key={index}
-									className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-lg"
+									className="grid grid-cols-1 @lg/main:grid-cols-3 gap-4 p-4 border rounded-lg"
 								>
 									<CatalogSelector
 										catalogKey="payment-methods"

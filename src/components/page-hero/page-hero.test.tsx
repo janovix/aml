@@ -410,33 +410,6 @@ describe("PageHero", () => {
 			expect(screen.getByText("Outline")).toBeInTheDocument();
 			expect(screen.getByText("Destructive")).toBeInTheDocument();
 		});
-
-		it("renders actions in dropdown on mobile", async () => {
-			mockUseIsMobile.mockReturnValue(true);
-			const user = userEvent.setup();
-
-			renderWithProviders(
-				<PageHero
-					title="Test Title"
-					subtitle="Test Subtitle"
-					icon={Users}
-					actions={[
-						{ label: "Primary", onClick: vi.fn() },
-						{ label: "Secondary", onClick: vi.fn() },
-					]}
-				/>,
-			);
-
-			// Should have "More actions" button
-			const moreButton = screen.getByLabelText("Más acciones");
-			expect(moreButton).toBeInTheDocument();
-
-			// Click to open dropdown
-			await user.click(moreButton);
-
-			// Secondary action should be in dropdown
-			expect(screen.getByText("Secondary")).toBeInTheDocument();
-		});
 	});
 
 	// New tests for back button

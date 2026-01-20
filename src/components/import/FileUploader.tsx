@@ -26,18 +26,21 @@ interface FileUploaderProps {
 	onFileUpload: (file: File, entityType: ImportEntityType) => void;
 	isUploading?: boolean;
 	disabled?: boolean;
+	/** Pre-select an entity type */
+	defaultEntityType?: ImportEntityType;
 }
 
 export function FileUploader({
 	onFileUpload,
 	isUploading = false,
 	disabled = false,
+	defaultEntityType,
 }: FileUploaderProps) {
 	const isDisabled = isUploading || disabled;
 	const [isDragging, setIsDragging] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [selectedEntityType, setSelectedEntityType] =
-		useState<ImportEntityType>("CLIENT");
+		useState<ImportEntityType>(defaultEntityType ?? "CLIENT");
 
 	const validateFile = useCallback((file: File): boolean => {
 		const validTypes = [

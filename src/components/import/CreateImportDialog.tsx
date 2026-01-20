@@ -20,12 +20,15 @@ interface CreateImportDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	onSuccess?: () => void;
+	/** Pre-select an entity type when the dialog opens */
+	defaultEntityType?: ImportEntityType;
 }
 
 export function CreateImportDialog({
 	open,
 	onOpenChange,
 	onSuccess,
+	defaultEntityType,
 }: CreateImportDialogProps) {
 	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const { navigateTo } = useOrgNavigation();
@@ -89,6 +92,7 @@ export function CreateImportDialog({
 						onFileUpload={handleFileUpload}
 						isUploading={isUploading}
 						disabled={isJwtLoading || !jwt}
+						defaultEntityType={defaultEntityType}
 					/>
 				</div>
 			</DialogContent>

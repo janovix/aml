@@ -42,7 +42,7 @@ export function FilterPopover({
 					)}
 				>
 					<Icon className="h-3.5 w-3.5" />
-					<span className="hidden sm:inline">{filter.label}</span>
+					<span className="hidden @sm/main:inline">{filter.label}</span>
 					{activeCount > 0 && (
 						<Badge
 							variant="secondary"

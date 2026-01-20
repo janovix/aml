@@ -51,7 +51,7 @@ export function ClientDetailsSkeleton(): React.ReactElement {
 							<Skeleton className="h-6 w-48" />
 						</CardHeader>
 						<CardContent>
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+							<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-6">
 								{[1, 2].map((j) => (
 									<div key={j} className="space-y-2">
 										<Skeleton className="h-4 w-24" />
@@ -225,7 +225,7 @@ export function ClientDetailsView({
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<dl className="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<dl className="grid grid-cols-1 @md/main:grid-cols-2 gap-6">
 							<div>
 								<dt className="text-sm font-medium text-muted-foreground mb-1">
 									{client.personType === "physical"
@@ -272,7 +272,7 @@ export function ClientDetailsView({
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<dl className="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<dl className="grid grid-cols-1 @md/main:grid-cols-2 gap-6">
 							<div>
 								<dt className="text-sm font-medium text-muted-foreground mb-1 flex items-center gap-2">
 									<Mail className="h-4 w-4" />
@@ -314,7 +314,7 @@ export function ClientDetailsView({
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+						<dl className="grid grid-cols-1 @sm/main:grid-cols-2 @xl/main:grid-cols-4 gap-6">
 							<div>
 								<dt className="text-sm font-medium text-muted-foreground mb-1">
 									{t("clientRegistrationDate")}

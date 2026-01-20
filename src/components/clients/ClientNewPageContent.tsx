@@ -136,7 +136,7 @@ export function ClientNewPageContent(): React.ReactElement {
 								<CardTitle>Información Básica</CardTitle>
 							</CardHeader>
 							<CardContent className="space-y-4">
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
 									<div className="space-y-2">
 										<Label htmlFor="rfc">RFC *</Label>
 										<Input
@@ -185,7 +185,7 @@ export function ClientNewPageContent(): React.ReactElement {
 
 								{formData.personType === "physical" ? (
 									<>
-										<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+										<div className="grid grid-cols-1 @lg/main:grid-cols-3 gap-4">
 											<div className="space-y-2">
 												<Label htmlFor="firstName">Nombre *</Label>
 												<Input
@@ -235,7 +235,7 @@ export function ClientNewPageContent(): React.ReactElement {
 									</div>
 								) : null}
 
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
 									<div className="space-y-2">
 										<Label htmlFor="email">Email *</Label>
 										<Input
@@ -267,8 +267,8 @@ export function ClientNewPageContent(): React.ReactElement {
 								<CardTitle>Dirección</CardTitle>
 							</CardHeader>
 							<CardContent className="space-y-4">
-								<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-									<div className="md:col-span-2 space-y-2">
+								<div className="grid grid-cols-1 @lg/main:grid-cols-3 gap-4">
+									<div className="@md/main:col-span-2 space-y-2">
 										<Label htmlFor="street">Calle</Label>
 										<Input
 											id="street"
@@ -287,7 +287,7 @@ export function ClientNewPageContent(): React.ReactElement {
 										/>
 									</div>
 								</div>
-								<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+								<div className="grid grid-cols-1 @xl/main:grid-cols-4 gap-4">
 									<div className="space-y-2">
 										<Label htmlFor="intNumber">Número Interior</Label>
 										<Input
@@ -325,7 +325,7 @@ export function ClientNewPageContent(): React.ReactElement {
 										/>
 									</div>
 								</div>
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
 									<div className="space-y-2">
 										<Label htmlFor="state">Estado</Label>
 										<Input

@@ -109,7 +109,7 @@ export function PersonTypePicker({
 			role="radiogroup"
 			aria-label={t("clientPersonType")}
 			className={cn(
-				"grid grid-cols-1 sm:grid-cols-3 gap-3",
+				"grid grid-cols-1 @sm/main:grid-cols-3 gap-3",
 				disabled && "opacity-50 pointer-events-none",
 				className,
 			)}

@@ -120,7 +120,7 @@ export function ClientFilterPopover({
 					)}
 				>
 					<Users className="h-3.5 w-3.5" />
-					<span className="hidden sm:inline">{label}</span>
+					<span className="hidden @sm/main:inline">{label}</span>
 					{activeCount > 0 && (
 						<Badge
 							variant="secondary"
