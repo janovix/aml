@@ -175,7 +175,7 @@ function playExpressionSound(expression: BotExpression, volume: number = 0.3) {
 	}
 }
 
-// Simple neutral face - eyes with dot mouth (most common)
+// Simple neutral face - eyes with slight flat smile (most common)
 const SIMPLE_NEUTRAL = {
 	pixels: [
 		// Square eyes
@@ -187,8 +187,10 @@ const SIMPLE_NEUTRAL = {
 		[8, 2],
 		[7, 3],
 		[8, 3],
-		// Dot mouth
+		// Slight flat smile (almost straight line with tiny upturn)
+		[4, 6],
 		[5, 6],
+		[6, 6],
 	],
 };
 
