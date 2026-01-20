@@ -3,7 +3,11 @@
 import * as React from "react";
 import { CheckIcon, ChevronsUpDown } from "lucide-react";
 import * as RPNInput from "react-phone-number-input";
-import type { Country, Value as PhoneValue } from "react-phone-number-input";
+import type {
+	Country,
+	Value as PhoneValue,
+	isValidPhoneNumber,
+} from "react-phone-number-input";
 import flags from "react-phone-number-input/flags";
 import esLabels from "react-phone-number-input/locale/es.json";
 import enLabels from "react-phone-number-input/locale/en.json";
@@ -70,6 +74,7 @@ const PhoneInput = React.forwardRef<
 			defaultCountry="MX"
 			value={normalizedValue}
 			labels={labels}
+			limitMaxLength
 			/**
 			 * Handles the onChange event.
 			 *
