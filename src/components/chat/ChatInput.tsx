@@ -234,7 +234,7 @@ export function ChatInput({ className }: ChatInputProps) {
 					}
 					className={cn(
 						"min-h-[60px] max-h-[200px] resize-none border-0 bg-transparent",
-						"px-4 pt-3 pb-0 text-sm rounded-b-none",
+						"px-4 pt-3 pb-0 text-base rounded-b-none",
 						"focus-visible:ring-0 focus-visible:ring-offset-0",
 						"placeholder:text-muted-foreground/60",
 						pendingFile && "rounded-t-none",
