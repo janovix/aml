@@ -515,9 +515,15 @@ export function ClientCreateView(): React.JSX.Element {
 								<PhoneInput
 									id="phone"
 									value={formData.phone || undefined}
-									onChange={(value: string | undefined) =>
-										handleInputChange("phone", value || "")
-									}
+									onChange={(value: string | undefined) => {
+										handleInputChange("phone", value || "");
+										if (validationErrors.phone) {
+											setValidationErrors((prev) => ({
+												...prev,
+												phone: undefined,
+											}));
+										}
+									}}
 									placeholder="+52 55 1234 5678"
 									required
 								/>

@@ -1,5 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { ClientDetailsView } from "../../components/clients/ClientDetailsView";
+import {
+	ClientDetailsView,
+	ClientDetailsSkeleton,
+} from "../../components/clients/ClientDetailsView";
 import { DashboardLayout } from "../../components/layout/DashboardLayout";
 
 const meta = {
@@ -10,7 +13,7 @@ const meta = {
 		docs: {
 			description: {
 				component:
-					"View component for displaying detailed information about a client. Shows client personal/business data, contact information, transaction history, and compliance notes. Includes navigation controls and action buttons for editing and generating reports.",
+					"View component for displaying detailed information about a client. Shows client personal/business data (with person type styling), contact information, transaction history dates, and compliance notes. Includes loading skeleton, navigation controls, and action buttons for editing, generating reports, and marking as suspicious.",
 			},
 		},
 		nextjs: {
@@ -38,6 +41,24 @@ export const Default: Story = {
 	},
 };
 
+export const Loading: Story = {
+	args: {
+		clientId: "1",
+	},
+	render: () => (
+		<DashboardLayout>
+			<ClientDetailsSkeleton />
+		</DashboardLayout>
+	),
+	parameters: {
+		docs: {
+			description: {
+				story: "Loading state skeleton shown while fetching client data.",
+			},
+		},
+	},
+};
+
 export const Mobile: Story = {
 	args: {
 		clientId: "1",
@@ -56,6 +77,17 @@ export const Tablet: Story = {
 	parameters: {
 		viewport: {
 			defaultViewport: "tablet",
+		},
+	},
+};
+
+export const Desktop: Story = {
+	args: {
+		clientId: "1",
+	},
+	parameters: {
+		viewport: {
+			defaultViewport: "desktop",
 		},
 	},
 };
