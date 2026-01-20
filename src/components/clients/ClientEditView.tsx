@@ -28,6 +28,7 @@ import { getFieldDescription } from "../../lib/field-descriptions";
 import { CatalogSelector } from "../catalogs/CatalogSelector";
 import { PhoneInput } from "../ui/phone-input";
 import { validateRFC, validateCURP } from "../../lib/utils";
+import { validatePhone } from "@/lib/validators/validate-phone";
 import { toast as sonnerToast } from "sonner";
 import { useLanguage } from "@/components/LanguageProvider";
 
@@ -148,6 +149,7 @@ export function ClientEditView({
 	const [validationErrors, setValidationErrors] = useState<{
 		rfc?: string;
 		curp?: string;
+		phone?: string;
 	}>({});
 
 	useEffect(() => {
@@ -215,7 +217,7 @@ export function ClientEditView({
 		const currentPersonType = client?.personType ?? formData.personType;
 
 		// Client-side validation
-		const errors: { rfc?: string; curp?: string } = {};
+		const errors: { rfc?: string; curp?: string; phone?: string } = {};
 
 		// Validate RFC
 		const rfcValidation = validateRFC(formData.rfc, currentPersonType);
@@ -229,6 +231,12 @@ export function ClientEditView({
 			if (!curpValidation.isValid) {
 				errors.curp = curpValidation.error;
 			}
+		}
+
+		// Validate phone
+		const phoneValidation = validatePhone(formData.phone);
+		if (!phoneValidation.isValid) {
+			errors.phone = phoneValidation.error;
 		}
 
 		// If there are validation errors, show them and prevent submission
@@ -677,12 +685,23 @@ export function ClientEditView({
 								<PhoneInput
 									id="phone"
 									value={formData.phone || undefined}
-									onChange={(value: string | undefined) =>
-										handleInputChange("phone", value || "")
-									}
+									onChange={(value: string | undefined) => {
+										handleInputChange("phone", value || "");
+										if (validationErrors.phone) {
+											setValidationErrors((prev) => ({
+												...prev,
+												phone: undefined,
+											}));
+										}
+									}}
 									placeholder="+52 55 1234 5678"
 									required
 								/>
+								{validationErrors.phone && (
+									<p className="text-xs text-destructive">
+										{validationErrors.phone}
+									</p>
+								)}
 							</div>
 						</div>
 					</CardContent>
