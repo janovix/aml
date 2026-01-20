@@ -138,7 +138,7 @@ function RowItem({
 				<CollapsibleContent>
 					<div className="px-3 md:px-4 pb-3 md:pb-4 pl-12 md:pl-20">
 						<div className="p-3 md:p-4 rounded-lg bg-secondary/50 space-y-3">
-							<div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 text-sm">
+							<div className="grid grid-cols-2 @md/main:grid-cols-4 gap-3 md:gap-4 text-sm">
 								{primaryFields.map(([key, value]) => (
 									<div key={key}>
 										<p className="text-muted-foreground text-xs mb-1 capitalize">
@@ -242,54 +242,59 @@ export function RowStatusTable({ rows, currentRow }: RowStatusTableProps) {
 	];
 
 	return (
-		<div className="h-full flex flex-col overflow-hidden bg-background relative">
-			{/* Sticky filter header */}
-			<div className="flex-shrink-0 border-b border-border bg-card">
-				<div className="flex items-center justify-between gap-2 px-3 py-2">
-					<h2 className="text-sm font-semibold text-foreground">
-						Detalle de Importación
-					</h2>
-					<div className="flex items-center gap-1">
-						{filterButtons.map((btn) => (
-							<Button
-								key={btn.value}
-								variant={filter === btn.value ? "secondary" : "ghost"}
-								size="sm"
-								onClick={() => setFilter(btn.value)}
-								className={cn(
-									"text-xs h-7 px-2",
-									filter === btn.value && "bg-secondary",
-								)}
-							>
-								{btn.label}
-							</Button>
-						))}
+		<div className="h-full flex flex-col overflow-hidden relative">
+			{/* Card wrapper for consistent styling */}
+			<div className="flex-1 flex flex-col overflow-hidden border border-border rounded-lg bg-card">
+				{/* Sticky filter header */}
+				<div className="flex-shrink-0 border-b border-border bg-muted/30">
+					<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-3 sm:px-4 py-2 sm:py-3">
+						<h2 className="text-sm font-semibold text-foreground shrink-0">
+							Detalle de Importación
+						</h2>
+						<div className="flex items-center gap-1 bg-muted/50 rounded-lg p-0.5 overflow-x-auto scrollbar-none -mx-1 px-1">
+							{filterButtons.map((btn) => (
+								<Button
+									key={btn.value}
+									variant="ghost"
+									size="sm"
+									onClick={() => setFilter(btn.value)}
+									className={cn(
+										"text-xs h-7 px-2 sm:px-3 rounded-md transition-all whitespace-nowrap shrink-0",
+										filter === btn.value
+											? "bg-background text-foreground shadow-sm"
+											: "text-muted-foreground hover:text-foreground hover:bg-transparent",
+									)}
+								>
+									{btn.label}
+								</Button>
+							))}
+						</div>
 					</div>
 				</div>
-			</div>
 
-			{/* Scrollable row list */}
-			<div ref={scrollRef} className="flex-1 overflow-y-auto">
-				<div className="bg-card">
+				{/* Scrollable row list */}
+				<div ref={scrollRef} className="flex-1 overflow-y-auto">
 					{filteredRows.length === 0 ? (
 						<div className="p-8 text-center text-muted-foreground">
 							No hay filas que coincidan con el filtro seleccionado
 						</div>
 					) : (
-						filteredRows.map((row) => (
-							<div key={row.rowNumber} data-row={row.rowNumber}>
-								<RowItem row={row} isActive={row.rowNumber === currentRow} />
-							</div>
-						))
+						<div>
+							{filteredRows.map((row) => (
+								<div key={row.rowNumber} data-row={row.rowNumber}>
+									<RowItem row={row} isActive={row.rowNumber === currentRow} />
+								</div>
+							))}
+						</div>
 					)}
-					<div ref={bottomRef} className="h-24" />
+					<div ref={bottomRef} className="h-16" />
 				</div>
 			</div>
 
 			{/* Go to Top button */}
 			<div
 				className={cn(
-					"absolute right-3 top-1/2 -translate-y-1/2 z-20 transition-all duration-300",
+					"absolute right-6 top-1/2 -translate-y-1/2 z-20 transition-all duration-300",
 					showGoToTop
 						? "opacity-100 translate-x-0"
 						: "opacity-0 translate-x-4 pointer-events-none",
@@ -309,7 +314,7 @@ export function RowStatusTable({ rows, currentRow }: RowStatusTableProps) {
 			{/* Go to Bottom button */}
 			<div
 				className={cn(
-					"absolute bottom-4 left-1/2 -translate-x-1/2 z-20 transition-all duration-300",
+					"absolute bottom-6 left-1/2 -translate-x-1/2 z-20 transition-all duration-300",
 					showGoToBottom
 						? "opacity-100 translate-y-0"
 						: "opacity-0 translate-y-4 pointer-events-none",

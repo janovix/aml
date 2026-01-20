@@ -171,6 +171,7 @@ export const translations = {
 		clientsTitle: "Clientes",
 		clientsSubtitle: "Gestión y monitoreo de clientes",
 		clientsNew: "Nuevo Cliente",
+		importClients: "Importar",
 		clientsSearch: "Buscar clientes...",
 		clientsSearchPlaceholder: "Buscar por nombre, RFC, email...",
 		clientsLoading: "Cargando clientes...",
@@ -297,6 +298,7 @@ export const translations = {
 		transactionsTitle: "Transacciones",
 		transactionsSubtitle: "Gestión de transacciones de vehículos",
 		transactionsNew: "Nueva Transacción",
+		importTransactions: "Importar",
 		transactionsSearch: "Buscar transacciones...",
 		transactionDate: "Fecha",
 		transactionAmount: "Monto",
@@ -668,6 +670,29 @@ export const translations = {
 		clockTimezoneMismatch: "Diferencia de zona horaria",
 		clockDifference: "Diferencia",
 		clockTimezonesMatch: "Las zonas horarias coinciden",
+
+		// AI Chat
+		chatTitle: "Jano",
+		chatSubtitle: "Tu asistente de cumplimiento AML",
+		chatPlaceholder: "Pregunta a Jano...",
+		chatSend: "Enviar mensaje",
+		chatStop: "Detener generación",
+		chatClear: "Limpiar chat",
+		chatWakeUp: "Despertar a Jano",
+		chatClose: "Cerrar chat",
+		chatAttach: "Adjuntar archivo (próximamente)",
+		chatToggleMode: "Cambiar modo de chat",
+		chatSwitchToFloating: "Cambiar a panel flotante",
+		chatSwitchToSidebar: "Cambiar a barra lateral",
+		chatAssistant: "Jano",
+		chatEmptyTitle: "¿Cómo puedo ayudarte?",
+		chatEmptyDescription:
+			"Pregunta sobre clientes, transacciones, alertas o cualquier tema de cumplimiento AML.",
+		chatAttachCSV: "Adjuntar archivo CSV",
+		chatImportClients: "Importar clientes",
+		chatImportTransactions: "Importar transacciones",
+		chatImportPlaceholder:
+			"Describe cómo procesar el archivo o presiona enviar para importar...",
 	},
 	en: {
 		// Common
@@ -831,6 +856,7 @@ export const translations = {
 		clientsTitle: "Clients",
 		clientsSubtitle: "Client management and monitoring",
 		clientsNew: "New Client",
+		importClients: "Import",
 		clientsSearch: "Search clients...",
 		clientsSearchPlaceholder: "Search by name, Tax ID, email...",
 		clientsLoading: "Loading clients...",
@@ -956,6 +982,7 @@ export const translations = {
 		transactionsTitle: "Transactions",
 		transactionsSubtitle: "Vehicle transaction management",
 		transactionsNew: "New Transaction",
+		importTransactions: "Import",
 		transactionsSearch: "Search transactions...",
 		transactionDate: "Date",
 		transactionAmount: "Amount",
@@ -1323,6 +1350,29 @@ export const translations = {
 		clockTimezoneMismatch: "Timezone mismatch",
 		clockDifference: "Difference",
 		clockTimezonesMatch: "Timezones match",
+
+		// AI Chat
+		chatTitle: "Jano",
+		chatSubtitle: "Your AML compliance assistant",
+		chatPlaceholder: "Ask Jano...",
+		chatSend: "Send message",
+		chatStop: "Stop generating",
+		chatClear: "Clear chat",
+		chatWakeUp: "Wake up Jano",
+		chatClose: "Close chat",
+		chatAttach: "Attach file (coming soon)",
+		chatToggleMode: "Toggle chat mode",
+		chatSwitchToFloating: "Switch to floating panel",
+		chatSwitchToSidebar: "Switch to sidebar",
+		chatAssistant: "Jano",
+		chatEmptyTitle: "How can I help you?",
+		chatEmptyDescription:
+			"Ask about clients, transactions, alerts, or any AML compliance topic.",
+		chatAttachCSV: "Attach CSV file",
+		chatImportClients: "Import clients",
+		chatImportTransactions: "Import transactions",
+		chatImportPlaceholder:
+			"Describe how to process the file or press send to import...",
 	},
 } as const;
 

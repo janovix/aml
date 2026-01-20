@@ -252,23 +252,21 @@ export function ImportViewContent({ importId }: ImportViewContentProps) {
 
 	return (
 		<div className="h-full flex flex-col overflow-hidden bg-background">
-			<div className="flex-1 overflow-hidden">
+			<div className="flex-1 overflow-hidden p-4">
 				{state.status === "failed" && state.error ? (
-					<div className="h-full overflow-auto p-4">
-						<CatastrophicError
-							error={state.error}
-							onRetry={handleRetry}
-							onReset={handleReset}
-						/>
-					</div>
+					<CatastrophicError
+						error={state.error}
+						onRetry={handleRetry}
+						onReset={handleReset}
+					/>
 				) : (
-					<div className="h-full flex flex-col">
+					<div className="h-full flex flex-col gap-4">
 						{/* Progress section */}
-						<div className="flex-shrink-0 p-3 border-b border-border">
+						<div className="flex-shrink-0">
 							<ImportProgress state={state} onReset={handleReset} />
 						</div>
 						{/* Row status table */}
-						<div className="flex-1 overflow-hidden">
+						<div className="flex-1 overflow-hidden min-h-0">
 							<RowStatusTable
 								rows={state.rows}
 								currentRow={state.processedRows}

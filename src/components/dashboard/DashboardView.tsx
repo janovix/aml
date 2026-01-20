@@ -38,7 +38,7 @@ interface DashboardData {
 
 export function StatsSkeleton(): React.ReactElement {
 	return (
-		<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+		<div className="grid grid-cols-1 gap-3 @md/main:grid-cols-2 @2xl/main:grid-cols-3">
 			{[1, 2, 3].map((i) => (
 				<Skeleton key={i} className="h-24 rounded-xl" />
 			))}
@@ -72,7 +72,7 @@ export function DashboardSkeleton(): React.ReactElement {
 	return (
 		<div className="space-y-6">
 			<StatsSkeleton />
-			<div className="grid gap-6 lg:grid-cols-2">
+			<div className="grid gap-6 @xl/main:grid-cols-2">
 				<CardSkeleton />
 				<CardSkeleton />
 			</div>
@@ -246,7 +246,7 @@ export function DashboardView(): React.ReactElement {
 			{isLoading && !hasData && (
 				<div className="space-y-6">
 					<StatsSkeleton />
-					<div className="grid gap-6 lg:grid-cols-2">
+					<div className="grid gap-6 @xl/main:grid-cols-2">
 						<CardSkeleton />
 						<CardSkeleton />
 					</div>
@@ -267,7 +267,7 @@ export function DashboardView(): React.ReactElement {
 
 			{/* Main content grid - Transactions and Clients side by side */}
 			{hasData && (
-				<div className="grid gap-6 lg:grid-cols-2">
+				<div className="grid gap-6 @xl/main:grid-cols-2">
 					{/* Transaction Stats Card */}
 					<Link
 						href={routes.transactions.list()}
@@ -286,7 +286,7 @@ export function DashboardView(): React.ReactElement {
 							<CardContent>
 								{data.transactionStats ? (
 									<div className="space-y-4">
-										<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+										<div className="grid grid-cols-1 @lg/main:grid-cols-2 gap-4">
 											<div className="rounded-lg border bg-muted/50 p-4">
 												<div className="text-sm font-medium text-muted-foreground">
 													{t("statsTotalVolume")}
@@ -352,7 +352,7 @@ export function DashboardView(): React.ReactElement {
 							</CardHeader>
 							<CardContent>
 								{data.clientStats ? (
-									<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+									<div className="grid grid-cols-1 @lg/main:grid-cols-3 gap-4">
 										<div className="flex flex-col items-center text-center rounded-lg border bg-muted/50 p-4">
 											<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10 mb-3">
 												<Users className="h-5 w-5 text-blue-500" />

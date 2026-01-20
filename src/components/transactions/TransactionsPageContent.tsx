@@ -3,8 +3,19 @@
 import { useCallback, useEffect, useState } from "react";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { TransactionsTable } from "@/components/transactions/TransactionsTable";
-import { PageHero, type StatCard } from "@/components/page-hero";
-import { DollarSign, Calendar, AlertCircle, Receipt, Plus } from "lucide-react";
+import {
+	PageHero,
+	type StatCard,
+	type PageHeroAction,
+} from "@/components/page-hero";
+import {
+	DollarSign,
+	Calendar,
+	AlertCircle,
+	Receipt,
+	Plus,
+	Upload,
+} from "lucide-react";
 import { getTransactionStats, type TransactionStats } from "@/lib/api/stats";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/lib/mutations";
@@ -12,6 +23,7 @@ import { ApiError, isOrganizationRequiredError } from "@/lib/api/http";
 import { useLanguage } from "@/components/LanguageProvider";
 import { getLocaleForLanguage } from "@/lib/translations";
 import { useJwt } from "@/hooks/useJwt";
+import { CreateImportDialog } from "@/components/import/CreateImportDialog";
 
 export function TransactionsPageContent(): React.ReactElement {
 	const { navigateTo } = useOrgNavigation();
@@ -19,6 +31,7 @@ export function TransactionsPageContent(): React.ReactElement {
 	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const [stats, setStats] = useState<TransactionStats | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
+	const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
 	const fetchStats = useCallback(async () => {
 		// Wait for JWT to be available (which means org is synced)
@@ -110,6 +123,21 @@ export function TransactionsPageContent(): React.ReactElement {
 		},
 	];
 
+	const heroActions: PageHeroAction[] = [
+		{
+			label: t("transactionsNew"),
+			icon: Plus,
+			onClick: () => navigateTo("/transactions/new"),
+			variant: "default",
+		},
+		{
+			label: t("importTransactions"),
+			icon: Upload,
+			onClick: () => setIsImportDialogOpen(true),
+			variant: "outline",
+		},
+	];
+
 	return (
 		<div className="space-y-6">
 			<PageHero
@@ -117,12 +145,16 @@ export function TransactionsPageContent(): React.ReactElement {
 				subtitle={t("transactionsSubtitle")}
 				icon={Receipt}
 				stats={heroStats}
-				ctaLabel={t("transactionsNew")}
-				ctaIcon={Plus}
-				onCtaClick={() => navigateTo("/transactions/new")}
+				actions={heroActions}
 			/>
 
 			<TransactionsTable />
+
+			<CreateImportDialog
+				open={isImportDialogOpen}
+				onOpenChange={setIsImportDialogOpen}
+				defaultEntityType="TRANSACTION"
+			/>
 		</div>
 	);
 }

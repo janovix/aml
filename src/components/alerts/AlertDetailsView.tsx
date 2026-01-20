@@ -107,7 +107,7 @@ export function AlertDetailsSkeleton(): React.ReactElement {
 				actionCount={2}
 			/>
 			{/* Content skeleton */}
-			<div className="grid gap-6 md:grid-cols-2">
+			<div className="grid gap-6 @md/main:grid-cols-2">
 				{[1, 2].map((i) => (
 					<Card key={i}>
 						<CardHeader>
@@ -273,7 +273,7 @@ export function AlertDetailsView({
 			/>
 
 			<div className="space-y-6">
-				<div className="grid gap-6 md:grid-cols-2">
+				<div className="grid gap-6 @md/main:grid-cols-2">
 					<Card>
 						<CardHeader>
 							<CardTitle>Información de la Alerta</CardTitle>

@@ -69,7 +69,7 @@ export function TransactionEditSkeleton(): React.ReactElement {
 							<Skeleton className="h-6 w-48" />
 						</CardHeader>
 						<CardContent>
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
 								{[1, 2, 3, 4].map((j) => (
 									<div key={j} className="space-y-2">
 										<Skeleton className="h-4 w-24" />
@@ -358,7 +358,7 @@ export function TransactionEditView({
 						<CardDescription>{t("txnInfoDesc")}</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
 							<div className="space-y-2">
 								<Label htmlFor="client">{t("txnClient")} *</Label>
 								<Select
@@ -454,7 +454,7 @@ export function TransactionEditView({
 
 						<Separator />
 
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
 							<CatalogSelector
 								catalogKey={getVehicleBrandCatalogKey(formData.vehicleType)}
 								label={t("txnBrand")}
@@ -627,7 +627,7 @@ export function TransactionEditView({
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
 							<div className="space-y-2">
 								<Label htmlFor="amount">{t("txnTotalAmount")} *</Label>
 								<Input
@@ -742,7 +742,7 @@ export function TransactionEditView({
 							{formData.paymentMethods.map((pm, index) => (
 								<div
 									key={index}
-									className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-lg"
+									className="grid grid-cols-1 @lg/main:grid-cols-3 gap-4 p-4 border rounded-lg"
 								>
 									<CatalogSelector
 										catalogKey="payment-methods"

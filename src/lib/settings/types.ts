@@ -12,10 +12,30 @@ export type LanguageCode = "en" | "es";
 export type ClockFormat = "12h" | "24h";
 
 /**
+ * LLM Provider types for AI chat
+ */
+export type LlmProvider = "openai" | "anthropic" | "google";
+export type LlmModel =
+	// OpenAI models
+	| "gpt-4o"
+	| "gpt-4o-mini"
+	| "gpt-4-turbo"
+	// Anthropic models
+	| "claude-3-5-sonnet-20241022"
+	| "claude-3-opus-20240229"
+	| "claude-3-haiku-20240307"
+	// Google models
+	| "gemini-2.0-flash-exp"
+	| "gemini-1.5-pro"
+	| "gemini-1.5-flash";
+
+/**
  * UI preferences stored in metadata
  */
 export interface UIPreferences {
 	sidebarCollapsed?: boolean;
+	preferredLlmProvider?: LlmProvider;
+	preferredLlmModel?: LlmModel;
 }
 
 /**

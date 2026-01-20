@@ -18,6 +18,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { MobileSidebarFullscreen } from "@/components/layout/MobileSidebarFullscreen";
+import { Logo } from "@/components/layout/Logo";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -306,22 +307,28 @@ function SidebarTrigger({
 	onClick,
 	...props
 }: React.ComponentProps<typeof Button>) {
-	const { toggleSidebar } = useSidebar();
+	const { toggleSidebar, isMobile } = useSidebar();
 
+	// Desktop: PanelLeftIcon (lucide)
+	// Mobile: Logo icon (the fullscreen sidebar has its own X close button)
 	return (
 		<Button
 			data-sidebar="trigger"
 			data-slot="sidebar-trigger"
 			variant="ghost"
 			size="icon"
-			className={cn("size-7", className)}
+			className={cn(isMobile ? "size-9" : "size-7", className)}
 			onClick={(event) => {
 				onClick?.(event);
 				toggleSidebar();
 			}}
 			{...props}
 		>
-			<PanelLeftIcon />
+			{isMobile ? (
+				<Logo variant="icon" imgClassName="size-10" />
+			) : (
+				<PanelLeftIcon />
+			)}
 			<span className="sr-only">Toggle Sidebar</span>
 		</Button>
 	);
