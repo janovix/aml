@@ -19,6 +19,7 @@ import {
 	getResolvedSettings,
 } from "@/lib/settings/settingsClient";
 import { ChatProvider, ChatSidebar, NavbarChatButton } from "@/components/chat";
+import { PageStatusProvider } from "@/components/PageStatusProvider";
 
 interface DashboardLayoutProps {
 	children: React.ReactNode;
@@ -206,25 +207,27 @@ export function DashboardLayout({
 	}, []);
 
 	return (
-		<ChatProvider>
-			<SidebarProvider
-				open={!isCollapsed}
-				onOpenChange={handleSidebarOpenChange}
-			>
-				<AppSidebar />
-				<SidebarInset className="flex h-screen flex-col overflow-hidden">
-					<Navbar />
-					<main className="@container/main flex min-h-0 flex-1 flex-col overflow-y-auto">
-						<div className="flex flex-1 flex-col p-4 pb-8 @md/main:p-6 @md/main:pb-12 @lg/main:p-8 @lg/main:pb-16">
-							{children}
-						</div>
-						<footer className="flex shrink-0 items-center justify-center py-6 opacity-40">
-							<Logo variant="logo" />
-						</footer>
-					</main>
-				</SidebarInset>
-				<ChatSidebar />
-			</SidebarProvider>
-		</ChatProvider>
+		<PageStatusProvider>
+			<ChatProvider>
+				<SidebarProvider
+					open={!isCollapsed}
+					onOpenChange={handleSidebarOpenChange}
+				>
+					<AppSidebar />
+					<SidebarInset className="flex h-screen flex-col overflow-hidden">
+						<Navbar />
+						<main className="@container/main flex min-h-0 flex-1 flex-col overflow-y-auto">
+							<div className="flex flex-1 flex-col p-4 pb-8 @md/main:p-6 @md/main:pb-12 @lg/main:p-8 @lg/main:pb-16">
+								{children}
+							</div>
+							<footer className="flex shrink-0 items-center justify-center py-6 opacity-40">
+								<Logo variant="logo" />
+							</footer>
+						</main>
+					</SidebarInset>
+					<ChatSidebar />
+				</SidebarProvider>
+			</ChatProvider>
+		</PageStatusProvider>
 	);
 }
