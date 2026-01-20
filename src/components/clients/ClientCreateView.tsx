@@ -256,7 +256,7 @@ export function ClientCreateView(): React.JSX.Element {
 					<CardContent className="space-y-4">
 						{formData.personType === "physical" ? (
 							<>
-								<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+								<div className="grid grid-cols-1 @lg/main:grid-cols-3 gap-4">
 									<div className="space-y-2">
 										<LabelWithInfo
 											htmlFor="firstName"
@@ -310,7 +310,7 @@ export function ClientCreateView(): React.JSX.Element {
 										/>
 									</div>
 								</div>
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
 									<div className="space-y-2">
 										<LabelWithInfo
 											htmlFor="birthDate"
@@ -468,7 +468,7 @@ export function ClientCreateView(): React.JSX.Element {
 						<CardTitle className="text-lg">{t("clientContactInfo")}</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-4">
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
 							<div className="space-y-2">
 								<LabelWithInfo
 									htmlFor="email"
@@ -513,8 +513,8 @@ export function ClientCreateView(): React.JSX.Element {
 						<CardTitle className="text-lg">{t("clientAddressInfo")}</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-4">
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-							<div className="md:col-span-2 space-y-2">
+						<div className="grid grid-cols-1 @lg/main:grid-cols-3 gap-4">
+							<div className="@md/main:col-span-2 space-y-2">
 								<LabelWithInfo
 									htmlFor="street"
 									description={getFieldDescription("street")}
@@ -549,7 +549,7 @@ export function ClientCreateView(): React.JSX.Element {
 								/>
 							</div>
 						</div>
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+						<div className="grid grid-cols-1 @lg/main:grid-cols-3 gap-4">
 							<div className="space-y-2">
 								<LabelWithInfo
 									htmlFor="internalNumber"
@@ -603,7 +603,7 @@ export function ClientCreateView(): React.JSX.Element {
 								/>
 							</div>
 						</div>
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+						<div className="grid grid-cols-1 @lg/main:grid-cols-3 gap-4">
 							<div className="space-y-2">
 								<LabelWithInfo
 									htmlFor="city"

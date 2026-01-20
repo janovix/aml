@@ -3,8 +3,12 @@
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { useCallback, useEffect, useState } from "react";
 import { ClientsTable } from "@/components/clients/ClientsTable";
-import { PageHero, type StatCard } from "@/components/page-hero";
-import { Users, User, Building2, Plus } from "lucide-react";
+import {
+	PageHero,
+	type StatCard,
+	type PageHeroAction,
+} from "@/components/page-hero";
+import { Users, User, Building2, Plus, Upload } from "lucide-react";
 import { getClientStats } from "@/lib/api/stats";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/lib/mutations";
@@ -12,6 +16,7 @@ import { ApiError, isOrganizationRequiredError } from "@/lib/api/http";
 import { useLanguage } from "@/components/LanguageProvider";
 import { getLocaleForLanguage } from "@/lib/translations";
 import { useJwt } from "@/hooks/useJwt";
+import { CreateImportDialog } from "@/components/import/CreateImportDialog";
 
 export function ClientsPageContent(): React.ReactElement {
 	const { navigateTo } = useOrgNavigation();
@@ -23,6 +28,7 @@ export function ClientsPageContent(): React.ReactElement {
 		moralClients: number;
 	} | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
+	const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
 	const fetchStats = useCallback(async () => {
 		// Wait for JWT to be available (which means org is synced)
@@ -109,6 +115,21 @@ export function ClientsPageContent(): React.ReactElement {
 		},
 	];
 
+	const heroActions: PageHeroAction[] = [
+		{
+			label: t("clientsNew"),
+			icon: Plus,
+			onClick: () => navigateTo("/clients/new"),
+			variant: "default",
+		},
+		{
+			label: t("importClients"),
+			icon: Upload,
+			onClick: () => setIsImportDialogOpen(true),
+			variant: "outline",
+		},
+	];
+
 	return (
 		<div className="space-y-6">
 			<PageHero
@@ -116,12 +137,16 @@ export function ClientsPageContent(): React.ReactElement {
 				subtitle={t("clientsSubtitle")}
 				icon={Users}
 				stats={heroStats}
-				ctaLabel={t("clientsNew")}
-				ctaIcon={Plus}
-				onCtaClick={() => navigateTo("/clients/new")}
+				actions={heroActions}
 			/>
 
 			<ClientsTable />
+
+			<CreateImportDialog
+				open={isImportDialogOpen}
+				onOpenChange={setIsImportDialogOpen}
+				defaultEntityType="CLIENT"
+			/>
 		</div>
 	);
 }

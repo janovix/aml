@@ -354,8 +354,8 @@ export function DataTable<T extends object>({
 							)}
 						</div>
 
-						{/* Desktop: Inline Filter Popovers */}
-						<div className="hidden md:flex items-center gap-1.5">
+						{/* Desktop: Inline Filter Popovers (uses container query) */}
+						<div className="hidden @md/main:flex items-center gap-1.5">
 							{filters.map((filter) => {
 								// Use ClientFilterPopover for clientId filter (searchable)
 								if (filter.id === "clientId") {
@@ -384,8 +384,8 @@ export function DataTable<T extends object>({
 							})}
 						</div>
 
-						{/* Mobile: Filter Summary Button */}
-						<div className="md:hidden">
+						{/* Mobile: Filter Summary Button (uses container query) */}
+						<div className="@md/main:hidden">
 							<InlineFilterSummary
 								activeFilters={activeFiltersList}
 								onRemoveFilter={removeFilter}

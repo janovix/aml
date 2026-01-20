@@ -49,7 +49,7 @@
 	--accent-foreground: oklch(0.2626 0.0057 301.1438);
 	--destructive: oklch(0.6368 0.2078 25.3313);
 	--destructive-foreground: oklch(1 0 0);
-	--border: oklch(0.9276 0.0058 264.5313);
+	--border: oklch(0.85 0.0058 264.5313);
 	--input: oklch(0.8717 0.0093 258.3382);
 	--ring: oklch(0.5477 0.2518 292.8796);
 	--chart-1: oklch(0.5477 0.2518 292.8796);
@@ -63,7 +63,7 @@
 	--sidebar-primary-foreground: oklch(1 0 0);
 	--sidebar-accent: oklch(0.8711 0.0055 286.286);
 	--sidebar-accent-foreground: oklch(0.2626 0.0057 301.1438);
-	--sidebar-border: oklch(0.8452 0 0);
+	--sidebar-border: oklch(0.78 0 0);
 	--sidebar-ring: oklch(0.5477 0.2518 292.8796);
 	--font-sans: Inter, ui-sans-serif, sans-serif, system-ui;
 	--font-serif: serif;
@@ -90,6 +90,8 @@
 	--shadow-2xl: 0 0.125rem 0.5rem 0 hsl(0 0% 0% / 0.25);
 	--tracking-normal: normal;
 	--spacing: 0.25rem;
+	--scrollbar-thumb: oklch(0.75 0 0 / 0.4);
+	--scrollbar-thumb-hover: oklch(0.65 0 0 / 0.6);
 }
 
 .dark {
@@ -148,6 +150,8 @@
 	--shadow-xl:
 		0 0.125rem 0.5rem 0 hsl(0 0% 0% / 0.3), 0 8px 10px -1px hsl(0 0% 0% / 0.3);
 	--shadow-2xl: 0 0.125rem 0.5rem 0 hsl(0 0% 0% / 0.75);
+	--scrollbar-thumb: oklch(0.5 0 0 / 0.4);
+	--scrollbar-thumb-hover: oklch(0.6 0 0 / 0.6);
 }
 
 @theme inline {
@@ -240,10 +244,23 @@ main {
 	overflow-x: hidden;
 }
 
-/* Global minimal scrollbar styles - applies to all scrollbars */
+/* Global scrollbar styles - subtle by default, visible on hover */
+* {
+	scrollbar-width: thin;
+	scrollbar-color: transparent transparent;
+}
+
+*:hover {
+	scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
 *::-webkit-scrollbar {
 	width: 8px;
 	height: 8px;
+}
+
+*::-webkit-scrollbar-button {
+	display: none;
 }
 
 *::-webkit-scrollbar-track {
@@ -251,12 +268,20 @@ main {
 }
 
 *::-webkit-scrollbar-thumb {
-	background: #cbd5e0;
-	border-radius: 4px;
+	background: transparent;
+	border-radius: 9999px;
+	border: 2px solid transparent;
+	background-clip: content-box;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+	background: var(--scrollbar-thumb);
+	background-clip: content-box;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-	background: #a0aec0;
+	background: var(--scrollbar-thumb-hover);
+	background-clip: content-box;
 }
 
 /* Hide scrollbar for horizontal scrolling cards */

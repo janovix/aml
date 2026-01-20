@@ -138,7 +138,7 @@ function RowItem({
 				<CollapsibleContent>
 					<div className="px-3 md:px-4 pb-3 md:pb-4 pl-12 md:pl-20">
 						<div className="p-3 md:p-4 rounded-lg bg-secondary/50 space-y-3">
-							<div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 text-sm">
+							<div className="grid grid-cols-2 @md/main:grid-cols-4 gap-3 md:gap-4 text-sm">
 								{primaryFields.map(([key, value]) => (
 									<div key={key}>
 										<p className="text-muted-foreground text-xs mb-1 capitalize">
@@ -247,11 +247,11 @@ export function RowStatusTable({ rows, currentRow }: RowStatusTableProps) {
 			<div className="flex-1 flex flex-col overflow-hidden border border-border rounded-lg bg-card">
 				{/* Sticky filter header */}
 				<div className="flex-shrink-0 border-b border-border bg-muted/30">
-					<div className="flex items-center justify-between gap-2 px-4 py-3">
-						<h2 className="text-sm font-semibold text-foreground">
+					<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-3 sm:px-4 py-2 sm:py-3">
+						<h2 className="text-sm font-semibold text-foreground shrink-0">
 							Detalle de Importación
 						</h2>
-						<div className="flex items-center gap-1 bg-muted/50 rounded-lg p-0.5">
+						<div className="flex items-center gap-1 bg-muted/50 rounded-lg p-0.5 overflow-x-auto scrollbar-none -mx-1 px-1">
 							{filterButtons.map((btn) => (
 								<Button
 									key={btn.value}
@@ -259,7 +259,7 @@ export function RowStatusTable({ rows, currentRow }: RowStatusTableProps) {
 									size="sm"
 									onClick={() => setFilter(btn.value)}
 									className={cn(
-										"text-xs h-7 px-3 rounded-md transition-all",
+										"text-xs h-7 px-2 sm:px-3 rounded-md transition-all whitespace-nowrap shrink-0",
 										filter === btn.value
 											? "bg-background text-foreground shadow-sm"
 											: "text-muted-foreground hover:text-foreground hover:bg-transparent",

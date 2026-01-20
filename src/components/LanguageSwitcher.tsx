@@ -18,8 +18,8 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/components/LanguageProvider";
 
 const languages = [
-	{ key: "en", label: "EN" },
-	{ key: "es", label: "ES" },
+	{ key: "en", label: "EN", nativeName: "English" },
+	{ key: "es", label: "ES", nativeName: "Español" },
 ] as const;
 
 type LanguageKey = "en" | "es";
@@ -111,7 +111,7 @@ export function LanguageSwitcher({
 					sideOffset={8}
 					className="min-w-0 w-auto"
 				>
-					{languages.map(({ key, label }) => (
+					{languages.map(({ key, nativeName }) => (
 						<DropdownMenuItem
 							key={key}
 							onClick={() => setLanguage(key)}
@@ -120,7 +120,7 @@ export function LanguageSwitcher({
 								currentLanguage === key && "bg-accent",
 							)}
 						>
-							{label}
+							{nativeName}
 						</DropdownMenuItem>
 					))}
 				</DropdownMenuContent>

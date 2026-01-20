@@ -149,68 +149,124 @@ export function ImportProgress({ state, onReset }: ImportProgressProps) {
 		state.entityType === "TRANSACTION" ? FileSpreadsheet : Users;
 
 	return (
-		<Card className="bg-card border-border overflow-hidden">
+		<Card className="bg-card border-border overflow-hidden relative">
 			<CardContent className="p-4">
-				<div className="flex items-start gap-4">
-					{/* Left: Circular Progress */}
-					<div className="flex-shrink-0">
-						<CircularProgress
-							progress={progress}
-							isComplete={isComplete}
-							isFailed={isFailed}
-						/>
+				{/* Close button - absolute positioned */}
+				<div className="absolute top-2 right-2 sm:relative sm:top-0 sm:right-0 sm:hidden">
+					<Button
+						variant="ghost"
+						size="icon"
+						onClick={onReset}
+						className="text-muted-foreground hover:text-foreground h-8 w-8"
+					>
+						<X className="h-4 w-4" />
+						<span className="sr-only">Cerrar</span>
+					</Button>
+				</div>
+
+				<div className="flex flex-col sm:flex-row sm:items-start gap-4">
+					{/* Top row on mobile: Progress + File info */}
+					<div className="flex items-center gap-4">
+						{/* Circular Progress */}
+						<div className="flex-shrink-0">
+							<CircularProgress
+								progress={progress}
+								isComplete={isComplete}
+								isFailed={isFailed}
+							/>
+						</div>
+
+						{/* File info - shown inline on mobile */}
+						<div className="flex-1 min-w-0 sm:hidden">
+							<div className="flex items-center gap-2 mb-1">
+								<div
+									className={cn(
+										"p-1.5 rounded-md",
+										isComplete
+											? "bg-green-500/10"
+											: isFailed
+												? "bg-destructive/10"
+												: "bg-primary/10",
+									)}
+								>
+									<EntityIcon
+										className={cn(
+											"h-4 w-4",
+											isComplete
+												? "text-green-500"
+												: isFailed
+													? "text-destructive"
+													: "text-primary",
+										)}
+									/>
+								</div>
+								<h3 className="font-semibold text-foreground truncate text-sm">
+									{state.fileName}
+								</h3>
+							</div>
+							<p className="text-sm text-muted-foreground">{getStatusText()}</p>
+						</div>
 					</div>
 
-					{/* Middle: Info */}
-					<div className="flex-1 min-w-0 py-1">
-						<div className="flex items-center gap-2 mb-1">
-							<div
-								className={cn(
-									"p-1.5 rounded-md",
-									isComplete
-										? "bg-green-500/10"
-										: isFailed
-											? "bg-destructive/10"
-											: "bg-primary/10",
-								)}
-							>
-								<EntityIcon
+					{/* Middle: Info - full width on mobile */}
+					<div className="flex-1 min-w-0">
+						{/* File info - hidden on mobile, shown on sm+ */}
+						<div className="hidden sm:block mb-3">
+							<div className="flex items-center gap-2 mb-1">
+								<div
 									className={cn(
-										"h-4 w-4",
+										"p-1.5 rounded-md",
 										isComplete
-											? "text-green-500"
+											? "bg-green-500/10"
 											: isFailed
-												? "text-destructive"
-												: "text-primary",
+												? "bg-destructive/10"
+												: "bg-primary/10",
 									)}
-								/>
+								>
+									<EntityIcon
+										className={cn(
+											"h-4 w-4",
+											isComplete
+												? "text-green-500"
+												: isFailed
+													? "text-destructive"
+													: "text-primary",
+										)}
+									/>
+								</div>
+								<h3 className="font-semibold text-foreground truncate">
+									{state.fileName}
+								</h3>
 							</div>
-							<h3 className="font-semibold text-foreground truncate">
-								{state.fileName}
-							</h3>
+							<p className="text-sm text-muted-foreground">{getStatusText()}</p>
 						</div>
-						<p className="text-sm text-muted-foreground mb-3">
-							{getStatusText()}
-						</p>
 
 						{/* Stats grid */}
-						<div className="grid grid-cols-4 gap-2">
+						<div className="grid grid-cols-4 gap-1.5 sm:gap-2">
 							{statItems.map((item, idx) => (
 								<div
 									key={idx}
 									className={cn(
-										"flex flex-col items-center justify-center py-2 px-1 rounded-lg border",
+										"flex flex-col items-center justify-center py-1.5 sm:py-2 px-1 rounded-lg border",
 										item.bgColor,
 										item.borderColor,
 									)}
 								>
-									<item.icon className={cn("h-4 w-4 mb-1", item.color)} />
+									<item.icon
+										className={cn(
+											"h-3.5 w-3.5 sm:h-4 sm:w-4 mb-0.5 sm:mb-1",
+											item.color,
+										)}
+									/>
 									<span
-										className={cn("text-lg font-bold tabular-nums", item.color)}
+										className={cn(
+											"text-base sm:text-lg font-bold tabular-nums",
+											item.color,
+										)}
 									>
 										{item.value}
 									</span>
-									<span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+									<span className="text-[8px] sm:text-[10px] text-muted-foreground uppercase tracking-wide text-center leading-tight">
 										{item.label}
 									</span>
 								</div>
@@ -218,8 +274,8 @@ export function ImportProgress({ state, onReset }: ImportProgressProps) {
 						</div>
 					</div>
 
-					{/* Right: Actions */}
-					<div className="flex-shrink-0 flex flex-col gap-1">
+					{/* Right: Actions - hidden on mobile */}
+					<div className="hidden sm:flex flex-shrink-0 flex-col gap-1">
 						{isComplete && (
 							<Button
 								variant="outline"
@@ -242,6 +298,21 @@ export function ImportProgress({ state, onReset }: ImportProgressProps) {
 						</Button>
 					</div>
 				</div>
+
+				{/* Mobile action buttons */}
+				{isComplete && (
+					<div className="mt-3 sm:hidden">
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={onReset}
+							className="w-full gap-1.5"
+						>
+							<RotateCcw className="h-3.5 w-3.5" />
+							Nueva importación
+						</Button>
+					</div>
+				)}
 			</CardContent>
 		</Card>
 	);
