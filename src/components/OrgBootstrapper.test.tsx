@@ -8,15 +8,6 @@ import {
 } from "@/lib/org-store";
 import { act, renderHook } from "@testing-library/react";
 
-// Mock zustand persist middleware
-vi.mock("zustand/middleware", async (importOriginal) => {
-	const actual = (await importOriginal()) as Record<string, unknown>;
-	return {
-		...actual,
-		persist: (fn: unknown) => fn,
-	};
-});
-
 // Mock next/navigation
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
