@@ -367,11 +367,9 @@ export async function middleware(request: NextRequest) {
 		}
 
 		if (!hasAccessToOrg(organizations, orgSlug)) {
-			// Org doesn't exist or user doesn't have access
-			// Check if org exists at all (for proper error message)
-			// For now, we'll show forbidden - the page will display appropriate message
+			// Org doesn't exist or user doesn't have access - show not-found
 			return NextResponse.rewrite(
-				createExternalUrl(`/${orgSlug}/forbidden`, request),
+				createExternalUrl(`/${orgSlug}/not-found`, request),
 			);
 		}
 
@@ -458,9 +456,9 @@ export async function middleware(request: NextRequest) {
 
 		// Check if user has access to this org
 		if (!hasAccessToOrg(organizations, orgSlug)) {
-			// No access - show forbidden page
+			// No access - show not-found page (org doesn't exist for this user)
 			return NextResponse.rewrite(
-				createExternalUrl(`/${orgSlug}/forbidden`, request),
+				createExternalUrl(`/${orgSlug}/not-found`, request),
 			);
 		}
 
