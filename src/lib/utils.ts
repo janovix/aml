@@ -160,8 +160,11 @@ export function extractBirthdateFromCURP(curp: string): string | null {
 	}
 
 	// Extract YYMMDD from positions 4-9 (indices 4-9)
+	// Position 4-5: Year (YY)
 	const yearStr = trimmedCurp.substring(4, 6);
+	// Position 6-7: Month (MM)
 	const monthStr = trimmedCurp.substring(6, 8);
+	// Position 8-9: Day (DD)
 	const dayStr = trimmedCurp.substring(8, 10);
 
 	// Validate that these are digits
@@ -211,6 +214,27 @@ function getFirstLetter(name: string): string {
 }
 
 /**
+ * Gets the first internal vowel of a name (first vowel after the first letter)
+ * @param name - The name string
+ * @returns The first internal vowel, or X if none found
+ */
+function getFirstInternalVowel(name: string): string {
+	if (!name || name.trim().length < 2) {
+		return "X";
+	}
+	const normalized = name.trim().toUpperCase();
+	const vowels = /[AEIOU]/;
+
+	// Start from position 1 (after first letter)
+	for (let i = 1; i < normalized.length; i++) {
+		if (vowels.test(normalized[i])) {
+			return normalized[i];
+		}
+	}
+	return "X";
+}
+
+/**
  * Gets the first internal consonant of a name (first consonant after the first letter)
  * @param name - The name string
  * @returns The first internal consonant, or X if none found
@@ -233,8 +257,14 @@ function getFirstInternalConsonant(name: string): string {
 
 /**
  * Validates that name initials in CURP match the provided names
- * CURP positions 0-3 contain: first letter of first name, first letter of last name,
- * first letter of second last name (or X), first internal consonant of last name
+ * CURP structure:
+ * Position 0: First letter of first last name (apellido paterno)
+ * Position 1: First internal vowel of first last name
+ * Position 2: First letter of second last name (apellido materno) or 'X'
+ * Position 3: First letter of first name (nombre)
+ * Position 13: First internal consonant of first last name
+ * Position 14: First internal consonant of second last name
+ * Position 15: First internal consonant of first name
  * @param curp - The CURP string
  * @param firstName - First name
  * @param lastName - Last name (paterno)
@@ -260,28 +290,31 @@ export function validateCURPNameMatch(
 		secondLastName?: string;
 	} = {};
 
-	if (!curp || curp.trim().length < 4) {
+	if (!curp || curp.trim().length < 16) {
 		return { isValid: false, errors };
 	}
 
 	const trimmedCurp = curp.trim().toUpperCase();
-	const curpFirstLetter = trimmedCurp[0];
-	const curpLastLetter = trimmedCurp[1];
+	// Position 0: First letter of first last name
+	const curpLastLetter = trimmedCurp[0];
+	// Position 1: First internal vowel of first last name
+	const curpLastVowel = trimmedCurp[1];
+	// Position 2: First letter of second last name or 'X'
 	const curpSecondLastLetter = trimmedCurp[2];
-	const curpConsonant = trimmedCurp[3];
+	// Position 3: First letter of first name
+	const curpFirstNameLetter = trimmedCurp[3];
+	// Position 13: First internal consonant of first last name
+	const curpLastConsonant = trimmedCurp[13];
+	// Position 14: First internal consonant of second last name
+	const curpSecondLastConsonant = trimmedCurp[14];
+	// Position 15: First internal consonant of first name
+	const curpFirstNameConsonant = trimmedCurp[15];
 
-	// Validate first name initial
-	if (firstName && firstName.trim().length > 0) {
-		const expectedFirstLetter = getFirstLetter(firstName);
-		if (curpFirstLetter !== expectedFirstLetter) {
-			errors.firstName = `La inicial del nombre en el CURP (${curpFirstLetter}) no coincide con el nombre proporcionado (${expectedFirstLetter})`;
-		}
-	}
-
-	// Validate last name initial and consonant
+	// Validate first last name (apellido paterno)
 	if (lastName && lastName.trim().length > 0) {
 		const expectedLastLetter = getFirstLetter(lastName);
-		const expectedConsonant = getFirstInternalConsonant(lastName);
+		const expectedLastVowel = getFirstInternalVowel(lastName);
+		const expectedLastConsonant = getFirstInternalConsonant(lastName);
 		const lastNameErrors: string[] = [];
 
 		if (curpLastLetter !== expectedLastLetter) {
@@ -290,9 +323,15 @@ export function validateCURPNameMatch(
 			);
 		}
 
-		if (curpConsonant !== expectedConsonant) {
+		if (curpLastVowel !== expectedLastVowel) {
 			lastNameErrors.push(
-				`La consonante interna del apellido paterno en el CURP (${curpConsonant}) no coincide con el apellido proporcionado (${expectedConsonant})`,
+				`La vocal interna del apellido paterno en el CURP (${curpLastVowel}) no coincide con el apellido proporcionado (${expectedLastVowel})`,
+			);
+		}
+
+		if (curpLastConsonant !== expectedLastConsonant) {
+			lastNameErrors.push(
+				`La consonante interna del apellido paterno en el CURP (${curpLastConsonant}) no coincide con el apellido proporcionado (${expectedLastConsonant})`,
 			);
 		}
 
@@ -301,16 +340,55 @@ export function validateCURPNameMatch(
 		}
 	}
 
-	// Validate second last name initial
+	// Validate second last name (apellido materno)
 	if (secondLastName && secondLastName.trim().length > 0) {
 		const expectedSecondLastLetter = getFirstLetter(secondLastName);
+		const expectedSecondLastConsonant =
+			getFirstInternalConsonant(secondLastName);
+		const secondLastNameErrors: string[] = [];
+
 		if (curpSecondLastLetter !== expectedSecondLastLetter) {
-			errors.secondLastName = `La inicial del apellido materno en el CURP (${curpSecondLastLetter}) no coincide con el apellido proporcionado (${expectedSecondLastLetter})`;
+			secondLastNameErrors.push(
+				`La inicial del apellido materno en el CURP (${curpSecondLastLetter}) no coincide con el apellido proporcionado (${expectedSecondLastLetter})`,
+			);
+		}
+
+		if (curpSecondLastConsonant !== expectedSecondLastConsonant) {
+			secondLastNameErrors.push(
+				`La consonante interna del apellido materno en el CURP (${curpSecondLastConsonant}) no coincide con el apellido proporcionado (${expectedSecondLastConsonant})`,
+			);
+		}
+
+		if (secondLastNameErrors.length > 0) {
+			errors.secondLastName = secondLastNameErrors.join(". ");
 		}
 	} else {
-		// If no second last name is provided, CURP should have X
+		// If no second last name is provided, CURP should have X in position 2
 		if (curpSecondLastLetter !== "X") {
 			errors.secondLastName = `El CURP indica un apellido materno (${curpSecondLastLetter}), pero no se proporcionó uno`;
+		}
+	}
+
+	// Validate first name (nombre)
+	if (firstName && firstName.trim().length > 0) {
+		const expectedFirstNameLetter = getFirstLetter(firstName);
+		const expectedFirstNameConsonant = getFirstInternalConsonant(firstName);
+		const firstNameErrors: string[] = [];
+
+		if (curpFirstNameLetter !== expectedFirstNameLetter) {
+			firstNameErrors.push(
+				`La inicial del nombre en el CURP (${curpFirstNameLetter}) no coincide con el nombre proporcionado (${expectedFirstNameLetter})`,
+			);
+		}
+
+		if (curpFirstNameConsonant !== expectedFirstNameConsonant) {
+			firstNameErrors.push(
+				`La consonante interna del nombre en el CURP (${curpFirstNameConsonant}) no coincide con el nombre proporcionado (${expectedFirstNameConsonant})`,
+			);
+		}
+
+		if (firstNameErrors.length > 0) {
+			errors.firstName = firstNameErrors.join(". ");
 		}
 	}
 

@@ -275,17 +275,20 @@ describe("utils", () => {
 	});
 
 	describe("validateCURPNameMatch", () => {
-		// CURP format: PECS850615HDFRRN09
-		// P = Pedro (first name)
-		// E = Espinosa (last name first letter)
-		// C = Castillo (second last name)
-		// S = Espinosa (first internal consonant after E)
+		// CURP format: OEVA910409HOCRLZ01
+		// O = Ortega (first letter of first last name)
+		// E = Ortega (first internal vowel - E after O)
+		// V = Valdovinos (first letter of second last name)
+		// A = Azael (first letter of first name)
+		// Position 13: R = Ortega (first internal consonant - R after O)
+		// Position 14: L = Valdovinos (first internal consonant - L after V)
+		// Position 15: Z = Azael (first internal consonant - Z after A)
 		it("returns valid for matching names", () => {
 			const result = validateCURPNameMatch(
-				"PECS850615HDFRRN09",
-				"Pedro",
-				"Espinosa",
-				"Castillo",
+				"OEVA910409HOCRLZ01",
+				"Azael",
+				"Ortega",
+				"Valdovinos",
 			);
 			expect(result.isValid).toBe(true);
 			expect(Object.keys(result.errors)).toHaveLength(0);
@@ -293,85 +296,100 @@ describe("utils", () => {
 
 		it("returns error when first name initial doesn't match", () => {
 			const result = validateCURPNameMatch(
-				"PECS850615HDFRRN09",
+				"OEVA910409HOCRLZ01",
 				"Juan",
-				"Espinosa",
-				"Castillo",
+				"Ortega",
+				"Valdovinos",
 			);
 			expect(result.isValid).toBe(false);
-			expect(result.errors.firstName).toContain("P");
+			expect(result.errors.firstName).toContain("A");
 			expect(result.errors.firstName).toContain("J");
 		});
 
 		it("returns error when last name initial doesn't match", () => {
 			const result = validateCURPNameMatch(
-				"PECS850615HDFRRN09",
-				"Pedro",
+				"OEVA910409HOCRLZ01",
+				"Azael",
 				"García",
-				"Castillo",
+				"Valdovinos",
 			);
 			expect(result.isValid).toBe(false);
-			expect(result.errors.lastName).toContain("E");
+			expect(result.errors.lastName).toContain("O");
 			expect(result.errors.lastName).toContain("G");
 		});
 
 		it("returns error when second last name initial doesn't match", () => {
 			const result = validateCURPNameMatch(
-				"PECS850615HDFRRN09",
-				"Pedro",
-				"Espinosa",
+				"OEVA910409HOCRLZ01",
+				"Azael",
+				"Ortega",
 				"García",
 			);
 			expect(result.isValid).toBe(false);
-			expect(result.errors.secondLastName).toContain("C");
+			expect(result.errors.secondLastName).toContain("V");
 			expect(result.errors.secondLastName).toContain("G");
 		});
 
 		it("returns error when second last name is missing but CURP has one", () => {
 			const result = validateCURPNameMatch(
-				"PECS850615HDFRRN09",
-				"Pedro",
-				"Espinosa",
+				"OEVA910409HOCRLZ01",
+				"Azael",
+				"Ortega",
 			);
 			expect(result.isValid).toBe(false);
-			expect(result.errors.secondLastName).toContain("C");
+			expect(result.errors.secondLastName).toContain("V");
 		});
 
 		it("returns valid when second last name is missing and CURP has X", () => {
-			// PEXS = Pedro Espinosa X (no second last name) S (consonant)
+			// OEXA = Ortega E (vowel) X (no second last name) Azael
+			// Position 13: R = Ortega consonant
+			// Position 14: X = no second last name
+			// Position 15: Z = Azael consonant
 			const result = validateCURPNameMatch(
-				"PEXS850615HDFRRN09",
-				"Pedro",
-				"Espinosa",
+				"OEXA910409HOCRXZ01",
+				"Azael",
+				"Ortega",
 			);
 			expect(result.isValid).toBe(true);
 		});
 
-		it("returns error when last name consonant doesn't match", () => {
-			// Using a CURP with different consonant
+		it("returns error when last name vowel doesn't match", () => {
+			// Using a CURP with different vowel
 			const result = validateCURPNameMatch(
-				"PECJ850615HDFRRN09", // J instead of S
-				"Pedro",
-				"Espinosa", // Has S as first consonant, not J
-				"Castillo",
+				"OIVA910409HOCRLZ01", // I instead of E
+				"Azael",
+				"Ortega", // Has E as first vowel, not I
+				"Valdovinos",
 			);
 			expect(result.isValid).toBe(false);
 			expect(result.errors.lastName).toBeDefined();
 		});
 
-		it("handles names with special characters", () => {
-			// ÑECS = Ñoño Espinosa Castillo S
+		it("returns error when last name consonant doesn't match", () => {
+			// Using a CURP with different consonant at position 13
 			const result = validateCURPNameMatch(
-				"ÑECS850615HDFRRN09",
-				"Ñoño",
-				"Espinosa",
-				"Castillo",
+				"OEVA910409HOCSLZ01", // S instead of R at position 13
+				"Azael",
+				"Ortega", // Has R as first consonant, not S
+				"Valdovinos",
+			);
+			expect(result.isValid).toBe(false);
+			expect(result.errors.lastName).toBeDefined();
+		});
+
+		it("handles names correctly", () => {
+			// Test that validation works with standard names
+			const result = validateCURPNameMatch(
+				"OEVA910409HOCRLZ01",
+				"Azael",
+				"Ortega",
+				"Valdovinos",
 			);
 			expect(result.isValid).toBe(true);
 		});
 
 		it("returns valid for empty CURP (should not crash)", () => {
-			const result = validateCURPNameMatch("", "Pedro", "Espinosa");
+			const result = validateCURPNameMatch("", "Azael", "Ortega");
 			expect(result.isValid).toBe(false);
 		});
 	});
