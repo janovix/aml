@@ -527,7 +527,10 @@ export function ClientCreateView(): React.JSX.Element {
 											id="firstName"
 											value={formData.firstName}
 											onChange={(e) =>
-												handleInputChange("firstName", e.target.value)
+												handleInputChange(
+													"firstName",
+													e.target.value.toUpperCase(),
+												)
 											}
 											placeholder="Juan"
 											className={
@@ -553,7 +556,10 @@ export function ClientCreateView(): React.JSX.Element {
 											id="lastName"
 											value={formData.lastName}
 											onChange={(e) =>
-												handleInputChange("lastName", e.target.value)
+												handleInputChange(
+													"lastName",
+													e.target.value.toUpperCase(),
+												)
 											}
 											placeholder="Pérez"
 											className={
@@ -579,7 +585,10 @@ export function ClientCreateView(): React.JSX.Element {
 											id="secondLastName"
 											value={formData.secondLastName}
 											onChange={(e) =>
-												handleInputChange("secondLastName", e.target.value)
+												handleInputChange(
+													"secondLastName",
+													e.target.value.toUpperCase(),
+												)
 											}
 											placeholder="García"
 											className={
@@ -657,9 +666,12 @@ export function ClientCreateView(): React.JSX.Element {
 										id="businessName"
 										value={formData.businessName}
 										onChange={(e) =>
-											handleInputChange("businessName", e.target.value)
+											handleInputChange(
+												"businessName",
+												e.target.value.toUpperCase(),
+											)
 										}
-										placeholder="Ej. Empresa S.A. de C.V."
+										placeholder="Ej. EMPRESA S.A. DE C.V."
 										required
 									/>
 								</div>
