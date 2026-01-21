@@ -302,8 +302,9 @@ describe("utils", () => {
 				"Valdovinos",
 			);
 			expect(result.isValid).toBe(false);
-			expect(result.errors.firstName).toContain("A");
-			expect(result.errors.firstName).toContain("J");
+			expect(result.errors.firstName).toBe(
+				"El nombre no coincide con el CURP proporcionado",
+			);
 		});
 
 		it("returns error when last name initial doesn't match", () => {
@@ -314,8 +315,9 @@ describe("utils", () => {
 				"Valdovinos",
 			);
 			expect(result.isValid).toBe(false);
-			expect(result.errors.lastName).toContain("O");
-			expect(result.errors.lastName).toContain("G");
+			expect(result.errors.lastName).toBe(
+				"El apellido paterno no coincide con el CURP proporcionado",
+			);
 		});
 
 		it("returns error when second last name initial doesn't match", () => {
@@ -326,8 +328,9 @@ describe("utils", () => {
 				"García",
 			);
 			expect(result.isValid).toBe(false);
-			expect(result.errors.secondLastName).toContain("V");
-			expect(result.errors.secondLastName).toContain("G");
+			expect(result.errors.secondLastName).toBe(
+				"El apellido materno no coincide con el CURP proporcionado",
+			);
 		});
 
 		it("returns error when second last name is missing but CURP has one", () => {
@@ -337,7 +340,9 @@ describe("utils", () => {
 				"Ortega",
 			);
 			expect(result.isValid).toBe(false);
-			expect(result.errors.secondLastName).toContain("V");
+			expect(result.errors.secondLastName).toBe(
+				"El apellido materno no coincide con el CURP proporcionado",
+			);
 		});
 
 		it("returns valid when second last name is missing and CURP has X", () => {
@@ -409,7 +414,9 @@ describe("utils", () => {
 				"1985-06-20",
 			);
 			expect(result.isValid).toBe(false);
-			expect(result.error).toContain("no coincide");
+			expect(result.error).toBe(
+				"La fecha de nacimiento no coincide con el CURP proporcionado",
+			);
 		});
 
 		it("returns error when year doesn't match", () => {

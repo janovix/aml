@@ -315,28 +315,14 @@ export function validateCURPNameMatch(
 		const expectedLastLetter = getFirstLetter(lastName);
 		const expectedLastVowel = getFirstInternalVowel(lastName);
 		const expectedLastConsonant = getFirstInternalConsonant(lastName);
-		const lastNameErrors: string[] = [];
 
-		if (curpLastLetter !== expectedLastLetter) {
-			lastNameErrors.push(
-				`La inicial del apellido paterno en el CURP (${curpLastLetter}) no coincide con el apellido proporcionado (${expectedLastLetter})`,
-			);
-		}
-
-		if (curpLastVowel !== expectedLastVowel) {
-			lastNameErrors.push(
-				`La vocal interna del apellido paterno en el CURP (${curpLastVowel}) no coincide con el apellido proporcionado (${expectedLastVowel})`,
-			);
-		}
-
-		if (curpLastConsonant !== expectedLastConsonant) {
-			lastNameErrors.push(
-				`La consonante interna del apellido paterno en el CURP (${curpLastConsonant}) no coincide con el apellido proporcionado (${expectedLastConsonant})`,
-			);
-		}
-
-		if (lastNameErrors.length > 0) {
-			errors.lastName = lastNameErrors.join(". ");
+		if (
+			curpLastLetter !== expectedLastLetter ||
+			curpLastVowel !== expectedLastVowel ||
+			curpLastConsonant !== expectedLastConsonant
+		) {
+			errors.lastName =
+				"El apellido paterno no coincide con el CURP proporcionado";
 		}
 	}
 
@@ -345,27 +331,19 @@ export function validateCURPNameMatch(
 		const expectedSecondLastLetter = getFirstLetter(secondLastName);
 		const expectedSecondLastConsonant =
 			getFirstInternalConsonant(secondLastName);
-		const secondLastNameErrors: string[] = [];
 
-		if (curpSecondLastLetter !== expectedSecondLastLetter) {
-			secondLastNameErrors.push(
-				`La inicial del apellido materno en el CURP (${curpSecondLastLetter}) no coincide con el apellido proporcionado (${expectedSecondLastLetter})`,
-			);
-		}
-
-		if (curpSecondLastConsonant !== expectedSecondLastConsonant) {
-			secondLastNameErrors.push(
-				`La consonante interna del apellido materno en el CURP (${curpSecondLastConsonant}) no coincide con el apellido proporcionado (${expectedSecondLastConsonant})`,
-			);
-		}
-
-		if (secondLastNameErrors.length > 0) {
-			errors.secondLastName = secondLastNameErrors.join(". ");
+		if (
+			curpSecondLastLetter !== expectedSecondLastLetter ||
+			curpSecondLastConsonant !== expectedSecondLastConsonant
+		) {
+			errors.secondLastName =
+				"El apellido materno no coincide con el CURP proporcionado";
 		}
 	} else {
 		// If no second last name is provided, CURP should have X in position 2
 		if (curpSecondLastLetter !== "X") {
-			errors.secondLastName = `El CURP indica un apellido materno (${curpSecondLastLetter}), pero no se proporcionó uno`;
+			errors.secondLastName =
+				"El apellido materno no coincide con el CURP proporcionado";
 		}
 	}
 
@@ -373,22 +351,12 @@ export function validateCURPNameMatch(
 	if (firstName && firstName.trim().length > 0) {
 		const expectedFirstNameLetter = getFirstLetter(firstName);
 		const expectedFirstNameConsonant = getFirstInternalConsonant(firstName);
-		const firstNameErrors: string[] = [];
 
-		if (curpFirstNameLetter !== expectedFirstNameLetter) {
-			firstNameErrors.push(
-				`La inicial del nombre en el CURP (${curpFirstNameLetter}) no coincide con el nombre proporcionado (${expectedFirstNameLetter})`,
-			);
-		}
-
-		if (curpFirstNameConsonant !== expectedFirstNameConsonant) {
-			firstNameErrors.push(
-				`La consonante interna del nombre en el CURP (${curpFirstNameConsonant}) no coincide con el nombre proporcionado (${expectedFirstNameConsonant})`,
-			);
-		}
-
-		if (firstNameErrors.length > 0) {
-			errors.firstName = firstNameErrors.join(". ");
+		if (
+			curpFirstNameLetter !== expectedFirstNameLetter ||
+			curpFirstNameConsonant !== expectedFirstNameConsonant
+		) {
+			errors.firstName = "El nombre no coincide con el CURP proporcionado";
 		}
 	}
 
@@ -443,11 +411,9 @@ export function validateCURPBirthdateMatch(
 		curpMonth !== providedMonth ||
 		curpDay !== providedDay
 	) {
-		const formattedCurpDate = `${curpDay.toString().padStart(2, "0")}/${curpMonth.toString().padStart(2, "0")}/${curpDate.getFullYear()}`;
-		const formattedProvidedDate = `${providedDay.toString().padStart(2, "0")}/${providedMonth.toString().padStart(2, "0")}/${providedDate.getFullYear()}`;
 		return {
 			isValid: false,
-			error: `La fecha de nacimiento en el CURP (${formattedCurpDate}) no coincide con la fecha proporcionada (${formattedProvidedDate})`,
+			error: "La fecha de nacimiento no coincide con el CURP proporcionado",
 		};
 	}
 
