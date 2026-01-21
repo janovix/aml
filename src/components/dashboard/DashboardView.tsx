@@ -30,6 +30,7 @@ import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { getClientStats, type ClientStats } from "@/lib/api/stats";
 import { getTransactionStats, type TransactionStats } from "@/lib/api/stats";
 import { getLocaleForLanguage } from "@/lib/translations";
+import { cn } from "@/lib/utils";
 
 interface DashboardData {
 	clientStats: ClientStats | null;
@@ -223,14 +224,17 @@ export function DashboardView(): React.ReactElement {
 
 	const hasData = data.clientStats || data.transactionStats;
 
+	// Only show skeleton on initial load (no data yet), not during org switch
+	const showInitialSkeleton = isLoading && !hasData;
+
 	return (
 		<div className="space-y-6">
-			{/* Page Hero with main stats */}
+			{/* Page Hero with main stats - keep showing previous stats while loading */}
 			<PageHero
 				title={t("navDashboard")}
 				subtitle={t("dashboardSubtitle")}
 				icon={Home}
-				stats={isLoading ? undefined : stats}
+				stats={stats.length > 0 ? stats : undefined}
 				actions={[
 					{
 						label: t("dashboardRefresh"),
@@ -242,8 +246,8 @@ export function DashboardView(): React.ReactElement {
 				]}
 			/>
 
-			{/* Loading skeleton */}
-			{isLoading && !hasData && (
+			{/* Loading skeleton - only on initial load when no data exists */}
+			{showInitialSkeleton && (
 				<div className="space-y-6">
 					<StatsSkeleton />
 					<div className="grid gap-6 @xl/main:grid-cols-2">
@@ -266,8 +270,14 @@ export function DashboardView(): React.ReactElement {
 			)}
 
 			{/* Main content grid - Transactions and Clients side by side */}
+			{/* Keep showing data while loading (reduced opacity indicates refresh in progress) */}
 			{hasData && (
-				<div className="grid gap-6 @xl/main:grid-cols-2">
+				<div
+					className={cn(
+						"grid gap-6 @xl/main:grid-cols-2 transition-opacity duration-200",
+						isLoading && "opacity-60 pointer-events-none",
+					)}
+				>
 					{/* Transaction Stats Card */}
 					<Link
 						href={routes.transactions.list()}
