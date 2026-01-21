@@ -218,9 +218,31 @@ export function OrgBootstrapper({
 	// Initialize and sync org on mount or when URL org changes
 	useEffect(() => {
 		// No org slug in URL (index page for org selection)
-		// Organizations already hydrated synchronously above
 		if (!urlOrgSlug) {
-			setIsReady(true);
+			// If store already has orgs (from server hydration), we're ready
+			const storeOrgs = useOrgStore.getState().organizations;
+			if (storeOrgs.length > 0) {
+				setIsReady(true);
+				return;
+			}
+
+			// Store is empty - need to fetch client-side
+			// This happens when server-side fetch failed (e.g., redirect from auth app)
+			async function fetchOrgsForIndexPage() {
+				setLoading(true);
+				const result = await listOrganizations();
+				if (result.error || !result.data) {
+					toast.error("Error loading organizations", {
+						description: result.error || "Please try again later.",
+					});
+				} else {
+					setOrganizations(result.data.organizations);
+				}
+				setLoading(false);
+				setIsReady(true);
+			}
+
+			fetchOrgsForIndexPage();
 			return;
 		}
 
