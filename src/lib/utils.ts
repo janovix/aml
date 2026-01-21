@@ -149,6 +149,12 @@ export function validateRFCMatch(
 		}
 		const rfcPrefix = trimmedRfc.slice(0, 4);
 		const rfcDate = trimmedRfc.slice(4, 10);
+		if (!/^[A-ZÑ&]{4}$/.test(rfcPrefix)) {
+			return {
+				isValid: false,
+				error: "El RFC no coincide con los datos proporcionados",
+			};
+		}
 		if (rfcPrefix !== expectedPrefix || rfcDate !== expectedDate) {
 			return {
 				isValid: false,
@@ -169,6 +175,12 @@ export function validateRFCMatch(
 	}
 	const rfcPrefix = trimmedRfc.slice(0, 3);
 	const rfcDate = trimmedRfc.slice(3, 9);
+	if (!/^[A-ZÑ&]{3}$/.test(rfcPrefix)) {
+		return {
+			isValid: false,
+			error: "El RFC no coincide con los datos proporcionados",
+		};
+	}
 	if (rfcPrefix !== expectedPrefix || rfcDate !== expectedDate) {
 		return {
 			isValid: false,
