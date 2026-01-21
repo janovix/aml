@@ -1,3 +1,17 @@
+# [1.4.0-rc.2](https://github.com/janovix/aml/compare/v1.4.0-rc.1...v1.4.0-rc.2) (2026-01-21)
+
+
+### Bug Fixes
+
+* **client:** improve RFC validation logic in ClientCreateView to handle format errors and clear previous errors on empty input ([76bd522](https://github.com/janovix/aml/commit/76bd5229ba83697bfb5d310bf8b8a8815f848e5a))
+
+
+### Features
+
+* **client:** add RFC validation logic to ClientCreateView and implement corresponding utility functions ([d478dbd](https://github.com/janovix/aml/commit/d478dbdc9600874be48edac44092cc5a1a373b0d))
+* **client:** enhance ClientCreateView with CURP validation and auto-fill features ([23ef7f7](https://github.com/janovix/aml/commit/23ef7f7f9776e20f69177f95648d98f2f3252a24))
+* **utils:** enhance RFC validation by adding prefix format checks and corresponding error messages ([4439298](https://github.com/janovix/aml/commit/4439298f2ceba0eae653ca42d6047dae105778ae))
+
 # [1.4.0-rc.1](https://github.com/janovix/aml/compare/v1.3.0...v1.4.0-rc.1) (2026-01-21)
 
 
