@@ -426,7 +426,9 @@ export function TransactionCreateView(): React.JSX.Element {
 								<Input
 									id="model"
 									value={formData.model}
-									onChange={(e) => handleInputChange("model", e.target.value)}
+									onChange={(e) =>
+										handleInputChange("model", e.target.value.toUpperCase())
+									}
 									placeholder="Corolla, X5, etc."
 									required
 								/>

@@ -19,7 +19,14 @@ import { LabelWithInfo } from "../ui/LabelWithInfo";
 import { getFieldDescription } from "../../lib/field-descriptions";
 import { CatalogSelector } from "../catalogs/CatalogSelector";
 import { PhoneInput } from "../ui/phone-input";
-import { validateRFC, validateCURP } from "../../lib/utils";
+import {
+	validateRFC,
+	validateCURP,
+	extractBirthdateFromCURP,
+	validateCURPNameMatch,
+	validateCURPBirthdateMatch,
+	validateRFCMatch,
+} from "../../lib/utils";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/LanguageProvider";
 import { validatePhone } from "@/lib/validators/validate-phone";
@@ -94,32 +101,265 @@ export function ClientCreateView(): React.JSX.Element {
 		rfc?: string;
 		curp?: string;
 		phone?: string;
+		firstName?: string;
+		lastName?: string;
+		secondLastName?: string;
 	}>({});
 
 	const handleInputChange = (
 		field: keyof ClientFormData,
 		value: string,
 	): void => {
-		setFormData((prev) => ({ ...prev, [field]: value }));
+		setFormData((prev) => {
+			const updated = { ...prev, [field]: value };
+
+			// Validate CURP when CURP or related fields change
+			if (
+				(field === "curp" ||
+					field === "firstName" ||
+					field === "lastName" ||
+					field === "secondLastName" ||
+					field === "birthDate") &&
+				updated.personType === "physical"
+			) {
+				if (updated.curp) {
+					// Validate CURP format first
+					const curpValidation = validateCURP(updated.curp);
+					if (!curpValidation.isValid) {
+						setValidationErrors((prev) => ({
+							...prev,
+							curp: curpValidation.error,
+						}));
+					} else {
+						// CURP format is valid, check for data mismatches
+						const mismatchErrors: string[] = [];
+
+						// Check birthdate match
+						if (updated.birthDate) {
+							const birthdateMatch = validateCURPBirthdateMatch(
+								updated.curp,
+								updated.birthDate,
+							);
+							if (!birthdateMatch.isValid) {
+								mismatchErrors.push(
+									"La fecha de nacimiento no coincide con el CURP",
+								);
+							}
+						}
+
+						// Check name match
+						if (updated.firstName && updated.lastName) {
+							const nameMatch = validateCURPNameMatch(
+								updated.curp,
+								updated.firstName,
+								updated.lastName,
+								updated.secondLastName,
+							);
+							if (!nameMatch.isValid) {
+								mismatchErrors.push(
+									"El nombre no coincide con el CURP proporcionado",
+								);
+							}
+						}
+
+						// Set combined error or clear
+						setValidationErrors((prev) => ({
+							...prev,
+							curp: mismatchErrors.length > 0 ? mismatchErrors[0] : undefined,
+						}));
+					}
+
+					// Auto-fill birthdate only when CURP field changes and birthdate is empty
+					if (field === "curp") {
+						const extractedBirthdate = extractBirthdateFromCURP(updated.curp);
+						if (extractedBirthdate && !updated.birthDate) {
+							updated.birthDate = extractedBirthdate;
+						}
+					}
+				} else if (field === "curp") {
+					// CURP is empty, clear any previous error
+					setValidationErrors((prev) => ({
+						...prev,
+						curp: undefined,
+					}));
+				}
+			}
+
+			// Validate RFC when relevant fields change
+			if (
+				field === "rfc" ||
+				field === "firstName" ||
+				field === "lastName" ||
+				field === "secondLastName" ||
+				field === "birthDate" ||
+				field === "businessName" ||
+				field === "incorporationDate"
+			) {
+				if (updated.rfc) {
+					const rfcValidation = validateRFC(updated.rfc, updated.personType);
+					if (!rfcValidation.isValid) {
+						// Show format validation error
+						setValidationErrors((prev) => ({
+							...prev,
+							rfc: rfcValidation.error,
+						}));
+					} else {
+						// RFC format is valid, now check if it matches the provided data
+						const rfcMatch = validateRFCMatch(updated.rfc, updated.personType, {
+							firstName: updated.firstName,
+							lastName: updated.lastName,
+							secondLastName: updated.secondLastName,
+							birthDate: updated.birthDate,
+							businessName: updated.businessName,
+							incorporationDate: updated.incorporationDate,
+						});
+						setValidationErrors((prev) => ({
+							...prev,
+							rfc: rfcMatch.isValid ? undefined : rfcMatch.error,
+						}));
+					}
+				} else {
+					// RFC is empty, clear any previous error (will be caught on submit)
+					setValidationErrors((prev) => ({
+						...prev,
+						rfc: undefined,
+					}));
+				}
+			}
+
+			// Validate name fields for physical persons
+			if (updated.personType === "physical") {
+				if (field === "firstName") {
+					const trimmed = value.trim();
+					if (trimmed.length > 0 && trimmed.length < 2) {
+						setValidationErrors((prev) => ({
+							...prev,
+							firstName: "El nombre debe tener al menos 2 caracteres",
+						}));
+					} else {
+						setValidationErrors((prev) => ({
+							...prev,
+							firstName: undefined,
+						}));
+					}
+				}
+
+				if (field === "lastName") {
+					const trimmed = value.trim();
+					if (trimmed.length > 0 && trimmed.length < 2) {
+						setValidationErrors((prev) => ({
+							...prev,
+							lastName: "El apellido paterno debe tener al menos 2 caracteres",
+						}));
+					} else {
+						setValidationErrors((prev) => ({
+							...prev,
+							lastName: undefined,
+						}));
+					}
+				}
+
+				if (field === "secondLastName") {
+					const trimmed = value.trim();
+					if (trimmed.length > 0 && trimmed.length < 1) {
+						setValidationErrors((prev) => ({
+							...prev,
+							secondLastName:
+								"El apellido materno debe tener al menos 1 caracter",
+						}));
+					} else {
+						setValidationErrors((prev) => ({
+							...prev,
+							secondLastName: undefined,
+						}));
+					}
+				}
+			}
+
+			return updated;
+		});
 	};
 
 	const handleSubmit = async (e: React.FormEvent): Promise<void> => {
 		e.preventDefault();
 
 		// Client-side validation
-		const errors: { rfc?: string; curp?: string; phone?: string } = {};
+		const errors: {
+			rfc?: string;
+			curp?: string;
+			phone?: string;
+			firstName?: string;
+			lastName?: string;
+			secondLastName?: string;
+		} = {};
+
+		// Validate name fields for physical persons
+		if (formData.personType === "physical") {
+			const firstNameTrimmed = (formData.firstName ?? "").trim();
+			if (firstNameTrimmed.length < 2) {
+				errors.firstName = "El nombre debe tener al menos 2 caracteres";
+			}
+
+			const lastNameTrimmed = (formData.lastName ?? "").trim();
+			if (lastNameTrimmed.length < 2) {
+				errors.lastName =
+					"El apellido paterno debe tener al menos 2 caracteres";
+			}
+
+			const secondLastNameTrimmed = (formData.secondLastName ?? "").trim();
+			if (secondLastNameTrimmed.length < 1) {
+				errors.secondLastName =
+					"El apellido materno es requerido (usa X si no existe)";
+			}
+		}
 
 		// Validate RFC
 		const rfcValidation = validateRFC(formData.rfc, formData.personType);
 		if (!rfcValidation.isValid) {
 			errors.rfc = rfcValidation.error;
+		} else {
+			const rfcMatch = validateRFCMatch(formData.rfc, formData.personType, {
+				firstName: formData.firstName,
+				lastName: formData.lastName,
+				secondLastName: formData.secondLastName,
+				birthDate: formData.birthDate,
+				businessName: formData.businessName,
+				incorporationDate: formData.incorporationDate,
+			});
+			if (!rfcMatch.isValid) {
+				errors.rfc = rfcMatch.error;
+			}
 		}
 
-		// Validate CURP (only for physical persons)
+		// Validate CURP and cross-validate with names and birthdate (only for physical persons)
 		if (formData.personType === "physical" && formData.curp) {
 			const curpValidation = validateCURP(formData.curp);
 			if (!curpValidation.isValid) {
 				errors.curp = curpValidation.error;
+			} else {
+				// Cross-validate birthdate - show error under CURP field
+				if (formData.birthDate) {
+					const birthdateMatch = validateCURPBirthdateMatch(
+						formData.curp,
+						formData.birthDate,
+					);
+					if (!birthdateMatch.isValid) {
+						errors.curp = "La fecha de nacimiento no coincide con el CURP";
+					}
+				}
+
+				// Cross-validate names - show error under CURP field
+				if (!errors.curp && formData.firstName && formData.lastName) {
+					const nameMatch = validateCURPNameMatch(
+						formData.curp,
+						formData.firstName,
+						formData.lastName,
+						formData.secondLastName,
+					);
+					if (!nameMatch.isValid) {
+						errors.curp = "El nombre no coincide con el CURP proporcionado";
+					}
+				}
 			}
 		}
 
@@ -287,11 +527,22 @@ export function ClientCreateView(): React.JSX.Element {
 											id="firstName"
 											value={formData.firstName}
 											onChange={(e) =>
-												handleInputChange("firstName", e.target.value)
+												handleInputChange(
+													"firstName",
+													e.target.value.toUpperCase(),
+												)
 											}
 											placeholder="Juan"
+											className={
+												validationErrors.firstName ? "border-destructive" : ""
+											}
 											required
 										/>
+										{validationErrors.firstName && (
+											<p className="text-xs text-destructive">
+												{validationErrors.firstName}
+											</p>
+										)}
 									</div>
 									<div className="space-y-2">
 										<LabelWithInfo
@@ -305,16 +556,28 @@ export function ClientCreateView(): React.JSX.Element {
 											id="lastName"
 											value={formData.lastName}
 											onChange={(e) =>
-												handleInputChange("lastName", e.target.value)
+												handleInputChange(
+													"lastName",
+													e.target.value.toUpperCase(),
+												)
 											}
 											placeholder="Pérez"
+											className={
+												validationErrors.lastName ? "border-destructive" : ""
+											}
 											required
 										/>
+										{validationErrors.lastName && (
+											<p className="text-xs text-destructive">
+												{validationErrors.lastName}
+											</p>
+										)}
 									</div>
 									<div className="space-y-2">
 										<LabelWithInfo
 											htmlFor="secondLastName"
-											description={getFieldDescription("secondLastName")}
+											description={`${getFieldDescription("secondLastName")} Coloca una X en caso de no existir para el cliente.`}
+											required
 										>
 											Apellido Materno
 										</LabelWithInfo>
@@ -322,10 +585,24 @@ export function ClientCreateView(): React.JSX.Element {
 											id="secondLastName"
 											value={formData.secondLastName}
 											onChange={(e) =>
-												handleInputChange("secondLastName", e.target.value)
+												handleInputChange(
+													"secondLastName",
+													e.target.value.toUpperCase(),
+												)
 											}
 											placeholder="García"
+											className={
+												validationErrors.secondLastName
+													? "border-destructive"
+													: ""
+											}
+											required
 										/>
+										{validationErrors.secondLastName && (
+											<p className="text-xs text-destructive">
+												{validationErrors.secondLastName}
+											</p>
+										)}
 									</div>
 								</div>
 								<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
@@ -359,14 +636,7 @@ export function ClientCreateView(): React.JSX.Element {
 											id="curp"
 											value={formData.curp}
 											onChange={(e) => {
-												handleInputChange("curp", e.target.value);
-												// Clear error when user starts typing
-												if (validationErrors.curp) {
-													setValidationErrors((prev) => ({
-														...prev,
-														curp: undefined,
-													}));
-												}
+												handleInputChange("curp", e.target.value.toUpperCase());
 											}}
 											placeholder="PECJ850615HDFRRN09"
 											className={
@@ -396,9 +666,12 @@ export function ClientCreateView(): React.JSX.Element {
 										id="businessName"
 										value={formData.businessName}
 										onChange={(e) =>
-											handleInputChange("businessName", e.target.value)
+											handleInputChange(
+												"businessName",
+												e.target.value.toUpperCase(),
+											)
 										}
-										placeholder="Ej. Empresa S.A. de C.V."
+										placeholder="Ej. EMPRESA S.A. DE C.V."
 										required
 									/>
 								</div>
@@ -434,14 +707,7 @@ export function ClientCreateView(): React.JSX.Element {
 								id="rfc"
 								value={formData.rfc}
 								onChange={(e) => {
-									handleInputChange("rfc", e.target.value);
-									// Clear error when user starts typing
-									if (validationErrors.rfc) {
-										setValidationErrors((prev) => ({
-											...prev,
-											rfc: undefined,
-										}));
-									}
+									handleInputChange("rfc", e.target.value.toUpperCase());
 								}}
 								className={`font-mono uppercase ${
 									validationErrors.rfc ? "border-destructive" : ""
