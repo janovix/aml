@@ -390,9 +390,26 @@ export async function middleware(request: NextRequest) {
 
 	const pathSegments = pathname.split("/").filter(Boolean);
 
-	// Root path "/" - redirect to index page for org selection
+	// Root path "/" - redirect to active org's dashboard
 	if (pathSegments.length === 0) {
-		// Let the index page handle org selection
+		// userOrganizations is already fetched above (line 330)
+		// We know the user has orgs (checked at line 334)
+		if (userOrganizations && userOrganizations.length > 0) {
+			// Find the active org or use the first one
+			const activeOrgId = sessionData?.session?.activeOrganizationId;
+			const targetOrg = getTargetOrg(userOrganizations, activeOrgId);
+
+			if (targetOrg) {
+				console.log(
+					`[AML Middleware] Redirecting from / to /${targetOrg.slug}`,
+				);
+				return NextResponse.redirect(
+					createExternalUrl(`/${targetOrg.slug}`, request),
+				);
+			}
+		}
+
+		// Fallback: let the index page handle it (shouldn't reach here normally)
 		return NextResponse.next();
 	}
 

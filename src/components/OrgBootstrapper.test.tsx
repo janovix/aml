@@ -1,21 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
-import { OrgBootstrapper } from "./OrgBootstrapper";
+import { OrgBootstrapper, resetOrgHydration } from "./OrgBootstrapper";
 import {
 	useOrgStore,
 	type Organization,
 	type OrganizationMember,
 } from "@/lib/org-store";
 import { act, renderHook } from "@testing-library/react";
-
-// Mock zustand persist middleware
-vi.mock("zustand/middleware", async (importOriginal) => {
-	const actual = (await importOriginal()) as Record<string, unknown>;
-	return {
-		...actual,
-		persist: (fn: unknown) => fn,
-	};
-});
 
 // Mock next/navigation
 vi.mock("next/navigation", () => ({
@@ -108,6 +99,7 @@ describe("OrgBootstrapper", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		resetOrgStore();
+		resetOrgHydration();
 		mockListMembers.mockResolvedValue({ data: [], error: null });
 		mockSetActiveOrganization.mockResolvedValue({
 			data: { activeOrganizationId: "org-1" },
