@@ -229,13 +229,22 @@ export function OrgBootstrapper({
 			return;
 		}
 
+		// Check if this org was already switched via OrgSwitcher/AppSidebar
+		// Only on SUBSEQUENT navigations (not initial load), we can skip heavy sync
+		// On initial load (lastSyncedOrgRef.current is null), always do full sync to ensure session is synced
+		const storeState = useOrgStore.getState();
+		const isSubsequentNavigation = lastSyncedOrgRef.current !== null;
+		const alreadySwitched =
+			isSubsequentNavigation && storeState.currentOrg?.slug === urlOrgSlug;
+
 		async function syncOrg() {
-			setLoading(true);
+			// Only show loading state if we need to do a full sync
+			if (!alreadySwitched) {
+				setLoading(true);
+			}
 
 			// Use initial data if available (first load) - already hydrated synchronously
-			let orgs: Organization[] = useOrgStore.getState().organizations;
-			let activeOrgId: string | null =
-				initialOrganizations?.activeOrganizationId ?? null;
+			let orgs: Organization[] = storeState.organizations;
 
 			// If no orgs in store, fetch from API
 			if (orgs.length === 0) {
@@ -249,7 +258,6 @@ export function OrgBootstrapper({
 					return;
 				}
 				orgs = result.data.organizations;
-				activeOrgId = result.data.activeOrganizationId;
 				setOrganizations(orgs);
 			}
 
@@ -264,28 +272,32 @@ export function OrgBootstrapper({
 				return;
 			}
 
-			// IMPORTANT: Sync activeOrganizationId BEFORE setting currentOrg in the store.
-			// This ensures the session's activeOrganizationId is updated in the database
-			// BEFORE useJwt hook fetches a new JWT. Otherwise, there's a race condition
-			// where the JWT is fetched with organizationId: null because setCurrentOrg
-			// triggers useJwt to fetch immediately, before setActiveOrganization completes.
-			// This is critical on first organization creation when redirecting from auth app.
-			const syncResult = await setActiveOrganization(targetOrg.id);
-			if (syncResult.error) {
-				console.error(
-					"[OrgBootstrapper] Failed to sync active org:",
-					syncResult.error,
-				);
+			// If already switched via OrgSwitcher, skip the heavy sync
+			// OrgSwitcher already called setActiveOrganization and setCurrentOrg
+			if (!alreadySwitched) {
+				// IMPORTANT: Sync activeOrganizationId BEFORE setting currentOrg in the store.
+				// This ensures the session's activeOrganizationId is updated in the database
+				// BEFORE useJwt hook fetches a new JWT. Otherwise, there's a race condition
+				// where the JWT is fetched with organizationId: null because setCurrentOrg
+				// triggers useJwt to fetch immediately, before setActiveOrganization completes.
+				// This is critical on first organization creation when redirecting from auth app.
+				const syncResult = await setActiveOrganization(targetOrg.id);
+				if (syncResult.error) {
+					console.error(
+						"[OrgBootstrapper] Failed to sync active org:",
+						syncResult.error,
+					);
+				}
+
+				// Clear token cache AFTER session is updated, so fresh JWT includes organizationId
+				tokenCache.clear();
+
+				// Now set the current org in the store - this triggers useJwt to fetch JWT
+				// The session is already updated, so the JWT will have the correct organizationId
+				setCurrentOrg(targetOrg);
 			}
 
-			// Clear token cache AFTER session is updated, so fresh JWT includes organizationId
-			tokenCache.clear();
-
-			// Now set the current org in the store - this triggers useJwt to fetch JWT
-			// The session is already updated, so the JWT will have the correct organizationId
-			setCurrentOrg(targetOrg);
-
-			// Fetch members
+			// Fetch members (always do this to ensure fresh data)
 			const membersResult = await listMembers(targetOrg.id);
 			if (membersResult.data) {
 				setMembers(membersResult.data);
