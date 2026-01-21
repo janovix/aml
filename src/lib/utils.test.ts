@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
 	validateRFC,
+	validateRFCMatch,
 	validateCURP,
 	validateVIN,
 	cn,
@@ -229,6 +230,50 @@ describe("utils", () => {
 		it("validates RFC with Ñ character", () => {
 			const result = validateRFC("ÑBC850101AAA", "moral");
 			expect(result.isValid).toBe(true);
+		});
+	});
+
+	describe("validateRFCMatch", () => {
+		it("validates physical RFC against name and birthdate", () => {
+			const result = validateRFCMatch("OEVA910409ABC", "physical", {
+				firstName: "Azael",
+				lastName: "Ortega",
+				secondLastName: "Valdovinos",
+				birthDate: "1991-04-09",
+			});
+			expect(result.isValid).toBe(true);
+		});
+
+		it("returns error when physical RFC does not match data", () => {
+			const result = validateRFCMatch("OEVA910409ABC", "physical", {
+				firstName: "Juan",
+				lastName: "Ortega",
+				secondLastName: "Valdovinos",
+				birthDate: "1991-04-09",
+			});
+			expect(result.isValid).toBe(false);
+			expect(result.error).toBe(
+				"El RFC no coincide con los datos proporcionados",
+			);
+		});
+
+		it("validates moral RFC against business name and incorporation date", () => {
+			const result = validateRFCMatch("ACM2002031A2", "moral", {
+				businessName: "Acme SA de CV",
+				incorporationDate: "2020-02-03",
+			});
+			expect(result.isValid).toBe(true);
+		});
+
+		it("returns error when moral RFC does not match data", () => {
+			const result = validateRFCMatch("ACM2002031A2", "moral", {
+				businessName: "Beta SA de CV",
+				incorporationDate: "2020-02-03",
+			});
+			expect(result.isValid).toBe(false);
+			expect(result.error).toBe(
+				"El RFC no coincide con los datos proporcionados",
+			);
 		});
 	});
 

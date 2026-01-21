@@ -25,6 +25,7 @@ import {
 	extractBirthdateFromCURP,
 	validateCURPNameMatch,
 	validateCURPBirthdateMatch,
+	validateRFCMatch,
 } from "../../lib/utils";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/LanguageProvider";
@@ -242,6 +243,34 @@ export function ClientCreateView(): React.JSX.Element {
 				}
 			}
 
+			if (
+				field === "rfc" ||
+				field === "firstName" ||
+				field === "lastName" ||
+				field === "secondLastName" ||
+				field === "birthDate" ||
+				field === "businessName" ||
+				field === "incorporationDate"
+			) {
+				if (updated.rfc) {
+					const rfcValidation = validateRFC(updated.rfc, updated.personType);
+					if (rfcValidation.isValid) {
+						const rfcMatch = validateRFCMatch(updated.rfc, updated.personType, {
+							firstName: updated.firstName,
+							lastName: updated.lastName,
+							secondLastName: updated.secondLastName,
+							birthDate: updated.birthDate,
+							businessName: updated.businessName,
+							incorporationDate: updated.incorporationDate,
+						});
+						setValidationErrors((prev) => ({
+							...prev,
+							rfc: rfcMatch.isValid ? undefined : rfcMatch.error,
+						}));
+					}
+				}
+			}
+
 			return updated;
 		});
 	};
@@ -264,6 +293,18 @@ export function ClientCreateView(): React.JSX.Element {
 		const rfcValidation = validateRFC(formData.rfc, formData.personType);
 		if (!rfcValidation.isValid) {
 			errors.rfc = rfcValidation.error;
+		} else {
+			const rfcMatch = validateRFCMatch(formData.rfc, formData.personType, {
+				firstName: formData.firstName,
+				lastName: formData.lastName,
+				secondLastName: formData.secondLastName,
+				birthDate: formData.birthDate,
+				businessName: formData.businessName,
+				incorporationDate: formData.incorporationDate,
+			});
+			if (!rfcMatch.isValid) {
+				errors.rfc = rfcMatch.error;
+			}
 		}
 
 		// Validate CURP and cross-validate with names and birthdate (only for physical persons)

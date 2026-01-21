@@ -50,6 +50,134 @@ export function validateRFC(
 	return { isValid: true };
 }
 
+function formatDateToYYMMDD(dateValue?: string): string | null {
+	if (!dateValue) {
+		return null;
+	}
+	const normalized = dateValue.trim();
+	const isoMatch = normalized.match(/^(\d{4})-(\d{2})-(\d{2})/);
+	if (isoMatch) {
+		const [, yearFull, month, day] = isoMatch;
+		return `${yearFull.slice(-2)}${month}${day}`;
+	}
+	const date = new Date(normalized);
+	if (Number.isNaN(date.getTime())) {
+		return null;
+	}
+	const year = (date.getFullYear() % 100).toString().padStart(2, "0");
+	const month = (date.getMonth() + 1).toString().padStart(2, "0");
+	const day = date.getDate().toString().padStart(2, "0");
+	return `${year}${month}${day}`;
+}
+
+function getRfcPrefixPhysical(
+	firstName: string,
+	lastName: string,
+	secondLastName?: string,
+): string {
+	const lastLetter = getFirstLetter(lastName);
+	const lastVowel = getFirstInternalVowel(lastName);
+	const secondLastLetter = secondLastName?.trim()
+		? getFirstLetter(secondLastName)
+		: "X";
+	const normalizedFirstName = firstName.trim().toUpperCase();
+	const nameParts = normalizedFirstName.split(/\s+/).filter(Boolean);
+	const ignoredNames = new Set(["JOSE", "MARIA", "MA", "JO"]);
+	const firstNameToken =
+		nameParts.length > 1 && ignoredNames.has(nameParts[0])
+			? nameParts[1]
+			: (nameParts[0] ?? "");
+	const firstNameLetter = firstNameToken ? firstNameToken[0] : "";
+	return `${lastLetter}${lastVowel}${secondLastLetter}${firstNameLetter}`;
+}
+
+function getRfcPrefixMoral(businessName: string): string {
+	const normalized = businessName
+		.toUpperCase()
+		.replace(/[^A-Z0-9\s]/g, " ")
+		.trim();
+	const tokens = normalized.split(/\s+/).filter(Boolean);
+	const ignored = new Set([
+		"DE",
+		"DEL",
+		"LA",
+		"LAS",
+		"LOS",
+		"Y",
+		"SA",
+		"S",
+		"A",
+		"CV",
+	]);
+	const cleaned = tokens
+		.filter((token) => !ignored.has(token))
+		.join("")
+		.replace(/[^A-Z0-9]/g, "");
+	return cleaned.padEnd(3, "X").slice(0, 3);
+}
+
+export function validateRFCMatch(
+	rfc: string,
+	personType: "physical" | "moral" | "trust",
+	data: {
+		firstName?: string;
+		lastName?: string;
+		secondLastName?: string;
+		birthDate?: string;
+		businessName?: string;
+		incorporationDate?: string;
+	},
+): { isValid: boolean; error?: string } {
+	const trimmedRfc = rfc.trim().toUpperCase();
+	if (!trimmedRfc) {
+		return { isValid: true };
+	}
+
+	if (personType === "physical") {
+		const { firstName, lastName, secondLastName, birthDate } = data;
+		if (!firstName || !lastName || !birthDate) {
+			return { isValid: true };
+		}
+		const expectedPrefix = getRfcPrefixPhysical(
+			firstName,
+			lastName,
+			secondLastName,
+		);
+		const expectedDate = formatDateToYYMMDD(birthDate);
+		if (!expectedDate) {
+			return { isValid: true };
+		}
+		const rfcPrefix = trimmedRfc.slice(0, 4);
+		const rfcDate = trimmedRfc.slice(4, 10);
+		if (rfcPrefix !== expectedPrefix || rfcDate !== expectedDate) {
+			return {
+				isValid: false,
+				error: "El RFC no coincide con los datos proporcionados",
+			};
+		}
+		return { isValid: true };
+	}
+
+	const { businessName, incorporationDate } = data;
+	if (!businessName || !incorporationDate) {
+		return { isValid: true };
+	}
+	const expectedPrefix = getRfcPrefixMoral(businessName);
+	const expectedDate = formatDateToYYMMDD(incorporationDate);
+	if (!expectedDate) {
+		return { isValid: true };
+	}
+	const rfcPrefix = trimmedRfc.slice(0, 3);
+	const rfcDate = trimmedRfc.slice(3, 9);
+	if (rfcPrefix !== expectedPrefix || rfcDate !== expectedDate) {
+		return {
+			isValid: false,
+			error: "El RFC no coincide con los datos proporcionados",
+		};
+	}
+	return { isValid: true };
+}
+
 /**
  * Validates CURP (Clave Única de Registro de Población) format
  * @param curp - The CURP string to validate
