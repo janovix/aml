@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useMemo } from "react";
-import { useParams, usePathname } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { useOrgStore } from "@/lib/org-store";
 import { useAuthSession } from "@/lib/auth/useAuthSession";
 import {
@@ -189,6 +189,7 @@ export function OrgBootstrapper({
 	const { data: session } = useAuthSession();
 	const params = useParams();
 	const pathname = usePathname();
+	const router = useRouter();
 	const urlOrgSlug = params?.orgSlug as string | undefined;
 
 	// SYNCHRONOUS HYDRATION: Must happen BEFORE useOrgStore hook reads state
@@ -206,6 +207,7 @@ export function OrgBootstrapper({
 	} = useOrgStore();
 
 	const [isReady, setIsReady] = useState(false);
+	const [isRedirecting, setIsRedirecting] = useState(false);
 	const lastSyncedOrgRef = useRef<string | null | undefined>(null);
 
 	// Set current user ID from session
@@ -250,11 +252,13 @@ export function OrgBootstrapper({
 			if (orgs.length === 0) {
 				const result = await listOrganizations();
 				if (result.error || !result.data) {
-					toast.error("Error loading organizations", {
-						description: result.error || "Please try again later.",
-					});
-					setLoading(false);
-					setIsReady(true);
+					console.error(
+						"[OrgBootstrapper] Error loading organizations:",
+						result.error,
+					);
+					// Redirect to not-found page - can't load orgs
+					setIsRedirecting(true);
+					router.replace(`/${urlOrgSlug}/not-found`);
 					return;
 				}
 				orgs = result.data.organizations;
@@ -265,10 +269,10 @@ export function OrgBootstrapper({
 			const targetOrg = orgs.find((org) => org.slug === urlOrgSlug);
 
 			if (!targetOrg) {
-				// Middleware should have caught this, but handle gracefully
+				// Org not found in user's organizations - redirect to not-found
 				console.warn(`[OrgBootstrapper] Org "${urlOrgSlug}" not found`);
-				setLoading(false);
-				setIsReady(true);
+				setIsRedirecting(true);
+				router.replace(`/${urlOrgSlug}/not-found`);
 				return;
 			}
 
@@ -321,12 +325,18 @@ export function OrgBootstrapper({
 		setMembers,
 		setLoading,
 		isReady,
+		router,
 	]);
 
 	// Check if we're on an error page (not-found, forbidden)
 	// These pages should render even without currentOrg
 	const isErrorPage =
 		pathname?.endsWith("/not-found") || pathname?.endsWith("/forbidden");
+
+	// If redirecting to error page, show skeleton briefly while navigation happens
+	if (isRedirecting) {
+		return <AppSkeletonWithView pathname={pathname || "/"} />;
+	}
 
 	// Show loading skeleton while syncing org
 	// But don't block error pages - they need to render even without currentOrg
