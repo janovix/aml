@@ -19,7 +19,13 @@ import { LabelWithInfo } from "../ui/LabelWithInfo";
 import { getFieldDescription } from "../../lib/field-descriptions";
 import { CatalogSelector } from "../catalogs/CatalogSelector";
 import { PhoneInput } from "../ui/phone-input";
-import { validateRFC, validateCURP } from "../../lib/utils";
+import {
+	validateRFC,
+	validateCURP,
+	extractBirthdateFromCURP,
+	validateCURPNameMatch,
+	validateCURPBirthdateMatch,
+} from "../../lib/utils";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/LanguageProvider";
 import { validatePhone } from "@/lib/validators/validate-phone";
@@ -94,20 +100,165 @@ export function ClientCreateView(): React.JSX.Element {
 		rfc?: string;
 		curp?: string;
 		phone?: string;
+		birthDate?: string;
+		firstName?: string;
+		lastName?: string;
+		secondLastName?: string;
 	}>({});
 
 	const handleInputChange = (
 		field: keyof ClientFormData,
 		value: string,
 	): void => {
-		setFormData((prev) => ({ ...prev, [field]: value }));
+		setFormData((prev) => {
+			const updated = { ...prev, [field]: value };
+
+			// Auto-fill birthdate from CURP when CURP is entered
+			if (field === "curp" && updated.personType === "physical") {
+				// Validate CURP format first
+				const curpValidation = validateCURP(value);
+				if (!curpValidation.isValid) {
+					setValidationErrors((prev) => ({
+						...prev,
+						curp: curpValidation.error,
+						birthDate: undefined,
+						firstName: undefined,
+						lastName: undefined,
+						secondLastName: undefined,
+					}));
+					return updated;
+				}
+
+				// Clear CURP format error
+				setValidationErrors((prev) => ({
+					...prev,
+					curp: undefined,
+				}));
+
+				// Auto-fill birthdate only if CURP is valid and birthdate is empty
+				const extractedBirthdate = extractBirthdateFromCURP(value);
+				if (extractedBirthdate && !updated.birthDate) {
+					updated.birthDate = extractedBirthdate;
+				}
+
+				// Cross-validate with birthdate if both are present
+				if (updated.birthDate) {
+					const birthdateMatch = validateCURPBirthdateMatch(
+						value,
+						updated.birthDate,
+					);
+					if (!birthdateMatch.isValid) {
+						setValidationErrors((prev) => ({
+							...prev,
+							birthDate: birthdateMatch.error,
+						}));
+					} else {
+						setValidationErrors((prev) => ({
+							...prev,
+							birthDate: undefined,
+						}));
+					}
+				}
+
+				// Cross-validate with names if all are present
+				if (updated.firstName && updated.lastName) {
+					const nameMatch = validateCURPNameMatch(
+						value,
+						updated.firstName,
+						updated.lastName,
+						updated.secondLastName,
+					);
+					if (!nameMatch.isValid) {
+						setValidationErrors((prev) => ({
+							...prev,
+							...nameMatch.errors,
+						}));
+					} else {
+						setValidationErrors((prev) => ({
+							...prev,
+							firstName: undefined,
+							lastName: undefined,
+							secondLastName: undefined,
+						}));
+					}
+				}
+			}
+
+			// Validate birthdate against CURP when birthdate changes
+			if (
+				field === "birthDate" &&
+				updated.personType === "physical" &&
+				updated.curp
+			) {
+				const curpValidation = validateCURP(updated.curp);
+				if (curpValidation.isValid) {
+					const birthdateMatch = validateCURPBirthdateMatch(
+						updated.curp,
+						value,
+					);
+					if (!birthdateMatch.isValid) {
+						setValidationErrors((prev) => ({
+							...prev,
+							birthDate: birthdateMatch.error,
+						}));
+					} else {
+						setValidationErrors((prev) => ({
+							...prev,
+							birthDate: undefined,
+						}));
+					}
+				}
+			}
+
+			// Validate names against CURP when names change
+			if (
+				(field === "firstName" ||
+					field === "lastName" ||
+					field === "secondLastName") &&
+				updated.personType === "physical" &&
+				updated.curp
+			) {
+				const curpValidation = validateCURP(updated.curp);
+				if (curpValidation.isValid && updated.firstName && updated.lastName) {
+					const nameMatch = validateCURPNameMatch(
+						updated.curp,
+						updated.firstName,
+						updated.lastName,
+						updated.secondLastName,
+					);
+					if (!nameMatch.isValid) {
+						setValidationErrors((prev) => ({
+							...prev,
+							...nameMatch.errors,
+						}));
+					} else {
+						setValidationErrors((prev) => ({
+							...prev,
+							firstName: undefined,
+							lastName: undefined,
+							secondLastName: undefined,
+						}));
+					}
+				}
+			}
+
+			return updated;
+		});
 	};
 
 	const handleSubmit = async (e: React.FormEvent): Promise<void> => {
 		e.preventDefault();
 
 		// Client-side validation
-		const errors: { rfc?: string; curp?: string; phone?: string } = {};
+		const errors: {
+			rfc?: string;
+			curp?: string;
+			phone?: string;
+			birthDate?: string;
+			firstName?: string;
+			lastName?: string;
+			secondLastName?: string;
+		} = {};
 
 		// Validate RFC
 		const rfcValidation = validateRFC(formData.rfc, formData.personType);
@@ -115,11 +266,35 @@ export function ClientCreateView(): React.JSX.Element {
 			errors.rfc = rfcValidation.error;
 		}
 
-		// Validate CURP (only for physical persons)
+		// Validate CURP and cross-validate with names and birthdate (only for physical persons)
 		if (formData.personType === "physical" && formData.curp) {
 			const curpValidation = validateCURP(formData.curp);
 			if (!curpValidation.isValid) {
 				errors.curp = curpValidation.error;
+			} else {
+				// Cross-validate birthdate
+				if (formData.birthDate) {
+					const birthdateMatch = validateCURPBirthdateMatch(
+						formData.curp,
+						formData.birthDate,
+					);
+					if (!birthdateMatch.isValid) {
+						errors.birthDate = birthdateMatch.error;
+					}
+				}
+
+				// Cross-validate names
+				if (formData.firstName && formData.lastName) {
+					const nameMatch = validateCURPNameMatch(
+						formData.curp,
+						formData.firstName,
+						formData.lastName,
+						formData.secondLastName,
+					);
+					if (!nameMatch.isValid) {
+						Object.assign(errors, nameMatch.errors);
+					}
+				}
 			}
 		}
 
@@ -290,8 +465,16 @@ export function ClientCreateView(): React.JSX.Element {
 												handleInputChange("firstName", e.target.value)
 											}
 											placeholder="Juan"
+											className={
+												validationErrors.firstName ? "border-destructive" : ""
+											}
 											required
 										/>
+										{validationErrors.firstName && (
+											<p className="text-xs text-destructive">
+												{validationErrors.firstName}
+											</p>
+										)}
 									</div>
 									<div className="space-y-2">
 										<LabelWithInfo
@@ -308,8 +491,16 @@ export function ClientCreateView(): React.JSX.Element {
 												handleInputChange("lastName", e.target.value)
 											}
 											placeholder="Pérez"
+											className={
+												validationErrors.lastName ? "border-destructive" : ""
+											}
 											required
 										/>
+										{validationErrors.lastName && (
+											<p className="text-xs text-destructive">
+												{validationErrors.lastName}
+											</p>
+										)}
 									</div>
 									<div className="space-y-2">
 										<LabelWithInfo
@@ -325,7 +516,17 @@ export function ClientCreateView(): React.JSX.Element {
 												handleInputChange("secondLastName", e.target.value)
 											}
 											placeholder="García"
+											className={
+												validationErrors.secondLastName
+													? "border-destructive"
+													: ""
+											}
 										/>
+										{validationErrors.secondLastName && (
+											<p className="text-xs text-destructive">
+												{validationErrors.secondLastName}
+											</p>
+										)}
 									</div>
 								</div>
 								<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
@@ -344,8 +545,16 @@ export function ClientCreateView(): React.JSX.Element {
 											onChange={(e) =>
 												handleInputChange("birthDate", e.target.value)
 											}
+											className={
+												validationErrors.birthDate ? "border-destructive" : ""
+											}
 											required
 										/>
+										{validationErrors.birthDate && (
+											<p className="text-xs text-destructive">
+												{validationErrors.birthDate}
+											</p>
+										)}
 									</div>
 									<div className="space-y-2">
 										<LabelWithInfo
@@ -359,14 +568,7 @@ export function ClientCreateView(): React.JSX.Element {
 											id="curp"
 											value={formData.curp}
 											onChange={(e) => {
-												handleInputChange("curp", e.target.value);
-												// Clear error when user starts typing
-												if (validationErrors.curp) {
-													setValidationErrors((prev) => ({
-														...prev,
-														curp: undefined,
-													}));
-												}
+												handleInputChange("curp", e.target.value.toUpperCase());
 											}}
 											placeholder="PECJ850615HDFRRN09"
 											className={

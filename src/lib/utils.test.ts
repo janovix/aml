@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { validateRFC, validateCURP, validateVIN, cn } from "./utils";
+import {
+	validateRFC,
+	validateCURP,
+	validateVIN,
+	cn,
+	extractBirthdateFromCURP,
+	validateCURPNameMatch,
+	validateCURPBirthdateMatch,
+} from "./utils";
 
 describe("utils", () => {
 	describe("cn", () => {
@@ -220,6 +228,205 @@ describe("utils", () => {
 
 		it("validates RFC with Ñ character", () => {
 			const result = validateRFC("ÑBC850101AAA", "moral");
+			expect(result.isValid).toBe(true);
+		});
+	});
+
+	describe("extractBirthdateFromCURP", () => {
+		it("returns null for empty CURP", () => {
+			const result = extractBirthdateFromCURP("");
+			expect(result).toBeNull();
+		});
+
+		it("returns null for CURP that is too short", () => {
+			const result = extractBirthdateFromCURP("ABCD85");
+			expect(result).toBeNull();
+		});
+
+		it("extracts birthdate from valid CURP", () => {
+			const result = extractBirthdateFromCURP("ABCD850615HDFRRN09");
+			expect(result).toBe("1985-06-15");
+		});
+
+		it("extracts birthdate with year in 2000s", () => {
+			const result = extractBirthdateFromCURP("ABCD010615HDFRRN09");
+			expect(result).toBe("2001-06-15");
+		});
+
+		it("returns null for invalid month", () => {
+			const result = extractBirthdateFromCURP("ABCD851315HDFRRN09");
+			expect(result).toBeNull();
+		});
+
+		it("returns null for invalid day", () => {
+			const result = extractBirthdateFromCURP("ABCD850632HDFRRN09");
+			expect(result).toBeNull();
+		});
+
+		it("handles CURP with leading/trailing spaces", () => {
+			const result = extractBirthdateFromCURP("  ABCD850615HDFRRN09  ");
+			expect(result).toBe("1985-06-15");
+		});
+
+		it("handles lowercase CURP", () => {
+			const result = extractBirthdateFromCURP("abcd850615hdfrrn09");
+			expect(result).toBe("1985-06-15");
+		});
+	});
+
+	describe("validateCURPNameMatch", () => {
+		// CURP format: PECS850615HDFRRN09
+		// P = Pedro (first name)
+		// E = Espinosa (last name first letter)
+		// C = Castillo (second last name)
+		// S = Espinosa (first internal consonant after E)
+		it("returns valid for matching names", () => {
+			const result = validateCURPNameMatch(
+				"PECS850615HDFRRN09",
+				"Pedro",
+				"Espinosa",
+				"Castillo",
+			);
+			expect(result.isValid).toBe(true);
+			expect(Object.keys(result.errors)).toHaveLength(0);
+		});
+
+		it("returns error when first name initial doesn't match", () => {
+			const result = validateCURPNameMatch(
+				"PECS850615HDFRRN09",
+				"Juan",
+				"Espinosa",
+				"Castillo",
+			);
+			expect(result.isValid).toBe(false);
+			expect(result.errors.firstName).toContain("P");
+			expect(result.errors.firstName).toContain("J");
+		});
+
+		it("returns error when last name initial doesn't match", () => {
+			const result = validateCURPNameMatch(
+				"PECS850615HDFRRN09",
+				"Pedro",
+				"García",
+				"Castillo",
+			);
+			expect(result.isValid).toBe(false);
+			expect(result.errors.lastName).toContain("E");
+			expect(result.errors.lastName).toContain("G");
+		});
+
+		it("returns error when second last name initial doesn't match", () => {
+			const result = validateCURPNameMatch(
+				"PECS850615HDFRRN09",
+				"Pedro",
+				"Espinosa",
+				"García",
+			);
+			expect(result.isValid).toBe(false);
+			expect(result.errors.secondLastName).toContain("C");
+			expect(result.errors.secondLastName).toContain("G");
+		});
+
+		it("returns error when second last name is missing but CURP has one", () => {
+			const result = validateCURPNameMatch(
+				"PECS850615HDFRRN09",
+				"Pedro",
+				"Espinosa",
+			);
+			expect(result.isValid).toBe(false);
+			expect(result.errors.secondLastName).toContain("C");
+		});
+
+		it("returns valid when second last name is missing and CURP has X", () => {
+			// PEXS = Pedro Espinosa X (no second last name) S (consonant)
+			const result = validateCURPNameMatch(
+				"PEXS850615HDFRRN09",
+				"Pedro",
+				"Espinosa",
+			);
+			expect(result.isValid).toBe(true);
+		});
+
+		it("returns error when last name consonant doesn't match", () => {
+			// Using a CURP with different consonant
+			const result = validateCURPNameMatch(
+				"PECJ850615HDFRRN09", // J instead of S
+				"Pedro",
+				"Espinosa", // Has S as first consonant, not J
+				"Castillo",
+			);
+			expect(result.isValid).toBe(false);
+			expect(result.errors.lastName).toBeDefined();
+		});
+
+		it("handles names with special characters", () => {
+			// ÑECS = Ñoño Espinosa Castillo S
+			const result = validateCURPNameMatch(
+				"ÑECS850615HDFRRN09",
+				"Ñoño",
+				"Espinosa",
+				"Castillo",
+			);
+			expect(result.isValid).toBe(true);
+		});
+
+		it("returns valid for empty CURP (should not crash)", () => {
+			const result = validateCURPNameMatch("", "Pedro", "Espinosa");
+			expect(result.isValid).toBe(false);
+		});
+	});
+
+	describe("validateCURPBirthdateMatch", () => {
+		it("returns valid for matching birthdate", () => {
+			const result = validateCURPBirthdateMatch(
+				"ABCD850615HDFRRN09",
+				"1985-06-15",
+			);
+			expect(result.isValid).toBe(true);
+		});
+
+		it("returns error when birthdate doesn't match", () => {
+			const result = validateCURPBirthdateMatch(
+				"ABCD850615HDFRRN09",
+				"1985-06-20",
+			);
+			expect(result.isValid).toBe(false);
+			expect(result.error).toContain("no coincide");
+		});
+
+		it("returns error when year doesn't match", () => {
+			const result = validateCURPBirthdateMatch(
+				"ABCD850615HDFRRN09",
+				"1990-06-15",
+			);
+			expect(result.isValid).toBe(false);
+		});
+
+		it("returns error when month doesn't match", () => {
+			const result = validateCURPBirthdateMatch(
+				"ABCD850615HDFRRN09",
+				"1985-07-15",
+			);
+			expect(result.isValid).toBe(false);
+		});
+
+		it("returns error for invalid CURP", () => {
+			const result = validateCURPBirthdateMatch("ABCD85", "1985-06-15");
+			expect(result.isValid).toBe(false);
+			expect(result.error).toContain("inválido");
+		});
+
+		it("returns error for empty birthdate", () => {
+			const result = validateCURPBirthdateMatch("ABCD850615HDFRRN09", "");
+			expect(result.isValid).toBe(false);
+			expect(result.error).toContain("requerida");
+		});
+
+		it("handles year in 2000s", () => {
+			const result = validateCURPBirthdateMatch(
+				"ABCD010615HDFRRN09",
+				"2001-06-15",
+			);
 			expect(result.isValid).toBe(true);
 		});
 	});
