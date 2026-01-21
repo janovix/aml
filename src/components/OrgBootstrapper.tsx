@@ -130,19 +130,58 @@ interface OrgBootstrapperProps {
 		activeOrganizationId: string | null;
 	};
 }
+let hasHydratedOrgs = false;
 
 /**
- * OrgBootstrapper - Simplified organization context provider
- *
- * Responsibilities:
- * 1. Sync current org to Zustand store based on URL org slug
- * 2. Set activeOrganizationId in auth session when org is visited
- * 3. Fetch members for the current org
- * 4. Provide loading state while syncing
- *
- * Note: Org validation (access check) is handled by middleware.
- * Note: Org selection UI is handled by the index page.
+ * Reset hydration state - for testing only
  */
+export function resetOrgHydration() {
+	hasHydratedOrgs = false;
+}
+
+/**
+ * Hydrate the org store synchronously before first render.
+ * This must be called before any component reads from useOrgStore.
+ */
+function hydrateOrgStore(
+	initialOrganizations: OrgBootstrapperProps["initialOrganizations"],
+	urlOrgSlug: string | undefined,
+) {
+	if (
+		hasHydratedOrgs ||
+		typeof window === "undefined" ||
+		!initialOrganizations
+	) {
+		return;
+	}
+
+	const storeState = useOrgStore.getState();
+
+	// Only hydrate if store is empty
+	if (storeState.organizations.length === 0) {
+		const updates: {
+			organizations: Organization[];
+			currentOrg?: Organization;
+		} = {
+			organizations: initialOrganizations.organizations,
+		};
+
+		// If we have a URL org slug, also set currentOrg
+		if (urlOrgSlug) {
+			const targetOrg = initialOrganizations.organizations.find(
+				(org) => org.slug === urlOrgSlug,
+			);
+			if (targetOrg) {
+				updates.currentOrg = targetOrg;
+			}
+		}
+
+		useOrgStore.setState(updates);
+	}
+
+	hasHydratedOrgs = true;
+}
+
 export function OrgBootstrapper({
 	children,
 	initialOrganizations,
@@ -151,6 +190,10 @@ export function OrgBootstrapper({
 	const params = useParams();
 	const pathname = usePathname();
 	const urlOrgSlug = params?.orgSlug as string | undefined;
+
+	// SYNCHRONOUS HYDRATION: Must happen BEFORE useOrgStore hook reads state
+	// This uses a module-level function to ensure it only runs once
+	hydrateOrgStore(initialOrganizations, urlOrgSlug);
 
 	const {
 		currentOrg,
@@ -163,34 +206,7 @@ export function OrgBootstrapper({
 	} = useOrgStore();
 
 	const [isReady, setIsReady] = useState(false);
-	const hydrated = useRef(false);
 	const lastSyncedOrgRef = useRef<string | null | undefined>(null);
-
-	// SYNCHRONOUS HYDRATION: Set initial organizations before first render
-	// This prevents flash of empty state in sidebar org switcher
-	if (
-		!hydrated.current &&
-		typeof window !== "undefined" &&
-		initialOrganizations
-	) {
-		// Only hydrate if store is empty (avoid overwriting on re-render)
-		if (organizations.length === 0) {
-			useOrgStore.setState({
-				organizations: initialOrganizations.organizations,
-			});
-
-			// If we have a URL org slug, also set currentOrg synchronously
-			if (urlOrgSlug) {
-				const targetOrg = initialOrganizations.organizations.find(
-					(org) => org.slug === urlOrgSlug,
-				);
-				if (targetOrg) {
-					useOrgStore.setState({ currentOrg: targetOrg });
-				}
-			}
-		}
-		hydrated.current = true;
-	}
 
 	// Set current user ID from session
 	useEffect(() => {
