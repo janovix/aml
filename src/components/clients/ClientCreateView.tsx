@@ -243,6 +243,7 @@ export function ClientCreateView(): React.JSX.Element {
 				}
 			}
 
+			// Validate RFC when relevant fields change
 			if (
 				field === "rfc" ||
 				field === "firstName" ||
@@ -254,7 +255,14 @@ export function ClientCreateView(): React.JSX.Element {
 			) {
 				if (updated.rfc) {
 					const rfcValidation = validateRFC(updated.rfc, updated.personType);
-					if (rfcValidation.isValid) {
+					if (!rfcValidation.isValid) {
+						// Show format validation error
+						setValidationErrors((prev) => ({
+							...prev,
+							rfc: rfcValidation.error,
+						}));
+					} else {
+						// RFC format is valid, now check if it matches the provided data
 						const rfcMatch = validateRFCMatch(updated.rfc, updated.personType, {
 							firstName: updated.firstName,
 							lastName: updated.lastName,
@@ -268,6 +276,12 @@ export function ClientCreateView(): React.JSX.Element {
 							rfc: rfcMatch.isValid ? undefined : rfcMatch.error,
 						}));
 					}
+				} else {
+					// RFC is empty, clear any previous error (will be caught on submit)
+					setValidationErrors((prev) => ({
+						...prev,
+						rfc: undefined,
+					}));
 				}
 			}
 
@@ -677,14 +691,7 @@ export function ClientCreateView(): React.JSX.Element {
 								id="rfc"
 								value={formData.rfc}
 								onChange={(e) => {
-									handleInputChange("rfc", e.target.value);
-									// Clear error when user starts typing
-									if (validationErrors.rfc) {
-										setValidationErrors((prev) => ({
-											...prev,
-											rfc: undefined,
-										}));
-									}
+									handleInputChange("rfc", e.target.value.toUpperCase());
 								}}
 								className={`font-mono uppercase ${
 									validationErrors.rfc ? "border-destructive" : ""
