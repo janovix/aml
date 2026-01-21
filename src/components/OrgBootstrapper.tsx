@@ -13,8 +13,6 @@ import { tokenCache } from "@/lib/auth/tokenCache";
 import type { Organization } from "@/lib/org-store";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PageHeroSkeleton } from "@/components/skeletons/page-hero-skeleton";
-import { TableSkeleton } from "@/components/skeletons/table-skeleton";
 import { getViewSkeleton } from "@/lib/view-skeletons";
 
 // Must match the cookie name in sidebar.tsx
@@ -156,6 +154,7 @@ export function OrgBootstrapper({
 
 	const {
 		currentOrg,
+		organizations,
 		setCurrentOrg,
 		setOrganizations,
 		setMembers,
@@ -164,8 +163,34 @@ export function OrgBootstrapper({
 	} = useOrgStore();
 
 	const [isReady, setIsReady] = useState(false);
-	const initRef = useRef(false);
+	const hydrated = useRef(false);
 	const lastSyncedOrgRef = useRef<string | null | undefined>(null);
+
+	// SYNCHRONOUS HYDRATION: Set initial organizations before first render
+	// This prevents flash of empty state in sidebar org switcher
+	if (
+		!hydrated.current &&
+		typeof window !== "undefined" &&
+		initialOrganizations
+	) {
+		// Only hydrate if store is empty (avoid overwriting on re-render)
+		if (organizations.length === 0) {
+			useOrgStore.setState({
+				organizations: initialOrganizations.organizations,
+			});
+
+			// If we have a URL org slug, also set currentOrg synchronously
+			if (urlOrgSlug) {
+				const targetOrg = initialOrganizations.organizations.find(
+					(org) => org.slug === urlOrgSlug,
+				);
+				if (targetOrg) {
+					useOrgStore.setState({ currentOrg: targetOrg });
+				}
+			}
+		}
+		hydrated.current = true;
+	}
 
 	// Set current user ID from session
 	useEffect(() => {
@@ -177,12 +202,8 @@ export function OrgBootstrapper({
 	// Initialize and sync org on mount or when URL org changes
 	useEffect(() => {
 		// No org slug in URL (index page for org selection)
-		// Still populate the store with initial organizations so index page can use them
+		// Organizations already hydrated synchronously above
 		if (!urlOrgSlug) {
-			if (initialOrganizations && !initRef.current) {
-				initRef.current = true;
-				setOrganizations(initialOrganizations.organizations);
-			}
 			setIsReady(true);
 			return;
 		}
@@ -195,17 +216,13 @@ export function OrgBootstrapper({
 		async function syncOrg() {
 			setLoading(true);
 
-			// Use initial data if available (first load)
-			let orgs: Organization[];
-			let activeOrgId: string | null = null;
+			// Use initial data if available (first load) - already hydrated synchronously
+			let orgs: Organization[] = useOrgStore.getState().organizations;
+			let activeOrgId: string | null =
+				initialOrganizations?.activeOrganizationId ?? null;
 
-			if (initialOrganizations && !initRef.current) {
-				initRef.current = true;
-				orgs = initialOrganizations.organizations;
-				activeOrgId = initialOrganizations.activeOrganizationId;
-				setOrganizations(orgs);
-			} else {
-				// Fetch organizations
+			// If no orgs in store, fetch from API
+			if (orgs.length === 0) {
 				const result = await listOrganizations();
 				if (result.error || !result.data) {
 					toast.error("Error loading organizations", {
