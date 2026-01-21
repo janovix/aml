@@ -1,3 +1,11 @@
+# [1.4.0-rc.3](https://github.com/janovix/aml/compare/v1.4.0-rc.2...v1.4.0-rc.3) (2026-01-21)
+
+
+### Features
+
+* **middleware:** update root path redirection to active organization's dashboard with fallback to index page ([bd6a580](https://github.com/janovix/aml/commit/bd6a580dd6ba8b3290382564827c6e8c55a1bf2d))
+* **OrgBootstrapper:** implement client-side organization fetching for index page when store is empty ([0ccbc8f](https://github.com/janovix/aml/commit/0ccbc8f6c84a5eb0ecefc7a77a61c19cd1e8a056))
+
 # [1.4.0-rc.2](https://github.com/janovix/aml/compare/v1.4.0-rc.1...v1.4.0-rc.2) (2026-01-21)
 
 
