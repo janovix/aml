@@ -217,32 +217,10 @@ export function OrgBootstrapper({
 
 	// Initialize and sync org on mount or when URL org changes
 	useEffect(() => {
-		// No org slug in URL (index page for org selection)
+		// No org slug in URL - this is the fallback index page (rarely reached)
+		// Middleware should redirect to /{orgSlug}, but if we reach here, just mark ready
 		if (!urlOrgSlug) {
-			// If store already has orgs (from server hydration), we're ready
-			const storeOrgs = useOrgStore.getState().organizations;
-			if (storeOrgs.length > 0) {
-				setIsReady(true);
-				return;
-			}
-
-			// Store is empty - need to fetch client-side
-			// This happens when server-side fetch failed (e.g., redirect from auth app)
-			async function fetchOrgsForIndexPage() {
-				setLoading(true);
-				const result = await listOrganizations();
-				if (result.error || !result.data) {
-					toast.error("Error loading organizations", {
-						description: result.error || "Please try again later.",
-					});
-				} else {
-					setOrganizations(result.data.organizations);
-				}
-				setLoading(false);
-				setIsReady(true);
-			}
-
-			fetchOrgsForIndexPage();
+			setIsReady(true);
 			return;
 		}
 
@@ -333,14 +311,8 @@ export function OrgBootstrapper({
 		isReady,
 	]);
 
-	// Show loading skeleton while syncing
-	// When no org slug in URL (index page), don't block on currentOrg - index handles org selection
-	if (!isReady) {
-		return <AppSkeletonWithView pathname={pathname || "/"} />;
-	}
-
-	// Only require currentOrg when we have an org slug in URL
-	if (urlOrgSlug && !currentOrg) {
+	// Show loading skeleton while syncing org
+	if (!isReady || (urlOrgSlug && !currentOrg)) {
 		return <AppSkeletonWithView pathname={pathname || "/"} />;
 	}
 

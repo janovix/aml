@@ -100,22 +100,9 @@ export const translations = {
 		orgSwitching: "Cambiando organización...",
 		orgSwitchSuccess: "ahora está activa.",
 		orgCreateSuccess: "ha sido creada y está activa.",
-		// Organization Selection
-		orgSelectTitle: "Seleccionar una organización",
-		orgSelectDescription: "Elige con qué organización quieres trabajar",
-		orgSelectFailed: "Error al seleccionar la organización",
-		orgCreateFirstTitle: "Crea tu primera organización",
-		orgCreateFirstDescription:
-			"Necesitas al menos una organización para continuar. Crea tu primera organización para comenzar.",
-		orgNameLabel: "Nombre",
-		orgSlugLabel: "Slug (identificador de URL)",
-		orgCreateButton: "Crear organización",
-		orgErrorKicked: "Has sido removido de esa organización",
-		orgErrorDeleted: "Esa organización ya no existe",
-		orgErrorInvalid: "Organización inválida",
-		orgErrorAccessDenied: "No tienes acceso a esa organización",
-		orgErrorLoading: "Error al cargar organizaciones",
-		orgErrorLoadingDesc: "Por favor, intenta de nuevo más tarde.",
+
+		// Redirect fallback
+		redirecting: "Redirigiendo...",
 
 		// Theme
 		themeLabel: "Tema",
@@ -786,22 +773,9 @@ export const translations = {
 		orgSwitching: "Switching organization...",
 		orgSwitchSuccess: "is now active.",
 		orgCreateSuccess: "has been created and is now active.",
-		// Organization Selection
-		orgSelectTitle: "Select an organization",
-		orgSelectDescription: "Choose which organization you want to work with",
-		orgSelectFailed: "Failed to select organization",
-		orgCreateFirstTitle: "Create your first organization",
-		orgCreateFirstDescription:
-			"You need at least one organization to continue. Create your first one to get started.",
-		orgNameLabel: "Name",
-		orgSlugLabel: "Slug (URL identifier)",
-		orgCreateButton: "Create organization",
-		orgErrorKicked: "You've been removed from that organization",
-		orgErrorDeleted: "That organization no longer exists",
-		orgErrorInvalid: "Invalid organization",
-		orgErrorAccessDenied: "You don't have access to that organization",
-		orgErrorLoading: "Error loading organizations",
-		orgErrorLoadingDesc: "Please try again later.",
+
+		// Redirect fallback
+		redirecting: "Redirecting...",
 
 		// Theme
 		themeLabel: "Theme",
