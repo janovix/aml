@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { useState, useEffect } from "react";
 import { ImportProgress } from "./ImportProgress";
 import { RowStatusTable } from "./RowStatusTable";
@@ -118,7 +119,13 @@ export function ImportViewContent({ importId }: ImportViewContentProps) {
 						: null,
 				});
 			} catch (err) {
-				console.error("Failed to load import:", err);
+				Sentry.captureException(err, {
+					tags: { feature: "import", action: "loadImport" },
+					extra: { importId },
+				});
+				Sentry.logger.error(
+					`Failed to load import ${importId}: ${err instanceof Error ? err.message : String(err)}`,
+				);
 				setState((prev) => ({
 					...prev,
 					status: "failed",

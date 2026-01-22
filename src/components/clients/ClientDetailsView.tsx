@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { useState, useEffect } from "react";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -84,14 +85,17 @@ export function ClientDetailsView({
 				});
 				setClient(data);
 			} catch (error) {
-				console.error("Error fetching client:", error);
+				Sentry.captureException(error, {
+					tags: { feature: "clients" },
+					extra: { clientId },
+				});
 				toast.error(extractErrorMessage(error));
 			} finally {
 				setIsLoading(false);
 			}
 		};
 		fetchClient();
-	}, [clientId, toast]);
+	}, [clientId]);
 
 	if (isLoading) {
 		return <ClientDetailsSkeleton />;
@@ -287,7 +291,7 @@ export function ClientDetailsView({
 								</dt>
 								<dd className="text-base">{client.phone}</dd>
 							</div>
-							<div className="md:col-span-2">
+							<div className="@md/main:col-span-2">
 								<dt className="text-sm font-medium text-muted-foreground mb-1 flex items-center gap-2">
 									<MapPin className="h-4 w-4" />
 									{t("clientAddressInfo")}

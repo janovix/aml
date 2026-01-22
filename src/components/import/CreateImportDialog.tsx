@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { useState, useCallback } from "react";
 import {
 	Dialog,
@@ -45,19 +46,42 @@ export function CreateImportDialog({
 			setIsUploading(true);
 			setError(null);
 
-			try {
-				const result = await createImport({ file, entityType, jwt });
+			await Sentry.startSpan(
+				{
+					op: "import.create",
+					name: "createImport API call",
+					attributes: {
+						"file.size": file.size,
+						"file.type": file.type,
+						entityType,
+					},
+				},
+				async (span) => {
+					try {
+						const result = await createImport({ file, entityType, jwt });
+						span.setStatus({ code: 1, message: "ok" });
 
-				// Close dialog and navigate to the import view
-				onOpenChange(false);
-				onSuccess?.();
-				navigateTo(`/import/${result.data.id}`);
-			} catch (err) {
-				const errorMessage =
-					err instanceof Error ? err.message : "Error desconocido";
-				setError(errorMessage);
-				setIsUploading(false);
-			}
+						// Close dialog and navigate to the import view
+						onOpenChange(false);
+						onSuccess?.();
+						navigateTo(`/import/${result.data.id}`);
+					} catch (err) {
+						span.setStatus({ code: 2, message: "error" });
+						Sentry.captureException(err, {
+							tags: { feature: "import" },
+							extra: { entityType, fileSize: file.size, fileType: file.type },
+						});
+						Sentry.logger.error(
+							`createImport failed: ${err instanceof Error ? err.message : String(err)}`,
+						);
+
+						const errorMessage =
+							err instanceof Error ? err.message : "Error desconocido";
+						setError(errorMessage);
+						setIsUploading(false);
+					}
+				},
+			);
 		},
 		[jwt, navigateTo, onOpenChange, onSuccess],
 	);

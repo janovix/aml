@@ -77,6 +77,21 @@ const INITIAL_CLIENT_FORM_DATA: ClientFormData = {
 	notes: "",
 };
 
+// Non-PII fields that are safe to persist in session storage
+// PII fields (name, email, phone, address, birthDate, CURP, RFC, nationality) are excluded
+type NonPiiFormData = Pick<
+	ClientFormData,
+	"personType" | "stateCode" | "city" | "municipality" | "postalCode"
+>;
+
+const INITIAL_NON_PII_FORM_DATA: NonPiiFormData = {
+	personType: "moral",
+	stateCode: "",
+	city: "",
+	municipality: "",
+	postalCode: "",
+};
+
 export function ClientCreateView(): React.JSX.Element {
 	const { t } = useLanguage();
 	const { navigateTo, orgPath } = useOrgNavigation();
@@ -84,11 +99,41 @@ export function ClientCreateView(): React.JSX.Element {
 	const returnUrl = searchParams.get("returnUrl");
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	const [formData, setFormData, clearFormStorage] =
-		useSessionStorageForm<ClientFormData>(
-			"client_create",
-			INITIAL_CLIENT_FORM_DATA,
+	// Only persist non-PII fields in session storage for privacy/AML compliance
+	const [nonPiiData, setNonPiiData, clearNonPiiStorage] =
+		useSessionStorageForm<NonPiiFormData>(
+			"client_create_draft",
+			INITIAL_NON_PII_FORM_DATA,
 		);
+
+	// Full form data kept in regular state (not persisted)
+	const [formData, setFormData] = useState<ClientFormData>(() => ({
+		...INITIAL_CLIENT_FORM_DATA,
+		...nonPiiData,
+	}));
+
+	// Sync non-PII fields to session storage when they change
+	const updateFormData = (
+		updater: (prev: ClientFormData) => ClientFormData,
+	) => {
+		setFormData((prev) => {
+			const next = updater(prev);
+			// Update non-PII session storage
+			setNonPiiData({
+				personType: next.personType,
+				stateCode: next.stateCode,
+				city: next.city,
+				municipality: next.municipality,
+				postalCode: next.postalCode,
+			});
+			return next;
+		});
+	};
+
+	const clearFormStorage = () => {
+		clearNonPiiStorage();
+		setFormData(INITIAL_CLIENT_FORM_DATA);
+	};
 
 	const [validationErrors, setValidationErrors] = useState<{
 		rfc?: string;
@@ -100,7 +145,7 @@ export function ClientCreateView(): React.JSX.Element {
 		field: keyof ClientFormData,
 		value: string,
 	): void => {
-		setFormData((prev) => ({ ...prev, [field]: value }));
+		updateFormData((prev) => ({ ...prev, [field]: value }));
 	};
 
 	const handleSubmit = async (e: React.FormEvent): Promise<void> => {

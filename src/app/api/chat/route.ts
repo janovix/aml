@@ -89,8 +89,9 @@ export async function POST(request: Request) {
 		const hasTools = Object.keys(tools).length > 0;
 
 		// Build system prompt with file context if present
+		// Only include processImport instructions when the tool is actually registered (requires both fileUpload and jwt)
 		let systemPrompt = SYSTEM_PROMPT;
-		if (fileUpload) {
+		if (fileUpload && jwt) {
 			systemPrompt += `\n\n## Current File Upload
 A user has uploaded a file for import:
 - **File name**: ${fileUpload.fileName}

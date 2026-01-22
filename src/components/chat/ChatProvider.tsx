@@ -8,6 +8,7 @@
  * Passes JWT token for authenticated API calls (data tools).
  */
 
+import * as Sentry from "@sentry/nextjs";
 import {
 	createContext,
 	useContext,
@@ -325,6 +326,15 @@ export function ChatProvider({ children }: ChatProviderProps) {
 				}
 			} catch (err) {
 				if (err instanceof Error && err.name !== "AbortError") {
+					// Report to Sentry for observability
+					Sentry.captureException(err, {
+						tags: { feature: "chat" },
+						extra: {
+							model: selectedModel,
+							hasFile: !!pendingFile,
+							messageCount: messages.length,
+						},
+					});
 					setError(err);
 					// Remove the empty assistant message if there was an error
 					setMessages((prev) =>

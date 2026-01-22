@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { useCallback, useEffect, useState } from "react";
 import { ClientsTable } from "@/components/clients/ClientsTable";
@@ -37,37 +38,54 @@ export function ClientsPageContent(): React.ReactElement {
 			return;
 		}
 
-		try {
-			setIsLoading(true);
-			const data = await getClientStats({ jwt });
-			setStats(data);
-		} catch (error) {
-			// Silently handle org-required errors - this can happen during org switching
-			if (isOrganizationRequiredError(error)) {
-				console.debug(
-					"[ClientsPageContent] Organization required error - org may be syncing",
-				);
-				return;
-			}
+		await Sentry.startSpan(
+			{ op: "http.client", name: "GET /api/clients/stats" },
+			async (span) => {
+				try {
+					setIsLoading(true);
+					const data = await getClientStats({ jwt });
+					setStats(data);
+					span.setStatus({ code: 1, message: "ok" });
+				} catch (error) {
+					span.setStatus({ code: 2, message: "error" });
 
-			if (error instanceof ApiError) {
-				console.error(
-					"[ClientsPageContent] API error fetching client stats:",
-					`status=${error.status}`,
-					`message=${error.message}`,
-					"body=",
-					error.body,
-				);
-			} else {
-				console.error(
-					"[ClientsPageContent] Error fetching client stats:",
-					error instanceof Error ? error.message : error,
-				);
-			}
-			toast.error(extractErrorMessage(error));
-		} finally {
-			setIsLoading(false);
-		}
+					// Silently handle org-required errors - this can happen during org switching
+					if (isOrganizationRequiredError(error)) {
+						Sentry.logger.debug(
+							"[ClientsPageContent] Organization required error - org may be syncing",
+						);
+						return;
+					}
+
+					// Capture exception to Sentry
+					Sentry.captureException(error, {
+						tags: { feature: "clients", action: "fetchStats" },
+						extra:
+							error instanceof ApiError
+								? {
+										status: error.status,
+										message: error.message,
+										body: error.body,
+									}
+								: undefined,
+					});
+
+					if (error instanceof ApiError) {
+						Sentry.logger.error(
+							`[ClientsPageContent] API error fetching client stats: status=${error.status} message=${error.message}`,
+						);
+					} else {
+						Sentry.logger.error(
+							`[ClientsPageContent] Error fetching client stats: ${error instanceof Error ? error.message : error}`,
+						);
+					}
+
+					toast.error(extractErrorMessage(error));
+				} finally {
+					setIsLoading(false);
+				}
+			},
+		);
 	}, [jwt]);
 
 	useEffect(() => {

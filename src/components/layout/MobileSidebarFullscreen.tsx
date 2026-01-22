@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { motion, AnimatePresence, type PanInfo } from "motion/react";
+import { FocusScope } from "@radix-ui/react-focus-scope";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/components/LanguageProvider";
@@ -113,6 +114,8 @@ export function MobileSidebarFullscreen({
 	bottomContent,
 }: MobileSidebarFullscreenProps) {
 	const { t } = useLanguage();
+	// Store the element that triggered the open to restore focus on close
+	const triggerRef = React.useRef<Element | null>(null);
 
 	// Gesture thresholds
 	const SWIPE_THRESHOLD = 100; // px
@@ -130,20 +133,43 @@ export function MobileSidebarFullscreen({
 		[onOpenChange],
 	);
 
-	// Prevent body scroll when open and add class for dropdown styling
+	// Save trigger element when opening and restore focus when closing
 	React.useEffect(() => {
 		if (open) {
+			// Save the currently focused element
+			triggerRef.current = document.activeElement;
 			document.body.style.overflow = "hidden";
 			document.body.classList.add("mobile-sidebar-open");
 		} else {
 			document.body.style.overflow = "";
 			document.body.classList.remove("mobile-sidebar-open");
+			// Restore focus to trigger element
+			if (triggerRef.current && triggerRef.current instanceof HTMLElement) {
+				triggerRef.current.focus();
+			}
 		}
 		return () => {
 			document.body.style.overflow = "";
 			document.body.classList.remove("mobile-sidebar-open");
 		};
 	}, [open]);
+
+	// Handle Escape key to close the sidebar
+	React.useEffect(() => {
+		if (!open) return;
+
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.key === "Escape") {
+				event.preventDefault();
+				onOpenChange(false);
+			}
+		};
+
+		document.addEventListener("keydown", handleKeyDown);
+		return () => {
+			document.removeEventListener("keydown", handleKeyDown);
+		};
+	}, [open, onOpenChange]);
 
 	return (
 		<AnimatePresence mode="wait">
@@ -183,96 +209,98 @@ export function MobileSidebarFullscreen({
 						aria-modal="true"
 						aria-label={t("mobileSidebarNavigation")}
 					>
-						{/* Aurora background */}
-						<AuroraBackground />
+						<FocusScope trapped loop>
+							{/* Aurora background */}
+							<AuroraBackground />
 
-						{/* Content container */}
-						<div className="relative flex h-full flex-col">
-							{/* Fixed header - App switcher + close button */}
-							<header className="shrink-0 border-b border-white/20 bg-background/90 backdrop-blur-xl">
-								<div className="flex h-18 items-center justify-between px-5">
-									<AppSwitcher variant="mobile-fullscreen" />
+							{/* Content container */}
+							<div className="relative flex h-full flex-col">
+								{/* Fixed header - App switcher + close button */}
+								<header className="shrink-0 border-b border-white/20 bg-background/90 backdrop-blur-xl">
+									<div className="flex h-18 items-center justify-between px-5">
+										<AppSwitcher variant="mobile-fullscreen" />
 
-									<button
-										onClick={() => onOpenChange(false)}
+										<button
+											onClick={() => onOpenChange(false)}
+											className={cn(
+												"flex size-12 items-center justify-center rounded-2xl",
+												"bg-white/10 text-foreground/80 transition-all duration-200",
+												"border border-white/15",
+												"hover:bg-white/20 hover:text-foreground hover:scale-105",
+												"active:scale-95 active:bg-white/25",
+												"focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+												"shadow-lg shadow-black/10",
+											)}
+											aria-label={t("mobileSidebarClose")}
+										>
+											<X className="size-6" />
+										</button>
+									</div>
+								</header>
+
+								{/* Fixed top: Org Switcher */}
+								{topContent && (
+									<div
 										className={cn(
-											"flex size-12 items-center justify-center rounded-2xl",
-											"bg-white/10 text-foreground/80 transition-all duration-200",
-											"border border-white/15",
-											"hover:bg-white/20 hover:text-foreground hover:scale-105",
-											"active:scale-95 active:bg-white/25",
-											"focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
-											"shadow-lg shadow-black/10",
+											"shrink-0 px-4 py-2",
+											// Style the org switcher menu button
+											"[&_[data-sidebar=menu-button]]:min-h-14 [&_[data-sidebar=menu-button]]:text-base",
+											"[&_[data-sidebar=menu-button]]:rounded-xl [&_[data-sidebar=menu-button]]:px-3",
+											"[&_[data-sidebar=menu-button]_svg]:size-5",
+											// Remove extra padding from the org switcher wrapper
+											"[&>div]:p-0 [&>div]:border-0",
+											// Ensure dropdowns appear above sidebar
+											"[&_[data-radix-popper-content-wrapper]]:z-[200]",
 										)}
-										aria-label={t("mobileSidebarClose")}
+										data-mobile-section="top"
 									>
-										<X className="size-6" />
-									</button>
-								</div>
-							</header>
-
-							{/* Fixed top: Org Switcher */}
-							{topContent && (
-								<div
-									className={cn(
-										"shrink-0 px-4 py-2",
-										// Style the org switcher menu button
-										"[&_[data-sidebar=menu-button]]:min-h-14 [&_[data-sidebar=menu-button]]:text-base",
-										"[&_[data-sidebar=menu-button]]:rounded-xl [&_[data-sidebar=menu-button]]:px-3",
-										"[&_[data-sidebar=menu-button]_svg]:size-5",
-										// Remove extra padding from the org switcher wrapper
-										"[&>div]:p-0 [&>div]:border-0",
-										// Ensure dropdowns appear above sidebar
-										"[&_[data-radix-popper-content-wrapper]]:z-[200]",
-									)}
-									data-mobile-section="top"
-								>
-									{topContent}
-								</div>
-							)}
-
-							{/* Scrollable middle: Navigation groups */}
-							<div
-								className={cn(
-									"flex-1 overflow-y-auto overscroll-contain px-4 py-2 mobile-sidebar-fullscreen",
-									// Mobile-optimized styles for larger touch targets
-									"[&_[data-sidebar=menu-button]]:min-h-14 [&_[data-sidebar=menu-button]]:text-base [&_[data-sidebar=menu-button]]:py-3",
-									"[&_[data-sidebar=menu-button]]:rounded-xl [&_[data-sidebar=menu-button]]:px-3 [&_[data-sidebar=menu-button]]:my-0.5",
-									"[&_[data-sidebar=menu-button][data-active=true]]:bg-white/15 [&_[data-sidebar=menu-button][data-active=true]]:border [&_[data-sidebar=menu-button][data-active=true]]:border-white/20",
-									"[&_[data-sidebar=menu-button]_svg]:size-5",
-									// Group styling with dividers
-									"[&_[data-sidebar=group]]:py-3 [&_[data-sidebar=group]]:px-0",
-									"[&_[data-sidebar=group]]:border-b [&_[data-sidebar=group]]:border-white/10",
-									"[&_[data-sidebar=group]:last-child]:border-b-0",
-									// Label alignment - match menu button padding (px-3 + icon width + gap)
-									"[&_[data-sidebar=group-label]]:text-sm [&_[data-sidebar=group-label]]:px-3 [&_[data-sidebar=group-label]]:opacity-70 [&_[data-sidebar=group-label]]:mb-1",
-									"[&_[data-sidebar=separator]]:my-2 [&_[data-sidebar=separator]]:bg-white/10",
-									"[&_[data-sidebar=content]]:gap-1",
-									// Ensure dropdowns appear above sidebar
-									"[&_[data-radix-popper-content-wrapper]]:z-[200]",
+										{topContent}
+									</div>
 								)}
-							>
-								{children}
-							</div>
 
-							{/* Fixed bottom: Language, Theme, User */}
-							{bottomContent && (
+								{/* Scrollable middle: Navigation groups */}
 								<div
 									className={cn(
-										"shrink-0 border-t border-white/10 bg-background/50 backdrop-blur-xl px-4 py-3",
-										// Style footer elements
-										"[&_[data-sidebar=menu-button]]:min-h-14 [&_[data-sidebar=menu-button]]:text-base",
-										"[&_[data-sidebar=menu-button]]:rounded-xl [&_[data-sidebar=menu-button]]:px-3 [&_[data-sidebar=menu-button]]:my-1",
+										"flex-1 overflow-y-auto overscroll-contain px-4 py-2 mobile-sidebar-fullscreen",
+										// Mobile-optimized styles for larger touch targets
+										"[&_[data-sidebar=menu-button]]:min-h-14 [&_[data-sidebar=menu-button]]:text-base [&_[data-sidebar=menu-button]]:py-3",
+										"[&_[data-sidebar=menu-button]]:rounded-xl [&_[data-sidebar=menu-button]]:px-3 [&_[data-sidebar=menu-button]]:my-0.5",
+										"[&_[data-sidebar=menu-button][data-active=true]]:bg-white/15 [&_[data-sidebar=menu-button][data-active=true]]:border [&_[data-sidebar=menu-button][data-active=true]]:border-white/20",
 										"[&_[data-sidebar=menu-button]_svg]:size-5",
+										// Group styling with dividers
+										"[&_[data-sidebar=group]]:py-3 [&_[data-sidebar=group]]:px-0",
+										"[&_[data-sidebar=group]]:border-b [&_[data-sidebar=group]]:border-white/10",
+										"[&_[data-sidebar=group]:last-child]:border-b-0",
+										// Label alignment - match menu button padding (px-3 + icon width + gap)
+										"[&_[data-sidebar=group-label]]:text-sm [&_[data-sidebar=group-label]]:px-3 [&_[data-sidebar=group-label]]:opacity-70 [&_[data-sidebar=group-label]]:mb-1",
+										"[&_[data-sidebar=separator]]:my-2 [&_[data-sidebar=separator]]:bg-white/10",
+										"[&_[data-sidebar=content]]:gap-1",
 										// Ensure dropdowns appear above sidebar
 										"[&_[data-radix-popper-content-wrapper]]:z-[200]",
 									)}
-									data-mobile-section="bottom"
 								>
-									{bottomContent}
+									{children}
 								</div>
-							)}
-						</div>
+
+								{/* Fixed bottom: Language, Theme, User */}
+								{bottomContent && (
+									<div
+										className={cn(
+											"shrink-0 border-t border-white/10 bg-background/50 backdrop-blur-xl px-4 py-3",
+											// Style footer elements
+											"[&_[data-sidebar=menu-button]]:min-h-14 [&_[data-sidebar=menu-button]]:text-base",
+											"[&_[data-sidebar=menu-button]]:rounded-xl [&_[data-sidebar=menu-button]]:px-3 [&_[data-sidebar=menu-button]]:my-1",
+											"[&_[data-sidebar=menu-button]_svg]:size-5",
+											// Ensure dropdowns appear above sidebar
+											"[&_[data-radix-popper-content-wrapper]]:z-[200]",
+										)}
+										data-mobile-section="bottom"
+									>
+										{bottomContent}
+									</div>
+								)}
+							</div>
+						</FocusScope>
 					</motion.div>
 				</>
 			)}

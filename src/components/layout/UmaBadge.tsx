@@ -98,9 +98,11 @@ export function UmaBadge({
 	return (
 		<Popover>
 			<PopoverTrigger asChild>
-				<div
+				<button
+					type="button"
 					className={cn(
 						"inline-flex items-center rounded-lg bg-muted/50 border border-border/50 hover:bg-muted/70 transition-all cursor-pointer select-none active:scale-[0.97] px-2 py-1",
+						"focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
 						className,
 					)}
 					title={t("dashboardUmaClickForInfo")}
@@ -108,7 +110,7 @@ export function UmaBadge({
 					<span className="text-xs font-semibold tabular-nums tracking-tight text-foreground">
 						{formatNumber(dailyValue)}
 					</span>
-				</div>
+				</button>
 			</PopoverTrigger>
 
 			<PopoverContent side="bottom" align="end" className="w-64 p-3">

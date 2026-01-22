@@ -8,6 +8,12 @@ import {
 } from "@/lib/org-store";
 import { act, renderHook } from "@testing-library/react";
 
+// Mock Sentry
+const mockSentryCaptureException = vi.fn();
+vi.mock("@sentry/nextjs", () => ({
+	captureException: (...args: unknown[]) => mockSentryCaptureException(...args),
+}));
+
 // Mock zustand persist middleware
 vi.mock("zustand/middleware", async (importOriginal) => {
 	const actual = (await importOriginal()) as Record<string, unknown>;
@@ -388,8 +394,8 @@ describe("OrgBootstrapper", () => {
 		expect(storeState.members).toHaveLength(1);
 	});
 
-	it("handles sync error gracefully and still renders children", async () => {
-		const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+	it("handles sync error by showing skeleton and capturing to Sentry", async () => {
+		mockSentryCaptureException.mockClear();
 
 		mockListOrganizations.mockResolvedValue({
 			data: {
@@ -409,16 +415,27 @@ describe("OrgBootstrapper", () => {
 			</OrgBootstrapper>,
 		);
 
+		// When sync fails, the component shows a skeleton instead of children
+		// because currentOrg is not set when sync fails
 		await waitFor(() => {
-			expect(screen.getByText("Children Content")).toBeInTheDocument();
+			expect(mockSentryCaptureException).toHaveBeenCalledWith(
+				expect.any(Error),
+				expect.objectContaining({
+					tags: { feature: "org-bootstrap" },
+					extra: expect.objectContaining({
+						targetOrgId: mockOrganization.id,
+						targetOrgSlug: mockOrganization.slug,
+					}),
+				}),
+			);
 		});
 
-		expect(consoleSpy).toHaveBeenCalledWith(
-			expect.stringContaining("[OrgBootstrapper] Failed to sync active org:"),
-			expect.any(String),
-		);
+		// Children should NOT be rendered when sync fails
+		expect(screen.queryByText("Children Content")).not.toBeInTheDocument();
 
-		consoleSpy.mockRestore();
+		// Skeleton should be shown instead
+		const skeletons = screen.getAllByTestId("skeleton");
+		expect(skeletons.length).toBeGreaterThan(0);
 	});
 
 	it("logs warning when org from URL is not found", async () => {

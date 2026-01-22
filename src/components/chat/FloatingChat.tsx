@@ -162,16 +162,22 @@ export function FloatingChat({ className }: FloatingChatProps) {
 	const [mode, setMode] = useState<ChatMode>("floating");
 	const [isMobile, setIsMobile] = useState(false);
 	const [mounted, setMounted] = useState(false);
+	// Store window dimensions in state to avoid SSR/hydration issues
+	const [windowSize, setWindowSize] = useState({ width: 1024, height: 768 });
 
-	// Check if mobile on mount and resize
+	// Check if mobile on mount and resize, also track window size
 	useEffect(() => {
 		setMounted(true);
-		function checkMobile() {
+		function handleResize() {
 			setIsMobile(window.innerWidth < MD_BREAKPOINT);
+			setWindowSize({
+				width: window.innerWidth,
+				height: window.innerHeight,
+			});
 		}
-		checkMobile();
-		window.addEventListener("resize", checkMobile);
-		return () => window.removeEventListener("resize", checkMobile);
+		handleResize();
+		window.addEventListener("resize", handleResize);
+		return () => window.removeEventListener("resize", handleResize);
 	}, []);
 
 	// Load mode preference on mount
@@ -216,8 +222,9 @@ export function FloatingChat({ className }: FloatingChatProps) {
 	}
 
 	// Desktop: floating button + panel OR sidebar
-	const chatWidth = Math.min(CHAT_WIDTH, window.innerWidth - 32);
-	const chatHeight = Math.min(CHAT_HEIGHT, window.innerHeight - 32);
+	// Use state-derived window dimensions to avoid SSR issues
+	const chatWidth = Math.min(CHAT_WIDTH, windowSize.width - 32);
+	const chatHeight = Math.min(CHAT_HEIGHT, windowSize.height - 32);
 
 	return (
 		<>
@@ -288,7 +295,7 @@ export function FloatingChat({ className }: FloatingChatProps) {
 									height: chatHeight,
 								}
 							: {
-									width: Math.min(420, window.innerWidth * 0.35),
+									width: Math.min(420, windowSize.width * 0.35),
 								}
 					}
 					role="complementary"

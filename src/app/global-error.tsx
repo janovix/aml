@@ -1,7 +1,7 @@
 "use client";
 
 import * as Sentry from "@sentry/nextjs";
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Home, RefreshCcw, ServerCrash } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,29 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
 	useEffect(() => {
 		Sentry.captureException(error);
 	}, [error]);
+
+	const handleRetry = useCallback(() => {
+		Sentry.startSpan(
+			{
+				op: "ui.click",
+				name: "global-error.retry",
+				attributes: {
+					action: "retry",
+					component: "GlobalError",
+					errorDigest: error.digest ?? "unknown",
+				},
+			},
+			() => {
+				try {
+					reset();
+				} catch (retryError) {
+					Sentry.captureException(retryError);
+					throw retryError;
+				}
+			},
+		);
+	}, [reset, error.digest]);
+
 	return (
 		<html>
 			<body className="min-h-screen bg-linear-to-br from-background to-muted/50">
@@ -43,7 +66,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
 							<p>Try again, or return home if the problem persists.</p>
 						</CardContent>
 						<CardFooter className="flex gap-3 pb-6">
-							<Button className="flex-1" onClick={reset}>
+							<Button className="flex-1" onClick={handleRetry}>
 								<RefreshCcw className="mr-2 h-4 w-4" />
 								Try again
 							</Button>

@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useParams, usePathname } from "next/navigation";
 import { useOrgStore } from "@/lib/org-store";
@@ -239,10 +240,18 @@ export function OrgBootstrapper({
 			// This is critical on first organization creation when redirecting from auth app.
 			const syncResult = await setActiveOrganization(targetOrg.id);
 			if (syncResult.error) {
-				console.error(
-					"[OrgBootstrapper] Failed to sync active org:",
-					syncResult.error,
-				);
+				// Capture error to Sentry and short-circuit to avoid clearing tokenCache
+				// and setting currentOrg (which triggers useJwt to fetch with stale session)
+				Sentry.captureException(new Error(syncResult.error), {
+					tags: { feature: "org-bootstrap" },
+					extra: {
+						targetOrgId: targetOrg.id,
+						targetOrgSlug: targetOrg.slug,
+					},
+				});
+				setLoading(false);
+				setIsReady(true);
+				return;
 			}
 
 			// Clear token cache AFTER session is updated, so fresh JWT includes organizationId

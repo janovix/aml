@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import {
+	useState,
+	useEffect,
+	useMemo,
+	useRef,
+	useCallback,
+	useId,
+} from "react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 
@@ -1864,12 +1871,18 @@ function LCDDisplay({
 	height,
 	idleVariantIndex = 0,
 	animationFrame = 0,
+	ids,
 }: {
 	expression: BotExpression;
 	width: number;
 	height: number;
 	idleVariantIndex?: number;
 	animationFrame?: number;
+	ids: {
+		lcdGrid: string;
+		pixelGlow: string;
+		lcdBg: string;
+	};
 }) {
 	const pixelSize = width / 11;
 
@@ -1901,7 +1914,7 @@ function LCDDisplay({
 			{/* LCD background with grid effect */}
 			<defs>
 				<pattern
-					id="lcdGrid"
+					id={ids.lcdGrid}
 					patternUnits="userSpaceOnUse"
 					width={pixelSize}
 					height={pixelSize}
@@ -1914,14 +1927,14 @@ function LCDDisplay({
 						strokeWidth="0.5"
 					/>
 				</pattern>
-				<filter id="pixelGlow" x="-50%" y="-50%" width="200%" height="200%">
+				<filter id={ids.pixelGlow} x="-50%" y="-50%" width="200%" height="200%">
 					<feGaussianBlur stdDeviation="1.5" result="glow" />
 					<feMerge>
 						<feMergeNode in="glow" />
 						<feMergeNode in="SourceGraphic" />
 					</feMerge>
 				</filter>
-				<linearGradient id="lcdBg" x1="0%" y1="0%" x2="0%" y2="100%">
+				<linearGradient id={ids.lcdBg} x1="0%" y1="0%" x2="0%" y2="100%">
 					<stop offset="0%" stopColor="#0d1a0d" />
 					<stop offset="50%" stopColor="#0a140a" />
 					<stop offset="100%" stopColor="#071007" />
@@ -1935,7 +1948,7 @@ function LCDDisplay({
 				width={width}
 				height={height}
 				rx="4"
-				fill="url(#lcdBg)"
+				fill={`url(#${ids.lcdBg})`}
 			/>
 
 			{/* Grid overlay */}
@@ -1945,7 +1958,7 @@ function LCDDisplay({
 				width={width}
 				height={height}
 				rx="4"
-				fill="url(#lcdGrid)"
+				fill={`url(#${ids.lcdGrid})`}
 				opacity="0.5"
 			/>
 
@@ -1964,7 +1977,7 @@ function LCDDisplay({
 			))}
 
 			{/* Render pixels with glow */}
-			<g filter="url(#pixelGlow)">
+			<g filter={`url(#${ids.pixelGlow})`}>
 				{pixels.map((pixel) => (
 					<LCDPixel
 						key={`pixel-${pixel[0]}-${pixel[1]}`}
@@ -2002,6 +2015,24 @@ export function AnimatedBotIcon({
 	const { resolvedTheme } = useTheme();
 	const [mounted, setMounted] = useState(false);
 	const prevExpressionRef = useRef<BotExpression>(expression);
+
+	// Generate unique IDs for SVG elements to avoid collisions across instances
+	const uniqueId = useId();
+	const ids = useMemo(
+		() => ({
+			// LCD display IDs
+			lcdGrid: `lcdGrid-${uniqueId}`,
+			pixelGlow: `pixelGlow-${uniqueId}`,
+			lcdBg: `lcdBg-${uniqueId}`,
+			// Helmet gradient IDs
+			helmetMain: `helmetMain-${uniqueId}`,
+			helmetHighlight: `helmetHighlight-${uniqueId}`,
+			helmetDark: `helmetDark-${uniqueId}`,
+			stripeGrad: `stripeGrad-${uniqueId}`,
+			screenBezel: `screenBezel-${uniqueId}`,
+		}),
+		[uniqueId],
+	);
 
 	// Play sound when expression changes
 	useEffect(() => {
@@ -2083,29 +2114,35 @@ export function AnimatedBotIcon({
 		>
 			<defs>
 				{/* Theme-aware metallic gradient for helmet - Purple in light, Pink in dark */}
-				<linearGradient id="helmetMain" x1="0%" y1="0%" x2="100%" y2="100%">
+				<linearGradient id={ids.helmetMain} x1="0%" y1="0%" x2="100%" y2="100%">
 					<stop offset="0%" stopColor={colors.mainStart} />
 					<stop offset="40%" stopColor={colors.mainMid} />
 					<stop offset="100%" stopColor={colors.mainEnd} />
 				</linearGradient>
 
-				<linearGradient id="helmetHighlight" x1="0%" y1="0%" x2="0%" y2="100%">
+				<linearGradient
+					id={ids.helmetHighlight}
+					x1="0%"
+					y1="0%"
+					x2="0%"
+					y2="100%"
+				>
 					<stop offset="0%" stopColor={colors.highlightStart} />
 					<stop offset="100%" stopColor={colors.highlightEnd} />
 				</linearGradient>
 
-				<linearGradient id="helmetDark" x1="0%" y1="0%" x2="100%" y2="100%">
+				<linearGradient id={ids.helmetDark} x1="0%" y1="0%" x2="100%" y2="100%">
 					<stop offset="0%" stopColor={colors.darkStart} />
 					<stop offset="100%" stopColor={colors.darkEnd} />
 				</linearGradient>
 
-				<linearGradient id="stripeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+				<linearGradient id={ids.stripeGrad} x1="0%" y1="0%" x2="0%" y2="100%">
 					<stop offset="0%" stopColor={colors.stripeStart} />
 					<stop offset="50%" stopColor={colors.stripeMid} />
 					<stop offset="100%" stopColor={colors.stripeEnd} />
 				</linearGradient>
 
-				<linearGradient id="screenBezel" x1="0%" y1="0%" x2="0%" y2="100%">
+				<linearGradient id={ids.screenBezel} x1="0%" y1="0%" x2="0%" y2="100%">
 					<stop offset="0%" stopColor="#1a1a2e" />
 					<stop offset="100%" stopColor="#0a0a14" />
 				</linearGradient>
@@ -2120,7 +2157,7 @@ export function AnimatedBotIcon({
 					width="76"
 					height="72"
 					rx="20"
-					fill="url(#helmetMain)"
+					fill={`url(#${ids.helmetMain})`}
 				/>
 
 				{/* Helmet top highlight */}
@@ -2130,7 +2167,7 @@ export function AnimatedBotIcon({
 					width="60"
 					height="20"
 					rx="10"
-					fill="url(#helmetHighlight)"
+					fill={`url(#${ids.helmetHighlight})`}
 					opacity="0.4"
 				/>
 
@@ -2141,7 +2178,7 @@ export function AnimatedBotIcon({
 					width="8"
 					height="54"
 					rx="3"
-					fill="url(#stripeGrad)"
+					fill={`url(#${ids.stripeGrad})`}
 				/>
 
 				{/* Screen bezel */}
@@ -2151,7 +2188,7 @@ export function AnimatedBotIcon({
 					width="60"
 					height="50"
 					rx="8"
-					fill="url(#screenBezel)"
+					fill={`url(#${ids.screenBezel})`}
 				/>
 
 				{/* LCD Screen */}
@@ -2162,6 +2199,11 @@ export function AnimatedBotIcon({
 						height={screenHeight}
 						idleVariantIndex={idleVariantIndex}
 						animationFrame={animationFrame}
+						ids={{
+							lcdGrid: ids.lcdGrid,
+							pixelGlow: ids.pixelGlow,
+							lcdBg: ids.lcdBg,
+						}}
 					/>
 				</g>
 
@@ -2183,7 +2225,7 @@ export function AnimatedBotIcon({
 					width="30"
 					height="4"
 					rx="2"
-					fill="url(#helmetDark)"
+					fill={`url(#${ids.helmetDark})`}
 				/>
 			</g>
 		</svg>

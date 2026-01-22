@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -58,7 +59,11 @@ function Navbar() {
 				if (resolvedSettings?.clockFormat) {
 					setEffectiveClockFormat(resolvedSettings.clockFormat);
 				}
-			} catch {
+			} catch (err) {
+				Sentry.captureException(err, {
+					tags: { feature: "settings" },
+					extra: { fallback: "orgTimezone" },
+				});
 				// Fall back to org timezone
 				setEffectiveTimezone(orgTimezone);
 			}
@@ -129,8 +134,11 @@ export function DashboardLayout({
 	const saveToServer = useCallback(async (collapsed: boolean) => {
 		try {
 			await saveSidebarCollapsed(collapsed);
-		} catch {
-			console.debug("[DashboardLayout] Failed to save sidebar state to server");
+		} catch (err) {
+			Sentry.captureException(err, {
+				tags: { feature: "settings" },
+				extra: { action: "saveSidebarCollapsed", collapsed },
+			});
 		}
 	}, []);
 
