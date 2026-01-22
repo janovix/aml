@@ -329,9 +329,14 @@ export function OrgBootstrapper({
 	]);
 
 	// Check if we're on an error page (not-found, forbidden)
-	// These pages should render even without currentOrg
+	// These pages should ALWAYS render immediately, even without currentOrg
 	const isErrorPage =
 		pathname?.endsWith("/not-found") || pathname?.endsWith("/forbidden");
+
+	// Error pages always render immediately - no skeleton, no waiting
+	if (isErrorPage) {
+		return <>{children}</>;
+	}
 
 	// If redirecting to error page, show skeleton briefly while navigation happens
 	if (isRedirecting) {
@@ -339,8 +344,7 @@ export function OrgBootstrapper({
 	}
 
 	// Show loading skeleton while syncing org
-	// But don't block error pages - they need to render even without currentOrg
-	if (!isReady || (urlOrgSlug && !currentOrg && !isErrorPage)) {
+	if (!isReady || (urlOrgSlug && !currentOrg)) {
 		return <AppSkeletonWithView pathname={pathname || "/"} />;
 	}
 
