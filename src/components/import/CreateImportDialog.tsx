@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import {
 	Dialog,
+	DialogBody,
 	DialogContent,
 	DialogDescription,
 	DialogHeader,
@@ -71,7 +72,7 @@ export function CreateImportDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
-			<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+			<DialogContent className="max-w-2xl">
 				<DialogHeader>
 					<DialogTitle>Nueva Importación</DialogTitle>
 					<DialogDescription>
@@ -80,21 +81,21 @@ export function CreateImportDialog({
 					</DialogDescription>
 				</DialogHeader>
 
-				{error && (
-					<Alert variant="destructive">
-						<AlertCircle className="h-4 w-4" />
-						<AlertDescription>{error}</AlertDescription>
-					</Alert>
-				)}
+				<DialogBody>
+					{error && (
+						<Alert variant="destructive">
+							<AlertCircle className="h-4 w-4" />
+							<AlertDescription>{error}</AlertDescription>
+						</Alert>
+					)}
 
-				<div className="py-4">
 					<FileUploader
 						onFileUpload={handleFileUpload}
 						isUploading={isUploading}
 						disabled={isJwtLoading || !jwt}
 						defaultEntityType={defaultEntityType}
 					/>
-				</div>
+				</DialogBody>
 			</DialogContent>
 		</Dialog>
 	);

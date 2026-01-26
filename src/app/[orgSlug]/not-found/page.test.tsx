@@ -12,6 +12,8 @@ vi.mock("next/navigation", () => ({
 		push: vi.fn(),
 		replace: vi.fn(),
 	}),
+	useParams: () => ({ orgSlug: "test-org" }),
+	usePathname: () => "/test-org/not-found",
 }));
 
 // Mock window.history.back

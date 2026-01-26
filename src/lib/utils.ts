@@ -164,29 +164,55 @@ export function validateRFCMatch(
 		return { isValid: true };
 	}
 
+	// For moral/trust person types: simplified validation
+	// Only validate that the first letter matches the business name
 	const { businessName, incorporationDate } = data;
 	if (!businessName || !incorporationDate) {
 		return { isValid: true };
 	}
-	const expectedPrefix = getRfcPrefixMoral(businessName);
-	const expectedDate = formatDateToYYMMDD(incorporationDate);
-	if (!expectedDate) {
-		return { isValid: true };
-	}
+
 	const rfcPrefix = trimmedRfc.slice(0, 3);
 	const rfcDate = trimmedRfc.slice(3, 9);
+
+	// Validate RFC prefix format (3 letters)
 	if (!/^[A-ZÑ&]{3}$/.test(rfcPrefix)) {
 		return {
 			isValid: false,
 			error: "El RFC no coincide con los datos proporcionados",
 		};
 	}
-	if (rfcPrefix !== expectedPrefix || rfcDate !== expectedDate) {
+
+	// Get the first letter of the business name (ignoring special characters and spaces)
+	const normalizedBusinessName = businessName
+		.toUpperCase()
+		.replace(/[^A-Z0-9]/g, "");
+	const firstLetterOfBusinessName = normalizedBusinessName.charAt(0);
+
+	// Only validate that the first letter of RFC matches the first letter of business name
+	if (
+		firstLetterOfBusinessName &&
+		rfcPrefix.charAt(0) !== firstLetterOfBusinessName
+	) {
 		return {
 			isValid: false,
-			error: "El RFC no coincide con los datos proporcionados",
+			error:
+				"La primera letra del RFC debe coincidir con la primera letra de la razón social",
 		};
 	}
+
+	// Validate date matches incorporation date
+	const expectedDate = formatDateToYYMMDD(incorporationDate);
+	if (!expectedDate) {
+		return { isValid: true };
+	}
+
+	if (rfcDate !== expectedDate) {
+		return {
+			isValid: false,
+			error: "La fecha en el RFC no coincide con la fecha de constitución",
+		};
+	}
+
 	return { isValid: true };
 }
 

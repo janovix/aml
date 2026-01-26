@@ -3,6 +3,8 @@ import type { ReactElement } from "react";
 import React from "react";
 import { LanguageProvider } from "@/components/LanguageProvider";
 import { PageStatusProvider } from "@/components/PageStatusProvider";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { ChatProvider } from "@/components/chat/ChatProvider";
 import {
 	translations,
 	type Language,
@@ -32,7 +34,11 @@ export function renderWithProviders(
 	return render(ui, {
 		wrapper: ({ children }) => (
 			<LanguageProvider defaultLanguage={language}>
-				<PageStatusProvider>{children}</PageStatusProvider>
+				<PageStatusProvider>
+					<SidebarProvider>
+						<ChatProvider>{children}</ChatProvider>
+					</SidebarProvider>
+				</PageStatusProvider>
 			</LanguageProvider>
 		),
 		...renderOptions,

@@ -44,6 +44,7 @@ import { getFieldDescription } from "../../lib/field-descriptions";
 import { validateVIN } from "../../lib/utils";
 import { getVehicleBrandCatalogKey } from "../../lib/vehicle-utils";
 import { useLanguage } from "@/components/LanguageProvider";
+import { FormActionBar } from "@/components/ui/FormActionBar";
 
 interface TransactionEditViewProps {
 	transactionId: string;
@@ -323,7 +324,7 @@ export function TransactionEditView({
 	}
 
 	return (
-		<div className="space-y-6">
+		<div className="space-y-6 pb-24 md:pb-20">
 			<PageHero
 				title={t("txnEditTitle")}
 				subtitle={transactionId}
@@ -332,23 +333,6 @@ export function TransactionEditView({
 					label: t("back"),
 					onClick: handleCancel,
 				}}
-				actions={[
-					{
-						label: isSaving ? t("txnSaving") : t("txnSaveButton"),
-						icon: Save,
-						onClick: () => {
-							void handleSubmit({
-								preventDefault: () => {},
-							} as React.FormEvent);
-						},
-						disabled: isSaveDisabled,
-					},
-					{
-						label: t("cancel"),
-						onClick: handleCancel,
-						variant: "outline",
-					},
-				]}
 			/>
 
 			<form onSubmit={handleSubmit} className="space-y-6">
@@ -801,6 +785,28 @@ export function TransactionEditView({
 					</CardContent>
 				</Card>
 			</form>
+
+			{/* Fixed Action Bar */}
+			<FormActionBar
+				actions={[
+					{
+						label: isSaving ? t("txnSaving") : t("txnSaveButton"),
+						icon: Save,
+						onClick: () => {
+							void handleSubmit({
+								preventDefault: () => {},
+							} as React.FormEvent);
+						},
+						disabled: isSaveDisabled,
+						loading: isSaving,
+					},
+					{
+						label: t("cancel"),
+						onClick: handleCancel,
+						variant: "outline",
+					},
+				]}
+			/>
 		</div>
 	);
 }

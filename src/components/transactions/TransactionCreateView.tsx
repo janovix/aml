@@ -42,6 +42,7 @@ import { getFieldDescription } from "../../lib/field-descriptions";
 import { validateVIN } from "../../lib/utils";
 import { getVehicleBrandCatalogKey } from "../../lib/vehicle-utils";
 import { useLanguage } from "@/components/LanguageProvider";
+import { FormActionBar } from "@/components/ui/FormActionBar";
 
 interface TransactionFormData {
 	clientId: string;
@@ -287,7 +288,7 @@ export function TransactionCreateView(): React.JSX.Element {
 	};
 
 	return (
-		<div className="space-y-6">
+		<div className="space-y-6 pb-24 md:pb-20">
 			<PageHero
 				title={t("txnNewTitle")}
 				subtitle={t("txnNewSubtitle")}
@@ -296,23 +297,6 @@ export function TransactionCreateView(): React.JSX.Element {
 					label: t("back"),
 					onClick: handleCancel,
 				}}
-				actions={[
-					{
-						label: isSaving ? t("txnCreating") : t("txnCreateButton"),
-						icon: Save,
-						onClick: () => {
-							void handleSubmit({
-								preventDefault: () => {},
-							} as React.FormEvent);
-						},
-						disabled: isSaving,
-					},
-					{
-						label: t("cancel"),
-						onClick: handleCancel,
-						variant: "outline",
-					},
-				]}
 			/>
 
 			<form onSubmit={handleSubmit} className="space-y-6">
@@ -703,6 +687,28 @@ export function TransactionCreateView(): React.JSX.Element {
 					</CardContent>
 				</Card>
 			</form>
+
+			{/* Fixed Action Bar */}
+			<FormActionBar
+				actions={[
+					{
+						label: isSaving ? t("txnCreating") : t("txnCreateButton"),
+						icon: Save,
+						onClick: () => {
+							void handleSubmit({
+								preventDefault: () => {},
+							} as React.FormEvent);
+						},
+						disabled: isSaving,
+						loading: isSaving,
+					},
+					{
+						label: t("cancel"),
+						onClick: handleCancel,
+						variant: "outline",
+					},
+				]}
+			/>
 		</div>
 	);
 }

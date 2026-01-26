@@ -99,10 +99,11 @@ describe("UmaBadge branch coverage", () => {
 			isLoading: false,
 		});
 
-		const { container } = renderWithProviders(<UmaBadge />);
+		renderWithProviders(<UmaBadge />);
 
 		await waitFor(() => {
-			expect(container.firstChild).toBeNull();
+			// UmaBadge should not render any badge content when no org is selected
+			expect(screen.queryByText(/UMA/i)).not.toBeInTheDocument();
 		});
 	});
 

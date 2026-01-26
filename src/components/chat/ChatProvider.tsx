@@ -107,11 +107,19 @@ function getRandomSleepInterval(): number {
 	);
 }
 
+const CHAT_DRAWER_STORAGE_KEY = "chatDrawerOpen";
+
 export function ChatProvider({ children }: ChatProviderProps) {
 	const { jwt } = useJwt();
 	const { orgSlug } = useOrgNavigation();
 	const [selectedModel, setSelectedModel] = useState<LlmModel>(DEFAULT_MODEL);
-	const [isOpen, setIsOpen] = useState(false);
+	const [isOpen, setIsOpen] = useState(() => {
+		// Initialize from sessionStorage if available (client-side only)
+		if (typeof window !== "undefined") {
+			return sessionStorage.getItem(CHAT_DRAWER_STORAGE_KEY) === "true";
+		}
+		return false;
+	});
 	const [messages, setMessages] = useState<ChatMessage[]>([]);
 	const [input, setInput] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
@@ -164,6 +172,11 @@ export function ChatProvider({ children }: ChatProviderProps) {
 			startSleepTimer();
 		}
 	}, [isLoading, messages.length, isSleeping, startSleepTimer]);
+
+	// Persist drawer open state to sessionStorage
+	useEffect(() => {
+		sessionStorage.setItem(CHAT_DRAWER_STORAGE_KEY, String(isOpen));
+	}, [isOpen]);
 
 	// Derive bot expression from chat state
 	useEffect(() => {

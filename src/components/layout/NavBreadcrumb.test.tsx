@@ -27,6 +27,10 @@ const mockPathname = vi.fn(() => "/test-org/clients");
 vi.mock("next/navigation", () => ({
 	usePathname: () => mockPathname(),
 	useParams: () => ({ orgSlug: "test-org" }),
+	useRouter: () => ({
+		push: vi.fn(),
+		replace: vi.fn(),
+	}),
 }));
 
 vi.mock("@/lib/org-store", () => ({
