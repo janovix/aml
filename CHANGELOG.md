@@ -1,3 +1,10 @@
+# [1.4.0-rc.4](https://github.com/janovix/aml/compare/v1.4.0-rc.3...v1.4.0-rc.4) (2026-01-27)
+
+
+### Features
+
+* add file proxy API route and utility functions for authenticated file requests ([0b7293f](https://github.com/janovix/aml/commit/0b7293fe7b651219624712e6816ef0caaac7d48b))
+
 # [1.4.0-rc.3](https://github.com/janovix/aml/compare/v1.4.0-rc.2...v1.4.0-rc.3) (2026-01-21)
 
 
