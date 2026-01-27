@@ -57,6 +57,7 @@ import {
 } from "@/components/data-table";
 import { useLanguage } from "@/components/LanguageProvider";
 import { getLocaleForLanguage } from "@/lib/translations";
+import { useStatesCatalog } from "@/hooks/useStatesCatalog";
 
 /**
  * Client row with computed display name
@@ -86,6 +87,7 @@ export function ClientsTable(): React.ReactElement {
 	const { currentOrg } = useOrgStore();
 	const urlFilters = useDataTableUrlFilters(CLIENT_FILTER_IDS);
 	const { t, language } = useLanguage();
+	const { states } = useStatesCatalog();
 
 	// Build person type config with translations
 	const personTypeConfig = useMemo(
@@ -337,7 +339,7 @@ export function ClientsTable(): React.ReactElement {
 				hideOnMobile: true,
 				cell: (item) => (
 					<div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-						<MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+						<MapPin className="h-3.5 w-3.5 shrink-0" />
 						<span className="truncate">
 							{item.city}, {item.stateCode}
 						</span>
@@ -411,13 +413,15 @@ export function ClientsTable(): React.ReactElement {
 				id: "stateCode",
 				label: t("filterState"),
 				icon: MapPin,
-				options: [
-					{ value: "CDMX", label: "Ciudad de México" },
-					{ value: "JAL", label: "Jalisco" },
-					{ value: "NLE", label: "Nuevo León" },
-					{ value: "QRO", label: "Querétaro" },
-					{ value: "MEX", label: "Estado de México" },
-				],
+				options: states
+					.map((state) => {
+						const metadata = state.metadata as { code?: string } | null;
+						return {
+							value: metadata?.code || state.id,
+							label: state.name,
+						};
+					})
+					.sort((a, b) => a.label.localeCompare(b.label, "es")),
 			},
 		],
 		[t],

@@ -48,6 +48,7 @@ import { PageHero } from "@/components/page-hero";
 import { PageHeroSkeleton } from "@/components/skeletons";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getPersonTypeStyle } from "../../lib/person-type-icon";
+import { useStatesCatalog } from "@/hooks/useStatesCatalog";
 import { useLanguage } from "@/components/LanguageProvider";
 import { CircularProgress } from "@/components/ui/circular-progress";
 import {
@@ -150,6 +151,7 @@ export function ClientDetailsView({
 }: ClientDetailsViewProps): React.JSX.Element {
 	const { navigateTo } = useOrgNavigation();
 	const { t } = useLanguage();
+	const { getStateName } = useStatesCatalog();
 	const searchParams = useSearchParams();
 	const [client, setClient] = useState<Client | null>(null);
 	const [documents, setDocuments] = useState<ClientDocument[]>([]);
@@ -638,8 +640,8 @@ export function ClientDetailsView({
 									{client.neighborhood && `${client.neighborhood}, `}
 									C.P. {client.postalCode}
 									<br />
-									{client.city}, {client.municipality}, {client.stateCode},{" "}
-									{client.country}
+									{client.city}, {client.municipality},{" "}
+									{getStateName(client.stateCode)}, {client.country}
 								</dd>
 							</div>
 							<FieldDisplay
@@ -678,7 +680,7 @@ export function ClientDetailsView({
 							/>
 							<FieldDisplay
 								label="Estado"
-								value={client.stateCode}
+								value={getStateName(client.stateCode)}
 								isMissing={!client.stateCode}
 							/>
 							<FieldDisplay

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useState, useCallback, useEffect } from "react";
+import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -18,6 +19,7 @@ import {
 } from "@/lib/api/client-documents";
 import { uploadDocumentFiles } from "@/lib/api/file-upload";
 import { useOrgStore } from "@/lib/org-store";
+import { getProxiedFileUrl } from "@/lib/utils/file-proxy";
 import type { PersonType } from "@/types/client";
 import type {
 	ClientDocumentType,
@@ -537,7 +539,7 @@ export function EditDocumentsSection({
 													Frente
 												</p>
 												<div
-													className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group"
+													className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group h-24"
 													onClick={() =>
 														window.open(
 															(existingIdDocument.metadata as any).ineFrontUrl,
@@ -545,12 +547,17 @@ export function EditDocumentsSection({
 														)
 													}
 												>
-													<img
+													<Image
 														src={
-															(existingIdDocument.metadata as any).ineFrontUrl
+															getProxiedFileUrl(
+																(existingIdDocument.metadata as any)
+																	.ineFrontUrl,
+															) || ""
 														}
 														alt="Frente de INE"
-														className="w-full h-24 object-contain"
+														fill
+														className="object-contain"
+														unoptimized
 													/>
 													<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
 														<ExternalLink className="h-6 w-6 text-white" />
@@ -564,7 +571,7 @@ export function EditDocumentsSection({
 													Reverso
 												</p>
 												<div
-													className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group"
+													className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group h-24"
 													onClick={() =>
 														window.open(
 															(existingIdDocument.metadata as any).ineBackUrl,
@@ -572,12 +579,16 @@ export function EditDocumentsSection({
 														)
 													}
 												>
-													<img
+													<Image
 														src={
-															(existingIdDocument.metadata as any).ineBackUrl
+															getProxiedFileUrl(
+																(existingIdDocument.metadata as any).ineBackUrl,
+															) || ""
 														}
 														alt="Reverso de INE"
-														className="w-full h-24 object-contain"
+														fill
+														className="object-contain"
+														unoptimized
 													/>
 													<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
 														<ExternalLink className="h-6 w-6 text-white" />
@@ -592,7 +603,7 @@ export function EditDocumentsSection({
 														Documento
 													</p>
 													<div
-														className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group"
+														className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group h-32"
 														onClick={() =>
 															window.open(
 																(existingIdDocument.metadata as any)
@@ -601,13 +612,17 @@ export function EditDocumentsSection({
 															)
 														}
 													>
-														<img
+														<Image
 															src={
-																(existingIdDocument.metadata as any)
-																	.primaryFileUrl
+																getProxiedFileUrl(
+																	(existingIdDocument.metadata as any)
+																		.primaryFileUrl,
+																) || ""
 															}
 															alt="Documento"
-															className="w-full h-32 object-contain"
+															fill
+															className="object-contain"
+															unoptimized
 														/>
 														<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
 															<ExternalLink className="h-6 w-6 text-white" />
@@ -697,15 +712,20 @@ export function EditDocumentsSection({
 															Documento
 														</p>
 														<div
-															className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group"
+															className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group h-24"
 															onClick={() =>
 																window.open(metadata.primaryFileUrl!, "_blank")
 															}
 														>
-															<img
-																src={metadata.primaryFileUrl}
+															<Image
+																src={
+																	getProxiedFileUrl(metadata.primaryFileUrl) ||
+																	""
+																}
 																alt="Documento"
-																className="w-full h-24 object-contain"
+																fill
+																className="object-contain"
+																unoptimized
 															/>
 															<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
 																<ExternalLink className="h-6 w-6 text-white" />
@@ -724,13 +744,15 @@ export function EditDocumentsSection({
 																	Página {idx + 1}
 																</p>
 																<div
-																	className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group"
+																	className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group h-24"
 																	onClick={() => window.open(url, "_blank")}
 																>
-																	<img
-																		src={url}
+																	<Image
+																		src={getProxiedFileUrl(url) || ""}
 																		alt={`Página ${idx + 1}`}
-																		className="w-full h-24 object-contain"
+																		fill
+																		className="object-contain"
+																		unoptimized
 																	/>
 																	<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
 																		<ExternalLink className="h-6 w-6 text-white" />
