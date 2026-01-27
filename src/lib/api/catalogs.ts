@@ -18,9 +18,19 @@ export interface CatalogItem {
 }
 
 export interface CatalogListResponse {
-	catalogKey: string;
-	items: CatalogItem[];
-	total: number;
+	catalog: {
+		id: string;
+		key: string;
+		name: string;
+		allowNewItems: boolean;
+	};
+	data: CatalogItem[];
+	pagination: {
+		page: number;
+		pageSize: number;
+		total: number;
+		totalPages: number;
+	};
 }
 
 /**

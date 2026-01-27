@@ -61,7 +61,7 @@ export function useStatesCatalog(): StatesCatalogResult {
 			activeOnly: true,
 			jwt,
 		}).then((response) => {
-			const items = response.items;
+			const items = response.data;
 			statesCache = items;
 			cachePromise = null;
 			return items;
