@@ -72,9 +72,23 @@ vi.mock("@/lib/auth/actions", () => ({
 	logout: vi.fn(),
 }));
 
+// Mock settings client to prevent async window access in tests
+vi.mock("@/lib/settings/settingsClient", () => ({
+	setSidebarCollapsed: vi.fn().mockResolvedValue(undefined),
+	getResolvedSettings: vi.fn().mockResolvedValue({
+		timezone: "America/New_York",
+		clockFormat: "12h",
+	}),
+}));
+
 describe("DashboardLayout", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		// Mock window.addEventListener to prevent unhandled rejections
+		if (typeof window !== "undefined") {
+			window.addEventListener = vi.fn();
+			window.removeEventListener = vi.fn();
+		}
 	});
 
 	it("renders children", () => {

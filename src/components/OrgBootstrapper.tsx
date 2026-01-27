@@ -14,6 +14,7 @@ import type { Organization } from "@/lib/org-store";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getViewSkeleton } from "@/lib/view-skeletons";
+import * as Sentry from "@sentry/nextjs";
 
 // Must match the cookie name in sidebar.tsx
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
@@ -252,10 +253,22 @@ export function OrgBootstrapper({
 			if (orgs.length === 0) {
 				const result = await listOrganizations();
 				if (result.error || !result.data) {
-					console.error(
-						"[OrgBootstrapper] Error loading organizations:",
-						result.error,
+					// Capture error with Sentry
+					const error = new Error(
+						`Failed to load organizations: ${result.error || "Unknown error"}`,
 					);
+					Sentry.captureException(error, {
+						level: "error",
+						tags: {
+							component: "OrgBootstrapper",
+							action: "listOrganizations",
+						},
+						extra: {
+							urlOrgSlug,
+							errorMessage: result.error,
+						},
+					});
+
 					// Redirect to not-found page - can't load orgs
 					setIsRedirecting(true);
 					router.replace(`/${urlOrgSlug}/not-found`);
@@ -270,7 +283,23 @@ export function OrgBootstrapper({
 
 			if (!targetOrg) {
 				// Org not found in user's organizations - redirect to not-found
-				console.warn(`[OrgBootstrapper] Org "${urlOrgSlug}" not found`);
+				const availableSlugs = orgs.map((org) => org.slug).join(", ");
+				const error = new Error(
+					`Organization "${urlOrgSlug}" not found in user's organizations`,
+				);
+				Sentry.captureException(error, {
+					level: "warning",
+					tags: {
+						component: "OrgBootstrapper",
+						action: "findTargetOrg",
+					},
+					extra: {
+						urlOrgSlug,
+						availableOrganizations: availableSlugs,
+						organizationCount: orgs.length,
+					},
+				});
+
 				setIsRedirecting(true);
 				router.replace(`/${urlOrgSlug}/not-found`);
 				return;
@@ -287,10 +316,21 @@ export function OrgBootstrapper({
 				// This is critical on first organization creation when redirecting from auth app.
 				const syncResult = await setActiveOrganization(targetOrg.id);
 				if (syncResult.error) {
-					console.error(
-						"[OrgBootstrapper] Failed to sync active org:",
-						syncResult.error,
+					const error = new Error(
+						`Failed to sync active organization: ${syncResult.error}`,
 					);
+					Sentry.captureException(error, {
+						level: "error",
+						tags: {
+							component: "OrgBootstrapper",
+							action: "setActiveOrganization",
+						},
+						extra: {
+							targetOrgId: targetOrg.id,
+							targetOrgSlug: targetOrg.slug,
+							errorMessage: syncResult.error,
+						},
+					});
 				}
 
 				// Clear token cache AFTER session is updated, so fresh JWT includes organizationId
@@ -324,8 +364,10 @@ export function OrgBootstrapper({
 		setOrganizations,
 		setMembers,
 		setLoading,
-		isReady,
 		router,
+		// Note: isReady is intentionally NOT in dependencies - it's an output of this effect,
+		// not an input. Including it would cause the effect to re-run after setting isReady=true,
+		// which is unnecessary and causes issues in tests.
 	]);
 
 	// Check if we're on an error page (not-found, forbidden)

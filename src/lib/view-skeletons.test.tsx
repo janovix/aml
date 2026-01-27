@@ -1,5 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render } from "@testing-library/react";
+
+// Unmock view-skeletons for this test file since we're testing the actual implementation
+vi.unmock("@/lib/view-skeletons");
+
 import { getViewSkeleton, VIEW_SKELETON_MAP } from "./view-skeletons";
 
 describe("view-skeletons", () => {

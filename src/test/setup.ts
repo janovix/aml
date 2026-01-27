@@ -2,6 +2,27 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, beforeAll, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
 
+// Mock Sentry globally - use factory function to avoid hoisting issues
+vi.mock("@sentry/nextjs", () => {
+	return {
+		captureException: vi.fn(),
+		captureMessage: vi.fn(),
+		captureRequestError: vi.fn(),
+		init: vi.fn(),
+		replayIntegration: vi.fn(() => ({})),
+		captureRouterTransitionStart: vi.fn(),
+	};
+});
+
+// Mock view-skeletons globally to prevent import hang
+vi.mock("@/lib/view-skeletons", () => ({
+	getViewSkeleton: vi.fn(() => {
+		return function MockSkeleton() {
+			return null;
+		};
+	}),
+}));
+
 // Mock next/navigation
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
