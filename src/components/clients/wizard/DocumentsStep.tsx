@@ -14,7 +14,10 @@ import {
 	AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import { createClientDocument } from "@/lib/api/client-documents";
+import {
+	createClientDocument,
+	patchClientDocument,
+} from "@/lib/api/client-documents";
 import { uploadDocumentFiles } from "@/lib/api/file-upload";
 import type { Client, PersonType } from "@/types/client";
 import type {
@@ -252,24 +255,14 @@ export function DocumentsStep({
 					}
 
 					// Update document with file URLs using PATCH
-					const patchIdResponse = await fetch(
-						`/api/aml-core/clients/${clientId}/documents/${createdDoc.id}`,
-						{
-							method: "PATCH",
-							headers: { "Content-Type": "application/json" },
-							body: JSON.stringify({
-								fileUrl: uploadResult.primary.url,
-								metadata: fileMetadata,
-							}),
+					await patchClientDocument({
+						clientId,
+						documentId: createdDoc.id,
+						input: {
+							fileUrl: uploadResult.primary.url,
+							metadata: fileMetadata as Record<string, unknown>,
 						},
-					);
-
-					if (!patchIdResponse.ok) {
-						const errorText = await patchIdResponse.text();
-						throw new Error(
-							`Failed to update ID document metadata: ${errorText}`,
-						);
-					}
+					});
 				} else {
 					// No files to upload, just create the document record
 					await createClientDocument({ clientId, input });
@@ -356,22 +349,14 @@ export function DocumentsStep({
 					fileMetadata.rasterizedPageUrls = allPageUrls;
 
 					// Update document with file URLs using PATCH
-					const patchDocResponse = await fetch(
-						`/api/aml-core/clients/${clientId}/documents/${createdDoc.id}`,
-						{
-							method: "PATCH",
-							headers: { "Content-Type": "application/json" },
-							body: JSON.stringify({
-								fileUrl: uploadResult.primary.url,
-								metadata: fileMetadata,
-							}),
+					await patchClientDocument({
+						clientId,
+						documentId: createdDoc.id,
+						input: {
+							fileUrl: uploadResult.primary.url,
+							metadata: fileMetadata as Record<string, unknown>,
 						},
-					);
-
-					if (!patchDocResponse.ok) {
-						const errorText = await patchDocResponse.text();
-						throw new Error(`Failed to update document metadata: ${errorText}`);
-					}
+					});
 				} else {
 					// No files to upload, just create the document record
 					await createClientDocument({ clientId, input });

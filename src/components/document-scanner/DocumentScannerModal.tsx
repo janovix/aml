@@ -598,7 +598,7 @@ function SimpleImagePreview({ canvas }: { canvas: HTMLCanvasElement }) {
 	return (
 		<canvas
 			ref={canvasRef}
-			className="max-w-full max-h-[400px] sm:max-h-[500px] object-contain rounded-lg"
+			className="w-full h-auto object-contain rounded-lg"
 		/>
 	);
 }
@@ -1388,7 +1388,7 @@ export function DocumentScannerModal({
 						<p className="text-sm text-muted-foreground text-center">
 							Frente de la INE capturado
 						</p>
-						<div className="relative bg-black/90 rounded-lg overflow-hidden flex items-center justify-center h-[180px] sm:h-[220px]">
+						<div className="relative bg-black/90 rounded-lg overflow-hidden">
 							<SimpleImagePreview canvas={ineState.front.canvas} />
 							<div className="absolute top-2 right-2">
 								<Badge variant="default" className="bg-green-500">

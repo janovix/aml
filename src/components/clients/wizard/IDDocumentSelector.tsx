@@ -585,7 +585,9 @@ export function IDDocumentSelector({
 						<Label className="text-xs">Tipo de Identificación</Label>
 						<RadioGroup
 							value={localData.idType}
-							onValueChange={(value) => handleIdTypeChange(value as IDType)}
+							onValueChange={(value: string) =>
+								handleIdTypeChange(value as IDType)
+							}
 							disabled={disabled || isComplete}
 							className="grid grid-cols-2 gap-3"
 						>
