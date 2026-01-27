@@ -224,7 +224,9 @@ describe("PageHero", () => {
 			/>,
 		);
 
-		const heroContainer = container.firstChild as HTMLElement;
+		// Find the actual PageHero container, not the wrapper
+		const heroContainer = container.querySelector(".custom-class");
+		expect(heroContainer).toBeInTheDocument();
 		expect(heroContainer).toHaveClass("custom-class");
 	});
 

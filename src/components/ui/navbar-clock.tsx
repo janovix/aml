@@ -236,33 +236,13 @@ export function NavbarClock({
 						<Clock className={cn(styles.icon, "text-muted-foreground")} />
 					)}
 
-					<div className="flex flex-col items-start">
-						<div className="flex items-center gap-1">
-							<span
-								className={cn(
-									styles.time,
-									"tabular-nums tracking-tight text-foreground",
-								)}
-							>
-								{formatTime()}
-							</span>
-							{displayLabel && (
-								<span
-									className={cn(
-										styles.date,
-										"text-muted-foreground font-medium",
-									)}
-								>
-									{displayLabel}
-								</span>
-							)}
-						</div>
-						{showDate && (
-							<span className={cn(styles.date, "text-muted-foreground")}>
-								{formatDateStr()}
-							</span>
-						)}
-					</div>
+					{displayLabel && (
+						<span
+							className={cn(styles.time, "text-muted-foreground font-medium")}
+						>
+							{displayLabel}
+						</span>
+					)}
 				</div>
 			</PopoverTrigger>
 
@@ -280,6 +260,16 @@ export function NavbarClock({
 					</div>
 
 					<div className="space-y-2 text-sm">
+						<div className="flex justify-between items-center">
+							<span className="text-muted-foreground">
+								{t("clockCurrentTime")}:
+							</span>
+							<span className="font-semibold text-base tabular-nums">
+								{formatTime()}
+							</span>
+						</div>
+
+						<div className="border-t border-border my-2" />
 						<div className="flex justify-between items-center">
 							<span className="text-muted-foreground">
 								{t("clockAppTimezone")}:

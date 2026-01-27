@@ -170,3 +170,58 @@ export async function deleteClient(opts: {
 		jwt: opts.jwt,
 	});
 }
+
+// KYC Status types
+export interface KYCStatusDocuments {
+	required: string[];
+	uploaded: string[];
+	missing: string[];
+	verified: number;
+	pending: number;
+	total: number;
+}
+
+export interface KYCStatusUBOs {
+	required: boolean;
+	hasUBO?: boolean;
+	count?: number;
+	allHaveDocuments?: boolean;
+}
+
+export interface KYCStatusPEP {
+	status: string;
+	isPEP: boolean;
+	checkedAt: string | null;
+}
+
+export interface KYCStatusResponse {
+	clientId: string;
+	personType: string;
+	kycStatus: string;
+	completionPercentage: number;
+	documents: KYCStatusDocuments;
+	ubos: KYCStatusUBOs;
+	pep: KYCStatusPEP;
+}
+
+/**
+ * Get KYC completion status for a client
+ */
+export async function getClientKYCStatus(opts: {
+	id: string;
+	baseUrl?: string;
+	signal?: AbortSignal;
+	/** JWT token for authentication */
+	jwt?: string;
+}): Promise<KYCStatusResponse> {
+	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
+	const url = new URL(`/api/v1/clients/${opts.id}/kyc-status`, baseUrl);
+
+	const { json } = await fetchJson<KYCStatusResponse>(url.toString(), {
+		method: "GET",
+		cache: "no-store",
+		signal: opts.signal,
+		jwt: opts.jwt,
+	});
+	return json;
+}

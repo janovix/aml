@@ -257,7 +257,7 @@ describe("utils", () => {
 			);
 		});
 
-		it("validates moral RFC against business name and incorporation date", () => {
+		it("validates moral RFC with matching first letter and date", () => {
 			const result = validateRFCMatch("ACM2002031A2", "moral", {
 				businessName: "Acme SA de CV",
 				incorporationDate: "2020-02-03",
@@ -265,15 +265,51 @@ describe("utils", () => {
 			expect(result.isValid).toBe(true);
 		});
 
-		it("returns error when moral RFC does not match data", () => {
-			const result = validateRFCMatch("ACM2002031A2", "moral", {
-				businessName: "Beta SA de CV",
+		it("validates moral RFC even if rest of name doesn't match (only first letter matters)", () => {
+			// First letter 'A' matches 'Acme', rest can be different
+			const result = validateRFCMatch("AXY2002031A2", "moral", {
+				businessName: "Acme SA de CV",
+				incorporationDate: "2020-02-03",
+			});
+			expect(result.isValid).toBe(true);
+		});
+
+		it("returns error when moral RFC first letter does not match business name", () => {
+			const result = validateRFCMatch("BCM2002031A2", "moral", {
+				businessName: "Acme SA de CV",
 				incorporationDate: "2020-02-03",
 			});
 			expect(result.isValid).toBe(false);
 			expect(result.error).toBe(
-				"El RFC no coincide con los datos proporcionados",
+				"La primera letra del RFC debe coincidir con la primera letra de la razón social",
 			);
+		});
+
+		it("returns error when moral RFC date does not match incorporation date", () => {
+			const result = validateRFCMatch("ACM2002051A2", "moral", {
+				businessName: "Acme SA de CV",
+				incorporationDate: "2020-02-03",
+			});
+			expect(result.isValid).toBe(false);
+			expect(result.error).toBe(
+				"La fecha en el RFC no coincide con la fecha de constitución",
+			);
+		});
+
+		it("validates trust RFC with matching first letter and date", () => {
+			const result = validateRFCMatch("TRU2002031A2", "trust", {
+				businessName: "Trust Financiero SA",
+				incorporationDate: "2020-02-03",
+			});
+			expect(result.isValid).toBe(true);
+		});
+
+		it("ignores special characters when extracting first letter from business name", () => {
+			const result = validateRFCMatch("ACM2002031A2", "moral", {
+				businessName: "& Acme SA de CV", // & should be ignored
+				incorporationDate: "2020-02-03",
+			});
+			expect(result.isValid).toBe(true);
 		});
 	});
 
