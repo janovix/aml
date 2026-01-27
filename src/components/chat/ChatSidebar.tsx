@@ -89,50 +89,12 @@ function saveMode(mode: ChatMode): void {
  * Visibility rules:
  * - Large screens + sidebar mode + chat open: HIDDEN (icon is in sidebar header)
  * - Large screens + sidebar mode + chat closed: SHOWN
- * - Large screens + floating mode: HIDDEN (floating button shows instead)
+ * - Large screens + floating mode: SHOWN (now in navbar instead of bottom-right)
  * - Small screens: ALWAYS SHOWN
  */
 export function NavbarChatButton({ className }: { className?: string }) {
 	const { toggleChat, isOpen, botExpression, isSleeping, wakeUp } = useChats();
 	const { t } = useLanguage();
-	const [shouldShow, setShouldShow] = useState(true);
-
-	useEffect(() => {
-		function checkVisibility() {
-			const isLargeScreen = window.innerWidth >= LG_BREAKPOINT;
-			const mode = loadMode();
-
-			if (!isLargeScreen) {
-				// Small screens: always show navbar button
-				setShouldShow(true);
-			} else if (mode === "floating") {
-				// Large screen + floating mode: hide (floating button shows)
-				setShouldShow(false);
-			} else {
-				// Large screen + sidebar mode: show only when sidebar is closed
-				// Note: isOpen state needs to be checked reactively
-				setShouldShow(true);
-			}
-		}
-
-		checkVisibility();
-		window.addEventListener("resize", checkVisibility);
-
-		// Listen for mode changes from same tab (custom event)
-		const handleModeChange = () => checkVisibility();
-		window.addEventListener("chat-mode-change", handleModeChange);
-
-		// Also listen for storage changes (when mode changes in another tab)
-		window.addEventListener("storage", handleModeChange);
-
-		return () => {
-			window.removeEventListener("resize", checkVisibility);
-			window.removeEventListener("chat-mode-change", handleModeChange);
-			window.removeEventListener("storage", handleModeChange);
-		};
-	}, []);
-
-	// Check if we should hide because sidebar is open in sidebar mode on large screens
 	const [isLargeScreen, setIsLargeScreen] = useState(false);
 	const [currentMode, setCurrentMode] = useState<ChatMode>("sidebar");
 
@@ -155,7 +117,7 @@ export function NavbarChatButton({ className }: { className?: string }) {
 		isLargeScreen && currentMode === "sidebar" && isOpen;
 
 	// Don't render if conditions say to hide
-	if (!shouldShow || hideBecauseSidebarOpen) {
+	if (hideBecauseSidebarOpen) {
 		return null;
 	}
 
@@ -181,6 +143,7 @@ export function NavbarChatButton({ className }: { className?: string }) {
 			title={isSleeping ? t("chatWakeUp") : t("chatTitle")}
 			aria-label={isSleeping ? t("chatWakeUp") : t("chatTitle")}
 			aria-expanded={isOpen}
+			id="navbar-chat-button"
 		>
 			<AnimatedBotIcon expression={botExpression} size={44} />
 		</button>
@@ -380,6 +343,12 @@ export function ChatSidebar({ className }: ChatSidebarProps) {
 			const newWidth = startWidthRef.current + delta;
 			const clampedWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, newWidth));
 			setWidth(clampedWidth);
+			// Dispatch event so other components (like FormActionBar) can react
+			window.dispatchEvent(
+				new CustomEvent("chat-width-change", {
+					detail: { width: clampedWidth },
+				}),
+			);
 		};
 
 		const handleMouseUp = () => {
@@ -458,47 +427,17 @@ export function ChatSidebar({ className }: ChatSidebarProps) {
 	if (mode === "floating") {
 		return (
 			<>
-				{/* Floating bot icon - no wrapper, just the icon */}
-				<button
-					onClick={handleFloatingClick}
-					className={cn(
-						"fixed z-50 bottom-4 right-4",
-						"cursor-pointer",
-						"hover:scale-110 active:scale-95",
-						"transition-transform duration-200 ease-out",
-						"focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-2xl",
-						"drop-shadow-lg hover:drop-shadow-xl",
-					)}
-					title={
-						isSleeping
-							? t("chatWakeUp")
-							: isOpen
-								? t("chatClose")
-								: t("chatTitle")
-					}
-					aria-label={
-						isSleeping
-							? t("chatWakeUp")
-							: isOpen
-								? t("chatClose")
-								: t("chatTitle")
-					}
-					aria-expanded={isOpen}
-				>
-					<AnimatedBotIcon expression={botExpression} size={72} />
-				</button>
-
-				{/* Floating panel */}
+				{/* Floating panel - positioned below navbar button */}
 				{isOpen && (
 					<div
 						className={cn(
-							"fixed z-50 bottom-20 right-4 flex flex-col",
+							"fixed z-50 top-18 right-4 flex flex-col",
 							"bg-background border rounded-xl shadow-2xl overflow-hidden",
-							"animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2 duration-200",
+							"animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200",
 						)}
 						style={{
 							width: Math.min(400, window.innerWidth - 32),
-							height: Math.min(560, window.innerHeight - 120),
+							height: Math.min(560, window.innerHeight - 88),
 						}}
 						role="dialog"
 						aria-label="AI Chat Assistant"

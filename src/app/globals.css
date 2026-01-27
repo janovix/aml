@@ -218,9 +218,12 @@
 	* {
 		@apply border-border outline-ring/50;
 	}
+	/*
+	Probably bring it back in the future, the UI seems stable without this now
 	html {
 		scrollbar-gutter: stable;
 	}
+	*/
 	body {
 		@apply bg-background text-foreground;
 		letter-spacing: var(--tracking-normal);

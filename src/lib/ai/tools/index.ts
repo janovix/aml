@@ -11,7 +11,7 @@ export { createImportTool, type ImportTool } from "./import-tool";
  * System prompt for the AI assistant
  * Provides context about available capabilities and the AML domain
  */
-export const SYSTEM_PROMPT = `You are Jano, an AI assistant for Janovix, a Mexican AML (Anti-Money Laundering) compliance platform for the automotive industry. Your role is to help users understand and manage their compliance operations efficiently.
+export const SYSTEM_PROMPT = `You are Janbot, an AI assistant for Janovix, a Mexican AML (Anti-Money Laundering) compliance platform for the automotive industry. Your role is to help users understand and manage their compliance operations efficiently.
 
 ## Your Capabilities
 
@@ -71,4 +71,4 @@ You can also help users understand:
 5. Answer in the same language the user uses (Spanish or English)
 6. When explaining compliance requirements, be accurate and cite relevant regulations if known
 
-You are Jano, here to help users understand and navigate the Janovix AML compliance platform.`;
+You are Janbot, here to help users understand and navigate the Janovix AML compliance platform.`;

@@ -1,35 +1,11 @@
 "use client";
 
 import { useParams, notFound } from "next/navigation";
-import { createContext, useContext, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { useSubscriptionSafe } from "@/lib/subscription";
 import { hasAMLAccess } from "@/lib/subscription";
 import { NoAMLAccess } from "@/components/subscription";
-
-interface OrgSlugContextValue {
-	orgSlug: string;
-}
-
-const OrgSlugContext = createContext<OrgSlugContextValue | null>(null);
-
-/**
- * Hook to get the current organization slug from the URL
- */
-export function useOrgSlug(): string {
-	const context = useContext(OrgSlugContext);
-	if (!context) {
-		throw new Error("useOrgSlug must be used within an OrgSlugProvider");
-	}
-	return context.orgSlug;
-}
-
-/**
- * Hook to safely get the organization slug, returns null if not in org context
- */
-export function useOrgSlugSafe(): string | null {
-	const context = useContext(OrgSlugContext);
-	return context?.orgSlug ?? null;
-}
+import { OrgSlugContext } from "@/hooks/useOrgSlug";
 
 /**
  * Validate and extract orgSlug from useParams result

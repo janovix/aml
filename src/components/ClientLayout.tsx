@@ -7,6 +7,8 @@ import { ViewportHeightProvider } from "@/components/ViewportHeightProvider";
 import { OrgBootstrapper } from "@/components/OrgBootstrapper";
 import { ScrollRestoration } from "@/components/ScrollRestoration";
 import { Toaster } from "@/components/ui/sonner";
+import { OpenCVProvider } from "@/lib/document-scanner/OpenCVProvider";
+import { TesseractProvider } from "@/lib/document-scanner/TesseractLoader";
 import type { OrganizationsData } from "@/lib/auth/organizations-server";
 
 export default function ClientLayout({
@@ -23,17 +25,21 @@ export default function ClientLayout({
 			<LanguageProvider>
 				<PageStatusProvider>
 					<ViewportHeightProvider>
-						<ScrollRestoration />
-						<OrgBootstrapper
-							initialOrganizations={initialOrganizations || undefined}
-						>
-							<DashboardLayout
-								initialSidebarCollapsed={initialSidebarCollapsed}
-							>
-								{children}
-							</DashboardLayout>
-						</OrgBootstrapper>
-						<Toaster />
+						<OpenCVProvider>
+							<TesseractProvider>
+								<ScrollRestoration />
+								<OrgBootstrapper
+									initialOrganizations={initialOrganizations || undefined}
+								>
+									<DashboardLayout
+										initialSidebarCollapsed={initialSidebarCollapsed}
+									>
+										{children}
+									</DashboardLayout>
+								</OrgBootstrapper>
+								<Toaster />
+							</TesseractProvider>
+						</OpenCVProvider>
 					</ViewportHeightProvider>
 				</PageStatusProvider>
 			</LanguageProvider>
