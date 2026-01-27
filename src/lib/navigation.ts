@@ -12,8 +12,7 @@ import { useOrgStore } from "@/lib/org-store";
  * Safe for server-side rendering - returns null on server
  */
 export function getOrgSlug(): string | null {
-	// On server-side, Zustand persist middleware may try to access localStorage
-	// which doesn't exist, causing errors. Return null safely.
+	// On server-side, Zustand store is not available. Return null safely.
 	if (typeof window === "undefined") {
 		return null;
 	}

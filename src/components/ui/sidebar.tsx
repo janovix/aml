@@ -10,13 +10,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import {
-	Sheet,
-	SheetContent,
-	SheetDescription,
-	SheetHeader,
-	SheetTitle,
-} from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Tooltip,
@@ -24,6 +17,8 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { MobileSidebarFullscreen } from "@/components/layout/MobileSidebarFullscreen";
+import { Logo } from "@/components/layout/Logo";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -199,29 +194,63 @@ function Sidebar({
 	}
 
 	if (isMobile) {
-		return (
-			<Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
-				<SheetContent
-					data-sidebar="sidebar"
-					data-slot="sidebar"
-					data-mobile="true"
-					className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
-					style={
-						{
-							"--sidebar-width": SIDEBAR_WIDTH_MOBILE,
-						} as React.CSSProperties
+		// Parse children to extract sections for mobile layout
+		let topContent: React.ReactNode = null;
+		let footerContent: React.ReactNode = null;
+		const navigationContent: React.ReactNode[] = [];
+
+		React.Children.forEach(children, (child) => {
+			if (!React.isValidElement(child)) return;
+
+			// Skip SidebarHeader (AppSwitcher is shown separately in MobileSidebarFullscreen)
+			if (child.type === SidebarHeader) {
+				return;
+			}
+
+			// Skip SidebarRail (not needed for mobile)
+			if (child.type === SidebarRail) {
+				return;
+			}
+
+			// Extract SidebarFooter for fixed bottom
+			if (child.type === SidebarFooter) {
+				footerContent = (child.props as { children?: React.ReactNode })
+					.children;
+				return;
+			}
+
+			// Extract SidebarContent - need to separate OrgSwitcher from nav groups
+			if (child.type === SidebarContent) {
+				const contentChildren = (child.props as { children?: React.ReactNode })
+					.children;
+				React.Children.forEach(contentChildren, (contentChild, index) => {
+					if (!React.isValidElement(contentChild)) return;
+
+					// First child is typically the OrgSwitcher wrapper - extract for fixed top
+					if (index === 0) {
+						topContent = contentChild;
+					} else {
+						// Rest are navigation groups - go to scrollable middle
+						navigationContent.push(contentChild);
 					}
-					side={side}
-				>
-					<SheetHeader className="sr-only">
-						<SheetTitle>Sidebar</SheetTitle>
-						<SheetDescription>Displays the mobile sidebar.</SheetDescription>
-					</SheetHeader>
-					<div className="flex h-full w-full flex-col overflow-x-hidden">
-						{children}
-					</div>
-				</SheetContent>
-			</Sheet>
+				});
+				return;
+			}
+
+			// Any other children go to navigation
+			navigationContent.push(child);
+		});
+
+		return (
+			<MobileSidebarFullscreen
+				open={openMobile}
+				onOpenChange={setOpenMobile}
+				topContent={topContent}
+				bottomContent={footerContent}
+				{...props}
+			>
+				{navigationContent}
+			</MobileSidebarFullscreen>
 		);
 	}
 
@@ -278,22 +307,28 @@ function SidebarTrigger({
 	onClick,
 	...props
 }: React.ComponentProps<typeof Button>) {
-	const { toggleSidebar } = useSidebar();
+	const { toggleSidebar, isMobile } = useSidebar();
 
+	// Desktop: PanelLeftIcon (lucide)
+	// Mobile: Logo icon (the fullscreen sidebar has its own X close button)
 	return (
 		<Button
 			data-sidebar="trigger"
 			data-slot="sidebar-trigger"
 			variant="ghost"
 			size="icon"
-			className={cn("size-7", className)}
+			className={cn(isMobile ? "size-9" : "size-7", className)}
 			onClick={(event) => {
 				onClick?.(event);
 				toggleSidebar();
 			}}
 			{...props}
 		>
-			<PanelLeftIcon />
+			{isMobile ? (
+				<Logo variant="icon" imgClassName="size-10" />
+			) : (
+				<PanelLeftIcon />
+			)}
 			<span className="sr-only">Toggle Sidebar</span>
 		</Button>
 	);

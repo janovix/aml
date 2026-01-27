@@ -10,6 +10,7 @@ import {
 	AlertCircle,
 	CheckCircle2,
 	Clock,
+	CircleDashed,
 } from "lucide-react";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { useJwt } from "@/hooks/useJwt";
@@ -60,8 +61,8 @@ export function CreateNoticeView(): React.ReactElement {
 				const response = await getAvailableMonths({ jwt });
 				setAvailableMonths(response.months);
 
-				// Select first available month without a notice
-				const firstAvailable = response.months.find((m) => !m.hasNotice);
+				// Select first available month without a pending notice
+				const firstAvailable = response.months.find((m) => !m.hasPendingNotice);
 				if (firstAvailable) {
 					const key = `${firstAvailable.year}-${firstAvailable.month}`;
 					setSelectedMonth(key);
@@ -174,7 +175,7 @@ export function CreateNoticeView(): React.ReactElement {
 				</div>
 			</div>
 
-			<form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-2">
+			<form onSubmit={handleSubmit} className="grid gap-6 @xl/main:grid-cols-2">
 				<Card>
 					<CardHeader>
 						<CardTitle className="text-lg">Configuración del Aviso</CardTitle>
@@ -191,18 +192,30 @@ export function CreateNoticeView(): React.ReactElement {
 										<SelectItem
 											key={`${month.year}-${month.month}`}
 											value={`${month.year}-${month.month}`}
-											disabled={month.hasNotice}
+											disabled={month.hasPendingNotice}
 										>
 											<div className="flex items-center gap-2">
-												{month.hasNotice && (
-													<CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+												{month.hasPendingNotice && (
+													<CircleDashed className="h-3.5 w-3.5 text-amber-500" />
 												)}
+												{!month.hasPendingNotice &&
+													month.hasSubmittedNotice && (
+														<CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+													)}
 												<span>{month.displayName}</span>
-												{month.hasNotice && (
+												{month.hasPendingNotice && (
 													<span className="text-xs text-muted-foreground">
-														(ya existe)
+														(en progreso)
 													</span>
 												)}
+												{!month.hasPendingNotice &&
+													month.hasSubmittedNotice && (
+														<span className="text-xs text-muted-foreground">
+															({month.noticeCount}{" "}
+															{month.noticeCount === 1 ? "enviado" : "enviados"}
+															)
+														</span>
+													)}
 											</div>
 										</SelectItem>
 									))}

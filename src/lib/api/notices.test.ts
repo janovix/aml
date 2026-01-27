@@ -435,6 +435,201 @@ describe("api/notices", () => {
 		});
 	});
 
+	describe("downloadNoticeXml", () => {
+		it("downloads file successfully with jwt", async () => {
+			const { downloadNoticeXml } = await import("./notices");
+
+			const mockBlob = new Blob(["<xml>content</xml>"], {
+				type: "application/xml",
+			});
+			const fetchSpy = vi.fn(
+				async (url: RequestInfo | URL, init?: RequestInit) => {
+					// Verify auth header is set
+					expect(
+						(init?.headers as Record<string, string>)?.["Authorization"],
+					).toBe("Bearer test-jwt");
+					return new Response(mockBlob, {
+						status: 200,
+						headers: {
+							"content-type": "application/xml",
+							"Content-Disposition": 'attachment; filename="aviso_202401.xml"',
+						},
+					});
+				},
+			);
+			vi.stubGlobal("fetch", fetchSpy);
+
+			// Mock DOM APIs
+			const mockLink = {
+				href: "",
+				download: "",
+				click: vi.fn(),
+			};
+			vi.spyOn(document, "createElement").mockReturnValue(
+				mockLink as unknown as HTMLAnchorElement,
+			);
+			vi.spyOn(document.body, "appendChild").mockImplementation(
+				() => mockLink as unknown as HTMLAnchorElement,
+			);
+			vi.spyOn(document.body, "removeChild").mockImplementation(
+				() => mockLink as unknown as HTMLAnchorElement,
+			);
+			vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:test-url");
+			vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+
+			await downloadNoticeXml({
+				id: "NOTICE123",
+				jwt: "test-jwt",
+				baseUrl: "https://example.com",
+			});
+
+			expect(mockLink.click).toHaveBeenCalled();
+			expect(mockLink.download).toBe("aviso_202401.xml");
+		});
+
+		it("uses default filename when Content-Disposition header is missing", async () => {
+			const { downloadNoticeXml } = await import("./notices");
+
+			const mockBlob = new Blob(["<xml>content</xml>"], {
+				type: "application/xml",
+			});
+			const fetchSpy = vi.fn(async () => {
+				return new Response(mockBlob, {
+					status: 200,
+					headers: { "content-type": "application/xml" },
+				});
+			});
+			vi.stubGlobal("fetch", fetchSpy);
+
+			const mockLink = {
+				href: "",
+				download: "",
+				click: vi.fn(),
+			};
+			vi.spyOn(document, "createElement").mockReturnValue(
+				mockLink as unknown as HTMLAnchorElement,
+			);
+			vi.spyOn(document.body, "appendChild").mockImplementation(
+				() => mockLink as unknown as HTMLAnchorElement,
+			);
+			vi.spyOn(document.body, "removeChild").mockImplementation(
+				() => mockLink as unknown as HTMLAnchorElement,
+			);
+			vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:test-url");
+			vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+
+			await downloadNoticeXml({
+				id: "NOTICE123",
+				baseUrl: "https://example.com",
+			});
+
+			// Should use default filename
+			expect(mockLink.download).toBe("aviso_NOTICE123.xml");
+		});
+
+		it("Content-Disposition overrides provided filename", async () => {
+			const { downloadNoticeXml } = await import("./notices");
+
+			const mockBlob = new Blob(["<xml>content</xml>"], {
+				type: "application/xml",
+			});
+			const fetchSpy = vi.fn(async () => {
+				return new Response(mockBlob, {
+					status: 200,
+					headers: {
+						"content-type": "application/xml",
+						"Content-Disposition": 'attachment; filename="server-name.xml"',
+					},
+				});
+			});
+			vi.stubGlobal("fetch", fetchSpy);
+
+			const mockLink = {
+				href: "",
+				download: "",
+				click: vi.fn(),
+			};
+			vi.spyOn(document, "createElement").mockReturnValue(
+				mockLink as unknown as HTMLAnchorElement,
+			);
+			vi.spyOn(document.body, "appendChild").mockImplementation(
+				() => mockLink as unknown as HTMLAnchorElement,
+			);
+			vi.spyOn(document.body, "removeChild").mockImplementation(
+				() => mockLink as unknown as HTMLAnchorElement,
+			);
+			vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:test-url");
+			vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+
+			await downloadNoticeXml({
+				id: "NOTICE123",
+				fileName: "custom-name.xml",
+				baseUrl: "https://example.com",
+			});
+
+			// Should use provided filename (before Content-Disposition processing)
+			expect(mockLink.download).toBe("server-name.xml");
+		});
+
+		it("throws error with JSON error message on non-ok response", async () => {
+			const { downloadNoticeXml } = await import("./notices");
+
+			const fetchSpy = vi.fn(async () => {
+				return new Response(JSON.stringify({ message: "Notice not found" }), {
+					status: 404,
+					headers: { "content-type": "application/json" },
+				});
+			});
+			vi.stubGlobal("fetch", fetchSpy);
+
+			await expect(
+				downloadNoticeXml({
+					id: "NOTICE123",
+					baseUrl: "https://example.com",
+				}),
+			).rejects.toThrow("Notice not found");
+		});
+
+		it("throws error with status text on non-JSON error response", async () => {
+			const { downloadNoticeXml } = await import("./notices");
+
+			const fetchSpy = vi.fn(async () => {
+				return new Response("Internal Server Error", {
+					status: 500,
+					statusText: "Internal Server Error",
+					headers: { "content-type": "text/plain" },
+				});
+			});
+			vi.stubGlobal("fetch", fetchSpy);
+
+			await expect(
+				downloadNoticeXml({
+					id: "NOTICE123",
+					baseUrl: "https://example.com",
+				}),
+			).rejects.toThrow("Download failed: 500 Internal Server Error");
+		});
+
+		it("uses default error message when JSON response has no message field", async () => {
+			const { downloadNoticeXml } = await import("./notices");
+
+			const fetchSpy = vi.fn(async () => {
+				return new Response(JSON.stringify({ error: "something" }), {
+					status: 400,
+					headers: { "content-type": "application/json" },
+				});
+			});
+			vi.stubGlobal("fetch", fetchSpy);
+
+			await expect(
+				downloadNoticeXml({
+					id: "NOTICE123",
+					baseUrl: "https://example.com",
+				}),
+			).rejects.toThrow("Download failed: 400");
+		});
+	});
+
 	describe("submitNoticeToSat", () => {
 		it("sends POST to /submit endpoint with satFolioNumber", async () => {
 			const submittedNotice: Notice = {

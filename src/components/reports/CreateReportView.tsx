@@ -389,7 +389,7 @@ export function CreateReportView(): React.ReactElement {
 					Elige el tipo de reporte que deseas generar
 				</p>
 			</div>
-			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+			<div className="grid gap-4 @sm/main:grid-cols-2 @lg/main:grid-cols-3">
 				{reportTemplates.map((tmpl) => (
 					<button
 						key={tmpl.id}
@@ -460,7 +460,7 @@ export function CreateReportView(): React.ReactElement {
 
 			<Card>
 				<CardContent className="pt-6 space-y-6">
-					<div className="grid gap-3 sm:grid-cols-2">
+					<div className="grid gap-3 @sm/main:grid-cols-2">
 						{periodOptions.map((opt) => (
 							<button
 								key={opt.value}
@@ -493,7 +493,7 @@ export function CreateReportView(): React.ReactElement {
 
 					<div className="border-t pt-6">
 						{periodType === "MONTHLY" && (
-							<div className="grid gap-4 sm:grid-cols-2">
+							<div className="grid gap-4 @sm/main:grid-cols-2">
 								<div className="space-y-2">
 									<Label htmlFor="year">Año</Label>
 									<Select
@@ -534,7 +534,7 @@ export function CreateReportView(): React.ReactElement {
 						)}
 
 						{periodType === "QUARTERLY" && (
-							<div className="grid gap-4 sm:grid-cols-2">
+							<div className="grid gap-4 @sm/main:grid-cols-2">
 								<div className="space-y-2">
 									<Label htmlFor="year">Año</Label>
 									<Select
@@ -598,7 +598,7 @@ export function CreateReportView(): React.ReactElement {
 						)}
 
 						{periodType === "CUSTOM" && (
-							<div className="grid gap-4 sm:grid-cols-2">
+							<div className="grid gap-4 @sm/main:grid-cols-2">
 								<div className="space-y-2">
 									<Label htmlFor="customStart">Fecha inicio</Label>
 									<Input
@@ -729,7 +729,7 @@ export function CreateReportView(): React.ReactElement {
 							</div>
 
 							{enableComparison && (
-								<div className="grid gap-4 sm:grid-cols-2 pt-2">
+								<div className="grid gap-4 @sm/main:grid-cols-2 pt-2">
 									<div className="space-y-2">
 										<Label htmlFor="compStart">
 											Período comparación - Inicio
@@ -768,7 +768,7 @@ export function CreateReportView(): React.ReactElement {
 				</p>
 			</div>
 
-			<div className="grid gap-6 lg:grid-cols-2">
+			<div className="grid gap-6 @xl/main:grid-cols-2">
 				<Card>
 					<CardHeader>
 						<CardTitle className="text-base flex items-center gap-2">

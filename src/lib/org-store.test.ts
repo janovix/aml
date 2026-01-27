@@ -1,15 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { act, renderHook } from "@testing-library/react";
-
-// Mock zustand persist middleware to use in-memory storage
-vi.mock("zustand/middleware", async (importOriginal) => {
-	const actual = (await importOriginal()) as Record<string, unknown>;
-	return {
-		...actual,
-		persist: (fn: unknown) => fn,
-	};
-});
-
 import {
 	useOrgStore,
 	DEFAULT_ORG_SETTINGS,

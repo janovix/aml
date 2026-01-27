@@ -1,7 +1,8 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import * as Sentry from "@sentry/nextjs";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Save, Plus, Trash2, Receipt } from "lucide-react";
+import { VehicleTypePicker } from "./VehicleTypePicker";
 import { PageHero } from "@/components/page-hero";
 import { PageHeroSkeleton } from "@/components/skeletons";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -43,6 +45,7 @@ import { getFieldDescription } from "../../lib/field-descriptions";
 import { validateVIN } from "../../lib/utils";
 import { getVehicleBrandCatalogKey } from "../../lib/vehicle-utils";
 import { useLanguage } from "@/components/LanguageProvider";
+import { FormActionBar } from "@/components/ui/FormActionBar";
 
 interface TransactionEditViewProps {
 	transactionId: string;
@@ -68,7 +71,7 @@ export function TransactionEditSkeleton(): React.ReactElement {
 							<Skeleton className="h-6 w-48" />
 						</CardHeader>
 						<CardContent>
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
 								{[1, 2, 3, 4].map((j) => (
 									<div key={j} className="space-y-2">
 										<Skeleton className="h-4 w-24" />
@@ -89,6 +92,7 @@ export function TransactionEditView({
 }: TransactionEditViewProps): React.JSX.Element {
 	const { t } = useLanguage();
 	const { navigateTo } = useOrgNavigation();
+	const formRef = useRef<HTMLFormElement>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isSaving, setIsSaving] = useState(false);
 	const [formData, setFormData] = useState({
@@ -213,53 +217,68 @@ export function TransactionEditView({
 			return;
 		}
 
-		setIsSaving(true);
-		// Format operationDate as date-only (YYYY-MM-DD) - API expects this format, not ISO date-time
-		const operationDateFormatted =
-			formData.operationDate || new Date().toISOString().slice(0, 10);
-		const updateData: TransactionUpdateRequest = {
-			operationDate: operationDateFormatted,
-			operationType: formData.operationType,
-			branchPostalCode: formData.branchPostalCode,
-			vehicleType: formData.vehicleType,
-			brand: formData.brand,
-			model: formData.model,
-			year: parseInt(formData.year, 10),
-			amount: formData.amount,
-			currency: formData.currency,
-			paymentMethods: formData.paymentMethods,
-			paymentDate: new Date(formData.paymentDate).toISOString(),
-		};
+		// Wrap in Sentry span for tracking
+		await Sentry.startSpan(
+			{
+				name: "Update Transaction",
+				op: "ui.submit",
+				attributes: { transactionId },
+			},
+			async () => {
+				setIsSaving(true);
+				// Format operationDate as date-only (YYYY-MM-DD) - API expects this format, not ISO date-time
+				const operationDateFormatted =
+					formData.operationDate || new Date().toISOString().slice(0, 10);
+				const updateData: TransactionUpdateRequest = {
+					operationDate: operationDateFormatted,
+					operationType: formData.operationType,
+					branchPostalCode: formData.branchPostalCode,
+					vehicleType: formData.vehicleType,
+					brand: formData.brand,
+					model: formData.model,
+					year: parseInt(formData.year, 10),
+					amount: formData.amount,
+					currency: formData.currency,
+					paymentMethods: formData.paymentMethods,
+					paymentDate: new Date(formData.paymentDate).toISOString(),
+				};
 
-		if (formData.vehicleType === "land") {
-			// At least one of plates, VIN, or engineNumber must be provided
-			if (formData.vin) updateData.vin = formData.vin;
-			if (formData.repuve) updateData.repuve = formData.repuve;
-			if (formData.plates) updateData.plates = formData.plates;
-			if (formData.engineNumber)
-				updateData.engineNumber = formData.engineNumber;
-		} else {
-			if (formData.registrationNumber)
-				updateData.registrationNumber = formData.registrationNumber;
-			if (formData.flagCountryId)
-				updateData.flagCountryId = formData.flagCountryId;
-		}
+				if (formData.vehicleType === "land") {
+					// At least one of plates, VIN, or engineNumber must be provided
+					if (formData.vin) updateData.vin = formData.vin;
+					if (formData.repuve) updateData.repuve = formData.repuve;
+					if (formData.plates) updateData.plates = formData.plates;
+					if (formData.engineNumber)
+						updateData.engineNumber = formData.engineNumber;
+				} else {
+					if (formData.registrationNumber)
+						updateData.registrationNumber = formData.registrationNumber;
+					if (formData.flagCountryId)
+						updateData.flagCountryId = formData.flagCountryId;
+				}
 
-		try {
-			await executeMutation({
-				mutation: () =>
-					updateTransaction({ id: transactionId, input: updateData }),
-				loading: "Actualizando transacción...",
-				success: "Transacción actualizada exitosamente",
-				onSuccess: () => {
-					navigateTo(`/transactions/${transactionId}`);
-				},
-			});
-		} catch {
-			// Error is already handled by executeMutation via Sonner
-		} finally {
-			setIsSaving(false);
-		}
+				try {
+					await executeMutation({
+						mutation: () =>
+							updateTransaction({ id: transactionId, input: updateData }),
+						loading: "Actualizando transacción...",
+						success: "Transacción actualizada exitosamente",
+						onSuccess: () => {
+							navigateTo(`/transactions/${transactionId}`);
+						},
+					});
+				} catch (error) {
+					// Capture exception in Sentry
+					Sentry.captureException(error);
+					Sentry.logger.error(
+						Sentry.logger.fmt`Failed to update transaction: ${error}`,
+					);
+					// Error is already handled by executeMutation via Sonner
+				} finally {
+					setIsSaving(false);
+				}
+			},
+		);
 	};
 
 	const handleCancel = (): void => {
@@ -322,7 +341,7 @@ export function TransactionEditView({
 	}
 
 	return (
-		<div className="space-y-6">
+		<div className="space-y-6 pb-24 md:pb-20">
 			<PageHero
 				title={t("txnEditTitle")}
 				subtitle={transactionId}
@@ -331,33 +350,16 @@ export function TransactionEditView({
 					label: t("back"),
 					onClick: handleCancel,
 				}}
-				actions={[
-					{
-						label: isSaving ? t("txnSaving") : t("txnSaveButton"),
-						icon: Save,
-						onClick: () => {
-							void handleSubmit({
-								preventDefault: () => {},
-							} as React.FormEvent);
-						},
-						disabled: isSaveDisabled,
-					},
-					{
-						label: t("cancel"),
-						onClick: handleCancel,
-						variant: "outline",
-					},
-				]}
 			/>
 
-			<form onSubmit={handleSubmit} className="space-y-6">
+			<form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
 				<Card>
 					<CardHeader>
 						<CardTitle className="text-lg">{t("txnInfoTitle")}</CardTitle>
 						<CardDescription>{t("txnInfoDesc")}</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
 							<div className="space-y-2">
 								<Label htmlFor="client">{t("txnClient")} *</Label>
 								<Select
@@ -444,29 +446,16 @@ export function TransactionEditView({
 					<CardContent className="space-y-4">
 						<div className="space-y-2">
 							<Label htmlFor="vehicle-type">{t("txnVehicleType")} *</Label>
-							<Select
+							<VehicleTypePicker
+								id="vehicle-type"
 								value={formData.vehicleType}
-								onValueChange={(value) => handleChange("vehicleType", value)}
-								required
-							>
-								<SelectTrigger id="vehicle-type">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="land">
-										{t("txnVehicleTypeLand")}
-									</SelectItem>
-									<SelectItem value="marine">
-										{t("txnVehicleTypeMarine")}
-									</SelectItem>
-									<SelectItem value="air">{t("txnVehicleTypeAir")}</SelectItem>
-								</SelectContent>
-							</Select>
+								onChange={(value) => handleChange("vehicleType", value)}
+							/>
 						</div>
 
 						<Separator />
 
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
 							<CatalogSelector
 								catalogKey={getVehicleBrandCatalogKey(formData.vehicleType)}
 								label={t("txnBrand")}
@@ -619,7 +608,10 @@ export function TransactionEditView({
 										value={formData.flagCountryId}
 										searchPlaceholder="Buscar país..."
 										onChange={(option) =>
-											handleChange("flagCountryId", option?.id ?? "")
+											handleChange(
+												"flagCountryId",
+												(option?.metadata?.code as string) ?? "",
+											)
 										}
 									/>
 								</>
@@ -636,7 +628,7 @@ export function TransactionEditView({
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
 							<div className="space-y-2">
 								<Label htmlFor="amount">{t("txnTotalAmount")} *</Label>
 								<Input
@@ -751,7 +743,7 @@ export function TransactionEditView({
 							{formData.paymentMethods.map((pm, index) => (
 								<div
 									key={index}
-									className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-lg"
+									className="grid grid-cols-1 @lg/main:grid-cols-3 gap-4 p-4 border rounded-lg"
 								>
 									<CatalogSelector
 										catalogKey="payment-methods"
@@ -810,6 +802,27 @@ export function TransactionEditView({
 					</CardContent>
 				</Card>
 			</form>
+
+			{/* Fixed Action Bar */}
+			<FormActionBar
+				actions={[
+					{
+						label: isSaving ? t("txnSaving") : t("txnSaveButton"),
+						icon: Save,
+						onClick: () => {
+							// Use requestSubmit() to trigger native form validation
+							formRef.current?.requestSubmit();
+						},
+						disabled: isSaveDisabled,
+						loading: isSaving,
+					},
+					{
+						label: t("cancel"),
+						onClick: handleCancel,
+						variant: "outline",
+					},
+				]}
+			/>
 		</div>
 	);
 }

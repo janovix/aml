@@ -1,32 +1,11 @@
 "use client";
 
 import { useParams, notFound } from "next/navigation";
-import { createContext, useContext, type ReactNode } from "react";
-
-interface OrgSlugContextValue {
-	orgSlug: string;
-}
-
-const OrgSlugContext = createContext<OrgSlugContextValue | null>(null);
-
-/**
- * Hook to get the current organization slug from the URL
- */
-export function useOrgSlug(): string {
-	const context = useContext(OrgSlugContext);
-	if (!context) {
-		throw new Error("useOrgSlug must be used within an OrgSlugProvider");
-	}
-	return context.orgSlug;
-}
-
-/**
- * Hook to safely get the organization slug, returns null if not in org context
- */
-export function useOrgSlugSafe(): string | null {
-	const context = useContext(OrgSlugContext);
-	return context?.orgSlug ?? null;
-}
+import { type ReactNode } from "react";
+import { useSubscriptionSafe } from "@/lib/subscription";
+import { hasAMLAccess } from "@/lib/subscription";
+import { NoAMLAccess } from "@/components/subscription";
+import { OrgSlugContext } from "@/hooks/useOrgSlug";
 
 /**
  * Validate and extract orgSlug from useParams result
@@ -49,6 +28,7 @@ function validateOrgSlug(rawOrgSlug: string | string[] | undefined): string {
 
 export default function OrgSlugLayout({ children }: { children: ReactNode }) {
 	const params = useParams();
+	const subscription = useSubscriptionSafe();
 
 	// Defensive validation of params
 	if (!params) {
@@ -60,6 +40,17 @@ export default function OrgSlugLayout({ children }: { children: ReactNode }) {
 		orgSlug = validateOrgSlug(params.orgSlug);
 	} catch {
 		notFound();
+	}
+
+	// Check AML product access
+	// Show loading state while subscription is being fetched
+	if (subscription?.isLoading) {
+		return <NoAMLAccess isLoading />;
+	}
+
+	// If subscription is loaded but user doesn't have AML access, show blocker
+	if (subscription && !hasAMLAccess(subscription.subscription)) {
+		return <NoAMLAccess />;
 	}
 
 	return (

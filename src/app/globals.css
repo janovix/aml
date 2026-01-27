@@ -49,7 +49,7 @@
 	--accent-foreground: oklch(0.2626 0.0057 301.1438);
 	--destructive: oklch(0.6368 0.2078 25.3313);
 	--destructive-foreground: oklch(1 0 0);
-	--border: oklch(0.9276 0.0058 264.5313);
+	--border: oklch(0.85 0.0058 264.5313);
 	--input: oklch(0.8717 0.0093 258.3382);
 	--ring: oklch(0.5477 0.2518 292.8796);
 	--chart-1: oklch(0.5477 0.2518 292.8796);
@@ -63,7 +63,7 @@
 	--sidebar-primary-foreground: oklch(1 0 0);
 	--sidebar-accent: oklch(0.8711 0.0055 286.286);
 	--sidebar-accent-foreground: oklch(0.2626 0.0057 301.1438);
-	--sidebar-border: oklch(0.8452 0 0);
+	--sidebar-border: oklch(0.78 0 0);
 	--sidebar-ring: oklch(0.5477 0.2518 292.8796);
 	--font-sans: Inter, ui-sans-serif, sans-serif, system-ui;
 	--font-serif: serif;
@@ -90,6 +90,8 @@
 	--shadow-2xl: 0 0.125rem 0.5rem 0 hsl(0 0% 0% / 0.25);
 	--tracking-normal: normal;
 	--spacing: 0.25rem;
+	--scrollbar-thumb: oklch(0.75 0 0 / 0.4);
+	--scrollbar-thumb-hover: oklch(0.65 0 0 / 0.6);
 }
 
 .dark {
@@ -148,6 +150,8 @@
 	--shadow-xl:
 		0 0.125rem 0.5rem 0 hsl(0 0% 0% / 0.3), 0 8px 10px -1px hsl(0 0% 0% / 0.3);
 	--shadow-2xl: 0 0.125rem 0.5rem 0 hsl(0 0% 0% / 0.75);
+	--scrollbar-thumb: oklch(0.5 0 0 / 0.4);
+	--scrollbar-thumb-hover: oklch(0.6 0 0 / 0.6);
 }
 
 @theme inline {
@@ -214,6 +218,12 @@
 	* {
 		@apply border-border outline-ring/50;
 	}
+	/*
+	Probably bring it back in the future, the UI seems stable without this now
+	html {
+		scrollbar-gutter: stable;
+	}
+	*/
 	body {
 		@apply bg-background text-foreground;
 		letter-spacing: var(--tracking-normal);
@@ -237,10 +247,23 @@ main {
 	overflow-x: hidden;
 }
 
-/* Global minimal scrollbar styles - applies to all scrollbars */
+/* Global scrollbar styles - subtle by default, visible on hover */
+* {
+	scrollbar-width: thin;
+	scrollbar-color: transparent transparent;
+}
+
+*:hover {
+	scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
 *::-webkit-scrollbar {
 	width: 8px;
 	height: 8px;
+}
+
+*::-webkit-scrollbar-button {
+	display: none;
 }
 
 *::-webkit-scrollbar-track {
@@ -248,12 +271,20 @@ main {
 }
 
 *::-webkit-scrollbar-thumb {
-	background: #cbd5e0;
-	border-radius: 4px;
+	background: transparent;
+	border-radius: 9999px;
+	border: 2px solid transparent;
+	background-clip: content-box;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+	background: var(--scrollbar-thumb);
+	background-clip: content-box;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-	background: #a0aec0;
+	background: var(--scrollbar-thumb-hover);
+	background-clip: content-box;
 }
 
 /* Hide scrollbar for horizontal scrolling cards */
@@ -266,54 +297,23 @@ main {
 	display: none; /* Chrome, Safari and Opera */
 }
 
-/* iOS Safari input focus fixes */
-/* Ensure inputs scroll into view properly when focused, accounting for browser chrome */
-@supports (-webkit-touch-callout: none) {
-	/* iOS Safari specific styles */
-
-	/* Prevent iOS Safari from zooming on input focus (if viewport scale is set) */
-	input[type="text"],
-	input[type="email"],
-	input[type="tel"],
-	input[type="number"],
-	input[type="password"],
-	input[type="search"],
-	input[type="date"],
-	textarea,
-	select {
-		font-size: 16px; /* Prevents zoom on focus in iOS Safari */
-	}
-
-	/* Fix for iOS Safari keyboard accessory bar spacing */
-	/* Prevent the body from scrolling - all scroll should happen in main container */
-	html {
-		height: 100%;
-		overflow: hidden;
-		position: fixed;
-		width: 100%;
-	}
-
-	body {
-		height: 100%;
-		overflow: hidden;
-		position: fixed;
-		width: 100%;
-		/* Prevent overscroll/bounce effect that can cause the gap */
-		overscroll-behavior: none;
-	}
-
-	/* The main content scrolls, not the body */
-	main {
-		-webkit-overflow-scrolling: touch;
-		overscroll-behavior: contain;
-	}
+/* Mobile sidebar dropdown styles - larger touch targets */
+.mobile-sidebar-open [data-slot="dropdown-menu-content"] {
+	@apply rounded-xl border-white/10 bg-background/95 backdrop-blur-xl;
 }
 
-/* Ensure form containers account for iOS Safari browser chrome */
-@media screen and (max-width: 768px) {
-	form,
-	[role="form"] {
-		/* Add padding at the bottom to account for safe area */
-		padding-bottom: env(safe-area-inset-bottom, 0px);
-	}
+.mobile-sidebar-open [data-slot="dropdown-menu-item"] {
+	@apply min-h-14 rounded-xl px-4 py-3 text-base gap-3;
+}
+
+.mobile-sidebar-open [data-slot="dropdown-menu-item"] svg {
+	@apply size-5;
+}
+
+.mobile-sidebar-open [data-slot="dropdown-menu-label"] {
+	@apply px-4 py-3 text-sm;
+}
+
+.mobile-sidebar-open [data-slot="dropdown-menu-separator"] {
+	@apply my-2 bg-white/10;
 }

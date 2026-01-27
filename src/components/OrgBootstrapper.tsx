@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useMemo } from "react";
-import { useParams, usePathname } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { useOrgStore } from "@/lib/org-store";
 import { useAuthSession } from "@/lib/auth/useAuthSession";
 import {
@@ -13,9 +13,8 @@ import { tokenCache } from "@/lib/auth/tokenCache";
 import type { Organization } from "@/lib/org-store";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PageHeroSkeleton } from "@/components/skeletons/page-hero-skeleton";
-import { TableSkeleton } from "@/components/skeletons/table-skeleton";
 import { getViewSkeleton } from "@/lib/view-skeletons";
+import * as Sentry from "@sentry/nextjs";
 
 // Must match the cookie name in sidebar.tsx
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
@@ -132,19 +131,58 @@ interface OrgBootstrapperProps {
 		activeOrganizationId: string | null;
 	};
 }
+let hasHydratedOrgs = false;
 
 /**
- * OrgBootstrapper - Simplified organization context provider
- *
- * Responsibilities:
- * 1. Sync current org to Zustand store based on URL org slug
- * 2. Set activeOrganizationId in auth session when org is visited
- * 3. Fetch members for the current org
- * 4. Provide loading state while syncing
- *
- * Note: Org validation (access check) is handled by middleware.
- * Note: Org selection UI is handled by the index page.
+ * Reset hydration state - for testing only
  */
+export function resetOrgHydration() {
+	hasHydratedOrgs = false;
+}
+
+/**
+ * Hydrate the org store synchronously before first render.
+ * This must be called before any component reads from useOrgStore.
+ */
+function hydrateOrgStore(
+	initialOrganizations: OrgBootstrapperProps["initialOrganizations"],
+	urlOrgSlug: string | undefined,
+) {
+	if (
+		hasHydratedOrgs ||
+		typeof window === "undefined" ||
+		!initialOrganizations
+	) {
+		return;
+	}
+
+	const storeState = useOrgStore.getState();
+
+	// Only hydrate if store is empty
+	if (storeState.organizations.length === 0) {
+		const updates: {
+			organizations: Organization[];
+			currentOrg?: Organization;
+		} = {
+			organizations: initialOrganizations.organizations,
+		};
+
+		// If we have a URL org slug, also set currentOrg
+		if (urlOrgSlug) {
+			const targetOrg = initialOrganizations.organizations.find(
+				(org) => org.slug === urlOrgSlug,
+			);
+			if (targetOrg) {
+				updates.currentOrg = targetOrg;
+			}
+		}
+
+		useOrgStore.setState(updates);
+	}
+
+	hasHydratedOrgs = true;
+}
+
 export function OrgBootstrapper({
 	children,
 	initialOrganizations,
@@ -152,10 +190,16 @@ export function OrgBootstrapper({
 	const { data: session } = useAuthSession();
 	const params = useParams();
 	const pathname = usePathname();
+	const router = useRouter();
 	const urlOrgSlug = params?.orgSlug as string | undefined;
+
+	// SYNCHRONOUS HYDRATION: Must happen BEFORE useOrgStore hook reads state
+	// This uses a module-level function to ensure it only runs once
+	hydrateOrgStore(initialOrganizations, urlOrgSlug);
 
 	const {
 		currentOrg,
+		organizations,
 		setCurrentOrg,
 		setOrganizations,
 		setMembers,
@@ -164,7 +208,7 @@ export function OrgBootstrapper({
 	} = useOrgStore();
 
 	const [isReady, setIsReady] = useState(false);
-	const initRef = useRef(false);
+	const [isRedirecting, setIsRedirecting] = useState(false);
 	const lastSyncedOrgRef = useRef<string | null | undefined>(null);
 
 	// Set current user ID from session
@@ -176,13 +220,9 @@ export function OrgBootstrapper({
 
 	// Initialize and sync org on mount or when URL org changes
 	useEffect(() => {
-		// No org slug in URL (index page for org selection)
-		// Still populate the store with initial organizations so index page can use them
+		// No org slug in URL - this is the fallback index page (rarely reached)
+		// Middleware should redirect to /{orgSlug}, but if we reach here, just mark ready
 		if (!urlOrgSlug) {
-			if (initialOrganizations && !initRef.current) {
-				initRef.current = true;
-				setOrganizations(initialOrganizations.organizations);
-			}
 			setIsReady(true);
 			return;
 		}
@@ -192,31 +232,49 @@ export function OrgBootstrapper({
 			return;
 		}
 
+		// Check if this org was already switched via OrgSwitcher/AppSidebar
+		// Only on SUBSEQUENT navigations (not initial load), we can skip heavy sync
+		// On initial load (lastSyncedOrgRef.current is null), always do full sync to ensure session is synced
+		const storeState = useOrgStore.getState();
+		const isSubsequentNavigation = lastSyncedOrgRef.current !== null;
+		const alreadySwitched =
+			isSubsequentNavigation && storeState.currentOrg?.slug === urlOrgSlug;
+
 		async function syncOrg() {
-			setLoading(true);
+			// Only show loading state if we need to do a full sync
+			if (!alreadySwitched) {
+				setLoading(true);
+			}
 
-			// Use initial data if available (first load)
-			let orgs: Organization[];
-			let activeOrgId: string | null = null;
+			// Use initial data if available (first load) - already hydrated synchronously
+			let orgs: Organization[] = storeState.organizations;
 
-			if (initialOrganizations && !initRef.current) {
-				initRef.current = true;
-				orgs = initialOrganizations.organizations;
-				activeOrgId = initialOrganizations.activeOrganizationId;
-				setOrganizations(orgs);
-			} else {
-				// Fetch organizations
+			// If no orgs in store, fetch from API
+			if (orgs.length === 0) {
 				const result = await listOrganizations();
 				if (result.error || !result.data) {
-					toast.error("Error loading organizations", {
-						description: result.error || "Please try again later.",
+					// Capture error with Sentry
+					const error = new Error(
+						`Failed to load organizations: ${result.error || "Unknown error"}`,
+					);
+					Sentry.captureException(error, {
+						level: "error",
+						tags: {
+							component: "OrgBootstrapper",
+							action: "listOrganizations",
+						},
+						extra: {
+							urlOrgSlug,
+							errorMessage: result.error,
+						},
 					});
-					setLoading(false);
-					setIsReady(true);
+
+					// Redirect to not-found page - can't load orgs
+					setIsRedirecting(true);
+					router.replace(`/${urlOrgSlug}/not-found`);
 					return;
 				}
 				orgs = result.data.organizations;
-				activeOrgId = result.data.activeOrganizationId;
 				setOrganizations(orgs);
 			}
 
@@ -224,29 +282,66 @@ export function OrgBootstrapper({
 			const targetOrg = orgs.find((org) => org.slug === urlOrgSlug);
 
 			if (!targetOrg) {
-				// Middleware should have caught this, but handle gracefully
-				console.warn(`[OrgBootstrapper] Org "${urlOrgSlug}" not found`);
-				setLoading(false);
-				setIsReady(true);
+				// Org not found in user's organizations - redirect to not-found
+				const availableSlugs = orgs.map((org) => org.slug).join(", ");
+				const error = new Error(
+					`Organization "${urlOrgSlug}" not found in user's organizations`,
+				);
+				Sentry.captureException(error, {
+					level: "warning",
+					tags: {
+						component: "OrgBootstrapper",
+						action: "findTargetOrg",
+					},
+					extra: {
+						urlOrgSlug,
+						availableOrganizations: availableSlugs,
+						organizationCount: orgs.length,
+					},
+				});
+
+				setIsRedirecting(true);
+				router.replace(`/${urlOrgSlug}/not-found`);
 				return;
 			}
 
-			// Set as current org
-			setCurrentOrg(targetOrg);
-
-			// Sync activeOrganizationId if different
-			if (activeOrgId !== targetOrg.id) {
-				tokenCache.clear();
+			// If already switched via OrgSwitcher, skip the heavy sync
+			// OrgSwitcher already called setActiveOrganization and setCurrentOrg
+			if (!alreadySwitched) {
+				// IMPORTANT: Sync activeOrganizationId BEFORE setting currentOrg in the store.
+				// This ensures the session's activeOrganizationId is updated in the database
+				// BEFORE useJwt hook fetches a new JWT. Otherwise, there's a race condition
+				// where the JWT is fetched with organizationId: null because setCurrentOrg
+				// triggers useJwt to fetch immediately, before setActiveOrganization completes.
+				// This is critical on first organization creation when redirecting from auth app.
 				const syncResult = await setActiveOrganization(targetOrg.id);
 				if (syncResult.error) {
-					console.error(
-						"[OrgBootstrapper] Failed to sync active org:",
-						syncResult.error,
+					const error = new Error(
+						`Failed to sync active organization: ${syncResult.error}`,
 					);
+					Sentry.captureException(error, {
+						level: "error",
+						tags: {
+							component: "OrgBootstrapper",
+							action: "setActiveOrganization",
+						},
+						extra: {
+							targetOrgId: targetOrg.id,
+							targetOrgSlug: targetOrg.slug,
+							errorMessage: syncResult.error,
+						},
+					});
 				}
+
+				// Clear token cache AFTER session is updated, so fresh JWT includes organizationId
+				tokenCache.clear();
+
+				// Now set the current org in the store - this triggers useJwt to fetch JWT
+				// The session is already updated, so the JWT will have the correct organizationId
+				setCurrentOrg(targetOrg);
 			}
 
-			// Fetch members
+			// Fetch members (always do this to ensure fresh data)
 			const membersResult = await listMembers(targetOrg.id);
 			if (membersResult.data) {
 				setMembers(membersResult.data);
@@ -269,17 +364,29 @@ export function OrgBootstrapper({
 		setOrganizations,
 		setMembers,
 		setLoading,
-		isReady,
+		router,
+		// Note: isReady is intentionally NOT in dependencies - it's an output of this effect,
+		// not an input. Including it would cause the effect to re-run after setting isReady=true,
+		// which is unnecessary and causes issues in tests.
 	]);
 
-	// Show loading skeleton while syncing
-	// When no org slug in URL (index page), don't block on currentOrg - index handles org selection
-	if (!isReady) {
+	// Check if we're on an error page (not-found, forbidden)
+	// These pages should ALWAYS render immediately, even without currentOrg
+	const isErrorPage =
+		pathname?.endsWith("/not-found") || pathname?.endsWith("/forbidden");
+
+	// Error pages always render immediately - no skeleton, no waiting
+	if (isErrorPage) {
+		return <>{children}</>;
+	}
+
+	// If redirecting to error page, show skeleton briefly while navigation happens
+	if (isRedirecting) {
 		return <AppSkeletonWithView pathname={pathname || "/"} />;
 	}
 
-	// Only require currentOrg when we have an org slug in URL
-	if (urlOrgSlug && !currentOrg) {
+	// Show loading skeleton while syncing org
+	if (!isReady || (urlOrgSlug && !currentOrg)) {
 		return <AppSkeletonWithView pathname={pathname || "/"} />;
 	}
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 
 // Organization Types (aligned with Better Auth organization plugin)
 export interface Organization {
@@ -215,76 +214,68 @@ interface OrgStore {
 	getCurrentMember: () => OrganizationMember | null;
 }
 
-export const useOrgStore = create<OrgStore>()(
-	persist(
-		(set, get) => ({
-			currentOrg: null,
-			currentUserId: null,
-			organizations: [],
-			members: [],
-			isLoading: false,
-			error: null,
-			setCurrentOrg: (org) => set({ currentOrg: org }),
-			setCurrentOrgById: (id) =>
-				set((state) => ({
-					currentOrg:
-						id !== null
-							? state.organizations.find((org) => org.id === id) || null
-							: null,
-				})),
-			setCurrentUserId: (userId) => set({ currentUserId: userId }),
-			setOrganizations: (orgs) => set({ organizations: orgs }),
-			addOrganization: (org) =>
-				set((state) => ({
-					organizations: [...state.organizations, org],
-					currentOrg: org,
-				})),
-			updateOrganization: (id, updates) =>
-				set((state) => ({
-					organizations: state.organizations.map((org) =>
-						org.id === id
-							? { ...org, ...updates, updatedAt: new Date().toISOString() }
-							: org,
-					),
-					currentOrg:
-						state.currentOrg?.id === id
-							? {
-									...state.currentOrg,
-									...updates,
-									updatedAt: new Date().toISOString(),
-								}
-							: state.currentOrg,
-				})),
-			setMembers: (members) => set({ members }),
-			setMembersForOrg: (organizationId, members) =>
-				set((state) => ({
-					members: [
-						...state.members.filter(
-							(member) => member.organizationId !== organizationId,
-						),
-						...members,
-					],
-				})),
-			setLoading: (isLoading) => set({ isLoading }),
-			setError: (error) => set({ error }),
-			hasPermission: (permission) => {
-				const member = get().getCurrentMember();
-				if (!member) return false;
-				return member.permissions.includes(permission);
-			},
-			getCurrentMember: () => {
-				const { currentOrg, members, currentUserId } = get();
-				if (!currentOrg) return null;
-				return (
-					members.find(
-						(m) =>
-							m.organizationId === currentOrg.id && m.userId === currentUserId,
-					) || null
-				);
-			},
-		}),
-		{
-			name: "janovix-org-storage",
-		},
-	),
-);
+export const useOrgStore = create<OrgStore>()((set, get) => ({
+	currentOrg: null,
+	currentUserId: null,
+	organizations: [],
+	members: [],
+	isLoading: false,
+	error: null,
+	setCurrentOrg: (org) => set({ currentOrg: org }),
+	setCurrentOrgById: (id) =>
+		set((state) => ({
+			currentOrg:
+				id !== null
+					? state.organizations.find((org) => org.id === id) || null
+					: null,
+		})),
+	setCurrentUserId: (userId) => set({ currentUserId: userId }),
+	setOrganizations: (orgs) => set({ organizations: orgs }),
+	addOrganization: (org) =>
+		set((state) => ({
+			organizations: [...state.organizations, org],
+			currentOrg: org,
+		})),
+	updateOrganization: (id, updates) =>
+		set((state) => ({
+			organizations: state.organizations.map((org) =>
+				org.id === id
+					? { ...org, ...updates, updatedAt: new Date().toISOString() }
+					: org,
+			),
+			currentOrg:
+				state.currentOrg?.id === id
+					? {
+							...state.currentOrg,
+							...updates,
+							updatedAt: new Date().toISOString(),
+						}
+					: state.currentOrg,
+		})),
+	setMembers: (members) => set({ members }),
+	setMembersForOrg: (organizationId, members) =>
+		set((state) => ({
+			members: [
+				...state.members.filter(
+					(member) => member.organizationId !== organizationId,
+				),
+				...members,
+			],
+		})),
+	setLoading: (isLoading) => set({ isLoading }),
+	setError: (error) => set({ error }),
+	hasPermission: (permission) => {
+		const member = get().getCurrentMember();
+		if (!member) return false;
+		return member.permissions.includes(permission);
+	},
+	getCurrentMember: () => {
+		const { currentOrg, members, currentUserId } = get();
+		if (!currentOrg) return null;
+		return (
+			members.find(
+				(m) => m.organizationId === currentOrg.id && m.userId === currentUserId,
+			) || null
+		);
+	},
+}));

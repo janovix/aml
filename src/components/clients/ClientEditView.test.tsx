@@ -134,7 +134,7 @@ describe("ClientEditView", () => {
 
 		await screen.findByDisplayValue("Visionaria S.A.");
 		const saveButtons = screen.getAllByRole("button", {
-			name: /guardar cambios/i,
+			name: /guardar/i,
 		});
 		await user.click(saveButtons.at(-1)!);
 
@@ -175,7 +175,7 @@ describe("ClientEditView", () => {
 		});
 
 		const saveButtons = screen.getAllByRole("button", {
-			name: /guardar cambios/i,
+			name: /guardar/i,
 		});
 		await user.click(saveButtons.at(-1)!);
 
@@ -204,7 +204,7 @@ describe("ClientEditView", () => {
 
 		await screen.findByText("Editar Cliente");
 		const saveButtons = screen.getAllByRole("button", {
-			name: /guardar cambios/i,
+			name: /guardar/i,
 		});
 		await user.click(saveButtons.at(-1)!);
 

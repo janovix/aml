@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
 	Dialog,
+	DialogBody,
 	DialogContent,
 	DialogDescription,
 	DialogFooter,
@@ -118,8 +119,8 @@ export function AddCatalogItemDialog({
 					</DialogDescription>
 				</DialogHeader>
 
-				<form onSubmit={handleSubmit}>
-					<div className="space-y-4 py-4">
+				<form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+					<DialogBody className="space-y-4">
 						<div className="space-y-2">
 							<Label htmlFor="catalog-item-name">Nombre</Label>
 							<Input
@@ -142,7 +143,7 @@ export function AddCatalogItemDialog({
 								</p>
 							)}
 						</div>
-					</div>
+					</DialogBody>
 
 					<DialogFooter>
 						<Button

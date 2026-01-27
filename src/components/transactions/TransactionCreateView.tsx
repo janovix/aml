@@ -1,9 +1,11 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import * as Sentry from "@sentry/nextjs";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
+import { useSessionStorageForm } from "@/hooks/useSessionStorageForm";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -23,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Save, Plus, Trash2, ReceiptText } from "lucide-react";
+import { VehicleTypePicker } from "./VehicleTypePicker";
 import { PageHero } from "@/components/page-hero";
 import { toast } from "sonner";
 import { createTransaction } from "../../lib/api/transactions";
@@ -40,6 +43,7 @@ import { getFieldDescription } from "../../lib/field-descriptions";
 import { validateVIN } from "../../lib/utils";
 import { getVehicleBrandCatalogKey } from "../../lib/vehicle-utils";
 import { useLanguage } from "@/components/LanguageProvider";
+import { FormActionBar } from "@/components/ui/FormActionBar";
 
 interface TransactionFormData {
 	clientId: string;
@@ -61,32 +65,39 @@ interface TransactionFormData {
 	paymentMethods: PaymentMethodInput[];
 }
 
+const getInitialTransactionFormData = (): TransactionFormData => ({
+	clientId: "",
+	operationDate: new Date().toISOString().slice(0, 10), // Date only (YYYY-MM-DD)
+	operationType: "sale", // Default to "Venta"
+	branchPostalCode: "",
+	vehicleType: "",
+	brand: "",
+	model: "",
+	year: "",
+	vin: "",
+	repuve: "",
+	plates: "",
+	engineNumber: "",
+	registrationNumber: "",
+	flagCountryId: "",
+	amount: "", // Calculated from payment methods on submit
+	currency: "MXN",
+	paymentMethods: [{ method: "", amount: "" }],
+});
+
 export function TransactionCreateView(): React.JSX.Element {
 	const { t } = useLanguage();
 	const { navigateTo, orgPath } = useOrgNavigation();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
+	const formRef = useRef<HTMLFormElement>(null);
 	const [isSaving, setIsSaving] = useState(false);
 
-	const [formData, setFormData] = useState<TransactionFormData>({
-		clientId: "",
-		operationDate: new Date().toISOString().slice(0, 10), // Date only (YYYY-MM-DD)
-		operationType: "sale", // Default to "Venta"
-		branchPostalCode: "",
-		vehicleType: "",
-		brand: "",
-		model: "",
-		year: "",
-		vin: "",
-		repuve: "",
-		plates: "",
-		engineNumber: "",
-		registrationNumber: "",
-		flagCountryId: "",
-		amount: "", // Calculated from payment methods on submit
-		currency: "MXN",
-		paymentMethods: [{ method: "", amount: "" }],
-	});
+	const [formData, setFormData, clearFormStorage] =
+		useSessionStorageForm<TransactionFormData>(
+			"transaction_create",
+			getInitialTransactionFormData(),
+		);
 
 	const [validationErrors, setValidationErrors] = useState<{
 		vin?: string;
@@ -222,54 +233,69 @@ export function TransactionCreateView(): React.JSX.Element {
 			return;
 		}
 
-		setIsSaving(true);
-		const calculatedAmount = calculateAmountFromPaymentMethods();
-		// Format operationDate as date-only (YYYY-MM-DD) - API expects this format, not ISO date-time
-		const operationDateFormatted =
-			formData.operationDate || new Date().toISOString().slice(0, 10);
-		const createData: TransactionCreateRequest = {
-			clientId: formData.clientId,
-			operationDate: operationDateFormatted,
-			operationType: "sale", // Always set to "Venta"
-			branchPostalCode: formData.branchPostalCode,
-			vehicleType: formData.vehicleType as TransactionVehicleType,
-			brand: formData.brand,
-			model: formData.model,
-			year: parseInt(formData.year, 10),
-			amount: calculatedAmount,
-			currency: formData.currency,
-			paymentMethods: formData.paymentMethods,
-		};
+		// Wrap in Sentry span for tracking
+		await Sentry.startSpan(
+			{
+				name: "Create Transaction",
+				op: "ui.submit",
+			},
+			async () => {
+				setIsSaving(true);
+				const calculatedAmount = calculateAmountFromPaymentMethods();
+				// Format operationDate as date-only (YYYY-MM-DD) - API expects this format, not ISO date-time
+				const operationDateFormatted =
+					formData.operationDate || new Date().toISOString().slice(0, 10);
+				const createData: TransactionCreateRequest = {
+					clientId: formData.clientId,
+					operationDate: operationDateFormatted,
+					operationType: "sale", // Always set to "Venta"
+					branchPostalCode: formData.branchPostalCode,
+					vehicleType: formData.vehicleType as TransactionVehicleType,
+					brand: formData.brand,
+					model: formData.model,
+					year: parseInt(formData.year, 10),
+					amount: calculatedAmount,
+					currency: formData.currency,
+					paymentMethods: formData.paymentMethods,
+				};
 
-		if (formData.vehicleType === "land") {
-			// At least one of plates, VIN, or engineNumber must be provided
-			if (formData.vin) createData.vin = formData.vin;
-			if (formData.repuve) createData.repuve = formData.repuve;
-			if (formData.plates) createData.plates = formData.plates;
-			if (formData.engineNumber)
-				createData.engineNumber = formData.engineNumber;
-		} else {
-			if (formData.registrationNumber)
-				createData.registrationNumber = formData.registrationNumber;
-			if (formData.flagCountryId)
-				createData.flagCountryId = formData.flagCountryId;
-		}
+				if (formData.vehicleType === "land") {
+					// At least one of plates, VIN, or engineNumber must be provided
+					if (formData.vin) createData.vin = formData.vin;
+					if (formData.repuve) createData.repuve = formData.repuve;
+					if (formData.plates) createData.plates = formData.plates;
+					if (formData.engineNumber)
+						createData.engineNumber = formData.engineNumber;
+				} else {
+					if (formData.registrationNumber)
+						createData.registrationNumber = formData.registrationNumber;
+					if (formData.flagCountryId)
+						createData.flagCountryId = formData.flagCountryId;
+				}
 
-		try {
-			await executeMutation({
-				mutation: () => createTransaction({ input: createData }),
-				loading: "Creando transacción...",
-				success: "Transacción creada exitosamente",
-				onSuccess: () => {
-					navigateTo("/transactions");
-				},
-			});
-		} catch (error) {
-			// Error is already handled by executeMutation via Sonner
-			console.error("Error creating transaction:", error);
-		} finally {
-			setIsSaving(false);
-		}
+				try {
+					await executeMutation({
+						mutation: () => createTransaction({ input: createData }),
+						loading: "Creando transacción...",
+						success: "Transacción creada exitosamente",
+						onSuccess: () => {
+							// Clear session storage on successful submission
+							clearFormStorage();
+							navigateTo("/transactions");
+						},
+					});
+				} catch (error) {
+					// Capture exception in Sentry
+					Sentry.captureException(error);
+					Sentry.logger.error(
+						Sentry.logger.fmt`Failed to create transaction: ${error}`,
+					);
+					// Error is already handled by executeMutation via Sonner
+				} finally {
+					setIsSaving(false);
+				}
+			},
+		);
 	};
 
 	const handleCancel = (): void => {
@@ -277,7 +303,7 @@ export function TransactionCreateView(): React.JSX.Element {
 	};
 
 	return (
-		<div className="space-y-6">
+		<div className="space-y-6 pb-24 md:pb-20">
 			<PageHero
 				title={t("txnNewTitle")}
 				subtitle={t("txnNewSubtitle")}
@@ -286,33 +312,16 @@ export function TransactionCreateView(): React.JSX.Element {
 					label: t("back"),
 					onClick: handleCancel,
 				}}
-				actions={[
-					{
-						label: isSaving ? t("txnCreating") : t("txnCreateButton"),
-						icon: Save,
-						onClick: () => {
-							void handleSubmit({
-								preventDefault: () => {},
-							} as React.FormEvent);
-						},
-						disabled: isSaving,
-					},
-					{
-						label: t("cancel"),
-						onClick: handleCancel,
-						variant: "outline",
-					},
-				]}
 			/>
 
-			<form onSubmit={handleSubmit} className="space-y-6">
+			<form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
 				<Card>
 					<CardHeader>
 						<CardTitle className="text-lg">{t("txnInfoTitle")}</CardTitle>
 						<CardDescription>{t("txnInfoDesc")}</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
 							<div className="space-y-2">
 								<ClientSelector
 									label={t("txnClient")}
@@ -382,31 +391,16 @@ export function TransactionCreateView(): React.JSX.Element {
 							>
 								{t("txnVehicleType")}
 							</LabelWithInfo>
-							<Select
+							<VehicleTypePicker
+								id="vehicle-type"
 								value={formData.vehicleType}
-								onValueChange={(value) =>
-									handleInputChange("vehicleType", value)
-								}
-								required
-							>
-								<SelectTrigger id="vehicle-type">
-									<SelectValue placeholder={t("txnVehicleTypePlaceholder")} />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="land">
-										{t("txnVehicleTypeLand")}
-									</SelectItem>
-									<SelectItem value="marine">
-										{t("txnVehicleTypeMarine")}
-									</SelectItem>
-									<SelectItem value="air">{t("txnVehicleTypeAir")}</SelectItem>
-								</SelectContent>
-							</Select>
+								onChange={(value) => handleInputChange("vehicleType", value)}
+							/>
 						</div>
 
 						<Separator />
 
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
 							<CatalogSelector
 								catalogKey={getVehicleBrandCatalogKey(formData.vehicleType)}
 								label={t("txnBrand")}
@@ -431,7 +425,9 @@ export function TransactionCreateView(): React.JSX.Element {
 								<Input
 									id="model"
 									value={formData.model}
-									onChange={(e) => handleInputChange("model", e.target.value)}
+									onChange={(e) =>
+										handleInputChange("model", e.target.value.toUpperCase())
+									}
 									placeholder="Corolla, X5, etc."
 									required
 								/>
@@ -565,7 +561,10 @@ export function TransactionCreateView(): React.JSX.Element {
 										value={formData.flagCountryId}
 										searchPlaceholder={t("search")}
 										onChange={(option) =>
-											handleInputChange("flagCountryId", option?.id ?? "")
+											handleInputChange(
+												"flagCountryId",
+												(option?.metadata?.code as string) ?? "",
+											)
 										}
 									/>
 								</>
@@ -580,7 +579,7 @@ export function TransactionCreateView(): React.JSX.Element {
 						<CardDescription>{t("txnPaymentDesc")}</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
 							<CatalogSelector
 								catalogKey="currencies"
 								label={t("txnCurrency")}
@@ -644,7 +643,7 @@ export function TransactionCreateView(): React.JSX.Element {
 							{formData.paymentMethods.map((pm, index) => (
 								<div
 									key={index}
-									className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-lg"
+									className="grid grid-cols-1 @lg/main:grid-cols-3 gap-4 p-4 border rounded-lg"
 								>
 									<CatalogSelector
 										catalogKey="payment-methods"
@@ -703,6 +702,27 @@ export function TransactionCreateView(): React.JSX.Element {
 					</CardContent>
 				</Card>
 			</form>
+
+			{/* Fixed Action Bar */}
+			<FormActionBar
+				actions={[
+					{
+						label: isSaving ? t("txnCreating") : t("txnCreateButton"),
+						icon: Save,
+						onClick: () => {
+							// Use requestSubmit() to trigger native form validation
+							formRef.current?.requestSubmit();
+						},
+						disabled: isSaving,
+						loading: isSaving,
+					},
+					{
+						label: t("cancel"),
+						onClick: handleCancel,
+						variant: "outline",
+					},
+				]}
+			/>
 		</div>
 	);
 }

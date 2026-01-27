@@ -65,11 +65,20 @@ vi.mock("@/lib/auth/actions", () => ({
 }));
 
 const mockSetActiveOrganization = vi.fn();
-const mockCreateOrganization = vi.fn();
 vi.mock("@/lib/auth/organizations", () => ({
 	setActiveOrganization: (...args: unknown[]) =>
 		mockSetActiveOrganization(...args),
-	createOrganization: (...args: unknown[]) => mockCreateOrganization(...args),
+}));
+
+const mockGetAuthAppUrl = vi.fn().mockReturnValue("https://auth.test.com");
+const mockGetWatchlistAppUrl = vi
+	.fn()
+	.mockReturnValue("https://watchlist.test.com");
+const mockGetHomepageUrl = vi.fn().mockReturnValue("https://aml.test.com");
+vi.mock("@/lib/auth/config", () => ({
+	getAuthAppUrl: () => mockGetAuthAppUrl(),
+	getWatchlistAppUrl: () => mockGetWatchlistAppUrl(),
+	getHomepageUrl: () => mockGetHomepageUrl(),
 }));
 
 const mockSetCurrentOrg = vi.fn();
@@ -205,10 +214,6 @@ describe("AppSidebar", () => {
 			data: { activeOrganizationId: "org-1" },
 			error: null,
 		});
-		mockCreateOrganization.mockResolvedValue({
-			data: { id: "new-org-1", name: "New Org", slug: "new-org" },
-			error: null,
-		});
 	});
 
 	it("renders sidebar with navigation items", () => {
@@ -216,7 +221,6 @@ describe("AppSidebar", () => {
 
 		expect(screen.getByText("Clientes")).toBeInTheDocument();
 		expect(screen.getByText("Transacciones")).toBeInTheDocument();
-		expect(screen.getByText("Configuración")).toBeInTheDocument();
 	});
 
 	it("renders organization switcher and nav user", () => {
@@ -237,17 +241,31 @@ describe("AppSidebar", () => {
 		expect(changeOrgButton).toBeInTheDocument();
 	});
 
-	it("handles create organization", async () => {
+	it("handles create organization - redirects to auth settings", async () => {
 		const user = userEvent.setup();
+
+		// Mock window.location.href setter
+		const originalLocation = window.location;
+		const mockHref = vi.fn();
+		Object.defineProperty(window, "location", {
+			configurable: true,
+			value: { href: mockHref },
+		});
+
 		renderWithProviders(<AppSidebar />);
 
 		const createOrgButton = screen.getByText("Create Org");
 		await user.click(createOrgButton);
 
-		// The create organization handler opens a dialog, it doesn't navigate
-		// Check that the dialog is opened
-		await waitFor(() => {
-			expect(screen.getByText("Nueva organización")).toBeInTheDocument();
+		// Should redirect to auth settings org create page
+		expect(window.location.href).toBe(
+			"https://auth.test.com/settings/organization/new",
+		);
+
+		// Restore window.location
+		Object.defineProperty(window, "location", {
+			configurable: true,
+			value: originalLocation,
 		});
 	});
 
@@ -430,8 +448,6 @@ describe("AppSidebar", () => {
 		// Verify all navigation groups are rendered
 		expect(screen.getByText("Clientes")).toBeInTheDocument(); // Main nav
 		expect(screen.getByText("Inicio")).toBeInTheDocument(); // Main nav
-		expect(screen.getByText("Equipo")).toBeInTheDocument(); // Org nav
-		expect(screen.getByText("Configuración")).toBeInTheDocument(); // Org nav
 	});
 
 	it("handles organization change callback", async () => {
@@ -463,37 +479,7 @@ describe("AppSidebar", () => {
 		expect(mockSetActiveOrganization).toHaveBeenCalledWith("org-1");
 	});
 
-	it("opens create organization dialog and submits form", async () => {
-		const user = userEvent.setup();
-
-		renderWithProviders(<AppSidebar />);
-
-		// Click create organization button
-		const createOrgButton = screen.getByText("Create Org");
-		await user.click(createOrgButton);
-
-		// Dialog should be open
-		await waitFor(() => {
-			expect(screen.getByText("Nueva organización")).toBeInTheDocument();
-		});
-
-		// Fill in the form
-		const nameInput = screen.getByLabelText("Nombre");
-		await user.type(nameInput, "Test Organization");
-
-		// Verify slug is derived
-		expect(screen.getByText("test-organization")).toBeInTheDocument();
-	});
-
-	it("handles settings navigation", async () => {
-		const user = userEvent.setup();
-		mockUsePathname.mockReturnValue("/settings");
-
-		renderWithProviders(<AppSidebar />);
-
-		// Settings link should be in the document
-		expect(screen.getByText("Configuración")).toBeInTheDocument();
-	});
+	// Dialog tests removed - create organization now redirects to auth settings
 
 	it("renders with no organizations", () => {
 		mockUseOrgStore.mockReturnValue({
@@ -509,360 +495,7 @@ describe("AppSidebar", () => {
 		expect(screen.getByText("Clientes")).toBeInTheDocument();
 	});
 
-	it("submits create organization form successfully", async () => {
-		const user = userEvent.setup();
-		mockCreateOrganization.mockResolvedValueOnce({
-			data: { id: "new-org-1", name: "My New Org", slug: "my-new-org" },
-			error: null,
-		});
-
-		renderWithProviders(<AppSidebar />);
-
-		// Open create organization dialog
-		const createOrgButton = screen.getByText("Create Org");
-		await user.click(createOrgButton);
-
-		await waitFor(() => {
-			expect(screen.getByText("Nueva organización")).toBeInTheDocument();
-		});
-
-		// Fill in the form
-		const nameInput = screen.getByLabelText("Nombre");
-		await user.type(nameInput, "My New Org");
-
-		// Submit the form
-		const submitButton = screen.getByText("Crear organización");
-		await user.click(submitButton);
-
-		// Verify createOrganization was called
-		await waitFor(() => {
-			expect(mockCreateOrganization).toHaveBeenCalledWith({
-				name: "My New Org",
-				slug: "my-new-org",
-				logo: undefined,
-			});
-		});
-	});
-
-	it("handles create organization error", async () => {
-		const user = userEvent.setup();
-		mockCreateOrganization.mockResolvedValueOnce({
-			data: null,
-			error: "Organization already exists",
-		});
-
-		renderWithProviders(<AppSidebar />);
-
-		// Open create organization dialog
-		const createOrgButton = screen.getByText("Create Org");
-		await user.click(createOrgButton);
-
-		await waitFor(() => {
-			expect(screen.getByText("Nueva organización")).toBeInTheDocument();
-		});
-
-		// Fill in the form
-		const nameInput = screen.getByLabelText("Nombre");
-		await user.type(nameInput, "Existing Org");
-
-		// Submit the form
-		const submitButton = screen.getByText("Crear organización");
-		await user.click(submitButton);
-
-		// Verify createOrganization was called (error is handled by executeMutation via Sonner toast)
-		await waitFor(() => {
-			expect(mockCreateOrganization).toHaveBeenCalledWith(
-				expect.objectContaining({
-					name: "Existing Org",
-				}),
-			);
-		});
-	});
-
-	it("handles create organization with no data returned", async () => {
-		const user = userEvent.setup();
-		mockCreateOrganization.mockResolvedValueOnce({
-			data: null,
-			error: null,
-		});
-
-		renderWithProviders(<AppSidebar />);
-
-		// Open create organization dialog
-		const createOrgButton = screen.getByText("Create Org");
-		await user.click(createOrgButton);
-
-		await waitFor(() => {
-			expect(screen.getByText("Nueva organización")).toBeInTheDocument();
-		});
-
-		// Fill in the form
-		const nameInput = screen.getByLabelText("Nombre");
-		await user.type(nameInput, "Test Org");
-
-		// Submit the form
-		const submitButton = screen.getByText("Crear organización");
-		await user.click(submitButton);
-
-		// Verify createOrganization was called (error is handled by executeMutation via Sonner toast)
-		await waitFor(() => {
-			expect(mockCreateOrganization).toHaveBeenCalledWith(
-				expect.objectContaining({
-					name: "Test Org",
-				}),
-			);
-		});
-	});
-
-	it("handles setActiveOrganization error after creating org", async () => {
-		const mockToast = vi.fn();
-		vi.doMock("@/hooks/use-toast", () => ({
-			useToast: () => ({
-				toast: mockToast,
-			}),
-		}));
-
-		const user = userEvent.setup();
-		mockCreateOrganization.mockResolvedValueOnce({
-			data: { id: "new-org-1", name: "New Org", slug: "new-org" },
-			error: null,
-		});
-		mockSetActiveOrganization.mockResolvedValueOnce({
-			data: null,
-			error: "Failed to activate organization",
-		});
-
-		renderWithProviders(<AppSidebar />);
-
-		// Open create organization dialog
-		const createOrgButton = screen.getByText("Create Org");
-		await user.click(createOrgButton);
-
-		await waitFor(() => {
-			expect(screen.getByText("Nueva organización")).toBeInTheDocument();
-		});
-
-		// Fill in the form
-		const nameInput = screen.getByLabelText("Nombre");
-		await user.type(nameInput, "New Org");
-
-		// Submit the form
-		const submitButton = screen.getByText("Crear organización");
-		await user.click(submitButton);
-
-		// Verify create was called
-		await waitFor(() => {
-			expect(mockCreateOrganization).toHaveBeenCalled();
-		});
-	});
-
-	it("does not submit when org name is empty", async () => {
-		const user = userEvent.setup();
-
-		renderWithProviders(<AppSidebar />);
-
-		// Open create organization dialog
-		const createOrgButton = screen.getByText("Create Org");
-		await user.click(createOrgButton);
-
-		await waitFor(() => {
-			expect(screen.getByText("Nueva organización")).toBeInTheDocument();
-		});
-
-		// Try to submit without filling in name
-		const submitButton = screen.getByText("Crear organización");
-		expect(submitButton).toBeDisabled();
-
-		// createOrganization should not be called
-		expect(mockCreateOrganization).not.toHaveBeenCalled();
-	});
-
-	it("handles custom slug input in create organization form", async () => {
-		const user = userEvent.setup();
-		mockCreateOrganization.mockResolvedValueOnce({
-			data: { id: "new-org-1", name: "My Org", slug: "custom-slug" },
-			error: null,
-		});
-
-		renderWithProviders(<AppSidebar />);
-
-		// Open create organization dialog
-		const createOrgButton = screen.getByText("Create Org");
-		await user.click(createOrgButton);
-
-		await waitFor(() => {
-			expect(screen.getByText("Nueva organización")).toBeInTheDocument();
-		});
-
-		// Fill in the form with custom slug
-		const nameInput = screen.getByLabelText("Nombre");
-		await user.type(nameInput, "My Org");
-
-		const slugInput = screen.getByLabelText("Slug");
-		await user.type(slugInput, "custom-slug");
-
-		// Verify derived slug shows custom value
-		expect(screen.getByText("custom-slug")).toBeInTheDocument();
-
-		// Submit the form
-		const submitButton = screen.getByText("Crear organización");
-		await user.click(submitButton);
-
-		// Verify createOrganization was called with custom slug
-		await waitFor(() => {
-			expect(mockCreateOrganization).toHaveBeenCalledWith({
-				name: "My Org",
-				slug: "custom-slug",
-				logo: undefined,
-			});
-		});
-	});
-
-	it("handles logo URL input in create organization form", async () => {
-		const user = userEvent.setup();
-		mockCreateOrganization.mockResolvedValueOnce({
-			data: {
-				id: "new-org-1",
-				name: "My Org",
-				slug: "my-org",
-				logo: "https://example.com/logo.png",
-			},
-			error: null,
-		});
-
-		renderWithProviders(<AppSidebar />);
-
-		// Open create organization dialog
-		const createOrgButton = screen.getByText("Create Org");
-		await user.click(createOrgButton);
-
-		await waitFor(() => {
-			expect(screen.getByText("Nueva organización")).toBeInTheDocument();
-		});
-
-		// Fill in the form with logo
-		const nameInput = screen.getByLabelText("Nombre");
-		await user.type(nameInput, "My Org");
-
-		const logoInput = screen.getByLabelText("Logo (URL opcional)");
-		await user.type(logoInput, "https://example.com/logo.png");
-
-		// Submit the form
-		const submitButton = screen.getByText("Crear organización");
-		await user.click(submitButton);
-
-		// Verify createOrganization was called with logo
-		await waitFor(() => {
-			expect(mockCreateOrganization).toHaveBeenCalledWith({
-				name: "My Org",
-				slug: "my-org",
-				logo: "https://example.com/logo.png",
-			});
-		});
-	});
-
-	it("closes dialog when cancel button is clicked", async () => {
-		const user = userEvent.setup();
-
-		renderWithProviders(<AppSidebar />);
-
-		// Open create organization dialog
-		const createOrgButton = screen.getByText("Create Org");
-		await user.click(createOrgButton);
-
-		await waitFor(() => {
-			expect(screen.getByText("Nueva organización")).toBeInTheDocument();
-		});
-
-		// Click cancel
-		const cancelButton = screen.getByText("Cancelar");
-		await user.click(cancelButton);
-
-		// Dialog should close
-		await waitFor(() => {
-			expect(screen.queryByText("Nueva organización")).not.toBeInTheDocument();
-		});
-	});
-
-	it("allows typing in name field and submitting form", async () => {
-		const user = userEvent.setup();
-		mockCreateOrganization.mockResolvedValueOnce({
-			data: { id: "new-org-1", name: "Test Org", slug: "test-org" },
-			error: null,
-		});
-
-		renderWithProviders(<AppSidebar />);
-
-		// Open create organization dialog
-		const createOrgButton = screen.getByText("Create Org");
-		await user.click(createOrgButton);
-
-		await waitFor(() => {
-			expect(screen.getByText("Nueva organización")).toBeInTheDocument();
-		});
-
-		// Fill in the form and submit
-		const nameInput = screen.getByLabelText("Nombre");
-		await user.type(nameInput, "Test Org");
-
-		const submitButton = screen.getByText("Crear organización");
-		await user.click(submitButton);
-
-		// Verify createOrganization was called
-		await waitFor(() => {
-			expect(mockCreateOrganization).toHaveBeenCalledWith(
-				expect.objectContaining({
-					name: "Test Org",
-				}),
-			);
-		});
-	});
-
-	it("allows customizing slug field and submitting form", async () => {
-		const user = userEvent.setup();
-		mockCreateOrganization.mockResolvedValueOnce({
-			data: { id: "new-org-1", name: "Test Org", slug: "custom-slug" },
-			error: null,
-		});
-
-		renderWithProviders(<AppSidebar />);
-
-		// Open create organization dialog
-		const createOrgButton = screen.getByText("Create Org");
-		await user.click(createOrgButton);
-
-		await waitFor(() => {
-			expect(screen.getByText("Nueva organización")).toBeInTheDocument();
-		});
-
-		// Fill in the form
-		const nameInput = screen.getByLabelText("Nombre");
-		await user.type(nameInput, "Test Org");
-
-		// Type in slug field
-		const slugInput = screen.getByLabelText("Slug");
-		await user.type(slugInput, "custom-slug");
-
-		const submitButton = screen.getByText("Crear organización");
-		await user.click(submitButton);
-
-		// Verify createOrganization was called with custom slug
-		await waitFor(() => {
-			expect(mockCreateOrganization).toHaveBeenCalledWith(
-				expect.objectContaining({
-					slug: "custom-slug",
-				}),
-			);
-		});
-	});
-
-	it("renders team navigation item", () => {
-		mockUsePathname.mockReturnValue("/team");
-
-		renderWithProviders(<AppSidebar />);
-
-		expect(screen.getByText("Equipo")).toBeInTheDocument();
-	});
+	// Dialog tests removed - create organization now redirects to auth settings
 
 	it("handles org with logo in legacy format", () => {
 		mockUseOrgStore.mockReturnValue({
@@ -970,6 +603,8 @@ describe("AppSidebar", () => {
 		expect(screen.getByText("Transacciones")).toBeInTheDocument();
 		expect(screen.getByText("Alertas")).toBeInTheDocument();
 		expect(screen.getByText("Reportes")).toBeInTheDocument();
+		// Products section items
+		expect(screen.getByText("Watchlist")).toBeInTheDocument();
 	});
 
 	it("handles session user without name", () => {
@@ -1017,13 +652,5 @@ describe("AppSidebar", () => {
 		renderWithProviders(<AppSidebar />);
 
 		expect(screen.getByText("Clientes")).toBeInTheDocument();
-	});
-
-	it("renders all org navigation items", () => {
-		renderWithProviders(<AppSidebar />);
-
-		// All org nav items should be visible
-		expect(screen.getByText("Equipo")).toBeInTheDocument();
-		expect(screen.getByText("Configuración")).toBeInTheDocument();
 	});
 });

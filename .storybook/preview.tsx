@@ -1,5 +1,6 @@
 import type { Preview } from "@storybook/react";
 import { useEffect } from "react";
+import { LanguageProvider } from "../src/components/LanguageProvider";
 
 import "../src/app/globals.css";
 
@@ -42,9 +43,11 @@ const preview: Preview = {
 			}, [theme]);
 
 			return (
-				<div className="min-h-screen bg-background text-foreground p-6">
-					<Story />
-				</div>
+				<LanguageProvider defaultLanguage="es">
+					<div className="min-h-screen bg-background text-foreground p-6">
+						<Story />
+					</div>
+				</LanguageProvider>
 			);
 		},
 	],

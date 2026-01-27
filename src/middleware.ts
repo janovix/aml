@@ -8,6 +8,12 @@ const getAuthAppUrl = () => {
 };
 
 const getAuthServiceUrl = () => {
+	// For middleware (Edge Runtime), prefer internal URL that doesn't need DNS resolution
+	// This allows local development where hosts file entries aren't available in Edge Runtime
+	const internalUrl = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL_INTERNAL;
+	if (internalUrl) {
+		return internalUrl;
+	}
 	return (
 		process.env.NEXT_PUBLIC_AUTH_SERVICE_URL ||
 		"https://auth-svc.janovix.workers.dev"
@@ -55,6 +61,35 @@ function redirectToLogin(request: NextRequest): NextResponse {
 	const authAppUrl = getAuthAppUrl();
 	const returnUrl = encodeURIComponent(getExternalUrl(request));
 	return NextResponse.redirect(`${authAppUrl}/login?redirect_to=${returnUrl}`);
+}
+
+/**
+ * Redirect to onboarding if user hasn't completed profile setup or has no organization.
+ */
+function redirectToOnboarding(request: NextRequest): NextResponse {
+	const authAppUrl = getAuthAppUrl();
+	const returnUrl = encodeURIComponent(getExternalUrl(request));
+	return NextResponse.redirect(
+		`${authAppUrl}/onboarding?redirect_to=${returnUrl}`,
+	);
+}
+
+/**
+ * Check if user needs profile onboarding (no name or empty name).
+ */
+function needsProfileOnboarding(user: { name?: string | null }): boolean {
+	const userName = user?.name?.trim();
+	return !userName;
+}
+
+/**
+ * Check if user has any organization membership.
+ * This is checked via the organizations list from auth service.
+ */
+function hasOrganizationMembership(
+	organizations: Array<{ id: string }> | null,
+): boolean {
+	return organizations !== null && organizations.length > 0;
 }
 
 /**
@@ -227,8 +262,17 @@ function getTargetOrg(
 export async function middleware(request: NextRequest) {
 	const sessionCookie = getSessionCookie(request);
 
+	// DEBUG: Log session cookie status
+	console.log(
+		"[AML Middleware] Session cookie:",
+		sessionCookie ? "EXISTS" : "NULL",
+	);
+	console.log("[AML Middleware] Auth Service URL:", getAuthServiceUrl());
+	console.log("[AML Middleware] Auth App URL (Origin):", getAuthAppUrl());
+
 	// No session cookie → redirect to auth app
 	if (!sessionCookie) {
+		console.log("[AML Middleware] No session cookie, redirecting to login");
 		return redirectToLogin(request);
 	}
 
@@ -237,12 +281,15 @@ export async function middleware(request: NextRequest) {
 
 	interface SessionData {
 		session?: { activeOrganizationId?: string };
-		user?: unknown;
+		user?: { name?: string | null };
 	}
 
 	let sessionData: SessionData | null = null;
 
+	let userOrganizations: Organization[] | null = null;
+
 	try {
+		console.log("[AML Middleware] Validating session with auth-svc...");
 		const response = await fetch(
 			`${getAuthServiceUrl()}/api/auth/get-session`,
 			{
@@ -254,16 +301,44 @@ export async function middleware(request: NextRequest) {
 			},
 		);
 
+		console.log("[AML Middleware] Auth-svc response status:", response.status);
+
 		if (!response.ok) {
+			console.log("[AML Middleware] Response not OK, redirecting to login");
 			return redirectToLogin(request);
 		}
 
 		sessionData = (await response.json()) as SessionData;
+		console.log("[AML Middleware] Session data:", JSON.stringify(sessionData));
 
 		if (!sessionData?.session || !sessionData?.user) {
+			console.log(
+				"[AML Middleware] No session/user in response, redirecting to login",
+			);
 			return redirectToLogin(request);
 		}
-	} catch {
+
+		// Check if user needs profile onboarding (no name set)
+		if (needsProfileOnboarding(sessionData.user)) {
+			console.log(
+				"[AML Middleware] User needs profile onboarding, redirecting",
+			);
+			return redirectToOnboarding(request);
+		}
+
+		// Fetch user organizations to check if they have any membership
+		const orgsData = await fetchUserOrganizations(cookieHeader);
+		userOrganizations = orgsData?.organizations ?? null;
+
+		// Check if user has any organization membership
+		if (!hasOrganizationMembership(userOrganizations)) {
+			console.log(
+				"[AML Middleware] User has no organization membership, redirecting to onboarding",
+			);
+			return redirectToOnboarding(request);
+		}
+	} catch (error) {
+		console.log("[AML Middleware] Error during validation:", error);
 		return redirectToLogin(request);
 	}
 
@@ -292,11 +367,9 @@ export async function middleware(request: NextRequest) {
 		}
 
 		if (!hasAccessToOrg(organizations, orgSlug)) {
-			// Org doesn't exist or user doesn't have access
-			// Check if org exists at all (for proper error message)
-			// For now, we'll show forbidden - the page will display appropriate message
+			// Org doesn't exist or user doesn't have access - show not-found
 			return NextResponse.rewrite(
-				createExternalUrl(`/${orgSlug}/forbidden`, request),
+				createExternalUrl(`/${orgSlug}/not-found`, request),
 			);
 		}
 
@@ -315,9 +388,26 @@ export async function middleware(request: NextRequest) {
 
 	const pathSegments = pathname.split("/").filter(Boolean);
 
-	// Root path "/" - redirect to index page for org selection
+	// Root path "/" - redirect to active org's dashboard
 	if (pathSegments.length === 0) {
-		// Let the index page handle org selection
+		// userOrganizations is already fetched above (line 330)
+		// We know the user has orgs (checked at line 334)
+		if (userOrganizations && userOrganizations.length > 0) {
+			// Find the active org or use the first one
+			const activeOrgId = sessionData?.session?.activeOrganizationId;
+			const targetOrg = getTargetOrg(userOrganizations, activeOrgId);
+
+			if (targetOrg) {
+				console.log(
+					`[AML Middleware] Redirecting from / to /${targetOrg.slug}`,
+				);
+				return NextResponse.redirect(
+					createExternalUrl(`/${targetOrg.slug}`, request),
+				);
+			}
+		}
+
+		// Fallback: let the index page handle it (shouldn't reach here normally)
 		return NextResponse.next();
 	}
 
@@ -366,9 +456,9 @@ export async function middleware(request: NextRequest) {
 
 		// Check if user has access to this org
 		if (!hasAccessToOrg(organizations, orgSlug)) {
-			// No access - show forbidden page
+			// No access - show not-found page (org doesn't exist for this user)
 			return NextResponse.rewrite(
-				createExternalUrl(`/${orgSlug}/forbidden`, request),
+				createExternalUrl(`/${orgSlug}/not-found`, request),
 			);
 		}
 
@@ -384,7 +474,8 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
+	// Exclude api, monitoring (Sentry tunnel), static files, and images from middleware
 	matcher: [
-		"/((?!api|_next/static|_next/image|favicon.ico|site.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+		"/((?!api|monitoring|_next/static|_next/image|favicon.ico|site.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
 	],
 };

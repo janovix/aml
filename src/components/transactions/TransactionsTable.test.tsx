@@ -291,13 +291,13 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 	});
 
 	it("passes filters to API", async () => {
-		const filters = { operationType: "purchase" as const };
+		const filters = { vehicleType: "land" as const };
 		renderWithProviders(<TransactionsTable filters={filters} />);
 
 		await waitFor(() => {
 			expect(transactionsApi.listTransactions).toHaveBeenCalledWith(
 				expect.objectContaining({
-					operationType: "purchase",
+					vehicleType: "land",
 				}),
 			);
 		});
@@ -373,10 +373,9 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 		});
 
 		// Check for filter buttons (using getAllByText since filter button and label may duplicate)
-		const operacionButtons = screen.getAllByText("Operación");
+		// Note: "Operación" filter was removed - all transactions default to "Venta" (sale)
 		const vehiculoButtons = screen.getAllByText("Vehículo");
 		const monedaButtons = screen.getAllByText("Moneda");
-		expect(operacionButtons.length).toBeGreaterThan(0);
 		expect(vehiculoButtons.length).toBeGreaterThan(0);
 		expect(monedaButtons.length).toBeGreaterThan(0);
 	});
@@ -855,8 +854,9 @@ describe("TransactionsTable", { timeout: 30000 }, () => {
 		});
 
 		// Filter buttons should be present
-		const operacionButtons = screen.getAllByText("Operación");
-		expect(operacionButtons.length).toBeGreaterThan(0);
+		// Note: "Operación" filter was removed - all transactions default to "Venta" (sale)
+		const vehiculoButtons = screen.getAllByText("Vehículo");
+		expect(vehiculoButtons.length).toBeGreaterThan(0);
 	});
 
 	it("handles filter by vehicle type marine", async () => {

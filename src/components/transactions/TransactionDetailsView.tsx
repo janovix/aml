@@ -45,7 +45,7 @@ export function TransactionDetailsSkeleton(): React.ReactElement {
 				actionCount={3}
 			/>
 			{/* Content skeleton */}
-			<div className="grid gap-6 md:grid-cols-2">
+			<div className="grid gap-6 @md/main:grid-cols-2">
 				{[1, 2].map((i) => (
 					<Card key={i}>
 						<CardHeader>
@@ -229,7 +229,7 @@ export function TransactionDetailsView({
 			/>
 
 			<div className="space-y-6">
-				<div className="grid gap-6 md:grid-cols-2">
+				<div className="grid gap-6 @md/main:grid-cols-2">
 					<Card>
 						<CardHeader>
 							<CardTitle>{t("txnInfoTitle")}</CardTitle>
@@ -366,7 +366,7 @@ export function TransactionDetailsView({
 							<CardTitle>{t("txnVehicleTitle")}</CardTitle>
 						</CardHeader>
 						<CardContent className="space-y-4">
-							<div className="grid gap-4 md:grid-cols-3">
+							<div className="grid gap-4 @lg/main:grid-cols-3">
 								<div>
 									<p className="text-sm font-medium text-muted-foreground">
 										Tipo de Vehículo
@@ -377,7 +377,7 @@ export function TransactionDetailsView({
 								</div>
 							</div>
 							<Separator />
-							<div className="grid gap-4 md:grid-cols-3">
+							<div className="grid gap-4 @lg/main:grid-cols-3">
 								<div>
 									<p className="text-sm font-medium text-muted-foreground">
 										Marca
@@ -414,7 +414,7 @@ export function TransactionDetailsView({
 								)}
 							</div>
 							<Separator />
-							<div className="grid gap-4 md:grid-cols-2">
+							<div className="grid gap-4 @md/main:grid-cols-2">
 								{transaction.plates && (
 									<div>
 										<p className="text-sm font-medium text-muted-foreground">

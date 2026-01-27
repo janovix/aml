@@ -6,9 +6,11 @@ import Link from "next/link";
 import {
 	Home,
 	Users,
+	User,
+	Building2,
 	Briefcase,
-	AlertTriangle,
 	Clock,
+	AlertTriangle,
 	RefreshCw,
 } from "lucide-react";
 
@@ -28,6 +30,7 @@ import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { getClientStats, type ClientStats } from "@/lib/api/stats";
 import { getTransactionStats, type TransactionStats } from "@/lib/api/stats";
 import { getLocaleForLanguage } from "@/lib/translations";
+import { cn } from "@/lib/utils";
 
 interface DashboardData {
 	clientStats: ClientStats | null;
@@ -36,7 +39,7 @@ interface DashboardData {
 
 export function StatsSkeleton(): React.ReactElement {
 	return (
-		<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+		<div className="grid grid-cols-1 gap-3 @md/main:grid-cols-2 @2xl/main:grid-cols-3">
 			{[1, 2, 3].map((i) => (
 				<Skeleton key={i} className="h-24 rounded-xl" />
 			))}
@@ -70,7 +73,7 @@ export function DashboardSkeleton(): React.ReactElement {
 	return (
 		<div className="space-y-6">
 			<StatsSkeleton />
-			<div className="grid gap-6 lg:grid-cols-2">
+			<div className="grid gap-6 @xl/main:grid-cols-2">
 				<CardSkeleton />
 				<CardSkeleton />
 			</div>
@@ -89,6 +92,13 @@ export function DashboardView(): React.ReactElement {
 	const formatCurrency = React.useCallback(
 		(value: string | number): string => {
 			const numValue = typeof value === "string" ? parseFloat(value) : value;
+			if (isNaN(numValue)) return "$0";
+			if (numValue >= 1000000) {
+				return `$${(numValue / 1000000).toFixed(1)}M`;
+			}
+			if (numValue >= 1000) {
+				return `$${(numValue / 1000).toFixed(1)}K`;
+			}
 			return new Intl.NumberFormat(locale, {
 				style: "currency",
 				currency: "MXN",
@@ -113,7 +123,50 @@ export function DashboardView(): React.ReactElement {
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
-	const fetchData = React.useCallback(async () => {
+	// Fetch data when JWT and org are ready
+	useEffect(() => {
+		// Still waiting for JWT
+		if (isJwtLoading) {
+			return;
+		}
+
+		// No JWT available (no org selected or auth issue)
+		if (!jwt) {
+			setIsLoading(false);
+			return;
+		}
+
+		// No org selected
+		if (!currentOrg?.id) {
+			setIsLoading(false);
+			return;
+		}
+
+		// All conditions met - fetch data
+		const fetchData = async () => {
+			setIsLoading(true);
+			setError(null);
+
+			try {
+				const [clientStats, transactionStats] = await Promise.all([
+					getClientStats({ jwt }).catch(() => null),
+					getTransactionStats({ jwt }).catch(() => null),
+				]);
+
+				setData({ clientStats, transactionStats });
+			} catch (err) {
+				console.error("Error fetching dashboard data:", err);
+				setError(t("errorLoadingData"));
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
+		fetchData();
+	}, [isJwtLoading, jwt, currentOrg?.id, t]);
+
+	// Manual refresh function for the refresh button
+	const handleRefresh = React.useCallback(async () => {
 		if (!jwt || !currentOrg?.id) return;
 
 		setIsLoading(true);
@@ -134,14 +187,6 @@ export function DashboardView(): React.ReactElement {
 		}
 	}, [jwt, currentOrg?.id, t]);
 
-	useEffect(() => {
-		if (!isJwtLoading && jwt && currentOrg?.id) {
-			fetchData();
-		} else if (!currentOrg?.id && !isJwtLoading) {
-			setIsLoading(false);
-		}
-	}, [fetchData, isJwtLoading, jwt, currentOrg?.id]);
-
 	// Build stats array for PageHero
 	const stats: StatCard[] = useMemo(() => {
 		const result: StatCard[] = [];
@@ -151,17 +196,17 @@ export function DashboardView(): React.ReactElement {
 				label: t("statsTotalClients"),
 				value: formatNumber(data.clientStats.totalClients),
 				icon: Users,
+				variant: "primary",
 				href: routes.clients.list(),
 			});
 		}
 
 		if (data.clientStats) {
 			result.push({
-				label: t("statsOpenAlerts"),
-				value: formatNumber(data.clientStats.openAlerts),
-				icon: AlertTriangle,
-				variant: data.clientStats.openAlerts > 0 ? "primary" : "default",
-				href: routes.alerts.list(),
+				label: t("statsPhysicalClients"),
+				value: formatNumber(data.clientStats.physicalClients),
+				icon: User,
+				href: routes.clients.list(),
 			});
 		}
 
@@ -179,30 +224,33 @@ export function DashboardView(): React.ReactElement {
 
 	const hasData = data.clientStats || data.transactionStats;
 
+	// Only show skeleton on initial load (no data yet), not during org switch
+	const showInitialSkeleton = isLoading && !hasData;
+
 	return (
 		<div className="space-y-6">
-			{/* Page Hero with main stats */}
+			{/* Page Hero with main stats - keep showing previous stats while loading */}
 			<PageHero
 				title={t("navDashboard")}
 				subtitle={t("dashboardSubtitle")}
 				icon={Home}
-				stats={isLoading ? undefined : stats}
+				stats={stats.length > 0 ? stats : undefined}
 				actions={[
 					{
 						label: t("dashboardRefresh"),
 						icon: RefreshCw,
-						onClick: fetchData,
+						onClick: handleRefresh,
 						variant: "outline",
 						disabled: isLoading,
 					},
 				]}
 			/>
 
-			{/* Loading skeleton */}
-			{isLoading && !hasData && (
+			{/* Loading skeleton - only on initial load when no data exists */}
+			{showInitialSkeleton && (
 				<div className="space-y-6">
 					<StatsSkeleton />
-					<div className="grid gap-6 lg:grid-cols-2">
+					<div className="grid gap-6 @xl/main:grid-cols-2">
 						<CardSkeleton />
 						<CardSkeleton />
 					</div>
@@ -222,8 +270,14 @@ export function DashboardView(): React.ReactElement {
 			)}
 
 			{/* Main content grid - Transactions and Clients side by side */}
+			{/* Keep showing data while loading (reduced opacity indicates refresh in progress) */}
 			{hasData && (
-				<div className="grid gap-6 lg:grid-cols-2">
+				<div
+					className={cn(
+						"grid gap-6 @xl/main:grid-cols-2 transition-opacity duration-200",
+						isLoading && "opacity-60 pointer-events-none",
+					)}
+				>
 					{/* Transaction Stats Card */}
 					<Link
 						href={routes.transactions.list()}
@@ -242,7 +296,7 @@ export function DashboardView(): React.ReactElement {
 							<CardContent>
 								{data.transactionStats ? (
 									<div className="space-y-4">
-										<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+										<div className="grid grid-cols-1 @lg/main:grid-cols-2 gap-4">
 											<div className="rounded-lg border bg-muted/50 p-4">
 												<div className="text-sm font-medium text-muted-foreground">
 													{t("statsTotalVolume")}
@@ -308,51 +362,38 @@ export function DashboardView(): React.ReactElement {
 							</CardHeader>
 							<CardContent>
 								{data.clientStats ? (
-									<div className="space-y-4">
-										<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-											<div className="rounded-lg border bg-muted/50 p-4">
-												<div className="flex items-center gap-3">
-													<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10">
-														<Users className="h-5 w-5 text-blue-500" />
-													</div>
-													<div>
-														<div className="text-sm font-medium text-muted-foreground">
-															{t("statsTotalClients")}
-														</div>
-														<div className="text-xl font-bold tabular-nums">
-															{formatNumber(data.clientStats.totalClients)}
-														</div>
-													</div>
-												</div>
+									<div className="grid grid-cols-1 @lg/main:grid-cols-3 gap-4">
+										<div className="flex flex-col items-center text-center rounded-lg border bg-muted/50 p-4">
+											<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10 mb-3">
+												<Users className="h-5 w-5 text-blue-500" />
 											</div>
-											<div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
-												<div className="flex items-center gap-3">
-													<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/10">
-														<AlertTriangle className="h-5 w-5 text-amber-500" />
-													</div>
-													<div>
-														<div className="text-sm font-medium text-muted-foreground">
-															{t("statsOpenAlerts")}
-														</div>
-														<div className="text-xl font-bold tabular-nums text-amber-600 dark:text-amber-400">
-															{formatNumber(data.clientStats.openAlerts)}
-														</div>
-													</div>
-												</div>
+											<div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+												{t("statsTotalClients")}
+											</div>
+											<div className="text-2xl font-bold tabular-nums mt-1 text-blue-500">
+												{formatNumber(data.clientStats.totalClients)}
 											</div>
 										</div>
-
-										<div className="flex items-center gap-4 rounded-lg border border-red-500/20 bg-red-500/5 p-4">
-											<div className="flex h-12 w-12 items-center justify-center rounded-lg bg-red-500/10">
-												<Clock className="h-6 w-6 text-red-500" />
+										<div className="flex flex-col items-center text-center rounded-lg border bg-muted/50 p-4">
+											<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 mb-3">
+												<User className="h-5 w-5 text-emerald-500" />
 											</div>
-											<div>
-												<div className="text-sm font-medium text-muted-foreground">
-													{t("statsUrgentReviews")}
-												</div>
-												<div className="text-2xl font-bold tabular-nums text-red-600 dark:text-red-400">
-													{formatNumber(data.clientStats.urgentReviews)}
-												</div>
+											<div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+												{t("statsPhysicalClients")}
+											</div>
+											<div className="text-2xl font-bold tabular-nums mt-1 text-emerald-500">
+												{formatNumber(data.clientStats.physicalClients)}
+											</div>
+										</div>
+										<div className="flex flex-col items-center text-center rounded-lg border bg-muted/50 p-4">
+											<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/10 mb-3">
+												<Building2 className="h-5 w-5 text-purple-500" />
+											</div>
+											<div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+												{t("statsMoralClients")}
+											</div>
+											<div className="text-2xl font-bold tabular-nums mt-1 text-purple-500">
+												{formatNumber(data.clientStats.moralClients)}
 											</div>
 										</div>
 									</div>

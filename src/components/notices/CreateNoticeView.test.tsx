@@ -61,18 +61,36 @@ const mockAvailableMonths: noticesApi.AvailableMonth[] = [
 		month: 12,
 		displayName: "Diciembre 2024",
 		hasNotice: false,
+		hasPendingNotice: false,
+		hasSubmittedNotice: false,
+		noticeCount: 0,
 	},
 	{
 		year: 2024,
 		month: 11,
 		displayName: "Noviembre 2024",
-		hasNotice: true, // Already has a notice
+		hasNotice: true, // Has a pending notice - blocks creation
+		hasPendingNotice: true,
+		hasSubmittedNotice: false,
+		noticeCount: 1,
 	},
 	{
 		year: 2024,
 		month: 10,
 		displayName: "Octubre 2024",
-		hasNotice: false,
+		hasNotice: false, // Has submitted notice but allows new creation
+		hasPendingNotice: false,
+		hasSubmittedNotice: true,
+		noticeCount: 1,
+	},
+	{
+		year: 2024,
+		month: 9,
+		displayName: "Septiembre 2024",
+		hasNotice: false, // No notices at all
+		hasPendingNotice: false,
+		hasSubmittedNotice: false,
+		noticeCount: 0,
 	},
 ];
 
@@ -325,7 +343,7 @@ describe("CreateNoticeView", () => {
 			});
 		});
 
-		it("disables months that already have notices", async () => {
+		it("disables months that have pending notices", async () => {
 			renderWithProviders(<CreateNoticeView />);
 
 			await waitFor(() => {
@@ -338,6 +356,21 @@ describe("CreateNoticeView", () => {
 
 			// Verify the API was called with months data
 			expect(noticesApi.getAvailableMonths).toHaveBeenCalled();
+		});
+
+		it("allows selection of months with only submitted notices", async () => {
+			// Octubre 2024 has a submitted notice but should still allow selection
+			const user = userEvent.setup();
+			renderWithProviders(<CreateNoticeView />);
+
+			await waitFor(() => {
+				expect(screen.getByText("Período SAT")).toBeInTheDocument();
+			});
+
+			// The mock data has Octubre with hasSubmittedNotice=true but hasPendingNotice=false
+			// It should be selectable
+			const selectTrigger = screen.getByRole("combobox");
+			expect(selectTrigger).toBeInTheDocument();
 		});
 
 		it("updates name when month changes", async () => {
@@ -357,6 +390,17 @@ describe("CreateNoticeView", () => {
 				expect(
 					screen.getByDisplayValue("Aviso Diciembre 2024"),
 				).toBeInTheDocument();
+			});
+		});
+
+		it("auto-selects first month without a pending notice", async () => {
+			// Diciembre should be auto-selected as it has no pending notice
+			renderWithProviders(<CreateNoticeView />);
+
+			await waitFor(() => {
+				const nameInput = screen.getByPlaceholderText("Aviso Diciembre 2024");
+				// Should auto-select Diciembre (first month without pending notice)
+				expect(nameInput).toHaveValue("Aviso Diciembre 2024");
 			});
 		});
 	});

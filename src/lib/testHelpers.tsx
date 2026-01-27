@@ -2,6 +2,9 @@ import { render, type RenderOptions } from "@testing-library/react";
 import type { ReactElement } from "react";
 import React from "react";
 import { LanguageProvider } from "@/components/LanguageProvider";
+import { PageStatusProvider } from "@/components/PageStatusProvider";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { ChatProvider } from "@/components/chat/ChatProvider";
 import {
 	translations,
 	type Language,
@@ -30,7 +33,13 @@ export function renderWithProviders(
 	const { language = "es", ...renderOptions } = options ?? {};
 	return render(ui, {
 		wrapper: ({ children }) => (
-			<LanguageProvider defaultLanguage={language}>{children}</LanguageProvider>
+			<LanguageProvider defaultLanguage={language}>
+				<PageStatusProvider>
+					<SidebarProvider>
+						<ChatProvider>{children}</ChatProvider>
+					</SidebarProvider>
+				</PageStatusProvider>
+			</LanguageProvider>
 		),
 		...renderOptions,
 	});

@@ -49,8 +49,8 @@ vi.mock("@/lib/org-store", () => ({
 vi.mock("@/lib/api/stats", () => ({
 	getClientStats: vi.fn().mockResolvedValue({
 		totalClients: 100,
-		openAlerts: 5,
-		urgentReviews: 2,
+		physicalClients: 70,
+		moralClients: 30,
 	}),
 	getTransactionStats: vi.fn().mockResolvedValue({
 		transactionsToday: 10,
@@ -246,27 +246,27 @@ describe("DashboardView branch coverage", () => {
 		});
 	});
 
-	it("shows primary variant for open alerts > 0", async () => {
+	it("shows client stats with person type breakdown", async () => {
 		vi.spyOn(statsApi, "getClientStats").mockResolvedValue({
 			totalClients: 100,
-			openAlerts: 10,
-			urgentReviews: 5,
+			physicalClients: 60,
+			moralClients: 40,
 		});
 
 		renderWithProviders(<DashboardView />);
 
 		await waitFor(() => {
-			// Should show open alerts with primary variant
+			// Should show client stats section
 			const dashboardHeaders = screen.getAllByText("Inicio");
 			expect(dashboardHeaders.length).toBeGreaterThan(0);
 		});
 	});
 
-	it("shows default variant for open alerts = 0", async () => {
+	it("shows zero counts when no clients exist", async () => {
 		vi.spyOn(statsApi, "getClientStats").mockResolvedValue({
-			totalClients: 100,
-			openAlerts: 0,
-			urgentReviews: 0,
+			totalClients: 0,
+			physicalClients: 0,
+			moralClients: 0,
 		});
 
 		renderWithProviders(<DashboardView />);

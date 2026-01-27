@@ -22,12 +22,8 @@ import { useDataTableUrlFilters } from "@/hooks/useDataTableUrlFilters";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 
 // Filter IDs for URL persistence
-const TRANSACTION_FILTER_IDS = [
-	"operationType",
-	"vehicleType",
-	"currency",
-	"clientId",
-];
+// Note: operationType removed - all transactions default to "Venta" (sale)
+const TRANSACTION_FILTER_IDS = ["vehicleType", "currency", "clientId"];
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -558,33 +554,9 @@ export function TransactionsTable({
 	);
 
 	// Filter definitions
+	// Note: operationType filter removed - all transactions default to "Venta" (sale)
 	const filterDefs: FilterDef[] = useMemo(() => {
 		return [
-			{
-				id: "operationType",
-				label: "Operación",
-				icon: DollarSign,
-				options: [
-					{
-						value: "purchase",
-						label: "Compra",
-						icon: (
-							<span className="flex items-center justify-center h-5 w-5 rounded bg-emerald-500/20 text-emerald-400">
-								<ArrowDownCircle className="h-3 w-3" />
-							</span>
-						),
-					},
-					{
-						value: "sale",
-						label: "Venta",
-						icon: (
-							<span className="flex items-center justify-center h-5 w-5 rounded bg-sky-500/20 text-sky-400">
-								<ArrowUpCircle className="h-3 w-3" />
-							</span>
-						),
-					},
-				],
-			},
 			{
 				id: "vehicleType",
 				label: "Vehículo",

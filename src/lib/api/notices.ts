@@ -80,7 +80,14 @@ export interface AvailableMonth {
 	year: number;
 	month: number;
 	displayName: string;
+	/** True if a pending notice exists (blocks creation) - kept for backward compatibility */
 	hasNotice: boolean;
+	/** True if there is a DRAFT or GENERATED notice for this period */
+	hasPendingNotice: boolean;
+	/** True if there is a SUBMITTED or ACKNOWLEDGED notice for this period */
+	hasSubmittedNotice: boolean;
+	/** Total number of notices for this period */
+	noticeCount: number;
 }
 
 /**

@@ -1,5 +1,6 @@
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
+import path from "path";
 
 // Determine environment from NEXT_PUBLIC_ENVIRONMENT (set in Cloudflare Worker config)
 // Set NEXT_PUBLIC_ENVIRONMENT=development for dev branch, NEXT_PUBLIC_ENVIRONMENT=production for main branch
@@ -7,7 +8,62 @@ const sentryEnvironment =
 	process.env.NEXT_PUBLIC_ENVIRONMENT || process.env.NODE_ENV || "development";
 
 const nextConfig: NextConfig = {
-	/* config options here */
+	// Exclude canvas-dependent packages from server-side bundling
+	serverExternalPackages: ["jscanify", "pdfjs-dist"],
+
+	// Turbopack configuration for handling canvas dependency
+	// jscanify requires canvas package which uses createCanvas - we provide a browser shim
+	turbopack: {
+		resolveAlias: {
+			// Map canvas to browser-compatible shim (provides createCanvas/loadImage)
+			canvas: { browser: "./src/lib/canvas-shim.ts" },
+		},
+	},
+
+	// Webpack configuration for handling problematic packages (used in production builds)
+	webpack: (config, { isServer }) => {
+		// Handle canvas dependency for jscanify (optional peer dependency)
+		// Use browser-compatible shim that provides createCanvas/loadImage
+		config.resolve.alias = {
+			...config.resolve.alias,
+			canvas: path.resolve(__dirname, "./src/lib/canvas-shim.ts"),
+		};
+
+		// For client-side, provide fallbacks for Node.js built-in modules
+		// that jscanify's jsdom dependency tries to import
+		if (!isServer) {
+			config.resolve.fallback = {
+				...config.resolve.fallback,
+				net: false,
+				tls: false,
+				fs: false,
+				child_process: false,
+				http: false,
+				https: false,
+				stream: false,
+				crypto: false,
+				os: false,
+				path: false,
+				zlib: false,
+				util: false,
+				buffer: false,
+				url: false,
+				assert: false,
+				querystring: false,
+				events: false,
+			};
+		}
+
+		// Prevent pdfjs-dist from being bundled on server
+		if (isServer) {
+			config.externals = config.externals || [];
+			if (Array.isArray(config.externals)) {
+				config.externals.push("pdfjs-dist", "jscanify");
+			}
+		}
+
+		return config;
+	},
 };
 
 export default withSentryConfig(nextConfig, {

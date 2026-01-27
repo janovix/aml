@@ -1,5 +1,26 @@
 export type PersonType = "physical" | "moral" | "trust";
 
+// KYC completion status
+export type KYCStatus =
+	| "INCOMPLETE"
+	| "PENDING_VERIFICATION"
+	| "COMPLETE"
+	| "EXPIRED";
+
+// PEP check status
+export type PEPStatus = "PENDING" | "CONFIRMED" | "NOT_PEP" | "ERROR";
+
+// Gender values
+export type Gender = "M" | "F" | "OTHER";
+
+// Marital status values
+export type MaritalStatus =
+	| "SINGLE"
+	| "MARRIED"
+	| "DIVORCED"
+	| "WIDOWED"
+	| "OTHER";
+
 export interface Client {
 	id: string; // UUID or deterministic ID from API
 	personType: PersonType;
@@ -25,6 +46,23 @@ export interface Client {
 	postalCode: string;
 	reference?: string | null;
 	notes?: string | null;
+	// Enhanced KYC fields
+	gender?: Gender | null;
+	occupation?: string | null;
+	maritalStatus?: MaritalStatus | null;
+	sourceOfFunds?: string | null;
+	sourceOfWealth?: string | null;
+	// KYC status tracking
+	kycStatus?: KYCStatus;
+	kycCompletedAt?: string | null;
+	// PEP status tracking
+	isPEP?: boolean;
+	pepStatus?: PEPStatus;
+	pepDetails?: string | null;
+	pepMatchConfidence?: string | null;
+	pepCheckedAt?: string | null;
+	pepCheckSource?: string | null;
+	// Timestamps
 	createdAt: string; // date-time format
 	updatedAt: string; // date-time format
 	deletedAt?: string | null; // date-time format
@@ -57,6 +95,12 @@ export interface ClientCreateRequest {
 	postalCode: string;
 	reference?: string | null;
 	notes?: string | null;
+	// Enhanced KYC fields
+	gender?: Gender | null;
+	occupation?: string | null;
+	maritalStatus?: MaritalStatus | null;
+	sourceOfFunds?: string | null;
+	sourceOfWealth?: string | null;
 }
 
 export interface Pagination {

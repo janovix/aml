@@ -8,10 +8,11 @@ import {
 	AlertTriangle,
 	FileText,
 	FileWarning,
-	Settings,
 	Home,
 	Briefcase,
-	UsersRound,
+	Settings,
+	Search,
+	Upload,
 } from "lucide-react";
 
 import {
@@ -26,37 +27,24 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 	SidebarRail,
-	SidebarSeparator,
 	useSidebar,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { useAuthSession } from "@/lib/auth/useAuthSession";
 import { logout } from "@/lib/auth/actions";
-import {
-	setActiveOrganization,
-	createOrganization,
-} from "@/lib/auth/organizations";
+import { setActiveOrganization } from "@/lib/auth/organizations";
 import { useOrgStore, type Organization } from "@/lib/org-store";
 import { executeMutation } from "@/lib/mutations";
+import { useSubscriptionSafe } from "@/lib/subscription";
 import {
 	OrganizationSwitcher,
 	type Organization as LegacyOrganization,
 } from "./OrganizationSwitcher";
 import { NavUser } from "./NavUser";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { slugify } from "@/lib/slugify";
-import { Plus } from "lucide-react";
+import { AppSwitcher } from "./AppSwitcher";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { getAuthAppUrl, getWatchlistAppUrl } from "@/lib/auth/config";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { TranslationKeys } from "@/lib/translations";
 
@@ -65,6 +53,7 @@ type NavItem = {
 	href: string;
 	icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 	available: boolean;
+	externalUrl?: string; // If set, links to external URL instead of internal href
 };
 
 const mainNavItems: NavItem[] = [
@@ -109,18 +98,23 @@ const complianceNavItems: NavItem[] = [
 	},
 ];
 
-const orgNavItems: NavItem[] = [
+const dataManagementNavItems: NavItem[] = [
 	{
-		titleKey: "navTeam",
-		href: "/team",
-		icon: UsersRound,
+		titleKey: "navImport",
+		href: "/import",
+		icon: Upload,
 		available: true,
 	},
+];
+
+// Products nav items (links to other apps)
+const getProductsNavItems = (): NavItem[] => [
 	{
-		titleKey: "navSettings",
-		href: "/settings",
-		icon: Settings,
+		titleKey: "navWatchlist",
+		href: "/",
+		icon: Search,
 		available: true,
+		externalUrl: getWatchlistAppUrl(),
 	},
 ];
 
@@ -140,6 +134,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 		setCurrentOrg,
 		isLoading: orgLoading,
 	} = useOrgStore();
+
+	// Get subscription data for org limits
+	const subscriptionData = useSubscriptionSafe();
+	const organizationsOwned =
+		subscriptionData?.subscription?.organizationsOwned ?? 0;
+	const organizationsLimit =
+		subscriptionData?.subscription?.organizationsLimit ?? 0;
 
 	// Get org slug from current org or URL
 	const orgSlug = currentOrg?.slug || urlOrgSlug;
@@ -220,75 +221,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 		}
 	};
 
-	const [createOrgDialogOpen, setCreateOrgDialogOpen] = React.useState(false);
-	const [orgName, setOrgName] = React.useState("");
-	const [newOrgSlug, setNewOrgSlug] = React.useState("");
-	const [orgLogo, setOrgLogo] = React.useState("");
-	const [isCreatingOrg, setIsCreatingOrg] = React.useState(false);
-	const [createOrgError, setCreateOrgError] = React.useState<string | null>(
-		null,
-	);
-
-	const derivedSlug = React.useMemo(
-		() => (newOrgSlug ? slugify(newOrgSlug) : slugify(orgName)),
-		[orgName, newOrgSlug],
-	);
-
+	// Redirect to auth settings to create a new organization
 	const handleCreateOrganization = () => {
-		setCreateOrgDialogOpen(true);
-	};
-
-	const handleCreateOrgSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
-		if (isCreatingOrg || !orgName) return;
-		setIsCreatingOrg(true);
-		setCreateOrgError(null);
-
-		try {
-			await executeMutation({
-				mutation: async () => {
-					const result = await createOrganization({
-						name: orgName,
-						slug: derivedSlug,
-						logo: orgLogo || undefined,
-					});
-
-					if (result.error || !result.data) {
-						throw new Error(result.error || "Failed to create organization");
-					}
-
-					// Set as active
-					const setActiveResult = await setActiveOrganization(result.data.id);
-					if (setActiveResult.error) {
-						// Organization created but activation failed - still return org
-						// but we'll show a warning toast after success
-						console.warn(
-							"Organization created but failed to activate:",
-							setActiveResult.error,
-						);
-					}
-
-					return result.data;
-				},
-				loading: "Creating organization...",
-				success: (org) => `${org.name} has been created and is now active.`,
-				onSuccess: (org) => {
-					const { addOrganization, setCurrentOrg } = useOrgStore.getState();
-					addOrganization(org);
-					setCurrentOrg(org);
-
-					setCreateOrgDialogOpen(false);
-					setOrgName("");
-					setNewOrgSlug("");
-					setOrgLogo("");
-					setCreateOrgError(null);
-				},
-			});
-		} catch {
-			// Error is already handled by executeMutation via Sonner
-		} finally {
-			setIsCreatingOrg(false);
-		}
+		const authBaseUrl = getAuthAppUrl();
+		window.location.href = `${authBaseUrl}/settings/organization/new`;
 	};
 
 	// Convert org-store organizations to legacy format for OrganizationSwitcher
@@ -319,220 +255,224 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 		: null;
 
 	return (
-		<>
-			<Sidebar collapsible="icon" {...props}>
-				<SidebarHeader className="h-16 border-b border-sidebar-border justify-center">
+		<Sidebar collapsible="icon" {...props}>
+			<SidebarHeader className="h-16 border-b border-sidebar-border flex items-center justify-center">
+				{/* App Switcher (replaces static Logo) */}
+				<AppSwitcher />
+			</SidebarHeader>
+
+			<SidebarContent>
+				{/* Organization Switcher */}
+				<div className="p-2 border-b border-sidebar-border">
 					<OrganizationSwitcher
 						organizations={legacyOrganizations}
 						activeOrganization={legacyActiveOrg}
 						onOrganizationChange={handleOrganizationChange}
 						onCreateOrganization={handleCreateOrganization}
 						isLoading={isPending || orgLoading}
+						organizationsOwned={organizationsOwned}
+						organizationsLimit={organizationsLimit}
 					/>
-				</SidebarHeader>
+				</div>
 
-				<SidebarContent>
-					<SidebarGroup>
-						<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
-							{t("navTransaction")}
-						</SidebarGroupLabel>
-						<SidebarGroupContent>
-							<SidebarMenu>
-								{mainNavItems.map((item) => {
-									const Icon = item.icon;
-									const isActive = isNavActive(item.href);
-									const title = t(item.titleKey);
+				<SidebarGroup>
+					<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
+						{t("navTransaction")}
+					</SidebarGroupLabel>
+					<SidebarGroupContent>
+						<SidebarMenu>
+							{mainNavItems.map((item) => {
+								const Icon = item.icon;
+								const isActive = isNavActive(item.href);
+								const title = t(item.titleKey);
 
-									return (
-										<SidebarMenuItem key={item.href}>
-											<SidebarMenuButton
-												asChild
-												isActive={isActive}
-												tooltip={title}
+								return (
+									<SidebarMenuItem key={item.href}>
+										<SidebarMenuButton
+											asChild
+											isActive={isActive}
+											tooltip={title}
+										>
+											<Link
+												href={item.available ? orgPath(item.href) : "#"}
+												aria-disabled={!item.available}
+												className={cn(
+													!item.available && "pointer-events-none opacity-50",
+												)}
+												onClick={item.available ? handleLinkClick : undefined}
 											>
-												<Link
-													href={item.available ? orgPath(item.href) : "#"}
-													aria-disabled={!item.available}
-													className={cn(
-														!item.available && "pointer-events-none opacity-50",
-													)}
-													onClick={item.available ? handleLinkClick : undefined}
-												>
-													<Icon />
-													<span>{title}</span>
-													{!item.available && (
-														<span className="ml-auto text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded group-data-[collapsible=icon]:hidden">
-															{t("navComingSoon")}
-														</span>
-													)}
-												</Link>
-											</SidebarMenuButton>
-										</SidebarMenuItem>
-									);
-								})}
-							</SidebarMenu>
-						</SidebarGroupContent>
-					</SidebarGroup>
+												<Icon />
+												<span>{title}</span>
+												{!item.available && (
+													<span className="ml-auto text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded group-data-[collapsible=icon]:hidden">
+														{t("navComingSoon")}
+													</span>
+												)}
+											</Link>
+										</SidebarMenuButton>
+									</SidebarMenuItem>
+								);
+							})}
+						</SidebarMenu>
+					</SidebarGroupContent>
+				</SidebarGroup>
 
-					<SidebarGroup>
-						<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
-							{t("navCompliance")}
-						</SidebarGroupLabel>
-						<SidebarGroupContent>
-							<SidebarMenu>
-								{complianceNavItems.map((item) => {
-									const Icon = item.icon;
-									const isActive = isNavActive(item.href);
-									const title = t(item.titleKey);
+				<SidebarGroup>
+					<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
+						{t("navCompliance")}
+					</SidebarGroupLabel>
+					<SidebarGroupContent>
+						<SidebarMenu>
+							{complianceNavItems.map((item) => {
+								const Icon = item.icon;
+								const isActive = isNavActive(item.href);
+								const title = t(item.titleKey);
 
-									return (
-										<SidebarMenuItem key={item.href}>
-											<SidebarMenuButton
-												asChild
-												isActive={isActive}
-												tooltip={title}
+								return (
+									<SidebarMenuItem key={item.href}>
+										<SidebarMenuButton
+											asChild
+											isActive={isActive}
+											tooltip={title}
+										>
+											<Link
+												href={item.available ? orgPath(item.href) : "#"}
+												aria-disabled={!item.available}
+												className={cn(
+													!item.available && "pointer-events-none opacity-50",
+												)}
+												onClick={item.available ? handleLinkClick : undefined}
 											>
-												<Link
-													href={item.available ? orgPath(item.href) : "#"}
-													aria-disabled={!item.available}
-													className={cn(
-														!item.available && "pointer-events-none opacity-50",
-													)}
-													onClick={item.available ? handleLinkClick : undefined}
-												>
-													<Icon />
-													<span>{title}</span>
-													{!item.available && (
-														<span className="ml-auto text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded group-data-[collapsible=icon]:hidden">
-															{t("navComingSoon")}
-														</span>
-													)}
-												</Link>
-											</SidebarMenuButton>
-										</SidebarMenuItem>
-									);
-								})}
-							</SidebarMenu>
-						</SidebarGroupContent>
-					</SidebarGroup>
+												<Icon />
+												<span>{title}</span>
+												{!item.available && (
+													<span className="ml-auto text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded group-data-[collapsible=icon]:hidden">
+														{t("navComingSoon")}
+													</span>
+												)}
+											</Link>
+										</SidebarMenuButton>
+									</SidebarMenuItem>
+								);
+							})}
+						</SidebarMenu>
+					</SidebarGroupContent>
+				</SidebarGroup>
 
-					<SidebarSeparator className="mt-auto" />
+				<SidebarGroup>
+					<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
+						{t("navDataManagement")}
+					</SidebarGroupLabel>
+					<SidebarGroupContent>
+						<SidebarMenu>
+							{dataManagementNavItems.map((item) => {
+								const Icon = item.icon;
+								const isActive = isNavActive(item.href);
+								const title = t(item.titleKey);
 
-					<SidebarGroup>
-						<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
-							{t("navOrganization")}
-						</SidebarGroupLabel>
-						<SidebarGroupContent>
-							<SidebarMenu>
-								{orgNavItems.map((item) => {
-									const Icon = item.icon;
-									const isActive = isNavActive(item.href);
-									const title = t(item.titleKey);
-
-									return (
-										<SidebarMenuItem key={item.href}>
-											<SidebarMenuButton
-												asChild
-												isActive={isActive}
-												tooltip={title}
+								return (
+									<SidebarMenuItem key={item.href}>
+										<SidebarMenuButton
+											asChild
+											isActive={isActive}
+											tooltip={title}
+										>
+											<Link
+												href={item.available ? orgPath(item.href) : "#"}
+												aria-disabled={!item.available}
+												className={cn(
+													!item.available && "pointer-events-none opacity-50",
+												)}
+												onClick={item.available ? handleLinkClick : undefined}
 											>
-												<Link
-													href={item.available ? orgPath(item.href) : "#"}
-													aria-disabled={!item.available}
-													className={cn(
-														!item.available && "pointer-events-none opacity-50",
-													)}
-													onClick={item.available ? handleLinkClick : undefined}
-												>
-													<Icon />
-													<span>{title}</span>
-												</Link>
-											</SidebarMenuButton>
-										</SidebarMenuItem>
-									);
-								})}
-							</SidebarMenu>
-						</SidebarGroupContent>
-					</SidebarGroup>
-				</SidebarContent>
+												<Icon />
+												<span>{title}</span>
+												{!item.available && (
+													<span className="ml-auto text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded group-data-[collapsible=icon]:hidden">
+														{t("navComingSoon")}
+													</span>
+												)}
+											</Link>
+										</SidebarMenuButton>
+									</SidebarMenuItem>
+								);
+							})}
+						</SidebarMenu>
+					</SidebarGroupContent>
+				</SidebarGroup>
 
-				<SidebarFooter className="border-t border-sidebar-border">
-					<NavUser user={user} isLoading={isPending} onLogout={handleLogout} />
-				</SidebarFooter>
+				<SidebarGroup>
+					<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
+						{t("navProducts")}
+					</SidebarGroupLabel>
+					<SidebarGroupContent>
+						<SidebarMenu>
+							{getProductsNavItems().map((item) => {
+								const Icon = item.icon;
+								const title = t(item.titleKey);
 
-				<SidebarRail />
-			</Sidebar>
-			<Dialog open={createOrgDialogOpen} onOpenChange={setCreateOrgDialogOpen}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>{t("orgNewTitle")}</DialogTitle>
-						<DialogDescription>{t("orgNewDescription")}</DialogDescription>
-					</DialogHeader>
-					<form onSubmit={handleCreateOrgSubmit} className="space-y-4">
-						{createOrgError && (
-							<div className="rounded-md bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
-								{createOrgError}
-							</div>
-						)}
-						<div className="space-y-2">
-							<Label htmlFor="org-name">{t("formName")}</Label>
-							<Input
-								id="org-name"
-								value={orgName}
-								onChange={(e) => {
-									setOrgName(e.target.value);
-									setCreateOrgError(null);
-								}}
-								required
-								placeholder={t("orgNamePlaceholder")}
-							/>
-						</div>
-						<div className="space-y-2">
-							<div className="flex items-center justify-between">
-								<Label htmlFor="org-slug">Slug</Label>
-								<span className="text-xs text-muted-foreground">
-									{t("orgSlugHint")}
-								</span>
-							</div>
-							<Input
-								id="org-slug"
-								value={newOrgSlug}
-								onChange={(e) => {
-									setNewOrgSlug(e.target.value);
-									setCreateOrgError(null);
-								}}
-								placeholder={t("orgSlugPlaceholder")}
-							/>
-							<p className="text-xs text-muted-foreground">
-								{t("orgSlugFinal")}{" "}
-								<span className="font-medium">{derivedSlug || "..."}</span>
-							</p>
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="org-logo">{t("orgLogoLabel")}</Label>
-							<Input
-								id="org-logo"
-								value={orgLogo}
-								onChange={(e) => setOrgLogo(e.target.value)}
-								placeholder="https://example.com/logo.png"
-							/>
-						</div>
-						<Separator />
-						<DialogFooter>
-							<Button
-								type="button"
-								variant="outline"
-								onClick={() => setCreateOrgDialogOpen(false)}
-							>
-								{t("cancel")}
-							</Button>
-							<Button type="submit" disabled={isCreatingOrg || !orgName}>
-								{isCreatingOrg ? t("orgCreating") : t("sidebarCreateOrg")}
-							</Button>
-						</DialogFooter>
-					</form>
-				</DialogContent>
-			</Dialog>
-		</>
+								return (
+									<SidebarMenuItem key={item.titleKey}>
+										<SidebarMenuButton asChild tooltip={title}>
+											<a
+												href={item.externalUrl}
+												onClick={handleLinkClick}
+												target="_blank"
+												rel="noopener noreferrer"
+											>
+												<Icon />
+												<span>{title}</span>
+											</a>
+										</SidebarMenuButton>
+									</SidebarMenuItem>
+								);
+							})}
+						</SidebarMenu>
+					</SidebarGroupContent>
+				</SidebarGroup>
+			</SidebarContent>
+
+			<SidebarFooter className="border-t border-sidebar-border">
+				{/* Language and Theme Switchers */}
+				<div className="flex items-center justify-between px-2 py-2 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-1">
+					<LanguageSwitcher
+						variant="default"
+						size="sm"
+						shape="rounded"
+						showIcon
+						side="right"
+						align="start"
+						className="group-data-[collapsible=icon]:hidden"
+					/>
+					<LanguageSwitcher
+						variant="mini"
+						size="sm"
+						shape="rounded"
+						side="right"
+						align="center"
+						className="hidden group-data-[collapsible=icon]:flex"
+					/>
+					<ThemeSwitcher
+						variant="default"
+						size="sm"
+						shape="rounded"
+						side="right"
+						align="start"
+						className="group-data-[collapsible=icon]:hidden"
+					/>
+					<ThemeSwitcher
+						variant="mini"
+						size="sm"
+						shape="rounded"
+						side="right"
+						align="center"
+						className="hidden group-data-[collapsible=icon]:flex"
+					/>
+				</div>
+				<NavUser user={user} isLoading={isPending} onLogout={handleLogout} />
+			</SidebarFooter>
+
+			<SidebarRail />
+		</Sidebar>
 	);
 }

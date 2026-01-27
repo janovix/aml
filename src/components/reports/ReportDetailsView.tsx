@@ -59,7 +59,7 @@ export function ReportDetailsSkeleton(): React.ReactElement {
 				showBackButton={true}
 				actionCount={2}
 			/>
-			<div className="grid gap-6 md:grid-cols-2">
+			<div className="grid gap-6 @lg/main:grid-cols-2">
 				{[1, 2].map((i) => (
 					<Card key={i}>
 						<CardHeader>
@@ -283,11 +283,11 @@ export function ReportDetailsView({
 				Volver a Reportes
 			</Button>
 
-			<div className="grid gap-6 lg:grid-cols-3">
+			<div className="grid gap-6 @2xl/main:grid-cols-3">
 				{/* Left column - Charts & Details */}
-				<div className="lg:col-span-2 space-y-6">
+				<div className="@2xl/main:col-span-2 space-y-6">
 					{/* Key Metrics */}
-					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+					<div className="grid gap-4 @sm/main:grid-cols-2 @xl/main:grid-cols-4">
 						<MetricCard
 							label="Alertas Totales"
 							value={report.alertSummary.total}
@@ -341,7 +341,7 @@ export function ReportDetailsView({
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<div className="grid gap-6 md:grid-cols-2">
+							<div className="grid gap-6 @md/main:grid-cols-2">
 								{severityChartData.length > 0 && (
 									<DonutChart
 										data={severityChartData}
@@ -385,7 +385,7 @@ export function ReportDetailsView({
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<div className="grid gap-4 sm:grid-cols-2">
+							<div className="grid gap-4 @sm/main:grid-cols-2">
 								<div className="space-y-1">
 									<p className="text-sm text-muted-foreground">Inicio</p>
 									<p className="font-medium">
@@ -429,7 +429,7 @@ export function ReportDetailsView({
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<div className="grid gap-6 sm:grid-cols-2">
+							<div className="grid gap-6 @sm/main:grid-cols-2">
 								<div className="space-y-3">
 									<p className="text-sm font-medium text-muted-foreground">
 										Por Severidad

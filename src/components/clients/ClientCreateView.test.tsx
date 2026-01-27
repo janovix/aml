@@ -35,7 +35,7 @@ describe("ClientCreateView", () => {
 
 		expect(screen.getByText("Nuevo Cliente")).toBeInTheDocument();
 		expect(
-			screen.getAllByRole("button", { name: /crear cliente/i }).length,
+			screen.getAllByRole("button", { name: /guardar y continuar/i }).length,
 		).toBeGreaterThan(0);
 	});
 });
