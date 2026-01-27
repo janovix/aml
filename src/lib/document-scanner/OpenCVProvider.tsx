@@ -17,6 +17,7 @@ import {
 	useCallback,
 	useRef,
 } from "react";
+import * as Sentry from "@sentry/nextjs";
 
 const OPENCV_URL = "https://docs.opencv.org/4.7.0/opencv.js";
 const JSCANIFY_URL =
@@ -129,38 +130,49 @@ export function OpenCVProvider({
 		setError(null);
 
 		loadPromiseRef.current = (async () => {
-			try {
-				// Step 1: Load OpenCV script
-				console.log("[OpenCV] Loading script...");
-				await loadScript("opencv-js", OPENCV_URL);
-				console.log("[OpenCV] Script loaded");
+			return Sentry.startSpan(
+				{
+					name: "Load OpenCV and jscanify",
+					op: "resource.script",
+				},
+				async () => {
+					try {
+						// Step 1: Load OpenCV script
+						Sentry.logger.info("[OpenCV] Loading script...");
+						await loadScript("opencv-js", OPENCV_URL);
+						Sentry.logger.info("[OpenCV] Script loaded");
 
-				// Step 2: Wait for cv to be ready (WASM initialization)
-				console.log("[OpenCV] Waiting for WASM...");
-				await waitFor(isCvReady, 30000);
-				console.log("[OpenCV] Ready!");
+						// Step 2: Wait for cv to be ready (WASM initialization)
+						Sentry.logger.info("[OpenCV] Waiting for WASM...");
+						await waitFor(isCvReady, 30000);
+						Sentry.logger.info("[OpenCV] Ready!");
 
-				// Step 3: Load jscanify script (AFTER OpenCV is ready)
-				console.log("[jscanify] Loading script...");
-				await loadScript("jscanify-js", JSCANIFY_URL);
-				console.log("[jscanify] Script loaded");
+						// Step 3: Load jscanify script (AFTER OpenCV is ready)
+						Sentry.logger.info("[jscanify] Loading script...");
+						await loadScript("jscanify-js", JSCANIFY_URL);
+						Sentry.logger.info("[jscanify] Script loaded");
 
-				// Step 4: Wait for jscanify to be available
-				await waitFor(isJscanifyReady, 5000);
-				console.log("[jscanify] Ready!");
+						// Step 4: Wait for jscanify to be available
+						await waitFor(isJscanifyReady, 5000);
+						Sentry.logger.info("[jscanify] Ready!");
 
-				setIsLoaded(true);
-				setIsLoading(false);
-			} catch (err) {
-				const errorMsg =
-					err instanceof Error ? err.message : "Failed to load libraries";
-				console.error("[OpenCV/jscanify] Error:", errorMsg);
-				setError(errorMsg);
-				setIsLoading(false);
-				throw err;
-			} finally {
-				loadPromiseRef.current = null;
-			}
+						setIsLoaded(true);
+						setIsLoading(false);
+					} catch (err) {
+						const errorMsg =
+							err instanceof Error ? err.message : "Failed to load libraries";
+						Sentry.captureException(err);
+						Sentry.logger.error(
+							Sentry.logger.fmt`[OpenCV/jscanify] Error: ${errorMsg}`,
+						);
+						setError(errorMsg);
+						setIsLoading(false);
+						throw err;
+					} finally {
+						loadPromiseRef.current = null;
+					}
+				},
+			);
 		})();
 
 		return loadPromiseRef.current;
@@ -218,24 +230,32 @@ export async function loadOpenCVScript(): Promise<void> {
 		return;
 	}
 
-	// Load OpenCV
-	if (!document.getElementById("opencv-js")) {
-		console.log("[OpenCV] Loading script...");
-		await loadScript("opencv-js", OPENCV_URL);
-	}
+	return await Sentry.startSpan(
+		{
+			name: "Load OpenCV Script (Imperative)",
+			op: "resource.script",
+		},
+		async () => {
+			// Load OpenCV
+			if (!document.getElementById("opencv-js")) {
+				Sentry.logger.info("[OpenCV] Loading script...");
+				await loadScript("opencv-js", OPENCV_URL);
+			}
 
-	// Wait for cv
-	console.log("[OpenCV] Waiting for WASM...");
-	await waitFor(isCvReady, 30000);
-	console.log("[OpenCV] Ready!");
+			// Wait for cv
+			Sentry.logger.info("[OpenCV] Waiting for WASM...");
+			await waitFor(isCvReady, 30000);
+			Sentry.logger.info("[OpenCV] Ready!");
 
-	// Load jscanify
-	if (!document.getElementById("jscanify-js")) {
-		console.log("[jscanify] Loading script...");
-		await loadScript("jscanify-js", JSCANIFY_URL);
-	}
+			// Load jscanify
+			if (!document.getElementById("jscanify-js")) {
+				Sentry.logger.info("[jscanify] Loading script...");
+				await loadScript("jscanify-js", JSCANIFY_URL);
+			}
 
-	// Wait for jscanify
-	await waitFor(isJscanifyReady, 5000);
-	console.log("[jscanify] Ready!");
+			// Wait for jscanify
+			await waitFor(isJscanifyReady, 5000);
+			Sentry.logger.info("[jscanify] Ready!");
+		},
+	);
 }

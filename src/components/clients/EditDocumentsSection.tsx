@@ -287,7 +287,7 @@ export function EditDocumentsSection({
 					}
 
 					// Update document with file URLs using PATCH
-					await fetch(
+					const patchIdResponse = await fetch(
 						`/api/aml-core/clients/${clientId}/documents/${createdDoc.id}`,
 						{
 							method: "PATCH",
@@ -298,6 +298,13 @@ export function EditDocumentsSection({
 							}),
 						},
 					);
+
+					if (!patchIdResponse.ok) {
+						const errorText = await patchIdResponse.text();
+						throw new Error(
+							`Failed to update ID document metadata: ${errorText}`,
+						);
+					}
 				} else {
 					// No files to upload, just create the document record
 					await createClientDocument({ clientId, input });
@@ -385,7 +392,7 @@ export function EditDocumentsSection({
 					fileMetadata.rasterizedPageUrls = allPageUrls;
 
 					// Update document with file URLs using PATCH
-					await fetch(
+					const patchDocResponse = await fetch(
 						`/api/aml-core/clients/${clientId}/documents/${createdDoc.id}`,
 						{
 							method: "PATCH",
@@ -396,6 +403,11 @@ export function EditDocumentsSection({
 							}),
 						},
 					);
+
+					if (!patchDocResponse.ok) {
+						const errorText = await patchDocResponse.text();
+						throw new Error(`Failed to update document metadata: ${errorText}`);
+					}
 				} else {
 					// No files to upload, just create the document record
 					await createClientDocument({ clientId, input });
@@ -518,8 +530,13 @@ export function EditDocumentsSection({
 											variant="outline"
 											size="sm"
 											onClick={() => {
-												// TODO: Open image viewer modal
-												window.open(existingIdDocument.fileUrl!, "_blank");
+												// Open in new tab with security attributes
+												const newWindow = window.open(
+													existingIdDocument.fileUrl!,
+													"_blank",
+													"noopener,noreferrer",
+												);
+												if (newWindow) newWindow.opener = null;
 											}}
 										>
 											<FileText className="h-4 w-4 mr-2" />

@@ -150,10 +150,11 @@ export function DocumentsStep({
 
 	const requiredDocs = REQUIRED_DOCUMENTS[personType];
 	const needsUBOs = personType === "moral" || personType === "trust";
+	const idRequired = !needsUBOs; // ID only required for physical persons
 
 	// Calculate progress
-	const totalRequired = requiredDocs.length + 1; // +1 for ID
-	const completedDocs = uploadedDocs.size + (idUploaded ? 1 : 0);
+	const totalRequired = requiredDocs.length + (idRequired ? 1 : 0); // +1 for ID if required
+	const completedDocs = uploadedDocs.size + (idUploaded && idRequired ? 1 : 0);
 	const progress = Math.round((completedDocs / totalRequired) * 100);
 
 	const handleIdDataChange = useCallback((data: IDDocumentData) => {
@@ -251,7 +252,7 @@ export function DocumentsStep({
 					}
 
 					// Update document with file URLs using PATCH
-					await fetch(
+					const patchIdResponse = await fetch(
 						`/api/aml-core/clients/${clientId}/documents/${createdDoc.id}`,
 						{
 							method: "PATCH",
@@ -262,6 +263,13 @@ export function DocumentsStep({
 							}),
 						},
 					);
+
+					if (!patchIdResponse.ok) {
+						const errorText = await patchIdResponse.text();
+						throw new Error(
+							`Failed to update ID document metadata: ${errorText}`,
+						);
+					}
 				} else {
 					// No files to upload, just create the document record
 					await createClientDocument({ clientId, input });
@@ -348,7 +356,7 @@ export function DocumentsStep({
 					fileMetadata.rasterizedPageUrls = allPageUrls;
 
 					// Update document with file URLs using PATCH
-					await fetch(
+					const patchDocResponse = await fetch(
 						`/api/aml-core/clients/${clientId}/documents/${createdDoc.id}`,
 						{
 							method: "PATCH",
@@ -359,6 +367,11 @@ export function DocumentsStep({
 							}),
 						},
 					);
+
+					if (!patchDocResponse.ok) {
+						const errorText = await patchDocResponse.text();
+						throw new Error(`Failed to update document metadata: ${errorText}`);
+					}
 				} else {
 					// No files to upload, just create the document record
 					await createClientDocument({ clientId, input });
@@ -380,15 +393,18 @@ export function DocumentsStep({
 	}, []);
 
 	const handleComplete = () => {
-		// Check minimum requirements
-		if (!idUploaded) {
+		// Check ID requirement (only for physical persons)
+		if (idRequired && !idUploaded) {
 			toast.error("Debes cargar una identificación oficial");
 			return;
 		}
 
 		// Check if at least some documents are uploaded
-		if (completedDocs < 2) {
-			toast.error("Debes cargar al menos 2 documentos");
+		const minDocs = idRequired ? 2 : 1; // Physical: ID + 1 doc, Moral/Trust: 1 doc
+		if (completedDocs < minDocs) {
+			toast.error(
+				`Debes cargar al menos ${minDocs} documento${minDocs > 1 ? "s" : ""}`,
+			);
 			return;
 		}
 
@@ -424,7 +440,7 @@ export function DocumentsStep({
 			</Card>
 
 			{/* ID Document Section (Physical persons only) */}
-			{!needsUBOs && (
+			{idRequired && (
 				<div className="space-y-4">
 					<h3 className="text-lg font-semibold flex items-center gap-2">
 						<FileText className="h-5 w-5" />
@@ -516,14 +532,17 @@ export function DocumentsStep({
 				</CardHeader>
 				<CardContent className="space-y-4">
 					<div className="grid grid-cols-2 gap-4 text-sm">
-						<div className="flex items-center gap-2">
-							{idUploaded ? (
-								<CheckCircle2 className="h-4 w-4 text-green-600" />
-							) : (
-								<div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30" />
-							)}
-							<span>Identificación oficial</span>
-						</div>
+						{/* Only show ID for physical persons */}
+						{idRequired && (
+							<div className="flex items-center gap-2">
+								{idUploaded ? (
+									<CheckCircle2 className="h-4 w-4 text-green-600" />
+								) : (
+									<div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30" />
+								)}
+								<span>Identificación oficial</span>
+							</div>
+						)}
 						{requiredDocs.map((docType) => (
 							<div key={docType} className="flex items-center gap-2">
 								{uploadedDocs.has(docType) ? (

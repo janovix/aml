@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useState, useCallback, useEffect } from "react";
+import * as Sentry from "@sentry/nextjs";
 import {
 	Dialog,
 	DialogContent,
@@ -374,6 +375,15 @@ function useDevMode() {
 		}
 	}, []);
 
+	// Clear timeout on unmount to prevent memory leaks
+	React.useEffect(() => {
+		return () => {
+			if (clickTimeoutRef.current) {
+				clearTimeout(clickTimeoutRef.current);
+			}
+		};
+	}, []);
+
 	const handleSecretClick = React.useCallback(() => {
 		// Reset timeout on each click
 		if (clickTimeoutRef.current) {
@@ -425,16 +435,16 @@ function INECombinedDisplay({
 	onSecretClick: () => void;
 	devMode: boolean;
 }) {
-	if (!combinedData) return null;
-
-	// Check if document is expired
+	// Check if document is expired - MUST be called before early return to satisfy Rules of Hooks
 	const isExpired = React.useMemo(() => {
-		if (combinedData.expiryDate) {
+		if (combinedData?.expiryDate) {
 			const expiry = new Date(combinedData.expiryDate);
 			return expiry < new Date();
 		}
 		return false;
-	}, [combinedData.expiryDate]);
+	}, [combinedData?.expiryDate]);
+
+	if (!combinedData) return null;
 
 	return (
 		<div className="space-y-3">
@@ -749,7 +759,8 @@ export function DocumentScannerModal({
 				}
 				processFile(file);
 			} catch (err) {
-				console.error("Failed to load OpenCV:", err);
+				Sentry.captureException(err);
+				Sentry.logger.error(Sentry.logger.fmt`Failed to load OpenCV: ${err}`);
 				setError("Error al cargar la librería de procesamiento");
 			}
 		};
@@ -768,7 +779,10 @@ export function DocumentScannerModal({
 				}
 				processFile(backSideFile);
 			} catch (err) {
-				console.error("Failed to process back side:", err);
+				Sentry.captureException(err);
+				Sentry.logger.error(
+					Sentry.logger.fmt`Failed to process back side: ${err}`,
+				);
 				setError("Error al procesar el reverso");
 			}
 		};
@@ -889,7 +903,11 @@ export function DocumentScannerModal({
 						aiResult: null,
 					});
 				} catch (cornerErr) {
-					console.error("Error detecting corners:", cornerErr);
+					Sentry.captureException(cornerErr);
+					Sentry.logger.warn(
+						Sentry.logger
+							.fmt`Error detecting corners, using defaults: ${cornerErr}`,
+					);
 					// Use default corners if detection fails
 					pageStates.push({
 						canvas,
@@ -913,7 +931,8 @@ export function DocumentScannerModal({
 			setCurrentPageIndex(0);
 			setStage("adjusting");
 		} catch (err) {
-			console.error("Error processing file:", err);
+			Sentry.captureException(err);
+			Sentry.logger.error(Sentry.logger.fmt`Error processing file: ${err}`);
 			const errorMessage =
 				err instanceof Error ? err.message : "Error al procesar archivo";
 			setError(errorMessage);
@@ -971,9 +990,13 @@ export function DocumentScannerModal({
 					throw new Error(result.message || "Error al extraer documento");
 				}
 
+				// Store canvas in local variable for type safety
+				const extractedCanvas = result.canvas;
+				const extractedBlob = result.blob;
+
 				// Validate quality
 				const quality = validateQuality(
-					result.canvas,
+					extractedCanvas,
 					currentPage.corners,
 					currentPage.canvas.width,
 					currentPage.canvas.height,
@@ -983,8 +1006,8 @@ export function DocumentScannerModal({
 					const updated = [...prev];
 					updated[currentPageIndex] = {
 						...updated[currentPageIndex],
-						extractedCanvas: result.canvas,
-						extractedBlob: result.blob,
+						extractedCanvas,
+						extractedBlob,
 						quality,
 					};
 					return updated;
@@ -999,48 +1022,113 @@ export function DocumentScannerModal({
 
 				// Try AI extraction first (more accurate), fall back to OCR
 				try {
-					console.log("[DocumentScanner] Starting field extraction...");
+					Sentry.logger.info("[DocumentScanner] Starting field extraction...");
 
 					// Check if AI service is available
 					const aiAvailable = await isAIExtractionAvailable();
-					console.log("[DocumentScanner] AI service available:", aiAvailable);
+					Sentry.logger.info(
+						`[DocumentScanner] AI service available: ${aiAvailable}`,
+					);
 
 					if (aiAvailable) {
-						// Use AI extraction (primary method)
-						setOcrProgress({
-							stage: "Extrayendo datos con IA...",
-							percent: 30,
-						});
-						const aiResult = await extractWithAI(result.canvas, documentType);
-
-						if (aiResult.success) {
-							console.log(
-								"[DocumentScanner] AI extraction complete:",
-								aiResult,
-							);
-
-							setPages((prev) => {
-								const updated = [...prev];
-								updated[currentPageIndex] = {
-									...updated[currentPageIndex],
-									aiResult,
-								};
-								return updated;
-							});
-
-							// If dev mode, also run OCR for comparison
-							if (devMode) {
+						// Use AI extraction (primary method) - wrap in Sentry span
+						await Sentry.startSpan(
+							{
+								name: "AI Document Extraction",
+								op: "ai.extraction",
+								attributes: { documentType },
+							},
+							async () => {
 								setOcrProgress({
-									stage: "Ejecutando OCR (modo dev)...",
-									percent: 60,
+									stage: "Extrayendo datos con IA...",
+									percent: 30,
 								});
+								const aiResult = await extractWithAI(
+									extractedCanvas,
+									documentType,
+								);
+
+								if (aiResult.success) {
+									Sentry.logger.info(
+										"[DocumentScanner] AI extraction complete",
+									);
+
+									setPages((prev) => {
+										const updated = [...prev];
+										updated[currentPageIndex] = {
+											...updated[currentPageIndex],
+											aiResult,
+										};
+										return updated;
+									});
+
+									// For INE documents, ALWAYS run OCR to extract MRZ fields from back side
+									// Otherwise, only run OCR in dev mode for comparison
+									if (isINEDocument || devMode) {
+										setOcrProgress({
+											stage: isINEDocument
+												? "Extrayendo MRZ de INE..."
+												: "Ejecutando OCR (modo dev)...",
+											percent: 60,
+										});
+										const ocrResult = await performOCR(
+											extractedCanvas,
+											documentType,
+											personalData,
+											(stage, percent) => {
+												setOcrProgress({ stage, percent: 60 + percent * 0.4 });
+											},
+										);
+
+										setPages((prev) => {
+											const updated = [...prev];
+											updated[currentPageIndex] = {
+												...updated[currentPageIndex],
+												ocrResult,
+											};
+											return updated;
+										});
+									}
+								} else {
+									// AI failed, fall back to OCR
+									Sentry.logger.warn(
+										"[DocumentScanner] AI extraction failed, falling back to OCR",
+									);
+									throw new Error(aiResult.error || "AI extraction failed");
+								}
+							},
+						);
+					} else {
+						// AI not available, use OCR
+						Sentry.logger.info(
+							"[DocumentScanner] AI not available, using OCR...",
+						);
+						throw new Error("AI service not available");
+					}
+				} catch (aiErr) {
+					// Fall back to OCR
+					Sentry.logger.info("[DocumentScanner] Falling back to OCR...");
+					setOcrProgress({ stage: "Preprocesando imagen...", percent: 20 });
+
+					try {
+						await Sentry.startSpan(
+							{
+								name: "OCR Document Processing",
+								op: "ocr.processing",
+								attributes: { documentType },
+							},
+							async () => {
 								const ocrResult = await performOCR(
-									result.canvas,
+									extractedCanvas,
 									documentType,
 									personalData,
 									(stage, percent) => {
-										setOcrProgress({ stage, percent: 60 + percent * 0.4 });
+										setOcrProgress({ stage, percent });
 									},
+								);
+
+								Sentry.logger.info(
+									`[DocumentScanner] OCR complete: ${ocrResult.isValid ? "Valid" : "Invalid"}`,
 								);
 
 								setPages((prev) => {
@@ -1051,49 +1139,11 @@ export function DocumentScannerModal({
 									};
 									return updated;
 								});
-							}
-						} else {
-							// AI failed, fall back to OCR
-							console.warn(
-								"[DocumentScanner] AI extraction failed, falling back to OCR",
-							);
-							throw new Error(aiResult.error || "AI extraction failed");
-						}
-					} else {
-						// AI not available, use OCR
-						console.log("[DocumentScanner] AI not available, using OCR...");
-						throw new Error("AI service not available");
-					}
-				} catch (aiErr) {
-					// Fall back to OCR
-					console.log("[DocumentScanner] Falling back to OCR...", aiErr);
-					setOcrProgress({ stage: "Preprocesando imagen...", percent: 20 });
-
-					try {
-						const ocrResult = await performOCR(
-							result.canvas,
-							documentType,
-							personalData,
-							(stage, percent) => {
-								setOcrProgress({ stage, percent });
 							},
 						);
-
-						console.log(
-							"[DocumentScanner] OCR complete:",
-							ocrResult.isValid ? "Valid" : "Invalid",
-						);
-
-						setPages((prev) => {
-							const updated = [...prev];
-							updated[currentPageIndex] = {
-								...updated[currentPageIndex],
-								ocrResult,
-							};
-							return updated;
-						});
 					} catch (ocrErr) {
-						console.error("OCR error:", ocrErr);
+						Sentry.captureException(ocrErr);
+						Sentry.logger.error(Sentry.logger.fmt`OCR error: ${ocrErr}`);
 						// Show error but don't block - validation is optional
 					}
 				} finally {
@@ -1101,11 +1151,11 @@ export function DocumentScannerModal({
 				}
 
 				// For INE documents, handle front/back flow
-				if (isINEDocument && result.canvas && result.blob) {
+				if (isINEDocument && extractedCanvas && extractedBlob) {
 					if (currentIneSide === "front") {
 						// Save front side data
-						const frontCanvas = result.canvas; // Capture for closure
-						const frontBlob = result.blob;
+						const frontCanvas = extractedCanvas; // Capture for closure
+						const frontBlob = extractedBlob;
 						setIneState((prev) => ({
 							...prev,
 							front: {
@@ -1126,8 +1176,8 @@ export function DocumentScannerModal({
 						const frontData = ineState.front;
 						const backOcr = pages[currentPageIndex]?.ocrResult;
 						const backAi = pages[currentPageIndex]?.aiResult;
-						const backCanvas = result.canvas; // Capture for closure
-						const backBlob = result.blob;
+						const backCanvas = extractedCanvas; // Capture for closure
+						const backBlob = extractedBlob;
 
 						// Save back side data
 						setIneState((prev) => ({
@@ -1164,7 +1214,10 @@ export function DocumentScannerModal({
 
 				setStage("complete");
 			} catch (err) {
-				console.error("Error extracting document:", err);
+				Sentry.captureException(err);
+				Sentry.logger.error(
+					Sentry.logger.fmt`Error extracting document: ${err}`,
+				);
 				toast.error(
 					err instanceof Error ? err.message : "Error al extraer documento",
 				);

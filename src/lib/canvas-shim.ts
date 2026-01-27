@@ -23,6 +23,9 @@ export function createCanvas(width: number, height: number): HTMLCanvasElement {
  * Loads an image (browser equivalent of node-canvas's loadImage)
  */
 export function loadImage(src: string): Promise<HTMLImageElement> {
+	if (typeof Image === "undefined") {
+		throw new Error("loadImage can only be used in browser environment");
+	}
 	return new Promise((resolve, reject) => {
 		const img = new Image();
 		img.onload = () => resolve(img);

@@ -1,7 +1,8 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import * as Sentry from "@sentry/nextjs";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { useSessionStorageForm } from "@/hooks/useSessionStorageForm";
@@ -89,6 +90,7 @@ export function TransactionCreateView(): React.JSX.Element {
 	const { navigateTo, orgPath } = useOrgNavigation();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
+	const formRef = useRef<HTMLFormElement>(null);
 	const [isSaving, setIsSaving] = useState(false);
 
 	const [formData, setFormData, clearFormStorage] =
@@ -231,56 +233,69 @@ export function TransactionCreateView(): React.JSX.Element {
 			return;
 		}
 
-		setIsSaving(true);
-		const calculatedAmount = calculateAmountFromPaymentMethods();
-		// Format operationDate as date-only (YYYY-MM-DD) - API expects this format, not ISO date-time
-		const operationDateFormatted =
-			formData.operationDate || new Date().toISOString().slice(0, 10);
-		const createData: TransactionCreateRequest = {
-			clientId: formData.clientId,
-			operationDate: operationDateFormatted,
-			operationType: "sale", // Always set to "Venta"
-			branchPostalCode: formData.branchPostalCode,
-			vehicleType: formData.vehicleType as TransactionVehicleType,
-			brand: formData.brand,
-			model: formData.model,
-			year: parseInt(formData.year, 10),
-			amount: calculatedAmount,
-			currency: formData.currency,
-			paymentMethods: formData.paymentMethods,
-		};
+		// Wrap in Sentry span for tracking
+		await Sentry.startSpan(
+			{
+				name: "Create Transaction",
+				op: "ui.submit",
+			},
+			async () => {
+				setIsSaving(true);
+				const calculatedAmount = calculateAmountFromPaymentMethods();
+				// Format operationDate as date-only (YYYY-MM-DD) - API expects this format, not ISO date-time
+				const operationDateFormatted =
+					formData.operationDate || new Date().toISOString().slice(0, 10);
+				const createData: TransactionCreateRequest = {
+					clientId: formData.clientId,
+					operationDate: operationDateFormatted,
+					operationType: "sale", // Always set to "Venta"
+					branchPostalCode: formData.branchPostalCode,
+					vehicleType: formData.vehicleType as TransactionVehicleType,
+					brand: formData.brand,
+					model: formData.model,
+					year: parseInt(formData.year, 10),
+					amount: calculatedAmount,
+					currency: formData.currency,
+					paymentMethods: formData.paymentMethods,
+				};
 
-		if (formData.vehicleType === "land") {
-			// At least one of plates, VIN, or engineNumber must be provided
-			if (formData.vin) createData.vin = formData.vin;
-			if (formData.repuve) createData.repuve = formData.repuve;
-			if (formData.plates) createData.plates = formData.plates;
-			if (formData.engineNumber)
-				createData.engineNumber = formData.engineNumber;
-		} else {
-			if (formData.registrationNumber)
-				createData.registrationNumber = formData.registrationNumber;
-			if (formData.flagCountryId)
-				createData.flagCountryId = formData.flagCountryId;
-		}
+				if (formData.vehicleType === "land") {
+					// At least one of plates, VIN, or engineNumber must be provided
+					if (formData.vin) createData.vin = formData.vin;
+					if (formData.repuve) createData.repuve = formData.repuve;
+					if (formData.plates) createData.plates = formData.plates;
+					if (formData.engineNumber)
+						createData.engineNumber = formData.engineNumber;
+				} else {
+					if (formData.registrationNumber)
+						createData.registrationNumber = formData.registrationNumber;
+					if (formData.flagCountryId)
+						createData.flagCountryId = formData.flagCountryId;
+				}
 
-		try {
-			await executeMutation({
-				mutation: () => createTransaction({ input: createData }),
-				loading: "Creando transacción...",
-				success: "Transacción creada exitosamente",
-				onSuccess: () => {
-					// Clear session storage on successful submission
-					clearFormStorage();
-					navigateTo("/transactions");
-				},
-			});
-		} catch (error) {
-			// Error is already handled by executeMutation via Sonner
-			console.error("Error creating transaction:", error);
-		} finally {
-			setIsSaving(false);
-		}
+				try {
+					await executeMutation({
+						mutation: () => createTransaction({ input: createData }),
+						loading: "Creando transacción...",
+						success: "Transacción creada exitosamente",
+						onSuccess: () => {
+							// Clear session storage on successful submission
+							clearFormStorage();
+							navigateTo("/transactions");
+						},
+					});
+				} catch (error) {
+					// Capture exception in Sentry
+					Sentry.captureException(error);
+					Sentry.logger.error(
+						Sentry.logger.fmt`Failed to create transaction: ${error}`,
+					);
+					// Error is already handled by executeMutation via Sonner
+				} finally {
+					setIsSaving(false);
+				}
+			},
+		);
 	};
 
 	const handleCancel = (): void => {
@@ -299,7 +314,7 @@ export function TransactionCreateView(): React.JSX.Element {
 				}}
 			/>
 
-			<form onSubmit={handleSubmit} className="space-y-6">
+			<form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
 				<Card>
 					<CardHeader>
 						<CardTitle className="text-lg">{t("txnInfoTitle")}</CardTitle>
@@ -695,9 +710,8 @@ export function TransactionCreateView(): React.JSX.Element {
 						label: isSaving ? t("txnCreating") : t("txnCreateButton"),
 						icon: Save,
 						onClick: () => {
-							void handleSubmit({
-								preventDefault: () => {},
-							} as React.FormEvent);
+							// Use requestSubmit() to trigger native form validation
+							formRef.current?.requestSubmit();
 						},
 						disabled: isSaving,
 						loading: isSaving,

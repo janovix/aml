@@ -1,7 +1,8 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import * as Sentry from "@sentry/nextjs";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -91,6 +92,7 @@ export function TransactionEditView({
 }: TransactionEditViewProps): React.JSX.Element {
 	const { t } = useLanguage();
 	const { navigateTo } = useOrgNavigation();
+	const formRef = useRef<HTMLFormElement>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isSaving, setIsSaving] = useState(false);
 	const [formData, setFormData] = useState({
@@ -215,53 +217,68 @@ export function TransactionEditView({
 			return;
 		}
 
-		setIsSaving(true);
-		// Format operationDate as date-only (YYYY-MM-DD) - API expects this format, not ISO date-time
-		const operationDateFormatted =
-			formData.operationDate || new Date().toISOString().slice(0, 10);
-		const updateData: TransactionUpdateRequest = {
-			operationDate: operationDateFormatted,
-			operationType: formData.operationType,
-			branchPostalCode: formData.branchPostalCode,
-			vehicleType: formData.vehicleType,
-			brand: formData.brand,
-			model: formData.model,
-			year: parseInt(formData.year, 10),
-			amount: formData.amount,
-			currency: formData.currency,
-			paymentMethods: formData.paymentMethods,
-			paymentDate: new Date(formData.paymentDate).toISOString(),
-		};
+		// Wrap in Sentry span for tracking
+		await Sentry.startSpan(
+			{
+				name: "Update Transaction",
+				op: "ui.submit",
+				attributes: { transactionId },
+			},
+			async () => {
+				setIsSaving(true);
+				// Format operationDate as date-only (YYYY-MM-DD) - API expects this format, not ISO date-time
+				const operationDateFormatted =
+					formData.operationDate || new Date().toISOString().slice(0, 10);
+				const updateData: TransactionUpdateRequest = {
+					operationDate: operationDateFormatted,
+					operationType: formData.operationType,
+					branchPostalCode: formData.branchPostalCode,
+					vehicleType: formData.vehicleType,
+					brand: formData.brand,
+					model: formData.model,
+					year: parseInt(formData.year, 10),
+					amount: formData.amount,
+					currency: formData.currency,
+					paymentMethods: formData.paymentMethods,
+					paymentDate: new Date(formData.paymentDate).toISOString(),
+				};
 
-		if (formData.vehicleType === "land") {
-			// At least one of plates, VIN, or engineNumber must be provided
-			if (formData.vin) updateData.vin = formData.vin;
-			if (formData.repuve) updateData.repuve = formData.repuve;
-			if (formData.plates) updateData.plates = formData.plates;
-			if (formData.engineNumber)
-				updateData.engineNumber = formData.engineNumber;
-		} else {
-			if (formData.registrationNumber)
-				updateData.registrationNumber = formData.registrationNumber;
-			if (formData.flagCountryId)
-				updateData.flagCountryId = formData.flagCountryId;
-		}
+				if (formData.vehicleType === "land") {
+					// At least one of plates, VIN, or engineNumber must be provided
+					if (formData.vin) updateData.vin = formData.vin;
+					if (formData.repuve) updateData.repuve = formData.repuve;
+					if (formData.plates) updateData.plates = formData.plates;
+					if (formData.engineNumber)
+						updateData.engineNumber = formData.engineNumber;
+				} else {
+					if (formData.registrationNumber)
+						updateData.registrationNumber = formData.registrationNumber;
+					if (formData.flagCountryId)
+						updateData.flagCountryId = formData.flagCountryId;
+				}
 
-		try {
-			await executeMutation({
-				mutation: () =>
-					updateTransaction({ id: transactionId, input: updateData }),
-				loading: "Actualizando transacción...",
-				success: "Transacción actualizada exitosamente",
-				onSuccess: () => {
-					navigateTo(`/transactions/${transactionId}`);
-				},
-			});
-		} catch {
-			// Error is already handled by executeMutation via Sonner
-		} finally {
-			setIsSaving(false);
-		}
+				try {
+					await executeMutation({
+						mutation: () =>
+							updateTransaction({ id: transactionId, input: updateData }),
+						loading: "Actualizando transacción...",
+						success: "Transacción actualizada exitosamente",
+						onSuccess: () => {
+							navigateTo(`/transactions/${transactionId}`);
+						},
+					});
+				} catch (error) {
+					// Capture exception in Sentry
+					Sentry.captureException(error);
+					Sentry.logger.error(
+						Sentry.logger.fmt`Failed to update transaction: ${error}`,
+					);
+					// Error is already handled by executeMutation via Sonner
+				} finally {
+					setIsSaving(false);
+				}
+			},
+		);
 	};
 
 	const handleCancel = (): void => {
@@ -335,7 +352,7 @@ export function TransactionEditView({
 				}}
 			/>
 
-			<form onSubmit={handleSubmit} className="space-y-6">
+			<form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
 				<Card>
 					<CardHeader>
 						<CardTitle className="text-lg">{t("txnInfoTitle")}</CardTitle>
@@ -793,9 +810,8 @@ export function TransactionEditView({
 						label: isSaving ? t("txnSaving") : t("txnSaveButton"),
 						icon: Save,
 						onClick: () => {
-							void handleSubmit({
-								preventDefault: () => {},
-							} as React.FormEvent);
+							// Use requestSubmit() to trigger native form validation
+							formRef.current?.requestSubmit();
 						},
 						disabled: isSaveDisabled,
 						loading: isSaving,

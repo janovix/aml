@@ -275,11 +275,13 @@ export function ClientInfoStep({
 
 				if (field === "secondLastName") {
 					const trimmed = value.trim();
-					if (trimmed.length > 0 && trimmed.length < 1) {
+					// Fixed: condition was impossible (length > 0 && length < 1)
+					// Should validate minimum length of 2 characters for second last name
+					if (trimmed.length > 0 && trimmed.length < 2) {
 						setValidationErrors((prev) => ({
 							...prev,
 							secondLastName:
-								"El apellido materno debe tener al menos 1 caracter",
+								"El apellido materno debe tener al menos 2 caracteres",
 						}));
 					} else {
 						setValidationErrors((prev) => ({

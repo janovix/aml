@@ -417,17 +417,15 @@ export function IDDocumentSelector({
 		(field: "documentNumber" | "expiryDate", value: string) => {
 			const newData = { ...localData, [field]: value };
 			setLocalData(newData);
+			// Preserve all fields including back files, previews, OCR, original/rasterized data
 			onDataChange({
+				...localData,
 				idType: localData.idType || "NATIONAL_ID",
 				documentType: localData.documentType || "NATIONAL_ID",
-				documentNumber:
-					field === "documentNumber" ? value : localData.documentNumber || "",
-				expiryDate: field === "expiryDate" ? value : localData.expiryDate,
-				file: localData.file,
-				processedBlob: localData.processedBlob,
-				isUploaded: localData.isUploaded || false,
+				documentNumber: localData.documentNumber || "",
+				[field]: value,
 				isUploading: false,
-			});
+			} as IDDocumentData);
 		},
 		[localData, onDataChange],
 	);
@@ -468,18 +466,12 @@ export function IDDocumentSelector({
 			return;
 		}
 
+		// Include all fields: original/rasterized/INE blobs for upload
 		const uploadData: IDDocumentData = {
+			...localData,
 			idType: localData.idType || "NATIONAL_ID",
 			documentType: localData.documentType || "NATIONAL_ID",
 			documentNumber: localData.documentNumber.trim().toUpperCase(),
-			expiryDate: localData.expiryDate,
-			file: localData.file,
-			processedBlob: localData.processedBlob,
-			backFile: localData.backFile,
-			backProcessedBlob: localData.backProcessedBlob,
-			frontPreview: localData.frontPreview,
-			backPreview: localData.backPreview,
-			ocrResult: localData.ocrResult,
 			isUploaded: false,
 			isUploading: true,
 		};

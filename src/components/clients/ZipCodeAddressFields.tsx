@@ -196,6 +196,7 @@ export function ZipCodeAddressFields({
 			onCityChange,
 			onMunicipalityChange,
 			onStateCodeChange,
+			onNeighborhoodChange, // Added missing dependency
 		],
 	);
 

@@ -3,6 +3,7 @@
  * Handles uploading files to R2 storage via aml-svc
  */
 
+import * as Sentry from "@sentry/nextjs";
 import { getAmlCoreBaseUrl } from "./config";
 
 /**
@@ -18,7 +19,8 @@ async function getJwtToken(): Promise<string | null> {
 		const { tokenCache } = await import("@/lib/auth/tokenCache");
 		return await tokenCache.getCachedToken();
 	} catch (error) {
-		console.warn("Failed to get JWT token:", error);
+		Sentry.captureException(error);
+		Sentry.logger.error(Sentry.logger.fmt`Failed to get JWT token: ${error}`);
 		return null;
 	}
 }
@@ -93,26 +95,45 @@ export async function uploadFile(
 	// Get JWT token if not provided
 	const jwt = options.jwt ?? (await getJwtToken());
 
-	// Upload file
-	const headers: Record<string, string> = {};
-	if (jwt) {
-		headers["Authorization"] = `Bearer ${jwt}`;
-	}
+	// Upload file with Sentry instrumentation
+	return await Sentry.startSpan(
+		{
+			name: "File Upload",
+			op: "http.client",
+			attributes: {
+				"http.method": "POST",
+				"http.url": url.toString(),
+				"file.size": options.file.size,
+				"file.name": fileName,
+			},
+		},
+		async () => {
+			const headers: Record<string, string> = {};
+			if (jwt) {
+				headers["Authorization"] = `Bearer ${jwt}`;
+			}
 
-	const response = await fetch(url.toString(), {
-		method: "POST",
-		body: formData,
-		signal: options.signal,
-		headers,
-	});
+			const response = await fetch(url.toString(), {
+				method: "POST",
+				body: formData,
+				signal: options.signal,
+				headers,
+			});
 
-	if (!response.ok) {
-		const errorText = await response.text();
-		throw new Error(`Upload failed: ${errorText}`);
-	}
+			if (!response.ok) {
+				const errorText = await response.text();
+				const error = new Error(`Upload failed: ${errorText}`);
+				Sentry.captureException(error);
+				Sentry.logger.error(
+					Sentry.logger.fmt`File upload failed: ${errorText}`,
+				);
+				throw error;
+			}
 
-	const result = (await response.json()) as FileUploadResult;
-	return result;
+			const result = (await response.json()) as FileUploadResult;
+			return result;
+		},
+	);
 }
 
 /**
