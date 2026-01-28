@@ -363,7 +363,7 @@ export function DashboardView(): React.ReactElement {
 							</CardHeader>
 							<CardContent>
 								{data.clientStats ? (
-									<div className="grid grid-cols-1 @md/main:grid-cols-2 @lg/main:grid-cols-4 gap-4">
+									<div className="grid grid-cols-2 @lg/main:grid-cols-4 gap-4">
 										<div className="flex flex-col items-center text-center rounded-lg border bg-muted/50 p-4">
 											<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10 mb-3">
 												<Users className="h-5 w-5 text-blue-500" />
