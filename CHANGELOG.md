@@ -1,3 +1,10 @@
+# [1.4.0-rc.8](https://github.com/janovix/aml/compare/v1.4.0-rc.7...v1.4.0-rc.8) (2026-01-28)
+
+
+### Features
+
+* add trust clients as separate category in statistics ([628e66a](https://github.com/janovix/aml/commit/628e66a3835de1e50c31f88aabdbab879b1c7f75))
+
 # [1.4.0-rc.7](https://github.com/janovix/aml/compare/v1.4.0-rc.6...v1.4.0-rc.7) (2026-01-28)
 
 
