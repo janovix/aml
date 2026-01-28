@@ -8,6 +8,7 @@ import {
 	Users,
 	User,
 	Building2,
+	Landmark,
 	Briefcase,
 	Clock,
 	AlertTriangle,
@@ -362,7 +363,7 @@ export function DashboardView(): React.ReactElement {
 							</CardHeader>
 							<CardContent>
 								{data.clientStats ? (
-									<div className="grid grid-cols-1 @lg/main:grid-cols-3 gap-4">
+									<div className="grid grid-cols-1 @md/main:grid-cols-2 @lg/main:grid-cols-4 gap-4">
 										<div className="flex flex-col items-center text-center rounded-lg border bg-muted/50 p-4">
 											<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10 mb-3">
 												<Users className="h-5 w-5 text-blue-500" />
@@ -394,6 +395,17 @@ export function DashboardView(): React.ReactElement {
 											</div>
 											<div className="text-2xl font-bold tabular-nums mt-1 text-purple-500">
 												{formatNumber(data.clientStats.moralClients)}
+											</div>
+										</div>
+										<div className="flex flex-col items-center text-center rounded-lg border bg-muted/50 p-4">
+											<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/10 mb-3">
+												<Landmark className="h-5 w-5 text-amber-500" />
+											</div>
+											<div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+												{t("statsTrustClients")}
+											</div>
+											<div className="text-2xl font-bold tabular-nums mt-1 text-amber-500">
+												{formatNumber(data.clientStats.trustClients)}
 											</div>
 										</div>
 									</div>

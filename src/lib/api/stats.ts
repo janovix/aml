@@ -5,6 +5,7 @@ export interface ClientStats {
 	totalClients: number;
 	physicalClients: number;
 	moralClients: number;
+	trustClients: number;
 }
 
 export interface TransactionStats {

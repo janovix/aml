@@ -33,6 +33,7 @@ vi.mock("@/lib/api/stats", () => ({
 		totalClients: 100,
 		physicalClients: 70,
 		moralClients: 30,
+		trustClients: 0,
 	}),
 }));
 
