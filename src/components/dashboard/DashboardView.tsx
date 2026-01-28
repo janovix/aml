@@ -368,7 +368,7 @@ export function DashboardView(): React.ReactElement {
 											<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10 mb-3">
 												<Users className="h-5 w-5 text-blue-500" />
 											</div>
-											<div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+											<div className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-8 flex items-center justify-center">
 												{t("statsTotalClients")}
 											</div>
 											<div className="text-2xl font-bold tabular-nums mt-1 text-blue-500">
@@ -379,7 +379,7 @@ export function DashboardView(): React.ReactElement {
 											<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 mb-3">
 												<User className="h-5 w-5 text-emerald-500" />
 											</div>
-											<div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+											<div className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-8 flex items-center justify-center">
 												{t("statsPhysicalClients")}
 											</div>
 											<div className="text-2xl font-bold tabular-nums mt-1 text-emerald-500">
@@ -390,7 +390,7 @@ export function DashboardView(): React.ReactElement {
 											<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/10 mb-3">
 												<Building2 className="h-5 w-5 text-purple-500" />
 											</div>
-											<div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+											<div className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-8 flex items-center justify-center">
 												{t("statsMoralClients")}
 											</div>
 											<div className="text-2xl font-bold tabular-nums mt-1 text-purple-500">
@@ -401,7 +401,7 @@ export function DashboardView(): React.ReactElement {
 											<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/10 mb-3">
 												<Landmark className="h-5 w-5 text-amber-500" />
 											</div>
-											<div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+											<div className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-8 flex items-center justify-center">
 												{t("statsTrustClients")}
 											</div>
 											<div className="text-2xl font-bold tabular-nums mt-1 text-amber-500">
