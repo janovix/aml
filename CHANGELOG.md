@@ -1,3 +1,10 @@
+# [1.4.0-rc.9](https://github.com/janovix/aml/compare/v1.4.0-rc.8...v1.4.0-rc.9) (2026-01-28)
+
+
+### Bug Fixes
+
+* improve client stats grid alignment for 4 columns ([568d5da](https://github.com/janovix/aml/commit/568d5da5a0721ceb8cb0fe6af7c0cdb08aedd224))
+
 # [1.4.0-rc.8](https://github.com/janovix/aml/compare/v1.4.0-rc.7...v1.4.0-rc.8) (2026-01-28)
 
 
