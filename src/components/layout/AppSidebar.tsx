@@ -42,8 +42,7 @@ import {
 } from "./OrganizationSwitcher";
 import { NavUser } from "./NavUser";
 import { AppSwitcher } from "./AppSwitcher";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { LanguageSwitcher, ThemeSwitcher } from "@janovix/blocks";
 import { getAuthAppUrl, getWatchlistAppUrl } from "@/lib/auth/config";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { TranslationKeys } from "@/lib/translations";
