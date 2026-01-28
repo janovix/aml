@@ -1,3 +1,10 @@
+# [1.4.0-rc.5](https://github.com/janovix/aml/compare/v1.4.0-rc.4...v1.4.0-rc.5) (2026-01-27)
+
+
+### Features
+
+* integrate notifications system with Janovix Blocks ([2b37aa1](https://github.com/janovix/aml/commit/2b37aa1fd90d96fd2e4f550b73f5d46cf57f0654))
+
 # [1.4.0-rc.4](https://github.com/janovix/aml/compare/v1.4.0-rc.3...v1.4.0-rc.4) (2026-01-27)
 
 
