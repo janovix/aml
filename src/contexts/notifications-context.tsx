@@ -10,6 +10,7 @@ import {
 	useMemo,
 	type ReactNode,
 } from "react";
+import * as Sentry from "@sentry/nextjs";
 import { useAuthSession } from "@/lib/auth/useAuthSession";
 import { getNotificationsServiceUrl } from "@/lib/auth/config";
 import { getClientJwt } from "@/lib/auth/authClient";
@@ -123,9 +124,11 @@ export function NotificationsProvider({
 			// Get auth token for WebSocket authentication
 			const token = await getClientJwt();
 			if (!token) {
-				console.error(
-					"[Notifications] No auth token found, cannot connect to WebSocket",
-				);
+				const error = new Error("No auth token found for WebSocket connection");
+				Sentry.captureException(error, {
+					tags: { context: "notifications", action: "websocket_connect" },
+					level: "warning",
+				});
 				return;
 			}
 
@@ -134,7 +137,6 @@ export function NotificationsProvider({
 			const orgWs = new WebSocket(wsUrl);
 
 			orgWs.onopen = () => {
-				console.log("[Notifications] WebSocket connected");
 				setIsConnected(true);
 				reconnectAttempts.current = 0;
 
@@ -159,29 +161,26 @@ export function NotificationsProvider({
 							[{ ...notification, read: false }, ...prev].slice(0, 50),
 						); // Keep last 50
 						setUnreadCount((prev) => prev + 1);
-
-						// Show toast notification (optional)
-						console.log("[Notifications] New notification:", notification);
-					} else if (message.type === "server_hello") {
-						console.log(
-							"[Notifications] Subscribed to topics:",
-							message.subscribedTopics,
-						);
 					} else if (message.type === "read_ack") {
 						// Update unread count after mark as read
 						setUnreadCount(message.unreadCount || 0);
 					}
 				} catch (error) {
-					console.error("[Notifications] Failed to parse message:", error);
+					Sentry.captureException(error, {
+						tags: { context: "notifications", action: "parse_ws_message" },
+						extra: { rawMessage: event.data },
+					});
 				}
 			};
 
 			orgWs.onerror = (error) => {
-				console.error("[Notifications] WebSocket error:", error);
+				Sentry.captureException(error, {
+					tags: { context: "notifications", action: "websocket_error" },
+					level: "error",
+				});
 			};
 
 			orgWs.onclose = () => {
-				console.log("[Notifications] WebSocket disconnected");
 				setIsConnected(false);
 
 				// Attempt to reconnect with exponential backoff
@@ -191,12 +190,21 @@ export function NotificationsProvider({
 						reconnectAttempts.current++;
 						connect();
 					}, delay);
+				} else {
+					// Max reconnection attempts reached
+					Sentry.captureMessage("Max WebSocket reconnection attempts reached", {
+						tags: { context: "notifications", action: "reconnect_failed" },
+						level: "warning",
+					});
 				}
 			};
 
 			wsRef.current = orgWs;
 		} catch (error) {
-			console.error("[Notifications] Failed to establish connection:", error);
+			Sentry.captureException(error, {
+				tags: { context: "notifications", action: "establish_connection" },
+				level: "error",
+			});
 		}
 	}, [activeOrgId, userId]);
 
@@ -208,9 +216,10 @@ export function NotificationsProvider({
 			const baseUrl = getNotificationsServiceUrl();
 			const token = await getClientJwt();
 			if (!token) {
-				console.error(
-					"[Notifications] No JWT token available for unread count fetch",
-				);
+				Sentry.captureMessage("No JWT token available for unread count fetch", {
+					tags: { context: "notifications", action: "fetch_unread_count" },
+					level: "warning",
+				});
 				return;
 			}
 
@@ -227,9 +236,20 @@ export function NotificationsProvider({
 					data?: { total: number };
 				};
 				setUnreadCount(data.data?.total || 0);
+			} else {
+				Sentry.captureMessage(
+					`Failed to fetch unread count: ${response.status}`,
+					{
+						tags: { context: "notifications", action: "fetch_unread_count" },
+						level: "error",
+						extra: { status: response.status },
+					},
+				);
 			}
 		} catch (error) {
-			console.error("[Notifications] Failed to fetch unread count:", error);
+			Sentry.captureException(error, {
+				tags: { context: "notifications", action: "fetch_unread_count" },
+			});
 		}
 	}, [activeOrgId]);
 
@@ -241,8 +261,12 @@ export function NotificationsProvider({
 			const baseUrl = getNotificationsServiceUrl();
 			const token = await getClientJwt();
 			if (!token) {
-				console.error(
-					"[Notifications] No JWT token available for notifications fetch",
+				Sentry.captureMessage(
+					"No JWT token available for notifications fetch",
+					{
+						tags: { context: "notifications", action: "fetch_notifications" },
+						level: "warning",
+					},
 				);
 				return;
 			}
@@ -261,9 +285,20 @@ export function NotificationsProvider({
 				};
 				// Use the read status from the server (already computed)
 				setNotifications(data.data || []);
+			} else {
+				Sentry.captureMessage(
+					`Failed to fetch notifications: ${response.status}`,
+					{
+						tags: { context: "notifications", action: "fetch_notifications" },
+						level: "error",
+						extra: { status: response.status },
+					},
+				);
 			}
 		} catch (error) {
-			console.error("[Notifications] Failed to fetch notifications:", error);
+			Sentry.captureException(error, {
+				tags: { context: "notifications", action: "fetch_notifications" },
+			});
 		}
 	}, [activeOrgId]);
 
@@ -276,9 +311,10 @@ export function NotificationsProvider({
 				const baseUrl = getNotificationsServiceUrl();
 				const token = await getClientJwt();
 				if (!token) {
-					console.error(
-						"[Notifications] No JWT token available for mark as read",
-					);
+					Sentry.captureMessage("No JWT token available for mark as read", {
+						tags: { context: "notifications", action: "mark_as_read" },
+						level: "warning",
+					});
 					return;
 				}
 
@@ -307,9 +343,22 @@ export function NotificationsProvider({
 								: n,
 						),
 					);
+				} else {
+					Sentry.captureMessage(`Failed to mark as read: ${response.status}`, {
+						tags: { context: "notifications", action: "mark_as_read" },
+						level: "error",
+						extra: {
+							status: response.status,
+							channelId,
+							notificationId: upToNotificationId,
+						},
+					});
 				}
 			} catch (error) {
-				console.error("[Notifications] Failed to mark as read:", error);
+				Sentry.captureException(error, {
+					tags: { context: "notifications", action: "mark_as_read" },
+					extra: { channelId, notificationId: upToNotificationId },
+				});
 			}
 		},
 		[activeOrgId],
@@ -462,11 +511,14 @@ export function NotificationsProvider({
 		// Check if any failed
 		const failures = results.filter((r) => r.status === "rejected");
 		if (failures.length > 0) {
-			console.error(
-				"[Notifications] Some channels failed to mark as read:",
-				failures,
+			const error = new Error(
+				`Failed to mark ${failures.length} channel(s) as read`,
 			);
-			throw new Error(`Failed to mark ${failures.length} channel(s) as read`);
+			Sentry.captureException(error, {
+				tags: { context: "notifications", action: "mark_all_as_read" },
+				extra: { failureCount: failures.length, failures },
+			});
+			throw error;
 		}
 
 		// Update local state on success
