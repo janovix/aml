@@ -1,3 +1,10 @@
+# [1.4.0-rc.6](https://github.com/janovix/aml/compare/v1.4.0-rc.5...v1.4.0-rc.6) (2026-01-28)
+
+
+### Features
+
+* integrate Sentry for enhanced error tracking in NotificationsProvider ([1d6f4c3](https://github.com/janovix/aml/commit/1d6f4c3f047a23bbf4395a5cad062d333b45361f))
+
 # [1.4.0-rc.5](https://github.com/janovix/aml/compare/v1.4.0-rc.4...v1.4.0-rc.5) (2026-01-27)
 
 
