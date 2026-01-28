@@ -1,3 +1,10 @@
+# [1.4.0-rc.7](https://github.com/janovix/aml/compare/v1.4.0-rc.6...v1.4.0-rc.7) (2026-01-28)
+
+
+### Bug Fixes
+
+* relax RFC validation for moral persons ([12d14d0](https://github.com/janovix/aml/commit/12d14d03c0e17870c3791c99a69e809f5faac6ea))
+
 # [1.4.0-rc.6](https://github.com/janovix/aml/compare/v1.4.0-rc.5...v1.4.0-rc.6) (2026-01-28)
 
 
