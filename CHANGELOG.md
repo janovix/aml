@@ -1,3 +1,10 @@
+# [1.4.0-rc.10](https://github.com/janovix/aml/compare/v1.4.0-rc.9...v1.4.0-rc.10) (2026-01-28)
+
+
+### Bug Fixes
+
+* enhance alignment of client stats labels in DashboardView ([8099c43](https://github.com/janovix/aml/commit/8099c43fb183f87fd845f0578dc44381f84bfaa2))
+
 # [1.4.0-rc.9](https://github.com/janovix/aml/compare/v1.4.0-rc.8...v1.4.0-rc.9) (2026-01-28)
 
 
