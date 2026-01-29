@@ -48,41 +48,8 @@ export function StatsSkeleton(): React.ReactElement {
 	);
 }
 
-export function TransactionCardSkeleton(): React.ReactElement {
-	return (
-		<Card>
-			<CardHeader>
-				<Skeleton className="h-5 w-40" />
-				<Skeleton className="h-4 w-60" />
-			</CardHeader>
-			<CardContent className="space-y-4">
-				<div className="grid grid-cols-1 @lg/main:grid-cols-2 gap-4">
-					<Skeleton className="h-[88px] rounded-lg" />
-					<Skeleton className="h-[88px] rounded-lg" />
-				</div>
-				<Skeleton className="h-[80px] rounded-lg" />
-			</CardContent>
-		</Card>
-	);
-}
-
-export function ClientCardSkeleton(): React.ReactElement {
-	return (
-		<Card>
-			<CardHeader>
-				<Skeleton className="h-5 w-40" />
-				<Skeleton className="h-4 w-60" />
-			</CardHeader>
-			<CardContent>
-				<div className="grid grid-cols-2 @lg/main:grid-cols-4 gap-4">
-					<Skeleton className="h-[140px] rounded-lg" />
-					<Skeleton className="h-[140px] rounded-lg" />
-					<Skeleton className="h-[140px] rounded-lg" />
-					<Skeleton className="h-[140px] rounded-lg" />
-				</div>
-			</CardContent>
-		</Card>
-	);
+export function CardSkeleton(): React.ReactElement {
+	return <Skeleton className="h-[280px] rounded-xl" />;
 }
 
 /**
@@ -94,8 +61,8 @@ export function DashboardSkeleton(): React.ReactElement {
 		<div className="space-y-6">
 			<StatsSkeleton />
 			<div className="grid gap-6 @xl/main:grid-cols-2">
-				<TransactionCardSkeleton />
-				<ClientCardSkeleton />
+				<CardSkeleton />
+				<CardSkeleton />
 			</div>
 		</div>
 	);
@@ -271,8 +238,8 @@ export function DashboardView(): React.ReactElement {
 				<div className="space-y-6">
 					<StatsSkeleton />
 					<div className="grid gap-6 @xl/main:grid-cols-2">
-						<TransactionCardSkeleton />
-						<ClientCardSkeleton />
+						<CardSkeleton />
+						<CardSkeleton />
 					</div>
 				</div>
 			)}
