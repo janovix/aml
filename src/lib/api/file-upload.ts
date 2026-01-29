@@ -51,8 +51,12 @@ export interface FileUploadOptions {
 export interface FileUploadResult {
 	/** File key in R2 */
 	key: string;
-	/** Public URL to access the file */
+	/** Public URL to access the file (requires authentication) */
 	url: string;
+	/** Presigned URL with embedded token (no authentication required) */
+	presignedUrl?: string;
+	/** Expiration time for presigned URL */
+	expiresAt?: string;
 	/** File size in bytes */
 	size: number;
 	/** ETag for the uploaded file */
@@ -288,4 +292,80 @@ export async function uploadDocumentFiles(
 	}
 
 	return organized;
+}
+
+/**
+ * Generate a presigned URL for an existing file
+ * This allows the file to be accessed without authentication for a limited time
+ */
+export interface PresignUrlOptions {
+	/** The authenticated file URL from aml-svc */
+	url: string;
+	/** How long the URL should be valid (in minutes, default: 60) */
+	expiresInMinutes?: number;
+	/** Base URL override */
+	baseUrl?: string;
+	/** JWT token for authentication */
+	jwt?: string;
+}
+
+export interface PresignUrlResult {
+	/** Presigned URL with embedded token */
+	presignedUrl: string;
+	/** Expiration timestamp */
+	expiresAt: string;
+	/** How long the URL is valid (in minutes) */
+	expiresInMinutes: number;
+}
+
+/**
+ * Generate a presigned URL for an existing file
+ */
+export async function generatePresignedUrl(
+	options: PresignUrlOptions,
+): Promise<PresignUrlResult> {
+	const baseUrl = options.baseUrl ?? getAmlCoreBaseUrl();
+	const url = new URL("/api/v1/files/presign", baseUrl);
+
+	// Get JWT token if not provided
+	const jwt = options.jwt ?? (await getJwtToken());
+
+	return await Sentry.startSpan(
+		{
+			name: "Generate Presigned URL",
+			op: "http.client",
+			attributes: {
+				"http.method": "POST",
+				"http.url": url.toString(),
+			},
+		},
+		async () => {
+			const headers: Record<string, string> = {
+				"Content-Type": "application/json",
+			};
+			if (jwt) {
+				headers["Authorization"] = `Bearer ${jwt}`;
+			}
+
+			const response = await fetch(url.toString(), {
+				method: "POST",
+				headers,
+				body: JSON.stringify({
+					url: options.url,
+					expiresInMinutes: options.expiresInMinutes ?? 60,
+				}),
+			});
+
+			if (!response.ok) {
+				const errorText = await response.text();
+				const error = new Error(
+					`Failed to generate presigned URL: ${errorText}`,
+				);
+				Sentry.captureException(error);
+				throw error;
+			}
+
+			return (await response.json()) as PresignUrlResult;
+		},
+	);
 }

@@ -7,26 +7,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import {
 	FileText,
 	CheckCircle2,
 	X,
 	Loader2,
-	ExternalLink,
 	Upload,
 	ZoomIn,
-	ChevronLeft,
-	ChevronRight,
 	Check,
+	ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { ClientDocumentType } from "@/types/client-document";
 import { rasterizePDF } from "@/lib/document-scanner/pdf-rasterizer";
+import {
+	DocumentViewerDialog,
+	type DocumentImage,
+} from "../DocumentViewerDialog";
 
 export interface SimpleDocumentUploadData {
 	documentType: ClientDocumentType;
@@ -81,15 +77,20 @@ export function SimpleDocumentUploadCard({
 
 	const [isProcessing, setIsProcessing] = useState(false);
 
-	// Enlarge preview modal with gallery navigation
-	const [enlargePreview, setEnlargePreview] = useState<{
+	// Document viewer dialog state
+	const [documentViewer, setDocumentViewer] = useState<{
 		open: boolean;
-		currentIndex: number;
-	}>({ open: false, currentIndex: 0 });
+		images: DocumentImage[];
+		initialIndex: number;
+	}>({
+		open: false,
+		images: [],
+		initialIndex: 0,
+	});
 
 	// Build gallery images array from rasterized images
-	const galleryImages = React.useMemo(() => {
-		const images: { src: string; title: string }[] = [];
+	const galleryImages = React.useMemo<DocumentImage[]>(() => {
+		const images: DocumentImage[] = [];
 
 		if (localData.rasterizedImages && localData.rasterizedImages.length > 0) {
 			localData.rasterizedImages.forEach((blob, index) => {
@@ -276,54 +277,6 @@ export function SimpleDocumentUploadCard({
 		}
 	}, [documentType, localData, onUpload]);
 
-	// Gallery navigation
-	const handleGalleryPrev = useCallback(() => {
-		setEnlargePreview((prev) => ({
-			...prev,
-			currentIndex:
-				prev.currentIndex > 0
-					? prev.currentIndex - 1
-					: galleryImages.length - 1,
-		}));
-	}, [galleryImages.length]);
-
-	const handleGalleryNext = useCallback(() => {
-		setEnlargePreview((prev) => ({
-			...prev,
-			currentIndex:
-				prev.currentIndex < galleryImages.length - 1
-					? prev.currentIndex + 1
-					: 0,
-		}));
-	}, [galleryImages.length]);
-
-	const handleEnlargePreview = useCallback((index: number) => {
-		setEnlargePreview({ open: true, currentIndex: index });
-	}, []);
-
-	// Keyboard navigation for gallery
-	React.useEffect(() => {
-		if (!enlargePreview.open || galleryImages.length <= 1) return;
-
-		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.key === "ArrowLeft") {
-				e.preventDefault();
-				handleGalleryPrev();
-			} else if (e.key === "ArrowRight") {
-				e.preventDefault();
-				handleGalleryNext();
-			}
-		};
-
-		window.addEventListener("keydown", handleKeyDown);
-		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [
-		enlargePreview.open,
-		galleryImages.length,
-		handleGalleryPrev,
-		handleGalleryNext,
-	]);
-
 	const isComplete = localData.isUploaded;
 	const isUploading = localData.isUploading;
 	const hasFile = galleryImages.length > 0;
@@ -411,35 +364,43 @@ export function SimpleDocumentUploadCard({
 							</div>
 						) : hasFile && !isComplete ? (
 							<div className="space-y-3">
-								{/* Thumbnail gallery */}
-								<div className="grid grid-cols-2 gap-2">
-									{galleryImages.map((image, index) => (
-										<div key={index} className="space-y-1">
-											<p className="text-xs text-muted-foreground text-center">
-												{image.title}
-											</p>
-											<div
-												className="relative rounded-lg overflow-hidden bg-muted/30 border group cursor-pointer"
-												onClick={() => handleEnlargePreview(index)}
-											>
-												<img
-													src={image.src}
-													alt={image.title}
-													className="w-full h-24 object-contain"
-												/>
-												<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-													<ZoomIn className="h-6 w-6 text-white" />
-												</div>
-												{/* Green circular checkmark */}
-												<div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center pointer-events-none shadow-sm">
-													<Check
-														className="h-3 w-3 text-white"
-														strokeWidth={3}
+								{/* Thumbnail gallery - horizontal scrolling */}
+								<div className="relative">
+									<div className="flex gap-3 overflow-x-auto pb-2">
+										{galleryImages.map((image, index) => (
+											<div key={index} className="flex-shrink-0 space-y-1">
+												<p className="text-xs text-muted-foreground text-center">
+													{image.title}
+												</p>
+												<div
+													className="relative rounded-lg overflow-hidden bg-muted/30 border group cursor-pointer h-24"
+													onClick={() =>
+														setDocumentViewer({
+															open: true,
+															images: galleryImages,
+															initialIndex: index,
+														})
+													}
+												>
+													<img
+														src={image.src}
+														alt={image.title}
+														className="h-24 w-auto object-contain"
 													/>
+													<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+														<ZoomIn className="h-6 w-6 text-white" />
+													</div>
+													{/* Green circular checkmark */}
+													<div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center pointer-events-none shadow-sm">
+														<Check
+															className="h-3 w-3 text-white"
+															strokeWidth={3}
+														/>
+													</div>
 												</div>
 											</div>
-										</div>
-									))}
+										))}
+									</div>
 								</div>
 
 								{/* File info and actions */}
@@ -519,86 +480,15 @@ export function SimpleDocumentUploadCard({
 				</CardContent>
 			</Card>
 
-			{/* Enlarge Preview Modal - Gallery */}
-			<Dialog
-				open={enlargePreview.open}
+			{/* Document Viewer Dialog */}
+			<DocumentViewerDialog
+				open={documentViewer.open}
 				onOpenChange={(open) =>
-					setEnlargePreview((prev) => ({ ...prev, open }))
+					setDocumentViewer((prev) => ({ ...prev, open }))
 				}
-			>
-				<DialogContent className="max-w-[95vw] sm:max-w-3xl p-0 gap-0 overflow-hidden">
-					<DialogHeader className="p-4 pb-2 sm:p-6 sm:pb-3">
-						<DialogTitle className="text-base sm:text-lg flex items-center justify-between">
-							<span>{galleryImages[enlargePreview.currentIndex]?.title}</span>
-							{galleryImages.length > 1 && (
-								<span className="text-xs sm:text-sm text-muted-foreground font-normal">
-									{enlargePreview.currentIndex + 1} / {galleryImages.length}
-								</span>
-							)}
-						</DialogTitle>
-					</DialogHeader>
-
-					{/* Image container with navigation */}
-					<div className="relative flex items-center justify-center bg-muted/30 min-h-[50vh] sm:min-h-[60vh]">
-						{/* Left arrow */}
-						{galleryImages.length > 1 && (
-							<Button
-								variant="ghost"
-								size="icon"
-								className="absolute left-2 sm:left-4 z-10 h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-black/50 hover:bg-black/70 text-white"
-								onClick={handleGalleryPrev}
-							>
-								<ChevronLeft className="h-6 w-6 sm:h-8 sm:w-8" />
-							</Button>
-						)}
-
-						{/* Image */}
-						{galleryImages[enlargePreview.currentIndex] && (
-							<img
-								src={galleryImages[enlargePreview.currentIndex].src}
-								alt={galleryImages[enlargePreview.currentIndex].title}
-								className="max-w-full max-h-[50vh] sm:max-h-[65vh] object-contain px-12 sm:px-16 py-4"
-							/>
-						)}
-
-						{/* Right arrow */}
-						{galleryImages.length > 1 && (
-							<Button
-								variant="ghost"
-								size="icon"
-								className="absolute right-2 sm:right-4 z-10 h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-black/50 hover:bg-black/70 text-white"
-								onClick={handleGalleryNext}
-							>
-								<ChevronRight className="h-6 w-6 sm:h-8 sm:w-8" />
-							</Button>
-						)}
-					</div>
-
-					{/* Dots indicator for multiple images */}
-					{galleryImages.length > 1 && (
-						<div className="flex justify-center gap-2 py-3 sm:py-4 bg-background">
-							{galleryImages.map((_, index) => (
-								<button
-									key={index}
-									onClick={() =>
-										setEnlargePreview((prev) => ({
-											...prev,
-											currentIndex: index,
-										}))
-									}
-									className={cn(
-										"w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full transition-colors",
-										index === enlargePreview.currentIndex
-											? "bg-primary"
-											: "bg-muted-foreground/30 hover:bg-muted-foreground/50",
-									)}
-									aria-label={`Ver imagen ${index + 1}`}
-								/>
-							))}
-						</div>
-					)}
-				</DialogContent>
-			</Dialog>
+				images={documentViewer.images}
+				initialIndex={documentViewer.initialIndex}
+			/>
 		</>
 	);
 }

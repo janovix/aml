@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import * as Sentry from "@sentry/nextjs";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
@@ -43,7 +43,6 @@ import { getFieldDescription } from "../../lib/field-descriptions";
 import { validateVIN } from "../../lib/utils";
 import { getVehicleBrandCatalogKey } from "../../lib/vehicle-utils";
 import { useLanguage } from "@/components/LanguageProvider";
-import { FormActionBar } from "@/components/ui/FormActionBar";
 
 interface TransactionFormData {
 	clientId: string;
@@ -90,7 +89,6 @@ export function TransactionCreateView(): React.JSX.Element {
 	const { navigateTo, orgPath } = useOrgNavigation();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
-	const formRef = useRef<HTMLFormElement>(null);
 	const [isSaving, setIsSaving] = useState(false);
 
 	const [formData, setFormData, clearFormStorage] =
@@ -303,7 +301,7 @@ export function TransactionCreateView(): React.JSX.Element {
 	};
 
 	return (
-		<div className="space-y-6 pb-24 md:pb-20">
+		<div className="space-y-6">
 			<PageHero
 				title={t("txnNewTitle")}
 				subtitle={t("txnNewSubtitle")}
@@ -314,7 +312,7 @@ export function TransactionCreateView(): React.JSX.Element {
 				}}
 			/>
 
-			<form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
+			<form onSubmit={handleSubmit} className="space-y-6">
 				<Card>
 					<CardHeader>
 						<CardTitle className="text-lg">{t("txnInfoTitle")}</CardTitle>
@@ -701,28 +699,31 @@ export function TransactionCreateView(): React.JSX.Element {
 						</div>
 					</CardContent>
 				</Card>
-			</form>
 
-			{/* Fixed Action Bar */}
-			<FormActionBar
-				actions={[
-					{
-						label: isSaving ? t("txnCreating") : t("txnCreateButton"),
-						icon: Save,
-						onClick: () => {
-							// Use requestSubmit() to trigger native form validation
-							formRef.current?.requestSubmit();
-						},
-						disabled: isSaving,
-						loading: isSaving,
-					},
-					{
-						label: t("cancel"),
-						onClick: handleCancel,
-						variant: "outline",
-					},
-				]}
-			/>
+				{/* Action buttons */}
+				<div className="flex justify-end gap-3">
+					<Button
+						type="button"
+						variant="outline"
+						onClick={handleCancel}
+					>
+						{t("cancel")}
+					</Button>
+					<Button type="submit" disabled={isSaving}>
+						{isSaving ? (
+							<>
+								<span className="animate-spin mr-2">⏳</span>
+								{t("txnCreating")}
+							</>
+						) : (
+							<>
+								<Save className="h-4 w-4 mr-2" />
+								{t("txnCreateButton")}
+							</>
+						)}
+					</Button>
+				</div>
+			</form>
 		</div>
 	);
 }

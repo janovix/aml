@@ -1,5 +1,6 @@
 import { getAmlCoreBaseUrl } from "./config";
 import { fetchJson } from "./http";
+import { downloadFile } from "./download";
 
 /**
  * Notice status enum matching backend
@@ -319,58 +320,13 @@ export async function downloadNoticeXml(opts: {
 	signal?: AbortSignal;
 	jwt?: string;
 }): Promise<void> {
-	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
-	const url = new URL(`/api/v1/notices/${opts.id}/download`, baseUrl);
-
-	const headers: HeadersInit = {};
-	if (opts.jwt) {
-		headers["Authorization"] = `Bearer ${opts.jwt}`;
-	}
-
-	const response = await fetch(url.toString(), {
-		method: "GET",
-		headers,
+	return downloadFile({
+		url: `/api/v1/notices/${opts.id}/download`,
+		defaultFileName: opts.fileName || `aviso_${opts.id}.xml`,
+		baseUrl: opts.baseUrl,
 		signal: opts.signal,
+		jwt: opts.jwt,
 	});
-
-	if (!response.ok) {
-		// Try to parse error message from response
-		const contentType = response.headers.get("content-type");
-		if (contentType?.includes("application/json")) {
-			const errorData = (await response.json()) as { message?: string };
-			throw new Error(
-				errorData.message || `Download failed: ${response.status}`,
-			);
-		}
-		throw new Error(
-			`Download failed: ${response.status} ${response.statusText}`,
-		);
-	}
-
-	// Get filename from Content-Disposition header or use provided/default name
-	const contentDisposition = response.headers.get("Content-Disposition");
-	let fileName = opts.fileName || `aviso_${opts.id}.xml`;
-	if (contentDisposition) {
-		const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
-		if (match?.[1]) {
-			fileName = match[1];
-		}
-	}
-
-	// Download the file as a blob
-	const blob = await response.blob();
-
-	// Create a download link and trigger it
-	const downloadUrl = URL.createObjectURL(blob);
-	const link = document.createElement("a");
-	link.href = downloadUrl;
-	link.download = fileName;
-	document.body.appendChild(link);
-	link.click();
-	document.body.removeChild(link);
-
-	// Clean up the object URL
-	URL.revokeObjectURL(downloadUrl);
 }
 
 /**

@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import * as Sentry from "@sentry/nextjs";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { Button } from "@/components/ui/button";
@@ -45,7 +45,6 @@ import { getFieldDescription } from "../../lib/field-descriptions";
 import { validateVIN } from "../../lib/utils";
 import { getVehicleBrandCatalogKey } from "../../lib/vehicle-utils";
 import { useLanguage } from "@/components/LanguageProvider";
-import { FormActionBar } from "@/components/ui/FormActionBar";
 
 interface TransactionEditViewProps {
 	transactionId: string;
@@ -92,7 +91,6 @@ export function TransactionEditView({
 }: TransactionEditViewProps): React.JSX.Element {
 	const { t } = useLanguage();
 	const { navigateTo } = useOrgNavigation();
-	const formRef = useRef<HTMLFormElement>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isSaving, setIsSaving] = useState(false);
 	const [formData, setFormData] = useState({
@@ -341,7 +339,7 @@ export function TransactionEditView({
 	}
 
 	return (
-		<div className="space-y-6 pb-24 md:pb-20">
+		<div className="space-y-6">
 			<PageHero
 				title={t("txnEditTitle")}
 				subtitle={transactionId}
@@ -352,7 +350,7 @@ export function TransactionEditView({
 				}}
 			/>
 
-			<form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
+			<form onSubmit={handleSubmit} className="space-y-6">
 				<Card>
 					<CardHeader>
 						<CardTitle className="text-lg">{t("txnInfoTitle")}</CardTitle>
@@ -801,28 +799,31 @@ export function TransactionEditView({
 						</div>
 					</CardContent>
 				</Card>
-			</form>
 
-			{/* Fixed Action Bar */}
-			<FormActionBar
-				actions={[
-					{
-						label: isSaving ? t("txnSaving") : t("txnSaveButton"),
-						icon: Save,
-						onClick: () => {
-							// Use requestSubmit() to trigger native form validation
-							formRef.current?.requestSubmit();
-						},
-						disabled: isSaveDisabled,
-						loading: isSaving,
-					},
-					{
-						label: t("cancel"),
-						onClick: handleCancel,
-						variant: "outline",
-					},
-				]}
-			/>
+				{/* Action buttons */}
+				<div className="flex justify-end gap-3">
+					<Button
+						type="button"
+						variant="outline"
+						onClick={handleCancel}
+					>
+						{t("cancel")}
+					</Button>
+					<Button type="submit" disabled={isSaveDisabled}>
+						{isSaving ? (
+							<>
+								<span className="animate-spin mr-2">⏳</span>
+								{t("txnSaving")}
+							</>
+						) : (
+							<>
+								<Save className="h-4 w-4 mr-2" />
+								{t("txnSaveButton")}
+							</>
+						)}
+					</Button>
+				</div>
+			</form>
 		</div>
 	);
 }
