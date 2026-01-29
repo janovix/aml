@@ -54,11 +54,12 @@ export function useStatesCatalog(): StatesCatalogResult {
 			return;
 		}
 
-		// Start a new fetch
+		// Start a new fetch - fetch ALL states by requesting a large page size
 		setIsLoading(true);
 		cachePromise = listCatalogItems({
 			catalogKey: "states",
 			activeOnly: true,
+			pageSize: 100, // Request all states at once (there are 32 Mexican states)
 			jwt,
 		}).then((response) => {
 			const items = response.data;
@@ -84,14 +85,10 @@ export function useStatesCatalog(): StatesCatalogResult {
 	const getStateName = (stateCode: string | undefined | null): string => {
 		if (!stateCode) return "";
 
-		// Try to parse the metadata to get the code
+		// Find the state by matching the code in metadata
 		const state = states.find((s) => {
-			try {
-				const metadata = s.metadata as { code?: string } | null;
-				return metadata?.code === stateCode;
-			} catch {
-				return false;
-			}
+			const metadata = s.metadata as { code?: string } | null;
+			return metadata?.code === stateCode;
 		});
 
 		return state?.name || stateCode;

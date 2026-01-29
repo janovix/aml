@@ -56,152 +56,22 @@ import type {
 	ClientDocumentType,
 	ClientDocumentCreateRequest,
 } from "@/types/client-document";
+import type { PersonType } from "@/types/client";
+import {
+	DOCUMENT_TYPE_CONFIG,
+	REQUIRED_DOCUMENTS,
+	AVAILABLE_DOCUMENTS,
+} from "@/lib/constants";
 
 interface DocumentUploadSectionProps {
 	clientId: string;
-	personType: string;
+	personType: PersonType;
 	className?: string;
 	/** Callback when document list changes (for refreshing KYC status) */
 	onDocumentChange?: () => void;
 }
 
-// Document type configurations
-const DOCUMENT_TYPE_CONFIG: Record<
-	ClientDocumentType,
-	{
-		label: string;
-		description: string;
-		allowImages: boolean;
-		allowPdf: boolean;
-	}
-> = {
-	PASSPORT: {
-		label: "Pasaporte",
-		description: "Página principal del pasaporte",
-		allowImages: true,
-		allowPdf: true,
-	},
-	NATIONAL_ID: {
-		label: "INE/IFE",
-		description: "Frente y reverso de la credencial",
-		allowImages: true,
-		allowPdf: true,
-	},
-	DRIVERS_LICENSE: {
-		label: "Licencia de conducir",
-		description: "Frente y reverso de la licencia",
-		allowImages: true,
-		allowPdf: true,
-	},
-	CEDULA_PROFESIONAL: {
-		label: "Cédula Profesional",
-		description: "Cédula profesional vigente",
-		allowImages: true,
-		allowPdf: true,
-	},
-	CARTILLA_MILITAR: {
-		label: "Cartilla Militar",
-		description: "Cartilla del servicio militar",
-		allowImages: true,
-		allowPdf: true,
-	},
-	TAX_ID: {
-		label: "Constancia de Situación Fiscal",
-		description: "RFC / Constancia del SAT",
-		allowImages: false,
-		allowPdf: true,
-	},
-	PROOF_OF_ADDRESS: {
-		label: "Comprobante de Domicilio",
-		description: "No mayor a 3 meses",
-		allowImages: true,
-		allowPdf: true,
-	},
-	UTILITY_BILL: {
-		label: "Recibo de Servicios",
-		description: "Luz, agua, teléfono, etc.",
-		allowImages: true,
-		allowPdf: true,
-	},
-	BANK_STATEMENT: {
-		label: "Estado de Cuenta",
-		description: "Estado de cuenta bancario",
-		allowImages: false,
-		allowPdf: true,
-	},
-	ACTA_CONSTITUTIVA: {
-		label: "Acta Constitutiva",
-		description: "Acta de constitución de la empresa",
-		allowImages: false,
-		allowPdf: true,
-	},
-	PODER_NOTARIAL: {
-		label: "Poder Notarial",
-		description: "Poder otorgado ante notario",
-		allowImages: false,
-		allowPdf: true,
-	},
-	TRUST_AGREEMENT: {
-		label: "Contrato de Fideicomiso",
-		description: "Contrato del fideicomiso",
-		allowImages: false,
-		allowPdf: true,
-	},
-	CORPORATE_BYLAWS: {
-		label: "Estatutos Sociales",
-		description: "Estatutos de la empresa",
-		allowImages: false,
-		allowPdf: true,
-	},
-	OTHER: {
-		label: "Otro",
-		description: "Otro tipo de documento",
-		allowImages: true,
-		allowPdf: true,
-	},
-};
-
-// Documents required per person type
-const REQUIRED_DOCUMENTS: Record<string, ClientDocumentType[]> = {
-	physical: ["NATIONAL_ID", "PROOF_OF_ADDRESS", "TAX_ID"],
-	moral: ["ACTA_CONSTITUTIVA", "TAX_ID", "PODER_NOTARIAL", "PROOF_OF_ADDRESS"],
-	trust: ["TRUST_AGREEMENT", "TAX_ID", "PROOF_OF_ADDRESS"],
-};
-
-// Available document types per person type
-const AVAILABLE_DOCUMENTS: Record<string, ClientDocumentType[]> = {
-	physical: [
-		"NATIONAL_ID",
-		"PASSPORT",
-		"DRIVERS_LICENSE",
-		"CEDULA_PROFESIONAL",
-		"CARTILLA_MILITAR",
-		"TAX_ID",
-		"PROOF_OF_ADDRESS",
-		"UTILITY_BILL",
-		"BANK_STATEMENT",
-		"OTHER",
-	],
-	moral: [
-		"ACTA_CONSTITUTIVA",
-		"PODER_NOTARIAL",
-		"CORPORATE_BYLAWS",
-		"TAX_ID",
-		"PROOF_OF_ADDRESS",
-		"UTILITY_BILL",
-		"BANK_STATEMENT",
-		"OTHER",
-	],
-	trust: [
-		"TRUST_AGREEMENT",
-		"TAX_ID",
-		"PROOF_OF_ADDRESS",
-		"UTILITY_BILL",
-		"BANK_STATEMENT",
-		"OTHER",
-	],
-};
-
+// Document status config with icons (component-specific)
 const DOCUMENT_STATUS_CONFIG = {
 	PENDING: {
 		label: "Pendiente",

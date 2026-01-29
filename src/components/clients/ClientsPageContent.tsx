@@ -17,11 +17,13 @@ import { useLanguage } from "@/components/LanguageProvider";
 import { getLocaleForLanguage } from "@/lib/translations";
 import { useJwt } from "@/hooks/useJwt";
 import { CreateImportDialog } from "@/components/import/CreateImportDialog";
+import { useStatesCatalog } from "@/hooks/useStatesCatalog";
 
 export function ClientsPageContent(): React.ReactElement {
 	const { navigateTo } = useOrgNavigation();
 	const { t, language } = useLanguage();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
+	const { isLoading: isStatesLoading } = useStatesCatalog(); // Preload states catalog
 	const [stats, setStats] = useState<{
 		totalClients: number;
 		physicalClients: number;

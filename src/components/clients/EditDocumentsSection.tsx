@@ -2,24 +2,36 @@
 
 import * as React from "react";
 import { useState, useCallback, useEffect } from "react";
-import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
 	FileText,
 	CheckCircle2,
 	AlertCircle,
 	ExternalLink,
+	Trash2,
+	ZoomIn,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
 	listClientDocuments,
 	createClientDocument,
 	patchClientDocument,
+	deleteClientDocument,
 } from "@/lib/api/client-documents";
 import { uploadDocumentFiles } from "@/lib/api/file-upload";
 import { useOrgStore } from "@/lib/org-store";
-import { getProxiedFileUrl } from "@/lib/utils/file-proxy";
+import { PresignedImage } from "@/components/PresignedImage";
 import type { PersonType } from "@/types/client";
 import type {
 	ClientDocumentType,
@@ -27,6 +39,12 @@ import type {
 	ClientDocument,
 	DocumentFileMetadata,
 } from "@/types/client-document";
+import {
+	DOCUMENT_TYPE_CONFIG,
+	REQUIRED_DOCUMENTS,
+	ID_DOCUMENT_TYPES,
+	requiresUBOs,
+} from "@/lib/constants";
 import {
 	SimpleDocumentUploadCard,
 	type SimpleDocumentUploadData,
@@ -36,6 +54,10 @@ import {
 	type IDDocumentData,
 } from "./wizard/IDDocumentSelector";
 import { Button } from "../ui/button";
+import {
+	DocumentViewerDialog,
+	type DocumentImage,
+} from "./DocumentViewerDialog";
 
 interface EditDocumentsSectionProps {
 	clientId: string;
@@ -43,97 +65,6 @@ interface EditDocumentsSectionProps {
 	className?: string;
 	onDocumentChange?: () => void;
 }
-
-// Document configuration per type
-const DOCUMENT_CONFIG: Record<
-	ClientDocumentType,
-	{
-		title: string;
-		description: string;
-		showExpiryDate: boolean;
-	}
-> = {
-	NATIONAL_ID: {
-		title: "INE/IFE",
-		description: "Credencial para Votar del INE",
-		showExpiryDate: true,
-	},
-	PASSPORT: {
-		title: "Pasaporte",
-		description: "Pasaporte mexicano vigente",
-		showExpiryDate: true,
-	},
-	DRIVERS_LICENSE: {
-		title: "Licencia de Conducir",
-		description: "Licencia de conducir vigente",
-		showExpiryDate: true,
-	},
-	CEDULA_PROFESIONAL: {
-		title: "Cédula Profesional",
-		description: "Cédula profesional expedida por SEP",
-		showExpiryDate: false,
-	},
-	CARTILLA_MILITAR: {
-		title: "Cartilla Militar",
-		description: "Cartilla del servicio militar nacional",
-		showExpiryDate: false,
-	},
-	TAX_ID: {
-		title: "Constancia de Situación Fiscal",
-		description: "Constancia de situación fiscal emitida por el SAT (RFC)",
-		showExpiryDate: false,
-	},
-	PROOF_OF_ADDRESS: {
-		title: "Comprobante de Domicilio",
-		description: "Recibo de servicios con antigüedad no mayor a 3 meses",
-		showExpiryDate: false,
-	},
-	UTILITY_BILL: {
-		title: "Recibo de Servicios",
-		description: "Recibo de luz, agua, gas o teléfono",
-		showExpiryDate: false,
-	},
-	BANK_STATEMENT: {
-		title: "Estado de Cuenta Bancario",
-		description: "Estado de cuenta bancario reciente",
-		showExpiryDate: false,
-	},
-	ACTA_CONSTITUTIVA: {
-		title: "Acta Constitutiva",
-		description: "Escritura pública de constitución de la empresa",
-		showExpiryDate: false,
-	},
-	PODER_NOTARIAL: {
-		title: "Poder Notarial",
-		description: "Poder otorgado ante notario público al representante legal",
-		showExpiryDate: false,
-	},
-	TRUST_AGREEMENT: {
-		title: "Contrato de Fideicomiso",
-		description: "Contrato del fideicomiso debidamente protocolizado",
-		showExpiryDate: false,
-	},
-	CORPORATE_BYLAWS: {
-		title: "Estatutos Sociales",
-		description: "Estatutos de la sociedad",
-		showExpiryDate: false,
-	},
-	OTHER: {
-		title: "Otro Documento",
-		description: "Otro tipo de documento",
-		showExpiryDate: false,
-	},
-};
-
-// Required documents per person type (excluding ID which is handled separately)
-const REQUIRED_DOCUMENTS: Record<PersonType, ClientDocumentType[]> = {
-	physical: ["PROOF_OF_ADDRESS", "TAX_ID"],
-	moral: ["ACTA_CONSTITUTIVA", "PODER_NOTARIAL", "TAX_ID", "PROOF_OF_ADDRESS"],
-	trust: ["TRUST_AGREEMENT", "TAX_ID", "PROOF_OF_ADDRESS"],
-};
-
-// ID document types
-const ID_DOCUMENT_TYPES: ClientDocumentType[] = ["NATIONAL_ID", "PASSPORT"];
 
 export function EditDocumentsSection({
 	clientId,
@@ -153,9 +84,25 @@ export function EditDocumentsSection({
 	const [documentData, setDocumentData] = useState<
 		Record<ClientDocumentType, SimpleDocumentUploadData | null>
 	>({} as Record<ClientDocumentType, SimpleDocumentUploadData | null>);
+	const [documentToDelete, setDocumentToDelete] =
+		useState<ClientDocument | null>(null);
+	const [isDeleting, setIsDeleting] = useState(false);
+
+	// Document viewer dialog state
+	const [documentViewer, setDocumentViewer] = useState<{
+		open: boolean;
+		images: DocumentImage[];
+		initialIndex: number;
+		originalFileUrl?: string | null;
+	}>({
+		open: false,
+		images: [],
+		initialIndex: 0,
+		originalFileUrl: null,
+	});
 
 	const requiredDocs = REQUIRED_DOCUMENTS[personType];
-	const needsUBOs = personType === "moral" || personType === "trust";
+	const needsUBOs = requiresUBOs(personType);
 
 	// Fetch existing documents
 	const fetchDocuments = useCallback(async () => {
@@ -265,7 +212,7 @@ export function EditDocumentsSection({
 						documentId: createdDoc.id,
 					});
 
-					// Build metadata with all file URLs
+					// Build metadata with all file URLs (store base URLs, not presigned)
 					const fileMetadata: DocumentFileMetadata = {
 						primaryFileUrl: uploadResult.primary.url,
 						originalFileUrl: uploadResult.original?.url,
@@ -289,7 +236,7 @@ export function EditDocumentsSection({
 						fileMetadata.rasterizedPageUrls = rasterizedPages.map((r) => r.url);
 					}
 
-					// Update document with file URLs using PATCH
+					// Update document with file URLs using PATCH (store base URL, not presigned)
 					await patchClientDocument({
 						clientId,
 						documentId: createdDoc.id,
@@ -371,7 +318,7 @@ export function EditDocumentsSection({
 						documentId: createdDoc.id,
 					});
 
-					// Build metadata with all file URLs
+					// Build metadata with all file URLs (store base URLs, not presigned)
 					const fileMetadata: DocumentFileMetadata = {
 						primaryFileUrl: uploadResult.primary.url,
 						originalFileUrl: uploadResult.original?.url,
@@ -384,7 +331,7 @@ export function EditDocumentsSection({
 					}
 					fileMetadata.rasterizedPageUrls = allPageUrls;
 
-					// Update document with file URLs using PATCH
+					// Update document with file URLs using PATCH (store base URL, not presigned)
 					await patchClientDocument({
 						clientId,
 						documentId: createdDoc.id,
@@ -409,6 +356,27 @@ export function EditDocumentsSection({
 		},
 		[clientId, fetchDocuments, onDocumentChange],
 	);
+
+	const handleDeleteDocument = useCallback(async () => {
+		if (!documentToDelete) return;
+
+		try {
+			setIsDeleting(true);
+			await deleteClientDocument({
+				clientId,
+				documentId: documentToDelete.id,
+			});
+			toast.success("Documento eliminado exitosamente");
+			setDocumentToDelete(null);
+			fetchDocuments();
+			onDocumentChange?.();
+		} catch (error) {
+			console.error("Error deleting document:", error);
+			toast.error("Error al eliminar el documento");
+		} finally {
+			setIsDeleting(false);
+		}
+	}, [documentToDelete, clientId, fetchDocuments, onDocumentChange]);
 
 	if (isLoading) {
 		return (
@@ -464,7 +432,7 @@ export function EditDocumentsSection({
 								{missingDocs.map((docType) => (
 									<li key={docType} className="flex items-center gap-1">
 										<span className="w-1 h-1 rounded-full bg-amber-500" />
-										{DOCUMENT_CONFIG[docType]?.title || docType}
+										{DOCUMENT_TYPE_CONFIG[docType]?.label || docType}
 									</li>
 								))}
 							</ul>
@@ -488,34 +456,189 @@ export function EditDocumentsSection({
 					</h3>
 					{hasIdDocument && existingIdDocument ? (
 						<Card className="border-green-500 bg-green-50/50 dark:bg-green-950/20">
-							<CardContent className="p-4 space-y-3">
-								<div className="flex items-center justify-between">
-									<div className="flex items-center gap-3">
-										<CheckCircle2 className="h-5 w-5 text-green-600" />
-										<div>
-											<p className="font-medium">
-												{DOCUMENT_CONFIG[existingIdDocument.documentType]
-													?.title || existingIdDocument.documentType}
-											</p>
-											<p className="text-sm text-muted-foreground">
-												#{existingIdDocument.documentNumber}
-												{existingIdDocument.expiryDate && (
-													<span className="ml-2">
-														Vence:{" "}
-														{new Date(
-															existingIdDocument.expiryDate,
-														).toLocaleDateString("es-MX")}
-													</span>
+							<CardHeader className="pb-3">
+								<CardTitle className="text-sm flex items-center justify-between">
+									<span className="flex items-center gap-2">
+										<FileText className="h-4 w-4" />
+										{DOCUMENT_TYPE_CONFIG[existingIdDocument.documentType]
+											?.label || existingIdDocument.documentType}
+									</span>
+									<Badge className="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+										<CheckCircle2 className="h-3 w-3 mr-1" />
+										Cargado
+									</Badge>
+								</CardTitle>
+							</CardHeader>
+							<CardContent className="space-y-3">
+								<div>
+									<p className="text-sm text-muted-foreground">
+										#{existingIdDocument.documentNumber}
+										{existingIdDocument.expiryDate && (
+											<span className="ml-2">
+												Vence:{" "}
+												{new Date(
+													existingIdDocument.expiryDate,
+												).toLocaleDateString("es-MX")}
+											</span>
+										)}
+									</p>
+								</div>
+
+								{/* Show thumbnails if metadata has image URLs - horizontal scrolling */}
+								{existingIdDocument.metadata && (
+									<div className="relative pt-2">
+										<div className="flex gap-3 overflow-x-auto pb-2">
+											{(existingIdDocument.metadata as any).ineFrontUrl && (
+												<div className="flex-shrink-0 space-y-1">
+													<p className="text-xs text-muted-foreground text-center">
+														Frente
+													</p>
+													<div
+														className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group h-24"
+														onClick={() => {
+															const images: DocumentImage[] = [];
+															if (
+																(existingIdDocument.metadata as any).ineFrontUrl
+															) {
+																images.push({
+																	src: (existingIdDocument.metadata as any)
+																		.ineFrontUrl,
+																	title: "Frente de INE",
+																});
+															}
+															if (
+																(existingIdDocument.metadata as any).ineBackUrl
+															) {
+																images.push({
+																	src: (existingIdDocument.metadata as any)
+																		.ineBackUrl,
+																	title: "Reverso de INE",
+																});
+															}
+															setDocumentViewer({
+																open: true,
+																images,
+																initialIndex: 0,
+																originalFileUrl: (
+																	existingIdDocument.metadata as any
+																)?.originalFileUrl,
+															});
+														}}
+													>
+														<PresignedImage
+															src={
+																(existingIdDocument.metadata as any).ineFrontUrl
+															}
+															alt="Frente de INE"
+															className="h-24 w-auto object-contain"
+														/>
+														<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+															<ZoomIn className="h-6 w-6 text-white" />
+														</div>
+													</div>
+												</div>
+											)}
+											{(existingIdDocument.metadata as any).ineBackUrl && (
+												<div className="flex-shrink-0 space-y-1">
+													<p className="text-xs text-muted-foreground text-center">
+														Reverso
+													</p>
+													<div
+														className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group h-24"
+														onClick={() => {
+															const images: DocumentImage[] = [];
+															if (
+																(existingIdDocument.metadata as any).ineFrontUrl
+															) {
+																images.push({
+																	src: (existingIdDocument.metadata as any)
+																		.ineFrontUrl,
+																	title: "Frente de INE",
+																});
+															}
+															if (
+																(existingIdDocument.metadata as any).ineBackUrl
+															) {
+																images.push({
+																	src: (existingIdDocument.metadata as any)
+																		.ineBackUrl,
+																	title: "Reverso de INE",
+																});
+															}
+															setDocumentViewer({
+																open: true,
+																images,
+																initialIndex: 1,
+																originalFileUrl: (
+																	existingIdDocument.metadata as any
+																)?.originalFileUrl,
+															});
+														}}
+													>
+														<PresignedImage
+															src={
+																(existingIdDocument.metadata as any).ineBackUrl
+															}
+															alt="Reverso de INE"
+															className="h-24 w-auto object-contain"
+														/>
+														<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+															<ZoomIn className="h-6 w-6 text-white" />
+														</div>
+													</div>
+												</div>
+											)}
+											{(existingIdDocument.metadata as any).primaryFileUrl &&
+												!(existingIdDocument.metadata as any).ineFrontUrl && (
+													<div className="flex-shrink-0 space-y-1">
+														<p className="text-xs text-muted-foreground text-center">
+															Documento
+														</p>
+														<div
+															className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group h-24"
+															onClick={() => {
+																const images: DocumentImage[] = [
+																	{
+																		src: (existingIdDocument.metadata as any)
+																			.primaryFileUrl,
+																		title: "Documento",
+																	},
+																];
+																setDocumentViewer({
+																	open: true,
+																	images,
+																	initialIndex: 0,
+																	originalFileUrl: (
+																		existingIdDocument.metadata as any
+																	)?.originalFileUrl,
+																});
+															}}
+														>
+															<PresignedImage
+																src={
+																	(existingIdDocument.metadata as any)
+																		.primaryFileUrl
+																}
+																alt="Documento"
+																className="h-24 w-auto object-contain"
+															/>
+															<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+																<ZoomIn className="h-6 w-6 text-white" />
+															</div>
+														</div>
+													</div>
 												)}
-											</p>
 										</div>
 									</div>
+								)}
+
+								{/* Action buttons */}
+								<div className="flex flex-wrap gap-2 pt-2">
 									{existingIdDocument.fileUrl && (
 										<Button
 											variant="outline"
 											size="sm"
 											onClick={() => {
-												// Open in new tab with security attributes
 												const newWindow = window.open(
 													existingIdDocument.fileUrl!,
 													"_blank",
@@ -524,114 +647,21 @@ export function EditDocumentsSection({
 												if (newWindow) newWindow.opener = null;
 											}}
 										>
-											<FileText className="h-4 w-4 mr-2" />
-											Ver Documento
+											<FileText className="h-4 w-4 sm:mr-2" />
+											<span className="hidden sm:inline">Ver Documento Original</span>
+											<span className="sm:hidden">Ver Original</span>
 										</Button>
 									)}
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={() => setDocumentToDelete(existingIdDocument)}
+										className="text-destructive hover:text-destructive"
+									>
+										<Trash2 className="h-4 w-4 sm:mr-2" />
+										<span className="hidden sm:inline">Eliminar</span>
+									</Button>
 								</div>
-
-								{/* Show thumbnails if metadata has image URLs */}
-								{existingIdDocument.metadata && (
-									<div className="grid grid-cols-2 gap-2 pt-2">
-										{(existingIdDocument.metadata as any).ineFrontUrl && (
-											<div className="space-y-1">
-												<p className="text-xs text-muted-foreground text-center">
-													Frente
-												</p>
-												<div
-													className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group h-24"
-													onClick={() =>
-														window.open(
-															(existingIdDocument.metadata as any).ineFrontUrl,
-															"_blank",
-														)
-													}
-												>
-													<Image
-														src={
-															getProxiedFileUrl(
-																(existingIdDocument.metadata as any)
-																	.ineFrontUrl,
-															) || ""
-														}
-														alt="Frente de INE"
-														fill
-														className="object-contain"
-														unoptimized
-													/>
-													<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-														<ExternalLink className="h-6 w-6 text-white" />
-													</div>
-												</div>
-											</div>
-										)}
-										{(existingIdDocument.metadata as any).ineBackUrl && (
-											<div className="space-y-1">
-												<p className="text-xs text-muted-foreground text-center">
-													Reverso
-												</p>
-												<div
-													className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group h-24"
-													onClick={() =>
-														window.open(
-															(existingIdDocument.metadata as any).ineBackUrl,
-															"_blank",
-														)
-													}
-												>
-													<Image
-														src={
-															getProxiedFileUrl(
-																(existingIdDocument.metadata as any).ineBackUrl,
-															) || ""
-														}
-														alt="Reverso de INE"
-														fill
-														className="object-contain"
-														unoptimized
-													/>
-													<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-														<ExternalLink className="h-6 w-6 text-white" />
-													</div>
-												</div>
-											</div>
-										)}
-										{(existingIdDocument.metadata as any).primaryFileUrl &&
-											!(existingIdDocument.metadata as any).ineFrontUrl && (
-												<div className="col-span-2 space-y-1">
-													<p className="text-xs text-muted-foreground text-center">
-														Documento
-													</p>
-													<div
-														className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group h-32"
-														onClick={() =>
-															window.open(
-																(existingIdDocument.metadata as any)
-																	.primaryFileUrl,
-																"_blank",
-															)
-														}
-													>
-														<Image
-															src={
-																getProxiedFileUrl(
-																	(existingIdDocument.metadata as any)
-																		.primaryFileUrl,
-																) || ""
-															}
-															alt="Documento"
-															fill
-															className="object-contain"
-															unoptimized
-														/>
-														<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-															<ExternalLink className="h-6 w-6 text-white" />
-														</div>
-													</div>
-												</div>
-											)}
-									</div>
-								)}
 							</CardContent>
 						</Card>
 					) : (
@@ -652,9 +682,9 @@ export function EditDocumentsSection({
 					<FileText className="h-5 w-5" />
 					Documentos Requeridos
 				</h3>
-				<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 					{requiredDocs.map((docType) => {
-						const config = DOCUMENT_CONFIG[docType];
+						const config = DOCUMENT_TYPE_CONFIG[docType];
 						const existingDoc = existingDocuments.find(
 							(d) => d.documentType === docType,
 						);
@@ -679,7 +709,7 @@ export function EditDocumentsSection({
 										<CardTitle className="text-sm flex items-center justify-between">
 											<span className="flex items-center gap-2">
 												<FileText className="h-4 w-4" />
-												{config.title}
+												{config.label}
 											</span>
 											<Badge className="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
 												<CheckCircle2 className="h-3 w-3 mr-1" />
@@ -688,103 +718,134 @@ export function EditDocumentsSection({
 										</CardTitle>
 									</CardHeader>
 									<CardContent className="space-y-3">
-										<div>
-											<p className="text-sm text-muted-foreground">
-												#{existingDoc.documentNumber}
-											</p>
-											{existingDoc.expiryDate && (
-												<p className="text-xs text-muted-foreground mt-1">
-													Vence:{" "}
-													{new Date(existingDoc.expiryDate).toLocaleDateString(
-														"es-MX",
-													)}
-												</p>
-											)}
-										</div>
-
 										{/* Show thumbnails if available */}
 										{hasImages && (
-											<div className="grid grid-cols-2 gap-2">
-												{/* Primary file */}
-												{metadata.primaryFileUrl && (
-													<div className="space-y-1">
-														<p className="text-xs text-muted-foreground text-center">
-															Documento
-														</p>
-														<div
-															className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group h-24"
-															onClick={() =>
-																window.open(metadata.primaryFileUrl!, "_blank")
-															}
-														>
-															<Image
-																src={
-																	getProxiedFileUrl(metadata.primaryFileUrl) ||
-																	""
-																}
-																alt="Documento"
-																fill
-																className="object-contain"
-																unoptimized
-															/>
-															<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-																<ExternalLink className="h-6 w-6 text-white" />
-															</div>
-														</div>
-													</div>
-												)}
-
-												{/* Rasterized pages */}
-												{metadata.rasterizedPageUrls &&
-													metadata.rasterizedPageUrls
-														.slice(0, 3)
-														.map((url, idx) => (
-															<div key={idx} className="space-y-1">
-																<p className="text-xs text-muted-foreground text-center">
-																	Página {idx + 1}
-																</p>
-																<div
-																	className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group h-24"
-																	onClick={() => window.open(url, "_blank")}
-																>
-																	<Image
-																		src={getProxiedFileUrl(url) || ""}
-																		alt={`Página ${idx + 1}`}
-																		fill
-																		className="object-contain"
-																		unoptimized
-																	/>
-																	<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-																		<ExternalLink className="h-6 w-6 text-white" />
-																	</div>
+											<div className="relative">
+												<div className="flex gap-3 overflow-x-auto pb-2">
+													{/* Primary file */}
+													{metadata.primaryFileUrl && (
+														<div className="flex-shrink-0 space-y-1">
+															<p className="text-xs text-muted-foreground text-center">
+																Documento
+															</p>
+															<div
+																className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group h-24"
+																onClick={() => {
+																	const images: DocumentImage[] = [];
+																	if (metadata.primaryFileUrl) {
+																		images.push({
+																			src: metadata.primaryFileUrl,
+																			title: "Documento",
+																		});
+																	}
+																	if (metadata.rasterizedPageUrls) {
+																		(
+																			metadata.rasterizedPageUrls as string[]
+																		).forEach((url, idx) => {
+																			images.push({
+																				src: url,
+																				title: `Página ${idx + 1}`,
+																			});
+																		});
+																	}
+																	setDocumentViewer({
+																		open: true,
+																		images,
+																		initialIndex: 0,
+																		originalFileUrl: metadata.originalFileUrl,
+																	});
+																}}
+															>
+																<PresignedImage
+																	src={metadata.primaryFileUrl}
+																	alt="Documento"
+																	className="h-24 w-auto object-contain"
+																/>
+																<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+																	<ZoomIn className="h-6 w-6 text-white" />
 																</div>
 															</div>
-														))}
-
-												{/* Show "more pages" indicator */}
-												{metadata.rasterizedPageUrls &&
-													metadata.rasterizedPageUrls.length > 3 && (
-														<div className="flex items-center justify-center text-xs text-muted-foreground">
-															+{metadata.rasterizedPageUrls.length - 3} más
 														</div>
 													)}
+
+													{/* Rasterized pages */}
+													{metadata.rasterizedPageUrls &&
+														(metadata.rasterizedPageUrls as string[]).map(
+															(url, idx) => (
+																<div
+																	key={idx}
+																	className="flex-shrink-0 space-y-1"
+																>
+																	<p className="text-xs text-muted-foreground text-center">
+																		Página {idx + 1}
+																	</p>
+																	<div
+																		className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group h-24"
+																		onClick={() => {
+																			const allPages =
+																				metadata.rasterizedPageUrls as string[];
+																			const images: DocumentImage[] =
+																				allPages.map(
+																					(
+																						pageUrl: string,
+																						pageIdx: number,
+																					) => ({
+																						src: pageUrl,
+																						title: `Página ${pageIdx + 1}`,
+																					}),
+																				);
+																			setDocumentViewer({
+																				open: true,
+																				images,
+																				initialIndex: idx,
+																				originalFileUrl:
+																					metadata.originalFileUrl,
+																			});
+																		}}
+																	>
+																		<PresignedImage
+																			src={url}
+																			alt={`Página ${idx + 1}`}
+																			className="h-24 w-auto object-contain"
+																		/>
+																		<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+																			<ZoomIn className="h-6 w-6 text-white" />
+																		</div>
+																	</div>
+																</div>
+															),
+														)}
+												</div>
 											</div>
 										)}
 
-										{/* View button if fileUrl exists */}
-										{existingDoc.fileUrl && (
+										{/* Action buttons */}
+										<div className="flex flex-wrap gap-2">
+											{existingDoc.fileUrl && (
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={() =>
+														window.open(existingDoc.fileUrl!, "_blank")
+													}
+												>
+													<FileText className="h-4 w-4 sm:mr-2" />
+													<span className="hidden sm:inline">
+														Ver Documento Original
+													</span>
+													<span className="sm:hidden">Ver Original</span>
+												</Button>
+											)}
 											<Button
 												variant="outline"
 												size="sm"
-												className="w-full"
-												onClick={() =>
-													window.open(existingDoc.fileUrl!, "_blank")
-												}
+												onClick={() => setDocumentToDelete(existingDoc)}
+												className="text-destructive hover:text-destructive"
 											>
-												<FileText className="h-4 w-4 mr-2" />
-												Ver Documento Original
+												<Trash2 className="h-4 w-4 sm:mr-2" />
+												<span className="hidden sm:inline">Eliminar</span>
 											</Button>
-										)}
+										</div>
 									</CardContent>
 								</Card>
 							);
@@ -795,7 +856,7 @@ export function EditDocumentsSection({
 							<SimpleDocumentUploadCard
 								key={docType}
 								documentType={docType}
-								title={config.title}
+								title={config.label}
 								description={config.description}
 								required
 								data={documentData[docType] || null}
@@ -806,6 +867,45 @@ export function EditDocumentsSection({
 					})}
 				</div>
 			</div>
+
+			{/* Delete Confirmation Dialog */}
+			<AlertDialog
+				open={!!documentToDelete}
+				onOpenChange={(open) => !open && setDocumentToDelete(null)}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>¿Eliminar documento?</AlertDialogTitle>
+						<AlertDialogDescription>
+							Esta acción no se puede deshacer. El documento será eliminado
+							permanentemente del expediente del cliente.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel disabled={isDeleting}>
+							Cancelar
+						</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={handleDeleteDocument}
+							disabled={isDeleting}
+							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+						>
+							{isDeleting ? "Eliminando..." : "Eliminar"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+
+			{/* Document Viewer Dialog */}
+			<DocumentViewerDialog
+				open={documentViewer.open}
+				onOpenChange={(open) =>
+					setDocumentViewer((prev) => ({ ...prev, open }))
+				}
+				images={documentViewer.images}
+				initialIndex={documentViewer.initialIndex}
+				originalFileUrl={documentViewer.originalFileUrl}
+			/>
 		</div>
 	);
 }

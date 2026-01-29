@@ -26,12 +26,16 @@ import type {
 	DocumentFileMetadata,
 } from "@/types/client-document";
 import {
+	DOCUMENT_TYPE_CONFIG,
+	REQUIRED_DOCUMENTS,
+	requiresUBOs,
+} from "@/lib/constants";
+import {
 	SimpleDocumentUploadCard,
 	type SimpleDocumentUploadData,
 } from "./SimpleDocumentUploadCard";
 import { IDDocumentSelector, type IDDocumentData } from "./IDDocumentSelector";
 import { UBOInlineForm, type UBOWithDocuments } from "./UBOInlineForm";
-import { FormActionBar } from "@/components/ui/FormActionBar";
 
 interface DocumentsStepProps {
 	clientId: string;
@@ -40,94 +44,6 @@ interface DocumentsStepProps {
 	onComplete: () => void;
 	onSkip: () => void;
 }
-
-// Document configuration per type
-const DOCUMENT_CONFIG: Record<
-	ClientDocumentType,
-	{
-		title: string;
-		description: string;
-		showExpiryDate: boolean;
-	}
-> = {
-	NATIONAL_ID: {
-		title: "INE/IFE",
-		description: "Credencial para Votar del INE",
-		showExpiryDate: true,
-	},
-	PASSPORT: {
-		title: "Pasaporte",
-		description: "Pasaporte mexicano vigente",
-		showExpiryDate: true,
-	},
-	DRIVERS_LICENSE: {
-		title: "Licencia de Conducir",
-		description: "Licencia de conducir vigente",
-		showExpiryDate: true,
-	},
-	CEDULA_PROFESIONAL: {
-		title: "Cédula Profesional",
-		description: "Cédula profesional expedida por SEP",
-		showExpiryDate: false,
-	},
-	CARTILLA_MILITAR: {
-		title: "Cartilla Militar",
-		description: "Cartilla del servicio militar nacional",
-		showExpiryDate: false,
-	},
-	TAX_ID: {
-		title: "Constancia de Situación Fiscal",
-		description: "Constancia de situación fiscal emitida por el SAT (RFC)",
-		showExpiryDate: false,
-	},
-	PROOF_OF_ADDRESS: {
-		title: "Comprobante de Domicilio",
-		description: "Recibo de servicios con antigüedad no mayor a 3 meses",
-		showExpiryDate: false,
-	},
-	UTILITY_BILL: {
-		title: "Recibo de Servicios",
-		description: "Recibo de luz, agua, gas o teléfono",
-		showExpiryDate: false,
-	},
-	BANK_STATEMENT: {
-		title: "Estado de Cuenta Bancario",
-		description: "Estado de cuenta bancario reciente",
-		showExpiryDate: false,
-	},
-	ACTA_CONSTITUTIVA: {
-		title: "Acta Constitutiva",
-		description: "Escritura pública de constitución de la empresa",
-		showExpiryDate: false,
-	},
-	PODER_NOTARIAL: {
-		title: "Poder Notarial",
-		description: "Poder otorgado ante notario público al representante legal",
-		showExpiryDate: false,
-	},
-	TRUST_AGREEMENT: {
-		title: "Contrato de Fideicomiso",
-		description: "Contrato del fideicomiso debidamente protocolizado",
-		showExpiryDate: false,
-	},
-	CORPORATE_BYLAWS: {
-		title: "Estatutos Sociales",
-		description: "Estatutos de la sociedad",
-		showExpiryDate: false,
-	},
-	OTHER: {
-		title: "Otro Documento",
-		description: "Otro tipo de documento",
-		showExpiryDate: false,
-	},
-};
-
-// Required documents per person type (excluding ID which is handled separately)
-const REQUIRED_DOCUMENTS: Record<PersonType, ClientDocumentType[]> = {
-	physical: ["PROOF_OF_ADDRESS", "TAX_ID"],
-	moral: ["ACTA_CONSTITUTIVA", "PODER_NOTARIAL", "TAX_ID", "PROOF_OF_ADDRESS"],
-	trust: ["TRUST_AGREEMENT", "TAX_ID", "PROOF_OF_ADDRESS"],
-};
 
 export function DocumentsStep({
 	clientId,
@@ -152,7 +68,7 @@ export function DocumentsStep({
 	const [ubos, setUbos] = useState<UBOWithDocuments[]>([]);
 
 	const requiredDocs = REQUIRED_DOCUMENTS[personType];
-	const needsUBOs = personType === "moral" || personType === "trust";
+	const needsUBOs = requiresUBOs(personType);
 	const idRequired = !needsUBOs; // ID only required for physical persons
 
 	// Calculate progress
@@ -230,7 +146,7 @@ export function DocumentsStep({
 						documentId: createdDoc.id,
 					});
 
-					// Build metadata with all file URLs
+					// Build metadata with all file URLs (store base URLs, not presigned)
 					const fileMetadata: DocumentFileMetadata = {
 						primaryFileUrl: uploadResult.primary.url,
 						originalFileUrl: uploadResult.original?.url,
@@ -254,7 +170,7 @@ export function DocumentsStep({
 						fileMetadata.rasterizedPageUrls = rasterizedPages.map((r) => r.url);
 					}
 
-					// Update document with file URLs using PATCH
+					// Update document with file URLs using PATCH (store base URL, not presigned)
 					await patchClientDocument({
 						clientId,
 						documentId: createdDoc.id,
@@ -335,7 +251,7 @@ export function DocumentsStep({
 						documentId: createdDoc.id,
 					});
 
-					// Build metadata with all file URLs
+					// Build metadata with all file URLs (store base URLs, not presigned)
 					const fileMetadata: DocumentFileMetadata = {
 						primaryFileUrl: uploadResult.primary.url,
 						originalFileUrl: uploadResult.original?.url,
@@ -348,7 +264,7 @@ export function DocumentsStep({
 					}
 					fileMetadata.rasterizedPageUrls = allPageUrls;
 
-					// Update document with file URLs using PATCH
+					// Update document with file URLs using PATCH (store base URL, not presigned)
 					await patchClientDocument({
 						clientId,
 						documentId: createdDoc.id,
@@ -449,12 +365,12 @@ export function DocumentsStep({
 				</h3>
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 					{requiredDocs.map((docType) => {
-						const config = DOCUMENT_CONFIG[docType];
+						const config = DOCUMENT_TYPE_CONFIG[docType];
 						return (
 							<SimpleDocumentUploadCard
 								key={docType}
 								documentType={docType}
-								title={config.title}
+								title={config.label}
 								description={config.description}
 								required
 								data={documentData[docType] || null}
@@ -535,7 +451,7 @@ export function DocumentsStep({
 								) : (
 									<div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30" />
 								)}
-								<span>{DOCUMENT_CONFIG[docType].title}</span>
+								<span>{DOCUMENT_TYPE_CONFIG[docType].label}</span>
 							</div>
 						))}
 						{needsUBOs && (
@@ -578,21 +494,16 @@ export function DocumentsStep({
 				</CardContent>
 			</Card>
 
-			{/* Fixed Action Bar */}
-			<FormActionBar
-				actions={[
-					{
-						label: "Finalizar",
-						icon: CheckCircle2,
-						onClick: handleComplete,
-					},
-					{
-						label: "Completar después",
-						onClick: onSkip,
-						variant: "outline",
-					},
-				]}
-			/>
+			{/* Action buttons */}
+			<div className="flex justify-end gap-3">
+				<Button variant="outline" onClick={onSkip}>
+					Completar después
+				</Button>
+				<Button onClick={handleComplete}>
+					<CheckCircle2 className="h-4 w-4 mr-2" />
+					Finalizar
+				</Button>
+			</div>
 		</div>
 	);
 }

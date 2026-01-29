@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Save, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import type { PersonType, ClientCreateRequest, Client } from "@/types/client";
 import { PersonTypePicker } from "../PersonTypePicker";
 import { createClient } from "@/lib/api/clients";
@@ -29,7 +29,6 @@ import { toast } from "sonner";
 import { useLanguage } from "@/components/LanguageProvider";
 import { validatePhone } from "@/lib/validators/validate-phone";
 import { ZipCodeAddressFields } from "../ZipCodeAddressFields";
-import { FormActionBar } from "@/components/ui/FormActionBar";
 
 interface ClientInfoStepProps {
 	onClientCreated: (client: Client) => void;
@@ -482,7 +481,7 @@ export function ClientInfoStep({
 				<CardContent className="space-y-4">
 					{formData.personType === "physical" ? (
 						<>
-							<div className="grid grid-cols-1 @lg/main:grid-cols-3 gap-4">
+							<div className="grid grid-cols-1 @2xl/main:grid-cols-3 gap-4">
 								<div className="space-y-2">
 									<LabelWithInfo
 										htmlFor="firstName"
@@ -573,7 +572,7 @@ export function ClientInfoStep({
 									)}
 								</div>
 							</div>
-							<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
+							<div className="grid grid-cols-1 @xl/main:grid-cols-2 gap-4">
 								<div className="space-y-2">
 									<LabelWithInfo
 										htmlFor="birthDate"
@@ -718,7 +717,7 @@ export function ClientInfoStep({
 					<CardTitle className="text-lg">{t("clientContactInfo")}</CardTitle>
 				</CardHeader>
 				<CardContent className="space-y-4">
-					<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
+					<div className="grid grid-cols-1 @xl/main:grid-cols-2 gap-4">
 						<div className="space-y-2">
 							<LabelWithInfo
 								htmlFor="email"
@@ -774,8 +773,8 @@ export function ClientInfoStep({
 					<CardTitle className="text-lg">{t("clientAddressInfo")}</CardTitle>
 				</CardHeader>
 				<CardContent className="space-y-4">
-					<div className="grid grid-cols-1 @lg/main:grid-cols-3 gap-4">
-						<div className="@md/main:col-span-2 space-y-2">
+					<div className="grid grid-cols-1 @md/main:grid-cols-[1fr_150px_150px] gap-4">
+						<div className="space-y-2">
 							<LabelWithInfo
 								htmlFor="street"
 								description={getFieldDescription("street")}
@@ -814,8 +813,6 @@ export function ClientInfoStep({
 								required
 							/>
 						</div>
-					</div>
-					<div className="grid grid-cols-1 @lg/main:grid-cols-3 gap-4">
 						<div className="space-y-2">
 							<LabelWithInfo
 								htmlFor="internalNumber"
@@ -883,33 +880,30 @@ export function ClientInfoStep({
 				</CardContent>
 			</Card>
 
-			{/* Hidden submit button for form submission */}
-			<button type="submit" className="sr-only" aria-hidden="true" />
-
-			{/* Fixed Action Bar */}
-			<FormActionBar
-				actions={[
-					{
-						label: isSubmitting ? "Creando..." : "Guardar y Continuar",
-						icon: isSubmitting ? undefined : ArrowRight,
-						onClick: () => {
-							// Trigger form submission
-							const form = document.getElementById(
-								"client-info-form",
-							) as HTMLFormElement;
-							form?.requestSubmit();
-						},
-						disabled: isSubmitting,
-						loading: isSubmitting,
-					},
-					{
-						label: "Cancelar",
-						onClick: onCancel,
-						variant: "outline",
-						disabled: isSubmitting,
-					},
-				]}
-			/>
+			{/* Action buttons */}
+			<div className="flex justify-end gap-3">
+				<Button
+					type="button"
+					variant="outline"
+					onClick={onCancel}
+					disabled={isSubmitting}
+				>
+					Cancelar
+				</Button>
+				<Button type="submit" disabled={isSubmitting}>
+					{isSubmitting ? (
+						<>
+							<span className="animate-spin mr-2">⏳</span>
+							Creando...
+						</>
+					) : (
+						<>
+							Guardar y Continuar
+							<ArrowRight className="h-4 w-4 ml-2" />
+						</>
+					)}
+				</Button>
+			</div>
 		</form>
 	);
 }

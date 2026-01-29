@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +30,7 @@ import {
 	Shield,
 	ExternalLink,
 	Pencil,
+	ZoomIn,
 } from "lucide-react";
 import type { Client } from "../../types/client";
 import { getClientDisplayName } from "../../types/client";
@@ -51,30 +51,20 @@ import { getPersonTypeStyle } from "../../lib/person-type-icon";
 import { useStatesCatalog } from "@/hooks/useStatesCatalog";
 import { useLanguage } from "@/components/LanguageProvider";
 import { CircularProgress } from "@/components/ui/circular-progress";
-import {
-	calculateKYCStatus,
-	getFieldLabel,
-	type KYCSectionStatus,
-} from "@/lib/kyc-status";
+import { calculateKYCStatus, type KYCSectionStatus } from "@/lib/kyc-status";
 import { cn } from "@/lib/utils";
-
-// Document type labels
-const DOCUMENT_LABELS: Record<string, string> = {
-	NATIONAL_ID: "INE/IFE",
-	PASSPORT: "Pasaporte",
-	DRIVERS_LICENSE: "Licencia de Conducir",
-	CEDULA_PROFESIONAL: "Cédula Profesional",
-	CARTILLA_MILITAR: "Cartilla Militar",
-	TAX_ID: "Constancia de Situación Fiscal",
-	PROOF_OF_ADDRESS: "Comprobante de Domicilio",
-	UTILITY_BILL: "Recibo de Servicios",
-	BANK_STATEMENT: "Estado de Cuenta",
-	ACTA_CONSTITUTIVA: "Acta Constitutiva",
-	PODER_NOTARIAL: "Poder Notarial",
-	TRUST_AGREEMENT: "Contrato de Fideicomiso",
-	CORPORATE_BYLAWS: "Estatutos Sociales",
-	OTHER: "Otro Documento",
-};
+import { PresignedImage } from "@/components/PresignedImage";
+import {
+	DocumentViewerDialog,
+	type DocumentImage,
+} from "./DocumentViewerDialog";
+import { UploadedIDDocumentCard } from "./UploadedIDDocumentCard";
+import {
+	getDocumentLabel,
+	ALL_REQUIRED_DOCUMENTS,
+	ID_DOCUMENT_TYPES,
+	requiresUBOs,
+} from "@/lib/constants";
 
 interface ClientDetailsViewProps {
 	clientId: string;
@@ -98,7 +88,7 @@ export function ClientDetailsSkeleton(): React.ReactElement {
 							<Skeleton className="h-6 w-48" />
 						</CardHeader>
 						<CardContent>
-							<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-6">
+							<div className="grid grid-cols-1 @xl/main:grid-cols-2 gap-6">
 								{[1, 2].map((j) => (
 									<div key={j} className="space-y-2">
 										<Skeleton className="h-4 w-24" />
@@ -152,12 +142,24 @@ export function ClientDetailsView({
 	const { navigateTo } = useOrgNavigation();
 	const { t } = useLanguage();
 	const { getStateName } = useStatesCatalog();
-	const searchParams = useSearchParams();
 	const [client, setClient] = useState<Client | null>(null);
 	const [documents, setDocuments] = useState<ClientDocument[]>([]);
 	const [ubos, setUbos] = useState<UBO[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [openAccordions, setOpenAccordions] = useState<string[]>([]);
+
+	// Document viewer dialog state
+	const [documentViewer, setDocumentViewer] = useState<{
+		open: boolean;
+		images: DocumentImage[];
+		initialIndex: number;
+		originalFileUrl?: string | null;
+	}>({
+		open: false,
+		images: [],
+		initialIndex: 0,
+		originalFileUrl: null,
+	});
 
 	// Fetch all data
 	useEffect(() => {
@@ -233,19 +235,16 @@ export function ClientDetailsView({
 
 	// Calculate KYC status
 	const kycStatus = calculateKYCStatus(client);
-	const needsUBOs =
-		client.personType === "moral" || client.personType === "trust";
+	const needsUBOs = requiresUBOs(client.personType);
 	const needsIdDocument = client.personType === "physical";
 
 	// Check documents status
-	const hasIdDocument = documents.some((d) =>
-		["NATIONAL_ID", "PASSPORT"].includes(d.documentType),
+	const idDocument = documents.find((d) =>
+		ID_DOCUMENT_TYPES.includes(d.documentType),
 	);
-	const requiredDocTypes: ClientDocumentType[] = needsUBOs
-		? client.personType === "moral"
-			? ["ACTA_CONSTITUTIVA", "PODER_NOTARIAL", "TAX_ID", "PROOF_OF_ADDRESS"]
-			: ["TRUST_AGREEMENT", "TAX_ID", "PROOF_OF_ADDRESS"]
-		: ["TAX_ID", "PROOF_OF_ADDRESS"];
+	const hasIdDocument = !!idDocument;
+	const requiredDocTypes: ClientDocumentType[] =
+		ALL_REQUIRED_DOCUMENTS[client.personType];
 
 	const uploadedDocTypes = new Set<ClientDocumentType>(
 		documents.map((d) => d.documentType),
@@ -428,7 +427,7 @@ export function ClientDetailsView({
 						</div>
 					</AccordionTrigger>
 					<AccordionContent className="px-6 pb-4">
-						<dl className="grid grid-cols-1 @md/main:grid-cols-2 gap-6">
+						<dl className="grid grid-cols-1 @xl/main:grid-cols-2 gap-6">
 							{client.personType === "physical" ? (
 								<>
 									<FieldDisplay
@@ -554,7 +553,7 @@ export function ClientDetailsView({
 						</div>
 					</AccordionTrigger>
 					<AccordionContent className="px-6 pb-4">
-						<dl className="grid grid-cols-1 @md/main:grid-cols-2 gap-6">
+						<dl className="grid grid-cols-1 @xl/main:grid-cols-2 gap-6">
 							<FieldDisplay
 								label="Correo Electrónico"
 								value={client.email}
@@ -628,8 +627,8 @@ export function ClientDetailsView({
 						</div>
 					</AccordionTrigger>
 					<AccordionContent className="px-6 pb-4">
-						<dl className="grid grid-cols-1 @md/main:grid-cols-2 gap-6">
-							<div className="md:col-span-2">
+						<dl className="grid grid-cols-1 @xl/main:grid-cols-2 gap-6">
+							<div className="xl:col-span-2">
 								<dt className="text-sm font-medium text-muted-foreground mb-1">
 									Dirección Completa
 								</dt>
@@ -753,7 +752,7 @@ export function ClientDetailsView({
 							</div>
 						</AccordionTrigger>
 						<AccordionContent className="px-6 pb-4">
-							<dl className="grid grid-cols-1 @md/main:grid-cols-2 gap-6">
+							<dl className="grid grid-cols-1 @xl/main:grid-cols-2 gap-6">
 								<FieldDisplay
 									label="Género"
 									value={client.gender}
@@ -837,7 +836,7 @@ export function ClientDetailsView({
 						</div>
 					</AccordionTrigger>
 					<AccordionContent className="px-6 pb-4">
-						<dl className="grid grid-cols-1 @md/main:grid-cols-2 gap-6">
+						<dl className="grid grid-cols-1 @xl/main:grid-cols-2 gap-6">
 							<FieldDisplay
 								label="Estado PEP"
 								value={client.pepStatus}
@@ -906,115 +905,234 @@ export function ClientDetailsView({
 						</div>
 					</AccordionTrigger>
 					<AccordionContent className="px-6 pb-4">
-						<div className="space-y-3">
-							{/* ID Document Status */}
-							{needsIdDocument && (
-								<div
-									className={cn(
-										"p-3 rounded-lg border",
-										hasIdDocument
-											? "bg-green-50 dark:bg-green-950/20 border-green-200"
-											: "bg-amber-50 dark:bg-amber-950/20 border-amber-200",
-									)}
-								>
-									<div className="flex items-center justify-between">
-										<div className="flex items-center gap-2">
-											{hasIdDocument ? (
-												<CheckCircle2 className="h-4 w-4 text-green-600" />
-											) : (
-												<AlertTriangle className="h-4 w-4 text-amber-600" />
-											)}
-											<span className="text-sm font-medium">
-												Identificación Oficial
-											</span>
-										</div>
-										{hasIdDocument ? (
-											<Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-												Cargado
-											</Badge>
-										) : (
-											<Badge
-												variant="outline"
-												className="border-amber-500 text-amber-700"
-											>
-												Faltante
-											</Badge>
-										)}
-									</div>
-								</div>
-							)}
+						{/* Documents Grid */}
+						<div className="grid grid-cols-1 @xl/main:grid-cols-2 gap-3">
+							{/* Build unified document list */}
+							{(() => {
+								// Build list of all documents to display
+								const allDocItems: Array<{
+									type: string;
+									label: string;
+									doc: typeof idDocument | null;
+									isIdDoc: boolean;
+								}> = [];
 
-							{/* Other Documents */}
-							{requiredDocTypes.map((docType) => {
-								const hasDoc = uploadedDocTypes.has(docType);
-								return (
-									<div
-										key={docType}
-										className={cn(
-											"p-3 rounded-lg border",
-											hasDoc
-												? "bg-green-50 dark:bg-green-950/20 border-green-200"
-												: "bg-amber-50 dark:bg-amber-950/20 border-amber-200",
-										)}
-									>
-										<div className="flex items-center justify-between">
-											<div className="flex items-center gap-2">
-												{hasDoc ? (
-													<CheckCircle2 className="h-4 w-4 text-green-600" />
-												) : (
-													<AlertTriangle className="h-4 w-4 text-amber-600" />
+								// Add ID document if needed
+								if (needsIdDocument) {
+									allDocItems.push({
+										type: "NATIONAL_ID",
+										label: "Identificación Oficial",
+										doc: idDocument || null,
+										isIdDoc: true,
+									});
+								}
+
+								// Add other required documents (excluding ID docs if handled separately above)
+								requiredDocTypes
+									.filter(
+										(docType) =>
+											!needsIdDocument || !ID_DOCUMENT_TYPES.includes(docType),
+									)
+									.forEach((docType) => {
+										const doc = documents.find(
+											(d) => d.documentType === docType,
+										);
+										allDocItems.push({
+											type: docType,
+											label: getDocumentLabel(docType),
+											doc: doc || null,
+											isIdDoc: false,
+										});
+									});
+
+								return allDocItems.map((item) => {
+									const hasDoc = !!item.doc;
+									const doc = item.doc;
+
+									// Get page images for display
+									type PageImage = {
+										src: string;
+										title: string;
+										label: string;
+									};
+									const getPageImages = (): PageImage[] => {
+										if (!doc?.metadata) return [];
+										const metadata = doc.metadata as any;
+
+										// Check rasterized pages first
+										if (metadata.rasterizedPageUrls?.length > 0) {
+											return metadata.rasterizedPageUrls.map(
+												(url: string, idx: number) => ({
+													src: url,
+													title: `Página ${idx + 1}`,
+													label: `Pág. ${idx + 1}`,
+												}),
+											);
+										}
+
+										// INE front/back fallback
+										const images: PageImage[] = [];
+										if (metadata.ineFrontUrl) {
+											images.push({
+												src: metadata.ineFrontUrl,
+												title: "Frente",
+												label: "Frente",
+											});
+										}
+										if (metadata.ineBackUrl) {
+											images.push({
+												src: metadata.ineBackUrl,
+												title: "Reverso",
+												label: "Reverso",
+											});
+										}
+										return images;
+									};
+
+									const pageImages: PageImage[] = hasDoc ? getPageImages() : [];
+									const hasImages = pageImages.length > 0;
+
+									return (
+										<Card
+											key={item.type}
+											className={cn(
+												"overflow-hidden py-0 flex flex-col",
+												hasDoc
+													? "border-green-500 bg-green-50/50 dark:bg-green-950/20"
+													: "border-amber-300 bg-amber-50/50 dark:bg-amber-950/20",
+											)}
+										>
+											<CardContent className="p-3 space-y-2 flex flex-col flex-1">
+												{/* Header with title and badge */}
+												<div className="flex items-center justify-between gap-2">
+													<div className="flex items-center gap-2 min-w-0">
+														<FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+														<span className="font-medium text-sm truncate">
+															{hasDoc && doc
+																? getDocumentLabel(doc.documentType)
+																: item.label}
+														</span>
+													</div>
+													<Badge
+														className={cn(
+															"shrink-0 text-xs",
+															hasDoc
+																? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+																: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+														)}
+													>
+														{hasDoc ? "Cargado" : "Faltante"}
+													</Badge>
+												</div>
+
+												{/* Document images */}
+												{hasImages && (
+													<div className="flex gap-2 overflow-x-auto pb-1">
+														{pageImages.slice(0, 4).map((img, idx) => (
+															<div
+																key={idx}
+																className="relative rounded-md overflow-hidden bg-muted/30 border cursor-pointer group h-24 shrink-0"
+																onClick={() => {
+																	setDocumentViewer({
+																		open: true,
+																		images: pageImages.map((p) => ({
+																			src: p.src,
+																			title: p.title,
+																		})),
+																		initialIndex: idx,
+																		originalFileUrl: (doc?.metadata as any)
+																			?.originalFileUrl,
+																	});
+																}}
+															>
+																<PresignedImage
+																	src={img.src}
+																	alt={img.title}
+																	className="h-full w-auto object-contain"
+																/>
+																<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+																	<ZoomIn className="h-4 w-4 text-white" />
+																</div>
+															</div>
+														))}
+														{pageImages.length > 4 && (
+															<div
+																className="h-24 px-3 shrink-0 rounded-md border bg-muted/50 flex items-center justify-center cursor-pointer hover:bg-muted/70 transition-colors"
+																onClick={() => {
+																	setDocumentViewer({
+																		open: true,
+																		images: pageImages.map((p) => ({
+																			src: p.src,
+																			title: p.title,
+																		})),
+																		initialIndex: 4,
+																		originalFileUrl: (doc?.metadata as any)
+																			?.originalFileUrl,
+																	});
+																}}
+															>
+																<span className="text-xs text-muted-foreground font-medium">
+																	+{pageImages.length - 4}
+																</span>
+															</div>
+														)}
+													</div>
 												)}
-												<span className="text-sm font-medium">
-													{DOCUMENT_LABELS[docType] || docType}
-												</span>
-											</div>
-											{hasDoc ? (
-												<Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-													Cargado
-												</Badge>
-											) : (
-												<Badge
-													variant="outline"
-													className="border-amber-500 text-amber-700"
-												>
-													Faltante
-												</Badge>
-											)}
-										</div>
-									</div>
-								);
-							})}
 
-							{/* Document count summary */}
-							<div className="pt-2 text-sm text-muted-foreground">
-								{documents.length} documento(s) cargado(s)
-								{missingDocs.length > 0 &&
-									`, ${missingDocs.length} faltante(s)`}
-							</div>
+												{/* Expiry date if available - shown below images */}
+												{hasDoc && doc?.expiryDate && (
+													<p className="text-xs text-muted-foreground">
+														Vence:{" "}
+														{new Date(doc.expiryDate).toLocaleDateString(
+															"es-MX",
+														)}
+													</p>
+												)}
+
+												{/* View original button - pushed to bottom */}
+												<div className="mt-auto pt-2">
+													{hasDoc &&
+														((doc?.metadata as any)?.originalFileUrl ||
+															doc?.fileUrl) && (
+															<Button
+																variant="outline"
+																size="sm"
+																className="w-full h-8 text-xs"
+																onClick={() =>
+																	window.open(
+																		(doc?.metadata as any)?.originalFileUrl ||
+																			doc?.fileUrl!,
+																		"_blank",
+																	)
+																}
+															>
+																<FileText className="h-3 w-3 mr-1.5" />
+																Ver Original
+															</Button>
+														)}
+												</div>
+											</CardContent>
+										</Card>
+									);
+								});
+							})()}
 						</div>
 
-						{!documentsComplete && (
-							<div className="mt-4 pt-4 border-t">
-								<Button
-									variant="outline"
-									size="sm"
-									onClick={() => navigateToEdit("documents", "documents")}
-								>
-									<FileText className="h-4 w-4 mr-2" />
-									Cargar documentos faltantes
-								</Button>
-							</div>
-						)}
-
-						{/* Edit button - always visible */}
-						<div className="mt-4 pt-4 border-t flex justify-end">
+						{/* Footer with count and edit button */}
+						<div className="mt-3 pt-3 border-t flex items-center justify-between">
+							<span className="text-xs text-muted-foreground">
+								{documents.length} cargado(s)
+								{missingDocs.length > 0 &&
+									` · ${missingDocs.length} faltante(s)`}
+							</span>
 							<Button
 								variant="ghost"
 								size="sm"
+								className="h-8 text-xs"
 								onClick={() => navigateToEdit("documents", "documents")}
 							>
-								<Pencil className="h-4 w-4 mr-2" />
-								Editar
+								<Pencil className="h-3 w-3 mr-1.5" />
+								{!documentsComplete ? "Cargar faltantes" : "Editar"}
 							</Button>
 						</div>
 					</AccordionContent>
@@ -1097,25 +1215,40 @@ export function ClientDetailsView({
 										Representante Legal
 									</h4>
 									{legalRep ? (
-										<div className="p-3 rounded-lg border bg-muted/30">
-											<div className="flex items-center justify-between">
-												<div>
-													<p className="font-medium text-sm">
-														{legalRep.firstName} {legalRep.lastName}{" "}
-														{legalRep.secondLastName || ""}
-													</p>
-													{legalRep.birthDate && (
-														<p className="text-xs text-muted-foreground">
-															{formatDate(legalRep.birthDate)}
+										<div className="space-y-3">
+											<div className="p-3 rounded-lg border bg-muted/30">
+												<div className="flex items-center justify-between">
+													<div>
+														<p className="font-medium text-sm">
+															{legalRep.firstName} {legalRep.lastName}{" "}
+															{legalRep.secondLastName || ""}
 														</p>
+														{legalRep.birthDate && (
+															<p className="text-xs text-muted-foreground">
+																{formatDate(legalRep.birthDate)}
+															</p>
+														)}
+													</div>
+													{legalRep.isPEP && (
+														<Badge variant="destructive" className="text-xs">
+															PEP
+														</Badge>
 													)}
 												</div>
-												{legalRep.isPEP && (
-													<Badge variant="destructive" className="text-xs">
-														PEP
-													</Badge>
-												)}
 											</div>
+											{/* Legal Rep ID Document Card */}
+											{legalRep.idDocumentId && (() => {
+												const legalRepIdDoc = documents.find(
+													(d) => d.id === legalRep.idDocumentId
+												);
+												return legalRepIdDoc ? (
+													<UploadedIDDocumentCard
+														document={legalRepIdDoc}
+														showDelete={false}
+														compact
+													/>
+												) : null;
+											})()}
 										</div>
 									) : (
 										<div className="p-3 rounded-lg border border-muted bg-muted/30">
@@ -1127,19 +1260,6 @@ export function ClientDetailsView({
 								</div>
 							</div>
 
-							{!ubosComplete && (
-								<div className="mt-4 pt-4 border-t">
-									<Button
-										variant="outline"
-										size="sm"
-										onClick={() => navigateToEdit("documents", "ubos")}
-									>
-										<Users className="h-4 w-4 mr-2" />
-										Agregar accionistas
-									</Button>
-								</div>
-							)}
-
 							{/* Edit button - always visible */}
 							<div className="mt-4 pt-4 border-t flex justify-end">
 								<Button
@@ -1148,7 +1268,7 @@ export function ClientDetailsView({
 									onClick={() => navigateToEdit("documents", "ubos")}
 								>
 									<Pencil className="h-4 w-4 mr-2" />
-									Editar
+									{!ubosComplete ? 'Agregar accionistas' : 'Editar' }
 								</Button>
 							</div>
 						</AccordionContent>
@@ -1205,7 +1325,7 @@ export function ClientDetailsView({
 						</div>
 					</AccordionTrigger>
 					<AccordionContent className="px-6 pb-4">
-						<dl className="grid grid-cols-1 @md/main:grid-cols-2 gap-6">
+						<dl className="grid grid-cols-1 @xl/main:grid-cols-2 gap-6">
 							<FieldDisplay
 								label="Fecha de Registro"
 								value={formatDate(client.createdAt)}
@@ -1239,6 +1359,17 @@ export function ClientDetailsView({
 					</AccordionContent>
 				</AccordionItem>
 			</Accordion>
+
+			{/* Document Viewer Dialog */}
+			<DocumentViewerDialog
+				open={documentViewer.open}
+				onOpenChange={(open) =>
+					setDocumentViewer((prev) => ({ ...prev, open }))
+				}
+				images={documentViewer.images}
+				initialIndex={documentViewer.initialIndex}
+				originalFileUrl={documentViewer.originalFileUrl}
+			/>
 		</div>
 	);
 }
