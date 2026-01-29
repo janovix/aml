@@ -1,3 +1,10 @@
+# [1.4.0-rc.11](https://github.com/janovix/aml/compare/v1.4.0-rc.10...v1.4.0-rc.11) (2026-01-29)
+
+
+### Bug Fixes
+
+* adjust dashboard skeleton to match actual loaded card layouts ([1e08876](https://github.com/janovix/aml/commit/1e0887689d442d493c00bdb0496b1f94d026b151))
+
 # [1.4.0-rc.10](https://github.com/janovix/aml/compare/v1.4.0-rc.9...v1.4.0-rc.10) (2026-01-28)
 
 
