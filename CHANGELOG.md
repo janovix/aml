@@ -1,3 +1,10 @@
+# [1.4.0-rc.12](https://github.com/janovix/aml/compare/v1.4.0-rc.11...v1.4.0-rc.12) (2026-01-29)
+
+
+### Bug Fixes
+
+* simplify dashboard skeleton to simple card placeholders ([d9bea0a](https://github.com/janovix/aml/commit/d9bea0afb9b3275d89d54b8825f485b74141b0c1))
+
 # [1.4.0-rc.11](https://github.com/janovix/aml/compare/v1.4.0-rc.10...v1.4.0-rc.11) (2026-01-29)
 
 
