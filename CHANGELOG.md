@@ -1,3 +1,10 @@
+# [1.4.0-rc.13](https://github.com/janovix/aml/compare/v1.4.0-rc.12...v1.4.0-rc.13) (2026-01-30)
+
+
+### Bug Fixes
+
+* **styles:** scan blocks package for Tailwind classes ([d4187af](https://github.com/janovix/aml/commit/d4187af8801138a0fdf16682a021dd4cccfae024))
+
 # [1.4.0-rc.12](https://github.com/janovix/aml/compare/v1.4.0-rc.11...v1.4.0-rc.12) (2026-01-29)
 
 
