@@ -39,6 +39,8 @@ export interface CatalogListResponse {
 export async function listCatalogItems(opts: {
 	catalogKey: string;
 	activeOnly?: boolean;
+	page?: number;
+	pageSize?: number;
 	baseUrl?: string;
 	signal?: AbortSignal;
 	jwt?: string;
@@ -48,6 +50,14 @@ export async function listCatalogItems(opts: {
 
 	if (opts.activeOnly !== undefined) {
 		url.searchParams.set("activeOnly", String(opts.activeOnly));
+	}
+
+	if (opts.page !== undefined) {
+		url.searchParams.set("page", String(opts.page));
+	}
+
+	if (opts.pageSize !== undefined) {
+		url.searchParams.set("pageSize", String(opts.pageSize));
 	}
 
 	const { json } = await fetchJson<CatalogListResponse>(url.toString(), {

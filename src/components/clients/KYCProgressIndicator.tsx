@@ -19,6 +19,7 @@ import {
 	Loader2,
 } from "lucide-react";
 import { getClientKYCStatus, type KYCStatusResponse } from "@/lib/api/clients";
+import { getDocumentLabel, requiresUBOs } from "@/lib/constants";
 
 interface KYCProgressIndicatorProps {
 	clientId: string;
@@ -77,20 +78,7 @@ const PEP_STATUS_CONFIG = {
 };
 
 function DocumentTypeLabel({ type }: { type: string }) {
-	const labels: Record<string, string> = {
-		NATIONAL_ID: "INE/IFE",
-		PASSPORT: "Pasaporte",
-		DRIVERS_LICENSE: "Licencia de conducir",
-		TAX_ID: "Constancia de situación fiscal",
-		PROOF_OF_ADDRESS: "Comprobante de domicilio",
-		UTILITY_BILL: "Recibo de servicios",
-		BANK_STATEMENT: "Estado de cuenta",
-		ACTA_CONSTITUTIVA: "Acta constitutiva",
-		PODER_NOTARIAL: "Poder notarial",
-		TRUST_AGREEMENT: "Contrato de fideicomiso",
-		CORPORATE_BYLAWS: "Estatutos sociales",
-	};
-	return <span>{labels[type] || type}</span>;
+	return <span>{getDocumentLabel(type)}</span>;
 }
 
 export function KYCProgressIndicator({
@@ -185,7 +173,9 @@ export function KYCProgressIndicator({
 	}
 
 	// Full card version
-	const requiresUBO = personType === "moral" || personType === "trust";
+	const requiresUBO = requiresUBOs(
+		personType as "physical" | "moral" | "trust",
+	);
 
 	return (
 		<Card className={className}>

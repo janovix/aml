@@ -135,11 +135,14 @@ export function FormActionBar({
 		<div
 			className={cn(
 				// Fixed positioning - respect sidebar on desktop
-				"fixed bottom-4 z-40",
+				// z-60 ensures it's above Dialog overlays (z-50) and content
+				"fixed z-60",
+				// Bottom positioning with safe area support
+				"bottom-[calc(1rem+env(safe-area-inset-bottom,0px))]",
 				// Left positioning based on sidebar state (desktop only)
 				"left-4 md:left-[calc(var(--sidebar-width)+1rem)]",
 				// Transition for smooth sidebar animation - matches chat sidebar duration
-				"transition-[left,right] duration-200 ease-in-out",
+				"transition-[left,right,bottom] duration-200 ease-in-out",
 				// When sidebar is collapsed on desktop, adjust left position
 				state === "collapsed" &&
 					!isMobile &&
@@ -159,15 +162,13 @@ export function FormActionBar({
 					// Floating glossy card styling
 					"rounded-xl border border-border/40",
 					"bg-background/80 backdrop-blur-xl",
-					"supports-[backdrop-filter]:bg-background/60",
+					"supports-backdrop-filter:bg-background/60",
 					// Shadow for depth
 					"shadow-2xl shadow-black/10 dark:shadow-black/40",
 					// Subtle ring for extra polish
 					"ring-1 ring-black/5 dark:ring-white/5",
 					// Padding
 					"px-3 py-2",
-					// Safe area padding for mobile devices
-					"pb-safe",
 				)}
 			>
 				{/* Mobile: Stack buttons vertically */}
