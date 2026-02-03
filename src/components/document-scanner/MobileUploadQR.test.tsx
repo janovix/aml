@@ -114,7 +114,7 @@ describe("MobileUploadQR", () => {
 		// Wait for upload link to be created
 		await waitFor(() => {
 			expect(mockCreateUploadLink).toHaveBeenCalledWith({
-				requiredDocuments: ["INE/IFE"],
+				requiredDocuments: [{ type: "INE/IFE" }],
 				maxUploads: 1,
 				allowMultipleFiles: true,
 				metadata: { clientId: "client-456" },

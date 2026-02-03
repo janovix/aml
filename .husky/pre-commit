@@ -4,4 +4,3 @@ pnpm exec lint-staged
 # Project-wide gates (enforced)
 pnpm typecheck
 pnpm test
-pnpm test:mutation

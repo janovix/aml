@@ -20,6 +20,7 @@ export default [
 			"dist/**",
 			"coverage/**",
 			"storybook-static/**",
+			".stryker-tmp/**",
 		],
 	},
 ];
