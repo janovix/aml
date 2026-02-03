@@ -27,6 +27,8 @@ jobs:
             cmd: pnpm run typecheck
           - name: test-coverage
             cmd: pnpm run test
+          - name: mutation-testing
+            cmd: pnpm run test:mutation
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -46,6 +48,13 @@ jobs:
           name: coverage
           path: coverage/**
           if-no-files-found: error
+      - name: Upload mutation report artifact
+        if: ${{ matrix.name == 'mutation-testing' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report
+          path: reports/mutation/**
+          if-no-files-found: warn
 
   storybook-artifact:
     name: storybook-artifact

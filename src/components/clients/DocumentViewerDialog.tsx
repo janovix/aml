@@ -98,20 +98,17 @@ export function DocumentViewerDialog({
 	}, []);
 
 	// Mouse wheel zoom
-	const handleWheel = useCallback(
-		(e: React.WheelEvent) => {
-			e.preventDefault();
-			const delta = e.deltaY > 0 ? -ZOOM_STEP / 2 : ZOOM_STEP / 2;
-			setZoom((prev) => {
-				const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, prev + delta));
-				if (newZoom === 1) {
-					setPosition({ x: 0, y: 0 });
-				}
-				return newZoom;
-			});
-		},
-		[],
-	);
+	const handleWheel = useCallback((e: React.WheelEvent) => {
+		e.preventDefault();
+		const delta = e.deltaY > 0 ? -ZOOM_STEP / 2 : ZOOM_STEP / 2;
+		setZoom((prev) => {
+			const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, prev + delta));
+			if (newZoom === 1) {
+				setPosition({ x: 0, y: 0 });
+			}
+			return newZoom;
+		});
+	}, []);
 
 	// Mouse drag for panning
 	const handleMouseDown = useCallback(
@@ -171,10 +168,7 @@ export function DocumentViewerDialog({
 				e.preventDefault();
 				const newDistance = getTouchDistance(e.touches);
 				const scale = newDistance / lastTouchDistance;
-				const newZoom = Math.max(
-					MIN_ZOOM,
-					Math.min(MAX_ZOOM, zoom * scale),
-				);
+				const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom * scale));
 
 				setZoom(newZoom);
 				setLastTouchDistance(newDistance);
@@ -320,7 +314,9 @@ export function DocumentViewerDialog({
 					}}
 					onTouchMove={handleTouchMove}
 					onTouchEnd={handleTouchEnd}
-					style={{ cursor: zoom > 1 ? (isDragging ? "grabbing" : "grab") : "default" }}
+					style={{
+						cursor: zoom > 1 ? (isDragging ? "grabbing" : "grab") : "default",
+					}}
 				>
 					{/* Left arrow */}
 					{images.length > 1 && (

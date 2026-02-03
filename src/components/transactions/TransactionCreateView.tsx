@@ -702,11 +702,7 @@ export function TransactionCreateView(): React.JSX.Element {
 
 				{/* Action buttons */}
 				<div className="flex justify-end gap-3">
-					<Button
-						type="button"
-						variant="outline"
-						onClick={handleCancel}
-					>
+					<Button type="button" variant="outline" onClick={handleCancel}>
 						{t("cancel")}
 					</Button>
 					<Button type="submit" disabled={isSaving}>

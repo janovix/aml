@@ -41,7 +41,10 @@ import {
 	patchClientDocument,
 } from "@/lib/api/client-documents";
 import { uploadDocumentFiles } from "@/lib/api/file-upload";
-import type { ClientDocument, ClientDocumentType } from "@/types/client-document";
+import type {
+	ClientDocument,
+	ClientDocumentType,
+} from "@/types/client-document";
 import { useOrgStore } from "@/lib/org-store";
 import { UploadedIDDocumentCard } from "../UploadedIDDocumentCard";
 
@@ -433,7 +436,11 @@ export function UBOInlineForm({
 							<User className="h-4 w-4 shrink-0" />
 							<span>Accionistas</span>
 						</span>
-						<Button size="sm" onClick={() => setIsUBODialogOpen(true)} className="w-full sm:w-auto">
+						<Button
+							size="sm"
+							onClick={() => setIsUBODialogOpen(true)}
+							className="w-full sm:w-auto"
+						>
 							<Plus className="h-4 w-4 mr-1" />
 							Agregar
 						</Button>

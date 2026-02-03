@@ -24,8 +24,7 @@ import {
 	CreditCard,
 	BookOpen,
 	Info,
-	Scan,
-	ImageIcon,
+	Upload,
 	ZoomIn,
 	ChevronLeft,
 	ChevronRight,
@@ -35,7 +34,6 @@ import { toast } from "sonner";
 import type { ClientDocumentType } from "@/types/client-document";
 import {
 	DocumentScannerModal,
-	MobileUploadQR,
 	type DocumentExtractionData,
 } from "@/components/document-scanner";
 import type { PersonalData, OCRResult } from "@/lib/document-scanner";
@@ -77,8 +75,6 @@ interface IDDocumentSelectorProps {
 	data: IDDocumentData | null;
 	onDataChange: (data: IDDocumentData) => void;
 	onUpload: (data: IDDocumentData) => Promise<void>;
-	/** Client ID for mobile upload session */
-	clientId?: string;
 	className?: string;
 	/** Label for this selector (default: "Identificación Oficial") */
 	label?: string;
@@ -128,7 +124,6 @@ export function IDDocumentSelector({
 	data,
 	onDataChange,
 	onUpload,
-	clientId,
 	className,
 	label = "Identificación Oficial",
 	personalData,
@@ -156,9 +151,6 @@ export function IDDocumentSelector({
 	const [scannerFile, setScannerFile] = useState<File | null>(null);
 	/** Which side we're scanning for INE */
 	const [scanningSide, setScanningSide] = useState<"front" | "back">("front");
-
-	// QR modal state
-	const [qrModalOpen, setQrModalOpen] = useState(false);
 
 	// Enlarge preview modal with gallery navigation
 	const [enlargePreview, setEnlargePreview] = useState<{
@@ -778,34 +770,18 @@ export function IDDocumentSelector({
 									)}
 								</div>
 							) : !isComplete ? (
-								/* No previews - show upload buttons */
-								<div className="grid grid-cols-2 gap-2">
-									<Button
-										type="button"
-										variant="outline"
-										size="sm"
-										className="h-auto py-3 flex flex-col items-center gap-1"
-										onClick={() => {
-											setScanningSide("front");
-											fileInputRef.current?.click();
-										}}
-										disabled={disabled}
-									>
-										<Scan className="h-5 w-5" />
-										<span className="text-xs">Seleccionar</span>
-									</Button>
-									<Button
-										type="button"
-										variant="outline"
-										size="sm"
-										className="h-auto py-3 flex flex-col items-center gap-1"
-										onClick={() => setQrModalOpen(true)}
-										disabled={disabled}
-									>
-										<ImageIcon className="h-5 w-5" />
-										<span className="text-xs">Celular</span>
-									</Button>
-								</div>
+								/* No previews - show upload button */
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									className="w-full h-auto py-3 flex flex-col items-center gap-1"
+									onClick={() => fileInputRef.current?.click()}
+									disabled={disabled}
+								>
+									<Upload className="h-5 w-5" />
+									<span className="text-xs">Seleccionar Archivo</span>
+								</Button>
 							) : (
 								/* Complete - show status message */
 								<div className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-950/30 rounded-lg">
@@ -884,14 +860,6 @@ export function IDDocumentSelector({
 						: currentConfig.label
 				}
 				personalData={personalData}
-			/>
-
-			{/* Mobile QR Modal */}
-			<MobileUploadQR
-				open={qrModalOpen}
-				onOpenChange={setQrModalOpen}
-				documentType={currentConfig.label}
-				clientId={clientId}
 			/>
 
 			{/* Enlarge Preview Modal - Gallery */}

@@ -258,7 +258,9 @@ export function ClientEditView({
 		if (!needsUBOs) return;
 
 		// Check for stockholders (at least one required)
-		const stockholders = ubos.filter((u) => u.relationshipType === "SHAREHOLDER");
+		const stockholders = ubos.filter(
+			(u) => u.relationshipType === "SHAREHOLDER",
+		);
 		const hasStockholders = stockholders.length > 0;
 
 		// Check for legal rep with ID document
@@ -620,8 +622,8 @@ export function ClientEditView({
 						)}
 					</TabsList>
 
-				<form id="client-edit-form" onSubmit={handleSubmit}>
-					{/* Personal Data Tab */}
+					<form id="client-edit-form" onSubmit={handleSubmit}>
+						{/* Personal Data Tab */}
 						<TabsContent value="personal" className="space-y-6 mt-0">
 							<Card id="personal-info">
 								<CardHeader>

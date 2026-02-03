@@ -43,12 +43,8 @@ import {
 	getDefaultCorners,
 	useOpenCV,
 	performOCR,
-	extractWithAI,
-	isAIExtractionAvailable,
-	normalizeAIFields,
 	type OCRResult,
 	type PersonalData,
-	type AIExtractionResult,
 } from "@/lib/document-scanner";
 import type {
 	CornerPoints,
@@ -123,229 +119,6 @@ function FieldRow({
 					<span className="text-xs text-muted-foreground italic">
 						No detectado
 					</span>
-				)}
-			</div>
-		</div>
-	);
-}
-
-/**
- * Display AI extraction results in a clean, user-friendly format
- */
-function AIExtractionDisplay({
-	aiResult,
-	onSecretClick,
-	devMode,
-}: {
-	aiResult: AIExtractionResult;
-	onSecretClick: () => void;
-	devMode: boolean;
-}) {
-	const fields = normalizeAIFields(aiResult.extraction);
-	const rawFields = aiResult.extraction.fields;
-
-	// Check if document is expired
-	const isExpired = React.useMemo(() => {
-		if (fields.expiryDate) {
-			const expiry = new Date(fields.expiryDate);
-			return expiry < new Date();
-		}
-		return false;
-	}, [fields.expiryDate]);
-
-	// Calculate found/total fields
-	const foundCount = Object.values(fields).filter(Boolean).length;
-	const totalFields = Object.keys(fields).length;
-
-	// Map document type for display
-	const docTypeLabel =
-		aiResult.documentType === "mx_ine"
-			? "INE/IFE"
-			: aiResult.documentType === "passport"
-				? "Pasaporte"
-				: aiResult.documentType || "Documento";
-
-	return (
-		<div className="space-y-3">
-			{/* Success message */}
-			<Alert variant={isExpired ? "destructive" : "default"}>
-				{isExpired ? (
-					<AlertCircle className="h-4 w-4" />
-				) : (
-					<CheckCircle2 className="h-4 w-4" />
-				)}
-				<AlertDescription>
-					<div className="space-y-1">
-						<p className="font-medium">
-							{isExpired
-								? "⚠ Documento vencido"
-								: "✓ Datos extraídos correctamente"}
-						</p>
-						<p className="text-sm">
-							{isExpired
-								? `El documento expiró el ${fields.expiryDate}. Por favor proporcione un documento vigente.`
-								: `Se identificaron ${foundCount} campos del ${docTypeLabel}.`}
-						</p>
-						{/* Easter egg: tap to enable dev mode */}
-						<p
-							className="text-xs text-muted-foreground cursor-default select-none"
-							onClick={onSecretClick}
-						>
-							{devMode && "🔧 "} Extracción con IA • {docTypeLabel}
-						</p>
-					</div>
-				</AlertDescription>
-			</Alert>
-
-			{/* Fields display - clean and simple */}
-			<div className="rounded-lg border bg-card p-4 space-y-3">
-				<div className="flex items-center justify-between">
-					<h4 className="text-sm font-medium">Información del Documento</h4>
-					<Badge variant="outline" className="text-xs">
-						{foundCount} campos
-					</Badge>
-				</div>
-
-				<div className="grid gap-2">
-					{/* Name - always show prominently */}
-					{fields.fullName && (
-						<div className="flex justify-between items-center py-1.5 border-b last:border-0">
-							<span className="text-sm text-muted-foreground">Nombre</span>
-							<span className="text-sm font-medium">{fields.fullName}</span>
-						</div>
-					)}
-
-					{/* CURP */}
-					{fields.curp && (
-						<div className="flex justify-between items-center py-1.5 border-b last:border-0">
-							<span className="text-sm text-muted-foreground">CURP</span>
-							<span className="text-sm font-mono">{fields.curp}</span>
-						</div>
-					)}
-
-					{/* Passport Number */}
-					{fields.passportNumber && (
-						<div className="flex justify-between items-center py-1.5 border-b last:border-0">
-							<span className="text-sm text-muted-foreground">
-								No. Pasaporte
-							</span>
-							<span className="text-sm font-mono">{fields.passportNumber}</span>
-						</div>
-					)}
-
-					{/* INE Document Number */}
-					{fields.ineDocumentNumber && (
-						<div className="flex justify-between items-center py-1.5 border-b last:border-0 bg-primary/5 -mx-2 px-2 rounded">
-							<span className="text-sm font-medium text-primary">
-								No. Documento INE
-							</span>
-							<span className="text-sm font-mono font-medium">
-								{fields.ineDocumentNumber}
-							</span>
-						</div>
-					)}
-
-					{/* Birth Date */}
-					{fields.birthDate && (
-						<div className="flex justify-between items-center py-1.5 border-b last:border-0">
-							<span className="text-sm text-muted-foreground">
-								Fecha de Nacimiento
-							</span>
-							<span className="text-sm">{fields.birthDate}</span>
-						</div>
-					)}
-
-					{/* Gender */}
-					{fields.gender && (
-						<div className="flex justify-between items-center py-1.5 border-b last:border-0">
-							<span className="text-sm text-muted-foreground">Sexo</span>
-							<span className="text-sm">
-								{fields.gender === "M" || fields.gender === "male"
-									? "Masculino"
-									: fields.gender === "F" || fields.gender === "female"
-										? "Femenino"
-										: fields.gender}
-							</span>
-						</div>
-					)}
-
-					{/* Nationality */}
-					{fields.nationality && (
-						<div className="flex justify-between items-center py-1.5 border-b last:border-0">
-							<span className="text-sm text-muted-foreground">
-								Nacionalidad
-							</span>
-							<span className="text-sm">{fields.nationality}</span>
-						</div>
-					)}
-
-					{/* Address */}
-					{fields.address && (
-						<div className="flex justify-between items-start py-1.5 border-b last:border-0">
-							<span className="text-sm text-muted-foreground shrink-0">
-								Domicilio
-							</span>
-							<span className="text-sm text-right max-w-[60%]">
-								{fields.address}
-							</span>
-						</div>
-					)}
-
-					{/* Expiry Date */}
-					{fields.expiryDate && (
-						<div className="flex justify-between items-center py-1.5 border-b last:border-0">
-							<span className="text-sm text-muted-foreground">
-								Fecha de Vencimiento
-							</span>
-							<div className="flex items-center gap-2">
-								<span
-									className={cn(
-										"text-sm",
-										isExpired && "text-destructive line-through",
-									)}
-								>
-									{fields.expiryDate}
-								</span>
-								{isExpired ? (
-									<Badge variant="destructive" className="text-xs">
-										Vencido
-									</Badge>
-								) : (
-									<Badge variant="default" className="bg-green-500 text-xs">
-										Vigente
-									</Badge>
-								)}
-							</div>
-						</div>
-					)}
-				</div>
-
-				{/* Dev mode: Show confidence scores */}
-				{devMode && (
-					<div className="mt-3 pt-3 border-t">
-						<p className="text-xs text-muted-foreground mb-2">
-							🔧 Confianza por campo:
-						</p>
-						<div className="grid grid-cols-2 gap-1 text-xs">
-							{Object.entries(rawFields).map(([key, field]) => (
-								<div key={key} className="flex justify-between">
-									<span className="text-muted-foreground truncate">{key}:</span>
-									<span
-										className={cn(
-											"font-mono",
-											field.confidence >= 0.8
-												? "text-green-600"
-												: field.confidence >= 0.5
-													? "text-yellow-600"
-													: "text-red-600",
-										)}
-									>
-										{(field.confidence * 100).toFixed(0)}%
-									</span>
-								</div>
-							))}
-						</div>
-					</div>
 				)}
 			</div>
 		</div>
@@ -649,7 +422,6 @@ interface PageState {
 	extractedBlob: Blob | null;
 	quality: QualityResult | null;
 	ocrResult: OCRResult | null;
-	aiResult: AIExtractionResult | null;
 	/** Which side of the document (for INE front/back) */
 	side?: "front" | "back";
 }
@@ -661,14 +433,12 @@ interface INEState {
 		canvas: HTMLCanvasElement;
 		blob: Blob;
 		ocrResult?: OCRResult | null;
-		aiResult?: AIExtractionResult | null;
 	} | null;
 	/** Back side data */
 	back: {
 		canvas: HTMLCanvasElement;
 		blob: Blob;
 		ocrResult?: OCRResult | null;
-		aiResult?: AIExtractionResult | null;
 	} | null;
 	/** Combined extracted data from both sides */
 	combinedData?: {
@@ -900,7 +670,6 @@ export function DocumentScannerModal({
 						extractedBlob: null,
 						quality: null,
 						ocrResult: null,
-						aiResult: null,
 					});
 				} catch (cornerErr) {
 					Sentry.captureException(cornerErr);
@@ -917,7 +686,6 @@ export function DocumentScannerModal({
 						extractedBlob: null,
 						quality: null,
 						ocrResult: null,
-						aiResult: null,
 					});
 				}
 			}
@@ -1016,136 +784,50 @@ export function DocumentScannerModal({
 				// Move to validation
 				setStage("validating");
 				setOcrProgress({
-					stage: "Conectando con servicio de IA...",
+					stage: "Preprocesando imagen...",
 					percent: 10,
 				});
 
-				// Try AI extraction first (more accurate), fall back to OCR
+				// Perform OCR extraction
 				try {
-					Sentry.logger.info("[DocumentScanner] Starting field extraction...");
-
-					// Check if AI service is available
-					const aiAvailable = await isAIExtractionAvailable();
 					Sentry.logger.info(
-						`[DocumentScanner] AI service available: ${aiAvailable}`,
+						"[DocumentScanner] Starting OCR field extraction...",
 					);
 
-					if (aiAvailable) {
-						// Use AI extraction (primary method) - wrap in Sentry span
-						await Sentry.startSpan(
-							{
-								name: "AI Document Extraction",
-								op: "ai.extraction",
-								attributes: { documentType },
-							},
-							async () => {
-								setOcrProgress({
-									stage: "Extrayendo datos con IA...",
-									percent: 30,
-								});
-								const aiResult = await extractWithAI(
-									extractedCanvas,
-									documentType,
-								);
+					await Sentry.startSpan(
+						{
+							name: "OCR Document Processing",
+							op: "ocr.processing",
+							attributes: { documentType },
+						},
+						async () => {
+							const ocrResult = await performOCR(
+								extractedCanvas,
+								documentType,
+								personalData,
+								(stage, percent) => {
+									setOcrProgress({ stage, percent });
+								},
+							);
 
-								if (aiResult.success) {
-									Sentry.logger.info(
-										"[DocumentScanner] AI extraction complete",
-									);
+							Sentry.logger.info(
+								`[DocumentScanner] OCR complete: ${ocrResult.isValid ? "Valid" : "Invalid"}`,
+							);
 
-									setPages((prev) => {
-										const updated = [...prev];
-										updated[currentPageIndex] = {
-											...updated[currentPageIndex],
-											aiResult,
-										};
-										return updated;
-									});
-
-									// For INE documents, ALWAYS run OCR to extract MRZ fields from back side
-									// Otherwise, only run OCR in dev mode for comparison
-									if (isINEDocument || devMode) {
-										setOcrProgress({
-											stage: isINEDocument
-												? "Extrayendo MRZ de INE..."
-												: "Ejecutando OCR (modo dev)...",
-											percent: 60,
-										});
-										const ocrResult = await performOCR(
-											extractedCanvas,
-											documentType,
-											personalData,
-											(stage, percent) => {
-												setOcrProgress({ stage, percent: 60 + percent * 0.4 });
-											},
-										);
-
-										setPages((prev) => {
-											const updated = [...prev];
-											updated[currentPageIndex] = {
-												...updated[currentPageIndex],
-												ocrResult,
-											};
-											return updated;
-										});
-									}
-								} else {
-									// AI failed, fall back to OCR
-									Sentry.logger.warn(
-										"[DocumentScanner] AI extraction failed, falling back to OCR",
-									);
-									throw new Error(aiResult.error || "AI extraction failed");
-								}
-							},
-						);
-					} else {
-						// AI not available, use OCR
-						Sentry.logger.info(
-							"[DocumentScanner] AI not available, using OCR...",
-						);
-						throw new Error("AI service not available");
-					}
-				} catch (aiErr) {
-					// Fall back to OCR
-					Sentry.logger.info("[DocumentScanner] Falling back to OCR...");
-					setOcrProgress({ stage: "Preprocesando imagen...", percent: 20 });
-
-					try {
-						await Sentry.startSpan(
-							{
-								name: "OCR Document Processing",
-								op: "ocr.processing",
-								attributes: { documentType },
-							},
-							async () => {
-								const ocrResult = await performOCR(
-									extractedCanvas,
-									documentType,
-									personalData,
-									(stage, percent) => {
-										setOcrProgress({ stage, percent });
-									},
-								);
-
-								Sentry.logger.info(
-									`[DocumentScanner] OCR complete: ${ocrResult.isValid ? "Valid" : "Invalid"}`,
-								);
-
-								setPages((prev) => {
-									const updated = [...prev];
-									updated[currentPageIndex] = {
-										...updated[currentPageIndex],
-										ocrResult,
-									};
-									return updated;
-								});
-							},
-						);
-					} catch (ocrErr) {
-						Sentry.captureException(ocrErr);
-						Sentry.logger.error(Sentry.logger.fmt`OCR error: ${ocrErr}`);
-						// Show error but don't block - validation is optional
-					}
+							setPages((prev) => {
+								const updated = [...prev];
+								updated[currentPageIndex] = {
+									...updated[currentPageIndex],
+									ocrResult,
+								};
+								return updated;
+							});
+						},
+					);
+				} catch (ocrErr) {
+					Sentry.captureException(ocrErr);
+					Sentry.logger.error(Sentry.logger.fmt`OCR error: ${ocrErr}`);
+					// Show error but don't block - validation is optional
 				} finally {
 					setOcrProgress(null);
 				}
@@ -1162,7 +844,6 @@ export function DocumentScannerModal({
 								canvas: frontCanvas,
 								blob: frontBlob,
 								ocrResult: pages[currentPageIndex]?.ocrResult ?? null,
-								aiResult: pages[currentPageIndex]?.aiResult ?? null,
 							},
 						}));
 
@@ -1175,7 +856,6 @@ export function DocumentScannerModal({
 						// Back side completed - combine data
 						const frontData = ineState.front;
 						const backOcr = pages[currentPageIndex]?.ocrResult;
-						const backAi = pages[currentPageIndex]?.aiResult;
 						const backCanvas = extractedCanvas; // Capture for closure
 						const backBlob = extractedBlob;
 
@@ -1186,7 +866,6 @@ export function DocumentScannerModal({
 								canvas: backCanvas,
 								blob: backBlob,
 								ocrResult: backOcr ?? null,
-								aiResult: backAi ?? null,
 							},
 							combinedData: {
 								// Prefer MRZ data from back side for key fields
@@ -1585,17 +1264,8 @@ export function DocumentScannerModal({
 						</div>
 					)}
 
-					{/* AI Extraction Results (for regular users) */}
-					{currentPage.aiResult?.success && (
-						<AIExtractionDisplay
-							aiResult={currentPage.aiResult}
-							onSecretClick={handleSecretClick}
-							devMode={devMode}
-						/>
-					)}
-
-					{/* OCR Validation Result (fallback or dev mode) */}
-					{currentPage.ocrResult && !currentPage.aiResult?.success && (
+					{/* OCR Validation Result */}
+					{currentPage.ocrResult && (
 						<div className="space-y-3">
 							<Alert
 								variant={

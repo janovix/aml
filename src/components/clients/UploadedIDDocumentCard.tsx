@@ -12,7 +12,10 @@ import {
 	type DocumentImage,
 } from "./DocumentViewerDialog";
 import { DOCUMENT_TYPE_CONFIG } from "@/lib/constants";
-import type { ClientDocument, DocumentFileMetadata } from "@/types/client-document";
+import type {
+	ClientDocument,
+	DocumentFileMetadata,
+} from "@/types/client-document";
 
 interface UploadedIDDocumentCardProps {
 	document: ClientDocument;
@@ -51,7 +54,8 @@ export function UploadedIDDocumentCard({
 		DOCUMENT_TYPE_CONFIG[document.documentType]?.label || document.documentType;
 
 	// Determine available image URLs (with fallbacks)
-	const frontUrl = metadata?.ineFrontUrl || metadata?.primaryFileUrl || document.fileUrl;
+	const frontUrl =
+		metadata?.ineFrontUrl || metadata?.primaryFileUrl || document.fileUrl;
 	const backUrl = metadata?.ineBackUrl;
 	const hasImages = !!frontUrl;
 

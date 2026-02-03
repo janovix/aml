@@ -75,6 +75,10 @@ lib-cov
 coverage
 *.lcov
 
+# Stryker mutation testing reports
+reports/
+.stryker-tmp/
+
 # Storybook build output (Chromatic/CI)
 storybook-static
 

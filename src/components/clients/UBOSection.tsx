@@ -58,7 +58,10 @@ import {
 	patchClientDocument,
 } from "@/lib/api/client-documents";
 import { uploadDocumentFiles } from "@/lib/api/file-upload";
-import type { ClientDocument, ClientDocumentType } from "@/types/client-document";
+import type {
+	ClientDocument,
+	ClientDocumentType,
+} from "@/types/client-document";
 import type { PersonType } from "@/types/client";
 import { useOrgStore } from "@/lib/org-store";
 import { requiresUBOs } from "@/lib/constants";
@@ -535,14 +538,16 @@ export function UBOSection({
 							<Users className="h-4 w-4 shrink-0" />
 							<span>Accionistas</span>
 							{ubos.length > 0 && (
-								<Badge
-									variant={isCapTableValid ? "secondary" : "destructive"}
-								>
+								<Badge variant={isCapTableValid ? "secondary" : "destructive"}>
 									Total: {totalOwnership.toFixed(2)}%
 								</Badge>
 							)}
 						</span>
-						<Button size="sm" onClick={handleOpenCreateUBO} className="w-full sm:w-auto">
+						<Button
+							size="sm"
+							onClick={handleOpenCreateUBO}
+							className="w-full sm:w-auto"
+						>
 							<Plus className="h-4 w-4 mr-1" />
 							Agregar Accionista
 						</Button>

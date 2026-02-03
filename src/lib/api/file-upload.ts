@@ -1,371 +1,379 @@
 /**
- * File Upload API
- * Handles uploading files to R2 storage via aml-svc
+ * Document Upload API
+ * Handles uploading documents via doc-svc for KYC processing
  */
 
+// Updated: Added uploadDocumentFiles and generatePresignedUrl functions
 import * as Sentry from "@sentry/nextjs";
-import { getAmlCoreBaseUrl } from "./config";
+import {
+	uploadDocument as uploadToDocSvc,
+	getDocumentUrls,
+	pollJobUntilComplete,
+	type JobStatusResponse,
+	type DocumentUrlsResponse,
+} from "./doc-svc";
+
+// Re-export types from doc-svc
+export type { JobStatusResponse, DocumentUrlsResponse };
 
 /**
- * Automatically get JWT token for client-side requests.
+ * Options for uploading documents via doc-svc
  */
-async function getJwtToken(): Promise<string | null> {
-	// Check if we're in a browser environment
-	if (typeof window === "undefined") {
-		return null;
-	}
-
-	try {
-		const { tokenCache } = await import("@/lib/auth/tokenCache");
-		return await tokenCache.getCachedToken();
-	} catch (error) {
-		Sentry.captureException(error);
-		Sentry.logger.error(Sentry.logger.fmt`Failed to get JWT token: ${error}`);
-		return null;
-	}
-}
-
-export interface FileUploadOptions {
-	/** File to upload */
-	file: File | Blob;
-	/** File name (required for Blob) */
-	fileName?: string;
+export interface DocumentUploadOptions {
 	/** Organization ID */
 	organizationId: string;
-	/** Client ID (for client documents) */
-	clientId?: string;
-	/** Document ID (for associating with a document) */
-	documentId?: string;
-	/** File category/type for organizing in R2 */
-	category?: "client-documents" | "ubo-documents" | "other";
-	/** Additional metadata */
-	metadata?: Record<string, string>;
-	/** Base URL override */
-	baseUrl?: string;
-	/** JWT token for authentication */
-	jwt?: string;
+	/** User ID */
+	userId: string;
+	/** Primary file (processed image) */
+	primaryFile: Blob;
+	/** Original file name */
+	fileName: string;
+	/** Additional page images (for multi-page documents, INE front/back, etc.) */
+	pageImages?: Blob[];
+	/** PDF file (if uploading a PDF or generated PDF) */
+	pdfFile?: Blob | null;
+	/** Whether to wait for AI processing to complete */
+	waitForProcessing?: boolean;
+	/** Progress callback */
+	onProgress?: (stage: string, percent: number) => void;
 	/** Abort signal */
 	signal?: AbortSignal;
 }
 
-export interface FileUploadResult {
-	/** File key in R2 */
-	key: string;
-	/** Public URL to access the file (requires authentication) */
-	url: string;
-	/** Presigned URL with embedded token (no authentication required) */
-	presignedUrl?: string;
-	/** Expiration time for presigned URL */
-	expiresAt?: string;
-	/** File size in bytes */
-	size: number;
-	/** ETag for the uploaded file */
-	etag: string;
+/**
+ * Result from document upload
+ */
+export interface DocumentUploadResult {
+	/** Document ID in doc-svc */
+	documentId: string;
+	/** Processing job ID */
+	jobId: string;
+	/** Final job status (if waitForProcessing was true) */
+	jobStatus?: JobStatusResponse;
 }
 
 /**
- * Upload a single file to R2 storage
+ * Upload a document to doc-svc for processing
+ *
+ * This uploads files directly to R2 via presigned URLs and triggers
+ * doc-svc's AI processing pipeline.
+ *
+ * @example
+ * ```ts
+ * const result = await uploadDocument({
+ *   organizationId: "org_123",
+ *   userId: "user_456",
+ *   primaryFile: processedBlob,
+ *   fileName: "document.jpg",
+ *   pageImages: [frontBlob, backBlob],
+ *   pdfFile: generatedPdfBlob,
+ *   waitForProcessing: false,
+ *   onProgress: (stage, percent) => console.log(stage, percent),
+ * });
+ *
+ * // result.documentId is stored in client_documents.doc_svc_document_id
+ * // result.jobId is stored in client_documents.doc_svc_job_id
+ * ```
  */
-export async function uploadFile(
-	options: FileUploadOptions,
-): Promise<FileUploadResult> {
-	const baseUrl = options.baseUrl ?? getAmlCoreBaseUrl();
-	const url = new URL("/api/v1/files/upload", baseUrl);
+export async function uploadDocument(
+	options: DocumentUploadOptions,
+): Promise<DocumentUploadResult> {
+	const {
+		organizationId,
+		userId,
+		primaryFile,
+		fileName,
+		pageImages = [],
+		pdfFile,
+		waitForProcessing = false,
+		onProgress,
+	} = options;
 
-	// Create FormData
-	const formData = new FormData();
-
-	// Determine file name
-	const fileName =
-		options.fileName ||
-		(options.file instanceof File ? options.file.name : "file");
-	formData.append("file", options.file, fileName);
-
-	// Add metadata
-	formData.append("organizationId", options.organizationId);
-	if (options.clientId) {
-		formData.append("clientId", options.clientId);
-	}
-	if (options.documentId) {
-		formData.append("documentId", options.documentId);
-	}
-	if (options.category) {
-		formData.append("category", options.category);
-	}
-	if (options.metadata) {
-		formData.append("metadata", JSON.stringify(options.metadata));
-	}
-
-	// Get JWT token if not provided
-	const jwt = options.jwt ?? (await getJwtToken());
-
-	// Upload file with Sentry instrumentation
 	return await Sentry.startSpan(
 		{
-			name: "File Upload",
+			name: "Document Upload to doc-svc",
 			op: "http.client",
 			attributes: {
-				"http.method": "POST",
-				"http.url": url.toString(),
-				"file.size": options.file.size,
 				"file.name": fileName,
+				"file.size": primaryFile.size,
+				"pages.count": pageImages.length || 1,
+				"has.pdf": !!pdfFile,
 			},
 		},
 		async () => {
-			const headers: Record<string, string> = {};
-			if (jwt) {
-				headers["Authorization"] = `Bearer ${jwt}`;
-			}
+			// Build image array - use page images if provided, otherwise use primary file
+			const images: Blob[] = pageImages.length > 0 ? pageImages : [primaryFile];
 
-			const response = await fetch(url.toString(), {
-				method: "POST",
-				body: formData,
-				signal: options.signal,
-				headers,
-			});
+			// Upload to doc-svc
+			const uploadResult = await uploadToDocSvc(
+				organizationId,
+				userId,
+				images,
+				pdfFile ?? null,
+				fileName,
+				onProgress,
+			);
 
-			if (!response.ok) {
-				const errorText = await response.text();
-				const error = new Error(`Upload failed: ${errorText}`);
-				Sentry.captureException(error);
-				Sentry.logger.error(
-					Sentry.logger.fmt`File upload failed: ${errorText}`,
+			const result: DocumentUploadResult = {
+				documentId: uploadResult.documentId,
+				jobId: uploadResult.jobId,
+			};
+
+			// Optionally wait for processing to complete
+			if (waitForProcessing) {
+				onProgress?.("Processing document...", 80);
+
+				const jobStatus = await pollJobUntilComplete(
+					organizationId,
+					uploadResult.jobId,
+					(status) => {
+						if (status.status === "PROCESSING") {
+							onProgress?.("AI processing...", 85);
+						}
+					},
 				);
-				throw error;
+
+				result.jobStatus = jobStatus;
+				onProgress?.("Complete", 100);
 			}
 
-			const result = (await response.json()) as FileUploadResult;
 			return result;
 		},
 	);
 }
 
 /**
- * Upload multiple files in parallel
+ * Upload document files for KYC processing
+ *
+ * Convenience function that handles common document upload patterns:
+ * - ID documents (INE front/back, passport)
+ * - Multi-page PDFs
+ * - Simple single-page documents
+ *
+ * @example
+ * ```ts
+ * // INE document with front and back
+ * const result = await uploadDocumentForKYC({
+ *   organizationId: "org_123",
+ *   userId: "user_456",
+ *   primaryFile: processedFrontBlob,
+ *   relatedFiles: [
+ *     { file: frontBlob, name: "ine_front.jpg", type: "ine_front" },
+ *     { file: backBlob, name: "ine_back.jpg", type: "ine_back" },
+ *   ],
+ *   pdfFile: generatedPdfBlob,
+ * });
+ * ```
  */
-export async function uploadFiles(
-	files: Array<{
-		file: File | Blob;
-		fileName?: string;
-		metadata?: Record<string, string>;
-	}>,
-	commonOptions: Omit<FileUploadOptions, "file" | "fileName" | "metadata">,
-): Promise<FileUploadResult[]> {
-	const uploadPromises = files.map(({ file, fileName, metadata }) =>
-		uploadFile({
-			...commonOptions,
-			file,
-			fileName,
-			metadata,
-		}),
-	);
-
-	return Promise.all(uploadPromises);
-}
-
-/**
- * Upload document with multiple related files
- * (e.g., PDF + rasterized images, INE front + back)
- */
-export interface DocumentFilesUploadOptions {
-	/** Primary/processed file */
-	primaryFile: File | Blob;
-	/** Original source file (e.g., original PDF before rasterization) */
-	originalFile?: File;
-	/** Additional related files (e.g., rasterized images, INE back side) */
-	relatedFiles?: Array<{ file: Blob; name: string; type: string }>;
-	/** Organization ID */
+export async function uploadDocumentForKYC(options: {
 	organizationId: string;
-	/** Client ID */
-	clientId: string;
-	/** Document ID */
-	documentId?: string;
-	/** Base URL override */
-	baseUrl?: string;
-	/** JWT token */
-	jwt?: string;
-	/** Abort signal */
-	signal?: AbortSignal;
-}
+	userId: string;
+	/** Primary processed file */
+	primaryFile: Blob;
+	/** Original file name */
+	fileName?: string;
+	/** Original PDF file (if user uploaded PDF) */
+	originalPdf?: File | null;
+	/** Related files (INE front/back, rasterized pages, etc.) */
+	relatedFiles?: Array<{ file: Blob; name: string; type: string }>;
+	/** Generated PDF (if not uploading original) */
+	generatedPdf?: Blob | null;
+	/** Whether to wait for AI processing */
+	waitForProcessing?: boolean;
+	/** Progress callback */
+	onProgress?: (stage: string, percent: number) => void;
+}): Promise<DocumentUploadResult> {
+	const {
+		organizationId,
+		userId,
+		primaryFile,
+		fileName = "document.jpg",
+		originalPdf,
+		relatedFiles,
+		generatedPdf,
+		waitForProcessing,
+		onProgress,
+	} = options;
 
-export interface DocumentFilesUploadResult {
-	/** Primary file upload result */
-	primary: FileUploadResult;
-	/** Original file upload result (if provided) */
-	original?: FileUploadResult;
-	/** Related files upload results */
-	related: FileUploadResult[];
-}
+	// Build page images from related files
+	const pageImages: Blob[] = [];
 
-/**
- * Upload all files related to a document
- * Returns URLs for primary, original, and related files
- */
-export async function uploadDocumentFiles(
-	options: DocumentFilesUploadOptions,
-): Promise<DocumentFilesUploadResult> {
-	const uploads: Array<Promise<FileUploadResult>> = [];
-	const uploadTypes: Array<"primary" | "original" | "related"> = [];
-
-	// Upload primary file
-	uploads.push(
-		uploadFile({
-			file: options.primaryFile,
-			fileName:
-				options.primaryFile instanceof File
-					? options.primaryFile.name
-					: "processed.jpg",
-			organizationId: options.organizationId,
-			clientId: options.clientId,
-			documentId: options.documentId,
-			category: "client-documents",
-			metadata: { type: "primary" },
-			baseUrl: options.baseUrl,
-			jwt: options.jwt,
-			signal: options.signal,
-		}),
-	);
-	uploadTypes.push("primary");
-
-	// Upload original file if provided
-	if (options.originalFile) {
-		uploads.push(
-			uploadFile({
-				file: options.originalFile,
-				fileName: options.originalFile.name,
-				organizationId: options.organizationId,
-				clientId: options.clientId,
-				documentId: options.documentId,
-				category: "client-documents",
-				metadata: { type: "original" },
-				baseUrl: options.baseUrl,
-				jwt: options.jwt,
-				signal: options.signal,
-			}),
-		);
-		uploadTypes.push("original");
-	}
-
-	// Upload related files if provided
-	if (options.relatedFiles) {
-		for (let i = 0; i < options.relatedFiles.length; i++) {
-			const relatedFile = options.relatedFiles[i];
-			uploads.push(
-				uploadFile({
-					file: relatedFile.file,
-					fileName: relatedFile.name,
-					organizationId: options.organizationId,
-					clientId: options.clientId,
-					documentId: options.documentId,
-					category: "client-documents",
-					metadata: {
-						type: relatedFile.type,
-						index: i.toString(),
-					},
-					baseUrl: options.baseUrl,
-					jwt: options.jwt,
-					signal: options.signal,
-				}),
-			);
-			uploadTypes.push("related");
+	if (relatedFiles) {
+		for (const rf of relatedFiles) {
+			// Include INE sides and rasterized pages
+			if (
+				rf.type.includes("ine_") ||
+				rf.type.includes("rasterized_page") ||
+				rf.type.includes("page_")
+			) {
+				pageImages.push(rf.file);
+			}
 		}
 	}
 
-	// Execute all uploads in parallel
-	const results = await Promise.all(uploads);
+	// If no page images, the primary file is the only image
+	if (pageImages.length === 0) {
+		pageImages.push(primaryFile);
+	}
 
-	// Organize results
-	const organized: DocumentFilesUploadResult = {
-		primary: results[0],
+	// Determine PDF file - prioritize original, then generated
+	const pdfFile = originalPdf ?? generatedPdf ?? null;
+
+	// Upload to doc-svc
+	return await uploadDocument({
+		organizationId,
+		userId,
+		primaryFile,
+		fileName,
+		pageImages,
+		pdfFile,
+		waitForProcessing,
+		onProgress,
+	});
+}
+
+/**
+ * Get presigned URLs for document images/PDF from doc-svc
+ *
+ * Use this to display document images in the UI
+ */
+export async function getDocumentDisplayUrls(
+	organizationId: string,
+	documentId: string,
+	type: "pdf" | "images" | "all" = "all",
+): Promise<DocumentUrlsResponse> {
+	return await getDocumentUrls(organizationId, documentId, type);
+}
+
+/**
+ * Upload document files to R2 storage via aml-svc
+ *
+ * This is the legacy upload function that uploads directly to R2 via aml-svc.
+ * For new KYC document uploads with AI processing, use uploadDocument() instead.
+ *
+ * @deprecated Use uploadDocument() for new KYC documents with AI processing
+ */
+export async function uploadDocumentFiles(options: {
+	primaryFile: Blob;
+	originalFile?: File | null;
+	relatedFiles?: Array<{ file: Blob; name: string; type: string }>;
+	organizationId: string;
+	clientId: string;
+	documentId: string;
+}): Promise<{
+	primary: { url: string; key: string };
+	original?: { url: string; key: string };
+	related: Array<{ url: string; key: string }>;
+}> {
+	const { primaryFile, originalFile, relatedFiles, clientId, documentId } =
+		options;
+
+	// Import config and http utilities
+	const { getAmlCoreBaseUrl } = await import("./config");
+	const { fetchJson } = await import("./http");
+
+	const baseUrl = getAmlCoreBaseUrl();
+
+	const results: {
+		primary: { url: string; key: string };
+		original?: { url: string; key: string };
+		related: Array<{ url: string; key: string }>;
+	} = {
+		primary: { url: "", key: "" },
 		related: [],
 	};
 
-	let resultIndex = 1;
-	for (let i = 1; i < uploadTypes.length; i++) {
-		const type = uploadTypes[i];
-		if (type === "original") {
-			organized.original = results[resultIndex];
-		} else if (type === "related") {
-			organized.related.push(results[resultIndex]);
+	// Helper function to upload a file
+	const uploadFile = async (file: Blob, fileName: string, category: string) => {
+		const formData = new FormData();
+		formData.append("file", file, fileName);
+		formData.append("clientId", clientId);
+		formData.append("documentId", documentId);
+		formData.append("category", category);
+
+		const response = await fetch(`${baseUrl}/api/v1/files/upload`, {
+			method: "POST",
+			body: formData,
+			credentials: "include",
+		});
+
+		if (!response.ok) {
+			throw new Error(`Upload failed: ${response.statusText}`);
 		}
-		resultIndex++;
+
+		const data = (await response.json()) as { key: string; url: string };
+		return data;
+	};
+
+	// Upload primary file
+	const primaryResult = await uploadFile(
+		primaryFile,
+		"primary",
+		"client-documents",
+	);
+	results.primary = { url: primaryResult.url, key: primaryResult.key };
+
+	// Upload original file if provided
+	if (originalFile) {
+		const originalResult = await uploadFile(
+			originalFile,
+			originalFile.name,
+			"client-documents",
+		);
+		results.original = { url: originalResult.url, key: originalResult.key };
 	}
 
-	return organized;
+	// Upload related files if provided
+	if (relatedFiles) {
+		for (const rf of relatedFiles) {
+			const relatedResult = await uploadFile(
+				rf.file,
+				rf.name,
+				"client-documents",
+			);
+			results.related.push({ url: relatedResult.url, key: relatedResult.key });
+		}
+	}
+
+	return results;
 }
 
 /**
- * Generate a presigned URL for an existing file
- * This allows the file to be accessed without authentication for a limited time
+ * Generate a presigned URL for accessing a file in R2 storage
+ *
+ * This converts an authenticated aml-svc file URL into a presigned URL
+ * that can be used directly in img/iframe tags without auth headers.
  */
-export interface PresignUrlOptions {
-	/** The authenticated file URL from aml-svc */
+export async function generatePresignedUrl(options: {
 	url: string;
-	/** How long the URL should be valid (in minutes, default: 60) */
 	expiresInMinutes?: number;
-	/** Base URL override */
-	baseUrl?: string;
-	/** JWT token for authentication */
-	jwt?: string;
-}
-
-export interface PresignUrlResult {
-	/** Presigned URL with embedded token */
+}): Promise<{
 	presignedUrl: string;
-	/** Expiration timestamp */
 	expiresAt: string;
-	/** How long the URL is valid (in minutes) */
-	expiresInMinutes: number;
-}
+}> {
+	const { url, expiresInMinutes = 60 } = options;
 
-/**
- * Generate a presigned URL for an existing file
- */
-export async function generatePresignedUrl(
-	options: PresignUrlOptions,
-): Promise<PresignUrlResult> {
-	const baseUrl = options.baseUrl ?? getAmlCoreBaseUrl();
-	const url = new URL("/api/v1/files/presign", baseUrl);
+	// Import config and http utilities
+	const { getAmlCoreBaseUrl } = await import("./config");
 
-	// Get JWT token if not provided
-	const jwt = options.jwt ?? (await getJwtToken());
+	const baseUrl = getAmlCoreBaseUrl();
 
-	return await Sentry.startSpan(
-		{
-			name: "Generate Presigned URL",
-			op: "http.client",
-			attributes: {
-				"http.method": "POST",
-				"http.url": url.toString(),
-			},
+	const response = await fetch(`${baseUrl}/api/v1/files/presign`, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
 		},
-		async () => {
-			const headers: Record<string, string> = {
-				"Content-Type": "application/json",
-			};
-			if (jwt) {
-				headers["Authorization"] = `Bearer ${jwt}`;
-			}
+		body: JSON.stringify({ url, expiresInMinutes }),
+		credentials: "include",
+	});
 
-			const response = await fetch(url.toString(), {
-				method: "POST",
-				headers,
-				body: JSON.stringify({
-					url: options.url,
-					expiresInMinutes: options.expiresInMinutes ?? 60,
-				}),
-			});
+	if (!response.ok) {
+		throw new Error(`Presign failed: ${response.statusText}`);
+	}
 
-			if (!response.ok) {
-				const errorText = await response.text();
-				const error = new Error(
-					`Failed to generate presigned URL: ${errorText}`,
-				);
-				Sentry.captureException(error);
-				throw error;
-			}
-
-			return (await response.json()) as PresignUrlResult;
-		},
-	);
+	const data = (await response.json()) as {
+		presignedUrl: string;
+		expiresAt: string;
+	};
+	return data;
 }

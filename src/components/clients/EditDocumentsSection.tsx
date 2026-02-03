@@ -26,10 +26,9 @@ import { toast } from "sonner";
 import {
 	listClientDocuments,
 	createClientDocument,
-	patchClientDocument,
 	deleteClientDocument,
 } from "@/lib/api/client-documents";
-import { uploadDocumentFiles } from "@/lib/api/file-upload";
+import { uploadDocumentForKYC } from "@/lib/api/file-upload";
 import { useOrgStore } from "@/lib/org-store";
 import { PresignedImage } from "@/components/PresignedImage";
 import type { PersonType } from "@/types/client";
@@ -58,10 +57,12 @@ import {
 	DocumentViewerDialog,
 	type DocumentImage,
 } from "./DocumentViewerDialog";
+import { MobileUploadCard } from "./MobileUploadCard";
 
 interface EditDocumentsSectionProps {
 	clientId: string;
 	personType: PersonType;
+	clientName?: string;
 	className?: string;
 	onDocumentChange?: () => void;
 }
@@ -69,6 +70,7 @@ interface EditDocumentsSectionProps {
 export function EditDocumentsSection({
 	clientId,
 	personType,
+	clientName,
 	className,
 	onDocumentChange,
 }: EditDocumentsSectionProps) {
@@ -148,28 +150,23 @@ export function EditDocumentsSection({
 
 	const handleIdUpload = useCallback(
 		async (data: IDDocumentData) => {
-			const { currentOrg } = useOrgStore.getState();
+			const { currentOrg, currentUserId } = useOrgStore.getState();
 
 			if (!currentOrg?.id) {
 				toast.error("No se pudo obtener la organización actual");
 				throw new Error("Organization ID not available");
 			}
 
+			const userId = currentUserId || "unknown";
+
 			try {
-				// Build base document input
-				const input: ClientDocumentCreateRequest = {
-					documentType: data.documentType,
-					documentNumber: data.documentNumber,
-					status: "PENDING",
-					expiryDate: data.expiryDate,
-				};
+				// Upload files to doc-svc if available
+				let docSvcDocumentId: string | undefined;
+				let docSvcJobId: string | undefined;
 
-				// Upload all files if available
 				if (data.processedBlob) {
-					// First create the document to get an ID
-					const createdDoc = await createClientDocument({ clientId, input });
-
-					const filesToUpload: Array<{
+					// Build related files for doc-svc upload
+					const relatedFiles: Array<{
 						file: Blob;
 						name: string;
 						type: string;
@@ -178,7 +175,7 @@ export function EditDocumentsSection({
 					// Add rasterized images if PDF was processed
 					if (data.rasterizedImages && data.rasterizedImages.length > 0) {
 						data.rasterizedImages.forEach((blob, index) => {
-							filesToUpload.push({
+							relatedFiles.push({
 								file: blob,
 								name: `rasterized_page_${index + 1}.jpg`,
 								type: `rasterized_page_${index + 1}`,
@@ -188,67 +185,49 @@ export function EditDocumentsSection({
 
 					// Add INE front/back if available
 					if (data.ineFrontBlob) {
-						filesToUpload.push({
+						relatedFiles.push({
 							file: data.ineFrontBlob,
 							name: "ine_front.jpg",
 							type: "ine_front",
 						});
 					}
 					if (data.ineBackBlob) {
-						filesToUpload.push({
+						relatedFiles.push({
 							file: data.ineBackBlob,
 							name: "ine_back.jpg",
 							type: "ine_back",
 						});
 					}
 
-					// Upload all files
-					const uploadResult = await uploadDocumentFiles({
-						primaryFile: data.processedBlob,
-						originalFile: data.originalFile,
-						relatedFiles: filesToUpload.length > 0 ? filesToUpload : undefined,
+					// Upload to doc-svc
+					const uploadResult = await uploadDocumentForKYC({
 						organizationId: currentOrg.id,
-						clientId,
-						documentId: createdDoc.id,
+						userId,
+						primaryFile: data.processedBlob,
+						fileName: data.originalFile?.name || "id_document.jpg",
+						originalPdf:
+							data.originalFile?.type === "application/pdf"
+								? data.originalFile
+								: null,
+						relatedFiles: relatedFiles.length > 0 ? relatedFiles : undefined,
+						waitForProcessing: false, // Don't block - webhook will update
 					});
 
-					// Build metadata with all file URLs (store base URLs, not presigned)
-					const fileMetadata: DocumentFileMetadata = {
-						primaryFileUrl: uploadResult.primary.url,
-						originalFileUrl: uploadResult.original?.url,
-					};
-
-					// Add INE URLs if available
-					const ineFront = uploadResult.related.find((r) =>
-						r.key.includes("ine_front"),
-					);
-					const ineBack = uploadResult.related.find((r) =>
-						r.key.includes("ine_back"),
-					);
-					if (ineFront) fileMetadata.ineFrontUrl = ineFront.url;
-					if (ineBack) fileMetadata.ineBackUrl = ineBack.url;
-
-					// Add rasterized page URLs if available
-					const rasterizedPages = uploadResult.related.filter((r) =>
-						r.key.includes("rasterized_page"),
-					);
-					if (rasterizedPages.length > 0) {
-						fileMetadata.rasterizedPageUrls = rasterizedPages.map((r) => r.url);
-					}
-
-					// Update document with file URLs using PATCH (store base URL, not presigned)
-					await patchClientDocument({
-						clientId,
-						documentId: createdDoc.id,
-						input: {
-							fileUrl: uploadResult.primary.url,
-							metadata: fileMetadata as Record<string, unknown>,
-						},
-					});
-				} else {
-					// No files to upload, just create the document record
-					await createClientDocument({ clientId, input });
+					docSvcDocumentId = uploadResult.documentId;
+					docSvcJobId = uploadResult.jobId;
 				}
+
+				// Create client document record with doc-svc references
+				const input: ClientDocumentCreateRequest = {
+					documentType: data.documentType,
+					documentNumber: data.documentNumber,
+					status: "PENDING",
+					expiryDate: data.expiryDate,
+					docSvcDocumentId,
+					docSvcJobId,
+				};
+
+				await createClientDocument({ clientId, input });
 
 				toast.success("Identificación guardada exitosamente");
 				fetchDocuments();
@@ -274,76 +253,64 @@ export function EditDocumentsSection({
 
 	const handleDocUpload = useCallback(
 		async (data: SimpleDocumentUploadData) => {
-			const { currentOrg } = useOrgStore.getState();
+			const { currentOrg, currentUserId } = useOrgStore.getState();
 
 			if (!currentOrg?.id) {
 				toast.error("No se pudo obtener la organización actual");
 				throw new Error("Organization ID not available");
 			}
 
+			const userId = currentUserId || "unknown";
+
 			try {
-				// Build base document input (no document number needed for simple documents)
-				const input: ClientDocumentCreateRequest = {
-					documentType: data.documentType,
-					documentNumber: "N/A", // Not required for these documents
-					status: "PENDING",
-				};
+				// Upload files to doc-svc if available
+				let docSvcDocumentId: string | undefined;
+				let docSvcJobId: string | undefined;
 
-				// Upload all files if available
 				if (data.rasterizedImages && data.rasterizedImages.length > 0) {
-					// First create the document to get an ID
-					const createdDoc = await createClientDocument({ clientId, input });
-
 					// Prepare rasterized images for upload
-					const filesToUpload: Array<{
+					const relatedFiles: Array<{
 						file: Blob;
 						name: string;
 						type: string;
 					}> = [];
 					data.rasterizedImages.forEach((blob, index) => {
-						filesToUpload.push({
+						relatedFiles.push({
 							file: blob,
 							name: `page_${index + 1}.jpg`,
 							type: `rasterized_page_${index + 1}`,
 						});
 					});
 
-					// Upload all files (primary = first page, rest as related)
-					const uploadResult = await uploadDocumentFiles({
-						primaryFile: data.rasterizedImages[0],
-						originalFile: data.originalFile,
-						relatedFiles: filesToUpload.slice(1), // Skip first page as it's the primary
+					// Upload to doc-svc
+					const uploadResult = await uploadDocumentForKYC({
 						organizationId: currentOrg.id,
-						clientId,
-						documentId: createdDoc.id,
+						userId,
+						primaryFile: data.rasterizedImages[0],
+						fileName: data.originalFile?.name || "document.jpg",
+						originalPdf:
+							data.originalFile?.type === "application/pdf"
+								? data.originalFile
+								: null,
+						relatedFiles:
+							relatedFiles.length > 1 ? relatedFiles.slice(1) : undefined,
+						waitForProcessing: false, // Don't block - webhook will update
 					});
 
-					// Build metadata with all file URLs (store base URLs, not presigned)
-					const fileMetadata: DocumentFileMetadata = {
-						primaryFileUrl: uploadResult.primary.url,
-						originalFileUrl: uploadResult.original?.url,
-					};
-
-					// Add all rasterized page URLs
-					const allPageUrls = [uploadResult.primary.url];
-					if (uploadResult.related.length > 0) {
-						allPageUrls.push(...uploadResult.related.map((r) => r.url));
-					}
-					fileMetadata.rasterizedPageUrls = allPageUrls;
-
-					// Update document with file URLs using PATCH (store base URL, not presigned)
-					await patchClientDocument({
-						clientId,
-						documentId: createdDoc.id,
-						input: {
-							fileUrl: uploadResult.primary.url,
-							metadata: fileMetadata as Record<string, unknown>,
-						},
-					});
-				} else {
-					// No files to upload, just create the document record
-					await createClientDocument({ clientId, input });
+					docSvcDocumentId = uploadResult.documentId;
+					docSvcJobId = uploadResult.jobId;
 				}
+
+				// Create client document record with doc-svc references
+				const input: ClientDocumentCreateRequest = {
+					documentType: data.documentType,
+					documentNumber: "N/A", // Not required for these documents
+					status: "PENDING",
+					docSvcDocumentId,
+					docSvcJobId,
+				};
+
+				await createClientDocument({ clientId, input });
 
 				toast.success("Documento guardado exitosamente");
 				fetchDocuments();
@@ -440,6 +407,18 @@ export function EditDocumentsSection({
 					)}
 				</CardContent>
 			</Card>
+
+			{/* Mobile upload link */}
+			<MobileUploadCard
+				clientId={clientId}
+				clientName={clientName}
+				clientType={personType}
+				uploadedDocuments={Array.from(uploadedDocTypes) as ClientDocumentType[]}
+				onUploadComplete={() => {
+					fetchDocuments();
+					onDocumentChange?.();
+				}}
+			/>
 
 			{/* ID Document Section (Physical persons only) */}
 			{!needsUBOs && (
@@ -648,7 +627,9 @@ export function EditDocumentsSection({
 											}}
 										>
 											<FileText className="h-4 w-4 sm:mr-2" />
-											<span className="hidden sm:inline">Ver Documento Original</span>
+											<span className="hidden sm:inline">
+												Ver Documento Original
+											</span>
 											<span className="sm:hidden">Ver Original</span>
 										</Button>
 									)}
@@ -670,7 +651,6 @@ export function EditDocumentsSection({
 							data={idDocumentData}
 							onDataChange={handleIdDataChange}
 							onUpload={handleIdUpload}
-							clientId={clientId}
 						/>
 					)}
 				</div>

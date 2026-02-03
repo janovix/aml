@@ -1237,18 +1237,19 @@ export function ClientDetailsView({
 												</div>
 											</div>
 											{/* Legal Rep ID Document Card */}
-											{legalRep.idDocumentId && (() => {
-												const legalRepIdDoc = documents.find(
-													(d) => d.id === legalRep.idDocumentId
-												);
-												return legalRepIdDoc ? (
-													<UploadedIDDocumentCard
-														document={legalRepIdDoc}
-														showDelete={false}
-														compact
-													/>
-												) : null;
-											})()}
+											{legalRep.idDocumentId &&
+												(() => {
+													const legalRepIdDoc = documents.find(
+														(d) => d.id === legalRep.idDocumentId,
+													);
+													return legalRepIdDoc ? (
+														<UploadedIDDocumentCard
+															document={legalRepIdDoc}
+															showDelete={false}
+															compact
+														/>
+													) : null;
+												})()}
 										</div>
 									) : (
 										<div className="p-3 rounded-lg border border-muted bg-muted/30">
@@ -1268,7 +1269,7 @@ export function ClientDetailsView({
 									onClick={() => navigateToEdit("documents", "ubos")}
 								>
 									<Pencil className="h-4 w-4 mr-2" />
-									{!ubosComplete ? 'Agregar accionistas' : 'Editar' }
+									{!ubosComplete ? "Agregar accionistas" : "Editar"}
 								</Button>
 							</div>
 						</AccordionContent>

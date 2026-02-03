@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { ClientDocumentType } from "@/types/client-document";
-import { rasterizePDF } from "@/lib/document-scanner/pdf-rasterizer";
+import { rasterizePDF } from "@/lib/pdf/rasterizer";
 import {
 	DocumentViewerDialog,
 	type DocumentImage,
