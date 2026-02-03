@@ -20,6 +20,7 @@ import {
 	updateUserSettings,
 	type LanguageCode,
 } from "@/lib/settings";
+import { LanguageContext as BlocksLanguageContext } from "@janovix/blocks";
 
 interface LanguageContextType {
 	language: Language;
@@ -111,22 +112,42 @@ export function LanguageProvider({
 	// Return default context during SSR
 	if (!mounted) {
 		const ssrLanguage = defaultLanguage ?? "es";
+		const ssrValue = {
+			language: ssrLanguage,
+			setLanguage: () => {},
+			t: (key: TranslationKeys) => translations[ssrLanguage][key] || key,
+		};
+		const blocksValue = {
+			language: ssrLanguage,
+			setLanguage: (_lang: string) => {},
+			languages: [
+				{ code: "en", name: "English" },
+				{ code: "es", name: "Español" },
+			],
+		};
 		return (
-			<LanguageContext.Provider
-				value={{
-					language: ssrLanguage,
-					setLanguage: () => {},
-					t: (key) => translations[ssrLanguage][key] || key,
-				}}
-			>
-				{children}
+			<LanguageContext.Provider value={ssrValue}>
+				<BlocksLanguageContext.Provider value={blocksValue}>
+					{children}
+				</BlocksLanguageContext.Provider>
 			</LanguageContext.Provider>
 		);
 	}
 
+	const blocksValue = {
+		language,
+		setLanguage: (lang: string) => setLanguage(lang as Language),
+		languages: [
+			{ code: "en", name: "English" },
+			{ code: "es", name: "Español" },
+		],
+	};
+
 	return (
 		<LanguageContext.Provider value={{ language, setLanguage, t }}>
-			{children}
+			<BlocksLanguageContext.Provider value={blocksValue}>
+				{children}
+			</BlocksLanguageContext.Provider>
 		</LanguageContext.Provider>
 	);
 }

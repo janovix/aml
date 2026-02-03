@@ -22,6 +22,7 @@ describe("api/stats", () => {
 			totalClients: 150,
 			physicalClients: 100,
 			moralClients: 50,
+			trustClients: 0,
 		};
 
 		it("fetches client stats from the API", async () => {

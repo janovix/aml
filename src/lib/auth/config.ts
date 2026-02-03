@@ -27,3 +27,10 @@ export const getAmlAppUrl = (): string => {
 		process.env.NEXT_PUBLIC_AML_APP_URL || "https://aml.janovix.workers.dev"
 	);
 };
+
+export const getNotificationsServiceUrl = (): string => {
+	return (
+		process.env.NEXT_PUBLIC_NOTIFICATIONS_SERVICE_URL ||
+		"https://notifications-svc.janovix.workers.dev"
+	);
+};

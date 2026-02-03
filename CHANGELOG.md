@@ -1,3 +1,66 @@
+# [1.4.0-rc.13](https://github.com/janovix/aml/compare/v1.4.0-rc.12...v1.4.0-rc.13) (2026-01-30)
+
+
+### Bug Fixes
+
+* **styles:** scan blocks package for Tailwind classes ([d4187af](https://github.com/janovix/aml/commit/d4187af8801138a0fdf16682a021dd4cccfae024))
+
+# [1.4.0-rc.12](https://github.com/janovix/aml/compare/v1.4.0-rc.11...v1.4.0-rc.12) (2026-01-29)
+
+
+### Bug Fixes
+
+* simplify dashboard skeleton to simple card placeholders ([d9bea0a](https://github.com/janovix/aml/commit/d9bea0afb9b3275d89d54b8825f485b74141b0c1))
+
+# [1.4.0-rc.11](https://github.com/janovix/aml/compare/v1.4.0-rc.10...v1.4.0-rc.11) (2026-01-29)
+
+
+### Bug Fixes
+
+* adjust dashboard skeleton to match actual loaded card layouts ([1e08876](https://github.com/janovix/aml/commit/1e0887689d442d493c00bdb0496b1f94d026b151))
+
+# [1.4.0-rc.10](https://github.com/janovix/aml/compare/v1.4.0-rc.9...v1.4.0-rc.10) (2026-01-28)
+
+
+### Bug Fixes
+
+* enhance alignment of client stats labels in DashboardView ([8099c43](https://github.com/janovix/aml/commit/8099c43fb183f87fd845f0578dc44381f84bfaa2))
+
+# [1.4.0-rc.9](https://github.com/janovix/aml/compare/v1.4.0-rc.8...v1.4.0-rc.9) (2026-01-28)
+
+
+### Bug Fixes
+
+* improve client stats grid alignment for 4 columns ([568d5da](https://github.com/janovix/aml/commit/568d5da5a0721ceb8cb0fe6af7c0cdb08aedd224))
+
+# [1.4.0-rc.8](https://github.com/janovix/aml/compare/v1.4.0-rc.7...v1.4.0-rc.8) (2026-01-28)
+
+
+### Features
+
+* add trust clients as separate category in statistics ([628e66a](https://github.com/janovix/aml/commit/628e66a3835de1e50c31f88aabdbab879b1c7f75))
+
+# [1.4.0-rc.7](https://github.com/janovix/aml/compare/v1.4.0-rc.6...v1.4.0-rc.7) (2026-01-28)
+
+
+### Bug Fixes
+
+* relax RFC validation for moral persons ([12d14d0](https://github.com/janovix/aml/commit/12d14d03c0e17870c3791c99a69e809f5faac6ea))
+
+# [1.4.0-rc.6](https://github.com/janovix/aml/compare/v1.4.0-rc.5...v1.4.0-rc.6) (2026-01-28)
+
+
+### Features
+
+* integrate Sentry for enhanced error tracking in NotificationsProvider ([1d6f4c3](https://github.com/janovix/aml/commit/1d6f4c3f047a23bbf4395a5cad062d333b45361f))
+
+# [1.4.0-rc.5](https://github.com/janovix/aml/compare/v1.4.0-rc.4...v1.4.0-rc.5) (2026-01-27)
+
+
+### Features
+
+* integrate notifications system with Janovix Blocks ([2b37aa1](https://github.com/janovix/aml/commit/2b37aa1fd90d96fd2e4f550b73f5d46cf57f0654))
+
 # [1.4.0-rc.4](https://github.com/janovix/aml/compare/v1.4.0-rc.3...v1.4.0-rc.4) (2026-01-27)
 
 

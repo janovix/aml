@@ -49,22 +49,21 @@ export function validateRFC(
 		};
 	}
 
-	// RFC format: Letters + 6 digits (YYMMDD) + 3 alphanumeric characters
+	// For physical persons: strict validation of format
 	// Physical: 4 letters + 6 digits + 3 alphanumeric (13 total)
-	// Moral/Trust: 3 letters + 6 digits + 3 alphanumeric (12 total)
-	const letterCount = personType === "physical" ? 4 : 3;
-	const lettersPattern = `^[A-ZÑ&]{${letterCount}}`;
-	const digitsPattern = `\\d{6}`;
-	const alphanumericPattern = `[A-Z0-9Ñ]{3}$`;
-	const rfcPattern = new RegExp(
-		`${lettersPattern}${digitsPattern}${alphanumericPattern}`,
-	);
-
-	if (!rfcPattern.test(trimmedRfc)) {
-		return {
-			isValid: false,
-			error: `RFC no tiene el formato correcto. Debe comenzar con ${letterCount} letras, seguido de 6 dígitos (fecha) y 3 caracteres alfanuméricos`,
-		};
+	if (personType === "physical") {
+		const rfcPattern = /^[A-ZÑ&]{4}\d{6}[A-Z0-9Ñ]{3}$/;
+		if (!rfcPattern.test(trimmedRfc)) {
+			return {
+				isValid: false,
+				error:
+					"RFC no tiene el formato correcto. Debe comenzar con 4 letras, seguido de 6 dígitos (fecha) y 3 caracteres alfanuméricos",
+			};
+		}
+	} else {
+		// For moral/trust persons: only validate length (already done above)
+		// The 3 initial characters don't always match the business name pattern
+		// so we skip that validation
 	}
 
 	return { isValid: true };
@@ -184,41 +183,14 @@ export function validateRFCMatch(
 		return { isValid: true };
 	}
 
-	// For moral/trust person types: simplified validation
-	// Only validate that the first letter matches the business name
-	const { businessName, incorporationDate } = data;
-	if (!businessName || !incorporationDate) {
+	// For moral/trust person types: only validate incorporation date
+	// The 3 initial characters don't always match the business name pattern
+	const { incorporationDate } = data;
+	if (!incorporationDate) {
 		return { isValid: true };
 	}
 
-	const rfcPrefix = trimmedRfc.slice(0, 3);
 	const rfcDate = trimmedRfc.slice(3, 9);
-
-	// Validate RFC prefix format (3 letters)
-	if (!/^[A-ZÑ&]{3}$/.test(rfcPrefix)) {
-		return {
-			isValid: false,
-			error: "El RFC no coincide con los datos proporcionados",
-		};
-	}
-
-	// Get the first letter of the business name (ignoring special characters and spaces)
-	const normalizedBusinessName = businessName
-		.toUpperCase()
-		.replace(/[^A-Z0-9]/g, "");
-	const firstLetterOfBusinessName = normalizedBusinessName.charAt(0);
-
-	// Only validate that the first letter of RFC matches the first letter of business name
-	if (
-		firstLetterOfBusinessName &&
-		rfcPrefix.charAt(0) !== firstLetterOfBusinessName
-	) {
-		return {
-			isValid: false,
-			error:
-				"La primera letra del RFC debe coincidir con la primera letra de la razón social",
-		};
-	}
 
 	// Validate date matches incorporation date
 	const expectedDate = formatDateToYYMMDD(incorporationDate);

@@ -43,15 +43,16 @@ vi.mock("next-themes", () => ({
 	}),
 }));
 
-vi.mock("@/components/ThemeSwitcher", () => ({
-	ThemeSwitcher: () => <div data-testid="theme-switcher">Theme Switcher</div>,
-}));
-
-vi.mock("@/components/LanguageSwitcher", () => ({
-	LanguageSwitcher: () => (
-		<div data-testid="language-switcher">Language Switcher</div>
-	),
-}));
+vi.mock("@janovix/blocks", async () => {
+	const actual = await vi.importActual("@janovix/blocks");
+	return {
+		...actual,
+		ThemeSwitcher: () => <div data-testid="theme-switcher">Theme Switcher</div>,
+		LanguageSwitcher: () => (
+			<div data-testid="language-switcher">Language Switcher</div>
+		),
+	};
+});
 
 vi.mock("@/lib/auth/useAuthSession", () => ({
 	useAuthSession: () => ({

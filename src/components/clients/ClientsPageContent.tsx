@@ -8,7 +8,7 @@ import {
 	type StatCard,
 	type PageHeroAction,
 } from "@/components/page-hero";
-import { Users, User, Building2, Plus, Upload } from "lucide-react";
+import { Users, User, Building2, Landmark, Plus, Upload } from "lucide-react";
 import { getClientStats } from "@/lib/api/stats";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/lib/mutations";
@@ -28,6 +28,7 @@ export function ClientsPageContent(): React.ReactElement {
 		totalClients: number;
 		physicalClients: number;
 		moralClients: number;
+		trustClients: number;
 	} | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
@@ -114,6 +115,15 @@ export function ClientsPageContent(): React.ReactElement {
 					? formatNumber(stats.moralClients)
 					: "0",
 			icon: Building2,
+		},
+		{
+			label: t("statsTrustClients"),
+			value: isLoading
+				? "..."
+				: stats?.trustClients
+					? formatNumber(stats.trustClients)
+					: "0",
+			icon: Landmark,
 		},
 	];
 

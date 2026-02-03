@@ -51,6 +51,7 @@ vi.mock("@/lib/api/stats", () => ({
 		totalClients: 100,
 		physicalClients: 70,
 		moralClients: 30,
+		trustClients: 0,
 	}),
 	getTransactionStats: vi.fn().mockResolvedValue({
 		transactionsToday: 10,
@@ -251,6 +252,7 @@ describe("DashboardView branch coverage", () => {
 			totalClients: 100,
 			physicalClients: 60,
 			moralClients: 40,
+			trustClients: 0,
 		});
 
 		renderWithProviders(<DashboardView />);
@@ -267,6 +269,7 @@ describe("DashboardView branch coverage", () => {
 			totalClients: 0,
 			physicalClients: 0,
 			moralClients: 0,
+			trustClients: 0,
 		});
 
 		renderWithProviders(<DashboardView />);
