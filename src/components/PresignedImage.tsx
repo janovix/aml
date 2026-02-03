@@ -8,6 +8,7 @@
 
 import { usePresignedUrl } from "@/hooks/usePresignedUrl";
 import { Skeleton } from "@/components/ui/skeleton";
+import * as Sentry from "@sentry/nextjs";
 
 interface PresignedImageProps {
 	src: string | undefined | null;
@@ -37,7 +38,10 @@ export function PresignedImage({
 	}
 
 	if (error) {
-		console.error("Error generating presigned URL:", error);
+		Sentry.captureException(error);
+		Sentry.logger.error(
+			Sentry.logger.fmt`Error generating presigned URL for image`,
+		);
 		// Fall back to original URL (will use proxy)
 		return (
 			<img
@@ -49,8 +53,6 @@ export function PresignedImage({
 			/>
 		);
 	}
-
-	console.log("PresignedImage loading:", presignedUrl);
 
 	return (
 		<img

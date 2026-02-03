@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useOrgStore } from "@/lib/org-store";
+import * as Sentry from "@sentry/nextjs";
 import {
 	FileText,
 	CheckCircle2,
@@ -256,30 +257,45 @@ export function DocumentsStep({
 	}, []);
 
 	const handleComplete = () => {
-		// Check ID requirement (only for physical persons)
-		if (idRequired && !idUploaded) {
-			toast.error("Debes cargar una identificación oficial");
-			return;
-		}
+		Sentry.startSpan(
+			{ op: "ui.click", name: "DocumentsStep.complete" },
+			(span) => {
+				span.setAttribute("clientId", clientId);
+				span.setAttribute("completedDocs", completedDocs);
 
-		// Check if at least some documents are uploaded
-		const minDocs = idRequired ? 2 : 1; // Physical: ID + 1 doc, Moral/Trust: 1 doc
-		if (completedDocs < minDocs) {
-			toast.error(
-				`Debes cargar al menos ${minDocs} documento${minDocs > 1 ? "s" : ""}`,
-			);
-			return;
-		}
+				// Check ID requirement (only for physical persons)
+				if (idRequired && !idUploaded) {
+					toast.error("Debes cargar una identificación oficial");
+					return;
+				}
 
-		// For moral/trust, check if at least one stockholder or legal rep exists
-		if (needsUBOs && ubos.length === 0) {
-			toast.error(
-				"Debes registrar al menos un accionista o representante legal",
-			);
-			return;
-		}
+				// Check if at least some documents are uploaded
+				const minDocs = idRequired ? 2 : 1; // Physical: ID + 1 doc, Moral/Trust: 1 doc
+				if (completedDocs < minDocs) {
+					toast.error(
+						`Debes cargar al menos ${minDocs} documento${minDocs > 1 ? "s" : ""}`,
+					);
+					return;
+				}
 
-		onComplete();
+				// For moral/trust, check if at least one stockholder or legal rep exists
+				if (needsUBOs && ubos.length === 0) {
+					toast.error(
+						"Debes registrar al menos un accionista o representante legal",
+					);
+					return;
+				}
+
+				onComplete();
+			},
+		);
+	};
+
+	const handleSkipClick = () => {
+		Sentry.startSpan({ op: "ui.click", name: "DocumentsStep.skip" }, (span) => {
+			span.setAttribute("clientId", clientId);
+			onSkip();
+		});
 	};
 
 	return (
@@ -478,7 +494,7 @@ export function DocumentsStep({
 
 			{/* Action buttons */}
 			<div className="flex justify-end gap-3">
-				<Button variant="outline" onClick={onSkip}>
+				<Button variant="outline" onClick={handleSkipClick}>
 					Completar después
 				</Button>
 				<Button onClick={handleComplete}>

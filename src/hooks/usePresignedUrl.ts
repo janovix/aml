@@ -138,6 +138,9 @@ export function usePresignedUrl(
 
 /**
  * Hook to manage multiple presigned URLs
+ *
+ * This hook properly manages multiple URLs without violating React's hooks rules.
+ * It uses a single useEffect to fetch all URLs in parallel.
  */
 export function usePresignedUrls(
 	urls: (string | undefined | null)[],
@@ -146,18 +149,136 @@ export function usePresignedUrls(
 	presignedUrls: (string | undefined)[];
 	isLoading: boolean;
 	errors: (Error | null)[];
+	refresh: () => Promise<void>;
 } {
-	const results = urls.map((url) =>
-		// eslint-disable-next-line react-hooks/rules-of-hooks
-		usePresignedUrl({
-			...options,
-			url,
-		}),
-	);
+	const {
+		expiresInMinutes = 60,
+		autoRefresh = true,
+		refreshBeforeMinutes = 5,
+	} = options ?? {};
+
+	const [state, setState] = useState<{
+		presignedUrls: (string | undefined)[];
+		errors: (Error | null)[];
+	}>({
+		presignedUrls: urls.map(() => undefined),
+		errors: urls.map(() => null),
+	});
+	const [isLoading, setIsLoading] = useState(urls.some((url) => !!url));
+	const [expiresAt, setExpiresAt] = useState<Date | null>(null);
+
+	// Serialize URLs for dependency comparison
+	const urlsKey = JSON.stringify(urls);
+
+	const generateUrls = useCallback(async () => {
+		const urlsToProcess = JSON.parse(urlsKey) as (string | undefined | null)[];
+
+		// Check if any URLs need processing
+		const hasUrlsToProcess = urlsToProcess.some((url) => !!url);
+		if (!hasUrlsToProcess) {
+			setState({
+				presignedUrls: urlsToProcess.map(() => undefined),
+				errors: urlsToProcess.map(() => null),
+			});
+			setIsLoading(false);
+			return;
+		}
+
+		setIsLoading(true);
+
+		const results = await Promise.all(
+			urlsToProcess.map(async (url) => {
+				if (!url) {
+					return { presignedUrl: undefined, error: null, expiresAt: null };
+				}
+
+				// Check if URL already has a presigned token
+				try {
+					const urlObj = new URL(url);
+					if (urlObj.searchParams.has("token")) {
+						// Already presigned, use it directly
+						return { presignedUrl: url, error: null, expiresAt: null };
+					}
+				} catch {
+					return {
+						presignedUrl: undefined,
+						error: new Error("Invalid URL"),
+						expiresAt: null,
+					};
+				}
+
+				try {
+					const result = await generatePresignedUrl({
+						url,
+						expiresInMinutes,
+					});
+					return {
+						presignedUrl: result.presignedUrl,
+						error: null,
+						expiresAt: new Date(result.expiresAt),
+					};
+				} catch (err) {
+					return {
+						presignedUrl: undefined,
+						error:
+							err instanceof Error
+								? err
+								: new Error("Failed to generate presigned URL"),
+						expiresAt: null,
+					};
+				}
+			}),
+		);
+
+		setState({
+			presignedUrls: results.map((r) => r.presignedUrl),
+			errors: results.map((r) => r.error),
+		});
+
+		// Set expiration to the earliest expiring URL
+		const expirations = results
+			.map((r) => r.expiresAt)
+			.filter((d): d is Date => d !== null);
+		if (expirations.length > 0) {
+			setExpiresAt(new Date(Math.min(...expirations.map((d) => d.getTime()))));
+		}
+
+		setIsLoading(false);
+	}, [urlsKey, expiresInMinutes]);
+
+	// Generate URLs on mount and when dependencies change
+	useEffect(() => {
+		void generateUrls();
+	}, [generateUrls]);
+
+	// Auto-refresh before expiration
+	useEffect(() => {
+		if (!autoRefresh || !expiresAt) {
+			return;
+		}
+
+		const refreshTime = expiresAt.getTime() - refreshBeforeMinutes * 60 * 1000;
+		const now = Date.now();
+		const timeUntilRefresh = refreshTime - now;
+
+		if (timeUntilRefresh <= 0) {
+			// Already expired or about to expire, refresh immediately
+			void generateUrls();
+			return;
+		}
+
+		// Schedule refresh
+		const timeoutId = setTimeout(() => {
+			void generateUrls();
+		}, timeUntilRefresh);
+
+		return () => clearTimeout(timeoutId);
+	}, [autoRefresh, expiresAt, refreshBeforeMinutes, generateUrls]);
 
 	return {
-		presignedUrls: results.map((r) => r.presignedUrl),
-		isLoading: results.some((r) => r.isLoading),
-		errors: results.map((r) => r.error),
+		presignedUrls: state.presignedUrls,
+		isLoading,
+		errors: state.errors,
+		refresh: generateUrls,
 	};
 }

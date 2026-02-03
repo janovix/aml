@@ -135,8 +135,8 @@ export function FormActionBar({
 		<div
 			className={cn(
 				// Fixed positioning - respect sidebar on desktop
-				// z-60 ensures it's above Dialog overlays (z-50) and content
-				"fixed z-60",
+				// z-[60] ensures it's above Dialog overlays (z-50) and content
+				"fixed z-[60]",
 				// Bottom positioning with safe area support
 				"bottom-[calc(1rem+env(safe-area-inset-bottom,0px))]",
 				// Left positioning based on sidebar state (desktop only)
@@ -162,7 +162,7 @@ export function FormActionBar({
 					// Floating glossy card styling
 					"rounded-xl border border-border/40",
 					"bg-background/80 backdrop-blur-xl",
-					"supports-backdrop-filter:bg-background/60",
+					"supports-[backdrop-filter]:bg-background/60",
 					// Shadow for depth
 					"shadow-2xl shadow-black/10 dark:shadow-black/40",
 					// Subtle ring for extra polish

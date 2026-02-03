@@ -5,6 +5,7 @@
  */
 
 import { getAmlCoreBaseUrl } from "./config";
+import * as Sentry from "@sentry/nextjs";
 
 export interface DownloadFileOptions {
 	/** The URL to download from (either full URL or path) */
@@ -29,60 +30,83 @@ export interface DownloadFileOptions {
  * - Blob download and cleanup
  */
 export async function downloadFile(opts: DownloadFileOptions): Promise<void> {
-	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
+	return Sentry.startSpan(
+		{
+			name: "File Download",
+			op: "http.client",
+			attributes: {
+				"download.defaultFileName": opts.defaultFileName,
+			},
+		},
+		async (span) => {
+			const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
 
-	// Build full URL if path is relative
-	const fullUrl = opts.url.startsWith("http")
-		? opts.url
-		: new URL(opts.url, baseUrl).toString();
+			// Build full URL if path is relative
+			const fullUrl = opts.url.startsWith("http")
+				? opts.url
+				: new URL(opts.url, baseUrl).toString();
 
-	const headers: HeadersInit = {};
-	if (opts.jwt) {
-		headers["Authorization"] = `Bearer ${opts.jwt}`;
-	}
+			const headers: HeadersInit = {};
+			if (opts.jwt) {
+				headers["Authorization"] = `Bearer ${opts.jwt}`;
+			}
 
-	const response = await fetch(fullUrl, {
-		method: "GET",
-		headers,
-		signal: opts.signal,
-	});
+			const response = await fetch(fullUrl, {
+				method: "GET",
+				headers,
+				signal: opts.signal,
+			});
 
-	if (!response.ok) {
-		// Try to parse error message from JSON response
-		const contentType = response.headers.get("content-type");
-		if (contentType?.includes("application/json")) {
-			const errorData = (await response.json()) as { message?: string };
-			throw new Error(
-				errorData.message || `Download failed: ${response.status}`,
-			);
-		}
-		throw new Error(
-			`Download failed: ${response.status} ${response.statusText}`,
-		);
-	}
+			span.setAttribute("http.status_code", response.status);
 
-	// Get filename from Content-Disposition header or use default
-	const contentDisposition = response.headers.get("Content-Disposition");
-	let fileName = opts.defaultFileName;
-	if (contentDisposition) {
-		const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
-		if (match?.[1]) {
-			fileName = match[1];
-		}
-	}
+			if (!response.ok) {
+				// Try to parse error message from JSON response
+				const contentType = response.headers.get("content-type");
+				if (contentType?.includes("application/json")) {
+					const errorData = (await response.json()) as { message?: string };
+					const err = new Error(
+						errorData.message || `Download failed: ${response.status}`,
+					);
+					Sentry.captureException(err);
+					Sentry.logger.error(
+						Sentry.logger.fmt`Download failed with status ${response.status}`,
+					);
+					throw err;
+				}
+				const err = new Error(
+					`Download failed: ${response.status} ${response.statusText}`,
+				);
+				Sentry.captureException(err);
+				Sentry.logger.error(
+					Sentry.logger.fmt`Download failed with status ${response.status}`,
+				);
+				throw err;
+			}
 
-	// Download the file as a blob
-	const blob = await response.blob();
+			// Get filename from Content-Disposition header or use default
+			const contentDisposition = response.headers.get("Content-Disposition");
+			let fileName = opts.defaultFileName;
+			if (contentDisposition) {
+				const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
+				if (match?.[1]) {
+					fileName = match[1];
+				}
+			}
 
-	// Create a download link and trigger it
-	const downloadUrl = URL.createObjectURL(blob);
-	const link = document.createElement("a");
-	link.href = downloadUrl;
-	link.download = fileName;
-	document.body.appendChild(link);
-	link.click();
-	document.body.removeChild(link);
+			// Download the file as a blob
+			const blob = await response.blob();
 
-	// Clean up the object URL
-	URL.revokeObjectURL(downloadUrl);
+			// Create a download link and trigger it
+			const downloadUrl = URL.createObjectURL(blob);
+			const link = document.createElement("a");
+			link.href = downloadUrl;
+			link.download = fileName;
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
+
+			// Clean up the object URL
+			URL.revokeObjectURL(downloadUrl);
+		},
+	);
 }
