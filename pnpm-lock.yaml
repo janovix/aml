@@ -21,8 +21,8 @@ importers:
         specifier: ^3.0.41
         version: 3.0.41(react@19.2.1)(zod@4.3.5)
       '@janovix/document-scanner':
-        specifier: file:..\document-scanner\janovix-document-scanner-1.0.0-rc.1.tgz
-        version: file:../document-scanner/janovix-document-scanner-1.0.0-rc.1.tgz(lucide-react@0.560.0(react@19.2.1))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+        specifier: 1.0.0-rc.5
+        version: 1.0.0-rc.5(lucide-react@0.560.0(react@19.2.1))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       '@nanostores/react':
         specifier: ^1.0.0
         version: 1.0.0(nanostores@1.1.0)(react@19.2.1)
@@ -2176,9 +2176,8 @@ packages:
     resolution: {integrity: sha512-ZXRY4jNvVgSVQ8DL3LTcakaAtXwTVUxE81hslsyD2AtoXW/wVob10HkOJ1X/pAlcI7D+2YoZKg5do8G/w6RYgA==}
     engines: {node: '>=8'}
 
-  '@janovix/document-scanner@file:../document-scanner/janovix-document-scanner-1.0.0-rc.1.tgz':
-    resolution: {integrity: sha512-mnkMduNUNQV3kl+6VSsCUhM5S/t/ujZFKe0eUCJZqok1g83aTNecV/8/OELQud0+Uf75rAR8ntn5SjWWiMO+RQ==, tarball: file:../document-scanner/janovix-document-scanner-1.0.0-rc.1.tgz}
-    version: 1.0.0-rc.1
+  '@janovix/document-scanner@1.0.0-rc.5':
+    resolution: {integrity: sha512-jPW36v+IEMXtlFKtqd53NE8LvGGHzWyLrkLJjxJE3veyQDP4vscYlOLx/gK6mUJTnvlfUCzbyKToa0P+bdC4Gg==}
     peerDependencies:
       lucide-react: '>=0.400.0'
       react: '>=18.0.0'
@@ -12278,7 +12277,7 @@ snapshots:
 
   '@istanbuljs/schema@0.1.3': {}
 
-  '@janovix/document-scanner@file:../document-scanner/janovix-document-scanner-1.0.0-rc.1.tgz(lucide-react@0.560.0(react@19.2.1))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)':
+  '@janovix/document-scanner@1.0.0-rc.5(lucide-react@0.560.0(react@19.2.1))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)':
     dependencies:
       '@dnd-kit/core': 6.3.1(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       '@dnd-kit/sortable': 10.0.0(@dnd-kit/core@6.3.1(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(react@19.2.1)

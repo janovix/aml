@@ -18,7 +18,7 @@
 		"@ai-sdk/google": "^3.0.10",
 		"@ai-sdk/openai": "^3.0.12",
 		"@ai-sdk/react": "^3.0.41",
-		"@janovix/document-scanner": "file:..\\document-scanner\\janovix-document-scanner-1.0.0-rc.1.tgz",
+		"@janovix/document-scanner": "1.0.0-rc.5",
 		"@nanostores/react": "^1.0.0",
 		"@opennextjs/cloudflare": "1.14.0",
 		"@radix-ui/react-accordion": "^1.2.12",
