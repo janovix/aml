@@ -1,6 +1,7 @@
 // Fallback example URL - will fail if NEXT_PUBLIC_AML_CORE_URL is not set
 // This helps detect missing environment variable configuration
-const DEFAULT_AML_CORE_URL = "https://aml-svc.janovix.workers.dev";
+// TEMPORARY: Using rs-scan preview server for testing
+const DEFAULT_AML_CORE_URL = "https://rs-scan-aml-svc.janovix.workers.dev";
 const DEFAULT_UMA_SERVICE_URL = "https://uma-aml-svc.janovix.workers.dev";
 export const DEFAULT_API_BASE_URL =
 	"https://backend-template.algtools.workers.dev";
