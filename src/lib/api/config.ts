@@ -2,7 +2,6 @@
 // This helps detect missing environment variable configuration
 // TEMPORARY: Using rs-scan preview server for testing
 const DEFAULT_AML_CORE_URL = "https://rs-scan-aml-svc.janovix.workers.dev";
-const DEFAULT_UMA_SERVICE_URL = "https://uma-aml-svc.janovix.workers.dev";
 export const DEFAULT_API_BASE_URL =
 	"https://backend-template.algtools.workers.dev";
 
@@ -16,10 +15,11 @@ export const DEFAULT_API_BASE_URL =
 export function getAmlCoreBaseUrl(): string {
 	// In Next.js, NEXT_PUBLIC_* variables are replaced at build time
 	// Access it directly - Next.js will replace it with the actual value or undefined
-	const envValue = process.env.NEXT_PUBLIC_AML_CORE_URL;
+	// TEMPORARY: Using rs-scan preview server for testing
+	/*const envValue = process.env.NEXT_PUBLIC_AML_CORE_URL;
 	if (envValue && typeof envValue === "string" && envValue.trim().length > 0) {
 		return envValue.trim().replace(/\/$/, "");
-	}
+	}*/
 	return DEFAULT_AML_CORE_URL;
 }
 
