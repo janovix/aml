@@ -206,7 +206,7 @@ export function ChatInput({ className }: ChatInputProps) {
 									<span>
 										{pendingFile.entityType === "CLIENT"
 											? t("chatImportClients")
-											: t("chatImportTransactions")}
+											: t("chatImportOperations")}
 									</span>
 								</div>
 							</div>
@@ -284,7 +284,7 @@ export function ChatInput({ className }: ChatInputProps) {
 									className="flex items-center gap-2 cursor-pointer"
 								>
 									<Receipt className="h-4 w-4 text-green-500" />
-									<span>{t("chatImportTransactions")}</span>
+									<span>{t("chatImportOperations")}</span>
 								</DropdownMenuItem>
 							</DropdownMenuContent>
 						</DropdownMenu>

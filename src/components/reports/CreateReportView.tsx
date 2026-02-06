@@ -48,6 +48,8 @@ import {
 } from "@/lib/api/reports";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/lib/mutations";
+import { useLanguage } from "@/components/LanguageProvider";
+import type { TranslationKeys } from "@/lib/translations";
 
 // Report Templates
 interface ReportTemplate {
@@ -62,7 +64,7 @@ interface ReportTemplate {
 	ringColor: string;
 }
 
-type DataSource = "ALERTS" | "TRANSACTIONS" | "CLIENTS" | "ALL";
+type DataSource = "ALERTS" | "OPERATIONS" | "CLIENTS" | "ALL";
 
 const reportTemplates: ReportTemplate[] = [
 	{
@@ -81,18 +83,18 @@ const reportTemplates: ReportTemplate[] = [
 		name: "Estado de Cumplimiento",
 		description: "Indicadores de cumplimiento y score organizacional",
 		icon: <Shield className="h-5 w-5" />,
-		dataSources: ["ALERTS", "TRANSACTIONS"],
+		dataSources: ["ALERTS", "OPERATIONS"],
 		defaultFilters: false,
 		supportsComparison: true,
 		bgColor: "bg-emerald-500/20 text-emerald-500",
 		ringColor: "ring-emerald-500",
 	},
 	{
-		id: "TRANSACTION_ANALYSIS",
-		name: "Análisis de Transacciones",
-		description: "Desglose detallado de transacciones por tipo y cliente",
+		id: "OPERATION_ANALYSIS",
+		name: "Análisis de Operaciones",
+		description: "Desglose detallado de operaciones por tipo y cliente",
 		icon: <Briefcase className="h-5 w-5" />,
-		dataSources: ["TRANSACTIONS"],
+		dataSources: ["OPERATIONS"],
 		defaultFilters: true,
 		supportsComparison: true,
 		bgColor: "bg-violet-500/20 text-violet-500",
@@ -138,54 +140,54 @@ type PeriodType = "MONTHLY" | "QUARTERLY" | "ANNUAL" | "CUSTOM";
 
 interface PeriodOption {
 	value: PeriodType;
-	label: string;
-	description: string;
+	label: TranslationKeys;
+	description: TranslationKeys;
 }
 
 const periodOptions: PeriodOption[] = [
 	{
 		value: "MONTHLY",
-		label: "Mensual",
-		description: "Período de un mes calendario",
+		label: "reportTypeMonthly",
+		description: "reportMonthlyPeriod",
 	},
 	{
 		value: "QUARTERLY",
-		label: "Trimestral",
-		description: "Período de un trimestre",
+		label: "reportTypeQuarterly",
+		description: "reportQuarterlyPeriod",
 	},
 	{
 		value: "ANNUAL",
-		label: "Anual",
-		description: "Período de un año completo",
+		label: "reportTypeAnnual",
+		description: "reportAnnualPeriod",
 	},
 	{
 		value: "CUSTOM",
-		label: "Personalizado",
-		description: "Rango de fechas personalizado",
+		label: "reportTypeCustom",
+		description: "reportCustomPeriod",
 	},
 ];
 
 const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - i);
 const MONTHS = [
-	{ value: 1, label: "Enero" },
-	{ value: 2, label: "Febrero" },
-	{ value: 3, label: "Marzo" },
-	{ value: 4, label: "Abril" },
-	{ value: 5, label: "Mayo" },
-	{ value: 6, label: "Junio" },
-	{ value: 7, label: "Julio" },
-	{ value: 8, label: "Agosto" },
-	{ value: 9, label: "Septiembre" },
-	{ value: 10, label: "Octubre" },
-	{ value: 11, label: "Noviembre" },
-	{ value: 12, label: "Diciembre" },
-];
-const QUARTERS: Array<{ value: 1 | 2 | 3 | 4; label: string }> = [
-	{ value: 1, label: "Q1 (Ene-Mar)" },
-	{ value: 2, label: "Q2 (Abr-Jun)" },
-	{ value: 3, label: "Q3 (Jul-Sep)" },
-	{ value: 4, label: "Q4 (Oct-Dic)" },
+	{ value: 1, label: "monthJanuary" },
+	{ value: 2, label: "monthFebruary" },
+	{ value: 3, label: "monthMarch" },
+	{ value: 4, label: "monthApril" },
+	{ value: 5, label: "monthMay" },
+	{ value: 6, label: "monthJune" },
+	{ value: 7, label: "monthJuly" },
+	{ value: 8, label: "monthAugust" },
+	{ value: 9, label: "monthSeptember" },
+	{ value: 10, label: "monthOctober" },
+	{ value: 11, label: "monthNovember" },
+	{ value: 12, label: "monthDecember" },
+] as const;
+const QUARTERS: Array<{ value: 1 | 2 | 3 | 4; label: TranslationKeys }> = [
+	{ value: 1, label: "reportQ1" },
+	{ value: 2, label: "reportQ2" },
+	{ value: 3, label: "reportQ3" },
+	{ value: 4, label: "reportQ4" },
 ];
 
 // Wizard steps
@@ -195,6 +197,7 @@ type Step = (typeof STEPS)[number];
 export function CreateReportView(): React.ReactElement {
 	const { navigateTo } = useOrgNavigation();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
+	const { t } = useLanguage();
 
 	const [currentStep, setCurrentStep] = useState<Step>("template");
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -216,7 +219,14 @@ export function CreateReportView(): React.ReactElement {
 	const [comparisonStart, setComparisonStart] = useState("");
 	const [comparisonEnd, setComparisonEnd] = useState("");
 
-	const template = reportTemplates.find((t) => t.id === selectedTemplate);
+	const template = reportTemplates.find((tmpl) => tmpl.id === selectedTemplate);
+
+	// Translation overrides for constants defined outside the component
+	const templateNameOverrides: Record<string, string> = {
+		ALERT_BREAKDOWN: t("reportAlertBreakdown"),
+		PERIOD_COMPARISON: t("reportPeriodComparison"),
+	};
+	// periodOptions descriptions are now translation keys, resolved via t()
 
 	// Calculate period based on type and selection
 	const period = useMemo(() => {
@@ -229,8 +239,8 @@ export function CreateReportView(): React.ReactElement {
 				const end = new Date(
 					Date.UTC(selectedYear, selectedMonth, 0, 23, 59, 59, 999),
 				);
-				const monthName =
-					MONTHS.find((m) => m.value === selectedMonth)?.label || "";
+				const monthLabel = MONTHS.find((m) => m.value === selectedMonth)?.label;
+				const monthName = monthLabel ? t(monthLabel) : "";
 				return {
 					periodStart: start,
 					periodEnd: end,
@@ -266,9 +276,10 @@ export function CreateReportView(): React.ReactElement {
 	// Auto-generate report name based on template and period
 	useEffect(() => {
 		if (template && period) {
-			setReportName(`${template.name} - ${period.displayName}`);
+			const name = templateNameOverrides[template.id] ?? template.name;
+			setReportName(`${name} - ${period.displayName}`);
 		}
-	}, [template, period]);
+	}, [template, period, templateNameOverrides]);
 
 	// Fetch preview when period changes
 	useEffect(() => {
@@ -310,11 +321,11 @@ export function CreateReportView(): React.ReactElement {
 				jwt,
 			});
 
-			toast.success("Reporte creado exitosamente");
+			toast.success(t("reportCreatedSuccess"));
 			navigateTo(`/reports/${report.id}`);
 		} catch (error) {
 			console.error("Error creating report:", error);
-			toast.error(extractErrorMessage(error));
+			toast.error(extractErrorMessage(error), { id: "create-report" });
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -384,10 +395,10 @@ export function CreateReportView(): React.ReactElement {
 	const renderTemplateStep = () => (
 		<div className="space-y-6">
 			<div className="text-center mb-8">
-				<h2 className="text-xl font-semibold mb-2">Selecciona una Plantilla</h2>
-				<p className="text-muted-foreground">
-					Elige el tipo de reporte que deseas generar
-				</p>
+				<h2 className="text-xl font-semibold mb-2">
+					{t("reportSelectTemplate")}
+				</h2>
+				<p className="text-muted-foreground">{t("reportSelectTemplateDesc")}</p>
 			</div>
 			<div className="grid gap-4 @sm/main:grid-cols-2 @lg/main:grid-cols-3">
 				{reportTemplates.map((tmpl) => (
@@ -416,7 +427,9 @@ export function CreateReportView(): React.ReactElement {
 							)}
 						</div>
 						<div>
-							<span className="font-medium">{tmpl.name}</span>
+							<span className="font-medium">
+								{templateNameOverrides[tmpl.id] ?? tmpl.name}
+							</span>
 							<p className="text-sm text-muted-foreground mt-1">
 								{tmpl.description}
 							</p>
@@ -428,18 +441,18 @@ export function CreateReportView(): React.ReactElement {
 									className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground"
 								>
 									{ds === "ALL"
-										? "Todos"
+										? t("reportAllDataSource")
 										: ds === "ALERTS"
-											? "Alertas"
-											: ds === "TRANSACTIONS"
-												? "Txns"
-												: "Clientes"}
+											? t("noticeAlerts")
+											: ds === "OPERATIONS"
+												? t("reportOpsDataSource")
+												: t("reportClientsDataSource")}
 								</span>
 							))}
 							{tmpl.supportsComparison && (
 								<span className="text-xs px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-500">
 									<TrendingUp className="h-3 w-3 inline mr-0.5" />
-									Comparar
+									{t("reportCompare")}
 								</span>
 							)}
 						</div>
@@ -452,10 +465,10 @@ export function CreateReportView(): React.ReactElement {
 	const renderPeriodStep = () => (
 		<div className="space-y-6 max-w-2xl mx-auto">
 			<div className="text-center mb-8">
-				<h2 className="text-xl font-semibold mb-2">Define el Período</h2>
-				<p className="text-muted-foreground">
-					Selecciona el rango de fechas para el reporte
-				</p>
+				<h2 className="text-xl font-semibold mb-2">
+					{t("reportDefinePeriod")}
+				</h2>
+				<p className="text-muted-foreground">{t("reportSelectDateRange")}</p>
 			</div>
 
 			<Card>
@@ -482,9 +495,9 @@ export function CreateReportView(): React.ReactElement {
 									)}
 								/>
 								<div>
-									<span className="font-medium text-sm">{opt.label}</span>
+									<span className="font-medium text-sm">{t(opt.label)}</span>
 									<p className="text-xs text-muted-foreground">
-										{opt.description}
+										{t(opt.description)}
 									</p>
 								</div>
 							</button>
@@ -495,7 +508,7 @@ export function CreateReportView(): React.ReactElement {
 						{periodType === "MONTHLY" && (
 							<div className="grid gap-4 @sm/main:grid-cols-2">
 								<div className="space-y-2">
-									<Label htmlFor="year">Año</Label>
+									<Label htmlFor="year">{t("reportYear")}</Label>
 									<Select
 										value={String(selectedYear)}
 										onValueChange={(v) => setSelectedYear(Number(v))}
@@ -513,7 +526,7 @@ export function CreateReportView(): React.ReactElement {
 									</Select>
 								</div>
 								<div className="space-y-2">
-									<Label htmlFor="month">Mes</Label>
+									<Label htmlFor="month">{t("reportMonth")}</Label>
 									<Select
 										value={String(selectedMonth)}
 										onValueChange={(v) => setSelectedMonth(Number(v))}
@@ -524,7 +537,7 @@ export function CreateReportView(): React.ReactElement {
 										<SelectContent>
 											{MONTHS.map((m) => (
 												<SelectItem key={m.value} value={String(m.value)}>
-													{m.label}
+													{t(m.label)}
 												</SelectItem>
 											))}
 										</SelectContent>
@@ -536,7 +549,7 @@ export function CreateReportView(): React.ReactElement {
 						{periodType === "QUARTERLY" && (
 							<div className="grid gap-4 @sm/main:grid-cols-2">
 								<div className="space-y-2">
-									<Label htmlFor="year">Año</Label>
+									<Label htmlFor="year">{t("reportYear")}</Label>
 									<Select
 										value={String(selectedYear)}
 										onValueChange={(v) => setSelectedYear(Number(v))}
@@ -554,7 +567,7 @@ export function CreateReportView(): React.ReactElement {
 									</Select>
 								</div>
 								<div className="space-y-2">
-									<Label htmlFor="quarter">Trimestre</Label>
+									<Label htmlFor="quarter">{t("reportQuarter")}</Label>
 									<Select
 										value={String(selectedQuarter)}
 										onValueChange={(v) =>
@@ -567,7 +580,7 @@ export function CreateReportView(): React.ReactElement {
 										<SelectContent>
 											{QUARTERS.map((q) => (
 												<SelectItem key={q.value} value={String(q.value)}>
-													{q.label}
+													{t(q.label)}
 												</SelectItem>
 											))}
 										</SelectContent>
@@ -578,7 +591,7 @@ export function CreateReportView(): React.ReactElement {
 
 						{periodType === "ANNUAL" && (
 							<div className="space-y-2">
-								<Label htmlFor="year">Año</Label>
+								<Label htmlFor="year">{t("reportYear")}</Label>
 								<Select
 									value={String(selectedYear)}
 									onValueChange={(v) => setSelectedYear(Number(v))}
@@ -600,7 +613,7 @@ export function CreateReportView(): React.ReactElement {
 						{periodType === "CUSTOM" && (
 							<div className="grid gap-4 @sm/main:grid-cols-2">
 								<div className="space-y-2">
-									<Label htmlFor="customStart">Fecha inicio</Label>
+									<Label htmlFor="customStart">{t("reportStartDate")}</Label>
 									<Input
 										id="customStart"
 										type="date"
@@ -610,7 +623,7 @@ export function CreateReportView(): React.ReactElement {
 									/>
 								</div>
 								<div className="space-y-2">
-									<Label htmlFor="customEnd">Fecha fin</Label>
+									<Label htmlFor="customEnd">{t("reportEndDate")}</Label>
 									<Input
 										id="customEnd"
 										type="date"
@@ -626,7 +639,7 @@ export function CreateReportView(): React.ReactElement {
 					{period && (
 						<div className="p-3 rounded-lg bg-muted/50 border">
 							<p className="text-sm text-muted-foreground">
-								Período seleccionado:
+								{t("reportSelectedPeriod")}
 							</p>
 							<p className="font-medium">
 								{period.periodStart.toLocaleDateString("es-MX", {
@@ -651,37 +664,35 @@ export function CreateReportView(): React.ReactElement {
 	const renderOptionsStep = () => (
 		<div className="space-y-6 max-w-2xl mx-auto">
 			<div className="text-center mb-8">
-				<h2 className="text-xl font-semibold mb-2">Opciones del Reporte</h2>
-				<p className="text-muted-foreground">
-					Personaliza el contenido y formato del reporte
-				</p>
+				<h2 className="text-xl font-semibold mb-2">{t("reportOptions")}</h2>
+				<p className="text-muted-foreground">{t("reportOptionsDesc")}</p>
 			</div>
 
 			<Card>
 				<CardHeader>
 					<CardTitle className="text-base flex items-center gap-2">
 						<FileText className="h-5 w-5" />
-						Información General
+						{t("reportGeneralInfo")}
 					</CardTitle>
 				</CardHeader>
 				<CardContent className="space-y-4">
 					<div className="space-y-2">
-						<Label htmlFor="name">Nombre del Reporte</Label>
+						<Label htmlFor="name">{t("reportName")}</Label>
 						<Input
 							id="name"
 							value={reportName}
 							onChange={(e) => setReportName(e.target.value)}
-							placeholder="Nombre del reporte"
+							placeholder={t("reportName")}
 							required
 						/>
 					</div>
 					<div className="space-y-2">
-						<Label htmlFor="notes">Notas (opcional)</Label>
+						<Label htmlFor="notes">{t("reportNotesLabel")}</Label>
 						<Textarea
 							id="notes"
 							value={notes}
 							onChange={(e) => setNotes(e.target.value)}
-							placeholder="Notas adicionales sobre este reporte..."
+							placeholder={t("reportNotesPlaceholder")}
 							rows={3}
 						/>
 					</div>
@@ -692,15 +703,15 @@ export function CreateReportView(): React.ReactElement {
 				<CardHeader>
 					<CardTitle className="text-base flex items-center gap-2">
 						<PieChart className="h-5 w-5" />
-						Visualización
+						{t("reportVisualization")}
 					</CardTitle>
 				</CardHeader>
 				<CardContent className="space-y-4">
 					<div className="flex items-center justify-between">
 						<div>
-							<Label htmlFor="charts">Incluir Gráficas</Label>
+							<Label htmlFor="charts">{t("reportIncludeCharts")}</Label>
 							<p className="text-sm text-muted-foreground">
-								Añade visualizaciones de datos al reporte PDF
+								{t("reportIncludeChartsDesc")}
 							</p>
 						</div>
 						<Switch
@@ -715,9 +726,11 @@ export function CreateReportView(): React.ReactElement {
 							<div className="border-t pt-4">
 								<div className="flex items-center justify-between">
 									<div>
-										<Label htmlFor="comparison">Comparación de Períodos</Label>
+										<Label htmlFor="comparison">
+											{t("reportPeriodComparison")}
+										</Label>
 										<p className="text-sm text-muted-foreground">
-											Compara con un período anterior
+											{t("reportCompareWithPrevious")}
 										</p>
 									</div>
 									<Switch
@@ -732,7 +745,7 @@ export function CreateReportView(): React.ReactElement {
 								<div className="grid gap-4 @sm/main:grid-cols-2 pt-2">
 									<div className="space-y-2">
 										<Label htmlFor="compStart">
-											Período comparación - Inicio
+											{t("reportComparisonPeriodStart")}
 										</Label>
 										<Input
 											id="compStart"
@@ -742,7 +755,9 @@ export function CreateReportView(): React.ReactElement {
 										/>
 									</div>
 									<div className="space-y-2">
-										<Label htmlFor="compEnd">Período comparación - Fin</Label>
+										<Label htmlFor="compEnd">
+											{t("reportComparisonPeriodEnd")}
+										</Label>
 										<Input
 											id="compEnd"
 											type="date"
@@ -762,10 +777,10 @@ export function CreateReportView(): React.ReactElement {
 	const renderReviewStep = () => (
 		<div className="space-y-6 max-w-3xl mx-auto">
 			<div className="text-center mb-8">
-				<h2 className="text-xl font-semibold mb-2">Revisar y Crear</h2>
-				<p className="text-muted-foreground">
-					Verifica la configuración antes de crear el reporte
-				</p>
+				<h2 className="text-xl font-semibold mb-2">
+					{t("reportReviewAndCreate")}
+				</h2>
+				<p className="text-muted-foreground">{t("reportReviewDesc")}</p>
 			</div>
 
 			<div className="grid gap-6 @xl/main:grid-cols-2">
@@ -773,7 +788,7 @@ export function CreateReportView(): React.ReactElement {
 					<CardHeader>
 						<CardTitle className="text-base flex items-center gap-2">
 							<LayoutTemplate className="h-5 w-5" />
-							Configuración del Reporte
+							{t("reportConfiguration")}
 						</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-4">
@@ -788,7 +803,9 @@ export function CreateReportView(): React.ReactElement {
 									{template.icon}
 								</span>
 								<div>
-									<p className="font-medium">{template.name}</p>
+									<p className="font-medium">
+										{templateNameOverrides[template.id] ?? template.name}
+									</p>
 									<p className="text-sm text-muted-foreground">
 										{template.description}
 									</p>
@@ -797,13 +814,17 @@ export function CreateReportView(): React.ReactElement {
 						)}
 
 						<div className="space-y-2">
-							<p className="text-sm text-muted-foreground">Nombre</p>
+							<p className="text-sm text-muted-foreground">
+								{t("reportNameLabel2")}
+							</p>
 							<p className="font-medium">{reportName}</p>
 						</div>
 
 						{period && (
 							<div className="space-y-2">
-								<p className="text-sm text-muted-foreground">Período</p>
+								<p className="text-sm text-muted-foreground">
+									{t("reportPeriod")}
+								</p>
 								<p className="font-medium">
 									{period.periodStart.toLocaleDateString("es-MX", {
 										day: "numeric",
@@ -828,7 +849,9 @@ export function CreateReportView(): React.ReactElement {
 								)}
 							>
 								<PieChart className="h-4 w-4" />
-								{includeCharts ? "Con gráficas" : "Sin gráficas"}
+								{includeCharts
+									? t("reportWithCharts")
+									: t("reportWithoutCharts")}
 							</span>
 							{template?.supportsComparison && (
 								<span
@@ -840,14 +863,18 @@ export function CreateReportView(): React.ReactElement {
 									)}
 								>
 									<TrendingUp className="h-4 w-4" />
-									{enableComparison ? "Con comparación" : "Sin comparación"}
+									{enableComparison
+										? t("reportWithComparison")
+										: t("reportWithoutComparison")}
 								</span>
 							)}
 						</div>
 
 						{notes && (
 							<div className="space-y-2">
-								<p className="text-sm text-muted-foreground">Notas</p>
+								<p className="text-sm text-muted-foreground">
+									{t("reportNotesLabel")}
+								</p>
 								<p className="text-sm">{notes}</p>
 							</div>
 						)}
@@ -858,7 +885,7 @@ export function CreateReportView(): React.ReactElement {
 					<CardHeader>
 						<CardTitle className="text-base flex items-center gap-2">
 							<AlertTriangle className="h-5 w-5" />
-							Vista Previa de Datos
+							{t("reportDataPreview")}
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
@@ -869,7 +896,9 @@ export function CreateReportView(): React.ReactElement {
 						) : preview ? (
 							<div className="space-y-4">
 								<div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20">
-									<span className="text-sm font-medium">Total Alertas</span>
+									<span className="text-sm font-medium">
+										{t("reportTotalAlerts")}
+									</span>
 									<span className="text-2xl font-bold text-primary">
 										{preview.total}
 									</span>
@@ -879,7 +908,7 @@ export function CreateReportView(): React.ReactElement {
 									<>
 										<div className="space-y-2">
 											<p className="text-sm font-medium text-muted-foreground">
-												Por Severidad
+												{t("reportBySeverity")}
 											</p>
 											{Object.entries(preview.bySeverity).map(
 												([severity, count]) => (
@@ -898,7 +927,7 @@ export function CreateReportView(): React.ReactElement {
 
 										<div className="space-y-2">
 											<p className="text-sm font-medium text-muted-foreground">
-												Por Estado
+												{t("reportByStatus")}
 											</p>
 											{Object.entries(preview.byStatus).map(
 												([status, count]) => (
@@ -920,14 +949,14 @@ export function CreateReportView(): React.ReactElement {
 								{preview.total === 0 && (
 									<div className="flex items-center gap-2 text-amber-500 text-sm">
 										<Clock className="h-4 w-4" />
-										<span>No hay alertas en este período</span>
+										<span>{t("reportNoAlertsInPeriod")}</span>
 									</div>
 								)}
 							</div>
 						) : (
 							<div className="text-center py-8 text-muted-foreground">
 								<FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-								<p className="text-sm">Vista previa no disponible</p>
+								<p className="text-sm">{t("reportPreviewNotAvailable")}</p>
 							</div>
 						)}
 					</CardContent>
@@ -939,8 +968,8 @@ export function CreateReportView(): React.ReactElement {
 	return (
 		<div className="space-y-6">
 			<PageHero
-				title="Nuevo Reporte"
-				subtitle="Crea un reporte de análisis personalizado"
+				title={t("reportNewTitle")}
+				subtitle={t("reportNewSubtitle")}
 				icon={FileText}
 			/>
 
@@ -951,7 +980,7 @@ export function CreateReportView(): React.ReactElement {
 				className="gap-2"
 			>
 				<ArrowLeft className="h-4 w-4" />
-				Volver a Reportes
+				{t("reportBackToReports")}
 			</Button>
 
 			{renderStepIndicator()}
@@ -971,7 +1000,7 @@ export function CreateReportView(): React.ReactElement {
 					disabled={currentStep === "template"}
 				>
 					<ArrowLeft className="h-4 w-4 mr-2" />
-					Anterior
+					{t("reportPrevious")}
 				</Button>
 
 				{currentStep === "review" ? (
@@ -983,18 +1012,18 @@ export function CreateReportView(): React.ReactElement {
 						{isSubmitting ? (
 							<>
 								<Loader2 className="h-4 w-4 animate-spin" />
-								Creando...
+								{t("reportCreating")}
 							</>
 						) : (
 							<>
 								<Save className="h-4 w-4" />
-								Crear Reporte
+								{t("reportCreateButton")}
 							</>
 						)}
 					</Button>
 				) : (
 					<Button onClick={goToNextStep} disabled={!canProceed()}>
-						Siguiente
+						{t("next")}
 						<ArrowRight className="h-4 w-4 ml-2" />
 					</Button>
 				)}

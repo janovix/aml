@@ -40,12 +40,13 @@ import {
 	createClientDocument,
 	patchClientDocument,
 } from "@/lib/api/client-documents";
-import { uploadDocumentFiles } from "@/lib/api/file-upload";
+import { uploadDocument } from "@/lib/api/file-upload";
 import type {
 	ClientDocument,
 	ClientDocumentType,
 } from "@/types/client-document";
 import { useOrgStore } from "@/lib/org-store";
+import { useAuthSession } from "@/lib/auth/useAuthSession";
 import { UploadedIDDocumentCard } from "../UploadedIDDocumentCard";
 
 export interface UBOWithDocuments {
@@ -123,6 +124,7 @@ export function UBOInlineForm({
 	ubos,
 	onUBOsChange,
 }: UBOInlineFormProps) {
+	const { data: session } = useAuthSession();
 	const [isUBODialogOpen, setIsUBODialogOpen] = useState(false);
 	const [isEditingLegalRep, setIsEditingLegalRep] = useState(false);
 	const [uboFormData, setUboFormData] = useState<UBOFormData>(
@@ -264,6 +266,11 @@ export function UBOInlineForm({
 			return;
 		}
 
+		if (!session?.user?.id) {
+			toast.error("No hay sesión de usuario activa");
+			return;
+		}
+
 		setIsSubmitting(true);
 
 		try {
@@ -287,69 +294,47 @@ export function UBOInlineForm({
 
 				idDocumentId = createdDoc.id;
 
-				// Prepare files for upload
-				const relatedFiles: Array<{ file: Blob; name: string; type: string }> =
-					[];
-
-				// Add INE back if available
-				if (idData.idType === "NATIONAL_ID" && idData.backFile) {
-					const backBlob = idData.backProcessedBlob || idData.backFile;
-					relatedFiles.push({
-						file: backBlob,
-						name: idData.backFile.name || "ine_back.jpg",
-						type: "ine_back",
-					});
-				}
-
-				// Upload all files
+				// Build page images array for doc-svc
+				const pageImages: Blob[] = [];
 				const primaryFile = idData.processedBlob || idData.file;
 				if (!primaryFile) {
 					throw new Error("No file available for upload");
 				}
-				const uploadResult = await uploadDocumentFiles({
-					primaryFile,
-					originalFile: idData.originalFile,
-					relatedFiles: relatedFiles.length > 0 ? relatedFiles : undefined,
-					organizationId: currentOrg.id,
-					clientId,
-					documentId: createdDoc.id,
-				});
 
-				// Build metadata with file URLs for display
-				const fileMetadata: Record<string, unknown> = {
-					primaryFileUrl: uploadResult.primary.url,
-					originalFileUrl: uploadResult.original?.url,
-				};
+				// Add front image
+				pageImages.push(primaryFile);
 
-				// Add INE URLs if available
-				const ineFront = uploadResult.related.find((r) =>
-					r.key.includes("ine_front"),
-				);
-				const ineBack = uploadResult.related.find((r) =>
-					r.key.includes("ine_back"),
-				);
-				if (ineFront) fileMetadata.ineFrontUrl = ineFront.url;
-				if (ineBack) fileMetadata.ineBackUrl = ineBack.url;
-				// For passport/INE front, use primary as front
-				if (idData.idType === "NATIONAL_ID" && !ineFront) {
-					fileMetadata.ineFrontUrl = uploadResult.primary.url;
+				// Add back image if available (INE)
+				if (idData.idType === "NATIONAL_ID" && idData.backFile) {
+					const backBlob = idData.backProcessedBlob || idData.backFile;
+					pageImages.push(backBlob);
 				}
 
-				// Update document with file URLs and metadata
+				// Upload to doc-svc
+				const uploadResult = await uploadDocument({
+					organizationId: currentOrg.id,
+					userId: session.user.id,
+					primaryFile,
+					fileName: idData.file?.name || "document.jpg",
+					pageImages,
+					waitForProcessing: false,
+				});
+
+				// Update document with doc-svc references
 				await patchClientDocument({
 					clientId,
 					documentId: createdDoc.id,
 					input: {
-						fileUrl: uploadResult.primary.url,
-						metadata: fileMetadata,
+						docSvcDocumentId: uploadResult.documentId,
+						docSvcJobId: uploadResult.jobId,
 					},
 				});
 
-				// Store document with metadata for display
+				// Store document with doc-svc IDs for display
 				idDocument = {
 					...createdDoc,
-					fileUrl: uploadResult.primary.url,
-					metadata: fileMetadata,
+					docSvcDocumentId: uploadResult.documentId,
+					docSvcJobId: uploadResult.jobId,
 				};
 			}
 

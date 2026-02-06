@@ -48,7 +48,7 @@ export interface SubscriptionStatus {
 		notices: UsageCheckResult;
 		users: UsageCheckResult;
 		alerts?: UsageCheckResult;
-		transactions?: UsageCheckResult;
+		operations?: UsageCheckResult;
 	} | null;
 	features: string[];
 	stripeCustomerId: string;

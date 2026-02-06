@@ -30,7 +30,7 @@ import {
 } from "@/lib/api/client-documents";
 import { uploadDocumentForKYC } from "@/lib/api/file-upload";
 import { useOrgStore } from "@/lib/org-store";
-import { PresignedImage } from "@/components/PresignedImage";
+import { DocSvcImage } from "@/components/DocSvcImage";
 import type { PersonType } from "@/types/client";
 import type {
 	ClientDocumentType,
@@ -74,6 +74,7 @@ export function EditDocumentsSection({
 	className,
 	onDocumentChange,
 }: EditDocumentsSectionProps) {
+	const { currentOrg } = useOrgStore();
 	const [existingDocuments, setExistingDocuments] = useState<ClientDocument[]>(
 		[],
 	);
@@ -504,13 +505,26 @@ export function EditDocumentsSection({
 															});
 														}}
 													>
-														<PresignedImage
-															src={
-																(existingIdDocument.metadata as any).ineFrontUrl
-															}
-															alt="Frente de INE"
-															className="h-24 w-auto object-contain"
-														/>
+														{existingIdDocument.docSvcDocumentId &&
+														currentOrg?.id ? (
+															<DocSvcImage
+																organizationId={currentOrg.id}
+																documentId={existingIdDocument.docSvcDocumentId}
+																imageIndex={0}
+																alt="Frente de INE"
+																className="h-24 w-auto object-contain"
+															/>
+														) : (
+															<img
+																src={
+																	(existingIdDocument.metadata as any)
+																		.ineFrontUrl
+																}
+																alt="Frente de INE"
+																className="h-24 w-auto object-contain"
+																crossOrigin="anonymous"
+															/>
+														)}
 														<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
 															<ZoomIn className="h-6 w-6 text-white" />
 														</div>
@@ -554,13 +568,26 @@ export function EditDocumentsSection({
 															});
 														}}
 													>
-														<PresignedImage
-															src={
-																(existingIdDocument.metadata as any).ineBackUrl
-															}
-															alt="Reverso de INE"
-															className="h-24 w-auto object-contain"
-														/>
+														{existingIdDocument.docSvcDocumentId &&
+														currentOrg?.id ? (
+															<DocSvcImage
+																organizationId={currentOrg.id}
+																documentId={existingIdDocument.docSvcDocumentId}
+																imageIndex={1}
+																alt="Reverso de INE"
+																className="h-24 w-auto object-contain"
+															/>
+														) : (
+															<img
+																src={
+																	(existingIdDocument.metadata as any)
+																		.ineBackUrl
+																}
+																alt="Reverso de INE"
+																className="h-24 w-auto object-contain"
+																crossOrigin="anonymous"
+															/>
+														)}
 														<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
 															<ZoomIn className="h-6 w-6 text-white" />
 														</div>
@@ -593,14 +620,28 @@ export function EditDocumentsSection({
 																});
 															}}
 														>
-															<PresignedImage
-																src={
-																	(existingIdDocument.metadata as any)
-																		.primaryFileUrl
-																}
-																alt="Documento"
-																className="h-24 w-auto object-contain"
-															/>
+															{existingIdDocument.docSvcDocumentId &&
+															currentOrg?.id ? (
+																<DocSvcImage
+																	organizationId={currentOrg.id}
+																	documentId={
+																		existingIdDocument.docSvcDocumentId
+																	}
+																	imageIndex={0}
+																	alt="Documento"
+																	className="h-24 w-auto object-contain"
+																/>
+															) : (
+																<img
+																	src={
+																		(existingIdDocument.metadata as any)
+																			.primaryFileUrl
+																	}
+																	alt="Documento"
+																	className="h-24 w-auto object-contain"
+																	crossOrigin="anonymous"
+																/>
+															)}
 															<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
 																<ZoomIn className="h-6 w-6 text-white" />
 															</div>
@@ -736,11 +777,23 @@ export function EditDocumentsSection({
 																	});
 																}}
 															>
-																<PresignedImage
-																	src={metadata.primaryFileUrl}
-																	alt="Documento"
-																	className="h-24 w-auto object-contain"
-																/>
+																{existingDoc.docSvcDocumentId &&
+																currentOrg?.id ? (
+																	<DocSvcImage
+																		organizationId={currentOrg.id}
+																		documentId={existingDoc.docSvcDocumentId}
+																		imageIndex={0}
+																		alt="Documento"
+																		className="h-24 w-auto object-contain"
+																	/>
+																) : (
+																	<img
+																		src={metadata.primaryFileUrl}
+																		alt="Documento"
+																		className="h-24 w-auto object-contain"
+																		crossOrigin="anonymous"
+																	/>
+																)}
 																<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
 																	<ZoomIn className="h-6 w-6 text-white" />
 																</div>
@@ -783,11 +836,25 @@ export function EditDocumentsSection({
 																			});
 																		}}
 																	>
-																		<PresignedImage
-																			src={url}
-																			alt={`Página ${idx + 1}`}
-																			className="h-24 w-auto object-contain"
-																		/>
+																		{existingDoc.docSvcDocumentId &&
+																		currentOrg?.id ? (
+																			<DocSvcImage
+																				organizationId={currentOrg.id}
+																				documentId={
+																					existingDoc.docSvcDocumentId
+																				}
+																				imageIndex={idx + 1}
+																				alt={`Página ${idx + 1}`}
+																				className="h-24 w-auto object-contain"
+																			/>
+																		) : (
+																			<img
+																				src={url}
+																				alt={`Página ${idx + 1}`}
+																				className="h-24 w-auto object-contain"
+																				crossOrigin="anonymous"
+																			/>
+																		)}
 																		<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
 																			<ZoomIn className="h-6 w-6 text-white" />
 																		</div>

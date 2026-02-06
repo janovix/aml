@@ -72,6 +72,13 @@ export function ScannerCanvas({
 	const [primaryColor, setPrimaryColor] = useState("#8b5cf6");
 	const [isTouch, setIsTouch] = useState(false);
 
+	// Loupe state for magnifying glass during drag
+	const [loupePosition, setLoupePosition] = useState<Point>({ x: 0, y: 0 });
+	const [loupeCanvasPoint, setLoupeCanvasPoint] = useState<Point>({
+		x: 0,
+		y: 0,
+	});
+
 	// Responsive handle size - larger on touch devices
 	const handleSize = propHandleSize ?? (isTouch ? 44 : 24);
 	// Hit area is even larger for easier touch targeting
@@ -281,6 +288,10 @@ export function ScannerCanvas({
 					...corners,
 					[draggingCorner]: { x: clampedX, y: clampedY },
 				});
+
+				// Update loupe position
+				setLoupePosition({ x: e.clientX, y: e.clientY });
+				setLoupeCanvasPoint(canvasPoint);
 			} else if (adjustable) {
 				const corner = findCornerAtPoint(canvasPoint);
 				setHoveredCorner(corner);
@@ -306,6 +317,9 @@ export function ScannerCanvas({
 
 			if (corner) {
 				setDraggingCorner(corner);
+				// Initialize loupe position
+				setLoupePosition({ x: e.clientX, y: e.clientY });
+				setLoupeCanvasPoint(canvasPoint);
 				e.preventDefault();
 			}
 		},
@@ -333,6 +347,9 @@ export function ScannerCanvas({
 			if (corner) {
 				setDraggingCorner(corner);
 				setHoveredCorner(corner);
+				// Initialize loupe position
+				setLoupePosition({ x: touch.clientX, y: touch.clientY });
+				setLoupeCanvasPoint(canvasPoint);
 				e.preventDefault(); // Prevent scrolling when dragging
 			}
 		},
@@ -363,6 +380,10 @@ export function ScannerCanvas({
 				...corners,
 				[draggingCorner]: { x: clampedX, y: clampedY },
 			});
+
+			// Update loupe position
+			setLoupePosition({ x: touch.clientX, y: touch.clientY });
+			setLoupeCanvasPoint(canvasPoint);
 		},
 		[draggingCorner, corners, onCornersChange, screenToCanvas, sourceCanvas],
 	);
@@ -436,6 +457,101 @@ export function ScannerCanvas({
 						: "Arrastra las esquinas para ajustar el área del documento"}
 				</div>
 			)}
+
+			{/* Magnifying Glass Loupe */}
+			{draggingCorner &&
+				sourceCanvas &&
+				containerRef.current &&
+				(() => {
+					const containerRect = containerRef.current.getBoundingClientRect();
+					const loupeSize = 120;
+					const loupeOffset = 30; // Gap between loupe and touch point
+
+					// Calculate position relative to container
+					const relativeX = loupePosition.x - containerRect.left;
+					const relativeY = loupePosition.y - containerRect.top;
+
+					// Check if there's enough room above for the loupe
+					const roomAbove = relativeY - loupeOffset - loupeSize;
+					const showBelow = roomAbove < 0;
+
+					// Calculate final position
+					const left = relativeX - loupeSize / 2;
+					const top = showBelow
+						? relativeY + loupeOffset // Show below touch point
+						: relativeY - loupeSize - loupeOffset; // Show above touch point
+
+					return (
+						<div
+							className="absolute pointer-events-none z-50"
+							style={{
+								left,
+								top,
+								width: loupeSize,
+								height: loupeSize,
+							}}
+						>
+							<div
+								className="relative w-full h-full rounded-full overflow-hidden border-4 shadow-2xl"
+								style={{
+									borderColor: primaryColor,
+									backgroundColor: "#000",
+								}}
+							>
+								<div
+									className="absolute"
+									style={{
+										width: sourceCanvas.width * 1.5,
+										height: sourceCanvas.height * 1.5,
+										left: loupeSize / 2 - loupeCanvasPoint.x * 1.5,
+										top: loupeSize / 2 - loupeCanvasPoint.y * 1.5,
+									}}
+								>
+									<canvas
+										ref={(el) => {
+											if (el && sourceCanvas) {
+												el.width = sourceCanvas.width;
+												el.height = sourceCanvas.height;
+												const ctx = el.getContext("2d");
+												if (ctx) {
+													ctx.drawImage(sourceCanvas, 0, 0);
+												}
+											}
+										}}
+										style={{
+											width: sourceCanvas.width * 1.5,
+											height: sourceCanvas.height * 1.5,
+										}}
+									/>
+								</div>
+								{/* Crosshair overlay */}
+								<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+									<div className="w-6 h-0.5 bg-white/70" />
+								</div>
+								<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+									<div className="w-0.5 h-6 bg-white/70" />
+								</div>
+								<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+									<div
+										className="w-2 h-2 rounded-full"
+										style={{ backgroundColor: primaryColor }}
+									/>
+								</div>
+							</div>
+							{/* Arrow pointing to touch point */}
+							<div
+								className={`absolute left-1/2 -translate-x-1/2 ${showBelow ? "-top-2" : "-bottom-2"} w-0 h-0`}
+								style={{
+									borderLeft: "8px solid transparent",
+									borderRight: "8px solid transparent",
+									...(showBelow
+										? { borderBottom: `8px solid ${primaryColor}` }
+										: { borderTop: `8px solid ${primaryColor}` }),
+								}}
+							/>
+						</div>
+					);
+				})()}
 		</div>
 	);
 }

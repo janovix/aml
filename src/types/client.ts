@@ -33,6 +33,8 @@ export interface Client {
 	incorporationDate?: string | null; // date-time format for moral/trust
 	rfc: string; // Primary key - RFC (Registro Federal de Contribuyentes)
 	nationality?: string | null;
+	countryCode?: string | null; // Reference to countries catalog (metadata.code)
+	economicActivityCode?: string | null; // Reference to economic-activities catalog (7-digit code)
 	email: string;
 	phone: string;
 	country: string;
@@ -82,6 +84,8 @@ export interface ClientCreateRequest {
 	// Common fields
 	rfc: string;
 	nationality?: string | null;
+	countryCode?: string | null;
+	economicActivityCode?: string | null;
 	email: string;
 	phone: string;
 	country: string;

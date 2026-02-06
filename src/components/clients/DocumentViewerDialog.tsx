@@ -23,7 +23,8 @@ import {
 	ZoomOut,
 	RotateCcw,
 } from "lucide-react";
-import { PresignedImage } from "@/components/PresignedImage";
+import { DocSvcImage } from "@/components/DocSvcImage";
+import { useDocSvcUrls } from "@/hooks/useDocSvcUrls";
 import { cn } from "@/lib/utils";
 
 export interface DocumentImage {
@@ -34,9 +35,14 @@ export interface DocumentImage {
 interface DocumentViewerDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
+	/** Legacy URL-based images */
 	images: DocumentImage[];
 	initialIndex?: number;
 	originalFileUrl?: string | null;
+	/** Doc-svc mode: organization ID */
+	organizationId?: string;
+	/** Doc-svc mode: document ID */
+	docSvcDocumentId?: string | null;
 }
 
 const MIN_ZOOM = 1;
@@ -49,6 +55,8 @@ export function DocumentViewerDialog({
 	images,
 	initialIndex = 0,
 	originalFileUrl,
+	organizationId,
+	docSvcDocumentId,
 }: DocumentViewerDialogProps) {
 	const [currentIndex, setCurrentIndex] = useState(initialIndex);
 	const [zoom, setZoom] = useState(1);
@@ -63,6 +71,28 @@ export function DocumentViewerDialog({
 	const [lastTouchDistance, setLastTouchDistance] = useState<number | null>(
 		null,
 	);
+
+	// Doc-svc mode: fetch URLs from doc-svc
+	const isDocSvcMode = !!organizationId && !!docSvcDocumentId;
+	const { imageUrls: docSvcImageUrls, isLoading: docSvcLoading } =
+		useDocSvcUrls({
+			organizationId: organizationId || "",
+			documentId: isDocSvcMode ? docSvcDocumentId : null,
+			type: "images",
+		});
+
+	// Build effective images list
+	const effectiveImages: DocumentImage[] = isDocSvcMode
+		? (docSvcImageUrls || []).map((url, index) => ({
+				src: url,
+				title:
+					index === 0
+						? "Frente"
+						: index === 1
+							? "Reverso"
+							: `Página ${index + 1}`,
+			}))
+		: images;
 
 	// Reset state when dialog opens or image changes
 	useEffect(() => {
@@ -210,14 +240,31 @@ export function DocumentViewerDialog({
 	);
 
 	const handlePrev = () => {
-		setCurrentIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+		setCurrentIndex((prev) =>
+			prev > 0 ? prev - 1 : effectiveImages.length - 1,
+		);
 	};
 
 	const handleNext = () => {
-		setCurrentIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+		setCurrentIndex((prev) =>
+			prev < effectiveImages.length - 1 ? prev + 1 : 0,
+		);
 	};
 
-	const currentImage = images[currentIndex];
+	const currentImage = effectiveImages[currentIndex];
+
+	// Show nothing if loading in doc-svc mode
+	if (isDocSvcMode && docSvcLoading) {
+		return (
+			<Dialog open={open} onOpenChange={onOpenChange}>
+				<DialogContent className="sm:max-w-md">
+					<div className="flex items-center justify-center p-8">
+						<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+					</div>
+				</DialogContent>
+			</Dialog>
+		);
+	}
 
 	if (!currentImage) {
 		return null;
@@ -235,9 +282,9 @@ export function DocumentViewerDialog({
 							{currentImage.title}
 						</DialogTitle>
 						<div className="flex items-center gap-1 sm:gap-2 shrink-0">
-							{images.length > 1 && (
+							{effectiveImages.length > 1 && (
 								<span className="text-xs sm:text-sm text-muted-foreground mr-1">
-									{currentIndex + 1} / {images.length}
+									{currentIndex + 1} / {effectiveImages.length}
 								</span>
 							)}
 
@@ -319,7 +366,7 @@ export function DocumentViewerDialog({
 					}}
 				>
 					{/* Left arrow */}
-					{images.length > 1 && (
+					{effectiveImages.length > 1 && (
 						<Button
 							variant="ghost"
 							size="icon"
@@ -339,15 +386,16 @@ export function DocumentViewerDialog({
 							transition: isDragging ? "none" : "transform 0.1s ease-out",
 						}}
 					>
-						<PresignedImage
+						<img
 							src={currentImage.src}
 							alt={currentImage.title}
 							className="max-w-full max-h-full object-contain pointer-events-none select-none"
+							crossOrigin="anonymous"
 						/>
 					</div>
 
 					{/* Right arrow */}
-					{images.length > 1 && (
+					{effectiveImages.length > 1 && (
 						<Button
 							variant="ghost"
 							size="icon"
@@ -402,10 +450,10 @@ export function DocumentViewerDialog({
 				</div>
 
 				{/* Thumbnail navigation (for multi-page documents) */}
-				{images.length > 1 && (
+				{effectiveImages.length > 1 && (
 					<div className="p-4 border-t bg-muted/20">
 						<div className="flex gap-2 overflow-x-auto">
-							{images.map((image, index) => (
+							{effectiveImages.map((image, index) => (
 								<button
 									key={index}
 									type="button"
@@ -417,10 +465,11 @@ export function DocumentViewerDialog({
 											: "border-transparent hover:border-muted-foreground/20",
 									)}
 								>
-									<PresignedImage
+									<img
 										src={image.src}
 										alt={image.title}
 										className="w-full h-full object-contain"
+										crossOrigin="anonymous"
 									/>
 								</button>
 							))}

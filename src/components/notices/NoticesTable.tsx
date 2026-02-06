@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/lib/mutations";
+import { showFetchError } from "@/lib/toast-utils";
 import {
 	DataTable,
 	type ColumnDef,
@@ -44,6 +45,7 @@ import {
 } from "@/components/data-table";
 import { PageHero, type StatCard } from "@/components/page-hero";
 import { formatProperNoun } from "@/lib/utils";
+import { useLanguage } from "@/components/LanguageProvider";
 import {
 	listNotices,
 	deleteNotice,
@@ -55,30 +57,37 @@ import {
 
 const ITEMS_PER_PAGE = 20;
 
+import type { TranslationKeys } from "@/lib/translations";
+
 const statusConfig: Record<
 	NoticeStatus,
-	{ label: string; icon: React.ReactNode; color: string; bgColor: string }
+	{
+		label: TranslationKeys;
+		icon: React.ReactNode;
+		color: string;
+		bgColor: string;
+	}
 > = {
 	DRAFT: {
-		label: "Borrador",
+		label: "statusDraft",
 		icon: <Clock className="h-4 w-4" />,
 		color: "text-zinc-400",
 		bgColor: "bg-zinc-500/20",
 	},
 	GENERATED: {
-		label: "Generado",
+		label: "statusGenerated",
 		icon: <FileCheck2 className="h-4 w-4" />,
 		color: "text-blue-400",
 		bgColor: "bg-blue-500/20",
 	},
 	SUBMITTED: {
-		label: "Enviado",
+		label: "noticeTableSent",
 		icon: <Send className="h-4 w-4" />,
 		color: "text-amber-400",
 		bgColor: "bg-amber-500/20",
 	},
 	ACKNOWLEDGED: {
-		label: "Acusado",
+		label: "noticeFilterAcknowledged",
 		icon: <CheckCircle2 className="h-4 w-4" />,
 		color: "text-emerald-400",
 		bgColor: "bg-emerald-500/20",
@@ -98,6 +107,7 @@ export function NoticesTable({
 	const { navigateTo, orgPath } = useOrgNavigation();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const { currentOrg } = useOrgStore();
+	const { t } = useLanguage();
 
 	const [notices, setNotices] = useState<Notice[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
@@ -127,7 +137,10 @@ export function NoticesTable({
 			setHasMore(response.pagination.page < response.pagination.totalPages);
 		} catch (error) {
 			console.error("Error fetching notices:", error);
-			toast.error(extractErrorMessage(error));
+			showFetchError("notices-table", error);
+			if (currentOrg?.id) {
+				hasLoadedForOrgRef.current = currentOrg.id;
+			}
 		} finally {
 			setIsLoading(false);
 		}
@@ -151,7 +164,7 @@ export function NoticesTable({
 			setHasMore(response.pagination.page < response.pagination.totalPages);
 		} catch (error) {
 			console.error("Error loading more notices:", error);
-			toast.error(extractErrorMessage(error));
+			showFetchError("notices-table-more", error);
 		} finally {
 			setIsLoadingMore(false);
 		}
@@ -224,7 +237,7 @@ export function NoticesTable({
 		() => [
 			{
 				id: "notice",
-				header: "Aviso",
+				header: t("noticeTableNotice"),
 				accessorKey: "name",
 				sortable: true,
 				cell: (item) => {
@@ -242,7 +255,7 @@ export function NoticesTable({
 										</span>
 									</TooltipTrigger>
 									<TooltipContent side="right">
-										<p>Aviso SAT</p>
+										<p>{t("noticeTableSatNotice")}</p>
 									</TooltipContent>
 								</Tooltip>
 							</TooltipProvider>
@@ -262,7 +275,7 @@ export function NoticesTable({
 												</span>
 											</TooltipTrigger>
 											<TooltipContent>
-												<p>{statusCfg.label}</p>
+												<p>{t(statusCfg.label)}</p>
 											</TooltipContent>
 										</Tooltip>
 									</TooltipProvider>
@@ -277,7 +290,7 @@ export function NoticesTable({
 			},
 			{
 				id: "period",
-				header: "Período SAT",
+				header: t("tableSatPeriod"),
 				accessorKey: "reportedMonth",
 				hideOnMobile: true,
 				cell: (item) => {
@@ -306,7 +319,7 @@ export function NoticesTable({
 			},
 			{
 				id: "recordCount",
-				header: "Alertas",
+				header: t("noticeAlerts"),
 				accessorKey: "recordCount",
 				sortable: true,
 				className: "text-center",
@@ -318,7 +331,7 @@ export function NoticesTable({
 			},
 			{
 				id: "status",
-				header: "Estado",
+				header: t("alertFilterStatus"),
 				accessorKey: "status",
 				sortable: true,
 				cell: (item) => {
@@ -328,14 +341,14 @@ export function NoticesTable({
 							className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${statusCfg.bgColor} ${statusCfg.color}`}
 						>
 							{statusCfg.icon}
-							{statusCfg.label}
+							{t(statusCfg.label)}
 						</span>
 					);
 				},
 			},
 			{
 				id: "submittedAt",
-				header: "Enviado",
+				header: t("noticeTableSent"),
 				accessorKey: "submittedAt",
 				sortable: true,
 				cell: (item) => {
@@ -359,51 +372,53 @@ export function NoticesTable({
 				},
 			},
 		],
-		[orgPath],
+		[orgPath, t],
 	);
 
 	const filterDefs: FilterDef[] = useMemo(
 		() => [
 			{
 				id: "status",
-				label: "Estado",
+				label: t("noticeFilterStatus"),
 				icon: Clock,
 				options: [
 					{
 						value: "DRAFT",
-						label: "Borrador",
+						label: t("statusDraft"),
 						icon: <Clock className="h-3.5 w-3.5 text-zinc-400" />,
 					},
 					{
 						value: "GENERATED",
-						label: "Generado",
+						label: t("statusGenerated"),
 						icon: <FileCheck2 className="h-3.5 w-3.5 text-blue-400" />,
 					},
 					{
 						value: "SUBMITTED",
-						label: "Enviado",
+						label: t("noticeFilterSent"),
 						icon: <Send className="h-3.5 w-3.5 text-amber-400" />,
 					},
 					{
 						value: "ACKNOWLEDGED",
-						label: "Acusado",
+						label: t("noticeFilterAcknowledged"),
 						icon: <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />,
 					},
 				],
 			},
 		],
-		[],
+		[t],
 	);
 
 	const handleGenerate = async (notice: Notice) => {
 		if (!jwt) return;
 		try {
 			const result = await generateNoticeFile({ id: notice.id, jwt });
-			toast.success(`XML generado con ${result.alertCount} alertas`);
+			toast.success(
+				`${t("noticeXmlGeneratedToast")} ${result.alertCount} ${t("noticeAlertsSuffix")}`,
+			);
 			doFetchNotices(jwt);
 		} catch (error) {
 			console.error("Error generating notice:", error);
-			toast.error(extractErrorMessage(error));
+			toast.error(extractErrorMessage(error), { id: "notices-generate" });
 		}
 	};
 
@@ -413,7 +428,7 @@ export function NoticesTable({
 			await downloadNoticeXml({ id: notice.id, jwt });
 		} catch (error) {
 			console.error("Error downloading notice:", error);
-			toast.error(extractErrorMessage(error));
+			toast.error(extractErrorMessage(error), { id: "notices-download" });
 		}
 	};
 
@@ -421,11 +436,11 @@ export function NoticesTable({
 		if (!jwt) return;
 		try {
 			await deleteNotice({ id: notice.id, jwt });
-			toast.success(`${notice.name} ha sido eliminado.`);
+			toast.success(`${notice.name} ${t("noticeDeletedToast")}`);
 			doFetchNotices(jwt);
 		} catch (error) {
 			console.error("Error deleting notice:", error);
-			toast.error(extractErrorMessage(error));
+			toast.error(extractErrorMessage(error), { id: "notices-delete" });
 		}
 	};
 
@@ -442,7 +457,7 @@ export function NoticesTable({
 					onClick={() => navigateTo(`/notices/${item.id}`)}
 				>
 					<Eye className="h-4 w-4" />
-					Ver detalle
+					{t("noticeViewDetail")}
 				</DropdownMenuItem>
 				{item.status === "DRAFT" && (
 					<DropdownMenuItem
@@ -450,7 +465,7 @@ export function NoticesTable({
 						onClick={() => handleGenerate(item)}
 					>
 						<FileCheck2 className="h-4 w-4" />
-						Generar XML
+						{t("noticeGenerateXml")}
 					</DropdownMenuItem>
 				)}
 				{item.status === "GENERATED" && (
@@ -459,7 +474,7 @@ export function NoticesTable({
 						onClick={() => navigateTo(`/notices/${item.id}`)}
 					>
 						<Send className="h-4 w-4" />
-						Enviar a SAT
+						{t("noticeSendToSat")}
 					</DropdownMenuItem>
 				)}
 				<DropdownMenuSeparator />
@@ -469,7 +484,7 @@ export function NoticesTable({
 						onClick={() => handleDownload(item)}
 					>
 						<Download className="h-4 w-4" />
-						Descargar XML
+						{t("noticeDownloadXml")}
 					</DropdownMenuItem>
 				)}
 				{item.status === "DRAFT" && (
@@ -478,7 +493,7 @@ export function NoticesTable({
 						onClick={() => handleDelete(item)}
 					>
 						<Trash2 className="h-4 w-4" />
-						Eliminar
+						{t("delete")}
 					</DropdownMenuItem>
 				)}
 			</DropdownMenuContent>
@@ -497,37 +512,35 @@ export function NoticesTable({
 
 		return [
 			{
-				label: "Total Avisos",
+				label: t("noticeTotalNotices"),
 				value: totalNotices,
 				icon: FileWarning,
 			},
 			{
-				label: "Pendientes",
+				label: t("noticePendingCount"),
 				value: draftNotices + pendingSubmission,
 				icon: Clock,
 				variant: "primary",
 			},
 			{
-				label: "Enviados",
+				label: t("noticeSentCount"),
 				value: submittedNotices,
 				icon: Send,
 			},
 			{
-				label: "Total Alertas",
+				label: t("noticeTotalAlerts"),
 				value: totalAlerts,
 				icon: FileCheck2,
 			},
 		];
-	}, [notices, totalNotices]);
+	}, [notices, totalNotices, t]);
 
 	if (!currentOrg && !isLoading) {
 		return (
 			<div className="flex flex-col items-center justify-center py-12 text-center">
 				<AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-				<h3 className="text-lg font-medium">Sin organización</h3>
-				<p className="text-muted-foreground">
-					Selecciona una organización para ver los avisos
-				</p>
+				<h3 className="text-lg font-medium">{t("noticeNoOrg")}</h3>
+				<p className="text-muted-foreground">{t("noticeNoOrgDesc")}</p>
 			</div>
 		);
 	}
@@ -535,11 +548,11 @@ export function NoticesTable({
 	return (
 		<div className="space-y-6">
 			<PageHero
-				title="Avisos SAT"
-				subtitle="Gestión de avisos y envío al portal SAT"
+				title={t("noticeTitle")}
+				subtitle={t("noticeSubtitle")}
 				icon={FileWarning}
 				stats={stats}
-				ctaLabel="Nuevo Aviso"
+				ctaLabel={t("noticeNewNotice")}
 				ctaIcon={Plus}
 				onCtaClick={() => navigateTo("/notices/new")}
 			/>
@@ -548,10 +561,10 @@ export function NoticesTable({
 				columns={columns}
 				filters={filterDefs}
 				searchKeys={["id", "name", "reportedMonth"]}
-				searchPlaceholder="Buscar por nombre, período..."
-				emptyMessage="No se encontraron avisos"
+				searchPlaceholder={t("noticeSearchPlaceholder")}
+				emptyMessage={t("noticeNoResults")}
 				emptyIcon={FileWarning}
-				loadingMessage="Cargando avisos..."
+				loadingMessage={t("noticeLoading")}
 				isLoading={isLoading || isJwtLoading}
 				selectable
 				getId={(item) => item.id}

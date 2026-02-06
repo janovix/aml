@@ -6,6 +6,10 @@ import { useSubscriptionSafe } from "@/lib/subscription";
 import { hasAMLAccess } from "@/lib/subscription";
 import { NoAMLAccess } from "@/components/subscription";
 import { OrgSlugContext } from "@/hooks/useOrgSlug";
+import { useOrgSettings } from "@/hooks/useOrgSettings";
+import { ObligatedSubjectSetup } from "@/components/onboarding/ObligatedSubjectSetup";
+import { Skeleton } from "@/components/ui/skeleton";
+import { getAuthAppUrl } from "@/lib/auth/config";
 
 /**
  * Validate and extract orgSlug from useParams result
@@ -24,6 +28,40 @@ function validateOrgSlug(rawOrgSlug: string | string[] | undefined): string {
 	}
 
 	return slug;
+}
+
+/**
+ * Guard that blocks access until the organization has configured
+ * its obligated subject (RFC) and vulnerable activity.
+ */
+function OrgSettingsGuard({ children }: { children: ReactNode }) {
+	const { isConfigured, isLoading, refresh } = useOrgSettings();
+
+	if (isLoading) {
+		return (
+			<div className="flex min-h-screen items-center justify-center bg-background">
+				<div className="flex flex-col items-center gap-4">
+					<Skeleton className="h-12 w-12 rounded-full" />
+					<Skeleton className="h-4 w-48" />
+					<Skeleton className="h-4 w-32" />
+				</div>
+			</div>
+		);
+	}
+
+	if (!isConfigured) {
+		return (
+			<ObligatedSubjectSetup
+				onComplete={refresh}
+				onSwitchOrg={() => {
+					const authUrl = getAuthAppUrl();
+					window.location.href = authUrl;
+				}}
+			/>
+		);
+	}
+
+	return <>{children}</>;
 }
 
 export default function OrgSlugLayout({ children }: { children: ReactNode }) {
@@ -55,7 +93,7 @@ export default function OrgSlugLayout({ children }: { children: ReactNode }) {
 
 	return (
 		<OrgSlugContext.Provider value={{ orgSlug }}>
-			{children}
+			<OrgSettingsGuard>{children}</OrgSettingsGuard>
 		</OrgSlugContext.Provider>
 	);
 }

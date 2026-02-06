@@ -35,6 +35,7 @@ import { EditDocumentsSection } from "./EditDocumentsSection";
 import { UBOSection } from "./UBOSection";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/lib/mutations";
+import { showFetchError } from "@/lib/toast-utils";
 import { getClientById, updateClient } from "../../lib/api/clients";
 import { listClientUBOs } from "../../lib/api/ubos";
 import { listClientDocuments } from "../../lib/api/client-documents";
@@ -43,6 +44,16 @@ import { executeMutation } from "../../lib/mutations";
 import { getPersonTypeStyle } from "../../lib/person-type-icon";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
 import { getFieldDescription } from "../../lib/field-descriptions";
+import { getClientFieldTierMap } from "@/lib/field-requirements";
+import type { FieldTier } from "@/types/completeness";
+import type { Gender, MaritalStatus } from "../../types/client";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { CatalogSelector } from "../catalogs/CatalogSelector";
 import { PhoneInput } from "../ui/phone-input";
 import { validateRFC, validateCURP, cn } from "../../lib/utils";
@@ -77,6 +88,13 @@ interface ClientFormData {
 	postalCode: string;
 	reference?: string;
 	notes?: string;
+	countryCode?: string;
+	economicActivityCode?: string;
+	gender?: string;
+	maritalStatus?: string;
+	occupation?: string;
+	sourceOfFunds?: string;
+	sourceOfWealth?: string;
 }
 
 interface ClientEditViewProps {
@@ -156,6 +174,13 @@ export function ClientEditView({
 		postalCode: "",
 		reference: "",
 		notes: "",
+		countryCode: "",
+		economicActivityCode: "",
+		gender: "",
+		maritalStatus: "",
+		occupation: "",
+		sourceOfFunds: "",
+		sourceOfWealth: "",
 	});
 
 	const [validationErrors, setValidationErrors] = useState<{
@@ -318,10 +343,17 @@ export function ClientEditView({
 					postalCode: data.postalCode,
 					reference: data.reference ?? "",
 					notes: data.notes ?? "",
+					countryCode: data.countryCode ?? "",
+					economicActivityCode: data.economicActivityCode ?? "",
+					gender: data.gender ?? "",
+					maritalStatus: data.maritalStatus ?? "",
+					occupation: data.occupation ?? "",
+					sourceOfFunds: data.sourceOfFunds ?? "",
+					sourceOfWealth: data.sourceOfWealth ?? "",
 				});
 			} catch (error) {
 				console.error("Error fetching client:", error);
-				toast.error(extractErrorMessage(error));
+				showFetchError("client-edit-load", error);
 			} finally {
 				setIsLoading(false);
 			}
@@ -438,6 +470,16 @@ export function ClientEditView({
 			request.internalNumber = formData.internalNumber;
 		if (formData.reference) request.reference = formData.reference;
 		if (formData.notes) request.notes = formData.notes;
+		if (formData.countryCode) request.countryCode = formData.countryCode;
+		if (formData.economicActivityCode)
+			request.economicActivityCode = formData.economicActivityCode;
+		if (formData.gender) request.gender = formData.gender as Gender;
+		if (formData.maritalStatus)
+			request.maritalStatus = formData.maritalStatus as MaritalStatus;
+		if (formData.occupation) request.occupation = formData.occupation;
+		if (formData.sourceOfFunds) request.sourceOfFunds = formData.sourceOfFunds;
+		if (formData.sourceOfWealth)
+			request.sourceOfWealth = formData.sourceOfWealth;
 
 		try {
 			await executeMutation({
@@ -485,6 +527,7 @@ export function ClientEditView({
 	}
 
 	const lockedPersonType = formData.personType ?? client.personType;
+	const fieldTiers = getClientFieldTierMap(lockedPersonType);
 	const personTypeStyle = getPersonTypeStyle(lockedPersonType);
 	const PersonTypeIcon = personTypeStyle.icon;
 
@@ -641,6 +684,7 @@ export function ClientEditView({
 													<LabelWithInfo
 														htmlFor="firstName"
 														description={getFieldDescription("firstName")}
+														tier={fieldTiers.firstName}
 														required
 													>
 														{t("clientFirstName")}
@@ -662,6 +706,7 @@ export function ClientEditView({
 													<LabelWithInfo
 														htmlFor="lastName"
 														description={getFieldDescription("lastName")}
+														tier={fieldTiers.lastName}
 														required
 													>
 														{t("clientLastName")}
@@ -683,6 +728,7 @@ export function ClientEditView({
 													<LabelWithInfo
 														htmlFor="secondLastName"
 														description={getFieldDescription("secondLastName")}
+														tier={fieldTiers.secondLastName}
 													>
 														{t("clientSecondLastName")}
 													</LabelWithInfo>
@@ -704,6 +750,7 @@ export function ClientEditView({
 													<LabelWithInfo
 														htmlFor="birthDate"
 														description={getFieldDescription("birthDate")}
+														tier={fieldTiers.birthDate}
 														required
 													>
 														{t("clientBirthDate")}
@@ -722,6 +769,7 @@ export function ClientEditView({
 													<LabelWithInfo
 														htmlFor="curp"
 														description={getFieldDescription("curp")}
+														tier={fieldTiers.curp}
 														required
 													>
 														{t("clientCurp")}
@@ -759,6 +807,7 @@ export function ClientEditView({
 												<LabelWithInfo
 													htmlFor="businessName"
 													description={getFieldDescription("businessName")}
+													tier={fieldTiers.businessName}
 													required
 												>
 													{t("clientBusinessName")}
@@ -803,6 +852,7 @@ export function ClientEditView({
 										<LabelWithInfo
 											htmlFor="rfc"
 											description={getFieldDescription("rfc")}
+											tier={fieldTiers.rfc}
 											required
 										>
 											{t("clientRfc")}
@@ -847,13 +897,49 @@ export function ClientEditView({
 											catalogKey="countries"
 											label={t("clientNationality")}
 											labelDescription={getFieldDescription("nationality")}
+											tier={fieldTiers.countryCode}
 											value={formData.nationality}
 											searchPlaceholder={t("clientSearchCountry")}
-											onChange={(option) =>
-												handleInputChange("nationality", option?.id ?? "")
-											}
+											onChange={(option) => {
+												handleInputChange("nationality", option?.id ?? "");
+												handleInputChange(
+													"countryCode",
+													option
+														? ((option.metadata?.code as string) ?? option.id)
+														: "",
+												);
+											}}
 										/>
 									)}
+									{formData.personType !== "physical" && (
+										<CatalogSelector
+											catalogKey="countries"
+											label="País"
+											labelDescription="País de constitución de la entidad"
+											tier={fieldTiers.countryCode}
+											value={formData.countryCode}
+											searchPlaceholder={t("clientSearchCountry")}
+											onChange={(option) => {
+												handleInputChange(
+													"countryCode",
+													option
+														? ((option.metadata?.code as string) ?? option.id)
+														: "",
+												);
+											}}
+										/>
+									)}
+									<CatalogSelector
+										catalogKey="economic-activities"
+										label="Actividad económica"
+										labelDescription="Actividad económica del catálogo SAT (7 dígitos)"
+										tier={fieldTiers.economicActivityCode}
+										value={formData.economicActivityCode}
+										searchPlaceholder="Buscar actividad económica..."
+										onValueChange={(value) =>
+											handleInputChange("economicActivityCode", value ?? "")
+										}
+									/>
 								</CardContent>
 							</Card>
 
@@ -876,6 +962,125 @@ export function ClientEditView({
 											rows={4}
 											placeholder={t("clientNotesPlaceholder")}
 										/>
+									</div>
+								</CardContent>
+							</Card>
+
+							{/* Enhanced KYC Card */}
+							<Card>
+								<CardHeader>
+									<CardTitle className="text-lg">
+										Información complementaria KYC
+									</CardTitle>
+									<p className="text-sm text-muted-foreground">
+										Datos adicionales para debida diligencia y perfil de riesgo
+									</p>
+								</CardHeader>
+								<CardContent className="space-y-4">
+									<div className="grid grid-cols-1 @xl/main:grid-cols-2 gap-4">
+										<div className="space-y-2">
+											<LabelWithInfo
+												htmlFor="gender"
+												description="Género del cliente"
+												tier={fieldTiers.gender}
+											>
+												Género
+											</LabelWithInfo>
+											<Select
+												value={formData.gender || undefined}
+												onValueChange={(value) =>
+													handleInputChange("gender", value)
+												}
+											>
+												<SelectTrigger id="gender">
+													<SelectValue placeholder="Seleccionar género" />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value="M">Masculino</SelectItem>
+													<SelectItem value="F">Femenino</SelectItem>
+													<SelectItem value="OTHER">Otro</SelectItem>
+												</SelectContent>
+											</Select>
+										</div>
+										<div className="space-y-2">
+											<LabelWithInfo
+												htmlFor="maritalStatus"
+												description="Estado civil del cliente"
+												tier={fieldTiers.maritalStatus}
+											>
+												Estado civil
+											</LabelWithInfo>
+											<Select
+												value={formData.maritalStatus || undefined}
+												onValueChange={(value) =>
+													handleInputChange("maritalStatus", value)
+												}
+											>
+												<SelectTrigger id="maritalStatus">
+													<SelectValue placeholder="Seleccionar estado civil" />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value="SINGLE">Soltero/a</SelectItem>
+													<SelectItem value="MARRIED">Casado/a</SelectItem>
+													<SelectItem value="DIVORCED">Divorciado/a</SelectItem>
+													<SelectItem value="WIDOWED">Viudo/a</SelectItem>
+													<SelectItem value="OTHER">Otro</SelectItem>
+												</SelectContent>
+											</Select>
+										</div>
+									</div>
+									<div className="space-y-2">
+										<LabelWithInfo
+											htmlFor="occupation"
+											description="Ocupación o profesión del cliente"
+											tier={fieldTiers.occupation}
+										>
+											Ocupación / Profesión
+										</LabelWithInfo>
+										<Input
+											id="occupation"
+											value={formData.occupation}
+											onChange={(e) =>
+												handleInputChange("occupation", e.target.value)
+											}
+											placeholder="Ej. Empresario, Abogado, Médico"
+										/>
+									</div>
+									<div className="grid grid-cols-1 @xl/main:grid-cols-2 gap-4">
+										<div className="space-y-2">
+											<LabelWithInfo
+												htmlFor="sourceOfFunds"
+												description="De dónde provienen los recursos utilizados en la operación"
+												tier={fieldTiers.sourceOfFunds}
+											>
+												Origen de los recursos
+											</LabelWithInfo>
+											<Input
+												id="sourceOfFunds"
+												value={formData.sourceOfFunds}
+												onChange={(e) =>
+													handleInputChange("sourceOfFunds", e.target.value)
+												}
+												placeholder="Ej. Salario, Inversiones, Herencia"
+											/>
+										</div>
+										<div className="space-y-2">
+											<LabelWithInfo
+												htmlFor="sourceOfWealth"
+												description="Origen general del patrimonio del cliente"
+												tier={fieldTiers.sourceOfWealth}
+											>
+												Origen del patrimonio
+											</LabelWithInfo>
+											<Input
+												id="sourceOfWealth"
+												value={formData.sourceOfWealth}
+												onChange={(e) =>
+													handleInputChange("sourceOfWealth", e.target.value)
+												}
+												placeholder="Ej. Actividad empresarial, Profesión"
+											/>
+										</div>
 									</div>
 								</CardContent>
 							</Card>
@@ -920,6 +1125,7 @@ export function ClientEditView({
 											<LabelWithInfo
 												htmlFor="email"
 												description={getFieldDescription("email")}
+												tier={fieldTiers.email}
 												required
 											>
 												{t("clientEmail")}
@@ -939,6 +1145,7 @@ export function ClientEditView({
 											<LabelWithInfo
 												htmlFor="phone"
 												description={getFieldDescription("phone")}
+												tier={fieldTiers.phone}
 												required
 											>
 												{t("clientPhone")}
@@ -1012,6 +1219,7 @@ export function ClientEditView({
 											<LabelWithInfo
 												htmlFor="street"
 												description={getFieldDescription("street")}
+												tier={fieldTiers.street}
 												required
 											>
 												{t("clientStreet")}

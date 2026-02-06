@@ -54,11 +54,21 @@ export const routes = {
 		detail: (id: string) => orgPath(`/clients/${id}`),
 		edit: (id: string) => orgPath(`/clients/${id}/edit`),
 	},
-	transactions: {
-		list: () => orgPath("/transactions"),
-		new: () => orgPath("/transactions/new"),
-		detail: (id: string) => orgPath(`/transactions/${id}`),
-		edit: (id: string) => orgPath(`/transactions/${id}/edit`),
+	operations: {
+		list: () => orgPath("/operations"),
+		new: () => orgPath("/operations/new"),
+		detail: (id: string) => orgPath(`/operations/${id}`),
+		edit: (id: string) => orgPath(`/operations/${id}/edit`),
+	},
+	invoices: {
+		list: () => orgPath("/invoices"),
+		detail: (id: string) => orgPath(`/invoices/${id}`),
+		upload: () => orgPath("/invoices/upload"),
+		createOperation: (id: string) =>
+			orgPath(`/invoices/${id}/create-operation`),
+	},
+	notices: {
+		list: () => orgPath("/notices"),
 	},
 	alerts: {
 		list: () => orgPath("/alerts"),

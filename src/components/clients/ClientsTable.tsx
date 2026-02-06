@@ -156,8 +156,9 @@ export function ClientsTable(): React.ReactElement {
 				setHasMore(response.pagination.page < response.pagination.totalPages);
 				hasLoadedForOrgRef.current = currentOrg.id;
 			} catch (error) {
+				hasLoadedForOrgRef.current = currentOrg.id;
 				console.error("Error fetching clients:", error);
-				toast.error(t("clientsLoadError"));
+				toast.error(t("clientsLoadError"), { id: "clients-table" });
 			} finally {
 				setIsLoading(false);
 			}
@@ -185,7 +186,7 @@ export function ClientsTable(): React.ReactElement {
 			setHasMore(response.pagination.page < response.pagination.totalPages);
 		} catch (error) {
 			console.error("Error loading more clients:", error);
-			toast.error(t("clientsLoadMoreError"));
+			toast.error(t("clientsLoadMoreError"), { id: "clients-table-more" });
 		} finally {
 			setIsLoadingMore(false);
 		}
@@ -459,9 +460,9 @@ export function ClientsTable(): React.ReactElement {
 				</DropdownMenuItem>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem
-					onClick={() => navigateTo(`/transactions?clientId=${item.id}`)}
+					onClick={() => navigateTo(`/operations?clientId=${item.id}`)}
 				>
-					{t("actionViewTransactions")}
+					{t("actionViewOperations")}
 				</DropdownMenuItem>
 				<DropdownMenuItem
 					onClick={() => navigateTo(`/alerts?clientId=${item.id}`)}

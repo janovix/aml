@@ -37,8 +37,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useJwt } from "@/hooks/useJwt";
-import { toast } from "sonner";
-import { extractErrorMessage } from "@/lib/mutations";
+import { showFetchError } from "@/lib/toast-utils";
 import { useOrgStore } from "@/lib/org-store";
 import {
 	listAlerts,
@@ -59,6 +58,7 @@ import {
 import { formatProperNoun } from "@/lib/utils";
 import { PageHero, type StatCard } from "@/components/page-hero";
 import { useLanguage } from "@/components/LanguageProvider";
+import type { TranslationKeys } from "@/lib/translations";
 
 /**
  * Extended alert row with resolved client and rule names
@@ -82,27 +82,27 @@ const statusConfig: Record<
 	{ label: string; icon: React.ReactNode; bgColor: string }
 > = {
 	DETECTED: {
-		label: "Detectada",
+		label: "alertStatusDetectedLabel",
 		icon: <Bell className="h-4 w-4" />,
 		bgColor: "bg-amber-500/20 text-amber-400",
 	},
 	FILE_GENERATED: {
-		label: "Archivo Generado",
+		label: "alertStatusFileGenerated",
 		icon: <FileCheck className="h-4 w-4" />,
 		bgColor: "bg-sky-500/20 text-sky-400",
 	},
 	SUBMITTED: {
-		label: "Enviada",
+		label: "alertStatusSentLabel",
 		icon: <Send className="h-4 w-4" />,
 		bgColor: "bg-emerald-500/20 text-emerald-400",
 	},
 	OVERDUE: {
-		label: "Vencida",
+		label: "alertStatusOverdueLabel",
 		icon: <AlertCircle className="h-4 w-4" />,
 		bgColor: "bg-red-500/20 text-red-400",
 	},
 	CANCELLED: {
-		label: "Cancelada",
+		label: "alertStatusCancelled",
 		icon: <XCircle className="h-4 w-4" />,
 		bgColor: "bg-zinc-500/20 text-zinc-400",
 	},
@@ -112,10 +112,10 @@ const severityConfig: Record<
 	AlertSeverity,
 	{ label: string; dotColor: string }
 > = {
-	LOW: { label: "Baja", dotColor: "bg-zinc-400" },
-	MEDIUM: { label: "Media", dotColor: "bg-amber-400" },
-	HIGH: { label: "Alta", dotColor: "bg-orange-500" },
-	CRITICAL: { label: "Crítica", dotColor: "bg-red-500" },
+	LOW: { label: "alertSeverityLow", dotColor: "bg-zinc-400" },
+	MEDIUM: { label: "alertSeverityMedium", dotColor: "bg-amber-400" },
+	HIGH: { label: "alertSeverityHigh", dotColor: "bg-orange-500" },
+	CRITICAL: { label: "alertSeverityCritical", dotColor: "bg-red-500" },
 };
 
 interface AlertsTableProps {
@@ -229,8 +229,9 @@ export function AlertsTable({
 
 				await fetchClientsForAlerts(response.data);
 			} catch (error) {
+				hasLoadedForOrgRef.current = currentOrg.id;
 				console.error("Error fetching alerts:", error);
-				toast.error(extractErrorMessage(error));
+				showFetchError("alerts-table", error);
 			} finally {
 				setIsLoading(false);
 			}
@@ -277,7 +278,7 @@ export function AlertsTable({
 				await fetchClientsForAlerts(response.data);
 			} catch (error) {
 				console.error("Error fetching alerts:", error);
-				toast.error(extractErrorMessage(error));
+				showFetchError("alerts-table-filter", error);
 			} finally {
 				setIsLoading(false);
 			}
@@ -308,7 +309,7 @@ export function AlertsTable({
 			await fetchClientsForAlerts(response.data);
 		} catch (error) {
 			console.error("Error loading more alerts:", error);
-			toast.error(extractErrorMessage(error));
+			showFetchError("alerts-table-more", error);
 		} finally {
 			setIsLoadingMore(false);
 		}
@@ -374,7 +375,7 @@ export function AlertsTable({
 		() => [
 			{
 				id: "alert",
-				header: "Alerta",
+				header: t("alertTableAlert"),
 				accessorKey: "ruleName",
 				cell: (item) => {
 					const statusCfg = statusConfig[item.status];
@@ -393,7 +394,7 @@ export function AlertsTable({
 										</span>
 									</TooltipTrigger>
 									<TooltipContent side="right">
-										<p>{statusCfg.label}</p>
+										<p>{t(statusCfg.label as TranslationKeys)}</p>
 									</TooltipContent>
 								</Tooltip>
 							</TooltipProvider>
@@ -407,7 +408,10 @@ export function AlertsTable({
 												/>
 											</TooltipTrigger>
 											<TooltipContent>
-												<p>Severidad: {severityCfg.label}</p>
+												<p>
+													{t("alertSeverityLabel")}:{" "}
+													{t(severityCfg.label as TranslationKeys)}
+												</p>
 											</TooltipContent>
 										</Tooltip>
 									</TooltipProvider>
@@ -431,7 +435,7 @@ export function AlertsTable({
 			},
 			{
 				id: "client",
-				header: "Cliente",
+				header: t("alertTableClient"),
 				accessorKey: "clientName",
 				sortable: true,
 				hideOnMobile: true,
@@ -452,7 +456,7 @@ export function AlertsTable({
 			},
 			{
 				id: "deadline",
-				header: "Fecha Límite",
+				header: t("alertTableDeadline"),
 				accessorKey: "submissionDeadline",
 				sortable: true,
 				cell: (item) => {
@@ -479,7 +483,7 @@ export function AlertsTable({
 			},
 			{
 				id: "createdAt",
-				header: "Creación",
+				header: t("alertTableCreation"),
 				accessorKey: "createdAt",
 				sortable: true,
 				hideOnMobile: true,
@@ -501,7 +505,7 @@ export function AlertsTable({
 				},
 			},
 		],
-		[],
+		[t],
 	);
 
 	// Filter definitions
@@ -509,12 +513,12 @@ export function AlertsTable({
 		() => [
 			{
 				id: "status",
-				label: "Estado",
+				label: t("alertFilterStatus"),
 				icon: Bell,
 				options: [
 					{
 						value: "DETECTED",
-						label: "Detectada",
+						label: t("alertStatusDetectedLabel"),
 						icon: (
 							<span className="flex items-center justify-center h-5 w-5 rounded bg-amber-500/20 text-amber-400">
 								<Bell className="h-3 w-3" />
@@ -523,7 +527,7 @@ export function AlertsTable({
 					},
 					{
 						value: "FILE_GENERATED",
-						label: "Archivo Generado",
+						label: t("alertStatusFileGenerated"),
 						icon: (
 							<span className="flex items-center justify-center h-5 w-5 rounded bg-sky-500/20 text-sky-400">
 								<FileCheck className="h-3 w-3" />
@@ -532,7 +536,7 @@ export function AlertsTable({
 					},
 					{
 						value: "SUBMITTED",
-						label: "Enviada",
+						label: t("alertStatusSentLabel"),
 						icon: (
 							<span className="flex items-center justify-center h-5 w-5 rounded bg-emerald-500/20 text-emerald-400">
 								<Send className="h-3 w-3" />
@@ -541,7 +545,7 @@ export function AlertsTable({
 					},
 					{
 						value: "OVERDUE",
-						label: "Vencida",
+						label: t("alertStatusOverdueLabel"),
 						icon: (
 							<span className="flex items-center justify-center h-5 w-5 rounded bg-red-500/20 text-red-400">
 								<AlertCircle className="h-3 w-3" />
@@ -550,7 +554,7 @@ export function AlertsTable({
 					},
 					{
 						value: "CANCELLED",
-						label: "Cancelada",
+						label: t("alertStatusCancelled"),
 						icon: (
 							<span className="flex items-center justify-center h-5 w-5 rounded bg-zinc-500/20 text-zinc-400">
 								<XCircle className="h-3 w-3" />
@@ -561,50 +565,50 @@ export function AlertsTable({
 			},
 			{
 				id: "severity",
-				label: "Severidad",
+				label: t("alertFilterSeverity"),
 				icon: AlertTriangle,
 				options: [
 					{
 						value: "LOW",
-						label: "Baja",
+						label: t("alertSeverityLow"),
 						icon: <span className="h-3 w-3 rounded-full bg-zinc-400" />,
 					},
 					{
 						value: "MEDIUM",
-						label: "Media",
+						label: t("alertSeverityMedium"),
 						icon: <span className="h-3 w-3 rounded-full bg-amber-400" />,
 					},
 					{
 						value: "HIGH",
-						label: "Alta",
+						label: t("alertSeverityHigh"),
 						icon: <span className="h-3 w-3 rounded-full bg-orange-500" />,
 					},
 					{
 						value: "CRITICAL",
-						label: "Crítica",
+						label: t("alertSeverityCritical"),
 						icon: <span className="h-3 w-3 rounded-full bg-red-500" />,
 					},
 				],
 			},
 			{
 				id: "isOverdue",
-				label: "Vencimiento",
+				label: t("alertFilterExpiry"),
 				icon: Clock,
 				options: [
 					{
 						value: "true",
-						label: "Vencidas",
+						label: t("alertFilterOverdue"),
 						icon: <AlertCircle className="h-3.5 w-3.5 text-red-400" />,
 					},
 					{
 						value: "false",
-						label: "Vigentes",
+						label: t("alertFilterActive"),
 						icon: <Clock className="h-3.5 w-3.5 text-emerald-400" />,
 					},
 				],
 			},
 		],
-		[],
+		[t],
 	);
 
 	// Row actions
@@ -621,18 +625,18 @@ export function AlertsTable({
 					onClick={() => navigateTo(`/alerts/${item.id}`)}
 				>
 					<Eye className="h-4 w-4" />
-					Ver detalle
+					{t("alertViewDetail")}
 				</DropdownMenuItem>
 				{item.status === "DETECTED" && (
 					<DropdownMenuItem className="gap-2">
 						<FileText className="h-4 w-4" />
-						Generar archivo
+						{t("alertGenerateFile")}
 					</DropdownMenuItem>
 				)}
 				{item.status === "FILE_GENERATED" && (
 					<DropdownMenuItem className="gap-2">
 						<Send className="h-4 w-4" />
-						Enviar a SAT
+						{t("alertSendToSat")}
 					</DropdownMenuItem>
 				)}
 				<DropdownMenuSeparator />
@@ -641,12 +645,12 @@ export function AlertsTable({
 					onClick={() => navigateTo(`/clients/${item.clientId}`)}
 				>
 					<User className="h-4 w-4" />
-					Ver cliente
+					{t("alertViewClient")}
 				</DropdownMenuItem>
 				{item.status !== "CANCELLED" && item.status !== "SUBMITTED" && (
 					<DropdownMenuItem className="gap-2 text-destructive">
 						<XCircle className="h-4 w-4" />
-						Cancelar alerta
+						{t("alertCancelAlertAction")}
 					</DropdownMenuItem>
 				)}
 			</DropdownMenuContent>

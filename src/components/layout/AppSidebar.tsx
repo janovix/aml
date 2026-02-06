@@ -10,6 +10,7 @@ import {
 	FileWarning,
 	Home,
 	Briefcase,
+	ReceiptText,
 	Settings,
 	Search,
 	Upload,
@@ -69,9 +70,15 @@ const mainNavItems: NavItem[] = [
 		available: true,
 	},
 	{
-		titleKey: "navTransactions",
-		href: "/transactions",
+		titleKey: "navOperations",
+		href: "/operations",
 		icon: Briefcase,
+		available: true,
+	},
+	{
+		titleKey: "navInvoices",
+		href: "/invoices",
+		icon: ReceiptText,
 		available: true,
 	},
 ];

@@ -13,7 +13,7 @@ const meta = {
 		docs: {
 			description: {
 				component:
-					"View component for displaying detailed information about a client. Shows client personal/business data (with person type styling), contact information, transaction history dates, and compliance notes. Includes loading skeleton, navigation controls, and action buttons for editing, generating reports, and marking as suspicious.",
+					"View component for displaying detailed information about a client. Shows client personal/business data (with person type styling), contact information, operation history dates, and compliance notes. Includes loading skeleton, navigation controls, and action buttons for editing, generating reports, and marking as suspicious.",
 			},
 		},
 		nextjs: {

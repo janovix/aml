@@ -362,7 +362,7 @@ describe("useSubscription", () => {
 					overage: 0,
 					planTier: "business",
 				},
-				transactions: {
+				operations: {
 					allowed: true,
 					used: 90,
 					included: 100,
@@ -394,8 +394,8 @@ describe("useSubscription", () => {
 					<div data-testid="alerts-near">
 						{sub.isNearLimit("alerts") ? "yes" : "no"}
 					</div>
-					<div data-testid="transactions-near">
-						{sub.isNearLimit("transactions") ? "yes" : "no"}
+					<div data-testid="operations-near">
+						{sub.isNearLimit("operations") ? "yes" : "no"}
 					</div>
 				</div>
 			);
@@ -411,7 +411,7 @@ describe("useSubscription", () => {
 			expect(screen.getByTestId("notices-near")).toHaveTextContent("yes");
 			expect(screen.getByTestId("users-near")).toHaveTextContent("no");
 			expect(screen.getByTestId("alerts-near")).toHaveTextContent("no");
-			expect(screen.getByTestId("transactions-near")).toHaveTextContent("yes");
+			expect(screen.getByTestId("operations-near")).toHaveTextContent("yes");
 		});
 	});
 });

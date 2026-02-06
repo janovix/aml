@@ -34,19 +34,17 @@ interface SubscriptionContextValue {
 	hasPaidSubscription: boolean;
 	/** Get usage info for a specific metric */
 	getUsage: (
-		metric: "notices" | "users" | "alerts" | "transactions",
+		metric: "notices" | "users" | "alerts" | "operations",
 	) => UsageCheckResult | null;
 	/** Check if a metric is near limit */
 	isNearLimit: (
-		metric: "notices" | "users" | "alerts" | "transactions",
+		metric: "notices" | "users" | "alerts" | "operations",
 	) => boolean;
 	/** Check if a metric is at limit */
-	isAtLimit: (
-		metric: "notices" | "users" | "alerts" | "transactions",
-	) => boolean;
+	isAtLimit: (metric: "notices" | "users" | "alerts" | "operations") => boolean;
 	/** Get usage percentage for a metric */
 	getUsagePercentage: (
-		metric: "notices" | "users" | "alerts" | "transactions",
+		metric: "notices" | "users" | "alerts" | "operations",
 	) => number;
 }
 
@@ -84,7 +82,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 	}, [refresh]);
 
 	const getUsage = useCallback(
-		(metric: "notices" | "users" | "alerts" | "transactions") => {
+		(metric: "notices" | "users" | "alerts" | "operations") => {
 			if (!subscription?.usage) return null;
 			return subscription.usage[metric] ?? null;
 		},
@@ -92,7 +90,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 	);
 
 	const isNearLimit = useCallback(
-		(metric: "notices" | "users" | "alerts" | "transactions") => {
+		(metric: "notices" | "users" | "alerts" | "operations") => {
 			const usage = getUsage(metric);
 			if (!usage) return false;
 			return checkIsNearLimit(usage);
@@ -101,7 +99,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 	);
 
 	const isAtLimit = useCallback(
-		(metric: "notices" | "users" | "alerts" | "transactions") => {
+		(metric: "notices" | "users" | "alerts" | "operations") => {
 			const usage = getUsage(metric);
 			if (!usage) return false;
 			return checkIsAtLimit(usage);
@@ -110,7 +108,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 	);
 
 	const getMetricUsagePercentage = useCallback(
-		(metric: "notices" | "users" | "alerts" | "transactions") => {
+		(metric: "notices" | "users" | "alerts" | "operations") => {
 			const usage = getUsage(metric);
 			if (!usage) return 0;
 			return getUsagePercentage(usage);

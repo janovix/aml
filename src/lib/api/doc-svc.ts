@@ -15,12 +15,16 @@ const DOC_SVC_URL =
 export interface InitiateUploadResponse {
 	documentId: string;
 	uploadUrls: {
-		pdf?: string;
-		images: string[];
+		originalPdfs: string[];
+		originalImages: string[];
+		rasterizedImages: string[];
+		finalPdf: string;
 	};
 	keys: {
-		pdf?: string;
-		images: string[];
+		originalPdfs: string[];
+		originalImages: string[];
+		rasterizedImages: string[];
+		finalPdf: string;
 	};
 	expiresAt: string;
 }
@@ -189,7 +193,12 @@ export async function confirmUpload(
 	organizationId: string,
 	userId: string,
 	documentId: string,
-	keys: { pdf?: string; images: string[] },
+	keys: {
+		originalPdfs: string[];
+		originalImages: string[];
+		rasterizedImages: string[];
+		finalPdf: string;
+	},
 	fileName: string,
 	fileSize: number,
 ): Promise<ConfirmUploadResponse> {
@@ -352,18 +361,22 @@ export async function uploadDocument(
 	const uploadPromises: Promise<void>[] = [];
 
 	// Upload PDF if present
-	if (pdf && initResult.uploadUrls.pdf) {
+	if (pdf && initResult.uploadUrls.finalPdf) {
 		uploadPromises.push(
-			uploadToPresignedUrl(initResult.uploadUrls.pdf, pdf, "application/pdf"),
+			uploadToPresignedUrl(
+				initResult.uploadUrls.finalPdf,
+				pdf,
+				"application/pdf",
+			),
 		);
 	}
 
-	// Upload images
+	// Upload images to rasterizedImages URLs
 	for (let i = 0; i < images.length; i++) {
-		if (initResult.uploadUrls.images[i]) {
+		if (initResult.uploadUrls.rasterizedImages[i]) {
 			uploadPromises.push(
 				uploadToPresignedUrl(
-					initResult.uploadUrls.images[i],
+					initResult.uploadUrls.rasterizedImages[i],
 					images[i],
 					"image/jpeg",
 				),

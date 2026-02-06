@@ -246,10 +246,11 @@ describe("ClientsTable", () => {
 
 		renderWithProviders(<ClientsTable />);
 
-		// Verify toast.error was called via Sonner
+		// Verify toast.error was called via Sonner (with dedup id)
 		await waitFor(() => {
 			expect(mockToastError).toHaveBeenCalledWith(
 				"No se pudieron cargar los clientes.",
+				{ id: "clients-table" },
 			);
 		});
 	});
@@ -739,7 +740,7 @@ describe("ClientsTable", () => {
 		).toBeInTheDocument();
 	});
 
-	it("renders action menu with navigate to transactions option", async () => {
+	it("renders action menu with navigate to operations option", async () => {
 		renderWithProviders(<ClientsTable />);
 
 		await waitFor(() => {
@@ -872,7 +873,7 @@ describe("ClientsTable", () => {
 		}
 	});
 
-	it("navigates to transactions when action is clicked", async () => {
+	it("navigates to operations when action is clicked", async () => {
 		const user = userEvent.setup();
 		renderWithProviders(<ClientsTable />);
 
@@ -889,14 +890,14 @@ describe("ClientsTable", () => {
 			await user.click(moreButton);
 
 			await waitFor(() => {
-				const transactionsOption = screen.getByText("Ver transacciones");
-				expect(transactionsOption).toBeInTheDocument();
+				const operationsOption = screen.getByText("Ver operaciones");
+				expect(operationsOption).toBeInTheDocument();
 			});
 
-			await user.click(screen.getByText("Ver transacciones"));
+			await user.click(screen.getByText("Ver operaciones"));
 
 			expect(mockPush).toHaveBeenCalledWith(
-				`/transactions?clientId=${mockClients[0].rfc}`,
+				`/operations?clientId=${mockClients[0].rfc}`,
 			);
 		}
 	});
@@ -1587,7 +1588,7 @@ describe("ClientsTable", () => {
 				expect(screen.getByText("Ver detalle")).toBeInTheDocument();
 				expect(screen.getByText("Editar cliente")).toBeInTheDocument();
 				expect(screen.getByText("Generar Reporte")).toBeInTheDocument();
-				expect(screen.getByText("Ver transacciones")).toBeInTheDocument();
+				expect(screen.getByText("Ver operaciones")).toBeInTheDocument();
 				expect(screen.getByText("Ver alertas")).toBeInTheDocument();
 				expect(screen.getByText("Marcar como Sospechoso")).toBeInTheDocument();
 				expect(screen.getByText("Eliminar")).toBeInTheDocument();
@@ -1624,7 +1625,7 @@ describe("ClientsTable", () => {
 		}
 	});
 
-	it("navigates to transactions page when Ver transacciones is clicked", async () => {
+	it("navigates to operations page when Ver operaciones is clicked", async () => {
 		const user = userEvent.setup();
 		renderWithProviders(<ClientsTable />);
 
@@ -1642,13 +1643,13 @@ describe("ClientsTable", () => {
 			await user.click(moreButton);
 
 			await waitFor(() => {
-				expect(screen.getByText("Ver transacciones")).toBeInTheDocument();
+				expect(screen.getByText("Ver operaciones")).toBeInTheDocument();
 			});
 
-			await user.click(screen.getByText("Ver transacciones"));
+			await user.click(screen.getByText("Ver operaciones"));
 
 			expect(mockPush).toHaveBeenCalledWith(
-				`/transactions?clientId=${mockClients[0].rfc}`,
+				`/operations?clientId=${mockClients[0].rfc}`,
 			);
 		}
 	});
@@ -2131,7 +2132,7 @@ describe("ClientsTable", () => {
 				expect(screen.getByText("Ver detalle")).toBeInTheDocument();
 				expect(screen.getByText("Editar cliente")).toBeInTheDocument();
 				expect(screen.getByText("Generar Reporte")).toBeInTheDocument();
-				expect(screen.getByText("Ver transacciones")).toBeInTheDocument();
+				expect(screen.getByText("Ver operaciones")).toBeInTheDocument();
 				expect(screen.getByText("Ver alertas")).toBeInTheDocument();
 				expect(screen.getByText("Marcar como Sospechoso")).toBeInTheDocument();
 				expect(screen.getByText("Eliminar")).toBeInTheDocument();
@@ -2440,7 +2441,7 @@ describe("ClientsTable", () => {
 		}
 	});
 
-	it("navigates to Ver transacciones when clicked", async () => {
+	it("navigates to Ver operaciones when clicked", async () => {
 		const user = userEvent.setup();
 		renderWithProviders(<ClientsTable />);
 
@@ -2458,10 +2459,10 @@ describe("ClientsTable", () => {
 			await user.click(moreButton);
 
 			await waitFor(() => {
-				expect(screen.getByText("Ver transacciones")).toBeInTheDocument();
+				expect(screen.getByText("Ver operaciones")).toBeInTheDocument();
 			});
 
-			await user.click(screen.getByText("Ver transacciones"));
+			await user.click(screen.getByText("Ver operaciones"));
 
 			// Navigation is tested through router.push being called
 		}
@@ -3206,7 +3207,7 @@ describe("ClientsTable", () => {
 				expect(screen.getByText("Ver detalle")).toBeInTheDocument();
 				expect(screen.getByText("Editar cliente")).toBeInTheDocument();
 				expect(screen.getByText("Generar Reporte")).toBeInTheDocument();
-				expect(screen.getByText("Ver transacciones")).toBeInTheDocument();
+				expect(screen.getByText("Ver operaciones")).toBeInTheDocument();
 				expect(screen.getByText("Ver alertas")).toBeInTheDocument();
 				expect(screen.getByText("Marcar como Sospechoso")).toBeInTheDocument();
 				expect(screen.getByText("Eliminar")).toBeInTheDocument();

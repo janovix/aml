@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/lib/mutations";
+import { showFetchError } from "@/lib/toast-utils";
 import {
 	DataTable,
 	type ColumnDef,
@@ -43,6 +44,8 @@ import {
 } from "@/components/data-table";
 import { PageHero, type StatCard } from "@/components/page-hero";
 import { formatProperNoun } from "@/lib/utils";
+import { useLanguage } from "@/components/LanguageProvider";
+import type { TranslationKeys } from "@/lib/translations";
 import {
 	listReports,
 	deleteReport,
@@ -55,27 +58,39 @@ import {
 
 const ITEMS_PER_PAGE = 20;
 
-const typeConfig: Record<ReportType, { label: string; bgColor: string }> = {
-	MONTHLY: { label: "Mensual", bgColor: "bg-sky-500/20 text-sky-400" },
+const typeConfig: Record<
+	ReportType,
+	{ label: TranslationKeys; bgColor: string }
+> = {
+	MONTHLY: {
+		label: "reportTypeMonthly",
+		bgColor: "bg-sky-500/20 text-sky-400",
+	},
 	QUARTERLY: {
-		label: "Trimestral",
+		label: "reportTypeQuarterly",
 		bgColor: "bg-violet-500/20 text-violet-400",
 	},
-	ANNUAL: { label: "Anual", bgColor: "bg-amber-500/20 text-amber-400" },
-	CUSTOM: { label: "Personalizado", bgColor: "bg-zinc-500/20 text-zinc-400" },
+	ANNUAL: {
+		label: "reportTypeAnnual",
+		bgColor: "bg-amber-500/20 text-amber-400",
+	},
+	CUSTOM: {
+		label: "reportTypeCustom",
+		bgColor: "bg-zinc-500/20 text-zinc-400",
+	},
 };
 
 const statusConfig: Record<
 	ReportStatus,
-	{ label: string; icon: React.ReactNode; color: string }
+	{ label: TranslationKeys; icon: React.ReactNode; color: string }
 > = {
 	DRAFT: {
-		label: "Borrador",
+		label: "statusDraft",
 		icon: <Clock className="h-4 w-4" />,
 		color: "text-zinc-400",
 	},
 	GENERATED: {
-		label: "Generado",
+		label: "statusGenerated",
 		icon: <FileCheck2 className="h-4 w-4" />,
 		color: "text-sky-400",
 	},
@@ -94,6 +109,7 @@ export function ReportsTable({
 	const { navigateTo, orgPath } = useOrgNavigation();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const { currentOrg } = useOrgStore();
+	const { t } = useLanguage();
 
 	const [reports, setReports] = useState<Report[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
@@ -126,7 +142,10 @@ export function ReportsTable({
 			setHasMore(response.pagination.page < response.pagination.totalPages);
 		} catch (error) {
 			console.error("Error fetching reports:", error);
-			toast.error(extractErrorMessage(error));
+			showFetchError("reports-table", error);
+			if (currentOrg?.id) {
+				hasLoadedForOrgRef.current = currentOrg.id;
+			}
 		} finally {
 			setIsLoading(false);
 		}
@@ -151,7 +170,7 @@ export function ReportsTable({
 			setHasMore(response.pagination.page < response.pagination.totalPages);
 		} catch (error) {
 			console.error("Error loading more reports:", error);
-			toast.error(extractErrorMessage(error));
+			showFetchError("reports-table-more", error);
 		} finally {
 			setIsLoadingMore(false);
 		}
@@ -233,7 +252,7 @@ export function ReportsTable({
 		() => [
 			{
 				id: "report",
-				header: "Reporte",
+				header: t("reportTableReport"),
 				accessorKey: "name",
 				sortable: true,
 				cell: (item) => {
@@ -252,7 +271,7 @@ export function ReportsTable({
 										</span>
 									</TooltipTrigger>
 									<TooltipContent side="right">
-										<p>{typeCfg.label}</p>
+										<p>{t(typeCfg.label)}</p>
 									</TooltipContent>
 								</Tooltip>
 							</TooltipProvider>
@@ -272,7 +291,7 @@ export function ReportsTable({
 												</span>
 											</TooltipTrigger>
 											<TooltipContent>
-												<p>{statusCfg.label}</p>
+												<p>{t(statusCfg.label)}</p>
 											</TooltipContent>
 										</Tooltip>
 									</TooltipProvider>
@@ -287,7 +306,7 @@ export function ReportsTable({
 			},
 			{
 				id: "period",
-				header: "Período",
+				header: t("noticePeriod"),
 				accessorKey: "reportedMonth",
 				hideOnMobile: true,
 				cell: (item) => {
@@ -316,7 +335,7 @@ export function ReportsTable({
 			},
 			{
 				id: "recordCount",
-				header: "Registros",
+				header: t("reportTableRecords"),
 				accessorKey: "recordCount",
 				sortable: true,
 				className: "text-center",
@@ -327,7 +346,7 @@ export function ReportsTable({
 				),
 			},
 		],
-		[orgPath],
+		[orgPath, t],
 	);
 
 	// Filter definitions
@@ -335,12 +354,12 @@ export function ReportsTable({
 		() => [
 			{
 				id: "type",
-				label: "Tipo",
+				label: t("reportFilterType"),
 				icon: FileText,
 				options: [
 					{
 						value: "MONTHLY",
-						label: "Mensual",
+						label: t("reportTypeMonthly"),
 						icon: (
 							<span className="flex items-center justify-center h-5 w-5 rounded bg-sky-500/20 text-sky-400">
 								<FileText className="h-3 w-3" />
@@ -349,7 +368,7 @@ export function ReportsTable({
 					},
 					{
 						value: "QUARTERLY",
-						label: "Trimestral",
+						label: t("reportTypeQuarterly"),
 						icon: (
 							<span className="flex items-center justify-center h-5 w-5 rounded bg-violet-500/20 text-violet-400">
 								<FileText className="h-3 w-3" />
@@ -358,7 +377,7 @@ export function ReportsTable({
 					},
 					{
 						value: "ANNUAL",
-						label: "Anual",
+						label: t("reportTypeAnnual"),
 						icon: (
 							<span className="flex items-center justify-center h-5 w-5 rounded bg-amber-500/20 text-amber-400">
 								<FileText className="h-3 w-3" />
@@ -367,7 +386,7 @@ export function ReportsTable({
 					},
 					{
 						value: "CUSTOM",
-						label: "Personalizado",
+						label: t("reportTypeCustom"),
 						icon: (
 							<span className="flex items-center justify-center h-5 w-5 rounded bg-zinc-500/20 text-zinc-400">
 								<FileText className="h-3 w-3" />
@@ -378,37 +397,34 @@ export function ReportsTable({
 			},
 			{
 				id: "status",
-				label: "Estado",
+				label: t("reportFilterStatus"),
 				icon: Clock,
 				options: [
 					{
 						value: "DRAFT",
-						label: "Borrador",
+						label: t("statusDraft"),
 						icon: <Clock className="h-3.5 w-3.5 text-zinc-400" />,
 					},
 					{
 						value: "GENERATED",
-						label: "Generado",
+						label: t("statusGenerated"),
 						icon: <FileCheck2 className="h-3.5 w-3.5 text-sky-400" />,
 					},
 				],
 			},
 		],
-		[],
+		[t],
 	);
 
 	const handleGenerate = async (report: Report) => {
 		if (!jwt) return;
 		try {
 			const result = await generateReportFile({ id: report.id, jwt });
-			const typesStr = result.types.join(" y ");
-			toast.success(
-				`${typesStr} generado${result.types.length > 1 ? "s" : ""} con ${result.alertCount} alertas`,
-			);
+			toast.success(t("reportGeneratedToast"));
 			doFetchReports(jwt);
 		} catch (error) {
 			console.error("Error generating report:", error);
-			toast.error(extractErrorMessage(error));
+			toast.error(extractErrorMessage(error), { id: "reports-generate" });
 		}
 	};
 
@@ -421,7 +437,7 @@ export function ReportsTable({
 			});
 		} catch (error) {
 			console.error("Error downloading report:", error);
-			toast.error(extractErrorMessage(error));
+			toast.error(extractErrorMessage(error), { id: "reports-download" });
 		}
 	};
 
@@ -429,11 +445,11 @@ export function ReportsTable({
 		if (!jwt) return;
 		try {
 			await deleteReport({ id: report.id, jwt });
-			toast.success(`${report.name} ha sido eliminado.`);
+			toast.success(`${report.name} ${t("reportDeletedToast")}`);
 			doFetchReports(jwt);
 		} catch (error) {
 			console.error("Error deleting report:", error);
-			toast.error(extractErrorMessage(error));
+			toast.error(extractErrorMessage(error), { id: "reports-delete" });
 		}
 	};
 
@@ -451,7 +467,7 @@ export function ReportsTable({
 					onClick={() => navigateTo(`/reports/${item.id}`)}
 				>
 					<Eye className="h-4 w-4" />
-					Ver detalle
+					{t("reportViewDetail")}
 				</DropdownMenuItem>
 				{item.status === "DRAFT" && (
 					<DropdownMenuItem
@@ -459,7 +475,8 @@ export function ReportsTable({
 						onClick={() => handleGenerate(item)}
 					>
 						<FileCheck2 className="h-4 w-4" />
-						Generar {item.periodType === "MONTHLY" ? "XML y PDF" : "PDF"}
+						{t("reportGenerate")}{" "}
+						{item.periodType === "MONTHLY" ? "XML y PDF" : "PDF"}
 					</DropdownMenuItem>
 				)}
 				{item.status === "GENERATED" && item.periodType === "MONTHLY" && (
@@ -468,7 +485,7 @@ export function ReportsTable({
 						onClick={() => navigateTo(`/reports/${item.id}`)}
 					>
 						<Send className="h-4 w-4" />
-						Enviar a SAT
+						{t("reportSendToSat")}
 					</DropdownMenuItem>
 				)}
 				<DropdownMenuSeparator />
@@ -478,7 +495,7 @@ export function ReportsTable({
 						onClick={() => handleDownload(item)}
 					>
 						<Download className="h-4 w-4" />
-						Descargar Reporte
+						{t("reportDownload")}
 					</DropdownMenuItem>
 				)}
 				{item.status === "DRAFT" && (
@@ -487,7 +504,7 @@ export function ReportsTable({
 						onClick={() => handleDelete(item)}
 					>
 						<Trash2 className="h-4 w-4" />
-						Eliminar
+						{t("delete")}
 					</DropdownMenuItem>
 				)}
 			</DropdownMenuContent>
@@ -504,38 +521,36 @@ export function ReportsTable({
 
 		return [
 			{
-				label: "Total Reportes",
+				label: t("tableTotalReports"),
 				value: totalReports,
 				icon: FileText,
 			},
 			{
-				label: "Borradores",
+				label: t("tableDrafts"),
 				value: draftReports,
 				icon: Clock,
 				variant: "primary",
 			},
 			{
-				label: "Generados",
+				label: t("tableGenerated"),
 				value: generatedReports,
 				icon: FileCheck2,
 			},
 			{
-				label: "Total Registros",
+				label: t("tableTotalRecords"),
 				value: totalRecords,
 				icon: FileCheck2,
 			},
 		];
-	}, [reports, totalReports]);
+	}, [reports, totalReports, t]);
 
 	// Show error if no organization selected
 	if (!currentOrg && !isLoading) {
 		return (
 			<div className="flex flex-col items-center justify-center py-12 text-center">
 				<AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-				<h3 className="text-lg font-medium">Sin organización</h3>
-				<p className="text-muted-foreground">
-					Selecciona una organización para ver los reportes
-				</p>
+				<h3 className="text-lg font-medium">{t("reportNoOrg")}</h3>
+				<p className="text-muted-foreground">{t("reportNoOrgDesc")}</p>
 			</div>
 		);
 	}
@@ -543,11 +558,11 @@ export function ReportsTable({
 	return (
 		<div className="space-y-6">
 			<PageHero
-				title="Reportes"
-				subtitle="Gestión y seguimiento de reportes AML"
+				title={t("reportPageTitle")}
+				subtitle={t("reportPageSubtitle")}
 				icon={FileText}
 				stats={stats}
-				ctaLabel="Nuevo Reporte"
+				ctaLabel={t("reportNewReport")}
 				ctaIcon={Plus}
 				onCtaClick={() => navigateTo("/reports/new")}
 			/>
@@ -556,10 +571,10 @@ export function ReportsTable({
 				columns={columns}
 				filters={filterDefs}
 				searchKeys={["id", "name", "reportedMonth"]}
-				searchPlaceholder="Buscar por nombre, período..."
-				emptyMessage="No se encontraron reportes"
+				searchPlaceholder={t("reportSearchPlaceholder")}
+				emptyMessage={t("reportNoResults")}
 				emptyIcon={FileText}
-				loadingMessage="Cargando reportes..."
+				loadingMessage={t("reportLoading")}
 				isLoading={isLoading || isJwtLoading}
 				selectable
 				getId={(item) => item.id}

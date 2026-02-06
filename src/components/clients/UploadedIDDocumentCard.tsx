@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FileText, CheckCircle2, Trash2, ZoomIn } from "lucide-react";
-import { PresignedImage } from "@/components/PresignedImage";
+import { DocSvcImage } from "@/components/DocSvcImage";
 import {
 	DocumentViewerDialog,
 	type DocumentImage,
@@ -16,6 +16,7 @@ import type {
 	ClientDocument,
 	DocumentFileMetadata,
 } from "@/types/client-document";
+import { useOrgStore } from "@/lib/org-store";
 
 interface UploadedIDDocumentCardProps {
 	document: ClientDocument;
@@ -37,29 +38,44 @@ export function UploadedIDDocumentCard({
 	showDelete = true,
 	compact = false,
 }: UploadedIDDocumentCardProps) {
+	const { currentOrg } = useOrgStore();
 	const [documentViewer, setDocumentViewer] = useState<{
 		open: boolean;
 		images: DocumentImage[];
 		initialIndex: number;
 		originalFileUrl?: string | null;
+		docSvcDocumentId?: string | null;
 	}>({
 		open: false,
 		images: [],
 		initialIndex: 0,
 		originalFileUrl: null,
+		docSvcDocumentId: null,
 	});
 
 	const metadata = document.metadata as DocumentFileMetadata | null;
 	const documentLabel =
 		DOCUMENT_TYPE_CONFIG[document.documentType]?.label || document.documentType;
 
-	// Determine available image URLs (with fallbacks)
+	// Check if we have doc-svc document ID (new flow) or legacy URLs
+	const docSvcDocumentId = document.docSvcDocumentId;
+	const hasDocSvcDocument = !!docSvcDocumentId && !!currentOrg?.id;
+
+	// For INE documents, we typically have 2 images (front/back)
+	// For passport/other, we have 1 image
+	const isINE = document.documentType === "NATIONAL_ID";
+	const hasBackImage = isINE; // INE documents have front and back
+
+	// Legacy URL-based detection (for backward compatibility)
 	const frontUrl =
 		metadata?.ineFrontUrl || metadata?.primaryFileUrl || document.fileUrl;
 	const backUrl = metadata?.ineBackUrl;
-	const hasImages = !!frontUrl;
+	const hasLegacyImages = !!frontUrl;
 
-	// Build images array for viewer
+	// Has any images (either doc-svc or legacy)
+	const hasImages = hasDocSvcDocument || hasLegacyImages;
+
+	// Build images array for viewer (legacy mode only)
 	const buildImagesArray = (startIndex: number = 0) => {
 		const images: DocumentImage[] = [];
 		if (frontUrl) {
@@ -78,13 +94,26 @@ export function UploadedIDDocumentCard({
 	};
 
 	const openViewer = (index: number = 0) => {
-		const { images, initialIndex } = buildImagesArray(index);
-		setDocumentViewer({
-			open: true,
-			images,
-			initialIndex,
-			originalFileUrl: metadata?.originalFileUrl || document.fileUrl,
-		});
+		if (hasDocSvcDocument) {
+			// New doc-svc flow - pass document ID to viewer
+			setDocumentViewer({
+				open: true,
+				images: [], // Not used in doc-svc mode
+				initialIndex: index,
+				originalFileUrl: null,
+				docSvcDocumentId,
+			});
+		} else {
+			// Legacy URL-based flow
+			const { images, initialIndex } = buildImagesArray(index);
+			setDocumentViewer({
+				open: true,
+				images,
+				initialIndex,
+				originalFileUrl: metadata?.originalFileUrl || document.fileUrl,
+				docSvcDocumentId: null,
+			});
+		}
 	};
 
 	if (compact) {
@@ -129,27 +158,38 @@ export function UploadedIDDocumentCard({
 					{/* Thumbnails with labels - horizontal scroll like regular ID */}
 					{hasImages && (
 						<div className="flex gap-3 overflow-x-auto pb-1">
-							{frontUrl && (
-								<div className="shrink-0 space-y-1">
-									<p className="text-xs text-muted-foreground text-center">
-										{backUrl ? "Frente" : "Documento"}
-									</p>
-									<div
-										className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group h-24"
-										onClick={() => openViewer(0)}
-									>
-										<PresignedImage
-											src={frontUrl}
-											alt={backUrl ? "Frente de INE" : "Documento"}
+							{/* Front/Primary image */}
+							<div className="shrink-0 space-y-1">
+								<p className="text-xs text-muted-foreground text-center">
+									{hasBackImage ? "Frente" : "Documento"}
+								</p>
+								<div
+									className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group h-24"
+									onClick={() => openViewer(0)}
+								>
+									{hasDocSvcDocument ? (
+										<DocSvcImage
+											organizationId={currentOrg!.id}
+											documentId={docSvcDocumentId}
+											imageIndex={0}
+											alt={hasBackImage ? "Frente de INE" : "Documento"}
 											className="h-24 w-auto object-contain"
 										/>
-										<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-											<ZoomIn className="h-6 w-6 text-white" />
-										</div>
+									) : frontUrl ? (
+										<img
+											src={frontUrl}
+											alt={hasBackImage ? "Frente de INE" : "Documento"}
+											className="h-24 w-auto object-contain"
+											crossOrigin="anonymous"
+										/>
+									) : null}
+									<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+										<ZoomIn className="h-6 w-6 text-white" />
 									</div>
 								</div>
-							)}
-							{backUrl && (
+							</div>
+							{/* Back image (for INE) */}
+							{(hasDocSvcDocument && hasBackImage) || backUrl ? (
 								<div className="shrink-0 space-y-1">
 									<p className="text-xs text-muted-foreground text-center">
 										Reverso
@@ -158,17 +198,28 @@ export function UploadedIDDocumentCard({
 										className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group h-24"
 										onClick={() => openViewer(1)}
 									>
-										<PresignedImage
-											src={backUrl}
-											alt="Reverso de INE"
-											className="h-24 w-auto object-contain"
-										/>
+										{hasDocSvcDocument ? (
+											<DocSvcImage
+												organizationId={currentOrg!.id}
+												documentId={docSvcDocumentId}
+												imageIndex={1}
+												alt="Reverso de INE"
+												className="h-24 w-auto object-contain"
+											/>
+										) : backUrl ? (
+											<img
+												src={backUrl}
+												alt="Reverso de INE"
+												className="h-24 w-auto object-contain"
+												crossOrigin="anonymous"
+											/>
+										) : null}
 										<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
 											<ZoomIn className="h-6 w-6 text-white" />
 										</div>
 									</div>
 								</div>
-							)}
+							) : null}
 						</div>
 					)}
 				</div>
@@ -181,6 +232,8 @@ export function UploadedIDDocumentCard({
 					images={documentViewer.images}
 					initialIndex={documentViewer.initialIndex}
 					originalFileUrl={documentViewer.originalFileUrl}
+					organizationId={currentOrg?.id}
+					docSvcDocumentId={documentViewer.docSvcDocumentId}
 				/>
 			</>
 		);
@@ -214,31 +267,42 @@ export function UploadedIDDocumentCard({
 						</p>
 					</div>
 
-					{/* Show thumbnails if image URLs available */}
+					{/* Show thumbnails if images available */}
 					{hasImages && (
 						<div className="relative pt-2">
 							<div className="flex gap-3 overflow-x-auto pb-2">
-								{frontUrl && (
-									<div className="shrink-0 space-y-1">
-										<p className="text-xs text-muted-foreground text-center">
-											{backUrl ? "Frente" : "Documento"}
-										</p>
-										<div
-											className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group h-24"
-											onClick={() => openViewer(0)}
-										>
-											<PresignedImage
-												src={frontUrl}
-												alt={backUrl ? "Frente de INE" : "Documento"}
+								{/* Front/Primary image */}
+								<div className="shrink-0 space-y-1">
+									<p className="text-xs text-muted-foreground text-center">
+										{hasBackImage ? "Frente" : "Documento"}
+									</p>
+									<div
+										className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group h-24"
+										onClick={() => openViewer(0)}
+									>
+										{hasDocSvcDocument ? (
+											<DocSvcImage
+												organizationId={currentOrg!.id}
+												documentId={docSvcDocumentId}
+												imageIndex={0}
+												alt={hasBackImage ? "Frente de INE" : "Documento"}
 												className="h-24 w-auto object-contain"
 											/>
-											<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-												<ZoomIn className="h-6 w-6 text-white" />
-											</div>
+										) : frontUrl ? (
+											<img
+												src={frontUrl}
+												alt={hasBackImage ? "Frente de INE" : "Documento"}
+												className="h-24 w-auto object-contain"
+												crossOrigin="anonymous"
+											/>
+										) : null}
+										<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+											<ZoomIn className="h-6 w-6 text-white" />
 										</div>
 									</div>
-								)}
-								{backUrl && (
+								</div>
+								{/* Back image (for INE) */}
+								{(hasDocSvcDocument && hasBackImage) || backUrl ? (
 									<div className="shrink-0 space-y-1">
 										<p className="text-xs text-muted-foreground text-center">
 											Reverso
@@ -247,17 +311,28 @@ export function UploadedIDDocumentCard({
 											className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group h-24"
 											onClick={() => openViewer(1)}
 										>
-											<PresignedImage
-												src={backUrl}
-												alt="Reverso de INE"
-												className="h-24 w-auto object-contain"
-											/>
+											{hasDocSvcDocument ? (
+												<DocSvcImage
+													organizationId={currentOrg!.id}
+													documentId={docSvcDocumentId}
+													imageIndex={1}
+													alt="Reverso de INE"
+													className="h-24 w-auto object-contain"
+												/>
+											) : backUrl ? (
+												<img
+													src={backUrl}
+													alt="Reverso de INE"
+													className="h-24 w-auto object-contain"
+													crossOrigin="anonymous"
+												/>
+											) : null}
 											<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
 												<ZoomIn className="h-6 w-6 text-white" />
 											</div>
 										</div>
 									</div>
-								)}
+								) : null}
 							</div>
 						</div>
 					)}
@@ -287,6 +362,8 @@ export function UploadedIDDocumentCard({
 				images={documentViewer.images}
 				initialIndex={documentViewer.initialIndex}
 				originalFileUrl={documentViewer.originalFileUrl}
+				organizationId={currentOrg?.id}
+				docSvcDocumentId={documentViewer.docSvcDocumentId}
 			/>
 		</>
 	);

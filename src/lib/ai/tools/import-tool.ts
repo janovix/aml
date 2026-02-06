@@ -2,7 +2,7 @@
  * AI Import Tool
  *
  * Tool that allows the AI to process CSV/Excel file imports
- * for clients and transactions.
+ * for clients and operations.
  */
 
 import { z } from "zod";
@@ -72,7 +72,7 @@ export function createImportTool(
 ) {
 	return {
 		processImport: {
-			description: `Process the uploaded file (${fileUpload.fileName}) to import ${fileUpload.entityType === "CLIENT" ? "clients" : "transactions"}. This will validate and import all rows from the file.`,
+			description: `Process the uploaded file (${fileUpload.fileName}) to import ${fileUpload.entityType === "CLIENT" ? "clients" : "operations"}. This will validate and import all rows from the file.`,
 			inputSchema: processImportSchema,
 			execute: async ({ confirm }: z.infer<typeof processImportSchema>) => {
 				if (!confirm) {
