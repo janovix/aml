@@ -27,7 +27,8 @@ export function DonationForm({
 					{t("opFieldDonationType")}
 				</FieldLabel>
 				<CatalogSelector
-					catalogKey="pld-liquidation-item-types"
+					id="donationType"
+					catalogKey="pld-donation-types"
 					value={(value.donationType as string) ?? ""}
 					onValueChange={(val) => handleChange("donationType", val ?? "")}
 					placeholder={t("selectPlaceholder")}
@@ -64,6 +65,7 @@ export function DonationForm({
 					{t("opFieldItemTypeCode")}
 				</FieldLabel>
 				<CatalogSelector
+					id="itemTypeCode"
 					catalogKey="pld-liquidation-item-types"
 					value={(value.itemTypeCode as string) ?? ""}
 					onValueChange={(val) => handleChange("itemTypeCode", val ?? "")}

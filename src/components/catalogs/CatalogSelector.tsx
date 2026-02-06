@@ -54,6 +54,8 @@ type OptionRenderer = (
 
 interface CatalogSelectorProps {
 	catalogKey: string;
+	/** HTML id attribute for the trigger button (for form label association) */
+	id?: string;
 	label?: string;
 	labelDescription?: string;
 	/** Field tier for 3-tier completeness indicators (RED/YELLOW/GREY dot) */
@@ -279,6 +281,7 @@ function CatalogSelectorCommandContent({
 
 export function CatalogSelector({
 	catalogKey,
+	id,
 	label,
 	labelDescription,
 	tier,
@@ -732,6 +735,7 @@ export function CatalogSelector({
 
 	const triggerButton = (
 		<Button
+			id={id}
 			variant="outline"
 			role="combobox"
 			aria-expanded={open}

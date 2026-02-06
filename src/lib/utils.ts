@@ -19,9 +19,13 @@ export function sanitizeString(value: string, maxLength: number): string {
 /**
  * Format a date for display using Mexican locale
  * Provides consistent date formatting across the application
+ * Returns empty string for invalid dates
  */
 export function formatClientDate(date: Date | string): string {
 	const d = typeof date === "string" ? new Date(date) : date;
+	if (Number.isNaN(d.getTime())) {
+		return "";
+	}
 	return d.toLocaleDateString("es-MX");
 }
 
