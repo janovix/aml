@@ -20,7 +20,7 @@ import {
 	updateUserSettings,
 	type LanguageCode,
 } from "@/lib/settings";
-import { LanguageContext as BlocksLanguageContext } from "@janovix/blocks";
+import { LanguageContext as BlocksLanguageContext } from "@algenium/blocks";
 
 interface LanguageContextType {
 	language: Language;

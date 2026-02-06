@@ -20,7 +20,7 @@ import {
 } from "@/lib/settings/settingsClient";
 import { ChatProvider, ChatSidebar, NavbarChatButton } from "@/components/chat";
 import { PageStatusProvider } from "@/components/PageStatusProvider";
-import { NotificationsWidget } from "@janovix/blocks";
+import { NotificationsWidget } from "@algenium/blocks";
 import { NotificationsProvider } from "@/contexts/notifications-context";
 import { useRouter } from "next/navigation";
 
