@@ -1,3 +1,18 @@
+# [1.4.0-rc.14](https://github.com/janovix/aml/compare/v1.4.0-rc.13...v1.4.0-rc.14) (2026-02-07)
+
+
+### Bug Fixes
+
+* address CodeRabbit review issues ([af5f143](https://github.com/janovix/aml/commit/af5f1430f878fd0bfcb702237291c788e6155d31))
+* address CodeRabbit review issues ([6fd10c2](https://github.com/janovix/aml/commit/6fd10c2110bf8afc0974818a007b296a8b7c22d7))
+* updated janovix and algenium deps ([980679e](https://github.com/janovix/aml/commit/980679ed9b1fa2b1eaaedf7b9da0a33b05ecaeb4))
+
+
+### Features
+
+* Added new components for document upload and management, enhancing the document handling capabilities. ([8637b8d](https://github.com/janovix/aml/commit/8637b8dc33e45c12ec0891c0d7005a52ee175ca1))
+* implement presigned URL generation and document viewer components ([b81d75c](https://github.com/janovix/aml/commit/b81d75c3b64520838dd2fdef170df1a691282b4f))
+
 # [1.4.0-rc.13](https://github.com/janovix/aml/compare/v1.4.0-rc.12...v1.4.0-rc.13) (2026-01-30)
 
 
