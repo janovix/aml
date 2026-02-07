@@ -71,6 +71,8 @@ export interface OperationPaymentEntity {
 	monetaryInstrumentCode: string | null;
 	currencyCode: string;
 	amount: string;
+	/** Per-payment exchange rate (payment currency → operation currency) */
+	exchangeRate: string | null;
 	bankName: string | null;
 	accountNumberMasked: string | null;
 	checkNumber: string | null;
@@ -85,6 +87,8 @@ export interface OperationPaymentInput {
 	monetaryInstrumentCode?: string | null;
 	currencyCode?: string;
 	amount: string;
+	/** Exchange rate for converting this payment's currency to the operation currency */
+	exchangeRate?: string;
 	bankName?: string | null;
 	accountNumberMasked?: string | null;
 	checkNumber?: string | null;

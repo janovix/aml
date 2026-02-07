@@ -135,6 +135,7 @@ export function OperationEditView({
 						monetaryInstrumentCode: p.monetaryInstrumentCode,
 						currencyCode: p.currencyCode,
 						amount: p.amount,
+						exchangeRate: p.exchangeRate ?? undefined,
 						bankName: p.bankName,
 						accountNumberMasked: p.accountNumberMasked,
 						checkNumber: p.checkNumber,
@@ -164,6 +165,32 @@ export function OperationEditView({
 		fetchOperation();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [operationId]);
+
+	// Auto-calculate operation amount from the sum of payment amounts (with exchange rate conversion)
+	useEffect(() => {
+		const opCurrency = currencyCode || "MXN";
+
+		const total = payments.reduce((sum, payment) => {
+			const amt = parseFloat(payment.amount) || 0;
+			const payCurrency = payment.currencyCode || "MXN";
+
+			if (payCurrency === opCurrency) {
+				return sum + amt;
+			}
+
+			const rate = parseFloat(payment.exchangeRate || "0");
+			return sum + amt * rate;
+		}, 0);
+
+		setAmount(total > 0 ? total.toFixed(2) : "");
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+		payments
+			.map((p) => `${p.amount}|${p.currencyCode}|${p.exchangeRate}`)
+			.join(","),
+		currencyCode,
+	]);
 
 	const handleSubmit = async (e: React.FormEvent): Promise<void> => {
 		e.preventDefault();
@@ -357,20 +384,23 @@ export function OperationEditView({
 								/>
 							</div>
 
-							{/* Amount */}
+							{/* Amount (auto-calculated from payments) */}
 							<div className="space-y-2">
 								<FieldLabel tier="sat_required" htmlFor="amount" required>
-									{t("opAmount")}
+									{t("opAmountAutoCalculated")}
 								</FieldLabel>
 								<Input
 									id="amount"
 									type="text"
 									inputMode="decimal"
 									value={amount}
-									onChange={(e) => setAmount(e.target.value)}
+									readOnly
+									className="bg-muted cursor-not-allowed"
 									placeholder="0.00"
-									required
 								/>
+								<p className="text-xs text-muted-foreground">
+									{t("opAmountHelperText")}
+								</p>
 							</div>
 
 							{/* Currency */}
@@ -442,7 +472,11 @@ export function OperationEditView({
 						<CardDescription>{t("opPaymentInfoDesc")}</CardDescription>
 					</CardHeader>
 					<CardContent>
-						<OperationPaymentForm payments={payments} onChange={setPayments} />
+						<OperationPaymentForm
+							payments={payments}
+							onChange={setPayments}
+							operationCurrency={currencyCode || "MXN"}
+						/>
 					</CardContent>
 				</Card>
 

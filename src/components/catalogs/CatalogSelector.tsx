@@ -393,9 +393,9 @@ export function CatalogSelector({
 		if (metadata?.shortName === val) {
 			return true;
 		}
-		// Check by metadata.code ONLY for 2-letter codes (country codes like "MX")
-		// This prevents matching currency codes like "MXN" against numeric SAT codes
-		if (metadata?.code === val && /^[A-Z]{2}$/.test(val)) {
+		// Check by metadata.code
+		// This matches both 2-letter country codes (e.g., "MX") and numeric SAT codes (e.g., "01", "03")
+		if (metadata?.code === val) {
 			return true;
 		}
 		return false;

@@ -115,6 +115,37 @@ export function OperationCreateView(): React.JSX.Element {
 		}
 	}, [isCfdiPrefill, invoiceIdParam, formData.invoiceId, setFormData]);
 
+	// Auto-calculate operation amount from the sum of payment amounts (with exchange rate conversion)
+	useEffect(() => {
+		const opCurrency = formData.currencyCode || "MXN";
+
+		const total = formData.payments.reduce((sum, payment) => {
+			const amount = parseFloat(payment.amount) || 0;
+			const payCurrency = payment.currencyCode || "MXN";
+
+			if (payCurrency === opCurrency) {
+				return sum + amount;
+			}
+
+			// Convert using the per-payment exchange rate
+			const rate = parseFloat(payment.exchangeRate || "0");
+			return sum + amount * rate;
+		}, 0);
+
+		setFormData((prev) => ({
+			...prev,
+			amount: total > 0 ? total.toFixed(2) : "",
+		}));
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [
+		// Only depend on payment amounts, currencies, exchange rates, and operation currency
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+		formData.payments
+			.map((p) => `${p.amount}|${p.currencyCode}|${p.exchangeRate}`)
+			.join(","),
+		formData.currencyCode,
+	]);
+
 	const handleFieldChange = (
 		field: keyof OperationFormData,
 		value: string | OperationPaymentInput[] | Record<string, unknown>,
@@ -132,11 +163,6 @@ export function OperationCreateView(): React.JSX.Element {
 
 		if (!formData.clientId) {
 			toast.error(t("opSelectClient"));
-			return;
-		}
-
-		if (!formData.amount || parseFloat(formData.amount) <= 0) {
-			toast.error(t("opValidAmount"));
 			return;
 		}
 
@@ -375,20 +401,23 @@ export function OperationCreateView(): React.JSX.Element {
 								/>
 							</div>
 
-							{/* Amount */}
+							{/* Amount (auto-calculated from payments) */}
 							<div className="space-y-2">
 								<FieldLabel tier="sat_required" htmlFor="amount" required>
-									{t("opAmount")}
+									{t("opAmountAutoCalculated")}
 								</FieldLabel>
 								<Input
 									id="amount"
 									type="text"
 									inputMode="decimal"
 									value={formData.amount}
-									onChange={(e) => handleFieldChange("amount", e.target.value)}
+									readOnly
+									className="bg-muted cursor-not-allowed"
 									placeholder="0.00"
-									required
 								/>
+								<p className="text-xs text-muted-foreground">
+									{t("opAmountHelperText")}
+								</p>
 							</div>
 
 							{/* Currency */}
@@ -470,6 +499,7 @@ export function OperationCreateView(): React.JSX.Element {
 						<OperationPaymentForm
 							payments={formData.payments}
 							onChange={(payments) => handleFieldChange("payments", payments)}
+							operationCurrency={formData.currencyCode || "MXN"}
 						/>
 					</CardContent>
 				</Card>
