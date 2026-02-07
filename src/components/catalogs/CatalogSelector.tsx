@@ -80,6 +80,12 @@ interface CatalogSelectorProps {
 	vaCode?: string;
 	/** Exclude automatable items (for alert types) */
 	excludeAutomatable?: boolean;
+	/**
+	 * Allow the user to use a custom free-text value that is not in the catalog.
+	 * Unlike `allowNewItems` (which creates a new catalog entry), this simply
+	 * stores the raw text value without modifying the catalog.
+	 */
+	allowCustomValue?: boolean;
 }
 
 function Spinner({
@@ -128,7 +134,9 @@ interface CatalogSelectorCommandContentProps {
 	mappedItems: Array<{ item: CatalogItem; value: string; label: string }>;
 	emptyState: string;
 	allowNewItems: boolean;
+	allowCustomValue: boolean;
 	onAddNewClick: () => void;
+	onUseCustomValue: (value: string) => void;
 	selectedOption: CatalogItem | null;
 	getOptionValue?: (option: CatalogItem) => string;
 	renderOption: OptionRenderer;
@@ -150,7 +158,9 @@ function CatalogSelectorCommandContent({
 	mappedItems,
 	emptyState,
 	allowNewItems,
+	allowCustomValue,
 	onAddNewClick,
+	onUseCustomValue,
 	selectedOption,
 	getOptionValue,
 	renderOption,
@@ -199,6 +209,17 @@ function CatalogSelectorCommandContent({
 							<CommandEmpty>
 								<div className="flex flex-col items-center gap-2 py-2 px-3">
 									<span>{emptyState}</span>
+									{allowCustomValue && searchTerm.trim() && (
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											onClick={() => onUseCustomValue(searchTerm.trim())}
+											className="mt-2 bg-transparent"
+										>
+											Usar &quot;{searchTerm.trim()}&quot;
+										</Button>
+									)}
 									{allowNewItems && searchTerm.trim() && (
 										<Button
 											type="button"
@@ -234,6 +255,18 @@ function CatalogSelectorCommandContent({
 										</CommandItem>
 									);
 								})}
+								{allowCustomValue && searchTerm.trim() && (
+									<CommandItem
+										key="__custom_value__"
+										value="__custom_value__"
+										onSelect={() => onUseCustomValue(searchTerm.trim())}
+										className={cn("text-muted-foreground", isMobile && "py-3")}
+									>
+										<div className="flex items-center gap-2">
+											<span>Usar &quot;{searchTerm.trim()}&quot;</span>
+										</div>
+									</CommandItem>
+								)}
 								{allowNewItems && searchTerm.trim() && (
 									<CommandItem
 										key="__add_new__"
@@ -303,6 +336,7 @@ export function CatalogSelector({
 	className,
 	vaCode,
 	excludeAutomatable,
+	allowCustomValue = false,
 }: CatalogSelectorProps): React.ReactElement {
 	const labelId = useId();
 	const listRef = useRef<HTMLDivElement>(null);
@@ -457,6 +491,16 @@ export function CatalogSelector({
 			setSelectedLabel(match.name);
 			setPagesSearchedForValue(0); // Reset search counter when found
 		} else if (
+			allowCustomValue &&
+			!loading &&
+			!loadingMore &&
+			!match &&
+			items.length > 0
+		) {
+			// When allowCustomValue is enabled and the value doesn't match any catalog item,
+			// display the raw value as-is (it's a user-entered custom value)
+			setSelectedLabel(value);
+		} else if (
 			!loading &&
 			!loadingMore &&
 			items.length > 0 &&
@@ -515,6 +559,7 @@ export function CatalogSelector({
 		selectedOption,
 		catalogKey,
 		fetchingById,
+		allowCustomValue,
 	]);
 
 	const handleSelect = (optionValue: string): void => {
@@ -552,6 +597,19 @@ export function CatalogSelector({
 		setOpen(false);
 		setAddDialogOpen(true);
 	}, []);
+
+	const handleUseCustomValue = useCallback(
+		(customValue: string): void => {
+			setSelectedOption(null);
+			setSelectedLabel(customValue);
+			setSearchTerm("");
+			setShowResults(false);
+			setOpen(false);
+			onValueChange?.(customValue);
+			onChange?.(null);
+		},
+		[onValueChange, onChange, setSearchTerm],
+	);
 
 	const handleItemCreated = useCallback(
 		(newItem: CatalogItem): void => {
@@ -764,7 +822,9 @@ export function CatalogSelector({
 		mappedItems,
 		emptyState,
 		allowNewItems,
+		allowCustomValue,
 		onAddNewClick: handleAddNewClick,
+		onUseCustomValue: handleUseCustomValue,
 		selectedOption,
 		getOptionValue,
 		renderOption,

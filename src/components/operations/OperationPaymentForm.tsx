@@ -330,18 +330,16 @@ export function OperationPaymentForm({
 								>
 									{t("opBank")}
 								</FieldLabel>
-								<Input
+								<CatalogSelector
 									id={`payment-bank-${index}`}
+									catalogKey="banks"
 									value={payment.bankName ?? ""}
-									onChange={(e) =>
-										handlePaymentChange(
-											index,
-											"bankName",
-											e.target.value || null,
-										)
+									onValueChange={(val) =>
+										handlePaymentChange(index, "bankName", val || null)
 									}
 									placeholder={t("opBankName")}
 									disabled={disabled}
+									allowCustomValue
 								/>
 							</div>
 
