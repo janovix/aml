@@ -1,3 +1,10 @@
+# [1.4.0-rc.15](https://github.com/janovix/aml/compare/v1.4.0-rc.14...v1.4.0-rc.15) (2026-02-07)
+
+
+### Features
+
+* add environment variable for scan app URL in wrangler configuration ([2698734](https://github.com/janovix/aml/commit/26987341eaaea40919fa878ac4605dbebf0f8b13))
+
 # [1.4.0-rc.14](https://github.com/janovix/aml/compare/v1.4.0-rc.13...v1.4.0-rc.14) (2026-02-07)
 
 
