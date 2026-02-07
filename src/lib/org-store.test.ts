@@ -567,7 +567,7 @@ describe("org-store", () => {
 
 		it("should define permissions for readonly role", () => {
 			expect(rolePermissions.readonly).toContain("clients:read");
-			expect(rolePermissions.readonly).toContain("transactions:read");
+			expect(rolePermissions.readonly).toContain("operations:read");
 			expect(rolePermissions.readonly).not.toContain("clients:create");
 			expect(rolePermissions.readonly).not.toContain("alerts:acknowledge");
 		});

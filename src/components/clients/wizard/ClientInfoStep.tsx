@@ -8,15 +8,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Save, ArrowRight } from "lucide-react";
-import type { PersonType, ClientCreateRequest, Client } from "@/types/client";
+import { ArrowRight } from "lucide-react";
+import type {
+	PersonType,
+	ClientCreateRequest,
+	Client,
+	Gender,
+	MaritalStatus,
+} from "@/types/client";
 import { PersonTypePicker } from "../PersonTypePicker";
 import { createClient } from "@/lib/api/clients";
 import { executeMutation } from "@/lib/mutations";
 import { LabelWithInfo } from "@/components/ui/LabelWithInfo";
 import { getFieldDescription } from "@/lib/field-descriptions";
+import { getClientFieldTierMap } from "@/lib/field-requirements";
 import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
 import { PhoneInput } from "@/components/ui/phone-input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import {
 	validateRFC,
 	validateCURP,
@@ -29,7 +43,6 @@ import { toast } from "sonner";
 import { useLanguage } from "@/components/LanguageProvider";
 import { validatePhone } from "@/lib/validators/validate-phone";
 import { ZipCodeAddressFields } from "../ZipCodeAddressFields";
-import { FormActionBar } from "@/components/ui/FormActionBar";
 
 interface ClientInfoStepProps {
 	onClientCreated: (client: Client) => void;
@@ -64,6 +77,15 @@ interface ClientFormData {
 	postalCode: string;
 	reference?: string;
 	notes?: string;
+	// Country and economic activity
+	countryCode?: string;
+	economicActivityCode?: string;
+	// Enhanced KYC fields
+	gender?: Gender;
+	maritalStatus?: MaritalStatus;
+	occupation?: string;
+	sourceOfFunds?: string;
+	sourceOfWealth?: string;
 }
 
 const INITIAL_CLIENT_FORM_DATA: ClientFormData = {
@@ -89,6 +111,11 @@ const INITIAL_CLIENT_FORM_DATA: ClientFormData = {
 	postalCode: "",
 	reference: "",
 	notes: "",
+	countryCode: "",
+	economicActivityCode: "",
+	occupation: "",
+	sourceOfFunds: "",
+	sourceOfWealth: "",
 };
 
 export function ClientInfoStep({
@@ -114,6 +141,8 @@ export function ClientInfoStep({
 		lastName?: string;
 		secondLastName?: string;
 	}>({});
+
+	const fieldTiers = getClientFieldTierMap(formData.personType);
 
 	const handleInputChange = (
 		field: keyof ClientFormData,
@@ -432,10 +461,20 @@ export function ClientInfoStep({
 
 		// Add optional fields
 		if (formData.nationality) request.nationality = formData.nationality;
+		if (formData.countryCode) request.countryCode = formData.countryCode;
+		if (formData.economicActivityCode)
+			request.economicActivityCode = formData.economicActivityCode;
 		if (formData.internalNumber)
 			request.internalNumber = formData.internalNumber;
 		if (formData.reference) request.reference = formData.reference;
 		if (formData.notes) request.notes = formData.notes;
+		// Enhanced KYC fields
+		if (formData.gender) request.gender = formData.gender;
+		if (formData.maritalStatus) request.maritalStatus = formData.maritalStatus;
+		if (formData.occupation) request.occupation = formData.occupation;
+		if (formData.sourceOfFunds) request.sourceOfFunds = formData.sourceOfFunds;
+		if (formData.sourceOfWealth)
+			request.sourceOfWealth = formData.sourceOfWealth;
 
 		try {
 			await executeMutation({
@@ -482,11 +521,12 @@ export function ClientInfoStep({
 				<CardContent className="space-y-4">
 					{formData.personType === "physical" ? (
 						<>
-							<div className="grid grid-cols-1 @lg/main:grid-cols-3 gap-4">
+							<div className="grid grid-cols-1 @2xl/main:grid-cols-3 gap-4">
 								<div className="space-y-2">
 									<LabelWithInfo
 										htmlFor="firstName"
 										description={getFieldDescription("firstName")}
+										tier={fieldTiers.firstName}
 										required
 									>
 										Nombre
@@ -516,6 +556,7 @@ export function ClientInfoStep({
 									<LabelWithInfo
 										htmlFor="lastName"
 										description={getFieldDescription("lastName")}
+										tier={fieldTiers.lastName}
 										required
 									>
 										Apellido Paterno
@@ -545,6 +586,7 @@ export function ClientInfoStep({
 									<LabelWithInfo
 										htmlFor="secondLastName"
 										description={`${getFieldDescription("secondLastName")} Coloca una X en caso de no existir para el cliente.`}
+										tier={fieldTiers.secondLastName}
 										required
 									>
 										Apellido Materno
@@ -573,11 +615,12 @@ export function ClientInfoStep({
 									)}
 								</div>
 							</div>
-							<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
+							<div className="grid grid-cols-1 @xl/main:grid-cols-2 gap-4">
 								<div className="space-y-2">
 									<LabelWithInfo
 										htmlFor="birthDate"
 										description={getFieldDescription("birthDate")}
+										tier={fieldTiers.birthDate}
 										required
 									>
 										Fecha de Nacimiento
@@ -596,6 +639,7 @@ export function ClientInfoStep({
 									<LabelWithInfo
 										htmlFor="curp"
 										description={getFieldDescription("curp")}
+										tier={fieldTiers.curp}
 										required
 									>
 										CURP
@@ -626,6 +670,7 @@ export function ClientInfoStep({
 								<LabelWithInfo
 									htmlFor="businessName"
 									description={getFieldDescription("businessName")}
+									tier={fieldTiers.businessName}
 									required
 								>
 									Razón Social
@@ -667,6 +712,7 @@ export function ClientInfoStep({
 						<LabelWithInfo
 							htmlFor="rfc"
 							description={getFieldDescription("rfc")}
+							tier={fieldTiers.rfc}
 							required
 						>
 							RFC
@@ -703,13 +749,28 @@ export function ClientInfoStep({
 							catalogKey="countries"
 							label="Nacionalidad"
 							labelDescription={getFieldDescription("nationality")}
+							tier={fieldTiers.countryCode}
 							value={formData.nationality}
 							searchPlaceholder="Buscar país..."
-							onChange={(option) =>
-								handleInputChange("nationality", option?.id ?? "")
-							}
+							onChange={(option) => {
+								handleInputChange("nationality", option?.id ?? "");
+								const code =
+									(option?.metadata as { code?: string } | null)?.code ?? "";
+								handleInputChange("countryCode", code);
+							}}
 						/>
 					)}
+					<CatalogSelector
+						catalogKey="economic-activities"
+						label="Actividad económica"
+						labelDescription="Código SAT de la actividad económica o giro mercantil del cliente."
+						tier={fieldTiers.economicActivityCode}
+						value={formData.economicActivityCode}
+						searchPlaceholder="Buscar actividad económica..."
+						onChange={(option) =>
+							handleInputChange("economicActivityCode", option?.id ?? "")
+						}
+					/>
 				</CardContent>
 			</Card>
 
@@ -718,11 +779,12 @@ export function ClientInfoStep({
 					<CardTitle className="text-lg">{t("clientContactInfo")}</CardTitle>
 				</CardHeader>
 				<CardContent className="space-y-4">
-					<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
+					<div className="grid grid-cols-1 @xl/main:grid-cols-2 gap-4">
 						<div className="space-y-2">
 							<LabelWithInfo
 								htmlFor="email"
 								description={getFieldDescription("email")}
+								tier={fieldTiers.email}
 								required
 							>
 								Email
@@ -740,6 +802,7 @@ export function ClientInfoStep({
 							<LabelWithInfo
 								htmlFor="phone"
 								description={getFieldDescription("phone")}
+								tier={fieldTiers.phone}
 								required
 							>
 								Teléfono
@@ -774,11 +837,12 @@ export function ClientInfoStep({
 					<CardTitle className="text-lg">{t("clientAddressInfo")}</CardTitle>
 				</CardHeader>
 				<CardContent className="space-y-4">
-					<div className="grid grid-cols-1 @lg/main:grid-cols-3 gap-4">
-						<div className="@md/main:col-span-2 space-y-2">
+					<div className="grid grid-cols-1 @md/main:grid-cols-[1fr_150px_150px] gap-4">
+						<div className="space-y-2">
 							<LabelWithInfo
 								htmlFor="street"
 								description={getFieldDescription("street")}
+								tier={fieldTiers.street}
 								required
 							>
 								Calle
@@ -814,8 +878,6 @@ export function ClientInfoStep({
 								required
 							/>
 						</div>
-					</div>
-					<div className="grid grid-cols-1 @lg/main:grid-cols-3 gap-4">
 						<div className="space-y-2">
 							<LabelWithInfo
 								htmlFor="internalNumber"
@@ -864,6 +926,116 @@ export function ClientInfoStep({
 			<Card>
 				<CardHeader>
 					<CardTitle className="text-lg">
+						Información complementaria KYC
+					</CardTitle>
+				</CardHeader>
+				<CardContent className="space-y-4">
+					{formData.personType === "physical" && (
+						<div className="grid grid-cols-1 @xl/main:grid-cols-2 gap-4">
+							<div className="space-y-2">
+								<LabelWithInfo htmlFor="gender" tier={fieldTiers.gender}>
+									Género
+								</LabelWithInfo>
+								<Select
+									value={formData.gender ?? ""}
+									onValueChange={(value) => handleInputChange("gender", value)}
+								>
+									<SelectTrigger id="gender">
+										<SelectValue placeholder="Seleccionar género" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="M">Masculino</SelectItem>
+										<SelectItem value="F">Femenino</SelectItem>
+										<SelectItem value="OTHER">Otro</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="space-y-2">
+								<LabelWithInfo
+									htmlFor="maritalStatus"
+									tier={fieldTiers.maritalStatus}
+								>
+									Estado civil
+								</LabelWithInfo>
+								<Select
+									value={formData.maritalStatus ?? ""}
+									onValueChange={(value) =>
+										handleInputChange("maritalStatus", value)
+									}
+								>
+									<SelectTrigger id="maritalStatus">
+										<SelectValue placeholder="Seleccionar estado civil" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="SINGLE">Soltero(a)</SelectItem>
+										<SelectItem value="MARRIED">Casado(a)</SelectItem>
+										<SelectItem value="DIVORCED">Divorciado(a)</SelectItem>
+										<SelectItem value="WIDOWED">Viudo(a)</SelectItem>
+										<SelectItem value="OTHER">Otro</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+						</div>
+					)}
+					<div className="grid grid-cols-1 @xl/main:grid-cols-3 gap-4">
+						<div className="space-y-2">
+							<LabelWithInfo htmlFor="occupation" tier={fieldTiers.occupation}>
+								Ocupación / Profesión
+							</LabelWithInfo>
+							<Input
+								id="occupation"
+								value={formData.occupation}
+								onChange={(e) =>
+									handleInputChange("occupation", e.target.value.toUpperCase())
+								}
+								placeholder="Ej. COMERCIANTE"
+							/>
+						</div>
+						<div className="space-y-2">
+							<LabelWithInfo
+								htmlFor="sourceOfFunds"
+								tier={fieldTiers.sourceOfFunds}
+							>
+								Origen de los recursos
+							</LabelWithInfo>
+							<Input
+								id="sourceOfFunds"
+								value={formData.sourceOfFunds}
+								onChange={(e) =>
+									handleInputChange(
+										"sourceOfFunds",
+										e.target.value.toUpperCase(),
+									)
+								}
+								placeholder="Ej. SALARIO"
+							/>
+						</div>
+						<div className="space-y-2">
+							<LabelWithInfo
+								htmlFor="sourceOfWealth"
+								tier={fieldTiers.sourceOfWealth}
+							>
+								Origen del patrimonio
+							</LabelWithInfo>
+							<Input
+								id="sourceOfWealth"
+								value={formData.sourceOfWealth}
+								onChange={(e) =>
+									handleInputChange(
+										"sourceOfWealth",
+										e.target.value.toUpperCase(),
+									)
+								}
+								placeholder="Ej. HERENCIA"
+							/>
+						</div>
+					</div>
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<CardTitle className="text-lg">
 						{t("clientComplianceNotes")}
 					</CardTitle>
 				</CardHeader>
@@ -883,33 +1055,30 @@ export function ClientInfoStep({
 				</CardContent>
 			</Card>
 
-			{/* Hidden submit button for form submission */}
-			<button type="submit" className="sr-only" aria-hidden="true" />
-
-			{/* Fixed Action Bar */}
-			<FormActionBar
-				actions={[
-					{
-						label: isSubmitting ? "Creando..." : "Guardar y Continuar",
-						icon: isSubmitting ? undefined : ArrowRight,
-						onClick: () => {
-							// Trigger form submission
-							const form = document.getElementById(
-								"client-info-form",
-							) as HTMLFormElement;
-							form?.requestSubmit();
-						},
-						disabled: isSubmitting,
-						loading: isSubmitting,
-					},
-					{
-						label: "Cancelar",
-						onClick: onCancel,
-						variant: "outline",
-						disabled: isSubmitting,
-					},
-				]}
-			/>
+			{/* Action buttons */}
+			<div className="flex justify-end gap-3">
+				<Button
+					type="button"
+					variant="outline"
+					onClick={onCancel}
+					disabled={isSubmitting}
+				>
+					Cancelar
+				</Button>
+				<Button type="submit" disabled={isSubmitting}>
+					{isSubmitting ? (
+						<>
+							<span className="animate-spin mr-2">⏳</span>
+							Creando...
+						</>
+					) : (
+						<>
+							Guardar y Continuar
+							<ArrowRight className="h-4 w-4 ml-2" />
+						</>
+					)}
+				</Button>
+			</div>
 		</form>
 	);
 }

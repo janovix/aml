@@ -297,40 +297,38 @@ describe("AlertDetailsView", () => {
 		});
 	});
 
-	it("displays transaction link when transactionId is available", async () => {
-		const alertWithTransaction = {
+	it("displays operation link when transactionId is available", async () => {
+		const alertWithOperation = {
 			...mockAlert,
 			transactionId: "TRX-2024-001",
 		};
-		vi.mocked(alertsApi.getAlertById).mockResolvedValue(alertWithTransaction);
+		vi.mocked(alertsApi.getAlertById).mockResolvedValue(alertWithOperation);
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
 		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Transacción Relacionada")).toBeInTheDocument();
+			expect(screen.getByText("Operación Relacionada")).toBeInTheDocument();
 			expect(screen.getByText("TRX-2024-001")).toBeInTheDocument();
 		});
 	});
 
-	it("displays all related transactions for N:1 alerts with transactionIds in metadata", async () => {
-		const alertWithMultipleTransactions = {
+	it("displays all related operations for N:1 alerts with transactionIds in metadata", async () => {
+		const alertWithMultipleOperations = {
 			...mockAlert,
 			metadata: {
 				transactionIds: ["TRX-2024-001", "TRX-2024-002", "TRX-2024-003"],
 			},
 		};
 		vi.mocked(alertsApi.getAlertById).mockResolvedValue(
-			alertWithMultipleTransactions,
+			alertWithMultipleOperations,
 		);
 		vi.mocked(clientsApi.getClientById).mockResolvedValue(mockClients[0]);
 
 		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
-			expect(
-				screen.getByText("Transacciones Relacionadas"),
-			).toBeInTheDocument();
+			expect(screen.getByText("Operaciones Relacionadas")).toBeInTheDocument();
 			expect(screen.getByText("TRX-2024-001")).toBeInTheDocument();
 			expect(screen.getByText("TRX-2024-002")).toBeInTheDocument();
 			expect(screen.getByText("TRX-2024-003")).toBeInTheDocument();
@@ -353,12 +351,10 @@ describe("AlertDetailsView", () => {
 		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
-			expect(
-				screen.getByText("Transacciones Relacionadas"),
-			).toBeInTheDocument();
-			// Should only show each transaction once
-			const transactionIds = screen.getAllByText("TRX-2024-001");
-			expect(transactionIds).toHaveLength(1);
+			expect(screen.getByText("Operaciones Relacionadas")).toBeInTheDocument();
+			// Should only show each operation once
+			const operationIds = screen.getAllByText("TRX-2024-001");
+			expect(operationIds).toHaveLength(1);
 			expect(screen.getByText("TRX-2024-002")).toBeInTheDocument();
 			// Check for count badge
 			expect(screen.getByText("2")).toBeInTheDocument();
@@ -567,9 +563,7 @@ describe("AlertDetailsView", () => {
 
 		await waitFor(() => {
 			expect(screen.getByText("Alerta no encontrada")).toBeInTheDocument();
-			expect(
-				screen.getByText(/La alerta alert-1 no existe/),
-			).toBeInTheDocument();
+			expect(screen.getByText("La alerta no existe")).toBeInTheDocument();
 		});
 	});
 
@@ -625,7 +619,7 @@ describe("AlertDetailsView", () => {
 					FILE_GENERATED: "Archivo Generado",
 					SUBMITTED: "Enviada",
 					OVERDUE: "Vencida",
-					CANCELLED: "Cancelada",
+					CANCELLED: "Canceladas", // Plural form used in the translation
 				};
 				expect(screen.getByText(statusLabels[status])).toBeInTheDocument();
 			});

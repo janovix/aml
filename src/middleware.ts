@@ -118,7 +118,7 @@ const ORG_FREE_ROUTES = ["/invitations"];
  */
 const KNOWN_ROUTES = [
 	"clients",
-	"transactions",
+	"operations",
 	"alerts",
 	"reports",
 	"team",

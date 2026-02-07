@@ -52,14 +52,25 @@ import {
 	LegalRepresentativeForm,
 	type LegalRepFormData as UnifiedLegalRepFormData,
 } from "./LegalRepresentativeForm";
-import { createClientDocument } from "@/lib/api/client-documents";
-import { uploadDocumentFiles } from "@/lib/api/file-upload";
-import type { ClientDocumentType } from "@/types/client-document";
+import {
+	createClientDocument,
+	listClientDocuments,
+	patchClientDocument,
+} from "@/lib/api/client-documents";
+import { uploadDocument } from "@/lib/api/file-upload";
+import type {
+	ClientDocument,
+	ClientDocumentType,
+} from "@/types/client-document";
+import type { PersonType } from "@/types/client";
 import { useOrgStore } from "@/lib/org-store";
+import { useAuthSession } from "@/lib/auth/useAuthSession";
+import { requiresUBOs } from "@/lib/constants";
+import { UploadedIDDocumentCard } from "./UploadedIDDocumentCard";
 
 interface UBOSectionProps {
 	clientId: string;
-	personType: string;
+	personType: PersonType;
 	className?: string;
 	/** Callback when UBO list changes (for refreshing KYC status) */
 	onUBOChange?: () => void;
@@ -128,6 +139,7 @@ export function UBOSection({
 	className,
 	onUBOChange,
 }: UBOSectionProps) {
+	const { data: session } = useAuthSession();
 	const [ubos, setUbos] = useState<UBO[]>([]);
 	const [legalRep, setLegalRep] = useState<UBO | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
@@ -147,8 +159,12 @@ export function UBOSection({
 	const [legalRepFormData, setLegalRepFormData] =
 		useState<LegacyLegalRepFormData>(INITIAL_LEGAL_REP_FORM_DATA);
 
+	// State for Legal Rep's ID document
+	const [legalRepIdDocument, setLegalRepIdDocument] =
+		useState<ClientDocument | null>(null);
+
 	// Only show for moral/trust entities
-	const shouldShow = personType === "moral" || personType === "trust";
+	const shouldShow = requiresUBOs(personType);
 
 	const fetchUBOs = useCallback(async () => {
 		if (!shouldShow) return;
@@ -177,6 +193,28 @@ export function UBOSection({
 	useEffect(() => {
 		fetchUBOs();
 	}, [fetchUBOs]);
+
+	// Fetch legal rep's ID document when legalRep changes
+	useEffect(() => {
+		const fetchLegalRepDocument = async () => {
+			if (!legalRep?.idDocumentId) {
+				setLegalRepIdDocument(null);
+				return;
+			}
+
+			try {
+				const documents = await listClientDocuments({ clientId });
+				const idDoc = documents.data.find(
+					(doc) => doc.id === legalRep.idDocumentId,
+				);
+				setLegalRepIdDocument(idDoc || null);
+			} catch (err) {
+				console.error("Error fetching legal rep document:", err);
+			}
+		};
+
+		fetchLegalRepDocument();
+	}, [legalRep?.idDocumentId, clientId]);
 
 	// UBO (Stockholder) handlers
 	const handleOpenCreateUBO = () => {
@@ -331,6 +369,11 @@ export function UBOSection({
 			return;
 		}
 
+		if (!session?.user?.id) {
+			toast.error("No hay sesión de usuario activa");
+			return;
+		}
+
 		setIsSubmitting(true);
 
 		try {
@@ -353,32 +396,40 @@ export function UBOSection({
 
 				idDocumentId = createdDoc.id;
 
-				// Prepare files for upload
-				const relatedFiles: Array<{ file: Blob; name: string; type: string }> =
-					[];
-
-				// Add INE back if available
-				if (idData.idType === "NATIONAL_ID" && idData.backFile) {
-					const backBlob = idData.backProcessedBlob || idData.backFile;
-					relatedFiles.push({
-						file: backBlob,
-						name: idData.backFile.name || "ine_back.jpg",
-						type: "ine_back",
-					});
-				}
-
-				// Upload all files
+				// Build page images array for doc-svc
+				const pageImages: Blob[] = [];
 				const primaryFile = idData.processedBlob || idData.file;
 				if (!primaryFile) {
 					throw new Error("No file available for upload");
 				}
-				await uploadDocumentFiles({
-					primaryFile,
-					originalFile: idData.originalFile,
-					relatedFiles: relatedFiles.length > 0 ? relatedFiles : undefined,
+
+				// Add front image
+				pageImages.push(primaryFile);
+
+				// Add back image if available (INE)
+				if (idData.idType === "NATIONAL_ID" && idData.backFile) {
+					const backBlob = idData.backProcessedBlob || idData.backFile;
+					pageImages.push(backBlob);
+				}
+
+				// Upload to doc-svc
+				const uploadResult = await uploadDocument({
 					organizationId: currentOrg.id,
+					userId: session.user.id,
+					primaryFile,
+					fileName: idData.file?.name || "document.jpg",
+					pageImages,
+					waitForProcessing: false,
+				});
+
+				// Update document with doc-svc references
+				await patchClientDocument({
 					clientId,
 					documentId: createdDoc.id,
+					input: {
+						docSvcDocumentId: uploadResult.documentId,
+						docSvcJobId: uploadResult.jobId,
+					},
 				});
 			}
 
@@ -467,20 +518,21 @@ export function UBOSection({
 			{/* Stockholders (UBOs) Section */}
 			<Card className={className}>
 				<CardHeader className="pb-3">
-					<CardTitle className="text-base flex items-center justify-between">
-						<span className="flex items-center gap-2">
-							<Users className="h-4 w-4" />
-							Accionistas
+					<CardTitle className="text-base flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+						<span className="flex items-center gap-2 flex-wrap">
+							<Users className="h-4 w-4 shrink-0" />
+							<span>Accionistas</span>
 							{ubos.length > 0 && (
-								<Badge
-									variant={isCapTableValid ? "secondary" : "destructive"}
-									className="ml-2"
-								>
+								<Badge variant={isCapTableValid ? "secondary" : "destructive"}>
 									Total: {totalOwnership.toFixed(2)}%
 								</Badge>
 							)}
 						</span>
-						<Button size="sm" onClick={handleOpenCreateUBO}>
+						<Button
+							size="sm"
+							onClick={handleOpenCreateUBO}
+							className="w-full sm:w-auto"
+						>
 							<Plus className="h-4 w-4 mr-1" />
 							Agregar Accionista
 						</Button>
@@ -598,6 +650,7 @@ export function UBOSection({
 						/>
 					) : (
 						<div className="space-y-3">
+							{/* Legal Rep Name and Actions */}
 							<div className="p-3 border rounded-lg bg-muted/30">
 								<div className="flex items-center justify-between">
 									<div className="min-w-0 flex-1">
@@ -640,6 +693,15 @@ export function UBOSection({
 									</div>
 								</div>
 							</div>
+
+							{/* ID Document Card for Legal Rep */}
+							{legalRepIdDocument && (
+								<UploadedIDDocumentCard
+									document={legalRepIdDocument}
+									showDelete={false}
+									compact
+								/>
+							)}
 						</div>
 					)}
 				</CardContent>

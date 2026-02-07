@@ -36,10 +36,18 @@ import {
 	LegalRepresentativeForm,
 	type LegalRepFormData as UnifiedLegalRepFormData,
 } from "../LegalRepresentativeForm";
-import { createClientDocument } from "@/lib/api/client-documents";
-import { uploadDocumentFiles } from "@/lib/api/file-upload";
-import type { ClientDocumentType } from "@/types/client-document";
+import {
+	createClientDocument,
+	patchClientDocument,
+} from "@/lib/api/client-documents";
+import { uploadDocument } from "@/lib/api/file-upload";
+import type {
+	ClientDocument,
+	ClientDocumentType,
+} from "@/types/client-document";
 import { useOrgStore } from "@/lib/org-store";
+import { useAuthSession } from "@/lib/auth/useAuthSession";
+import { UploadedIDDocumentCard } from "../UploadedIDDocumentCard";
 
 export interface UBOWithDocuments {
 	id: string;
@@ -50,6 +58,9 @@ export interface UBOWithDocuments {
 	rfc?: string;
 	relationshipType: UBORelationshipType;
 	ownershipPercentage?: number;
+	idDocumentId?: string;
+	/** Full ID document data if available */
+	idDocument?: ClientDocument;
 }
 
 interface UBOFormData {
@@ -113,6 +124,7 @@ export function UBOInlineForm({
 	ubos,
 	onUBOsChange,
 }: UBOInlineFormProps) {
+	const { data: session } = useAuthSession();
 	const [isUBODialogOpen, setIsUBODialogOpen] = useState(false);
 	const [isEditingLegalRep, setIsEditingLegalRep] = useState(false);
 	const [uboFormData, setUboFormData] = useState<UBOFormData>(
@@ -254,11 +266,17 @@ export function UBOInlineForm({
 			return;
 		}
 
+		if (!session?.user?.id) {
+			toast.error("No hay sesión de usuario activa");
+			return;
+		}
+
 		setIsSubmitting(true);
 
 		try {
 			// First, upload the ID document if provided
 			let idDocumentId: string | undefined;
+			let idDocument: ClientDocument | undefined;
 
 			if (formData.idDocumentData && formData.idDocumentData.file) {
 				const idData = formData.idDocumentData;
@@ -276,33 +294,48 @@ export function UBOInlineForm({
 
 				idDocumentId = createdDoc.id;
 
-				// Prepare files for upload
-				const relatedFiles: Array<{ file: Blob; name: string; type: string }> =
-					[];
-
-				// Add INE back if available
-				if (idData.idType === "NATIONAL_ID" && idData.backFile) {
-					const backBlob = idData.backProcessedBlob || idData.backFile;
-					relatedFiles.push({
-						file: backBlob,
-						name: idData.backFile.name || "ine_back.jpg",
-						type: "ine_back",
-					});
-				}
-
-				// Upload all files
+				// Build page images array for doc-svc
+				const pageImages: Blob[] = [];
 				const primaryFile = idData.processedBlob || idData.file;
 				if (!primaryFile) {
 					throw new Error("No file available for upload");
 				}
-				await uploadDocumentFiles({
-					primaryFile,
-					originalFile: idData.originalFile,
-					relatedFiles: relatedFiles.length > 0 ? relatedFiles : undefined,
+
+				// Add front image
+				pageImages.push(primaryFile);
+
+				// Add back image if available (INE)
+				if (idData.idType === "NATIONAL_ID" && idData.backFile) {
+					const backBlob = idData.backProcessedBlob || idData.backFile;
+					pageImages.push(backBlob);
+				}
+
+				// Upload to doc-svc
+				const uploadResult = await uploadDocument({
 					organizationId: currentOrg.id,
+					userId: session.user.id,
+					primaryFile,
+					fileName: idData.file?.name || "document.jpg",
+					pageImages,
+					waitForProcessing: false,
+				});
+
+				// Update document with doc-svc references
+				await patchClientDocument({
 					clientId,
 					documentId: createdDoc.id,
+					input: {
+						docSvcDocumentId: uploadResult.documentId,
+						docSvcJobId: uploadResult.jobId,
+					},
 				});
+
+				// Store document with doc-svc IDs for display
+				idDocument = {
+					...createdDoc,
+					docSvcDocumentId: uploadResult.documentId,
+					docSvcJobId: uploadResult.jobId,
+				};
 			}
 
 			// Create the legal representative UBO with the document reference
@@ -328,6 +361,8 @@ export function UBOInlineForm({
 				secondLastName:
 					formData.secondLastName.trim().toUpperCase() || undefined,
 				relationshipType: "LEGAL_REP",
+				idDocumentId,
+				idDocument,
 			};
 
 			// Replace existing legal rep if any
@@ -381,12 +416,16 @@ export function UBOInlineForm({
 			{/* Stockholders Section */}
 			<Card>
 				<CardHeader className="pb-3">
-					<CardTitle className="text-base flex items-center justify-between">
+					<CardTitle className="text-base flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
 						<span className="flex items-center gap-2">
-							<User className="h-4 w-4" />
-							Accionistas
+							<User className="h-4 w-4 shrink-0" />
+							<span>Accionistas</span>
 						</span>
-						<Button size="sm" onClick={() => setIsUBODialogOpen(true)}>
+						<Button
+							size="sm"
+							onClick={() => setIsUBODialogOpen(true)}
+							className="w-full sm:w-auto"
+						>
 							<Plus className="h-4 w-4 mr-1" />
 							Agregar
 						</Button>
@@ -477,6 +516,7 @@ export function UBOInlineForm({
 						/>
 					) : (
 						<div className="space-y-3">
+							{/* Legal Rep Name and Actions */}
 							<div className="p-3 border rounded-lg bg-muted/30 flex items-center justify-between">
 								<div>
 									<div className="font-medium text-sm">
@@ -503,6 +543,15 @@ export function UBOInlineForm({
 									</Button>
 								</div>
 							</div>
+
+							{/* ID Document Card for Legal Rep */}
+							{legalRep?.idDocument && (
+								<UploadedIDDocumentCard
+									document={legalRep.idDocument}
+									showDelete={false}
+									compact
+								/>
+							)}
 						</div>
 					)}
 				</CardContent>

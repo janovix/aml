@@ -18,7 +18,7 @@ import {
 	NotificationsContext as BlocksNotificationsContext,
 	type BlocksNotification,
 	type NotificationsContextValue as BlocksNotificationsContextValue,
-} from "@janovix/blocks";
+} from "@algenium/blocks";
 
 export interface Notification {
 	id: string;

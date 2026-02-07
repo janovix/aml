@@ -43,8 +43,8 @@ vi.mock("next-themes", () => ({
 	}),
 }));
 
-vi.mock("@janovix/blocks", async () => {
-	const actual = await vi.importActual("@janovix/blocks");
+vi.mock("@algenium/blocks", async () => {
+	const actual = await vi.importActual("@algenium/blocks");
 	return {
 		...actual,
 		ThemeSwitcher: () => <div data-testid="theme-switcher">Theme Switcher</div>,

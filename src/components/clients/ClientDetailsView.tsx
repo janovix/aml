@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,8 +30,10 @@ import {
 	Shield,
 	ExternalLink,
 	Pencil,
+	ZoomIn,
 } from "lucide-react";
 import type { Client } from "../../types/client";
+import type { Gender, MaritalStatus } from "../../types/client";
 import { getClientDisplayName } from "../../types/client";
 import { getClientById } from "../../lib/api/clients";
 import { listClientDocuments } from "../../lib/api/client-documents";
@@ -44,37 +45,38 @@ import type {
 import type { UBO } from "../../types/ubo";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/lib/mutations";
+import { showFetchError } from "@/lib/toast-utils";
 import { PageHero } from "@/components/page-hero";
 import { PageHeroSkeleton } from "@/components/skeletons";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getPersonTypeStyle } from "../../lib/person-type-icon";
 import { useStatesCatalog } from "@/hooks/useStatesCatalog";
 import { useLanguage } from "@/components/LanguageProvider";
+import type { TranslationKeys } from "@/lib/translations";
 import { CircularProgress } from "@/components/ui/circular-progress";
-import {
-	calculateKYCStatus,
-	getFieldLabel,
-	type KYCSectionStatus,
-} from "@/lib/kyc-status";
+import { calculateKYCStatus, type KYCSectionStatus } from "@/lib/kyc-status";
 import { cn } from "@/lib/utils";
-
-// Document type labels
-const DOCUMENT_LABELS: Record<string, string> = {
-	NATIONAL_ID: "INE/IFE",
-	PASSPORT: "Pasaporte",
-	DRIVERS_LICENSE: "Licencia de Conducir",
-	CEDULA_PROFESIONAL: "Cédula Profesional",
-	CARTILLA_MILITAR: "Cartilla Militar",
-	TAX_ID: "Constancia de Situación Fiscal",
-	PROOF_OF_ADDRESS: "Comprobante de Domicilio",
-	UTILITY_BILL: "Recibo de Servicios",
-	BANK_STATEMENT: "Estado de Cuenta",
-	ACTA_CONSTITUTIVA: "Acta Constitutiva",
-	PODER_NOTARIAL: "Poder Notarial",
-	TRUST_AGREEMENT: "Contrato de Fideicomiso",
-	CORPORATE_BYLAWS: "Estatutos Sociales",
-	OTHER: "Otro Documento",
-};
+import { DocSvcImage } from "@/components/DocSvcImage";
+import {
+	DocumentViewerDialog,
+	type DocumentImage,
+} from "./DocumentViewerDialog";
+import { UploadedIDDocumentCard } from "./UploadedIDDocumentCard";
+import {
+	getDocumentLabel,
+	ALL_REQUIRED_DOCUMENTS,
+	ID_DOCUMENT_TYPES,
+	requiresUBOs,
+} from "@/lib/constants";
+import { useOrgStore } from "@/lib/org-store";
+import { CompletenessBanner } from "@/components/completeness";
+import {
+	computeCompleteness,
+	getClientFieldTierMap,
+} from "@/lib/field-requirements";
+import type { FieldTier } from "@/types/completeness";
+import { TIER_COLORS } from "@/types/completeness";
+import { useOrgSettings } from "@/hooks/useOrgSettings";
 
 interface ClientDetailsViewProps {
 	clientId: string;
@@ -98,7 +100,7 @@ export function ClientDetailsSkeleton(): React.ReactElement {
 							<Skeleton className="h-6 w-48" />
 						</CardHeader>
 						<CardContent>
-							<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-6">
+							<div className="grid grid-cols-1 @xl/main:grid-cols-2 gap-6">
 								{[1, 2].map((j) => (
 									<div key={j} className="space-y-2">
 										<Skeleton className="h-4 w-24" />
@@ -115,31 +117,67 @@ export function ClientDetailsSkeleton(): React.ReactElement {
 }
 
 /**
- * Field display component with missing indicator
+ * Gender display labels
+ */
+const GENDER_LABELS: Record<Gender, TranslationKeys> = {
+	M: "clientGenderMale",
+	F: "clientGenderFemale",
+	OTHER: "clientGenderOther",
+};
+
+/**
+ * Marital status display labels
+ */
+const MARITAL_STATUS_LABELS: Record<MaritalStatus, TranslationKeys> = {
+	SINGLE: "clientMaritalSingle",
+	MARRIED: "clientMaritalMarried",
+	DIVORCED: "clientMaritalDivorced",
+	WIDOWED: "clientMaritalWidowed",
+	OTHER: "clientGenderOther",
+};
+
+/**
+ * Field display component with missing indicator and optional tier dot
  */
 function FieldDisplay({
 	label,
 	value,
 	icon: Icon,
 	isMissing,
+	tier,
 }: {
 	label: string;
 	value?: string | null;
 	icon?: React.ElementType;
 	isMissing?: boolean;
+	tier?: FieldTier;
 }) {
+	const { t } = useLanguage();
+	const missingIconColor = tier ? TIER_COLORS[tier].text : "text-amber-500";
+
 	return (
 		<div>
 			<dt className="text-sm font-medium text-muted-foreground mb-1 flex items-center gap-2">
+				{tier && (
+					<span
+						className={cn(
+							"h-2 w-2 rounded-full shrink-0",
+							TIER_COLORS[tier].dot,
+						)}
+						aria-hidden="true"
+					/>
+				)}
 				{Icon && <Icon className="h-4 w-4" />}
 				{label}
 			</dt>
 			<dd
 				className={cn("text-base", isMissing && "text-muted-foreground italic")}
 			>
-				{value || "No especificado"}
+				{value || t("commonNotSpecified")}
 				{isMissing && (
-					<AlertTriangle className="h-4 w-4 inline ml-2 text-amber-500" />
+					<AlertTriangle
+						className={cn("h-4 w-4 inline ml-2", missingIconColor)}
+					/>
 				)}
 			</dd>
 		</div>
@@ -152,12 +190,26 @@ export function ClientDetailsView({
 	const { navigateTo } = useOrgNavigation();
 	const { t } = useLanguage();
 	const { getStateName } = useStatesCatalog();
-	const searchParams = useSearchParams();
+	const { currentOrg } = useOrgStore();
+	const { activityCode } = useOrgSettings();
 	const [client, setClient] = useState<Client | null>(null);
 	const [documents, setDocuments] = useState<ClientDocument[]>([]);
 	const [ubos, setUbos] = useState<UBO[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [openAccordions, setOpenAccordions] = useState<string[]>([]);
+
+	// Document viewer dialog state
+	const [documentViewer, setDocumentViewer] = useState<{
+		open: boolean;
+		images: DocumentImage[];
+		initialIndex: number;
+		originalFileUrl?: string | null;
+	}>({
+		open: false,
+		images: [],
+		initialIndex: 0,
+		originalFileUrl: null,
+	});
 
 	// Fetch all data
 	useEffect(() => {
@@ -177,7 +229,7 @@ export function ClientDetailsView({
 				setUbos(ubosData.data);
 			} catch (error) {
 				console.error("Error fetching client data:", error);
-				toast.error(extractErrorMessage(error));
+				showFetchError("client-details", error);
 			} finally {
 				setIsLoading(false);
 			}
@@ -233,19 +285,16 @@ export function ClientDetailsView({
 
 	// Calculate KYC status
 	const kycStatus = calculateKYCStatus(client);
-	const needsUBOs =
-		client.personType === "moral" || client.personType === "trust";
+	const needsUBOs = requiresUBOs(client.personType);
 	const needsIdDocument = client.personType === "physical";
 
 	// Check documents status
-	const hasIdDocument = documents.some((d) =>
-		["NATIONAL_ID", "PASSPORT"].includes(d.documentType),
+	const idDocument = documents.find((d) =>
+		ID_DOCUMENT_TYPES.includes(d.documentType),
 	);
-	const requiredDocTypes: ClientDocumentType[] = needsUBOs
-		? client.personType === "moral"
-			? ["ACTA_CONSTITUTIVA", "PODER_NOTARIAL", "TAX_ID", "PROOF_OF_ADDRESS"]
-			: ["TRUST_AGREEMENT", "TAX_ID", "PROOF_OF_ADDRESS"]
-		: ["TAX_ID", "PROOF_OF_ADDRESS"];
+	const hasIdDocument = !!idDocument;
+	const requiredDocTypes: ClientDocumentType[] =
+		ALL_REQUIRED_DOCUMENTS[client.personType];
 
 	const uploadedDocTypes = new Set<ClientDocumentType>(
 		documents.map((d) => d.documentType),
@@ -282,6 +331,19 @@ export function ClientDetailsView({
 	const personTypeStyle = getPersonTypeStyle(client.personType);
 	const PersonTypeIcon = personTypeStyle.icon;
 
+	// Compute field-level tier map and completeness result
+	const tierMap = getClientFieldTierMap(client.personType);
+	const completenessResult = activityCode
+		? computeCompleteness(
+				activityCode,
+				"client",
+				client as unknown as Record<string, unknown>,
+				{
+					personType: client.personType,
+				},
+			)
+		: null;
+
 	return (
 		<div className="space-y-6">
 			<PageHero
@@ -313,7 +375,7 @@ export function ClientDetailsView({
 								strokeWidth={8}
 							/>
 							<p className="text-xs text-muted-foreground font-medium">
-								Estado KYC
+								{t("clientKycStatus")}
 							</p>
 						</div>
 
@@ -321,11 +383,13 @@ export function ClientDetailsView({
 						<div className="flex-1 space-y-3">
 							<div>
 								<h3 className="text-lg font-semibold mb-1">
-									{kycStatus.isComplete ? "KYC Completo" : "KYC Incompleto"}
+									{kycStatus.isComplete
+										? t("clientKycComplete")
+										: t("clientKycIncomplete")}
 								</h3>
 								<p className="text-sm text-muted-foreground">
-									{kycStatus.totalCompleted} de {kycStatus.totalRequired} campos
-									completados
+									{kycStatus.totalCompleted} {t("clientFieldsOf")}{" "}
+									{kycStatus.totalRequired} {t("clientFieldsCompleted")}
 								</p>
 							</div>
 
@@ -342,7 +406,8 @@ export function ClientDetailsView({
 								/>
 								<div className="flex items-center justify-between text-xs">
 									<span className="text-muted-foreground">
-										{kycStatus.overallPercentage}% completado
+										{kycStatus.overallPercentage}
+										{t("clientPercentComplete")}
 									</span>
 									{!kycStatus.isComplete && (
 										<Button
@@ -351,7 +416,7 @@ export function ClientDetailsView({
 											className="h-auto p-0 text-xs"
 											onClick={() => navigateToEdit("personal")}
 										>
-											Completar información
+											{t("clientCompleteInfo")}
 											<ExternalLink className="h-3 w-3 ml-1" />
 										</Button>
 									)}
@@ -383,6 +448,9 @@ export function ClientDetailsView({
 				</CardContent>
 			</Card>
 
+			{/* Completeness Banner */}
+			{completenessResult && <CompletenessBanner result={completenessResult} />}
+
 			{/* Accordion Sections */}
 			<Accordion
 				type="multiple"
@@ -406,8 +474,8 @@ export function ClientDetailsView({
 								)}
 								<span className="font-semibold">
 									{client.personType === "physical"
-										? "Información Personal"
-										: "Información de la Empresa"}
+										? t("clientPersonalInfo")
+										: t("clientCompanyInfo")}
 								</span>
 							</div>
 							<div className="flex items-center gap-2">
@@ -428,25 +496,28 @@ export function ClientDetailsView({
 						</div>
 					</AccordionTrigger>
 					<AccordionContent className="px-6 pb-4">
-						<dl className="grid grid-cols-1 @md/main:grid-cols-2 gap-6">
+						<dl className="grid grid-cols-1 @xl/main:grid-cols-2 gap-6">
 							{client.personType === "physical" ? (
 								<>
 									<FieldDisplay
-										label="Nombre"
+										label={t("clientFirstName")}
 										value={client.firstName}
 										isMissing={!client.firstName}
+										tier={tierMap.firstName}
 									/>
 									<FieldDisplay
-										label="Apellido Paterno"
+										label={t("clientLastName")}
 										value={client.lastName}
 										isMissing={!client.lastName}
+										tier={tierMap.lastName}
 									/>
 									<FieldDisplay
-										label="Apellido Materno"
+										label={t("clientSecondLastName")}
 										value={client.secondLastName}
+										tier={tierMap.secondLastName}
 									/>
 									<FieldDisplay
-										label="Fecha de Nacimiento"
+										label={t("clientBirthDate")}
 										value={
 											client.birthDate
 												? formatDate(client.birthDate)
@@ -454,27 +525,44 @@ export function ClientDetailsView({
 										}
 										icon={Calendar}
 										isMissing={!client.birthDate}
+										tier={tierMap.birthDate}
 									/>
 									<FieldDisplay
-										label="CURP"
+										label={t("clientCurp")}
 										value={client.curp}
 										isMissing={!client.curp}
+										tier={tierMap.curp}
 									/>
 									<FieldDisplay
-										label="Nacionalidad"
+										label={t("clientNationality")}
 										value={client.nationality}
 										isMissing={!client.nationality}
+									/>
+									<FieldDisplay
+										label={t("clientCountryCode")}
+										value={client.countryCode}
+										icon={Flag}
+										isMissing={!client.countryCode}
+										tier={tierMap.countryCode}
+									/>
+									<FieldDisplay
+										label={t("clientEconomicActivityLabel")}
+										value={client.economicActivityCode}
+										icon={Briefcase}
+										isMissing={!client.economicActivityCode}
+										tier={tierMap.economicActivityCode}
 									/>
 								</>
 							) : (
 								<>
 									<FieldDisplay
-										label="Razón Social"
+										label={t("clientBusinessName")}
 										value={client.businessName}
 										isMissing={!client.businessName}
+										tier={tierMap.businessName}
 									/>
 									<FieldDisplay
-										label="Fecha de Constitución"
+										label={t("clientConstitutionDate")}
 										value={
 											client.incorporationDate
 												? formatDate(client.incorporationDate)
@@ -483,9 +571,23 @@ export function ClientDetailsView({
 										icon={Calendar}
 										isMissing={!client.incorporationDate}
 									/>
+									<FieldDisplay
+										label={t("clientCountryCode")}
+										value={client.countryCode}
+										icon={Flag}
+										isMissing={!client.countryCode}
+										tier={tierMap.countryCode}
+									/>
+									<FieldDisplay
+										label={t("clientEconomicActivityLabel")}
+										value={client.economicActivityCode}
+										icon={Briefcase}
+										isMissing={!client.economicActivityCode}
+										tier={tierMap.economicActivityCode}
+									/>
 								</>
 							)}
-							<FieldDisplay label="RFC" value={client.rfc} />
+							<FieldDisplay label="RFC" value={client.rfc} tier={tierMap.rfc} />
 						</dl>
 
 						{/* CTA if incomplete */}
@@ -506,7 +608,7 @@ export function ClientDetailsView({
 											}
 										>
 											<Edit className="h-4 w-4 mr-2" />
-											Completar información
+											{t("clientCompleteInfo")}
 										</Button>
 									</div>
 								);
@@ -522,7 +624,7 @@ export function ClientDetailsView({
 								onClick={() => navigateToEdit("personal", "personal-info")}
 							>
 								<Pencil className="h-4 w-4 mr-2" />
-								Editar
+								{t("edit")}
 							</Button>
 						</div>
 					</AccordionContent>
@@ -538,7 +640,9 @@ export function ClientDetailsView({
 						<div className="flex items-center justify-between w-full pr-4">
 							<div className="flex items-center gap-3">
 								<Phone className="h-5 w-5" />
-								<span className="font-semibold">Información de Contacto</span>
+								<span className="font-semibold">
+									{t("clientContactInfoTitle")}
+								</span>
 							</div>
 							<div className="flex items-center gap-2">
 								{(() => {
@@ -554,18 +658,20 @@ export function ClientDetailsView({
 						</div>
 					</AccordionTrigger>
 					<AccordionContent className="px-6 pb-4">
-						<dl className="grid grid-cols-1 @md/main:grid-cols-2 gap-6">
+						<dl className="grid grid-cols-1 @xl/main:grid-cols-2 gap-6">
 							<FieldDisplay
-								label="Correo Electrónico"
+								label={t("clientEmailLabel")}
 								value={client.email}
 								icon={Mail}
 								isMissing={!client.email}
+								tier={tierMap.email}
 							/>
 							<FieldDisplay
-								label="Teléfono"
+								label={t("clientPhoneLabel")}
 								value={client.phone}
 								icon={Phone}
 								isMissing={!client.phone}
+								tier={tierMap.phone}
 							/>
 						</dl>
 
@@ -580,7 +686,7 @@ export function ClientDetailsView({
 											onClick={() => navigateToEdit("contact", "contact-info")}
 										>
 											<Edit className="h-4 w-4 mr-2" />
-											Completar información
+											{t("clientCompleteInfo")}
 										</Button>
 									</div>
 								);
@@ -596,7 +702,7 @@ export function ClientDetailsView({
 								onClick={() => navigateToEdit("contact", "contact-info")}
 							>
 								<Pencil className="h-4 w-4 mr-2" />
-								Editar
+								{t("edit")}
 							</Button>
 						</div>
 					</AccordionContent>
@@ -612,7 +718,7 @@ export function ClientDetailsView({
 						<div className="flex items-center justify-between w-full pr-4">
 							<div className="flex items-center gap-3">
 								<MapPin className="h-5 w-5" />
-								<span className="font-semibold">Domicilio</span>
+								<span className="font-semibold">{t("clientAddressTitle")}</span>
 							</div>
 							<div className="flex items-center gap-2">
 								{(() => {
@@ -628,10 +734,10 @@ export function ClientDetailsView({
 						</div>
 					</AccordionTrigger>
 					<AccordionContent className="px-6 pb-4">
-						<dl className="grid grid-cols-1 @md/main:grid-cols-2 gap-6">
-							<div className="md:col-span-2">
+						<dl className="grid grid-cols-1 @xl/main:grid-cols-2 gap-6">
+							<div className="xl:col-span-2">
 								<dt className="text-sm font-medium text-muted-foreground mb-1">
-									Dirección Completa
+									{t("clientFullAddress")}
 								</dt>
 								<dd className="text-base">
 									{client.street} {client.externalNumber}
@@ -645,50 +751,55 @@ export function ClientDetailsView({
 								</dd>
 							</div>
 							<FieldDisplay
-								label="Calle"
+								label={t("clientStreet")}
 								value={client.street}
 								isMissing={!client.street}
+								tier={tierMap.street}
 							/>
 							<FieldDisplay
-								label="Número Exterior"
+								label={t("clientExteriorNumber")}
 								value={client.externalNumber}
 								isMissing={!client.externalNumber}
 							/>
 							<FieldDisplay
-								label="Número Interior"
+								label={t("clientInteriorNumber")}
 								value={client.internalNumber}
 							/>
 							<FieldDisplay
-								label="Colonia"
+								label={t("clientNeighborhood")}
 								value={client.neighborhood}
 								isMissing={!client.neighborhood}
 							/>
 							<FieldDisplay
-								label="Código Postal"
+								label={t("clientPostalCode")}
 								value={client.postalCode}
 								isMissing={!client.postalCode}
+								tier={tierMap.postalCode}
 							/>
 							<FieldDisplay
-								label="Ciudad"
+								label={t("clientCity")}
 								value={client.city}
 								isMissing={!client.city}
 							/>
 							<FieldDisplay
-								label="Municipio"
+								label={t("clientMunicipality")}
 								value={client.municipality}
 								isMissing={!client.municipality}
 							/>
 							<FieldDisplay
-								label="Estado"
+								label={t("clientState")}
 								value={getStateName(client.stateCode)}
 								isMissing={!client.stateCode}
 							/>
 							<FieldDisplay
-								label="País"
+								label={t("clientCountry")}
 								value={client.country}
 								isMissing={!client.country}
 							/>
-							<FieldDisplay label="Referencia" value={client.reference} />
+							<FieldDisplay
+								label={t("clientReference")}
+								value={client.reference}
+							/>
 						</dl>
 
 						{(() => {
@@ -702,7 +813,7 @@ export function ClientDetailsView({
 											onClick={() => navigateToEdit("address", "address-info")}
 										>
 											<Edit className="h-4 w-4 mr-2" />
-											Completar domicilio
+											{t("clientCompleteAddress")}
 										</Button>
 									</div>
 								);
@@ -718,7 +829,7 @@ export function ClientDetailsView({
 								onClick={() => navigateToEdit("address", "address-info")}
 							>
 								<Pencil className="h-4 w-4 mr-2" />
-								Editar
+								{t("edit")}
 							</Button>
 						</div>
 					</AccordionContent>
@@ -736,7 +847,7 @@ export function ClientDetailsView({
 								<div className="flex items-center gap-3">
 									<Briefcase className="h-5 w-5" />
 									<span className="font-semibold">
-										Información KYC Adicional
+										{t("clientKycAdditionalInfo")}
 									</span>
 								</div>
 								<div className="flex items-center gap-2">
@@ -753,30 +864,41 @@ export function ClientDetailsView({
 							</div>
 						</AccordionTrigger>
 						<AccordionContent className="px-6 pb-4">
-							<dl className="grid grid-cols-1 @md/main:grid-cols-2 gap-6">
+							<dl className="grid grid-cols-1 @xl/main:grid-cols-2 gap-6">
 								<FieldDisplay
-									label="Género"
-									value={client.gender}
+									label={t("clientGender")}
+									value={
+										client.gender ? t(GENDER_LABELS[client.gender]) : undefined
+									}
 									isMissing={!client.gender}
+									tier={tierMap.gender}
 								/>
 								<FieldDisplay
-									label="Ocupación"
+									label={t("clientMaritalStatus")}
+									value={
+										client.maritalStatus
+											? t(MARITAL_STATUS_LABELS[client.maritalStatus])
+											: undefined
+									}
+									isMissing={!client.maritalStatus}
+									tier={tierMap.maritalStatus}
+								/>
+								<FieldDisplay
+									label={t("clientOccupationProfession")}
 									value={client.occupation}
 									isMissing={!client.occupation}
+									tier={tierMap.occupation}
 								/>
 								<FieldDisplay
-									label="Estado Civil"
-									value={client.maritalStatus}
-									isMissing={!client.maritalStatus}
-								/>
-								<FieldDisplay
-									label="Fuente de Fondos"
+									label={t("clientResourceOrigin")}
 									value={client.sourceOfFunds}
 									isMissing={!client.sourceOfFunds}
+									tier={tierMap.sourceOfFunds}
 								/>
 								<FieldDisplay
-									label="Fuente de Riqueza"
+									label={t("clientPatrimonyOrigin")}
 									value={client.sourceOfWealth}
+									tier={tierMap.sourceOfWealth}
 								/>
 							</dl>
 
@@ -791,7 +913,7 @@ export function ClientDetailsView({
 												onClick={() => navigateToEdit("personal", "kyc-info")}
 											>
 												<Edit className="h-4 w-4 mr-2" />
-												Completar información KYC
+												{t("clientCompleteKyc")}
 											</Button>
 										</div>
 									);
@@ -824,7 +946,7 @@ export function ClientDetailsView({
 						<div className="flex items-center justify-between w-full pr-4">
 							<div className="flex items-center gap-3">
 								<Shield className="h-5 w-5" />
-								<span className="font-semibold">Estado PEP</span>
+								<span className="font-semibold">{t("clientPepStatus")}</span>
 							</div>
 							<div className="flex items-center gap-2">
 								{client.pepStatus === "NOT_PEP" ||
@@ -837,14 +959,15 @@ export function ClientDetailsView({
 						</div>
 					</AccordionTrigger>
 					<AccordionContent className="px-6 pb-4">
-						<dl className="grid grid-cols-1 @md/main:grid-cols-2 gap-6">
+						<dl className="grid grid-cols-1 @xl/main:grid-cols-2 gap-6">
 							<FieldDisplay
-								label="Estado PEP"
+								label={t("clientPepStatus")}
 								value={client.pepStatus}
 								isMissing={!client.pepStatus || client.pepStatus === "PENDING"}
+								tier={tierMap.isPEP}
 							/>
 							<FieldDisplay
-								label="Verificado el"
+								label={t("clientPepVerifiedOn")}
 								value={
 									client.pepCheckedAt
 										? formatDate(client.pepCheckedAt)
@@ -877,7 +1000,7 @@ export function ClientDetailsView({
 									onClick={() => navigateToEdit("personal", "pep-info")}
 								>
 									<Shield className="h-4 w-4 mr-2" />
-									Verificar estado PEP
+									{t("clientVerifyPep")}
 								</Button>
 							</div>
 						)}
@@ -894,7 +1017,7 @@ export function ClientDetailsView({
 						<div className="flex items-center justify-between w-full pr-4">
 							<div className="flex items-center gap-3">
 								<FileText className="h-5 w-5" />
-								<span className="font-semibold">Documentos</span>
+								<span className="font-semibold">{t("commonDocuments")}</span>
 							</div>
 							<div className="flex items-center gap-2">
 								{documentsComplete ? (
@@ -906,115 +1029,245 @@ export function ClientDetailsView({
 						</div>
 					</AccordionTrigger>
 					<AccordionContent className="px-6 pb-4">
-						<div className="space-y-3">
-							{/* ID Document Status */}
-							{needsIdDocument && (
-								<div
-									className={cn(
-										"p-3 rounded-lg border",
-										hasIdDocument
-											? "bg-green-50 dark:bg-green-950/20 border-green-200"
-											: "bg-amber-50 dark:bg-amber-950/20 border-amber-200",
-									)}
-								>
-									<div className="flex items-center justify-between">
-										<div className="flex items-center gap-2">
-											{hasIdDocument ? (
-												<CheckCircle2 className="h-4 w-4 text-green-600" />
-											) : (
-												<AlertTriangle className="h-4 w-4 text-amber-600" />
-											)}
-											<span className="text-sm font-medium">
-												Identificación Oficial
-											</span>
-										</div>
-										{hasIdDocument ? (
-											<Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-												Cargado
-											</Badge>
-										) : (
-											<Badge
-												variant="outline"
-												className="border-amber-500 text-amber-700"
-											>
-												Faltante
-											</Badge>
-										)}
-									</div>
-								</div>
-							)}
+						{/* Documents Grid */}
+						<div className="grid grid-cols-1 @xl/main:grid-cols-2 gap-3">
+							{/* Build unified document list */}
+							{(() => {
+								// Build list of all documents to display
+								const allDocItems: Array<{
+									type: string;
+									label: string;
+									doc: typeof idDocument | null;
+									isIdDoc: boolean;
+								}> = [];
 
-							{/* Other Documents */}
-							{requiredDocTypes.map((docType) => {
-								const hasDoc = uploadedDocTypes.has(docType);
-								return (
-									<div
-										key={docType}
-										className={cn(
-											"p-3 rounded-lg border",
-											hasDoc
-												? "bg-green-50 dark:bg-green-950/20 border-green-200"
-												: "bg-amber-50 dark:bg-amber-950/20 border-amber-200",
-										)}
-									>
-										<div className="flex items-center justify-between">
-											<div className="flex items-center gap-2">
-												{hasDoc ? (
-													<CheckCircle2 className="h-4 w-4 text-green-600" />
-												) : (
-													<AlertTriangle className="h-4 w-4 text-amber-600" />
+								// Add ID document if needed
+								if (needsIdDocument) {
+									allDocItems.push({
+										type: "NATIONAL_ID",
+										label: t("clientOfficialId"),
+										doc: idDocument || null,
+										isIdDoc: true,
+									});
+								}
+
+								// Add other required documents (excluding ID docs if handled separately above)
+								requiredDocTypes
+									.filter(
+										(docType) =>
+											!needsIdDocument || !ID_DOCUMENT_TYPES.includes(docType),
+									)
+									.forEach((docType) => {
+										const doc = documents.find(
+											(d) => d.documentType === docType,
+										);
+										allDocItems.push({
+											type: docType,
+											label: getDocumentLabel(docType),
+											doc: doc || null,
+											isIdDoc: false,
+										});
+									});
+
+								return allDocItems.map((item) => {
+									const hasDoc = !!item.doc;
+									const doc = item.doc;
+
+									// Get page images for display
+									type PageImage = {
+										src: string;
+										title: string;
+										label: string;
+									};
+									const getPageImages = (): PageImage[] => {
+										if (!doc?.metadata) return [];
+										const metadata = doc.metadata as any;
+
+										// Check rasterized pages first
+										if (metadata.rasterizedPageUrls?.length > 0) {
+											return metadata.rasterizedPageUrls.map(
+												(url: string, idx: number) => ({
+													src: url,
+													title: `Página ${idx + 1}`,
+													label: `Pág. ${idx + 1}`,
+												}),
+											);
+										}
+
+										// INE front/back fallback
+										const images: PageImage[] = [];
+										if (metadata.ineFrontUrl) {
+											images.push({
+												src: metadata.ineFrontUrl,
+												title: "Frente",
+												label: "Frente",
+											});
+										}
+										if (metadata.ineBackUrl) {
+											images.push({
+												src: metadata.ineBackUrl,
+												title: "Reverso",
+												label: "Reverso",
+											});
+										}
+										return images;
+									};
+
+									const pageImages: PageImage[] = hasDoc ? getPageImages() : [];
+									const hasImages = pageImages.length > 0;
+
+									return (
+										<Card
+											key={item.type}
+											className={cn(
+												"overflow-hidden py-0 flex flex-col",
+												hasDoc
+													? "border-green-500 bg-green-50/50 dark:bg-green-950/20"
+													: "border-amber-300 bg-amber-50/50 dark:bg-amber-950/20",
+											)}
+										>
+											<CardContent className="p-3 space-y-2 flex flex-col flex-1">
+												{/* Header with title and badge */}
+												<div className="flex items-center justify-between gap-2">
+													<div className="flex items-center gap-2 min-w-0">
+														<FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+														<span className="font-medium text-sm truncate">
+															{hasDoc && doc
+																? getDocumentLabel(doc.documentType)
+																: item.label}
+														</span>
+													</div>
+													<Badge
+														className={cn(
+															"shrink-0 text-xs",
+															hasDoc
+																? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+																: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+														)}
+													>
+														{hasDoc ? t("clientUploaded") : t("clientMissing")}
+													</Badge>
+												</div>
+
+												{/* Document images */}
+												{hasImages && (
+													<div className="flex gap-2 overflow-x-auto pb-1">
+														{pageImages.slice(0, 4).map((img, idx) => (
+															<div
+																key={idx}
+																className="relative rounded-md overflow-hidden bg-muted/30 border cursor-pointer group h-24 shrink-0"
+																onClick={() => {
+																	setDocumentViewer({
+																		open: true,
+																		images: pageImages.map((p) => ({
+																			src: p.src,
+																			title: p.title,
+																		})),
+																		initialIndex: idx,
+																		originalFileUrl: (doc?.metadata as any)
+																			?.originalFileUrl,
+																	});
+																}}
+															>
+																{doc?.docSvcDocumentId && currentOrg?.id ? (
+																	<DocSvcImage
+																		organizationId={currentOrg.id}
+																		documentId={doc.docSvcDocumentId}
+																		imageIndex={idx}
+																		alt={img.title}
+																		className="h-full w-auto object-contain"
+																	/>
+																) : (
+																	<img
+																		src={img.src}
+																		alt={img.title}
+																		className="h-full w-auto object-contain"
+																		crossOrigin="anonymous"
+																	/>
+																)}
+																<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+																	<ZoomIn className="h-4 w-4 text-white" />
+																</div>
+															</div>
+														))}
+														{pageImages.length > 4 && (
+															<div
+																className="h-24 px-3 shrink-0 rounded-md border bg-muted/50 flex items-center justify-center cursor-pointer hover:bg-muted/70 transition-colors"
+																onClick={() => {
+																	setDocumentViewer({
+																		open: true,
+																		images: pageImages.map((p) => ({
+																			src: p.src,
+																			title: p.title,
+																		})),
+																		initialIndex: 4,
+																		originalFileUrl: (doc?.metadata as any)
+																			?.originalFileUrl,
+																	});
+																}}
+															>
+																<span className="text-xs text-muted-foreground font-medium">
+																	+{pageImages.length - 4}
+																</span>
+															</div>
+														)}
+													</div>
 												)}
-												<span className="text-sm font-medium">
-													{DOCUMENT_LABELS[docType] || docType}
-												</span>
-											</div>
-											{hasDoc ? (
-												<Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-													Cargado
-												</Badge>
-											) : (
-												<Badge
-													variant="outline"
-													className="border-amber-500 text-amber-700"
-												>
-													Faltante
-												</Badge>
-											)}
-										</div>
-									</div>
-								);
-							})}
 
-							{/* Document count summary */}
-							<div className="pt-2 text-sm text-muted-foreground">
-								{documents.length} documento(s) cargado(s)
-								{missingDocs.length > 0 &&
-									`, ${missingDocs.length} faltante(s)`}
-							</div>
+												{/* Expiry date if available - shown below images */}
+												{hasDoc && doc?.expiryDate && (
+													<p className="text-xs text-muted-foreground">
+														{t("clientExpires")}{" "}
+														{new Date(doc.expiryDate).toLocaleDateString(
+															"es-MX",
+														)}
+													</p>
+												)}
+
+												{/* View original button - pushed to bottom */}
+												<div className="mt-auto pt-2">
+													{hasDoc &&
+														((doc?.metadata as any)?.originalFileUrl ||
+															doc?.fileUrl) && (
+															<Button
+																variant="outline"
+																size="sm"
+																className="w-full h-8 text-xs"
+																onClick={() =>
+																	window.open(
+																		(doc?.metadata as any)?.originalFileUrl ||
+																			doc?.fileUrl!,
+																		"_blank",
+																	)
+																}
+															>
+																<FileText className="h-3 w-3 mr-1.5" />
+																{t("clientViewOriginal")}
+															</Button>
+														)}
+												</div>
+											</CardContent>
+										</Card>
+									);
+								});
+							})()}
 						</div>
 
-						{!documentsComplete && (
-							<div className="mt-4 pt-4 border-t">
-								<Button
-									variant="outline"
-									size="sm"
-									onClick={() => navigateToEdit("documents", "documents")}
-								>
-									<FileText className="h-4 w-4 mr-2" />
-									Cargar documentos faltantes
-								</Button>
-							</div>
-						)}
-
-						{/* Edit button - always visible */}
-						<div className="mt-4 pt-4 border-t flex justify-end">
+						{/* Footer with count and edit button */}
+						<div className="mt-3 pt-3 border-t flex items-center justify-between">
+							<span className="text-xs text-muted-foreground">
+								{documents.length} {t("clientDocsUploaded")}
+								{missingDocs.length > 0 &&
+									` · ${missingDocs.length} ${t("clientDocsMissing")}`}
+							</span>
 							<Button
 								variant="ghost"
 								size="sm"
+								className="h-8 text-xs"
 								onClick={() => navigateToEdit("documents", "documents")}
 							>
-								<Pencil className="h-4 w-4 mr-2" />
-								Editar
+								<Pencil className="h-3 w-3 mr-1.5" />
+								{!documentsComplete ? t("commonLoadMissing") : t("edit")}
 							</Button>
 						</div>
 					</AccordionContent>
@@ -1031,9 +1284,7 @@ export function ClientDetailsView({
 							<div className="flex items-center justify-between w-full pr-4">
 								<div className="flex items-center gap-3">
 									<Users className="h-5 w-5" />
-									<span className="font-semibold">
-										UBO y Representante Legal
-									</span>
+									<span className="font-semibold">{t("clientUboTitle")}</span>
 								</div>
 								<div className="flex items-center gap-2">
 									{ubosComplete ? (
@@ -1049,7 +1300,7 @@ export function ClientDetailsView({
 								{/* Stockholders */}
 								<div>
 									<h4 className="text-sm font-medium text-muted-foreground mb-2">
-										Accionistas
+										{t("clientShareholders")}
 									</h4>
 									{stockholders.length > 0 ? (
 										<div className="space-y-2">
@@ -1066,13 +1317,14 @@ export function ClientDetailsView({
 															</p>
 															{ubo.ownershipPercentage && (
 																<p className="text-xs text-muted-foreground">
-																	{ubo.ownershipPercentage}% de participación
+																	{ubo.ownershipPercentage}
+																	{t("clientParticipation")}
 																</p>
 															)}
 														</div>
 														{ubo.isPEP && (
 															<Badge variant="destructive" className="text-xs">
-																PEP
+																{t("clientPep")}
 															</Badge>
 														)}
 													</div>
@@ -1084,7 +1336,7 @@ export function ClientDetailsView({
 											<div className="flex items-center gap-2">
 												<AlertTriangle className="h-4 w-4 text-amber-600" />
 												<span className="text-sm text-amber-700 dark:text-amber-300">
-													No hay accionistas registrados
+													{t("clientNoShareholders")}
 												</span>
 											</div>
 										</div>
@@ -1094,51 +1346,54 @@ export function ClientDetailsView({
 								{/* Legal Representative */}
 								<div>
 									<h4 className="text-sm font-medium text-muted-foreground mb-2">
-										Representante Legal
+										{t("clientLegalRep")}
 									</h4>
 									{legalRep ? (
-										<div className="p-3 rounded-lg border bg-muted/30">
-											<div className="flex items-center justify-between">
-												<div>
-													<p className="font-medium text-sm">
-														{legalRep.firstName} {legalRep.lastName}{" "}
-														{legalRep.secondLastName || ""}
-													</p>
-													{legalRep.birthDate && (
-														<p className="text-xs text-muted-foreground">
-															{formatDate(legalRep.birthDate)}
+										<div className="space-y-3">
+											<div className="p-3 rounded-lg border bg-muted/30">
+												<div className="flex items-center justify-between">
+													<div>
+														<p className="font-medium text-sm">
+															{legalRep.firstName} {legalRep.lastName}{" "}
+															{legalRep.secondLastName || ""}
 														</p>
+														{legalRep.birthDate && (
+															<p className="text-xs text-muted-foreground">
+																{formatDate(legalRep.birthDate)}
+															</p>
+														)}
+													</div>
+													{legalRep.isPEP && (
+														<Badge variant="destructive" className="text-xs">
+															PEP
+														</Badge>
 													)}
 												</div>
-												{legalRep.isPEP && (
-													<Badge variant="destructive" className="text-xs">
-														PEP
-													</Badge>
-												)}
 											</div>
+											{/* Legal Rep ID Document Card */}
+											{legalRep.idDocumentId &&
+												(() => {
+													const legalRepIdDoc = documents.find(
+														(d) => d.id === legalRep.idDocumentId,
+													);
+													return legalRepIdDoc ? (
+														<UploadedIDDocumentCard
+															document={legalRepIdDoc}
+															showDelete={false}
+															compact
+														/>
+													) : null;
+												})()}
 										</div>
 									) : (
 										<div className="p-3 rounded-lg border border-muted bg-muted/30">
 											<p className="text-sm text-muted-foreground">
-												No hay representante legal registrado (opcional)
+												{t("clientNoLegalRep")}
 											</p>
 										</div>
 									)}
 								</div>
 							</div>
-
-							{!ubosComplete && (
-								<div className="mt-4 pt-4 border-t">
-									<Button
-										variant="outline"
-										size="sm"
-										onClick={() => navigateToEdit("documents", "ubos")}
-									>
-										<Users className="h-4 w-4 mr-2" />
-										Agregar accionistas
-									</Button>
-								</div>
-							)}
 
 							{/* Edit button - always visible */}
 							<div className="mt-4 pt-4 border-t flex justify-end">
@@ -1148,7 +1403,7 @@ export function ClientDetailsView({
 									onClick={() => navigateToEdit("documents", "ubos")}
 								>
 									<Pencil className="h-4 w-4 mr-2" />
-									Editar
+									{!ubosComplete ? t("clientAddShareholders") : t("edit")}
 								</Button>
 							</div>
 						</AccordionContent>
@@ -1164,16 +1419,18 @@ export function ClientDetailsView({
 					<AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50">
 						<div className="flex items-center gap-3">
 							<FileText className="h-5 w-5" />
-							<span className="font-semibold">Notas de Cumplimiento</span>
+							<span className="font-semibold">
+								{t("clientComplianceNotesTitle")}
+							</span>
 						</div>
 					</AccordionTrigger>
 					<AccordionContent className="px-6 pb-4">
 						<p className="text-sm text-muted-foreground leading-relaxed">
-							{client.notes || "Sin notas"}
+							{client.notes || t("clientNoNotes2")}
 						</p>
 						<div className="mt-4 pt-4 border-t">
 							<p className="text-sm text-muted-foreground">
-								<span className="font-medium">Última actualización:</span>{" "}
+								<span className="font-medium">{t("clientLastUpdated")}</span>{" "}
 								{formatDate(client.updatedAt)}
 							</p>
 						</div>
@@ -1186,7 +1443,7 @@ export function ClientDetailsView({
 								onClick={() => navigateToEdit("personal")}
 							>
 								<Pencil className="h-4 w-4 mr-2" />
-								Editar
+								{t("edit")}
 							</Button>
 						</div>
 					</AccordionContent>
@@ -1201,24 +1458,24 @@ export function ClientDetailsView({
 					<AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50">
 						<div className="flex items-center gap-3">
 							<Calendar className="h-5 w-5" />
-							<span className="font-semibold">Historial</span>
+							<span className="font-semibold">{t("clientHistory")}</span>
 						</div>
 					</AccordionTrigger>
 					<AccordionContent className="px-6 pb-4">
-						<dl className="grid grid-cols-1 @md/main:grid-cols-2 gap-6">
+						<dl className="grid grid-cols-1 @xl/main:grid-cols-2 gap-6">
 							<FieldDisplay
-								label="Fecha de Registro"
+								label={t("clientRegistrationDate")}
 								value={formatDate(client.createdAt)}
 								icon={Calendar}
 							/>
 							<FieldDisplay
-								label="Última Actualización"
+								label={t("clientLastUpdate")}
 								value={formatDate(client.updatedAt)}
 								icon={Calendar}
 							/>
 							{client.kycCompletedAt && (
 								<FieldDisplay
-									label="KYC Completado"
+									label={t("clientKycCompleted")}
 									value={formatDate(client.kycCompletedAt)}
 									icon={CheckCircle2}
 								/>
@@ -1233,12 +1490,23 @@ export function ClientDetailsView({
 								onClick={() => navigateToEdit("personal")}
 							>
 								<Pencil className="h-4 w-4 mr-2" />
-								Editar
+								{t("edit")}
 							</Button>
 						</div>
 					</AccordionContent>
 				</AccordionItem>
 			</Accordion>
+
+			{/* Document Viewer Dialog */}
+			<DocumentViewerDialog
+				open={documentViewer.open}
+				onOpenChange={(open) =>
+					setDocumentViewer((prev) => ({ ...prev, open }))
+				}
+				images={documentViewer.images}
+				initialIndex={documentViewer.initialIndex}
+				originalFileUrl={documentViewer.originalFileUrl}
+			/>
 		</div>
 	);
 }

@@ -21,8 +21,6 @@ import {
 	X,
 	Loader2,
 	ExternalLink,
-	Scan,
-	ImageIcon,
 	ZoomIn,
 	ChevronLeft,
 	ChevronRight,
@@ -32,8 +30,6 @@ import { toast } from "sonner";
 import type { ClientDocumentType } from "@/types/client-document";
 import {
 	DocumentScannerModal,
-	MobileUploadQR,
-	MobileUploadTrigger,
 	type DocumentExtractionData,
 } from "@/components/document-scanner";
 import type { PersonalData } from "@/lib/document-scanner";
@@ -67,8 +63,6 @@ interface DocumentUploadCardProps {
 	data: DocumentUploadData | null;
 	onDataChange: (data: DocumentUploadData) => void;
 	onUpload: (data: DocumentUploadData) => Promise<void>;
-	/** Client ID for mobile upload session */
-	clientId?: string;
 	className?: string;
 	/** Personal data for OCR validation */
 	personalData?: PersonalData;
@@ -88,7 +82,6 @@ export function DocumentUploadCard({
 	data,
 	onDataChange,
 	onUpload,
-	clientId,
 	className,
 	personalData,
 }: DocumentUploadCardProps) {
@@ -103,13 +96,11 @@ export function DocumentUploadCard({
 		isUploading: false,
 	});
 
+	const [processedPreview, setProcessedPreview] = useState<string | null>(null);
+
 	// Scanner modal state
 	const [scannerOpen, setScannerOpen] = useState(false);
 	const [scannerFile, setScannerFile] = useState<File | null>(null);
-	const [processedPreview, setProcessedPreview] = useState<string | null>(null);
-
-	// QR modal state
-	const [qrModalOpen, setQrModalOpen] = useState(false);
 
 	// Enlarge preview modal with gallery navigation
 	const [enlargePreview, setEnlargePreview] = useState<{
@@ -188,14 +179,12 @@ export function DocumentUploadCard({
 
 	const handleScannerExtracted = useCallback(
 		(extractionData: DocumentExtractionData) => {
-			// Create preview URL from processed canvas
 			const previewUrl = extractionData.processedCanvas.toDataURL(
 				"image/jpeg",
 				0.92,
 			);
 			setProcessedPreview(previewUrl);
 
-			// Create a File from the processed blob for upload
 			const processedFile = new File(
 				[extractionData.processedBlob],
 				`${documentType}_processed.jpg`,
@@ -208,9 +197,8 @@ export function DocumentUploadCard({
 				processedBlob: extractionData.processedBlob,
 				originalFile: extractionData.originalFile,
 				rasterizedImages: extractionData.rasterizedImages,
-				ineFrontBlob: extractionData.ineData?.frontBlob,
-				ineBackBlob: extractionData.ineData?.backBlob,
 			};
+
 			setLocalData(newData);
 			onDataChange({
 				documentType,
@@ -220,8 +208,6 @@ export function DocumentUploadCard({
 				processedBlob: extractionData.processedBlob,
 				originalFile: extractionData.originalFile,
 				rasterizedImages: extractionData.rasterizedImages,
-				ineFrontBlob: extractionData.ineData?.frontBlob,
-				ineBackBlob: extractionData.ineData?.backBlob,
 				isUploaded: false,
 				isUploading: false,
 			});
@@ -464,34 +450,18 @@ export function DocumentUploadCard({
 
 						{!hasFile && !isComplete ? (
 							<div className="space-y-3">
-								{/* Upload options */}
-								<div className="grid grid-cols-2 gap-2">
-									{/* Desktop file select with scanner */}
-									<Button
-										type="button"
-										variant="outline"
-										size="sm"
-										className="h-auto py-3 flex flex-col items-center gap-1"
-										onClick={() => fileInputRef.current?.click()}
-										disabled={disabled}
-									>
-										<Scan className="h-5 w-5" />
-										<span className="text-xs">Seleccionar Archivo</span>
-									</Button>
-
-									{/* Mobile QR option */}
-									<Button
-										type="button"
-										variant="outline"
-										size="sm"
-										className="h-auto py-3 flex flex-col items-center gap-1"
-										onClick={() => setQrModalOpen(true)}
-										disabled={disabled}
-									>
-										<ImageIcon className="h-5 w-5" />
-										<span className="text-xs">Escanear con Celular</span>
-									</Button>
-								</div>
+								{/* Upload button */}
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									className="w-full h-auto py-3 flex flex-col items-center gap-1"
+									onClick={() => fileInputRef.current?.click()}
+									disabled={disabled}
+								>
+									<Upload className="h-5 w-5" />
+									<span className="text-xs">Seleccionar Archivo</span>
+								</Button>
 
 								<p className="text-xs text-muted-foreground text-center">
 									PDF o imagen, máx. 10MB
@@ -610,14 +580,6 @@ export function DocumentUploadCard({
 				onExtracted={handleScannerExtracted}
 				documentType={title}
 				personalData={personalData}
-			/>
-
-			{/* Mobile QR Modal */}
-			<MobileUploadQR
-				open={qrModalOpen}
-				onOpenChange={setQrModalOpen}
-				documentType={title}
-				clientId={clientId}
 			/>
 
 			{/* Enlarge Preview Modal - Gallery */}

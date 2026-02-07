@@ -71,7 +71,7 @@ export const Tablet: Story = {
 	},
 };
 
-export const WithTransactions: Story = {
+export const WithOperations: Story = {
 	args: {
 		children: (
 			<div className="space-y-6">
@@ -87,7 +87,7 @@ export const WithTransactions: Story = {
 	parameters: {
 		nextjs: {
 			router: {
-				pathname: "/transactions",
+				pathname: "/operations",
 			},
 		},
 	},

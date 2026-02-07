@@ -34,7 +34,7 @@ vi.mock("@/components/LanguageProvider", () => ({
 				"subscription.metrics.notices": "notices",
 				"subscription.metrics.users": "users",
 				"subscription.metrics.alerts": "alerts",
-				"subscription.metrics.transactions": "transactions",
+				"subscription.metrics.operations": "operations",
 				"common.dismiss": "Dismiss",
 			};
 			return translations[key] || key;

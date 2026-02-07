@@ -54,8 +54,12 @@ type OptionRenderer = (
 
 interface CatalogSelectorProps {
 	catalogKey: string;
+	/** HTML id attribute for the trigger button (for form label association) */
+	id?: string;
 	label?: string;
 	labelDescription?: string;
+	/** Field tier for 3-tier completeness indicators (RED/YELLOW/GREY dot) */
+	tier?: import("@/types/completeness").FieldTier;
 	value?: string;
 	placeholder?: string;
 	searchPlaceholder?: string;
@@ -72,6 +76,10 @@ interface CatalogSelectorProps {
 	getOptionValue?: (option: CatalogItem) => string;
 	renderOption?: OptionRenderer;
 	className?: string;
+	/** Filter by va_code in metadata (for alert types) */
+	vaCode?: string;
+	/** Exclude automatable items (for alert types) */
+	excludeAutomatable?: boolean;
 }
 
 function Spinner({
@@ -273,8 +281,10 @@ function CatalogSelectorCommandContent({
 
 export function CatalogSelector({
 	catalogKey,
+	id,
 	label,
 	labelDescription,
+	tier,
 	value,
 	placeholder,
 	searchPlaceholder = "Buscar en el catálogo...",
@@ -291,6 +301,8 @@ export function CatalogSelector({
 	getOptionValue,
 	renderOption = defaultRenderOption,
 	className,
+	vaCode,
+	excludeAutomatable,
 }: CatalogSelectorProps): React.ReactElement {
 	const labelId = useId();
 	const listRef = useRef<HTMLDivElement>(null);
@@ -334,6 +346,8 @@ export function CatalogSelector({
 		pageSize,
 		debounceMs,
 		enabled: !disabled,
+		vaCode,
+		excludeAutomatable,
 	});
 
 	// State for "Add new item" dialog
@@ -721,6 +735,7 @@ export function CatalogSelector({
 
 	const triggerButton = (
 		<Button
+			id={id}
 			variant="outline"
 			role="combobox"
 			aria-expanded={open}
@@ -764,11 +779,12 @@ export function CatalogSelector({
 	return (
 		<div className={cn("space-y-2", className)}>
 			{label &&
-				(labelDescription ? (
+				(labelDescription || tier ? (
 					<LabelWithInfo
 						htmlFor={labelId}
 						description={labelDescription}
 						required={required}
+						tier={tier}
 					>
 						{label}
 					</LabelWithInfo>

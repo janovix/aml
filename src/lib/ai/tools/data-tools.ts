@@ -61,7 +61,7 @@ const listClientsSchema = z.object({
 	page: z.number().min(1).default(1).describe("Page number"),
 });
 
-const listTransactionsSchema = z.object({
+const listOperationsSchema = z.object({
 	clientId: z.string().optional().describe("Filter by client ID"),
 	operationType: z
 		.enum(["PURCHASE", "SALE"])
@@ -142,22 +142,22 @@ export function createDataTools(jwt: string) {
 			},
 		},
 
-		getTransactionStats: {
+		getOperationStats: {
 			description:
-				"Get statistics about transactions, including today's count, suspicious count, and total volume",
+				"Get statistics about operations, including today's count, suspicious count, and total volume",
 			inputSchema: emptySchema,
 			execute: async () => {
 				try {
 					const stats = await fetchWithAuth<{
-						transactionsToday: number;
-						suspiciousTransactions: number;
+						operationsToday: number;
+						suspiciousOperations: number;
 						totalVolume: string;
-					}>("/api/v1/transactions/stats", jwt);
-					return `Transactions today: ${stats.transactionsToday}, Suspicious: ${stats.suspiciousTransactions}, Total volume: ${stats.totalVolume}`;
+					}>("/api/v1/operations/stats", jwt);
+					return `Operations today: ${stats.operationsToday}, Suspicious: ${stats.suspiciousOperations}, Total volume: ${stats.totalVolume}`;
 				} catch (error) {
 					const msg =
 						error instanceof Error ? error.message : "Failed to fetch stats";
-					return `Error fetching transaction stats: ${msg}`;
+					return `Error fetching operation stats: ${msg}`;
 				}
 			},
 		},
@@ -221,17 +221,17 @@ export function createDataTools(jwt: string) {
 			},
 		},
 
-		listTransactions: {
+		listOperations: {
 			description:
-				"List transactions in the organization with optional filters. Returns paginated results.",
-			inputSchema: listTransactionsSchema,
+				"List operations in the organization with optional filters. Returns paginated results.",
+			inputSchema: listOperationsSchema,
 			execute: async ({
 				clientId,
 				operationType,
 				vehicleType,
 				limit = 10,
 				page = 1,
-			}: z.infer<typeof listTransactionsSchema>) => {
+			}: z.infer<typeof listOperationsSchema>) => {
 				try {
 					const params: Record<string, string> = {
 						limit: String(limit),
@@ -258,10 +258,10 @@ export function createDataTools(jwt: string) {
 							limit: number;
 							totalPages: number;
 						};
-					}>("/api/v1/transactions", jwt, params);
+					}>("/api/v1/operations", jwt, params);
 
 					if (result.data.length === 0) {
-						return `No transactions found matching the criteria.`;
+						return `No operations found matching the criteria.`;
 					}
 
 					const txList = result.data
@@ -272,13 +272,13 @@ export function createDataTools(jwt: string) {
 						})
 						.join("\n");
 
-					return `Found ${result.pagination.total} transactions (showing ${result.data.length} on page ${result.pagination.page}):\n${txList}`;
+					return `Found ${result.pagination.total} operations (showing ${result.data.length} on page ${result.pagination.page}):\n${txList}`;
 				} catch (error) {
 					const msg =
 						error instanceof Error
 							? error.message
-							: "Failed to fetch transactions";
-					return `Error fetching transactions: ${msg}`;
+							: "Failed to fetch operations";
+					return `Error fetching operations: ${msg}`;
 				}
 			},
 		},

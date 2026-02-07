@@ -87,7 +87,7 @@ export function ClientsTable(): React.ReactElement {
 	const { currentOrg } = useOrgStore();
 	const urlFilters = useDataTableUrlFilters(CLIENT_FILTER_IDS);
 	const { t, language } = useLanguage();
-	const { states } = useStatesCatalog();
+	const { states, getStateName } = useStatesCatalog();
 
 	// Build person type config with translations
 	const personTypeConfig = useMemo(
@@ -156,8 +156,9 @@ export function ClientsTable(): React.ReactElement {
 				setHasMore(response.pagination.page < response.pagination.totalPages);
 				hasLoadedForOrgRef.current = currentOrg.id;
 			} catch (error) {
+				hasLoadedForOrgRef.current = currentOrg.id;
 				console.error("Error fetching clients:", error);
-				toast.error(t("clientsLoadError"));
+				toast.error(t("clientsLoadError"), { id: "clients-table" });
 			} finally {
 				setIsLoading(false);
 			}
@@ -185,7 +186,7 @@ export function ClientsTable(): React.ReactElement {
 			setHasMore(response.pagination.page < response.pagination.totalPages);
 		} catch (error) {
 			console.error("Error loading more clients:", error);
-			toast.error(t("clientsLoadMoreError"));
+			toast.error(t("clientsLoadMoreError"), { id: "clients-table-more" });
 		} finally {
 			setIsLoadingMore(false);
 		}
@@ -341,7 +342,7 @@ export function ClientsTable(): React.ReactElement {
 					<div className="flex items-center gap-1.5 text-sm text-muted-foreground">
 						<MapPin className="h-3.5 w-3.5 shrink-0" />
 						<span className="truncate">
-							{item.city}, {item.stateCode}
+							{item.city}, {getStateName(item.stateCode)}
 						</span>
 					</div>
 				),
@@ -369,7 +370,7 @@ export function ClientsTable(): React.ReactElement {
 				},
 			},
 		],
-		[t, personTypeConfig, orgPath, language],
+		[t, personTypeConfig, orgPath, language, getStateName],
 	);
 
 	// Filter definitions
@@ -424,7 +425,7 @@ export function ClientsTable(): React.ReactElement {
 					.sort((a, b) => a.label.localeCompare(b.label, "es")),
 			},
 		],
-		[t],
+		[t, states],
 	);
 
 	// Row actions
@@ -459,9 +460,9 @@ export function ClientsTable(): React.ReactElement {
 				</DropdownMenuItem>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem
-					onClick={() => navigateTo(`/transactions?clientId=${item.id}`)}
+					onClick={() => navigateTo(`/operations?clientId=${item.id}`)}
 				>
-					{t("actionViewTransactions")}
+					{t("actionViewOperations")}
 				</DropdownMenuItem>
 				<DropdownMenuItem
 					onClick={() => navigateTo(`/alerts?clientId=${item.id}`)}

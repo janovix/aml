@@ -6,6 +6,30 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Sanitize a string value by trimming, limiting length, and removing control characters
+ * Used by URL filters and other input sanitization
+ */
+export function sanitizeString(value: string, maxLength: number): string {
+	return String(value)
+		.trim()
+		.slice(0, maxLength)
+		.replace(/[\x00-\x1F\x7F]/g, "");
+}
+
+/**
+ * Format a date for display using Mexican locale
+ * Provides consistent date formatting across the application
+ * Returns empty string for invalid dates
+ */
+export function formatClientDate(date: Date | string): string {
+	const d = typeof date === "string" ? new Date(date) : date;
+	if (Number.isNaN(d.getTime())) {
+		return "";
+	}
+	return d.toLocaleDateString("es-MX");
+}
+
+/**
  * Validates RFC (Registro Federal de Contribuyentes) format
  * @param rfc - The RFC string to validate
  * @param personType - Type of person: "physical" (13 chars) or "moral"/"trust" (12 chars)

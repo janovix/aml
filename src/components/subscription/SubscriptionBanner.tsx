@@ -12,7 +12,7 @@ interface SubscriptionBannerProps {
 	/** The billing page URL */
 	billingUrl?: string;
 	/** Metrics to check for limit warnings */
-	checkMetrics?: ("notices" | "users" | "alerts" | "transactions")[];
+	checkMetrics?: ("notices" | "users" | "alerts" | "operations")[];
 	/** Whether to show the banner even without limits (for free tier) */
 	showFreeTierBanner?: boolean;
 	/** Whether the banner can be dismissed */

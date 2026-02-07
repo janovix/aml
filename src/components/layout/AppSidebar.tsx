@@ -10,6 +10,7 @@ import {
 	FileWarning,
 	Home,
 	Briefcase,
+	ReceiptText,
 	Settings,
 	Search,
 	Upload,
@@ -42,7 +43,7 @@ import {
 } from "./OrganizationSwitcher";
 import { NavUser } from "./NavUser";
 import { AppSwitcher } from "./AppSwitcher";
-import { LanguageSwitcher, ThemeSwitcher } from "@janovix/blocks";
+import { LanguageSwitcher, ThemeSwitcher } from "@algenium/blocks";
 import { getAuthAppUrl, getWatchlistAppUrl } from "@/lib/auth/config";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { TranslationKeys } from "@/lib/translations";
@@ -69,9 +70,15 @@ const mainNavItems: NavItem[] = [
 		available: true,
 	},
 	{
-		titleKey: "navTransactions",
-		href: "/transactions",
+		titleKey: "navOperations",
+		href: "/operations",
 		icon: Briefcase,
+		available: true,
+	},
+	{
+		titleKey: "navInvoices",
+		href: "/invoices",
+		icon: ReceiptText,
 		available: true,
 	},
 ];

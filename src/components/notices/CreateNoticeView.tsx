@@ -28,6 +28,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/lib/mutations";
+import { showFetchError } from "@/lib/toast-utils";
+import { useLanguage } from "@/components/LanguageProvider";
 import {
 	createNotice,
 	previewNotice,
@@ -41,6 +43,7 @@ export function CreateNoticeView(): React.ReactElement {
 	const router = useRouter();
 	const { navigateTo, orgPath } = useOrgNavigation();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
+	const { t } = useLanguage();
 
 	const [isLoading, setIsLoading] = useState(true);
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -70,7 +73,7 @@ export function CreateNoticeView(): React.ReactElement {
 				}
 			} catch (error) {
 				console.error("Error loading available months:", error);
-				toast.error(extractErrorMessage(error));
+				showFetchError("create-notice-load", error);
 			} finally {
 				setIsLoading(false);
 			}
@@ -136,7 +139,7 @@ export function CreateNoticeView(): React.ReactElement {
 			navigateTo(`/notices/${notice.id}`);
 		} catch (error) {
 			console.error("Error creating notice:", error);
-			toast.error(extractErrorMessage(error));
+			toast.error(extractErrorMessage(error), { id: "create-notice" });
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -167,25 +170,23 @@ export function CreateNoticeView(): React.ReactElement {
 				<div>
 					<h1 className="text-2xl font-semibold flex items-center gap-2">
 						<FileWarning className="h-6 w-6 text-primary" />
-						Nuevo Aviso SAT
+						{t("noticeNewTitle")}
 					</h1>
-					<p className="text-muted-foreground">
-						Crear un nuevo aviso para envío al portal SAT
-					</p>
+					<p className="text-muted-foreground">{t("noticeNewSubtitle")}</p>
 				</div>
 			</div>
 
 			<form onSubmit={handleSubmit} className="grid gap-6 @xl/main:grid-cols-2">
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">Configuración del Aviso</CardTitle>
+						<CardTitle className="text-lg">{t("noticeConfigTitle")}</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="space-y-2">
-							<Label htmlFor="month">Período SAT</Label>
+							<Label htmlFor="month">{t("noticeSatPeriod")}</Label>
 							<Select value={selectedMonth} onValueChange={handleMonthChange}>
 								<SelectTrigger id="month">
-									<SelectValue placeholder="Seleccionar período" />
+									<SelectValue placeholder={t("noticeSelectPeriod")} />
 								</SelectTrigger>
 								<SelectContent>
 									{availableMonths.map((month) => (
@@ -205,14 +206,16 @@ export function CreateNoticeView(): React.ReactElement {
 												<span>{month.displayName}</span>
 												{month.hasPendingNotice && (
 													<span className="text-xs text-muted-foreground">
-														(en progreso)
+														{t("noticeInProgress")}
 													</span>
 												)}
 												{!month.hasPendingNotice &&
 													month.hasSubmittedNotice && (
 														<span className="text-xs text-muted-foreground">
 															({month.noticeCount}{" "}
-															{month.noticeCount === 1 ? "enviado" : "enviados"}
+															{month.noticeCount === 1
+																? t("noticeSentSuffix")
+																: t("noticeSentSuffixPlural")}
 															)
 														</span>
 													)}
@@ -223,30 +226,32 @@ export function CreateNoticeView(): React.ReactElement {
 							</Select>
 							{periodInfo && (
 								<p className="text-xs text-muted-foreground">
-									Período: {periodInfo.periodStart.toLocaleDateString("es-MX")}{" "}
-									al {periodInfo.periodEnd.toLocaleDateString("es-MX")}
+									{t("noticePeriodLabel")}
+									{periodInfo.periodStart.toLocaleDateString("es-MX")}{" "}
+									{t("noticePeriodTo")}
+									{periodInfo.periodEnd.toLocaleDateString("es-MX")}
 								</p>
 							)}
 						</div>
 
 						<div className="space-y-2">
-							<Label htmlFor="name">Nombre del Aviso</Label>
+							<Label htmlFor="name">{t("noticeNameLabel")}</Label>
 							<Input
 								id="name"
 								value={name}
 								onChange={(e) => setName(e.target.value)}
-								placeholder="Aviso Diciembre 2024"
+								placeholder={t("noticeNamePlaceholder")}
 								required
 							/>
 						</div>
 
 						<div className="space-y-2">
-							<Label htmlFor="notes">Notas (opcional)</Label>
+							<Label htmlFor="notes">{t("noticeNotesLabel")}</Label>
 							<Textarea
 								id="notes"
 								value={notes}
 								onChange={(e) => setNotes(e.target.value)}
-								placeholder="Notas o comentarios sobre este aviso..."
+								placeholder={t("noticeNotesPlaceholder")}
 								rows={3}
 							/>
 						</div>
@@ -255,7 +260,7 @@ export function CreateNoticeView(): React.ReactElement {
 
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">Vista Previa</CardTitle>
+						<CardTitle className="text-lg">{t("noticePreview")}</CardTitle>
 					</CardHeader>
 					<CardContent>
 						{isPreviewLoading ? (
@@ -268,7 +273,7 @@ export function CreateNoticeView(): React.ReactElement {
 									<div className="p-4 bg-muted/50 rounded-lg">
 										<p className="text-2xl font-bold">{preview.total}</p>
 										<p className="text-sm text-muted-foreground">
-											Alertas disponibles
+											{t("noticeAvailableAlerts")}
 										</p>
 									</div>
 									<div className="p-4 bg-muted/50 rounded-lg">
@@ -282,7 +287,9 @@ export function CreateNoticeView(): React.ReactElement {
 								{preview.total > 0 ? (
 									<>
 										<div className="space-y-2">
-											<p className="text-sm font-medium">Por Severidad</p>
+											<p className="text-sm font-medium">
+												{t("noticeBySeverity")}
+											</p>
 											<div className="flex flex-wrap gap-2">
 												{Object.entries(preview.bySeverity).map(
 													([severity, count]) => (
@@ -309,7 +316,7 @@ export function CreateNoticeView(): React.ReactElement {
 											<div className="flex items-center gap-2 text-amber-600">
 												<Clock className="h-4 w-4" />
 												<p className="text-sm font-medium">
-													Fecha límite de envío
+													{t("noticeSubmissionDeadline")}
 												</p>
 											</div>
 											<p className="text-sm text-amber-600/80 mt-1">
@@ -328,7 +335,7 @@ export function CreateNoticeView(): React.ReactElement {
 									<div className="flex flex-col items-center justify-center py-8 text-center">
 										<AlertCircle className="h-8 w-8 text-muted-foreground mb-2" />
 										<p className="text-sm text-muted-foreground">
-											No hay alertas disponibles para este período
+											{t("noticeNoAlerts")}
 										</p>
 									</div>
 								)}
@@ -337,7 +344,7 @@ export function CreateNoticeView(): React.ReactElement {
 							<div className="flex flex-col items-center justify-center py-8 text-center">
 								<Calendar className="h-8 w-8 text-muted-foreground mb-2" />
 								<p className="text-sm text-muted-foreground">
-									Selecciona un período para ver la vista previa
+									{t("noticeSelectPeriodPreview")}
 								</p>
 							</div>
 						)}
@@ -350,7 +357,7 @@ export function CreateNoticeView(): React.ReactElement {
 						variant="outline"
 						onClick={() => navigateTo("/notices")}
 					>
-						Cancelar
+						{t("cancel")}
 					</Button>
 					<Button
 						type="submit"
@@ -362,7 +369,7 @@ export function CreateNoticeView(): React.ReactElement {
 						}
 					>
 						{isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-						Crear Aviso
+						{t("noticeCreateButton")}
 					</Button>
 				</div>
 			</form>

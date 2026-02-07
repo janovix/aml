@@ -53,9 +53,9 @@ vi.mock("@/lib/api/stats", () => ({
 		moralClients: 30,
 		trustClients: 0,
 	}),
-	getTransactionStats: vi.fn().mockResolvedValue({
-		transactionsToday: 10,
-		suspiciousTransactions: 3,
+	getOperationStats: vi.fn().mockResolvedValue({
+		operationsToday: 10,
+		suspiciousOperations: 3,
 		totalVolume: "1500000.00",
 	}),
 }));
@@ -85,14 +85,14 @@ describe("DashboardView", () => {
 		});
 	});
 
-	it("renders transaction stats card", async () => {
+	it("renders operation stats card", async () => {
 		renderWithProviders(<DashboardView />);
 
 		await waitFor(() => {
-			const transactionStats = screen.getAllByText(
-				/estadísticas de transacciones/i,
+			const operationStats = screen.getAllByText(
+				/estadísticas de operaciones/i,
 			);
-			expect(transactionStats.length).toBeGreaterThan(0);
+			expect(operationStats.length).toBeGreaterThan(0);
 		});
 	});
 
@@ -115,18 +115,15 @@ describe("DashboardView", () => {
 		});
 	});
 
-	it("renders link to transactions page", async () => {
+	it("renders link to operations page", async () => {
 		renderWithProviders(<DashboardView />);
 
 		await waitFor(() => {
-			const transactionLinks = screen.getAllByRole("link", {
-				name: /transacciones/i,
+			const operationLinks = screen.getAllByRole("link", {
+				name: /operaciones/i,
 			});
-			expect(transactionLinks.length).toBeGreaterThan(0);
-			expect(transactionLinks[0]).toHaveAttribute(
-				"href",
-				"/test-org/transactions",
-			);
+			expect(operationLinks.length).toBeGreaterThan(0);
+			expect(operationLinks[0]).toHaveAttribute("href", "/test-org/operations");
 		});
 	});
 
@@ -220,8 +217,8 @@ describe("DashboardView branch coverage", () => {
 		});
 	});
 
-	it("handles null transaction stats", async () => {
-		vi.spyOn(statsApi, "getTransactionStats").mockResolvedValue(null as never);
+	it("handles null operation stats", async () => {
+		vi.spyOn(statsApi, "getOperationStats").mockResolvedValue(null as never);
 
 		renderWithProviders(<DashboardView />);
 
@@ -235,7 +232,7 @@ describe("DashboardView branch coverage", () => {
 		vi.spyOn(statsApi, "getClientStats").mockRejectedValue(
 			new Error("API Error"),
 		);
-		vi.spyOn(statsApi, "getTransactionStats").mockRejectedValue(
+		vi.spyOn(statsApi, "getOperationStats").mockRejectedValue(
 			new Error("API Error"),
 		);
 
@@ -281,9 +278,9 @@ describe("DashboardView branch coverage", () => {
 	});
 
 	it("formats currency with string value", async () => {
-		vi.spyOn(statsApi, "getTransactionStats").mockResolvedValue({
-			transactionsToday: 10,
-			suspiciousTransactions: 3,
+		vi.spyOn(statsApi, "getOperationStats").mockResolvedValue({
+			operationsToday: 10,
+			suspiciousOperations: 3,
 			totalVolume: "1500000.00",
 		});
 
@@ -296,9 +293,9 @@ describe("DashboardView branch coverage", () => {
 	});
 
 	it("formats currency with numeric value", async () => {
-		vi.spyOn(statsApi, "getTransactionStats").mockResolvedValue({
-			transactionsToday: 10,
-			suspiciousTransactions: 3,
+		vi.spyOn(statsApi, "getOperationStats").mockResolvedValue({
+			operationsToday: 10,
+			suspiciousOperations: 3,
 			totalVolume: "1500000",
 		});
 
@@ -310,8 +307,8 @@ describe("DashboardView branch coverage", () => {
 		});
 	});
 
-	it("handles null transaction stats gracefully", async () => {
-		vi.spyOn(statsApi, "getTransactionStats").mockResolvedValue(null as never);
+	it("handles null operation stats gracefully", async () => {
+		vi.spyOn(statsApi, "getOperationStats").mockResolvedValue(null as never);
 
 		renderWithProviders(<DashboardView />);
 

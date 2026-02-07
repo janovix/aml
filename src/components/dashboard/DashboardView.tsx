@@ -29,13 +29,13 @@ import { useJwt } from "@/hooks/useJwt";
 import { useOrgStore } from "@/lib/org-store";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { getClientStats, type ClientStats } from "@/lib/api/stats";
-import { getTransactionStats, type TransactionStats } from "@/lib/api/stats";
+import { getOperationStats, type OperationStats } from "@/lib/api/stats";
 import { getLocaleForLanguage } from "@/lib/translations";
 import { cn } from "@/lib/utils";
 
 interface DashboardData {
 	clientStats: ClientStats | null;
-	transactionStats: TransactionStats | null;
+	operationStats: OperationStats | null;
 }
 
 export function StatsSkeleton(): React.ReactElement {
@@ -105,7 +105,7 @@ export function DashboardView(): React.ReactElement {
 
 	const [data, setData] = useState<DashboardData>({
 		clientStats: null,
-		transactionStats: null,
+		operationStats: null,
 	});
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -135,12 +135,12 @@ export function DashboardView(): React.ReactElement {
 			setError(null);
 
 			try {
-				const [clientStats, transactionStats] = await Promise.all([
+				const [clientStats, operationStats] = await Promise.all([
 					getClientStats({ jwt }).catch(() => null),
-					getTransactionStats({ jwt }).catch(() => null),
+					getOperationStats({ jwt }).catch(() => null),
 				]);
 
-				setData({ clientStats, transactionStats });
+				setData({ clientStats, operationStats });
 			} catch (err) {
 				console.error("Error fetching dashboard data:", err);
 				setError(t("errorLoadingData"));
@@ -160,12 +160,12 @@ export function DashboardView(): React.ReactElement {
 		setError(null);
 
 		try {
-			const [clientStats, transactionStats] = await Promise.all([
+			const [clientStats, operationStats] = await Promise.all([
 				getClientStats({ jwt }).catch(() => null),
-				getTransactionStats({ jwt }).catch(() => null),
+				getOperationStats({ jwt }).catch(() => null),
 			]);
 
-			setData({ clientStats, transactionStats });
+			setData({ clientStats, operationStats });
 		} catch (err) {
 			console.error("Error fetching dashboard data:", err);
 			setError(t("errorLoadingData"));
@@ -197,19 +197,19 @@ export function DashboardView(): React.ReactElement {
 			});
 		}
 
-		if (data.transactionStats) {
+		if (data.operationStats) {
 			result.push({
-				label: t("statsTransactionsToday"),
-				value: formatNumber(data.transactionStats.transactionsToday),
+				label: t("statsOperationsToday"),
+				value: formatNumber(data.operationStats.operationsToday),
 				icon: Briefcase,
-				href: routes.transactions.list(),
+				href: routes.operations.list(),
 			});
 		}
 
 		return result;
 	}, [data, t, formatNumber, routes]);
 
-	const hasData = data.clientStats || data.transactionStats;
+	const hasData = data.clientStats || data.operationStats;
 
 	// Only show skeleton on initial load (no data yet), not during org switch
 	const showInitialSkeleton = isLoading && !hasData;
@@ -256,7 +256,7 @@ export function DashboardView(): React.ReactElement {
 				</Card>
 			)}
 
-			{/* Main content grid - Transactions and Clients side by side */}
+			{/* Main content grid - Operations and Clients side by side */}
 			{/* Keep showing data while loading (reduced opacity indicates refresh in progress) */}
 			{hasData && (
 				<div
@@ -265,23 +265,23 @@ export function DashboardView(): React.ReactElement {
 						isLoading && "opacity-60 pointer-events-none",
 					)}
 				>
-					{/* Transaction Stats Card */}
+					{/* Operation Stats Card */}
 					<Link
-						href={routes.transactions.list()}
+						href={routes.operations.list()}
 						className="block transition-transform hover:scale-[1.01]"
 					>
 						<Card className="h-full cursor-pointer transition-colors hover:border-primary/50">
 							<CardHeader>
 								<CardTitle className="flex items-center gap-2">
 									<Briefcase className="h-5 w-5 text-primary" />
-									{t("dashboardTransactionStats")}
+									{t("dashboardOperationStats")}
 								</CardTitle>
 								<CardDescription>
-									{t("dashboardTransactionStatsDesc")}
+									{t("dashboardOperationStatsDesc")}
 								</CardDescription>
 							</CardHeader>
 							<CardContent>
-								{data.transactionStats ? (
+								{data.operationStats ? (
 									<div className="space-y-4">
 										<div className="grid grid-cols-1 @lg/main:grid-cols-2 gap-4">
 											<div className="rounded-lg border bg-muted/50 p-4">
@@ -289,16 +289,16 @@ export function DashboardView(): React.ReactElement {
 													{t("statsTotalVolume")}
 												</div>
 												<div className="mt-1 text-xl font-bold tabular-nums">
-													{formatCurrency(data.transactionStats.totalVolume)}
+													{formatCurrency(data.operationStats.totalVolume)}
 												</div>
 											</div>
 											<div className="rounded-lg border bg-muted/50 p-4">
 												<div className="text-sm font-medium text-muted-foreground">
-													{t("statsSuspiciousTransactions")}
+													{t("statsSuspiciousOperations")}
 												</div>
 												<div className="mt-1 text-xl font-bold tabular-nums">
 													{formatNumber(
-														data.transactionStats.suspiciousTransactions,
+														data.operationStats.suspiciousOperations,
 													)}
 												</div>
 											</div>
@@ -310,12 +310,10 @@ export function DashboardView(): React.ReactElement {
 											</div>
 											<div>
 												<div className="text-sm font-medium text-muted-foreground">
-													{t("statsTransactionsToday")}
+													{t("statsOperationsToday")}
 												</div>
 												<div className="text-2xl font-bold tabular-nums">
-													{formatNumber(
-														data.transactionStats.transactionsToday,
-													)}
+													{formatNumber(data.operationStats.operationsToday)}
 												</div>
 											</div>
 										</div>
@@ -324,7 +322,7 @@ export function DashboardView(): React.ReactElement {
 									<div className="flex flex-col items-center justify-center py-8 text-center">
 										<Briefcase className="h-10 w-10 text-muted-foreground/50" />
 										<p className="mt-2 text-muted-foreground">
-											{t("dashboardNoTransactionData")}
+											{t("dashboardNoOperationData")}
 										</p>
 									</div>
 								)}

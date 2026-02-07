@@ -16,6 +16,14 @@ vi.mock("sonner", () => ({
 	}),
 }));
 
+// Mock toast-utils to bypass dedup and forward to toast.error
+vi.mock("@/lib/toast-utils", () => ({
+	showFetchError: (_id: string, error: unknown) => {
+		const msg = error instanceof Error ? error.message : "Error desconocido";
+		mockToastError(msg, { id: _id });
+	},
+}));
+
 vi.mock("@/hooks/use-mobile", () => ({
 	useIsMobile: () => false,
 }));

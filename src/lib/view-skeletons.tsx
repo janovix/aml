@@ -8,15 +8,15 @@ import type React from "react";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardView";
 import { ClientDetailsSkeleton } from "@/components/clients/ClientDetailsView";
 import { ClientEditSkeleton } from "@/components/clients/ClientEditView";
-import { TransactionDetailsSkeleton } from "@/components/transactions/TransactionDetailsView";
-import { TransactionEditSkeleton } from "@/components/transactions/TransactionEditView";
+import { OperationDetailsSkeleton } from "@/components/operations/OperationDetailsView";
+import { OperationEditSkeleton } from "@/components/operations/OperationEditView";
 import { AlertDetailsSkeleton } from "@/components/alerts/AlertDetailsView";
 import { ReportDetailsSkeleton } from "@/components/reports/ReportDetailsView";
 import { PageHeroSkeleton } from "@/components/skeletons";
 import { TableSkeleton } from "@/components/skeletons";
 
 /**
- * Generic skeleton for list/table views (clients, transactions, alerts, reports)
+ * Generic skeleton for list/table views (clients, operations, alerts, reports)
  */
 function ListViewSkeleton(): React.ReactElement {
 	return (
@@ -65,11 +65,11 @@ export const VIEW_SKELETON_MAP: Record<string, () => React.ReactElement> = {
 	"/clients/[id]": ClientDetailsSkeleton,
 	"/clients/[id]/edit": ClientEditSkeleton,
 
-	// Transaction views
-	"/transactions": ListViewSkeleton,
-	"/transactions/new": FormViewSkeleton,
-	"/transactions/[id]": TransactionDetailsSkeleton,
-	"/transactions/[id]/edit": TransactionEditSkeleton,
+	// Operation views
+	"/operations": ListViewSkeleton,
+	"/operations/new": FormViewSkeleton,
+	"/operations/[id]": OperationDetailsSkeleton,
+	"/operations/[id]/edit": OperationEditSkeleton,
 
 	// Alert views
 	"/alerts": ListViewSkeleton,

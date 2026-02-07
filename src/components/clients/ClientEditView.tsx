@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,7 @@ import {
 	Home,
 	FileText,
 	Users,
+	AlertCircle,
 } from "lucide-react";
 import { PageHero } from "@/components/page-hero";
 import { PageHeroSkeleton } from "@/components/skeletons";
@@ -34,19 +35,32 @@ import { EditDocumentsSection } from "./EditDocumentsSection";
 import { UBOSection } from "./UBOSection";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/lib/mutations";
+import { showFetchError } from "@/lib/toast-utils";
 import { getClientById, updateClient } from "../../lib/api/clients";
+import { listClientUBOs } from "../../lib/api/ubos";
+import { listClientDocuments } from "../../lib/api/client-documents";
+import type { ClientDocumentType } from "../../types/client-document";
 import { executeMutation } from "../../lib/mutations";
 import { getPersonTypeStyle } from "../../lib/person-type-icon";
 import { LabelWithInfo } from "../ui/LabelWithInfo";
 import { getFieldDescription } from "../../lib/field-descriptions";
+import { getClientFieldTierMap } from "@/lib/field-requirements";
+import type { FieldTier } from "@/types/completeness";
+import type { Gender, MaritalStatus } from "../../types/client";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { CatalogSelector } from "../catalogs/CatalogSelector";
 import { PhoneInput } from "../ui/phone-input";
 import { validateRFC, validateCURP, cn } from "../../lib/utils";
 import { validatePhone } from "@/lib/validators/validate-phone";
-import { toast as sonnerToast } from "sonner";
 import { useLanguage } from "@/components/LanguageProvider";
+import { requiresUBOs, REQUIRED_DOCUMENTS } from "@/lib/constants";
 import { ZipCodeAddressFields } from "./ZipCodeAddressFields";
-import { FormActionBar } from "@/components/ui/FormActionBar";
 
 interface ClientFormData {
 	personType: PersonType;
@@ -74,6 +88,13 @@ interface ClientFormData {
 	postalCode: string;
 	reference?: string;
 	notes?: string;
+	countryCode?: string;
+	economicActivityCode?: string;
+	gender?: string;
+	maritalStatus?: string;
+	occupation?: string;
+	sourceOfFunds?: string;
+	sourceOfWealth?: string;
 }
 
 interface ClientEditViewProps {
@@ -100,7 +121,7 @@ export function ClientEditSkeleton(): React.ReactElement {
 							<Skeleton className="h-6 w-48" />
 						</CardHeader>
 						<CardContent>
-							<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
+							<div className="grid grid-cols-1 @xl/main:grid-cols-2 gap-4">
 								{[1, 2, 3, 4].map((j) => (
 									<div key={j} className="space-y-2">
 										<Skeleton className="h-4 w-24" />
@@ -126,18 +147,9 @@ export function ClientEditView({
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
 	const [client, setClient] = useState<Client | null>(null);
-	const formRef = useRef<HTMLFormElement | null>(null);
-	const hiddenSubmitButtonRef = useRef<HTMLButtonElement | null>(null);
-	const handleToolbarSubmit = (): void => {
-		const form = formRef.current;
-		if (!form) return;
-
-		if (typeof form.requestSubmit === "function") {
-			form.requestSubmit();
-		}
-
-		hiddenSubmitButtonRef.current?.click();
-	};
+	const [documents, setDocuments] = useState<any[]>([]);
+	const [ubos, setUbos] = useState<any[]>([]);
+	const [isLoadingValidation, setIsLoadingValidation] = useState(true);
 
 	const [formData, setFormData] = useState<ClientFormData>({
 		personType: "moral",
@@ -162,6 +174,13 @@ export function ClientEditView({
 		postalCode: "",
 		reference: "",
 		notes: "",
+		countryCode: "",
+		economicActivityCode: "",
+		gender: "",
+		maritalStatus: "",
+		occupation: "",
+		sourceOfFunds: "",
+		sourceOfWealth: "",
 	});
 
 	const [validationErrors, setValidationErrors] = useState<{
@@ -170,6 +189,15 @@ export function ClientEditView({
 		phone?: string;
 	}>({});
 	const [kycRefreshTrigger, setKycRefreshTrigger] = useState(0);
+
+	// Track missing information per tab for warning indicators
+	const [tabWarnings, setTabWarnings] = useState<{
+		documents: boolean;
+		ubos: boolean;
+	}>({
+		documents: false,
+		ubos: false,
+	});
 
 	// Initialize activeTab from query param or default to "personal"
 	const [activeTab, setActiveTab] = useState(() => {
@@ -181,9 +209,9 @@ export function ClientEditView({
 	});
 
 	// Callback to refresh KYC status when documents or UBOs change
-	const handleKYCChange = () => {
+	const handleKYCChange = useCallback(() => {
 		setKycRefreshTrigger((prev) => prev + 1);
-	};
+	}, []);
 
 	// Update URL when tab changes
 	const handleTabChange = (newTab: string) => {
@@ -192,6 +220,88 @@ export function ClientEditView({
 		url.searchParams.set("tab", newTab);
 		router.replace(url.pathname + url.search, { scroll: false });
 	};
+
+	// Fetch documents and UBOs for validation (runs regardless of active tab)
+	const fetchValidationData = useCallback(async () => {
+		if (!client) return;
+
+		try {
+			setIsLoadingValidation(true);
+			const [docsResponse, ubosResponse] = await Promise.all([
+				listClientDocuments({ clientId }),
+				requiresUBOs(client.personType)
+					? listClientUBOs({ clientId })
+					: Promise.resolve({ data: [] }),
+			]);
+			setDocuments(docsResponse.data);
+			setUbos(ubosResponse.data);
+		} catch (error) {
+			console.error("Error fetching validation data:", error);
+		} finally {
+			setIsLoadingValidation(false);
+		}
+	}, [clientId, client]);
+
+	// Fetch validation data when client is loaded or KYC changes
+	useEffect(() => {
+		if (client) {
+			fetchValidationData();
+		}
+	}, [client, kycRefreshTrigger, fetchValidationData]);
+
+	// Calculate validation status for documents tab
+	useEffect(() => {
+		if (!client || isLoadingValidation) return;
+
+		const needsUBOs = requiresUBOs(client.personType);
+		const uploadedDocTypes = new Set(documents.map((d) => d.documentType));
+
+		const required = REQUIRED_DOCUMENTS[client.personType] || [];
+		const missingDocs = required.filter((d) => !uploadedDocTypes.has(d));
+
+		// For physical persons, also check ID document
+		const hasIdDocument =
+			["NATIONAL_ID", "PASSPORT"].some((type) =>
+				uploadedDocTypes.has(type as ClientDocumentType),
+			) || needsUBOs; // Skip ID check for moral/trust
+
+		const hasMissingDocs = missingDocs.length > 0 || !hasIdDocument;
+
+		setTabWarnings((prev) => {
+			if (prev.documents !== hasMissingDocs) {
+				return { ...prev, documents: hasMissingDocs };
+			}
+			return prev;
+		});
+	}, [client, documents, isLoadingValidation]);
+
+	// Calculate validation status for UBOs tab
+	useEffect(() => {
+		if (!client || isLoadingValidation) return;
+
+		const needsUBOs = requiresUBOs(client.personType);
+		if (!needsUBOs) return;
+
+		// Check for stockholders (at least one required)
+		const stockholders = ubos.filter(
+			(u) => u.relationshipType === "SHAREHOLDER",
+		);
+		const hasStockholders = stockholders.length > 0;
+
+		// Check for legal rep with ID document
+		const legalRep = ubos.find((u) => u.relationshipType === "LEGAL_REP");
+		const hasLegalRepWithId = legalRep && legalRep.idDocumentId !== null;
+
+		// Warning if missing stockholders OR missing legal rep with ID
+		const hasMissingInfo = !hasStockholders || !hasLegalRepWithId;
+
+		setTabWarnings((prev) => {
+			if (prev.ubos !== hasMissingInfo) {
+				return { ...prev, ubos: hasMissingInfo };
+			}
+			return prev;
+		});
+	}, [client, ubos, isLoadingValidation]);
 
 	useEffect(() => {
 		const fetchClient = async () => {
@@ -233,10 +343,17 @@ export function ClientEditView({
 					postalCode: data.postalCode,
 					reference: data.reference ?? "",
 					notes: data.notes ?? "",
+					countryCode: data.countryCode ?? "",
+					economicActivityCode: data.economicActivityCode ?? "",
+					gender: data.gender ?? "",
+					maritalStatus: data.maritalStatus ?? "",
+					occupation: data.occupation ?? "",
+					sourceOfFunds: data.sourceOfFunds ?? "",
+					sourceOfWealth: data.sourceOfWealth ?? "",
 				});
 			} catch (error) {
 				console.error("Error fetching client:", error);
-				toast.error(extractErrorMessage(error));
+				showFetchError("client-edit-load", error);
 			} finally {
 				setIsLoading(false);
 			}
@@ -299,7 +416,7 @@ export function ClientEditView({
 		// If there are validation errors, show them and prevent submission
 		if (Object.keys(errors).length > 0) {
 			setValidationErrors(errors);
-			sonnerToast.error(t("clientValidationError"));
+			toast.error(t("clientValidationError"));
 			return;
 		}
 
@@ -353,6 +470,16 @@ export function ClientEditView({
 			request.internalNumber = formData.internalNumber;
 		if (formData.reference) request.reference = formData.reference;
 		if (formData.notes) request.notes = formData.notes;
+		if (formData.countryCode) request.countryCode = formData.countryCode;
+		if (formData.economicActivityCode)
+			request.economicActivityCode = formData.economicActivityCode;
+		if (formData.gender) request.gender = formData.gender as Gender;
+		if (formData.maritalStatus)
+			request.maritalStatus = formData.maritalStatus as MaritalStatus;
+		if (formData.occupation) request.occupation = formData.occupation;
+		if (formData.sourceOfFunds) request.sourceOfFunds = formData.sourceOfFunds;
+		if (formData.sourceOfWealth)
+			request.sourceOfWealth = formData.sourceOfWealth;
 
 		try {
 			await executeMutation({
@@ -400,11 +527,12 @@ export function ClientEditView({
 	}
 
 	const lockedPersonType = formData.personType ?? client.personType;
+	const fieldTiers = getClientFieldTierMap(lockedPersonType);
 	const personTypeStyle = getPersonTypeStyle(lockedPersonType);
 	const PersonTypeIcon = personTypeStyle.icon;
 
 	return (
-		<div className="space-y-6 pb-24 md:pb-20">
+		<div className="space-y-6">
 			<PageHero
 				title={t("clientEditTitle")}
 				subtitle={t("clientEditSubtitle")}
@@ -469,54 +597,75 @@ export function ClientEditView({
 					onValueChange={handleTabChange}
 					className="w-full"
 				>
-					{/* Tabs List - No card wrapper, just a subtle background */}
+					{/* Tabs List - Large icons centered with text below */}
 					<TabsList
-						className="grid w-full grid-cols-2 lg:grid-cols-5 gap-1 mb-4 p-2 bg-muted/50 rounded-lg"
+						className={cn(
+							"grid w-full gap-2 mb-4 p-2 bg-muted/50 rounded-lg auto-rows-fr",
+							"grid-cols-2",
+							requiresUBOs(client.personType)
+								? "lg:grid-cols-5"
+								: "lg:grid-cols-4",
+						)}
 						style={{ height: "unset" }}
 					>
-						<TabsTrigger value="personal" className="gap-2 px-4 h-full py-3.5">
-							<User className="h-4 w-4" />
-							<span className="hidden sm:inline">
+						<TabsTrigger
+							value="personal"
+							className="flex flex-col items-center justify-center gap-1.5 px-3 py-4 min-h-[80px] text-center"
+						>
+							<User className="h-6 w-6 shrink-0" />
+							<span className="text-xs leading-tight">
 								{formData.personType === "physical"
 									? t("clientPersonalData")
 									: t("clientCompanyData")}
 							</span>
-							<span className="sm:hidden">Datos</span>
 						</TabsTrigger>
-						<TabsTrigger value="contact" className="gap-2 px-4 h-full py-3.5">
-							<Phone className="h-4 w-4" />
-							<span className="hidden sm:inline">{t("clientContactInfo")}</span>
-							<span className="sm:hidden">Contacto</span>
+						<TabsTrigger
+							value="contact"
+							className="flex flex-col items-center justify-center gap-1.5 px-3 py-4 min-h-[80px] text-center"
+						>
+							<Phone className="h-6 w-6 shrink-0" />
+							<span className="text-xs leading-tight">
+								{t("clientContactInfo")}
+							</span>
 						</TabsTrigger>
-						<TabsTrigger value="address" className="gap-2 px-4 h-full py-3.5">
-							<Home className="h-4 w-4" />
-							<span className="hidden sm:inline">{t("clientAddressInfo")}</span>
-							<span className="sm:hidden">Dirección</span>
+						<TabsTrigger
+							value="address"
+							className="flex flex-col items-center justify-center gap-1.5 px-3 py-4 min-h-[80px] text-center"
+						>
+							<Home className="h-6 w-6 shrink-0" />
+							<span className="text-xs leading-tight">
+								{t("clientAddressInfo")}
+							</span>
 						</TabsTrigger>
-						<TabsTrigger value="documents" className="gap-2 px-4 h-full py-3.5">
-							<FileText className="h-4 w-4" />
-							<span className="hidden sm:inline">Documentos</span>
-							<span className="sm:hidden">Docs</span>
+						<TabsTrigger
+							value="documents"
+							className="flex flex-col items-center justify-center gap-1.5 px-3 py-4 min-h-[80px] text-center"
+						>
+							<FileText className="h-6 w-6 shrink-0" />
+							<span className="text-xs leading-tight flex items-center gap-1">
+								Documentos
+								{tabWarnings.documents && (
+									<AlertCircle className="h-3.5 w-3.5 text-amber-500" />
+								)}
+							</span>
 						</TabsTrigger>
-						{(client.personType === "moral" ||
-							client.personType === "trust") && (
-							<TabsTrigger value="ubos" className="gap-2 px-4 h-full py-3.5">
-								<Users className="h-4 w-4" />
-								<span className="hidden sm:inline">UBOs</span>
-								<span className="sm:hidden">UBOs</span>
+						{requiresUBOs(client.personType) && (
+							<TabsTrigger
+								value="ubos"
+								className="flex flex-col items-center justify-center gap-1.5 px-3 py-4 min-h-[80px] text-center"
+							>
+								<Users className="h-6 w-6 shrink-0" />
+								<span className="text-xs leading-tight flex items-center gap-1">
+									UBOs
+									{tabWarnings.ubos && (
+										<AlertCircle className="h-3.5 w-3.5 text-amber-500" />
+									)}
+								</span>
 							</TabsTrigger>
 						)}
 					</TabsList>
 
-					<form id="client-edit-form" ref={formRef} onSubmit={handleSubmit}>
-						<button
-							ref={hiddenSubmitButtonRef}
-							type="submit"
-							tabIndex={-1}
-							aria-hidden="true"
-							className="sr-only"
-						/>
-
+					<form id="client-edit-form" onSubmit={handleSubmit}>
 						{/* Personal Data Tab */}
 						<TabsContent value="personal" className="space-y-6 mt-0">
 							<Card id="personal-info">
@@ -530,11 +679,12 @@ export function ClientEditView({
 								<CardContent className="space-y-4">
 									{formData.personType === "physical" ? (
 										<>
-											<div className="grid grid-cols-1 @lg/main:grid-cols-3 gap-4">
+											<div className="grid grid-cols-1 @2xl/main:grid-cols-3 gap-4">
 												<div className="space-y-2">
 													<LabelWithInfo
 														htmlFor="firstName"
 														description={getFieldDescription("firstName")}
+														tier={fieldTiers.firstName}
 														required
 													>
 														{t("clientFirstName")}
@@ -556,6 +706,7 @@ export function ClientEditView({
 													<LabelWithInfo
 														htmlFor="lastName"
 														description={getFieldDescription("lastName")}
+														tier={fieldTiers.lastName}
 														required
 													>
 														{t("clientLastName")}
@@ -577,6 +728,7 @@ export function ClientEditView({
 													<LabelWithInfo
 														htmlFor="secondLastName"
 														description={getFieldDescription("secondLastName")}
+														tier={fieldTiers.secondLastName}
 													>
 														{t("clientSecondLastName")}
 													</LabelWithInfo>
@@ -593,11 +745,12 @@ export function ClientEditView({
 													/>
 												</div>
 											</div>
-											<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
+											<div className="grid grid-cols-1 @xl/main:grid-cols-2 gap-4">
 												<div className="space-y-2">
 													<LabelWithInfo
 														htmlFor="birthDate"
 														description={getFieldDescription("birthDate")}
+														tier={fieldTiers.birthDate}
 														required
 													>
 														{t("clientBirthDate")}
@@ -616,6 +769,7 @@ export function ClientEditView({
 													<LabelWithInfo
 														htmlFor="curp"
 														description={getFieldDescription("curp")}
+														tier={fieldTiers.curp}
 														required
 													>
 														{t("clientCurp")}
@@ -653,6 +807,7 @@ export function ClientEditView({
 												<LabelWithInfo
 													htmlFor="businessName"
 													description={getFieldDescription("businessName")}
+													tier={fieldTiers.businessName}
 													required
 												>
 													{t("clientBusinessName")}
@@ -697,6 +852,7 @@ export function ClientEditView({
 										<LabelWithInfo
 											htmlFor="rfc"
 											description={getFieldDescription("rfc")}
+											tier={fieldTiers.rfc}
 											required
 										>
 											{t("clientRfc")}
@@ -741,13 +897,49 @@ export function ClientEditView({
 											catalogKey="countries"
 											label={t("clientNationality")}
 											labelDescription={getFieldDescription("nationality")}
+											tier={fieldTiers.countryCode}
 											value={formData.nationality}
 											searchPlaceholder={t("clientSearchCountry")}
-											onChange={(option) =>
-												handleInputChange("nationality", option?.id ?? "")
-											}
+											onChange={(option) => {
+												handleInputChange("nationality", option?.id ?? "");
+												handleInputChange(
+													"countryCode",
+													option
+														? ((option.metadata?.code as string) ?? option.id)
+														: "",
+												);
+											}}
 										/>
 									)}
+									{formData.personType !== "physical" && (
+										<CatalogSelector
+											catalogKey="countries"
+											label="País"
+											labelDescription="País de constitución de la entidad"
+											tier={fieldTiers.countryCode}
+											value={formData.countryCode}
+											searchPlaceholder={t("clientSearchCountry")}
+											onChange={(option) => {
+												handleInputChange(
+													"countryCode",
+													option
+														? ((option.metadata?.code as string) ?? option.id)
+														: "",
+												);
+											}}
+										/>
+									)}
+									<CatalogSelector
+										catalogKey="economic-activities"
+										label="Actividad económica"
+										labelDescription="Actividad económica del catálogo SAT (7 dígitos)"
+										tier={fieldTiers.economicActivityCode}
+										value={formData.economicActivityCode}
+										searchPlaceholder="Buscar actividad económica..."
+										onValueChange={(value) =>
+											handleInputChange("economicActivityCode", value ?? "")
+										}
+									/>
 								</CardContent>
 							</Card>
 
@@ -773,6 +965,150 @@ export function ClientEditView({
 									</div>
 								</CardContent>
 							</Card>
+
+							{/* Enhanced KYC Card */}
+							<Card>
+								<CardHeader>
+									<CardTitle className="text-lg">
+										Información complementaria KYC
+									</CardTitle>
+									<p className="text-sm text-muted-foreground">
+										Datos adicionales para debida diligencia y perfil de riesgo
+									</p>
+								</CardHeader>
+								<CardContent className="space-y-4">
+									<div className="grid grid-cols-1 @xl/main:grid-cols-2 gap-4">
+										<div className="space-y-2">
+											<LabelWithInfo
+												htmlFor="gender"
+												description="Género del cliente"
+												tier={fieldTiers.gender}
+											>
+												Género
+											</LabelWithInfo>
+											<Select
+												value={formData.gender || undefined}
+												onValueChange={(value) =>
+													handleInputChange("gender", value)
+												}
+											>
+												<SelectTrigger id="gender">
+													<SelectValue placeholder="Seleccionar género" />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value="M">Masculino</SelectItem>
+													<SelectItem value="F">Femenino</SelectItem>
+													<SelectItem value="OTHER">Otro</SelectItem>
+												</SelectContent>
+											</Select>
+										</div>
+										<div className="space-y-2">
+											<LabelWithInfo
+												htmlFor="maritalStatus"
+												description="Estado civil del cliente"
+												tier={fieldTiers.maritalStatus}
+											>
+												Estado civil
+											</LabelWithInfo>
+											<Select
+												value={formData.maritalStatus || undefined}
+												onValueChange={(value) =>
+													handleInputChange("maritalStatus", value)
+												}
+											>
+												<SelectTrigger id="maritalStatus">
+													<SelectValue placeholder="Seleccionar estado civil" />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value="SINGLE">Soltero/a</SelectItem>
+													<SelectItem value="MARRIED">Casado/a</SelectItem>
+													<SelectItem value="DIVORCED">Divorciado/a</SelectItem>
+													<SelectItem value="WIDOWED">Viudo/a</SelectItem>
+													<SelectItem value="OTHER">Otro</SelectItem>
+												</SelectContent>
+											</Select>
+										</div>
+									</div>
+									<div className="space-y-2">
+										<LabelWithInfo
+											htmlFor="occupation"
+											description="Ocupación o profesión del cliente"
+											tier={fieldTiers.occupation}
+										>
+											Ocupación / Profesión
+										</LabelWithInfo>
+										<Input
+											id="occupation"
+											value={formData.occupation}
+											onChange={(e) =>
+												handleInputChange("occupation", e.target.value)
+											}
+											placeholder="Ej. Empresario, Abogado, Médico"
+										/>
+									</div>
+									<div className="grid grid-cols-1 @xl/main:grid-cols-2 gap-4">
+										<div className="space-y-2">
+											<LabelWithInfo
+												htmlFor="sourceOfFunds"
+												description="De dónde provienen los recursos utilizados en la operación"
+												tier={fieldTiers.sourceOfFunds}
+											>
+												Origen de los recursos
+											</LabelWithInfo>
+											<Input
+												id="sourceOfFunds"
+												value={formData.sourceOfFunds}
+												onChange={(e) =>
+													handleInputChange("sourceOfFunds", e.target.value)
+												}
+												placeholder="Ej. Salario, Inversiones, Herencia"
+											/>
+										</div>
+										<div className="space-y-2">
+											<LabelWithInfo
+												htmlFor="sourceOfWealth"
+												description="Origen general del patrimonio del cliente"
+												tier={fieldTiers.sourceOfWealth}
+											>
+												Origen del patrimonio
+											</LabelWithInfo>
+											<Input
+												id="sourceOfWealth"
+												value={formData.sourceOfWealth}
+												onChange={(e) =>
+													handleInputChange("sourceOfWealth", e.target.value)
+												}
+												placeholder="Ej. Actividad empresarial, Profesión"
+											/>
+										</div>
+									</div>
+								</CardContent>
+							</Card>
+
+							{/* Action buttons */}
+							<div className="flex justify-end gap-3">
+								<Button
+									type="button"
+									variant="outline"
+									onClick={handleCancel}
+									disabled={isSubmitting}
+								>
+									{t("cancel")}
+								</Button>
+								<Button type="submit" disabled={isSubmitting}>
+									{isSubmitting ? (
+										<>
+											<span className="animate-spin mr-2">⏳</span>
+											{t("clientSaving")}
+										</>
+									) : (
+										<>
+											<Save className="h-4 w-4 mr-2" />
+											{t("clientSaveButton")}
+										</>
+									)}
+								</Button>
+							</div>
 						</TabsContent>
 
 						{/* Contact Tab */}
@@ -784,11 +1120,12 @@ export function ClientEditView({
 									</CardTitle>
 								</CardHeader>
 								<CardContent className="space-y-4">
-									<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
+									<div className="grid grid-cols-1 @xl/main:grid-cols-2 gap-4">
 										<div className="space-y-2">
 											<LabelWithInfo
 												htmlFor="email"
 												description={getFieldDescription("email")}
+												tier={fieldTiers.email}
 												required
 											>
 												{t("clientEmail")}
@@ -808,6 +1145,7 @@ export function ClientEditView({
 											<LabelWithInfo
 												htmlFor="phone"
 												description={getFieldDescription("phone")}
+												tier={fieldTiers.phone}
 												required
 											>
 												{t("clientPhone")}
@@ -836,6 +1174,31 @@ export function ClientEditView({
 									</div>
 								</CardContent>
 							</Card>
+
+							{/* Action buttons */}
+							<div className="flex justify-end gap-3 mt-6">
+								<Button
+									type="button"
+									variant="outline"
+									onClick={handleCancel}
+									disabled={isSubmitting}
+								>
+									{t("cancel")}
+								</Button>
+								<Button type="submit" disabled={isSubmitting}>
+									{isSubmitting ? (
+										<>
+											<span className="animate-spin mr-2">⏳</span>
+											{t("clientSaving")}
+										</>
+									) : (
+										<>
+											<Save className="h-4 w-4 mr-2" />
+											{t("clientSaveButton")}
+										</>
+									)}
+								</Button>
+							</div>
 						</TabsContent>
 
 						{/* Address Tab */}
@@ -850,12 +1213,13 @@ export function ClientEditView({
 									</p>
 								</CardHeader>
 								<CardContent className="space-y-4">
-									{/* Row 1: Street + External Number */}
-									<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
+									{/* Address fields: Street + External Number + Internal Number */}
+									<div className="grid grid-cols-1 @md/main:grid-cols-[1fr_150px_150px] gap-4">
 										<div className="space-y-2">
 											<LabelWithInfo
 												htmlFor="street"
 												description={getFieldDescription("street")}
+												tier={fieldTiers.street}
 												required
 											>
 												{t("clientStreet")}
@@ -894,10 +1258,6 @@ export function ClientEditView({
 												required
 											/>
 										</div>
-									</div>
-
-									{/* Row 2: Internal Number */}
-									<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
 										<div className="space-y-2">
 											<LabelWithInfo
 												htmlFor="internalNumber"
@@ -948,53 +1308,74 @@ export function ClientEditView({
 									/>
 								</CardContent>
 							</Card>
+
+							{/* Action buttons */}
+							<div className="flex justify-end gap-3 mt-6">
+								<Button
+									type="button"
+									variant="outline"
+									onClick={handleCancel}
+									disabled={isSubmitting}
+								>
+									{t("cancel")}
+								</Button>
+								<Button type="submit" disabled={isSubmitting}>
+									{isSubmitting ? (
+										<>
+											<span className="animate-spin mr-2">⏳</span>
+											{t("clientSaving")}
+										</>
+									) : (
+										<>
+											<Save className="h-4 w-4 mr-2" />
+											{t("clientSaveButton")}
+										</>
+									)}
+								</Button>
+							</div>
 						</TabsContent>
 					</form>
 
 					{/* Documents Tab - Outside form since it has its own submission logic */}
 					<TabsContent value="documents" className="mt-0">
-						<div id="documents">
+						<div id="documents" className="space-y-6">
 							{/* Documents Section - Has its own progress indicator */}
 							<EditDocumentsSection
 								clientId={clientId}
 								personType={client.personType}
 								onDocumentChange={handleKYCChange}
 							/>
+
+							{/* Cancel button only - document actions are immediate */}
+							<div className="flex justify-end">
+								<Button variant="outline" onClick={handleCancel}>
+									{t("cancel")}
+								</Button>
+							</div>
 						</div>
 					</TabsContent>
 
 					{/* UBOs Tab - Only for moral/trust entities */}
-					{(client.personType === "moral" || client.personType === "trust") && (
+					{requiresUBOs(client.personType) && (
 						<TabsContent value="ubos" className="mt-0">
-							<div id="ubos">
+							<div id="ubos" className="space-y-6">
 								<UBOSection
 									clientId={clientId}
 									personType={client.personType}
 									onUBOChange={handleKYCChange}
 								/>
+
+								{/* Cancel button only - UBO actions are immediate */}
+								<div className="flex justify-end">
+									<Button variant="outline" onClick={handleCancel}>
+										{t("cancel")}
+									</Button>
+								</div>
 							</div>
 						</TabsContent>
 					)}
 				</Tabs>
 			</div>
-
-			{/* Fixed Action Bar */}
-			<FormActionBar
-				actions={[
-					{
-						label: isSubmitting ? t("clientSaving") : t("clientSaveButton"),
-						icon: Save,
-						onClick: handleToolbarSubmit,
-						disabled: isSubmitting,
-						loading: isSubmitting,
-					},
-					{
-						label: t("cancel"),
-						onClick: handleCancel,
-						variant: "outline",
-					},
-				]}
-			/>
 		</div>
 	);
 }

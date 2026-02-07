@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/lib/mutations";
+import { showFetchError } from "@/lib/toast-utils";
+import { useLanguage } from "@/components/LanguageProvider";
 import {
 	getNoticeById,
 	generateNoticeFile,
@@ -42,36 +44,6 @@ import {
 	type NoticeStatus,
 } from "@/lib/api/notices";
 
-const statusConfig: Record<
-	NoticeStatus,
-	{ label: string; icon: React.ReactNode; color: string; bgColor: string }
-> = {
-	DRAFT: {
-		label: "Borrador",
-		icon: <Clock className="h-4 w-4" />,
-		color: "text-zinc-400",
-		bgColor: "bg-zinc-500/20",
-	},
-	GENERATED: {
-		label: "Generado",
-		icon: <FileCheck2 className="h-4 w-4" />,
-		color: "text-blue-400",
-		bgColor: "bg-blue-500/20",
-	},
-	SUBMITTED: {
-		label: "Enviado al SAT",
-		icon: <Send className="h-4 w-4" />,
-		color: "text-amber-400",
-		bgColor: "bg-amber-500/20",
-	},
-	ACKNOWLEDGED: {
-		label: "Acusado por SAT",
-		icon: <CheckCircle2 className="h-4 w-4" />,
-		color: "text-emerald-400",
-		bgColor: "bg-emerald-500/20",
-	},
-};
-
 interface NoticeDetailsViewProps {
 	noticeId: string;
 }
@@ -82,6 +54,37 @@ export function NoticeDetailsView({
 	const router = useRouter();
 	const { navigateTo } = useOrgNavigation();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
+	const { t } = useLanguage();
+
+	const statusConfig: Record<
+		NoticeStatus,
+		{ label: string; icon: React.ReactNode; color: string; bgColor: string }
+	> = {
+		DRAFT: {
+			label: t("statusDraft"),
+			icon: <Clock className="h-4 w-4" />,
+			color: "text-zinc-400",
+			bgColor: "bg-zinc-500/20",
+		},
+		GENERATED: {
+			label: t("statusGenerated"),
+			icon: <FileCheck2 className="h-4 w-4" />,
+			color: "text-blue-400",
+			bgColor: "bg-blue-500/20",
+		},
+		SUBMITTED: {
+			label: t("statusSubmitted"),
+			icon: <Send className="h-4 w-4" />,
+			color: "text-amber-400",
+			bgColor: "bg-amber-500/20",
+		},
+		ACKNOWLEDGED: {
+			label: t("statusAcknowledged"),
+			icon: <CheckCircle2 className="h-4 w-4" />,
+			color: "text-emerald-400",
+			bgColor: "bg-emerald-500/20",
+		},
+	};
 
 	const [notice, setNotice] = useState<NoticeWithAlertSummary | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
@@ -103,7 +106,7 @@ export function NoticeDetailsView({
 			setNotice(data);
 		} catch (error) {
 			console.error("Error loading notice:", error);
-			toast.error(extractErrorMessage(error));
+			showFetchError("notice-details", error);
 		} finally {
 			setIsLoading(false);
 		}
@@ -120,11 +123,11 @@ export function NoticeDetailsView({
 		try {
 			setIsGenerating(true);
 			await generateNoticeFile({ id: notice.id, jwt });
-			toast.success("El archivo XML ha sido generado exitosamente");
+			toast.success(t("noticeXmlGenerated"));
 			loadNotice();
 		} catch (error) {
 			console.error("Error generating notice:", error);
-			toast.error(extractErrorMessage(error));
+			toast.error(extractErrorMessage(error), { id: "notice-download" });
 		} finally {
 			setIsGenerating(false);
 		}
@@ -136,7 +139,7 @@ export function NoticeDetailsView({
 			await downloadNoticeXml({ id: notice.id, jwt });
 		} catch (error) {
 			console.error("Error downloading notice:", error);
-			toast.error(extractErrorMessage(error));
+			toast.error(extractErrorMessage(error), { id: "notice-download" });
 		}
 	};
 
@@ -149,13 +152,13 @@ export function NoticeDetailsView({
 				satFolioNumber: satFolioNumber || undefined,
 				jwt,
 			});
-			toast.success("El aviso ha sido marcado como enviado al SAT");
+			toast.success(t("noticeMarkedSubmitted"));
 			setShowSubmitDialog(false);
 			setSatFolioNumber("");
 			loadNotice();
 		} catch (error) {
 			console.error("Error submitting notice:", error);
-			toast.error(extractErrorMessage(error));
+			toast.error(extractErrorMessage(error), { id: "notice-submit" });
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -170,13 +173,13 @@ export function NoticeDetailsView({
 				satFolioNumber,
 				jwt,
 			});
-			toast.success("El acuse del SAT ha sido registrado");
+			toast.success(t("noticeAckRegistered"));
 			setShowAcknowledgeDialog(false);
 			setSatFolioNumber("");
 			loadNotice();
 		} catch (error) {
 			console.error("Error acknowledging notice:", error);
-			toast.error(extractErrorMessage(error));
+			toast.error(extractErrorMessage(error), { id: "notice-validate" });
 		} finally {
 			setIsAcknowledging(false);
 		}
@@ -187,11 +190,11 @@ export function NoticeDetailsView({
 		try {
 			setIsDeleting(true);
 			await deleteNotice({ id: notice.id, jwt });
-			toast.success(`${notice.name} ha sido eliminado`);
+			toast.success(t("noticeDeleted"));
 			navigateTo("/notices");
 		} catch (error) {
 			console.error("Error deleting notice:", error);
-			toast.error(extractErrorMessage(error));
+			toast.error(extractErrorMessage(error), { id: "notice-delete" });
 		} finally {
 			setIsDeleting(false);
 			setShowDeleteDialog(false);
@@ -210,11 +213,11 @@ export function NoticeDetailsView({
 		return (
 			<div className="flex flex-col items-center justify-center py-12 text-center">
 				<AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-				<h3 className="text-lg font-medium">Aviso no encontrado</h3>
-				<p className="text-muted-foreground mb-4">
-					El aviso que buscas no existe o no tienes acceso
-				</p>
-				<Button onClick={() => navigateTo("/notices")}>Volver a avisos</Button>
+				<h3 className="text-lg font-medium">{t("noticeNotFound")}</h3>
+				<p className="text-muted-foreground mb-4">{t("noticeNotFoundDesc")}</p>
+				<Button onClick={() => navigateTo("/notices")}>
+					{t("noticeBackToNotices")}
+				</Button>
 			</div>
 		);
 	}
@@ -253,7 +256,7 @@ export function NoticeDetailsView({
 								onClick={() => setShowDeleteDialog(true)}
 							>
 								<Trash2 className="h-4 w-4 mr-2" />
-								Eliminar
+								{t("noticeDelete")}
 							</Button>
 							<Button onClick={handleGenerate} disabled={isGenerating}>
 								{isGenerating ? (
@@ -261,7 +264,7 @@ export function NoticeDetailsView({
 								) : (
 									<FileCheck2 className="h-4 w-4 mr-2" />
 								)}
-								Generar XML
+								{t("noticeGenerateXml")}
 							</Button>
 						</>
 					)}
@@ -269,11 +272,11 @@ export function NoticeDetailsView({
 						<>
 							<Button variant="outline" onClick={handleDownload}>
 								<Download className="h-4 w-4 mr-2" />
-								Descargar XML
+								{t("noticeDownloadXml")}
 							</Button>
 							<Button onClick={() => setShowSubmitDialog(true)}>
 								<Send className="h-4 w-4 mr-2" />
-								Marcar como Enviado
+								{t("noticeMarkSubmitted")}
 							</Button>
 						</>
 					)}
@@ -281,18 +284,18 @@ export function NoticeDetailsView({
 						<>
 							<Button variant="outline" onClick={handleDownload}>
 								<Download className="h-4 w-4 mr-2" />
-								Descargar XML
+								{t("noticeDownloadXml")}
 							</Button>
 							<Button onClick={() => setShowAcknowledgeDialog(true)}>
 								<CheckCircle2 className="h-4 w-4 mr-2" />
-								Registrar Acuse
+								{t("noticeRegisterAcknowledgement")}
 							</Button>
 						</>
 					)}
 					{notice.status === "ACKNOWLEDGED" && (
 						<Button variant="outline" onClick={handleDownload}>
 							<Download className="h-4 w-4 mr-2" />
-							Descargar XML
+							{t("noticeDownloadXml")}
 						</Button>
 					)}
 				</div>
@@ -303,21 +306,27 @@ export function NoticeDetailsView({
 					<CardHeader>
 						<CardTitle className="text-lg flex items-center gap-2">
 							<Calendar className="h-5 w-5" />
-							Información del Período
+							{t("noticePeriodInfo")}
 						</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="grid grid-cols-2 gap-4">
 							<div>
-								<p className="text-sm text-muted-foreground">Período</p>
+								<p className="text-sm text-muted-foreground">
+									{t("noticePeriod")}
+								</p>
 								<p className="font-medium">{notice.reportedMonth}</p>
 							</div>
 							<div>
-								<p className="text-sm text-muted-foreground">Alertas</p>
+								<p className="text-sm text-muted-foreground">
+									{t("noticeAlerts")}
+								</p>
 								<p className="font-medium">{notice.recordCount}</p>
 							</div>
 							<div>
-								<p className="text-sm text-muted-foreground">Inicio</p>
+								<p className="text-sm text-muted-foreground">
+									{t("noticePeriodStart")}
+								</p>
 								<p className="font-medium">
 									{periodStart.toLocaleDateString("es-MX", {
 										day: "2-digit",
@@ -327,7 +336,9 @@ export function NoticeDetailsView({
 								</p>
 							</div>
 							<div>
-								<p className="text-sm text-muted-foreground">Fin</p>
+								<p className="text-sm text-muted-foreground">
+									{t("noticePeriodEnd")}
+								</p>
 								<p className="font-medium">
 									{periodEnd.toLocaleDateString("es-MX", {
 										day: "2-digit",
@@ -340,7 +351,9 @@ export function NoticeDetailsView({
 
 						{notice.satFolioNumber && (
 							<div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
-								<p className="text-sm text-muted-foreground">Folio SAT</p>
+								<p className="text-sm text-muted-foreground">
+									{t("noticeSatFolio")}
+								</p>
 								<p className="font-medium text-emerald-600">
 									{notice.satFolioNumber}
 								</p>
@@ -349,7 +362,9 @@ export function NoticeDetailsView({
 
 						{notice.submittedAt && (
 							<div>
-								<p className="text-sm text-muted-foreground">Fecha de Envío</p>
+								<p className="text-sm text-muted-foreground">
+									{t("noticeSubmissionDate")}
+								</p>
 								<p className="font-medium">
 									{new Date(notice.submittedAt).toLocaleDateString("es-MX", {
 										day: "2-digit",
@@ -368,7 +383,7 @@ export function NoticeDetailsView({
 					<CardHeader>
 						<CardTitle className="text-lg flex items-center gap-2">
 							<FileWarning className="h-5 w-5" />
-							Resumen de Alertas
+							{t("noticeAlertsSummary")}
 						</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-4">
@@ -378,7 +393,9 @@ export function NoticeDetailsView({
 
 						<div className="space-y-3">
 							<div>
-								<p className="text-sm font-medium mb-2">Por Severidad</p>
+								<p className="text-sm font-medium mb-2">
+									{t("noticeBySeverity")}
+								</p>
 								<div className="flex flex-wrap gap-2">
 									{Object.entries(notice.alertSummary.bySeverity).map(
 										([severity, count]) => (
@@ -402,7 +419,9 @@ export function NoticeDetailsView({
 							</div>
 
 							<div>
-								<p className="text-sm font-medium mb-2">Por Estado</p>
+								<p className="text-sm font-medium mb-2">
+									{t("noticeByStatus")}
+								</p>
 								<div className="flex flex-wrap gap-2">
 									{Object.entries(notice.alertSummary.byStatus).map(
 										([status, count]) => (
@@ -419,7 +438,9 @@ export function NoticeDetailsView({
 
 							{notice.alertSummary.byRule.length > 0 && (
 								<div>
-									<p className="text-sm font-medium mb-2">Por Regla</p>
+									<p className="text-sm font-medium mb-2">
+										{t("noticeByRule")}
+									</p>
 									<div className="space-y-1">
 										{notice.alertSummary.byRule.slice(0, 5).map((rule) => (
 											<div
@@ -444,20 +465,19 @@ export function NoticeDetailsView({
 			<Dialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Marcar como Enviado</DialogTitle>
+						<DialogTitle>{t("noticeMarkSubmittedTitle")}</DialogTitle>
 						<DialogDescription>
-							Confirma que has subido el archivo XML al portal del SAT.
-							Opcionalmente puedes ingresar el número de folio.
+							{t("noticeMarkSubmittedDesc")}
 						</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-4 py-4">
 						<div className="space-y-2">
-							<Label htmlFor="folioSubmit">Número de Folio (opcional)</Label>
+							<Label htmlFor="folioSubmit">{t("noticeFolioOptional")}</Label>
 							<Input
 								id="folioSubmit"
 								value={satFolioNumber}
 								onChange={(e) => setSatFolioNumber(e.target.value)}
-								placeholder="Ingresa el folio del SAT"
+								placeholder={t("noticeFolioPlaceholder")}
 							/>
 						</div>
 					</div>
@@ -466,13 +486,13 @@ export function NoticeDetailsView({
 							variant="outline"
 							onClick={() => setShowSubmitDialog(false)}
 						>
-							Cancelar
+							{t("cancel")}
 						</Button>
 						<Button onClick={handleSubmit} disabled={isSubmitting}>
 							{isSubmitting && (
 								<Loader2 className="h-4 w-4 mr-2 animate-spin" />
 							)}
-							Confirmar Envío
+							{t("noticeConfirmSubmission")}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -485,19 +505,17 @@ export function NoticeDetailsView({
 			>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Registrar Acuse del SAT</DialogTitle>
-						<DialogDescription>
-							Ingresa el número de folio del acuse de recibo del SAT.
-						</DialogDescription>
+						<DialogTitle>{t("noticeRegisterAckTitle")}</DialogTitle>
+						<DialogDescription>{t("noticeRegisterAckDesc")}</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-4 py-4">
 						<div className="space-y-2">
-							<Label htmlFor="folioAck">Número de Folio *</Label>
+							<Label htmlFor="folioAck">{t("noticeFolioRequired")}</Label>
 							<Input
 								id="folioAck"
 								value={satFolioNumber}
 								onChange={(e) => setSatFolioNumber(e.target.value)}
-								placeholder="Ingresa el folio del acuse"
+								placeholder={t("noticeFolioAckPlaceholder")}
 								required
 							/>
 						</div>
@@ -507,7 +525,7 @@ export function NoticeDetailsView({
 							variant="outline"
 							onClick={() => setShowAcknowledgeDialog(false)}
 						>
-							Cancelar
+							{t("cancel")}
 						</Button>
 						<Button
 							onClick={handleAcknowledge}
@@ -516,7 +534,7 @@ export function NoticeDetailsView({
 							{isAcknowledging && (
 								<Loader2 className="h-4 w-4 mr-2 animate-spin" />
 							)}
-							Registrar Acuse
+							{t("noticeRegisterAcknowledgement")}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -526,18 +544,15 @@ export function NoticeDetailsView({
 			<Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Eliminar Aviso</DialogTitle>
-						<DialogDescription>
-							¿Estás seguro de que deseas eliminar este aviso? Esta acción no se
-							puede deshacer.
-						</DialogDescription>
+						<DialogTitle>{t("noticeDeleteTitle")}</DialogTitle>
+						<DialogDescription>{t("noticeDeleteDesc")}</DialogDescription>
 					</DialogHeader>
 					<DialogFooter>
 						<Button
 							variant="outline"
 							onClick={() => setShowDeleteDialog(false)}
 						>
-							Cancelar
+							{t("cancel")}
 						</Button>
 						<Button
 							variant="destructive"
@@ -545,7 +560,7 @@ export function NoticeDetailsView({
 							disabled={isDeleting}
 						>
 							{isDeleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-							Eliminar
+							{t("delete")}
 						</Button>
 					</DialogFooter>
 				</DialogContent>

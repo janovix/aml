@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,9 +20,22 @@ import {
 	Clock,
 	QrCode,
 	RefreshCw,
+	AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useOrgStore } from "@/lib/org-store";
+import { useJwt } from "@/hooks/useJwt";
+import {
+	createUploadLink,
+	getUploadLinkUrl,
+	subscribeToUploadLinkEvents,
+	type CreateUploadLinkResponse,
+	type SSEEvent,
+} from "@/lib/api/doc-svc";
+
+const SCAN_APP_URL =
+	process.env.NEXT_PUBLIC_SCAN_APP_URL || "https://scan.janovix.com";
 
 interface MobileUploadQRProps {
 	/** Whether the QR modal is open */
@@ -37,18 +50,15 @@ interface MobileUploadQRProps {
 	onUploadComplete?: (blob: Blob) => void;
 }
 
-// Mock session ID generator
-function generateSessionId(): string {
-	return `scan-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
-
 // Status types for the upload session
 type SessionStatus =
+	| "loading"
 	| "waiting"
 	| "scanning"
 	| "uploading"
 	| "complete"
-	| "expired";
+	| "expired"
+	| "error";
 
 export function MobileUploadQR({
 	open,
@@ -57,37 +67,119 @@ export function MobileUploadQR({
 	clientId,
 	onUploadComplete,
 }: MobileUploadQRProps) {
-	const [sessionId, setSessionId] = useState<string | null>(null);
-	const [status, setStatus] = useState<SessionStatus>("waiting");
-	const [expiresAt, setExpiresAt] = useState<Date | null>(null);
-	const [timeLeft, setTimeLeft] = useState<number>(0);
+	// Auth context is handled by JWT token - no need for org/user IDs here
+	const { currentOrg } = useOrgStore();
+	const { jwt } = useJwt();
 
-	// Generate session when modal opens
+	const [uploadLink, setUploadLink] = useState<CreateUploadLinkResponse | null>(
+		null,
+	);
+	const [status, setStatus] = useState<SessionStatus>("loading");
+	const [timeLeft, setTimeLeft] = useState<number>(0);
+	const [error, setError] = useState<string | null>(null);
+	const sseCleanupRef = useRef<(() => void) | null>(null);
+
+	// Create upload link when modal opens
 	useEffect(() => {
-		if (open) {
-			const newSessionId = generateSessionId();
-			setSessionId(newSessionId);
-			setStatus("waiting");
-			// Session expires in 10 minutes
-			const expiry = new Date(Date.now() + 10 * 60 * 1000);
-			setExpiresAt(expiry);
-		} else {
-			setSessionId(null);
-			setStatus("waiting");
-			setExpiresAt(null);
+		if (!open) {
+			// Cleanup when modal closes
+			if (sseCleanupRef.current) {
+				sseCleanupRef.current();
+				sseCleanupRef.current = null;
+			}
+			setUploadLink(null);
+			setStatus("loading");
+			setError(null);
+			return;
 		}
-	}, [open]);
+
+		if (!currentOrg) {
+			setError("No organization context");
+			setStatus("error");
+			return;
+		}
+
+		// Create upload link
+		const createLink = async () => {
+			setStatus("loading");
+			setError(null);
+
+			try {
+				// Convert string document type to RequiredDocument object
+				const requiredDocs = documentType
+					? [
+							{
+								type: documentType as
+									| "other"
+									| "mx_ine_front"
+									| "mx_ine_back"
+									| "passport"
+									| "proof_of_address"
+									| "proof_of_income"
+									| "bank_statement"
+									| "utility_bill",
+							},
+						]
+					: [];
+
+				const link = await createUploadLink({
+					requiredDocuments: requiredDocs,
+					maxUploads: 1,
+					allowMultipleFiles: true,
+					metadata: clientId ? { clientId } : undefined,
+				});
+
+				setUploadLink(link);
+				setStatus("waiting");
+
+				// Subscribe to SSE events for real-time updates
+				if (jwt) {
+					const cleanup = subscribeToUploadLinkEvents(
+						link.id,
+						jwt,
+						(event: SSEEvent) => {
+							if (event.type === "document-confirmed") {
+								setStatus("complete");
+								toast.success("Documento subido exitosamente");
+							} else if (event.type === "document-initiated") {
+								setStatus("uploading");
+							}
+						},
+						(err) => {
+							console.error("SSE error:", err);
+						},
+					);
+					sseCleanupRef.current = cleanup;
+				}
+			} catch (err) {
+				console.error("Failed to create upload link:", err);
+				setError(err instanceof Error ? err.message : "Error al crear enlace");
+				setStatus("error");
+			}
+		};
+
+		createLink();
+
+		return () => {
+			if (sseCleanupRef.current) {
+				sseCleanupRef.current();
+				sseCleanupRef.current = null;
+			}
+		};
+	}, [open, currentOrg, documentType, clientId, jwt]);
 
 	// Countdown timer
 	useEffect(() => {
-		if (!expiresAt) return;
+		if (!uploadLink?.expiresAt) return;
+
+		const expiresAt = new Date(uploadLink.expiresAt);
 
 		const updateTimer = () => {
 			const now = Date.now();
 			const remaining = Math.max(0, expiresAt.getTime() - now);
 			setTimeLeft(Math.floor(remaining / 1000));
 
-			if (remaining <= 0) {
+			if (remaining <= 0 && status === "waiting") {
 				setStatus("expired");
 			}
 		};
@@ -96,7 +188,7 @@ export function MobileUploadQR({
 		const interval = setInterval(updateTimer, 1000);
 
 		return () => clearInterval(interval);
-	}, [expiresAt]);
+	}, [uploadLink?.expiresAt, status]);
 
 	// Format time remaining
 	const formatTimeLeft = (seconds: number): string => {
@@ -105,9 +197,9 @@ export function MobileUploadQR({
 		return `${mins}:${secs.toString().padStart(2, "0")}`;
 	};
 
-	// Generate the scan URL
-	const scanUrl = sessionId
-		? `https://scan.janovix.com/${sessionId}?doc=${encodeURIComponent(documentType)}&client=${clientId || ""}`
+	// Generate the scan URL using the upload link ID
+	const scanUrl = uploadLink
+		? getUploadLinkUrl(uploadLink.id, SCAN_APP_URL)
 		: "";
 
 	// Copy URL to clipboard
@@ -120,19 +212,84 @@ export function MobileUploadQR({
 		}
 	}, [scanUrl]);
 
-	// Regenerate session
-	const handleRefresh = useCallback(() => {
-		const newSessionId = generateSessionId();
-		setSessionId(newSessionId);
-		setStatus("waiting");
-		const expiry = new Date(Date.now() + 10 * 60 * 1000);
-		setExpiresAt(expiry);
-		toast.info("Sesión renovada");
-	}, []);
+	// Regenerate upload link
+	const handleRefresh = useCallback(async () => {
+		if (!currentOrg) return;
+
+		setStatus("loading");
+		setError(null);
+
+		// Cleanup previous SSE
+		if (sseCleanupRef.current) {
+			sseCleanupRef.current();
+			sseCleanupRef.current = null;
+		}
+
+		try {
+			// Convert string document type to RequiredDocument object
+			const requiredDocs = documentType
+				? [
+						{
+							type: documentType as
+								| "other"
+								| "mx_ine_front"
+								| "mx_ine_back"
+								| "passport"
+								| "proof_of_address"
+								| "proof_of_income"
+								| "bank_statement"
+								| "utility_bill",
+						},
+					]
+				: [];
+
+			const link = await createUploadLink({
+				requiredDocuments: requiredDocs,
+				maxUploads: 1,
+				allowMultipleFiles: true,
+				metadata: clientId ? { clientId } : undefined,
+			});
+
+			setUploadLink(link);
+			setStatus("waiting");
+			toast.info("Nuevo enlace generado");
+
+			// Subscribe to SSE events
+			if (jwt) {
+				const cleanup = subscribeToUploadLinkEvents(
+					link.id,
+					jwt,
+					(event: SSEEvent) => {
+						if (event.type === "document-confirmed") {
+							setStatus("complete");
+							toast.success("Documento subido exitosamente");
+						} else if (event.type === "document-initiated") {
+							setStatus("uploading");
+						}
+					},
+					(err) => {
+						console.error("SSE error:", err);
+					},
+				);
+				sseCleanupRef.current = cleanup;
+			}
+		} catch (err) {
+			console.error("Failed to create upload link:", err);
+			setError(err instanceof Error ? err.message : "Error al crear enlace");
+			setStatus("error");
+		}
+	}, [currentOrg, documentType, clientId, jwt]);
 
 	// Status indicator component
 	const StatusIndicator = () => {
 		switch (status) {
+			case "loading":
+				return (
+					<Badge variant="outline" className="gap-1">
+						<Loader2 className="h-3 w-3 animate-spin" />
+						Creando enlace...
+					</Badge>
+				);
 			case "waiting":
 				return (
 					<Badge variant="outline" className="gap-1">
@@ -177,6 +334,13 @@ export function MobileUploadQR({
 						Expirado
 					</Badge>
 				);
+			case "error":
+				return (
+					<Badge variant="destructive" className="gap-1">
+						<AlertCircle className="h-3 w-3" />
+						Error
+					</Badge>
+				);
 			default:
 				return null;
 		}
@@ -201,10 +365,19 @@ export function MobileUploadQR({
 					<div
 						className={cn(
 							"p-4 bg-white rounded-xl shadow-lg",
-							status === "expired" && "opacity-50",
+							(status === "expired" || status === "error") && "opacity-50",
 						)}
 					>
-						{sessionId ? (
+						{status === "loading" ? (
+							<div className="w-[180px] h-[180px] flex items-center justify-center">
+								<Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+							</div>
+						) : status === "error" ? (
+							<div className="w-[180px] h-[180px] flex flex-col items-center justify-center gap-2 text-destructive">
+								<AlertCircle className="h-8 w-8" />
+								<span className="text-xs text-center">{error}</span>
+							</div>
+						) : uploadLink ? (
 							<QRCodeSVG
 								value={scanUrl}
 								size={180}
@@ -221,7 +394,7 @@ export function MobileUploadQR({
 					{/* Status and timer */}
 					<div className="flex items-center gap-3">
 						<StatusIndicator />
-						{status !== "expired" && status !== "complete" && (
+						{status === "waiting" && timeLeft > 0 && (
 							<span className="text-sm text-muted-foreground">
 								Expira en {formatTimeLeft(timeLeft)}
 							</span>
@@ -230,34 +403,36 @@ export function MobileUploadQR({
 				</div>
 
 				{/* URL display - full width */}
-				<div className="space-y-2 w-full">
-					<label className="text-xs font-medium text-muted-foreground">
-						O comparte este enlace:
-					</label>
-					<div className="flex items-center gap-2 w-full">
-						<input
-							type="text"
-							readOnly
-							value={scanUrl}
-							className="flex-1 text-xs bg-muted px-3 py-2 rounded border-0 min-w-0"
-						/>
-						<Button
-							variant="outline"
-							size="icon"
-							className="shrink-0"
-							onClick={handleCopyUrl}
-							disabled={!sessionId || status === "expired"}
-						>
-							<Copy className="h-4 w-4" />
-						</Button>
+				{uploadLink && status !== "error" && (
+					<div className="space-y-2 w-full">
+						<label className="text-xs font-medium text-muted-foreground">
+							O comparte este enlace:
+						</label>
+						<div className="flex items-center gap-2 w-full">
+							<input
+								type="text"
+								readOnly
+								value={scanUrl}
+								className="flex-1 text-xs bg-muted px-3 py-2 rounded border-0 min-w-0"
+							/>
+							<Button
+								variant="outline"
+								size="icon"
+								className="shrink-0"
+								onClick={handleCopyUrl}
+								disabled={!uploadLink || status === "expired"}
+							>
+								<Copy className="h-4 w-4" />
+							</Button>
+						</div>
 					</div>
-				</div>
+				)}
 
-				{/* Refresh button (only when expired) */}
-				{status === "expired" && (
+				{/* Refresh button (when expired or error) */}
+				{(status === "expired" || status === "error") && (
 					<Button onClick={handleRefresh} className="w-full">
 						<RefreshCw className="h-4 w-4 mr-2" />
-						Generar Nuevo QR
+						{status === "error" ? "Reintentar" : "Generar Nuevo QR"}
 					</Button>
 				)}
 

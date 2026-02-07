@@ -36,6 +36,8 @@ import {
 } from "@/lib/api/reports";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/lib/mutations";
+import { useLanguage } from "@/components/LanguageProvider";
+import { showFetchError } from "@/lib/toast-utils";
 import {
 	DonutChart,
 	BarChart,
@@ -80,35 +82,42 @@ export function ReportDetailsSkeleton(): React.ReactElement {
 	);
 }
 
+import type { TranslationKeys } from "@/lib/translations";
+
 const statusConfig: Record<
 	ReportStatus,
-	{ label: string; icon: React.ReactNode; color: string; bgColor: string }
+	{
+		label: TranslationKeys;
+		icon: React.ReactNode;
+		color: string;
+		bgColor: string;
+	}
 > = {
 	DRAFT: {
-		label: "Borrador",
+		label: "statusDraft",
 		icon: <Clock className="h-4 w-4" />,
 		color: "text-zinc-400",
 		bgColor: "bg-zinc-500/20",
 	},
 	GENERATED: {
-		label: "Generado",
+		label: "statusGenerated",
 		icon: <FileCheck2 className="h-4 w-4" />,
 		color: "text-emerald-400",
 		bgColor: "bg-emerald-500/20",
 	},
 };
 
-const typeLabels: Record<string, string> = {
-	MONTHLY: "Mensual",
-	QUARTERLY: "Trimestral",
-	ANNUAL: "Anual",
-	CUSTOM: "Personalizado",
-	EXECUTIVE_SUMMARY: "Resumen Ejecutivo",
-	COMPLIANCE_STATUS: "Estado de Cumplimiento",
-	TRANSACTION_ANALYSIS: "Análisis de Transacciones",
-	CLIENT_RISK_PROFILE: "Perfil de Riesgo",
-	ALERT_BREAKDOWN: "Desglose de Alertas",
-	PERIOD_COMPARISON: "Comparación de Períodos",
+const typeLabels: Record<string, TranslationKeys> = {
+	MONTHLY: "reportTypeMonthly",
+	QUARTERLY: "reportTypeQuarterly",
+	ANNUAL: "reportTypeAnnual",
+	CUSTOM: "reportTypeCustom",
+	EXECUTIVE_SUMMARY: "reportTypeExecutiveSummary",
+	COMPLIANCE_STATUS: "reportTypeComplianceStatus",
+	TRANSACTION_ANALYSIS: "reportTypeTransactionAnalysis",
+	CLIENT_RISK_PROFILE: "reportTypeRiskProfile",
+	ALERT_BREAKDOWN: "reportAlertBreakdown",
+	PERIOD_COMPARISON: "reportPeriodComparison",
 };
 
 export function ReportDetailsView({
@@ -116,6 +125,13 @@ export function ReportDetailsView({
 }: ReportDetailsViewProps): React.ReactElement {
 	const { navigateTo } = useOrgNavigation();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
+	const { t } = useLanguage();
+
+	// Resolve type labels through translation
+	const resolveTypeLabel = (type: string) => {
+		const key = typeLabels[type];
+		return key ? t(key) : type;
+	};
 
 	const [report, setReport] = useState<ReportWithAlertSummary | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
@@ -132,7 +148,7 @@ export function ReportDetailsView({
 				setReport(data);
 			} catch (error) {
 				console.error("Error fetching report:", error);
-				toast.error(extractErrorMessage(error));
+				showFetchError("report-details", error);
 			} finally {
 				setIsLoading(false);
 			}
@@ -147,12 +163,12 @@ export function ReportDetailsView({
 		setIsGenerating(true);
 		try {
 			await generateReportFile({ id: report.id, jwt });
-			toast.success("Reporte generado exitosamente");
+			toast.success(t("reportGeneratedSuccess"));
 			const updated = await getReportById({ id: reportId, jwt });
 			setReport(updated);
 		} catch (error) {
 			console.error("Error generating report:", error);
-			toast.error(extractErrorMessage(error));
+			toast.error(extractErrorMessage(error), { id: "report-generate" });
 		} finally {
 			setIsGenerating(false);
 		}
@@ -168,7 +184,7 @@ export function ReportDetailsView({
 			});
 		} catch (error) {
 			console.error("Error downloading report:", error);
-			toast.error(extractErrorMessage(error));
+			toast.error(extractErrorMessage(error), { id: "report-download" });
 		}
 	};
 
@@ -222,16 +238,14 @@ export function ReportDetailsView({
 		return (
 			<div className="flex flex-col items-center justify-center py-12 text-center">
 				<AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-				<h3 className="text-lg font-medium">Reporte no encontrado</h3>
-				<p className="text-muted-foreground">
-					El reporte solicitado no existe o no tienes acceso
-				</p>
+				<h3 className="text-lg font-medium">{t("reportNotFound")}</h3>
+				<p className="text-muted-foreground">{t("reportNotFoundDesc")}</p>
 				<Button
 					variant="outline"
 					onClick={() => navigateTo("/reports")}
 					className="mt-4"
 				>
-					Volver a Reportes
+					{t("reportBackToReports")}
 				</Button>
 			</div>
 		);
@@ -243,23 +257,23 @@ export function ReportDetailsView({
 
 	const stats: StatCard[] = [
 		{
-			label: "Total Alertas",
+			label: t("reportTotalAlerts"),
 			value: report.alertSummary.total,
 			icon: AlertTriangle,
 		},
 		{
-			label: "Alta/Crítica",
+			label: t("reportHighCritical"),
 			value: criticalCount + highCount,
 			icon: AlertCircle,
 			variant: criticalCount + highCount > 0 ? "primary" : undefined,
 		},
 		{
-			label: "Reglas Activadas",
+			label: t("reportRulesActivated"),
 			value: report.alertSummary.byRule.length,
 			icon: FileType,
 		},
 		{
-			label: "Score",
+			label: t("reportScore"),
 			value: `${complianceScore}%`,
 			icon: Shield,
 		},
@@ -269,7 +283,7 @@ export function ReportDetailsView({
 		<div className="space-y-6">
 			<PageHero
 				title={report.name}
-				subtitle={`${typeLabels[report.periodType] || report.periodType} | ${report.reportedMonth || "Personalizado"}`}
+				subtitle={`${resolveTypeLabel(report.periodType)} | ${report.reportedMonth || t("reportCustom")}`}
 				icon={FileText}
 				stats={stats}
 			/>
@@ -280,7 +294,7 @@ export function ReportDetailsView({
 				className="gap-2"
 			>
 				<ArrowLeft className="h-4 w-4" />
-				Volver a Reportes
+				{t("reportBackToReports")}
 			</Button>
 
 			<div className="grid gap-6 @2xl/main:grid-cols-3">
@@ -289,12 +303,12 @@ export function ReportDetailsView({
 					{/* Key Metrics */}
 					<div className="grid gap-4 @sm/main:grid-cols-2 @xl/main:grid-cols-4">
 						<MetricCard
-							label="Alertas Totales"
+							label={t("reportTotalAlertsLabel")}
 							value={report.alertSummary.total}
 							icon={<AlertTriangle className="h-4 w-4" />}
 						/>
 						<MetricCard
-							label="Críticas"
+							label={t("reportCritical")}
 							value={criticalCount}
 							icon={
 								criticalCount > 0 ? (
@@ -306,12 +320,12 @@ export function ReportDetailsView({
 							color={criticalCount > 0 ? "text-red-500" : undefined}
 						/>
 						<MetricCard
-							label="Reglas"
+							label={t("reportRules")}
 							value={report.alertSummary.byRule.length}
 							icon={<BarChart3 className="h-4 w-4" />}
 						/>
 						<MetricCard
-							label="Cumplimiento"
+							label={t("reportCompliance")}
 							value={`${complianceScore}%`}
 							icon={
 								complianceScore >= 80 ? (
@@ -337,7 +351,7 @@ export function ReportDetailsView({
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2">
 								<PieChartIcon className="h-5 w-5" />
-								Visualización de Alertas
+								{t("reportAlertVisualization")}
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
@@ -345,17 +359,17 @@ export function ReportDetailsView({
 								{severityChartData.length > 0 && (
 									<DonutChart
 										data={severityChartData}
-										title="Por Severidad"
+										title={t("reportBySeverity")}
 										width={180}
 										height={180}
 										centerValue={report.alertSummary.total}
-										centerLabel="Total"
+										centerLabel={t("reportTotal")}
 									/>
 								)}
 								{statusChartData.length > 0 && (
 									<DonutChart
 										data={statusChartData}
-										title="Por Estado"
+										title={t("reportByStatus")}
 										width={180}
 										height={180}
 									/>
@@ -366,7 +380,7 @@ export function ReportDetailsView({
 								<div className="mt-6 pt-6 border-t">
 									<BarChart
 										data={ruleChartData}
-										title="Por Tipo de Alerta"
+										title={t("reportByAlertType")}
 										width={500}
 										height={200}
 										horizontal
@@ -381,13 +395,15 @@ export function ReportDetailsView({
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2">
 								<Calendar className="h-5 w-5" />
-								Período del Reporte
+								{t("reportPeriodLabel")}
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
 							<div className="grid gap-4 @sm/main:grid-cols-2">
 								<div className="space-y-1">
-									<p className="text-sm text-muted-foreground">Inicio</p>
+									<p className="text-sm text-muted-foreground">
+										{t("reportStart")}
+									</p>
 									<p className="font-medium">
 										{new Date(report.periodStart).toLocaleDateString("es-MX", {
 											day: "numeric",
@@ -397,7 +413,9 @@ export function ReportDetailsView({
 									</p>
 								</div>
 								<div className="space-y-1">
-									<p className="text-sm text-muted-foreground">Fin</p>
+									<p className="text-sm text-muted-foreground">
+										{t("reportEnd")}
+									</p>
 									<p className="font-medium">
 										{new Date(report.periodEnd).toLocaleDateString("es-MX", {
 											day: "numeric",
@@ -407,13 +425,17 @@ export function ReportDetailsView({
 									</p>
 								</div>
 								<div className="space-y-1">
-									<p className="text-sm text-muted-foreground">Tipo</p>
+									<p className="text-sm text-muted-foreground">
+										{t("reportType")}
+									</p>
 									<p className="font-medium">
-										{typeLabels[report.periodType] || report.periodType}
+										{resolveTypeLabel(report.periodType)}
 									</p>
 								</div>
 								<div className="space-y-1">
-									<p className="text-sm text-muted-foreground">Registros</p>
+									<p className="text-sm text-muted-foreground">
+										{t("reportRecords")}
+									</p>
 									<p className="font-medium">{report.recordCount}</p>
 								</div>
 							</div>
@@ -425,14 +447,14 @@ export function ReportDetailsView({
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2">
 								<AlertTriangle className="h-5 w-5" />
-								Desglose Detallado
+								{t("reportDetailedBreakdown")}
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
 							<div className="grid gap-6 @sm/main:grid-cols-2">
 								<div className="space-y-3">
 									<p className="text-sm font-medium text-muted-foreground">
-										Por Severidad
+										{t("reportBySeverity")}
 									</p>
 									{Object.entries(report.alertSummary.bySeverity).map(
 										([severity, count]) => (
@@ -461,7 +483,7 @@ export function ReportDetailsView({
 								</div>
 								<div className="space-y-3">
 									<p className="text-sm font-medium text-muted-foreground">
-										Por Estado
+										{t("reportByStatus")}
 									</p>
 									{Object.entries(report.alertSummary.byStatus).map(
 										([status, count]) => (
@@ -493,7 +515,7 @@ export function ReportDetailsView({
 							{report.alertSummary.byRule.length > 0 && (
 								<div className="mt-6 pt-6 border-t space-y-3">
 									<p className="text-sm font-medium text-muted-foreground">
-										Por Tipo de Alerta
+										{t("reportByAlertType")}
 									</p>
 									{report.alertSummary.byRule.map(
 										({ ruleId, ruleName, count }) => (
@@ -521,7 +543,7 @@ export function ReportDetailsView({
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2">
 								<FileText className="h-5 w-5" />
-								Estado del Reporte
+								{t("reportStatus")}
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
@@ -536,8 +558,10 @@ export function ReportDetailsView({
 									{status.icon}
 								</span>
 								<div>
-									<p className="font-medium">{status.label}</p>
-									<p className="text-sm text-muted-foreground">Formato: PDF</p>
+									<p className="font-medium">{t(status.label)}</p>
+									<p className="text-sm text-muted-foreground">
+										{t("reportFormatPdf")}
+									</p>
 								</div>
 							</div>
 						</CardContent>
@@ -548,7 +572,7 @@ export function ReportDetailsView({
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2">
 								<Clock className="h-5 w-5" />
-								Línea de Tiempo
+								{t("reportTimeline")}
 							</CardTitle>
 						</CardHeader>
 						<CardContent className="space-y-4">
@@ -557,7 +581,7 @@ export function ReportDetailsView({
 									<FileText className="h-4 w-4" />
 								</div>
 								<div>
-									<p className="font-medium">Creado</p>
+									<p className="font-medium">{t("reportCreated")}</p>
 									<p className="text-sm text-muted-foreground">
 										{new Date(report.createdAt).toLocaleDateString("es-MX", {
 											day: "numeric",
@@ -576,7 +600,7 @@ export function ReportDetailsView({
 										<FileCheck2 className="h-4 w-4" />
 									</div>
 									<div>
-										<p className="font-medium">Generado</p>
+										<p className="font-medium">{t("statusGenerated")}</p>
 										<p className="text-sm text-muted-foreground">
 											{new Date(report.generatedAt).toLocaleDateString(
 												"es-MX",
@@ -598,7 +622,7 @@ export function ReportDetailsView({
 					{/* Actions */}
 					<Card>
 						<CardHeader>
-							<CardTitle>Acciones</CardTitle>
+							<CardTitle>{t("reportActions")}</CardTitle>
 						</CardHeader>
 						<CardContent className="space-y-3">
 							{report.status === "DRAFT" && (
@@ -610,12 +634,12 @@ export function ReportDetailsView({
 									{isGenerating ? (
 										<>
 											<Loader2 className="h-4 w-4 animate-spin" />
-											Generando...
+											{t("reportGenerating")}
 										</>
 									) : (
 										<>
 											<FileCheck2 className="h-4 w-4" />
-											Generar PDF
+											{t("reportGeneratePdf")}
 										</>
 									)}
 								</Button>
@@ -628,13 +652,13 @@ export function ReportDetailsView({
 									onClick={handleDownload}
 								>
 									<Download className="h-4 w-4" />
-									Descargar PDF
+									{t("reportDownloadPdf")}
 								</Button>
 							)}
 
 							{report.recordCount === 0 && report.status === "DRAFT" && (
 								<p className="text-sm text-amber-500 text-center">
-									No hay alertas para generar
+									{t("reportNoAlertsToGenerate")}
 								</p>
 							)}
 						</CardContent>
@@ -644,7 +668,7 @@ export function ReportDetailsView({
 					{report.notes && (
 						<Card>
 							<CardHeader>
-								<CardTitle>Notas</CardTitle>
+								<CardTitle>{t("reportNotesLabel")}</CardTitle>
 							</CardHeader>
 							<CardContent>
 								<p className="text-sm text-muted-foreground whitespace-pre-wrap">

@@ -114,11 +114,11 @@ describe("NavBreadcrumb", () => {
 		expect(screen.getByText("Editar")).toBeInTheDocument();
 	});
 
-	it("renders transactions route", () => {
-		mockPathname.mockReturnValue("/test-org/transactions");
+	it("renders operations route", () => {
+		mockPathname.mockReturnValue("/test-org/operations");
 		renderWithProviders(<NavBreadcrumb />);
 
-		expect(screen.getByText("Transacciones")).toBeInTheDocument();
+		expect(screen.getByText("Operaciones")).toBeInTheDocument();
 	});
 
 	it("renders alerts route", () => {
@@ -144,10 +144,10 @@ describe("NavBreadcrumb", () => {
 	});
 
 	it("renders edit route", () => {
-		mockPathname.mockReturnValue("/test-org/transactions/abc123/edit");
+		mockPathname.mockReturnValue("/test-org/operations/abc123/edit");
 		renderWithProviders(<NavBreadcrumb />);
 
-		expect(screen.getByText("Transacciones")).toBeInTheDocument();
+		expect(screen.getByText("Operaciones")).toBeInTheDocument();
 		expect(screen.getByText("Editar")).toBeInTheDocument();
 	});
 
@@ -268,10 +268,10 @@ describe("NavBreadcrumb", () => {
 		});
 
 		it("does not fetch client for non-client ID segments", () => {
-			mockPathname.mockReturnValue("/test-org/transactions/TXN123456789");
+			mockPathname.mockReturnValue("/test-org/operations/TXN123456789");
 			renderWithProviders(<NavBreadcrumb />);
 
-			// Should not call getClientById for transaction IDs
+			// Should not call getClientById for operation IDs
 			expect(mockGetClientById).not.toHaveBeenCalled();
 		});
 	});

@@ -38,19 +38,19 @@ describe("view-skeletons", () => {
 			expect(Skeleton).toBe(VIEW_SKELETON_MAP["/clients/[id]/edit"]);
 		});
 
-		it("returns transactions list skeleton for /transactions", () => {
-			const Skeleton = getViewSkeleton("/transactions");
-			expect(Skeleton).toBe(VIEW_SKELETON_MAP["/transactions"]);
+		it("returns operations list skeleton for /operations", () => {
+			const Skeleton = getViewSkeleton("/operations");
+			expect(Skeleton).toBe(VIEW_SKELETON_MAP["/operations"]);
 		});
 
-		it("returns transaction details skeleton for /transactions/[id]", () => {
-			const Skeleton = getViewSkeleton("/transactions/abc-123");
-			expect(Skeleton).toBe(VIEW_SKELETON_MAP["/transactions/[id]"]);
+		it("returns operation details skeleton for /operations/[id]", () => {
+			const Skeleton = getViewSkeleton("/operations/abc-123");
+			expect(Skeleton).toBe(VIEW_SKELETON_MAP["/operations/[id]"]);
 		});
 
-		it("returns transaction edit skeleton for /transactions/[id]/edit", () => {
-			const Skeleton = getViewSkeleton("/transactions/abc-123/edit");
-			expect(Skeleton).toBe(VIEW_SKELETON_MAP["/transactions/[id]/edit"]);
+		it("returns operation edit skeleton for /operations/[id]/edit", () => {
+			const Skeleton = getViewSkeleton("/operations/abc-123/edit");
+			expect(Skeleton).toBe(VIEW_SKELETON_MAP["/operations/[id]/edit"]);
 		});
 
 		it("returns alerts list skeleton for /alerts", () => {
