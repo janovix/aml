@@ -17,6 +17,6 @@
 	},
 	"upload_source_maps": true,
 	"vars": {
-		"NEXT_PUBLIC_SCAN_APP_URL": "https://scan.janovix.workers.dev"
-	}
+		"NEXT_PUBLIC_SCAN_APP_URL": "https://scan.janovix.workers.dev",
+	},
 }

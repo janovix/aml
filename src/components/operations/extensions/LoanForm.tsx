@@ -5,6 +5,7 @@ import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { ExtensionFormProps } from ".";
+import { getCatalogCode } from "@/lib/catalog-utils";
 
 export function LoanForm({ value, onChange, disabled }: ExtensionFormProps) {
 	function handleChange(
@@ -76,6 +77,7 @@ export function LoanForm({ value, onChange, disabled }: ExtensionFormProps) {
 					onValueChange={(val) => handleChange("guaranteeTypeCode", val ?? "")}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 

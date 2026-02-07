@@ -8,6 +8,7 @@ import { FieldLabel } from "@/components/completeness/FieldLabel";
 import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
 import type { OperationPaymentInput } from "@/types/operation";
 import { useLanguage } from "@/components/LanguageProvider";
+import { getCatalogCode } from "@/lib/catalog-utils";
 
 interface OperationPaymentFormProps {
 	payments: OperationPaymentInput[];
@@ -99,6 +100,7 @@ export function OperationPaymentForm({
 								}
 								placeholder={t("selectPlaceholder")}
 								disabled={disabled}
+								getOptionValue={getCatalogCode}
 							/>
 						</div>
 
@@ -122,6 +124,7 @@ export function OperationPaymentForm({
 								}
 								placeholder={t("selectPlaceholder")}
 								disabled={disabled}
+								getOptionValue={getCatalogCode}
 							/>
 						</div>
 

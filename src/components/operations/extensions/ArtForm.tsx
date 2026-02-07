@@ -5,6 +5,7 @@ import { FieldLabel } from "@/components/completeness/FieldLabel";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { ExtensionFormProps } from ".";
+import { getCatalogCode } from "@/lib/catalog-utils";
 
 export function ArtForm({ value, onChange, disabled }: ExtensionFormProps) {
 	function handleChange(
@@ -27,6 +28,7 @@ export function ArtForm({ value, onChange, disabled }: ExtensionFormProps) {
 					onValueChange={(val) => handleChange("artworkTypeCode", val ?? "")}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 

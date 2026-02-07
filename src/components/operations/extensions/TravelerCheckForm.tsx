@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { ExtensionFormProps } from ".";
+import { getCatalogCode } from "@/lib/catalog-utils";
 
 export function TravelerCheckForm({
 	value,
@@ -31,6 +32,7 @@ export function TravelerCheckForm({
 					onValueChange={(val) => handleChange("denominationCode", val ?? "")}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 
@@ -80,6 +82,7 @@ export function TravelerCheckForm({
 					onValueChange={(val) => handleChange("issuerCountryCode", val ?? "")}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 		</div>

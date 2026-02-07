@@ -5,6 +5,7 @@ import { FieldLabel } from "@/components/completeness/FieldLabel";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { ExtensionFormProps } from ".";
+import { getCatalogCode } from "@/lib/catalog-utils";
 
 export function JewelryForm({ value, onChange, disabled }: ExtensionFormProps) {
 	function handleChange(
@@ -27,6 +28,7 @@ export function JewelryForm({ value, onChange, disabled }: ExtensionFormProps) {
 					onValueChange={(val) => handleChange("itemTypeCode", val ?? "")}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 
@@ -112,6 +114,7 @@ export function JewelryForm({ value, onChange, disabled }: ExtensionFormProps) {
 					onValueChange={(val) => handleChange("tradeUnitCode", val ?? "")}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 

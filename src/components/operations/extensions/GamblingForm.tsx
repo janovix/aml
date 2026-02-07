@@ -5,6 +5,7 @@ import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { ExtensionFormProps } from ".";
+import { getCatalogCode } from "@/lib/catalog-utils";
 
 export function GamblingForm({
 	value,
@@ -67,6 +68,7 @@ export function GamblingForm({
 					onValueChange={(val) => handleChange("businessLineCode", val ?? "")}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 
@@ -82,6 +84,7 @@ export function GamblingForm({
 					}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 
@@ -132,6 +135,7 @@ export function GamblingForm({
 					onValueChange={(val) => handleChange("propertyTypeCode", val ?? "")}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 

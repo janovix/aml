@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { ExtensionFormProps } from ".";
+import { getCatalogCode } from "@/lib/catalog-utils";
 
 export function RentalForm({ value, onChange, disabled }: ExtensionFormProps) {
 	function handleChange(
@@ -28,6 +29,7 @@ export function RentalForm({ value, onChange, disabled }: ExtensionFormProps) {
 					onValueChange={(val) => handleChange("propertyTypeCode", val ?? "")}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 
@@ -163,6 +165,7 @@ export function RentalForm({ value, onChange, disabled }: ExtensionFormProps) {
 					onValueChange={(val) => handleChange("stateCode", val ?? "")}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 

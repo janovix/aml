@@ -5,6 +5,7 @@ import { FieldLabel } from "@/components/completeness/FieldLabel";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { ExtensionFormProps } from ".";
+import { getCatalogCode } from "@/lib/catalog-utils";
 
 export function ArmoringForm({
 	value,
@@ -44,6 +45,7 @@ export function ArmoringForm({
 					onValueChange={(val) => handleChange("armorLevelCode", val ?? "")}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 
@@ -57,6 +59,7 @@ export function ArmoringForm({
 					onValueChange={(val) => handleChange("itemStatusCode", val ?? "")}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 
@@ -70,6 +73,7 @@ export function ArmoringForm({
 					onValueChange={(val) => handleChange("armoredPartCode", val ?? "")}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 

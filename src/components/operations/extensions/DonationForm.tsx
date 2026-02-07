@@ -5,6 +5,7 @@ import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { ExtensionFormProps } from ".";
+import { getCatalogCode } from "@/lib/catalog-utils";
 
 export function DonationForm({
 	value,
@@ -33,6 +34,7 @@ export function DonationForm({
 					onValueChange={(val) => handleChange("donationType", val ?? "")}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 
@@ -71,6 +73,7 @@ export function DonationForm({
 					onValueChange={(val) => handleChange("itemTypeCode", val ?? "")}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 

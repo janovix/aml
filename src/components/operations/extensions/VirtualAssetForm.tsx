@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { ExtensionFormProps } from ".";
+import { getCatalogCode } from "@/lib/catalog-utils";
 
 export function VirtualAssetForm({
 	value,
@@ -108,6 +109,7 @@ export function VirtualAssetForm({
 					}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 

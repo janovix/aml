@@ -5,6 +5,7 @@ import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { ExtensionFormProps } from ".";
+import { getCatalogCode } from "@/lib/catalog-utils";
 
 export function OfficialForm({
 	value,
@@ -32,6 +33,7 @@ export function OfficialForm({
 					onValueChange={(val) => handleChange("actTypeCode", val ?? "")}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 
@@ -70,6 +72,7 @@ export function OfficialForm({
 					onValueChange={(val) => handleChange("trustTypeCode", val ?? "")}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 
@@ -107,6 +110,7 @@ export function OfficialForm({
 					onValueChange={(val) => handleChange("movementTypeCode", val ?? "")}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 
@@ -120,6 +124,7 @@ export function OfficialForm({
 					onValueChange={(val) => handleChange("assignmentTypeCode", val ?? "")}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 
@@ -133,6 +138,7 @@ export function OfficialForm({
 					onValueChange={(val) => handleChange("mergerTypeCode", val ?? "")}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 
@@ -148,6 +154,7 @@ export function OfficialForm({
 					}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 
@@ -163,6 +170,7 @@ export function OfficialForm({
 					}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 
@@ -178,6 +186,7 @@ export function OfficialForm({
 					}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 
@@ -191,6 +200,7 @@ export function OfficialForm({
 					onValueChange={(val) => handleChange("grantingTypeCode", val ?? "")}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 
@@ -206,6 +216,7 @@ export function OfficialForm({
 					}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 
@@ -231,6 +242,7 @@ export function OfficialForm({
 					onValueChange={(val) => handleChange("itemTypeCode", val ?? "")}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 

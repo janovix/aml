@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { ExtensionFormProps } from ".";
+import { getCatalogCode } from "@/lib/catalog-utils";
 
 export function ValuableForm({
 	value,
@@ -31,6 +32,7 @@ export function ValuableForm({
 					onValueChange={(val) => handleChange("valueTypeCode", val ?? "")}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 
@@ -44,6 +46,7 @@ export function ValuableForm({
 					onValueChange={(val) => handleChange("serviceTypeCode", val ?? "")}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 

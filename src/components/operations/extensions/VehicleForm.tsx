@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { ExtensionFormProps } from ".";
+import { getCatalogCode } from "@/lib/catalog-utils";
 
 function getBrandCatalogKey(vehicleType: string | undefined): string {
 	switch (vehicleType) {
@@ -163,6 +164,7 @@ export function VehicleForm({ value, onChange, disabled }: ExtensionFormProps) {
 					onValueChange={(val) => handleChange("armorLevelCode", val ?? "")}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 
@@ -176,6 +178,7 @@ export function VehicleForm({ value, onChange, disabled }: ExtensionFormProps) {
 					onValueChange={(val) => handleChange("flagCountryCode", val ?? "")}
 					placeholder={t("selectPlaceholder")}
 					disabled={disabled}
+					getOptionValue={getCatalogCode}
 				/>
 			</div>
 

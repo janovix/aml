@@ -37,6 +37,7 @@ import { FieldLabel } from "@/components/completeness/FieldLabel";
 import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
 import { ClientSelector } from "@/components/clients/ClientSelector";
 import { useLanguage } from "@/components/LanguageProvider";
+import { getCatalogCode } from "@/lib/catalog-utils";
 
 interface OperationFormData {
 	clientId: string;
@@ -295,7 +296,7 @@ export function OperationCreateView(): React.JSX.Element {
 			{activityVisual && (
 				<Card>
 					<CardContent className="py-3">
-						<div className="flex items-center justify-between">
+						<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
 							<div className="flex items-center gap-3">
 								<ActivityBadge
 									code={activityCode}
@@ -303,7 +304,7 @@ export function OperationCreateView(): React.JSX.Element {
 									className="text-sm"
 								/>
 							</div>
-							<span className="text-xs text-muted-foreground">
+							<span className="text-xs text-muted-foreground whitespace-nowrap">
 								{t("opActivityLabel")}
 							</span>
 						</div>
@@ -495,6 +496,7 @@ export function OperationCreateView(): React.JSX.Element {
 									placeholder={t("selectPlaceholder")}
 									vaCode={activityCode ?? undefined}
 									excludeAutomatable={true}
+									getOptionValue={getCatalogCode}
 								/>
 							</div>
 

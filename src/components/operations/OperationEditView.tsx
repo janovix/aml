@@ -40,6 +40,7 @@ import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
 import { ClientSelector } from "@/components/clients/ClientSelector";
 import type { CompletenessResult } from "@/types/completeness";
 import { useLanguage } from "@/components/LanguageProvider";
+import { getCatalogCode } from "@/lib/catalog-utils";
 
 interface OperationEditViewProps {
 	operationId: string;
@@ -464,6 +465,7 @@ export function OperationEditView({
 									placeholder={t("selectPlaceholder")}
 									vaCode={operation.activityCode}
 									excludeAutomatable={true}
+									getOptionValue={getCatalogCode}
 								/>
 							</div>
 
