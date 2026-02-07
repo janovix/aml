@@ -1,3 +1,10 @@
+# [1.4.0-rc.17](https://github.com/janovix/aml/compare/v1.4.0-rc.16...v1.4.0-rc.17) (2026-02-07)
+
+
+### Features
+
+* implement auto-calculation of operation amount and exchange rate fetching in payment forms ([8d37335](https://github.com/janovix/aml/commit/8d37335beedcaa9f4ac09d8a199b5dab945d702a))
+
 # [1.4.0-rc.16](https://github.com/janovix/aml/compare/v1.4.0-rc.15...v1.4.0-rc.16) (2026-02-07)
 
 
