@@ -1,3 +1,10 @@
+# [1.4.0-rc.16](https://github.com/janovix/aml/compare/v1.4.0-rc.15...v1.4.0-rc.16) (2026-02-07)
+
+
+### Features
+
+* integrate getCatalogCode utility across various forms for improved catalog item handling ([6910ee9](https://github.com/janovix/aml/commit/6910ee90a70f25e6ef18180d365b68299cd07070))
+
 # [1.4.0-rc.15](https://github.com/janovix/aml/compare/v1.4.0-rc.14...v1.4.0-rc.15) (2026-02-07)
 
 
