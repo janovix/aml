@@ -1,3 +1,10 @@
+# [1.4.0-rc.19](https://github.com/janovix/aml/compare/v1.4.0-rc.18...v1.4.0-rc.19) (2026-02-08)
+
+
+### Features
+
+* add getCurrencyCode utility and integrate it into operation forms for improved currency handling ([1a9adc6](https://github.com/janovix/aml/commit/1a9adc600fdf4670baf3e8db836c320294a821f7))
+
 # [1.4.0-rc.18](https://github.com/janovix/aml/compare/v1.4.0-rc.17...v1.4.0-rc.18) (2026-02-07)
 
 
