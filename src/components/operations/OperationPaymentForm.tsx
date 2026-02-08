@@ -24,6 +24,10 @@ interface OperationPaymentFormProps {
 	operationCurrency?: string;
 	/** Callback to change the operation currency */
 	onCurrencyChange?: (currency: string) => void;
+	/** Operation-level exchange rate (operation currency → MXN) */
+	exchangeRate?: string;
+	/** Callback to change the operation exchange rate */
+	onExchangeRateChange?: (rate: string) => void;
 	/** Activity code for threshold calculation */
 	activityCode?: string;
 	/** Amount in MXN for threshold calculation */
@@ -74,6 +78,8 @@ export function OperationPaymentForm({
 	disabled = false,
 	operationCurrency = "MXN",
 	onCurrencyChange,
+	exchangeRate,
+	onExchangeRateChange,
 	activityCode,
 	amountMxn,
 	umaValue,
@@ -419,21 +425,45 @@ export function OperationPaymentForm({
 			{payments.length > 0 && (
 				<div className="space-y-3">
 					<div className="rounded-lg border bg-muted/50 p-4 space-y-4">
-						{/* Currency selector - top section */}
+						{/* Currency and exchange rate - top section */}
 						{showCurrencySelector && onCurrencyChange && (
-							<div className="space-y-1.5">
-								<FieldLabel tier="sat_required" htmlFor="operation-currency">
-									{t("opCurrencyLabel")}
-								</FieldLabel>
-								<CatalogSelector
-									id="operation-currency"
-									catalogKey="currencies"
-									value={operationCurrency}
-									onValueChange={(val) => onCurrencyChange(val ?? "MXN")}
-									placeholder="MXN"
-									disabled={disabled}
-									getOptionValue={getCurrencyCode}
-								/>
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								{/* Currency selector */}
+								<div className="space-y-1.5">
+									<FieldLabel tier="sat_required" htmlFor="operation-currency">
+										{t("opCurrencyLabel")}
+									</FieldLabel>
+									<CatalogSelector
+										id="operation-currency"
+										catalogKey="currencies"
+										value={operationCurrency}
+										onValueChange={(val) => onCurrencyChange(val ?? "MXN")}
+										placeholder="MXN"
+										disabled={disabled}
+										getOptionValue={getCurrencyCode}
+									/>
+								</div>
+
+								{/* Exchange rate - only shown when currency is not MXN */}
+								{operationCurrency !== "MXN" && onExchangeRateChange && (
+									<div className="space-y-1.5">
+										<FieldLabel
+											tier="sat_required"
+											htmlFor="operation-exchange-rate"
+										>
+											{t("opExchangeRateLabel")} ({operationCurrency} → MXN)
+										</FieldLabel>
+										<Input
+											id="operation-exchange-rate"
+											type="text"
+											inputMode="decimal"
+											value={exchangeRate || ""}
+											onChange={(e) => onExchangeRateChange(e.target.value)}
+											placeholder="1.00"
+											disabled={disabled}
+										/>
+									</div>
+								)}
 							</div>
 						)}
 

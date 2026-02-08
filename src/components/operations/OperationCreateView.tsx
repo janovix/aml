@@ -389,25 +389,6 @@ export function OperationCreateView(): React.JSX.Element {
 									required
 								/>
 							</div>
-
-							{/* Exchange Rate - only shown when currency is not MXN */}
-							{formData.currencyCode !== "MXN" && (
-								<div className="space-y-2">
-									<FieldLabel tier="sat_required" htmlFor="exchange-rate">
-										{t("opExchangeRateLabel")}
-									</FieldLabel>
-									<Input
-										id="exchange-rate"
-										type="text"
-										inputMode="decimal"
-										value={formData.exchangeRate}
-										onChange={(e) =>
-											handleFieldChange("exchangeRate", e.target.value)
-										}
-										placeholder="1.00"
-									/>
-								</div>
-							)}
 						</div>
 					</CardContent>
 				</Card>
@@ -446,6 +427,10 @@ export function OperationCreateView(): React.JSX.Element {
 							operationCurrency={formData.currencyCode || "MXN"}
 							onCurrencyChange={(currency) =>
 								handleFieldChange("currencyCode", currency)
+							}
+							exchangeRate={formData.exchangeRate}
+							onExchangeRateChange={(rate) =>
+								handleFieldChange("exchangeRate", rate)
 							}
 							activityCode={activityCode ?? undefined}
 							amountMxn={amountMxn}

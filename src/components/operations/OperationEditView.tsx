@@ -383,23 +383,6 @@ export function OperationEditView({
 									required
 								/>
 							</div>
-
-							{/* Exchange Rate - only shown when currency is not MXN */}
-							{currencyCode !== "MXN" && (
-								<div className="space-y-2">
-									<FieldLabel tier="sat_required" htmlFor="exchange-rate">
-										{t("opExchangeRateLabel")}
-									</FieldLabel>
-									<Input
-										id="exchange-rate"
-										type="text"
-										inputMode="decimal"
-										value={exchangeRate}
-										onChange={(e) => setExchangeRate(e.target.value)}
-										placeholder="1.00"
-									/>
-								</div>
-							)}
 						</div>
 					</CardContent>
 				</Card>
@@ -434,6 +417,8 @@ export function OperationEditView({
 							onChange={setPayments}
 							operationCurrency={currencyCode || "MXN"}
 							onCurrencyChange={setCurrencyCode}
+							exchangeRate={exchangeRate}
+							onExchangeRateChange={setExchangeRate}
 							activityCode={activityCode}
 							amountMxn={amountMxn}
 							umaValue={umaValue}
