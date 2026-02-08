@@ -6,10 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FieldLabel } from "@/components/completeness/FieldLabel";
 import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
-import type { OperationPaymentInput } from "@/types/operation";
+import type { OperationPaymentInput, ActivityCode } from "@/types/operation";
 import { useLanguage } from "@/components/LanguageProvider";
-import { getCatalogCode, getCurrencyCode } from "@/lib/catalog-utils";
+import {
+	getCatalogCode,
+	getCurrencyCode,
+	getCatalogName,
+} from "@/lib/catalog-utils";
 import { fetchExchangeRate } from "@/lib/api/exchange-rates";
+import { ThresholdIndicator } from "./ThresholdIndicator";
 
 interface OperationPaymentFormProps {
 	payments: OperationPaymentInput[];
@@ -17,6 +22,16 @@ interface OperationPaymentFormProps {
 	disabled?: boolean;
 	/** The operation-level currency code (used to determine when exchange rates are needed) */
 	operationCurrency?: string;
+	/** Callback to change the operation currency */
+	onCurrencyChange?: (currency: string) => void;
+	/** Activity code for threshold calculation */
+	activityCode?: string;
+	/** Amount in MXN for threshold calculation */
+	amountMxn?: number;
+	/** UMA value for threshold calculation */
+	umaValue?: number;
+	/** Whether to show the currency selector */
+	showCurrencySelector?: boolean;
 }
 
 const DEFAULT_PAYMENT: OperationPaymentInput = {
@@ -58,6 +73,11 @@ export function OperationPaymentForm({
 	onChange,
 	disabled = false,
 	operationCurrency = "MXN",
+	onCurrencyChange,
+	activityCode,
+	amountMxn,
+	umaValue,
+	showCurrencySelector = false,
 }: OperationPaymentFormProps): React.ReactElement {
 	const { t } = useLanguage();
 	const [loadingRates, setLoadingRates] = React.useState<Set<number>>(
@@ -341,6 +361,7 @@ export function OperationPaymentForm({
 									placeholder={t("opBankName")}
 									disabled={disabled}
 									allowCustomValue
+									getOptionValue={getCatalogName}
 								/>
 							</div>
 
@@ -394,24 +415,53 @@ export function OperationPaymentForm({
 				);
 			})}
 
-			{/* Payment total summary */}
+			{/* Payment total summary with currency selector */}
 			{payments.length > 0 && (
-				<div className="rounded-lg border bg-muted/50 p-3 text-sm">
-					<div className="flex items-center justify-between font-medium">
-						<span>{t("opPaymentTotal")}</span>
-						<span>
-							{operationCurrency}{" "}
-							{total.toLocaleString("en-US", {
-								minimumFractionDigits: 2,
-								maximumFractionDigits: 2,
-							})}
-						</span>
+				<div className="space-y-3">
+					<div className="rounded-lg border bg-muted/50 p-3">
+						<div className="flex items-start justify-between gap-4">
+							<div className="flex-1 space-y-3">
+								<div className="flex items-center justify-between font-medium text-sm">
+									<span>{t("opPaymentTotal")}</span>
+									<span>
+										{operationCurrency}{" "}
+										{total.toLocaleString("en-US", {
+											minimumFractionDigits: 2,
+											maximumFractionDigits: 2,
+										})}
+									</span>
+								</div>
+								{hasMultipleCurrencies && (
+									<p className="text-xs text-muted-foreground">
+										{t("opPaymentTotalConverted")} {operationCurrency}
+									</p>
+								)}
+								{activityCode && amountMxn !== undefined && umaValue && (
+									<ThresholdIndicator
+										code={activityCode as ActivityCode}
+										amountMxn={amountMxn}
+										umaValue={umaValue}
+									/>
+								)}
+							</div>
+							{showCurrencySelector && onCurrencyChange && (
+								<div className="w-48 space-y-1.5">
+									<FieldLabel tier="sat_required" htmlFor="operation-currency">
+										{t("opCurrencyLabel")}
+									</FieldLabel>
+									<CatalogSelector
+										id="operation-currency"
+										catalogKey="currencies"
+										value={operationCurrency}
+										onValueChange={(val) => onCurrencyChange(val ?? "MXN")}
+										placeholder="MXN"
+										disabled={disabled}
+										getOptionValue={getCurrencyCode}
+									/>
+								</div>
+							)}
+						</div>
 					</div>
-					{hasMultipleCurrencies && (
-						<p className="text-xs text-muted-foreground mt-1">
-							{t("opPaymentTotalConverted")} {operationCurrency}
-						</p>
-					)}
 				</div>
 			)}
 

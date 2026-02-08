@@ -25,3 +25,16 @@ export function getCurrencyCode(option: CatalogItem): string {
 	const metadata = option.metadata as { shortName?: string } | undefined;
 	return metadata?.shortName || option.id;
 }
+
+/**
+ * Helper function to extract the name from a catalog item.
+ * This is used with CatalogSelector's getOptionValue prop for catalogs that allow
+ * custom values (like banks) to ensure that names are stored instead of UUIDs.
+ * This makes the stored value human-readable and consistent with custom entries.
+ *
+ * @param option - The catalog item
+ * @returns The name of the catalog item
+ */
+export function getCatalogName(option: CatalogItem): string {
+	return option.name;
+}

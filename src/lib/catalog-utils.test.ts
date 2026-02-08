@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { getCatalogCode, getCurrencyCode } from "./catalog-utils";
+import {
+	getCatalogCode,
+	getCurrencyCode,
+	getCatalogName,
+} from "./catalog-utils";
 import type { CatalogItem } from "@/types/catalog";
 
 describe("getCatalogCode", () => {
@@ -168,5 +172,67 @@ describe("getCurrencyCode", () => {
 		};
 
 		expect(getCurrencyCode(item)).toBe("EUR");
+	});
+});
+
+describe("getCatalogName", () => {
+	it("returns the name of the catalog item", () => {
+		const item: CatalogItem = {
+			id: "00000000-0000-0000-0000-000000000615",
+			catalogId: "banks",
+			name: "BBVA MEXICO",
+			normalizedName: "bbva mexico",
+			active: true,
+			metadata: { code: "40012" },
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		};
+
+		expect(getCatalogName(item)).toBe("BBVA MEXICO");
+	});
+
+	it("returns the name even when metadata has other fields", () => {
+		const item: CatalogItem = {
+			id: "00000000-0000-0000-0000-000000000133",
+			catalogId: "banks",
+			name: "ACTINVER",
+			normalizedName: "actinver",
+			active: true,
+			metadata: { code: "40133" },
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		};
+
+		expect(getCatalogName(item)).toBe("ACTINVER");
+	});
+
+	it("handles items with special characters in name", () => {
+		const item: CatalogItem = {
+			id: "bank-custom-123",
+			catalogId: "banks",
+			name: "Banco de México S.A.",
+			normalizedName: "banco de mexico sa",
+			active: true,
+			metadata: undefined,
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		};
+
+		expect(getCatalogName(item)).toBe("Banco de México S.A.");
+	});
+
+	it("works for any catalog type", () => {
+		const item: CatalogItem = {
+			id: "country-mx",
+			catalogId: "countries",
+			name: "México",
+			normalizedName: "mexico",
+			active: true,
+			metadata: { code: "MX" },
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		};
+
+		expect(getCatalogName(item)).toBe("México");
 	});
 });

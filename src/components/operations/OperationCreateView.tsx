@@ -318,24 +318,13 @@ export function OperationCreateView(): React.JSX.Element {
 				</div>
 			)}
 
-			{/* Activity banner */}
+			{/* Activity badge */}
 			{activityVisual && (
-				<Card>
-					<CardContent className="py-3">
-						<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-							<div className="flex items-center gap-3">
-								<ActivityBadge
-									code={activityCode}
-									variant="full"
-									className="text-sm"
-								/>
-							</div>
-							<span className="text-xs text-muted-foreground whitespace-nowrap">
-								{t("opActivityLabel")}
-							</span>
-						</div>
-					</CardContent>
-				</Card>
+				<ActivityBadge
+					code={activityCode}
+					variant="full"
+					className="text-base px-3 py-1.5"
+				/>
 			)}
 
 			<form onSubmit={handleSubmit} className="space-y-6">
@@ -401,42 +390,7 @@ export function OperationCreateView(): React.JSX.Element {
 								/>
 							</div>
 
-							{/* Amount (auto-calculated from payments) */}
-							<div className="space-y-2">
-								<FieldLabel tier="sat_required" htmlFor="amount" required>
-									{t("opAmountAutoCalculated")}
-								</FieldLabel>
-								<Input
-									id="amount"
-									type="text"
-									inputMode="decimal"
-									value={formData.amount}
-									readOnly
-									className="bg-muted cursor-not-allowed"
-									placeholder="0.00"
-								/>
-								<p className="text-xs text-muted-foreground">
-									{t("opAmountHelperText")}
-								</p>
-							</div>
-
-							{/* Currency */}
-							<div className="space-y-2">
-								<FieldLabel tier="sat_required" htmlFor="currency-code">
-									{t("opCurrencyLabel")}
-								</FieldLabel>
-								<CatalogSelector
-									catalogKey="currencies"
-									value={formData.currencyCode}
-									onValueChange={(val) =>
-										handleFieldChange("currencyCode", val ?? "MXN")
-									}
-									placeholder="MXN"
-									getOptionValue={getCurrencyCode}
-								/>
-							</div>
-
-							{/* Exchange Rate */}
+							{/* Exchange Rate - only shown when currency is not MXN */}
 							{formData.currencyCode !== "MXN" && (
 								<div className="space-y-2">
 									<FieldLabel tier="sat_required" htmlFor="exchange-rate">
@@ -455,17 +409,6 @@ export function OperationCreateView(): React.JSX.Element {
 								</div>
 							)}
 						</div>
-
-						{/* Threshold indicator */}
-						{amountNum > 0 && (
-							<div className="pt-2">
-								<ThresholdIndicator
-									code={activityCode}
-									amountMxn={amountMxn}
-									umaValue={umaValue}
-								/>
-							</div>
-						)}
 					</CardContent>
 				</Card>
 
@@ -501,6 +444,13 @@ export function OperationCreateView(): React.JSX.Element {
 							payments={formData.payments}
 							onChange={(payments) => handleFieldChange("payments", payments)}
 							operationCurrency={formData.currencyCode || "MXN"}
+							onCurrencyChange={(currency) =>
+								handleFieldChange("currencyCode", currency)
+							}
+							activityCode={activityCode ?? undefined}
+							amountMxn={amountMxn}
+							umaValue={umaValue}
+							showCurrencySelector={true}
 						/>
 					</CardContent>
 				</Card>
@@ -564,23 +514,35 @@ export function OperationCreateView(): React.JSX.Element {
 				</Card>
 
 				{/* Action buttons */}
-				<div className="flex justify-end gap-3">
-					<Button type="button" variant="outline" onClick={handleCancel}>
-						{t("cancel")}
-					</Button>
-					<Button type="submit" disabled={isSaving}>
-						{isSaving ? (
-							<>
-								<span className="animate-spin mr-2">⏳</span>
-								{t("opCreating")}
-							</>
-						) : (
-							<>
-								<Save className="h-4 w-4 mr-2" />
-								{t("opCreateButton")}
-							</>
-						)}
-					</Button>
+				<div className="space-y-3">
+					<div className="flex justify-end gap-3">
+						<Button type="button" variant="outline" onClick={handleCancel}>
+							{t("cancel")}
+						</Button>
+						<Button type="submit" disabled={isSaving}>
+							{isSaving ? (
+								<>
+									<span className="animate-spin mr-2">⏳</span>
+									{t("opCreating")}
+								</>
+							) : (
+								<>
+									<Save className="h-4 w-4 mr-2" />
+									{t("opCreateButton")}
+								</>
+							)}
+						</Button>
+					</div>
+					{/* Threshold indicator below submit button */}
+					{amountNum > 0 && activityCode && (
+						<div className="flex justify-end">
+							<ThresholdIndicator
+								code={activityCode}
+								amountMxn={amountMxn}
+								umaValue={umaValue}
+							/>
+						</div>
+					)}
 				</div>
 			</form>
 		</div>

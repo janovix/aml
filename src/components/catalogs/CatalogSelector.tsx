@@ -415,8 +415,12 @@ export function CatalogSelector({
 	// Helper to check if an option matches a given value
 	// This handles lookups by ID, shortName (metadata.shortName), or code (metadata.code)
 	const optionMatchesValue = (option: CatalogItem, val: string): boolean => {
-		// Check by ID or custom getOptionValue
+		// Check by custom getOptionValue result (e.g., name, shortName, code)
 		if (getOptionValueResolved(option) === val) {
+			return true;
+		}
+		// Always check by ID for backward compatibility with stored UUIDs
+		if (option.id === val) {
 			return true;
 		}
 		// Check by metadata.shortName (e.g., "MXN" for currencies)

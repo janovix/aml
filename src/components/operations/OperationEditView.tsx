@@ -384,40 +384,7 @@ export function OperationEditView({
 								/>
 							</div>
 
-							{/* Amount (auto-calculated from payments) */}
-							<div className="space-y-2">
-								<FieldLabel tier="sat_required" htmlFor="amount" required>
-									{t("opAmountAutoCalculated")}
-								</FieldLabel>
-								<Input
-									id="amount"
-									type="text"
-									inputMode="decimal"
-									value={amount}
-									readOnly
-									className="bg-muted cursor-not-allowed"
-									placeholder="0.00"
-								/>
-								<p className="text-xs text-muted-foreground">
-									{t("opAmountHelperText")}
-								</p>
-							</div>
-
-							{/* Currency */}
-							<div className="space-y-2">
-								<FieldLabel tier="sat_required" htmlFor="currency-code">
-									{t("opCurrencyLabel")}
-								</FieldLabel>
-								<CatalogSelector
-									catalogKey="currencies"
-									value={currencyCode}
-									onValueChange={(val) => setCurrencyCode(val ?? "MXN")}
-									placeholder="MXN"
-									getOptionValue={getCurrencyCode}
-								/>
-							</div>
-
-							{/* Exchange Rate */}
+							{/* Exchange Rate - only shown when currency is not MXN */}
 							{currencyCode !== "MXN" && (
 								<div className="space-y-2">
 									<FieldLabel tier="sat_required" htmlFor="exchange-rate">
@@ -434,17 +401,6 @@ export function OperationEditView({
 								</div>
 							)}
 						</div>
-
-						{/* Threshold indicator */}
-						{amountNum > 0 && (
-							<div className="pt-2">
-								<ThresholdIndicator
-									code={activityCode}
-									amountMxn={amountMxn}
-									umaValue={umaValue}
-								/>
-							</div>
-						)}
 					</CardContent>
 				</Card>
 
@@ -477,6 +433,11 @@ export function OperationEditView({
 							payments={payments}
 							onChange={setPayments}
 							operationCurrency={currencyCode || "MXN"}
+							onCurrencyChange={setCurrencyCode}
+							activityCode={activityCode}
+							amountMxn={amountMxn}
+							umaValue={umaValue}
+							showCurrencySelector={true}
 						/>
 					</CardContent>
 				</Card>
@@ -533,23 +494,35 @@ export function OperationEditView({
 				</Card>
 
 				{/* Action buttons */}
-				<div className="flex justify-end gap-3">
-					<Button type="button" variant="outline" onClick={handleCancel}>
-						{t("cancel")}
-					</Button>
-					<Button type="submit" disabled={isSaving}>
-						{isSaving ? (
-							<>
-								<span className="animate-spin mr-2">⏳</span>
-								{t("opSaving")}
-							</>
-						) : (
-							<>
-								<Save className="h-4 w-4 mr-2" />
-								{t("opSaveButton")}
-							</>
-						)}
-					</Button>
+				<div className="space-y-3">
+					<div className="flex justify-end gap-3">
+						<Button type="button" variant="outline" onClick={handleCancel}>
+							{t("cancel")}
+						</Button>
+						<Button type="submit" disabled={isSaving}>
+							{isSaving ? (
+								<>
+									<span className="animate-spin mr-2">⏳</span>
+									{t("opSaving")}
+								</>
+							) : (
+								<>
+									<Save className="h-4 w-4 mr-2" />
+									{t("opSaveButton")}
+								</>
+							)}
+						</Button>
+					</div>
+					{/* Threshold indicator below submit button */}
+					{amountNum > 0 && activityCode && (
+						<div className="flex justify-end">
+							<ThresholdIndicator
+								code={activityCode}
+								amountMxn={amountMxn}
+								umaValue={umaValue}
+							/>
+						</div>
+					)}
 				</div>
 			</form>
 		</div>
