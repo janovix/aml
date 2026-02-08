@@ -1,3 +1,10 @@
+# [1.4.0-rc.18](https://github.com/janovix/aml/compare/v1.4.0-rc.17...v1.4.0-rc.18) (2026-02-07)
+
+
+### Features
+
+* add support for custom free-text values in CatalogSelector component ([5f96eab](https://github.com/janovix/aml/commit/5f96eaba79b60d6b20da4b3517799d5057e1a61c))
+
 # [1.4.0-rc.17](https://github.com/janovix/aml/compare/v1.4.0-rc.16...v1.4.0-rc.17) (2026-02-07)
 
 
