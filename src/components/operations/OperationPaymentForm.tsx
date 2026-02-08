@@ -418,47 +418,55 @@ export function OperationPaymentForm({
 			{/* Payment total summary with currency selector */}
 			{payments.length > 0 && (
 				<div className="space-y-3">
-					<div className="rounded-lg border bg-muted/50 p-3">
-						<div className="flex items-start justify-between gap-4">
-							<div className="flex-1 space-y-3">
-								<div className="flex items-center justify-between font-medium text-sm">
-									<span>{t("opPaymentTotal")}</span>
-									<span>
-										{operationCurrency}{" "}
-										{total.toLocaleString("en-US", {
-											minimumFractionDigits: 2,
-											maximumFractionDigits: 2,
-										})}
-									</span>
+					<div className="rounded-lg border bg-muted/50 p-4 space-y-4">
+						{/* Currency selector - top section */}
+						{showCurrencySelector && onCurrencyChange && (
+							<div className="space-y-1.5">
+								<FieldLabel tier="sat_required" htmlFor="operation-currency">
+									{t("opCurrencyLabel")}
+								</FieldLabel>
+								<CatalogSelector
+									id="operation-currency"
+									catalogKey="currencies"
+									value={operationCurrency}
+									onValueChange={(val) => onCurrencyChange(val ?? "MXN")}
+									placeholder="MXN"
+									disabled={disabled}
+									getOptionValue={getCurrencyCode}
+								/>
+							</div>
+						)}
+
+						{/* Divider */}
+						{showCurrencySelector && onCurrencyChange && (
+							<div className="border-t" />
+						)}
+
+						{/* Total section - bottom */}
+						<div className="space-y-3">
+							<div className="space-y-1">
+								<div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+									{t("opPaymentTotal")}
+								</div>
+								<div className="text-3xl font-bold tabular-nums">
+									{operationCurrency}{" "}
+									{total.toLocaleString("en-US", {
+										minimumFractionDigits: 2,
+										maximumFractionDigits: 2,
+									})}
 								</div>
 								{hasMultipleCurrencies && (
 									<p className="text-xs text-muted-foreground">
 										{t("opPaymentTotalConverted")} {operationCurrency}
 									</p>
 								)}
-								{activityCode && amountMxn !== undefined && umaValue && (
-									<ThresholdIndicator
-										code={activityCode as ActivityCode}
-										amountMxn={amountMxn}
-										umaValue={umaValue}
-									/>
-								)}
 							</div>
-							{showCurrencySelector && onCurrencyChange && (
-								<div className="w-48 space-y-1.5">
-									<FieldLabel tier="sat_required" htmlFor="operation-currency">
-										{t("opCurrencyLabel")}
-									</FieldLabel>
-									<CatalogSelector
-										id="operation-currency"
-										catalogKey="currencies"
-										value={operationCurrency}
-										onValueChange={(val) => onCurrencyChange(val ?? "MXN")}
-										placeholder="MXN"
-										disabled={disabled}
-										getOptionValue={getCurrencyCode}
-									/>
-								</div>
+							{activityCode && amountMxn !== undefined && umaValue && (
+								<ThresholdIndicator
+									code={activityCode as ActivityCode}
+									amountMxn={amountMxn}
+									umaValue={umaValue}
+								/>
 							)}
 						</div>
 					</div>
