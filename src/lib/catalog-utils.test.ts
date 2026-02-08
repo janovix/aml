@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getCatalogCode } from "./catalog-utils";
+import { getCatalogCode, getCurrencyCode } from "./catalog-utils";
 import type { CatalogItem } from "@/types/catalog";
 
 describe("getCatalogCode", () => {
@@ -91,5 +91,82 @@ describe("getCatalogCode", () => {
 		};
 
 		expect(getCatalogCode(item)).toBe("3");
+	});
+});
+
+describe("getCurrencyCode", () => {
+	it("returns metadata.shortName when available", () => {
+		const item: CatalogItem = {
+			id: "00000000-0000-0000-0000-000000000003",
+			catalogId: "currencies",
+			name: "Peso Mexicano",
+			normalizedName: "peso mexicano",
+			active: true,
+			metadata: { code: "3", shortName: "MXN" },
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		};
+
+		expect(getCurrencyCode(item)).toBe("MXN");
+	});
+
+	it("returns item.id when metadata.shortName is not available", () => {
+		const item: CatalogItem = {
+			id: "currency-unknown-123",
+			catalogId: "currencies",
+			name: "Unknown Currency",
+			normalizedName: "unknown currency",
+			active: true,
+			metadata: { code: "999" },
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		};
+
+		expect(getCurrencyCode(item)).toBe("currency-unknown-123");
+	});
+
+	it("returns item.id when metadata is undefined", () => {
+		const item: CatalogItem = {
+			id: "currency-id-789",
+			catalogId: "currencies",
+			name: "Test Currency",
+			normalizedName: "test currency",
+			active: true,
+			metadata: undefined,
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		};
+
+		expect(getCurrencyCode(item)).toBe("currency-id-789");
+	});
+
+	it("handles USD correctly", () => {
+		const item: CatalogItem = {
+			id: "00000000-0000-0000-0000-000000000001",
+			catalogId: "currencies",
+			name: "Dólar estadounidense",
+			normalizedName: "dolar estadounidense",
+			active: true,
+			metadata: { code: "1", shortName: "USD" },
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		};
+
+		expect(getCurrencyCode(item)).toBe("USD");
+	});
+
+	it("handles EUR correctly", () => {
+		const item: CatalogItem = {
+			id: "00000000-0000-0000-0000-000000000002",
+			catalogId: "currencies",
+			name: "Euro",
+			normalizedName: "euro",
+			active: true,
+			metadata: { code: "2", shortName: "EUR" },
+			createdAt: "2024-01-01T00:00:00Z",
+			updatedAt: "2024-01-01T00:00:00Z",
+		};
+
+		expect(getCurrencyCode(item)).toBe("EUR");
 	});
 });

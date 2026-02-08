@@ -40,7 +40,7 @@ import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
 import { ClientSelector } from "@/components/clients/ClientSelector";
 import type { CompletenessResult } from "@/types/completeness";
 import { useLanguage } from "@/components/LanguageProvider";
-import { getCatalogCode } from "@/lib/catalog-utils";
+import { getCatalogCode, getCurrencyCode } from "@/lib/catalog-utils";
 
 interface OperationEditViewProps {
 	operationId: string;
@@ -413,6 +413,7 @@ export function OperationEditView({
 									value={currencyCode}
 									onValueChange={(val) => setCurrencyCode(val ?? "MXN")}
 									placeholder="MXN"
+									getOptionValue={getCurrencyCode}
 								/>
 							</div>
 

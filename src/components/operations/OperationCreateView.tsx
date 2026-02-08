@@ -37,7 +37,7 @@ import { FieldLabel } from "@/components/completeness/FieldLabel";
 import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
 import { ClientSelector } from "@/components/clients/ClientSelector";
 import { useLanguage } from "@/components/LanguageProvider";
-import { getCatalogCode } from "@/lib/catalog-utils";
+import { getCatalogCode, getCurrencyCode } from "@/lib/catalog-utils";
 
 interface OperationFormData {
 	clientId: string;
@@ -432,6 +432,7 @@ export function OperationCreateView(): React.JSX.Element {
 										handleFieldChange("currencyCode", val ?? "MXN")
 									}
 									placeholder="MXN"
+									getOptionValue={getCurrencyCode}
 								/>
 							</div>
 

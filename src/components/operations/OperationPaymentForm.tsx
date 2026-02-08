@@ -8,7 +8,7 @@ import { FieldLabel } from "@/components/completeness/FieldLabel";
 import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
 import type { OperationPaymentInput } from "@/types/operation";
 import { useLanguage } from "@/components/LanguageProvider";
-import { getCatalogCode } from "@/lib/catalog-utils";
+import { getCatalogCode, getCurrencyCode } from "@/lib/catalog-utils";
 import { fetchExchangeRate } from "@/lib/api/exchange-rates";
 
 interface OperationPaymentFormProps {
@@ -263,6 +263,7 @@ export function OperationPaymentForm({
 									}
 									placeholder="MXN"
 									disabled={disabled}
+									getOptionValue={getCurrencyCode}
 								/>
 							</div>
 
