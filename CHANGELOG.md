@@ -1,3 +1,10 @@
+# [1.4.0-rc.20](https://github.com/janovix/aml/compare/v1.4.0-rc.19...v1.4.0-rc.20) (2026-02-08)
+
+
+### Features
+
+* enhance Operation forms with currency selector and catalog name utility ([758caec](https://github.com/janovix/aml/commit/758caec40439b4b7834fcfa3cf3aa2e3e3c3e146))
+
 # [1.4.0-rc.19](https://github.com/janovix/aml/compare/v1.4.0-rc.18...v1.4.0-rc.19) (2026-02-08)
 
 
