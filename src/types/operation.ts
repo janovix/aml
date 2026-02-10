@@ -104,6 +104,8 @@ export interface VehicleExtension {
 	operationId: string;
 	vehicleType: VehicleType;
 	brand: string;
+	/** Resolved catalog name for the brand ID */
+	brandName: string | null;
 	model: string;
 	year: number;
 	vin: string | null;
@@ -115,6 +117,8 @@ export interface VehicleExtension {
 	armorLevelCode: string | null;
 	engineNumber: string | null;
 	description: string | null;
+	/** Resolved catalog names for *Code fields */
+	resolvedNames?: Record<string, string> | null;
 }
 
 export interface RealEstateExtension {
@@ -136,6 +140,8 @@ export interface RealEstateExtension {
 	clientFigureCode: string | null;
 	personFigureCode: string | null;
 	description: string | null;
+	/** Resolved catalog names for *Code fields */
+	resolvedNames?: Record<string, string> | null;
 }
 
 export interface JewelryExtension {
@@ -147,10 +153,14 @@ export interface JewelryExtension {
 	purity: string | null;
 	jewelryDescription: string | null;
 	brand: string | null;
+	/** Resolved catalog name for the brand ID */
+	brandName?: string | null;
 	serialNumber: string | null;
 	tradeUnitCode: string | null;
 	quantity: string | null;
 	unitPrice: string | null;
+	/** Resolved catalog names for *Code fields */
+	resolvedNames?: Record<string, string> | null;
 }
 
 export interface VirtualAssetExtension {
@@ -165,6 +175,8 @@ export interface VirtualAssetExtension {
 	assetQuantity: string | null;
 	assetUnitPrice: string | null;
 	blockchainTxHash: string | null;
+	/** Resolved catalog names for *Code fields */
+	resolvedNames?: Record<string, string> | null;
 }
 
 export interface GamblingExtension {
@@ -180,6 +192,8 @@ export interface GamblingExtension {
 	eventDate: string | null;
 	propertyTypeCode: string | null;
 	propertyDescription: string | null;
+	/** Resolved catalog names for *Code fields */
+	resolvedNames?: Record<string, string> | null;
 }
 
 export interface RentalExtension {
@@ -201,6 +215,8 @@ export interface RentalExtension {
 	isPrepaid: boolean | null;
 	prepaidMonths: number | null;
 	description: string | null;
+	/** Resolved catalog names for *Code fields */
+	resolvedNames?: Record<string, string> | null;
 }
 
 export interface ArmoringExtension {
@@ -217,6 +233,8 @@ export interface ArmoringExtension {
 	vehicleVin: string | null;
 	vehiclePlates: string | null;
 	serviceDescription: string | null;
+	/** Resolved catalog names for *Code fields */
+	resolvedNames?: Record<string, string> | null;
 }
 
 export interface DonationExtension {
@@ -229,6 +247,8 @@ export interface DonationExtension {
 	itemValue: string | null;
 	isAnonymous: boolean | null;
 	campaignName: string | null;
+	/** Resolved catalog names for *Code fields */
+	resolvedNames?: Record<string, string> | null;
 }
 
 export interface LoanExtension {
@@ -244,6 +264,8 @@ export interface LoanExtension {
 	maturityDate: string | null;
 	guaranteeDescription: string | null;
 	guaranteeValue: string | null;
+	/** Resolved catalog names for *Code fields */
+	resolvedNames?: Record<string, string> | null;
 }
 
 export interface OfficialExtension {
@@ -267,6 +289,8 @@ export interface OfficialExtension {
 	itemTypeCode: string | null;
 	itemDescription: string | null;
 	itemValue: string | null;
+	/** Resolved catalog names for *Code fields */
+	resolvedNames?: Record<string, string> | null;
 }
 
 export interface NotaryExtension {
@@ -289,6 +313,8 @@ export interface NotaryExtension {
 	itemDescription: string | null;
 	appraisalValue: string | null;
 	guaranteeTypeCode: string | null;
+	/** Resolved catalog names for *Code fields */
+	resolvedNames?: Record<string, string> | null;
 }
 
 export interface ProfessionalExtension {
@@ -309,6 +335,8 @@ export interface ProfessionalExtension {
 	financialInstitutionName: string | null;
 	occupationCode: string | null;
 	serviceDescription: string | null;
+	/** Resolved catalog names for *Code fields */
+	resolvedNames?: Record<string, string> | null;
 }
 
 export interface TravelerCheckExtension {
@@ -319,6 +347,8 @@ export interface TravelerCheckExtension {
 	serialNumbers: string | null;
 	issuerName: string | null;
 	issuerCountryCode: string | null;
+	/** Resolved catalog names for *Code fields */
+	resolvedNames?: Record<string, string> | null;
 }
 
 export interface CardExtension {
@@ -330,6 +360,8 @@ export interface CardExtension {
 	issuerName: string | null;
 	creditLimit: string | null;
 	transactionType: string | null;
+	/** Resolved catalog names for *Code fields */
+	resolvedNames?: Record<string, string> | null;
 }
 
 export interface PrepaidExtension {
@@ -341,6 +373,8 @@ export interface PrepaidExtension {
 	reloadAmount: string | null;
 	currentBalance: string | null;
 	issuerName: string | null;
+	/** Resolved catalog names for *Code fields */
+	resolvedNames?: Record<string, string> | null;
 }
 
 export interface RewardExtension {
@@ -353,6 +387,8 @@ export interface RewardExtension {
 	pointsExpiryDate: string | null;
 	redemptionType: string | null;
 	redemptionDescription: string | null;
+	/** Resolved catalog names for *Code fields */
+	resolvedNames?: Record<string, string> | null;
 }
 
 export interface ValuableExtension {
@@ -369,6 +405,8 @@ export interface ValuableExtension {
 	declaredValue: string | null;
 	insuredValue: string | null;
 	description: string | null;
+	/** Resolved catalog names for *Code fields */
+	resolvedNames?: Record<string, string> | null;
 }
 
 export interface ArtExtension {
@@ -386,6 +424,8 @@ export interface ArtExtension {
 	isAntique: boolean | null;
 	auctionHouse: string | null;
 	lotNumber: string | null;
+	/** Resolved catalog names for *Code fields */
+	resolvedNames?: Record<string, string> | null;
 }
 
 export interface DevelopmentExtension {
@@ -401,6 +441,8 @@ export interface DevelopmentExtension {
 	thirdPartyName: string | null;
 	financialInstitutionTypeCode: string | null;
 	financialInstitutionName: string | null;
+	/** Resolved catalog names for *Code fields */
+	resolvedNames?: Record<string, string> | null;
 }
 
 // --- Main Operation Entity ---

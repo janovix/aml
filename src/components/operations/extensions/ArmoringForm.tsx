@@ -119,6 +119,7 @@ export function ArmoringForm({
 				</FieldLabel>
 				<Input
 					id="vehicleYear"
+					inputMode="numeric"
 					value={(value.vehicleYear as string) ?? ""}
 					onChange={(e) => handleChange("vehicleYear", e.target.value)}
 					disabled={disabled}

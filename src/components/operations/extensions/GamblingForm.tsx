@@ -40,6 +40,7 @@ export function GamblingForm({
 				</FieldLabel>
 				<Input
 					id="prizeAmount"
+					inputMode="decimal"
 					value={(value.prizeAmount as string) ?? ""}
 					onChange={(e) => handleChange("prizeAmount", e.target.value)}
 					disabled={disabled}
@@ -52,6 +53,7 @@ export function GamblingForm({
 				</FieldLabel>
 				<Input
 					id="betAmount"
+					inputMode="decimal"
 					value={(value.betAmount as string) ?? ""}
 					onChange={(e) => handleChange("betAmount", e.target.value)}
 					disabled={disabled}

@@ -64,6 +64,8 @@ export interface Client {
 	pepMatchConfidence?: string | null;
 	pepCheckedAt?: string | null;
 	pepCheckSource?: string | null;
+	// Resolved catalog names for *Code fields
+	resolvedNames?: Record<string, string> | null;
 	// Timestamps
 	createdAt: string; // date-time format
 	updatedAt: string; // date-time format

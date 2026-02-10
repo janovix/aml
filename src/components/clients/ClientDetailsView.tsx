@@ -540,14 +540,19 @@ export function ClientDetailsView({
 									/>
 									<FieldDisplay
 										label={t("clientCountryCode")}
-										value={client.countryCode}
+										value={
+											client.resolvedNames?.countryCode || client.countryCode
+										}
 										icon={Flag}
 										isMissing={!client.countryCode}
 										tier={tierMap.countryCode}
 									/>
 									<FieldDisplay
 										label={t("clientEconomicActivityLabel")}
-										value={client.economicActivityCode}
+										value={
+											client.resolvedNames?.economicActivityCode ||
+											client.economicActivityCode
+										}
 										icon={Briefcase}
 										isMissing={!client.economicActivityCode}
 										tier={tierMap.economicActivityCode}
@@ -573,14 +578,19 @@ export function ClientDetailsView({
 									/>
 									<FieldDisplay
 										label={t("clientCountryCode")}
-										value={client.countryCode}
+										value={
+											client.resolvedNames?.countryCode || client.countryCode
+										}
 										icon={Flag}
 										isMissing={!client.countryCode}
 										tier={tierMap.countryCode}
 									/>
 									<FieldDisplay
 										label={t("clientEconomicActivityLabel")}
-										value={client.economicActivityCode}
+										value={
+											client.resolvedNames?.economicActivityCode ||
+											client.economicActivityCode
+										}
 										icon={Briefcase}
 										isMissing={!client.economicActivityCode}
 										tier={tierMap.economicActivityCode}
@@ -747,7 +757,9 @@ export function ClientDetailsView({
 									C.P. {client.postalCode}
 									<br />
 									{client.city}, {client.municipality},{" "}
-									{getStateName(client.stateCode)}, {client.country}
+									{client.resolvedNames?.stateCode ||
+										getStateName(client.stateCode)}
+									, {client.country}
 								</dd>
 							</div>
 							<FieldDisplay
@@ -788,7 +800,10 @@ export function ClientDetailsView({
 							/>
 							<FieldDisplay
 								label={t("clientState")}
-								value={getStateName(client.stateCode)}
+								value={
+									client.resolvedNames?.stateCode ||
+									getStateName(client.stateCode)
+								}
 								isMissing={!client.stateCode}
 							/>
 							<FieldDisplay

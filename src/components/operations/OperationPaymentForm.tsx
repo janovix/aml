@@ -13,8 +13,8 @@ import {
 	getCurrencyCode,
 	getCatalogName,
 } from "@/lib/catalog-utils";
-import { fetchExchangeRate } from "@/lib/api/exchange-rates";
 import { ThresholdIndicator } from "./ThresholdIndicator";
+import { MoneyInput } from "./MoneyInput";
 
 interface OperationPaymentFormProps {
 	payments: OperationPaymentInput[];
@@ -86,20 +86,12 @@ export function OperationPaymentForm({
 	showCurrencySelector = false,
 }: OperationPaymentFormProps): React.ReactElement {
 	const { t } = useLanguage();
-	const [loadingRates, setLoadingRates] = React.useState<Set<number>>(
-		new Set(),
-	);
-	// Track which currency we last fetched a rate for, per payment index,
-	// so we don't re-fetch when the user manually edits the rate.
-	const lastFetchedRef = React.useRef<Map<number, string>>(new Map());
 
 	function handleAdd() {
 		onChange([...payments, { ...DEFAULT_PAYMENT }]);
 	}
 
 	function handleRemove(index: number) {
-		// Clean up the fetch-tracking ref
-		lastFetchedRef.current.delete(index);
 		onChange(payments.filter((_, i) => i !== index));
 	}
 
@@ -112,74 +104,8 @@ export function OperationPaymentForm({
 			i === index ? { ...p, [field]: value } : p,
 		);
 
-		// When currency changes, clear the exchange rate so auto-fetch kicks in
-		if (field === "currencyCode") {
-			const payment = updated[index];
-			const newCurrency = (value as string) || "MXN";
-			if (newCurrency === operationCurrency) {
-				payment.exchangeRate = undefined;
-				lastFetchedRef.current.delete(index);
-			} else {
-				// Clear rate + tracking so the effect refetches
-				payment.exchangeRate = undefined;
-				lastFetchedRef.current.delete(index);
-			}
-		}
-
 		onChange(updated);
 	}
-
-	// Auto-fetch exchange rates when a payment currency differs from operation currency
-	React.useEffect(() => {
-		let cancelled = false;
-
-		payments.forEach(async (payment, index) => {
-			const payCurrency = payment.currencyCode || "MXN";
-			const fetchKey = `${payCurrency}_${operationCurrency}`;
-
-			// Skip if same currency
-			if (payCurrency === operationCurrency) return;
-			// Skip if we already fetched for this exact pair
-			if (lastFetchedRef.current.get(index) === fetchKey) return;
-			// Skip if payment already has a rate (user manually typed or previously fetched)
-			if (payment.exchangeRate) {
-				lastFetchedRef.current.set(index, fetchKey);
-				return;
-			}
-
-			setLoadingRates((prev) => new Set(prev).add(index));
-
-			const rate = await fetchExchangeRate(payCurrency, operationCurrency);
-
-			if (cancelled) return;
-
-			setLoadingRates((prev) => {
-				const next = new Set(prev);
-				next.delete(index);
-				return next;
-			});
-
-			if (rate) {
-				lastFetchedRef.current.set(index, fetchKey);
-				// Update the payment with the fetched rate
-				const updated = [...payments];
-				updated[index] = {
-					...updated[index],
-					exchangeRate: rate.rate.toFixed(6),
-				};
-				onChange(updated);
-			} else {
-				// Mark as fetched even on failure to avoid infinite retries
-				lastFetchedRef.current.set(index, fetchKey);
-			}
-		});
-
-		return () => {
-			cancelled = true;
-		};
-		// We intentionally key on the currency codes and operationCurrency only
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [payments.map((p) => p.currencyCode).join(","), operationCurrency]);
 
 	const hasMultipleCurrencies = payments.some(
 		(p) => (p.currencyCode || "MXN") !== operationCurrency,
@@ -189,11 +115,20 @@ export function OperationPaymentForm({
 
 	return (
 		<div className="space-y-4">
-			{payments.map((payment, index) => {
-				const payCurrency = payment.currencyCode || "MXN";
-				const isForeignCurrency = payCurrency !== operationCurrency;
-				const isLoadingRate = loadingRates.has(index);
+			{/* Add payment button */}
+			<Button
+				type="button"
+				variant="outline"
+				size="sm"
+				onClick={handleAdd}
+				disabled={disabled}
+				className="w-full"
+			>
+				<Plus className="h-4 w-4 mr-1.5" />
+				{t("opAddPaymentMethod")}
+			</Button>
 
+			{payments.map((payment, index) => {
 				return (
 					<div key={index} className="relative rounded-lg border p-4 space-y-3">
 						{payments.length > 1 && (
@@ -273,81 +208,29 @@ export function OperationPaymentForm({
 								/>
 							</div>
 
-							{/* Currency */}
-							<div className="space-y-1.5">
-								<FieldLabel
-									tier="sat_required"
-									htmlFor={`payment-currency-${index}`}
-								>
-									{t("opCurrencyLabel")}
-								</FieldLabel>
-								<CatalogSelector
-									catalogKey="currencies"
-									value={payment.currencyCode ?? "MXN"}
-									onValueChange={(val) =>
-										handlePaymentChange(index, "currencyCode", val ?? "MXN")
-									}
-									placeholder="MXN"
-									disabled={disabled}
-									getOptionValue={getCurrencyCode}
-								/>
-							</div>
-
-							{/* Amount */}
-							<div className="space-y-1.5">
-								<FieldLabel
-									tier="sat_required"
-									htmlFor={`payment-amount-${index}`}
-								>
-									{t("opAmount")}
-								</FieldLabel>
-								<Input
+							{/* Currency + Amount + Exchange Rate (combined in MoneyInput) */}
+							<div className="md:col-span-2">
+								<MoneyInput
 									id={`payment-amount-${index}`}
-									type="text"
-									inputMode="decimal"
-									value={payment.amount}
-									onChange={(e) =>
-										handlePaymentChange(index, "amount", e.target.value)
+									amount={payment.amount}
+									currencyCode={payment.currencyCode ?? "MXN"}
+									exchangeRate={payment.exchangeRate}
+									onAmountChange={(val) =>
+										handlePaymentChange(index, "amount", val)
 									}
-									placeholder="0.00"
+									onCurrencyChange={(val) =>
+										handlePaymentChange(index, "currencyCode", val)
+									}
+									onExchangeRateChange={(val) =>
+										handlePaymentChange(index, "exchangeRate", val)
+									}
+									mainCurrency={operationCurrency}
+									label={t("opAmount")}
+									tier="sat_required"
 									disabled={disabled}
+									required
 								/>
 							</div>
-
-							{/* Exchange Rate (only shown for foreign currencies) */}
-							{isForeignCurrency && (
-								<div className="space-y-1.5">
-									<FieldLabel
-										tier="sat_required"
-										htmlFor={`payment-exchange-rate-${index}`}
-									>
-										{t("opPaymentExchangeRate")} ({payCurrency} →{" "}
-										{operationCurrency})
-									</FieldLabel>
-									<Input
-										id={`payment-exchange-rate-${index}`}
-										type="text"
-										inputMode="decimal"
-										value={payment.exchangeRate || ""}
-										onChange={(e) =>
-											handlePaymentChange(index, "exchangeRate", e.target.value)
-										}
-										placeholder={isLoadingRate ? "..." : "0.000000"}
-										disabled={disabled || isLoadingRate}
-										required
-									/>
-									{isLoadingRate && (
-										<p className="text-xs text-muted-foreground">
-											{t("opPaymentExchangeRateFetching")}
-										</p>
-									)}
-									{!isLoadingRate && !payment.exchangeRate && (
-										<p className="text-xs text-destructive">
-											{t("opPaymentExchangeRateManual")}
-										</p>
-									)}
-								</div>
-							)}
 
 							{/* Bank Name */}
 							<div className="space-y-1.5">
@@ -502,18 +385,6 @@ export function OperationPaymentForm({
 					</div>
 				</div>
 			)}
-
-			<Button
-				type="button"
-				variant="outline"
-				size="sm"
-				onClick={handleAdd}
-				disabled={disabled}
-				className="w-full"
-			>
-				<Plus className="h-4 w-4 mr-1.5" />
-				{t("opAddPaymentMethod")}
-			</Button>
 		</div>
 	);
 }

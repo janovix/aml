@@ -226,6 +226,7 @@ export function OfficialForm({
 				</FieldLabel>
 				<Input
 					id="sharePercentage"
+					inputMode="decimal"
 					value={(value.sharePercentage as string) ?? ""}
 					onChange={(e) => handleChange("sharePercentage", e.target.value)}
 					disabled={disabled}
@@ -264,6 +265,7 @@ export function OfficialForm({
 				</FieldLabel>
 				<Input
 					id="itemValue"
+					inputMode="decimal"
 					value={(value.itemValue as string) ?? ""}
 					onChange={(e) => handleChange("itemValue", e.target.value)}
 					disabled={disabled}

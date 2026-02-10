@@ -56,23 +56,23 @@ interface OperationDetailsViewProps {
  */
 export function OperationDetailsSkeleton(): React.ReactElement {
 	return (
-		<div className="space-y-6">
+		<div className="space-y-4 @lg/main:space-y-6">
 			<PageHeroSkeleton
 				showStats={false}
 				showBackButton={true}
 				actionCount={3}
 			/>
-			<div className="grid gap-6 @md/main:grid-cols-2">
+			<div className="grid grid-cols-1 gap-4 @lg/main:gap-6 @lg/main:grid-cols-2">
 				{[1, 2].map((i) => (
 					<Card key={i}>
-						<CardHeader>
-							<Skeleton className="h-6 w-48" />
+						<CardHeader className="pb-3">
+							<Skeleton className="h-5 @lg/main:h-6 w-32 @lg/main:w-48" />
 						</CardHeader>
-						<CardContent className="space-y-4">
+						<CardContent className="space-y-3 @lg/main:space-y-4">
 							{[1, 2, 3].map((j) => (
 								<div key={j} className="space-y-2">
-									<Skeleton className="h-4 w-24" />
-									<Skeleton className="h-5 w-40" />
+									<Skeleton className="h-3 @lg/main:h-4 w-20 @lg/main:w-24" />
+									<Skeleton className="h-4 @lg/main:h-5 w-32 @lg/main:w-40" />
 								</div>
 							))}
 						</CardContent>
@@ -82,6 +82,16 @@ export function OperationDetailsSkeleton(): React.ReactElement {
 		</div>
 	);
 }
+
+/** Fields to hide from the extension data grid (internal IDs and raw values superseded by resolved names) */
+const EXTENSION_HIDDEN_FIELDS = new Set([
+	"id",
+	"operationId",
+	// Hide raw brand ID when brandName is available
+	"brand",
+	// Hide the resolvedNames map itself (we use it to enrich *Code fields)
+	"resolvedNames",
+]);
 
 const DATA_SOURCE_LABELS: Record<
 	string,
@@ -277,7 +287,7 @@ export function OperationDetailsView({
 		: null;
 
 	return (
-		<div className="space-y-6">
+		<div className="space-y-4 @lg/main:space-y-6">
 			<PageHero
 				title={operationId}
 				subtitle="Detalle de operación"
@@ -302,13 +312,16 @@ export function OperationDetailsView({
 			/>
 
 			{/* Activity header */}
-			<div className="flex items-center gap-3 flex-wrap">
+			<div className="flex items-center gap-2 @lg/main:gap-3 flex-wrap">
 				<ActivityBadge
 					code={operation.activityCode}
 					variant="full"
-					className="text-sm"
+					className="text-xs @lg/main:text-sm"
 				/>
-				<Badge variant={dataSourceConfig.variant}>
+				<Badge
+					variant={dataSourceConfig.variant}
+					className="text-xs @lg/main:text-sm"
+				>
 					{t(dataSourceConfig.label)}
 				</Badge>
 				{operation.completenessStatus !== "COMPLETE" && (
@@ -316,6 +329,7 @@ export function OperationDetailsView({
 						variant="outline"
 						size="sm"
 						onClick={() => navigateTo(`/operations/${operation.id}/edit`)}
+						className="text-xs @lg/main:text-sm"
 					>
 						<Edit className="h-3.5 w-3.5 mr-1.5" />
 						{t("opEnrich")}
@@ -338,46 +352,48 @@ export function OperationDetailsView({
 				umaValue={umaValue}
 			/>
 
-			<div className="space-y-6">
-				<div className="grid gap-6 @md/main:grid-cols-2">
+			<div className="space-y-4 @lg/main:space-y-6">
+				<div className="grid grid-cols-1 gap-3 @lg/main:gap-6 @lg/main:grid-cols-2">
 					{/* General information */}
 					<Card>
-						<CardHeader>
-							<CardTitle>{t("opGeneralInfo")}</CardTitle>
+						<CardHeader className="pb-2 @lg/main:pb-3 px-3 @lg/main:px-6 pt-3 @lg/main:pt-6">
+							<CardTitle className="text-sm @lg/main:text-base font-semibold">
+								{t("opGeneralInfo")}
+							</CardTitle>
 						</CardHeader>
-						<CardContent className="space-y-4">
+						<CardContent className="space-y-2.5 @lg/main:space-y-4 px-3 @lg/main:px-6 pb-3 @lg/main:pb-6">
 							<div>
-								<p className="text-sm font-medium text-muted-foreground">
+								<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
 									{t("opClient")}
 								</p>
-								<p className="text-base font-medium mt-1">
+								<p className="text-sm @lg/main:text-base font-semibold mt-1 wrap-break-word">
 									{client ? getClientDisplayName(client) : operation.clientId}
 								</p>
 							</div>
 							<Separator />
 							<div>
-								<p className="text-sm font-medium text-muted-foreground">
+								<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
 									{t("opOperationDate")}
 								</p>
-								<p className="text-base font-medium mt-1">
+								<p className="text-sm @lg/main:text-base font-semibold mt-1">
 									{formatDate(operation.operationDate)}
 								</p>
 							</div>
 							<Separator />
-							<div className="grid grid-cols-2 gap-4">
+							<div className="space-y-2.5 @md/main:grid @md/main:grid-cols-2 @md/main:gap-3 @md/main:space-y-0">
 								<div>
-									<p className="text-sm font-medium text-muted-foreground">
+									<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
 										{t("opBranchPostalCode")}
 									</p>
-									<p className="text-base font-medium mt-1">
+									<p className="text-sm @lg/main:text-base font-semibold mt-1">
 										{operation.branchPostalCode}
 									</p>
 								</div>
 								<div>
-									<p className="text-sm font-medium text-muted-foreground">
+									<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
 										{t("opOperationType")}
 									</p>
-									<p className="text-base font-medium mt-1">
+									<p className="text-sm @lg/main:text-base font-semibold mt-1 wrap-break-word">
 										{operation.operationTypeCatalog?.name ||
 											operation.operationTypeCode ||
 											"—"}
@@ -386,10 +402,10 @@ export function OperationDetailsView({
 							</div>
 							<Separator />
 							<div>
-								<p className="text-sm font-medium text-muted-foreground">
+								<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
 									{t("opCreatedAt")}
 								</p>
-								<p className="text-base font-medium mt-1">
+								<p className="text-xs @lg/main:text-sm font-medium mt-1">
 									{formatDateTime(operation.createdAt)}
 								</p>
 							</div>
@@ -397,10 +413,10 @@ export function OperationDetailsView({
 								<>
 									<Separator />
 									<div>
-										<p className="text-sm font-medium text-muted-foreground">
+										<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
 											{t("opReference")}
 										</p>
-										<p className="text-base font-mono mt-1">
+										<p className="text-xs @lg/main:text-sm font-mono mt-1 break-all">
 											{operation.referenceNumber}
 										</p>
 									</div>
@@ -410,10 +426,10 @@ export function OperationDetailsView({
 								<>
 									<Separator />
 									<div>
-										<p className="text-sm font-medium text-muted-foreground">
+										<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
 											{t("opNotes")}
 										</p>
-										<p className="text-sm mt-1 whitespace-pre-wrap">
+										<p className="text-xs @lg/main:text-sm mt-1 whitespace-pre-wrap wrap-break-word">
 											{operation.notes}
 										</p>
 									</div>
@@ -424,77 +440,88 @@ export function OperationDetailsView({
 
 					{/* Financial information */}
 					<Card>
-						<CardHeader>
-							<CardTitle>{t("opFinancialInfo")}</CardTitle>
+						<CardHeader className="pb-2 @lg/main:pb-3 px-3 @lg/main:px-6 pt-3 @lg/main:pt-6">
+							<CardTitle className="text-sm @lg/main:text-base font-semibold">
+								{t("opFinancialInfo")}
+							</CardTitle>
 						</CardHeader>
-						<CardContent className="space-y-4">
+						<CardContent className="space-y-2.5 @lg/main:space-y-4 px-3 @lg/main:px-6 pb-3 @lg/main:pb-6">
 							<div>
-								<p className="text-sm font-medium text-muted-foreground">
+								<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
 									{t("opAmount")}
 								</p>
-								<p className="text-3xl font-bold mt-1">
+								<p className="text-xl @lg/main:text-3xl font-bold mt-1 wrap-break-word leading-tight">
 									{new Intl.NumberFormat("es-MX", {
 										style: "currency",
 										currency: operation.currencyCode || "MXN",
 									}).format(amountNum)}
 								</p>
-								<p className="text-xs text-muted-foreground mt-1">
+								<p className="text-xs text-muted-foreground mt-0.5">
 									{operation.currencyCatalog?.name || operation.currencyCode}
 								</p>
 							</div>
-							{operation.exchangeRate && (
-								<>
-									<Separator />
-									<div className="grid grid-cols-2 gap-4">
-										<div>
-											<p className="text-sm font-medium text-muted-foreground">
-												{t("opExchangeRate")}
-											</p>
-											<p className="text-base font-medium mt-1">
-												{operation.exchangeRate}
-											</p>
-										</div>
-										{operation.amountMxn && (
+							{operation.exchangeRate &&
+								parseFloat(operation.exchangeRate) !== 1 && (
+									<>
+										<Separator />
+										<div className="space-y-2.5">
 											<div>
-												<p className="text-sm font-medium text-muted-foreground">
-													{t("opAmountMxn")}
+												<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+													{t("opExchangeRate")}
 												</p>
-												<p className="text-base font-medium mt-1">
-													{new Intl.NumberFormat("es-MX", {
-														style: "currency",
-														currency: "MXN",
-													}).format(parseFloat(operation.amountMxn))}
+												<p className="text-sm @lg/main:text-base font-semibold mt-1">
+													1 {operation.currencyCode} = {operation.exchangeRate}{" "}
+													MXN
 												</p>
 											</div>
-										)}
-									</div>
-								</>
-							)}
+											{operation.amountMxn && (
+												<div>
+													<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+														{t("opAmountMxn")}
+													</p>
+													<p className="text-sm @lg/main:text-base font-semibold mt-1 wrap-break-word">
+														{new Intl.NumberFormat("es-MX", {
+															style: "currency",
+															currency: "MXN",
+														}).format(parseFloat(operation.amountMxn))}
+													</p>
+													<p className="text-xs text-muted-foreground mt-0.5">
+														{new Intl.NumberFormat("es-MX").format(amountNum)}{" "}
+														{operation.currencyCode} × {operation.exchangeRate}
+													</p>
+												</div>
+											)}
+										</div>
+									</>
+								)}
 							<Separator />
 							<div>
-								<p className="text-sm font-medium text-muted-foreground mb-3">
+								<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
 									{t("opPaymentMethods")}
 								</p>
-								<div className="space-y-2">
+								<div className="space-y-1.5 @lg/main:space-y-2">
 									{operation.payments.map((payment, index) => (
 										<div
 											key={payment.id || index}
-											className="flex items-center justify-between py-2 px-3 rounded-lg border bg-muted/30"
+											className="flex flex-col gap-1 py-1.5 px-2.5 @lg/main:py-2 @lg/main:px-3 rounded-lg border bg-muted/30"
 										>
-											<div>
-												<span className="text-base font-medium">
+											<div className="flex items-center justify-between gap-2">
+												<span className="text-sm @lg/main:text-base font-semibold">
 													{new Intl.NumberFormat("es-MX", {
 														style: "currency",
 														currency: payment.currencyCode || "MXN",
 													}).format(parseFloat(payment.amount))}
 												</span>
-												<span className="text-xs text-muted-foreground ml-2">
-													{formatDate(payment.paymentDate)}
-												</span>
+												<Badge
+													variant="outline"
+													className="text-xs font-medium shrink-0 h-5"
+												>
+													{payment.paymentFormCode}
+												</Badge>
 											</div>
-											<Badge variant="outline" className="font-medium">
-												{payment.paymentFormCode}
-											</Badge>
+											<span className="text-xs text-muted-foreground">
+												{formatDate(payment.paymentDate)}
+											</span>
 										</div>
 									))}
 								</div>
@@ -505,20 +532,22 @@ export function OperationDetailsView({
 					{/* Watchlist status */}
 					{watchlistConfig && (
 						<Card>
-							<CardHeader>
-								<CardTitle>{t("opWatchlistStatus")}</CardTitle>
+							<CardHeader className="pb-2 @lg/main:pb-3 px-3 @lg/main:px-6 pt-3 @lg/main:pt-6">
+								<CardTitle className="text-sm @lg/main:text-base font-semibold">
+									{t("opWatchlistStatus")}
+								</CardTitle>
 							</CardHeader>
-							<CardContent>
-								<div className="flex items-center gap-3">
+							<CardContent className="px-3 @lg/main:px-6 pb-3 @lg/main:pb-6">
+								<div className="flex items-center gap-2.5 @lg/main:gap-3">
 									<watchlistConfig.icon
-										className={`h-5 w-5 ${watchlistConfig.color}`}
+										className={`h-4 w-4 @lg/main:h-5 @lg/main:w-5 shrink-0 ${watchlistConfig.color}`}
 									/>
-									<div>
-										<p className="text-sm font-medium">
+									<div className="min-w-0">
+										<p className="text-sm @lg/main:text-base font-semibold">
 											{t(watchlistConfig.label)}
 										</p>
 										{operation.watchlistCheckedAt && (
-											<p className="text-xs text-muted-foreground">
+											<p className="text-xs text-muted-foreground wrap-break-word mt-0.5">
 												{t("opVerified")}{" "}
 												{formatDateTime(operation.watchlistCheckedAt)}
 											</p>
@@ -526,11 +555,11 @@ export function OperationDetailsView({
 									</div>
 								</div>
 								{operation.watchlistFlags && (
-									<div className="mt-3">
-										<p className="text-xs text-muted-foreground mb-1">
+									<div className="mt-2.5 @lg/main:mt-3">
+										<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
 											{t("opFlags")}
 										</p>
-										<p className="text-sm font-mono">
+										<p className="text-xs @lg/main:text-sm font-mono break-all">
 											{operation.watchlistFlags}
 										</p>
 									</div>
@@ -542,16 +571,18 @@ export function OperationDetailsView({
 					{/* Linked invoice */}
 					{operation.invoiceId && (
 						<Card>
-							<CardHeader>
-								<CardTitle>{t("opLinkedInvoice")}</CardTitle>
+							<CardHeader className="pb-2 @lg/main:pb-3 px-3 @lg/main:px-6 pt-3 @lg/main:pt-6">
+								<CardTitle className="text-sm @lg/main:text-base font-semibold">
+									{t("opLinkedInvoice")}
+								</CardTitle>
 							</CardHeader>
-							<CardContent>
-								<div className="flex items-center justify-between">
-									<div>
-										<p className="text-sm font-medium text-muted-foreground">
+							<CardContent className="px-3 @lg/main:px-6 pb-3 @lg/main:pb-6">
+								<div className="flex flex-col @md/main:flex-row @md/main:items-center @md/main:justify-between gap-2.5 @lg/main:gap-3">
+									<div className="min-w-0">
+										<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
 											{t("opInvoiceId")}
 										</p>
-										<p className="text-base font-mono mt-1">
+										<p className="text-xs @lg/main:text-sm font-mono mt-1 break-all">
 											{operation.invoiceId}
 										</p>
 									</div>
@@ -561,6 +592,7 @@ export function OperationDetailsView({
 										onClick={() =>
 											navigateTo(`/invoices/${operation.invoiceId}`)
 										}
+										className="self-start @md/main:self-auto shrink-0"
 									>
 										<ExternalLink className="h-3.5 w-3.5 mr-1.5" />
 										{t("opViewInvoice")}
@@ -572,26 +604,44 @@ export function OperationDetailsView({
 
 					{/* Extension data */}
 					{extensionData && Object.keys(extensionData).length > 0 && (
-						<Card className="md:col-span-2">
-							<CardHeader>
-								<CardTitle>
-									{t("opActivityData")}{" "}
-									{activityVisual?.shortLabel ?? operation.activityCode}
+						<Card className="@lg/main:col-span-2">
+							<CardHeader className="pb-2 @lg/main:pb-3 px-3 @lg/main:px-6 pt-3 @lg/main:pt-6">
+								<CardTitle className="text-sm @lg/main:text-base font-semibold wrap-break-word">
+									{t("opVehicleData")}
 								</CardTitle>
 							</CardHeader>
-							<CardContent>
-								<div className="grid gap-4 @lg/main:grid-cols-3">
+							<CardContent className="px-3 @lg/main:px-6 pb-3 @lg/main:pb-6">
+								<div className="grid gap-2.5 @lg/main:gap-4 @md/main:grid-cols-2 @xl/main:grid-cols-3">
 									{Object.entries(extensionData)
-										.filter(([key]) => key !== "id" && key !== "operationId")
+										.filter(([key]) => !EXTENSION_HIDDEN_FIELDS.has(key))
 										.map(([key, value]) => {
 											if (value === null || value === undefined) return null;
+
+											// For fields ending in "Code", check if we have a resolved name
+											let displayValue = String(value);
+											if (
+												key.endsWith("Code") &&
+												extensionData.resolvedNames &&
+												typeof extensionData.resolvedNames === "object"
+											) {
+												const resolvedNames =
+													extensionData.resolvedNames as Record<
+														string,
+														unknown
+													>;
+												const resolvedName = resolvedNames[key];
+												if (typeof resolvedName === "string") {
+													displayValue = resolvedName;
+												}
+											}
+
 											return (
 												<div key={key}>
-													<p className="text-sm font-medium text-muted-foreground">
+													<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
 														{formatFieldName(key)}
 													</p>
-													<p className="text-base font-medium mt-1">
-														{String(value)}
+													<p className="text-sm @lg/main:text-base font-semibold mt-1 wrap-break-word">
+														{displayValue}
 													</p>
 												</div>
 											);

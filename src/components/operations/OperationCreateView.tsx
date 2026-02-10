@@ -38,6 +38,8 @@ import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
 import { ClientSelector } from "@/components/clients/ClientSelector";
 import { useLanguage } from "@/components/LanguageProvider";
 import { getCatalogCode, getCurrencyCode } from "@/lib/catalog-utils";
+import { fetchExchangeRate } from "@/lib/api/exchange-rates";
+import { BranchZipCodeDisplay } from "./BranchZipCodeDisplay";
 
 interface OperationFormData {
 	clientId: string;
@@ -85,7 +87,7 @@ const getInitialFormData = (): OperationFormData => ({
 
 export function OperationCreateView(): React.JSX.Element {
 	const { t } = useLanguage();
-	const { navigateTo } = useOrgNavigation();
+	const { navigateTo, orgPath } = useOrgNavigation();
 	const searchParams = useSearchParams();
 	const {
 		activityCode,
@@ -96,6 +98,7 @@ export function OperationCreateView(): React.JSX.Element {
 
 	const invoiceIdParam = searchParams.get("invoiceId");
 	const dataSourceParam = searchParams.get("dataSource");
+	const clientIdParam = searchParams.get("clientId");
 	const isCfdiPrefill = dataSourceParam === "CFDI" && !!invoiceIdParam;
 
 	const [formData, setFormData, clearFormStorage] =
@@ -114,6 +117,59 @@ export function OperationCreateView(): React.JSX.Element {
 			}));
 		}
 	}, [isCfdiPrefill, invoiceIdParam, formData.invoiceId, setFormData]);
+
+	// Auto-select client when returning from client creation wizard
+	useEffect(() => {
+		if (clientIdParam && !formData.clientId) {
+			setFormData((prev) => ({
+				...prev,
+				clientId: clientIdParam,
+			}));
+		}
+	}, [clientIdParam, formData.clientId, setFormData]);
+
+	// Auto-fetch exchange rate when operation currency changes
+	useEffect(() => {
+		let cancelled = false;
+
+		const fetchRate = async () => {
+			const currency = formData.currencyCode || "MXN";
+
+			// Clear exchange rate and skip fetch if currency is MXN
+			if (currency === "MXN") {
+				setFormData((prev) => ({
+					...prev,
+					exchangeRate: "",
+				}));
+				return;
+			}
+
+			// Clear the old exchange rate immediately when currency changes
+			// This prevents stale rates from session storage
+			setFormData((prev) => ({
+				...prev,
+				exchangeRate: "",
+			}));
+
+			// Fetch the exchange rate from operation currency to MXN
+			const rate = await fetchExchangeRate(currency, "MXN");
+
+			if (cancelled) return;
+
+			if (rate) {
+				setFormData((prev) => ({
+					...prev,
+					exchangeRate: rate.rate.toFixed(6),
+				}));
+			}
+		};
+
+		void fetchRate();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [formData.currencyCode, setFormData]);
 
 	// Auto-calculate operation amount from the sum of payment amounts (with exchange rate conversion)
 	useEffect(() => {
@@ -239,6 +295,11 @@ export function OperationCreateView(): React.JSX.Element {
 		navigateTo("/operations");
 	};
 
+	const handleCreateNewClient = (): void => {
+		const returnUrl = encodeURIComponent(orgPath("/operations/new"));
+		navigateTo(`/clients/new?returnUrl=${returnUrl}`);
+	};
+
 	// Get activity visual info for the banner
 	const activityVisual = activityCode ? getActivityVisual(activityCode) : null;
 
@@ -346,6 +407,7 @@ export function OperationCreateView(): React.JSX.Element {
 									onValueChange={(value) =>
 										handleFieldChange("clientId", value || "")
 									}
+									onCreateNew={handleCreateNewClient}
 									required
 								/>
 							</div>
@@ -371,7 +433,7 @@ export function OperationCreateView(): React.JSX.Element {
 							</div>
 
 							{/* Branch Postal Code */}
-							<div className="space-y-2">
+							<div className="space-y-2 @md/main:col-span-2">
 								<FieldLabel
 									tier="sat_required"
 									htmlFor="branch-postal-code"
@@ -379,15 +441,20 @@ export function OperationCreateView(): React.JSX.Element {
 								>
 									{t("opBranchCp")}
 								</FieldLabel>
-								<Input
-									id="branch-postal-code"
-									value={formData.branchPostalCode}
-									onChange={(e) =>
-										handleFieldChange("branchPostalCode", e.target.value)
-									}
-									placeholder="64000"
-									required
-								/>
+								<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
+									<Input
+										id="branch-postal-code"
+										value={formData.branchPostalCode}
+										onChange={(e) =>
+											handleFieldChange("branchPostalCode", e.target.value)
+										}
+										placeholder="64000"
+										required
+									/>
+									<div className="flex items-center">
+										<BranchZipCodeDisplay zipCode={formData.branchPostalCode} />
+									</div>
+								</div>
 							</div>
 						</div>
 					</CardContent>
@@ -409,6 +476,7 @@ export function OperationCreateView(): React.JSX.Element {
 							<ExtensionForm
 								value={formData.extension}
 								onChange={(val) => handleFieldChange("extension", val)}
+								operationCurrency={formData.currencyCode || "MXN"}
 							/>
 						</CardContent>
 					</Card>

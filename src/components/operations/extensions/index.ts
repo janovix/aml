@@ -5,6 +5,8 @@ export interface ExtensionFormProps {
 	value: Record<string, unknown>;
 	onChange: (value: Record<string, unknown>) => void;
 	disabled?: boolean;
+	/** The operation's currency code (for MoneyInput components) */
+	operationCurrency?: string;
 }
 
 export { VehicleForm } from "./VehicleForm";

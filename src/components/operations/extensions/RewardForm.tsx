@@ -47,6 +47,7 @@ export function RewardForm({ value, onChange, disabled }: ExtensionFormProps) {
 				</FieldLabel>
 				<Input
 					id="pointsAmount"
+					inputMode="numeric"
 					value={(value.pointsAmount as string) ?? ""}
 					onChange={(e) => handleChange("pointsAmount", e.target.value)}
 					disabled={disabled}
@@ -59,6 +60,7 @@ export function RewardForm({ value, onChange, disabled }: ExtensionFormProps) {
 				</FieldLabel>
 				<Input
 					id="pointsValue"
+					inputMode="decimal"
 					value={(value.pointsValue as string) ?? ""}
 					onChange={(e) => handleChange("pointsValue", e.target.value)}
 					disabled={disabled}

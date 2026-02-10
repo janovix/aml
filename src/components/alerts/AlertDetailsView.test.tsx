@@ -455,7 +455,8 @@ describe("AlertDetailsView", () => {
 		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Cancelar Alerta")).toBeInTheDocument();
+			// Button appears twice (mobile and desktop), check that at least one exists
+			expect(screen.getAllByText("Cancelar Alerta")[0]).toBeInTheDocument();
 		});
 	});
 
@@ -467,10 +468,12 @@ describe("AlertDetailsView", () => {
 		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Cancelar Alerta")).toBeInTheDocument();
+			// Button appears twice (mobile and desktop), check that at least one exists
+			expect(screen.getAllByText("Cancelar Alerta")[0]).toBeInTheDocument();
 		});
 
-		const cancelButton = screen.getByText("Cancelar Alerta");
+		// Button appears twice (mobile and desktop), get the first one
+		const cancelButton = screen.getAllByText("Cancelar Alerta")[0];
 		await user.click(cancelButton);
 
 		await waitFor(() => {
@@ -493,10 +496,12 @@ describe("AlertDetailsView", () => {
 		renderWithProviders(<AlertDetailsView alertId="alert-1" />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Cancelar Alerta")).toBeInTheDocument();
+			// Button appears twice (mobile and desktop), check that at least one exists
+			expect(screen.getAllByText("Cancelar Alerta")[0]).toBeInTheDocument();
 		});
 
-		const cancelButton = screen.getByText("Cancelar Alerta");
+		// Button appears twice (mobile and desktop), get the first one
+		const cancelButton = screen.getAllByText("Cancelar Alerta")[0];
 		await user.click(cancelButton);
 
 		await waitFor(() => {

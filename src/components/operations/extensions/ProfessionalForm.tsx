@@ -133,6 +133,7 @@ export function ProfessionalForm({
 				</FieldLabel>
 				<Input
 					id="sharePercentage"
+					inputMode="decimal"
 					value={(value.sharePercentage as string) ?? ""}
 					onChange={(e) => handleChange("sharePercentage", e.target.value)}
 					disabled={disabled}

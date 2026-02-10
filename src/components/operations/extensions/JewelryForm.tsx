@@ -50,6 +50,7 @@ export function JewelryForm({ value, onChange, disabled }: ExtensionFormProps) {
 				</FieldLabel>
 				<Input
 					id="weightGrams"
+					inputMode="decimal"
 					value={(value.weightGrams as string) ?? ""}
 					onChange={(e) => handleChange("weightGrams", e.target.value)}
 					disabled={disabled}
@@ -62,6 +63,7 @@ export function JewelryForm({ value, onChange, disabled }: ExtensionFormProps) {
 				</FieldLabel>
 				<Input
 					id="purity"
+					inputMode="decimal"
 					value={(value.purity as string) ?? ""}
 					onChange={(e) => handleChange("purity", e.target.value)}
 					disabled={disabled}
@@ -124,6 +126,7 @@ export function JewelryForm({ value, onChange, disabled }: ExtensionFormProps) {
 				</FieldLabel>
 				<Input
 					id="quantity"
+					inputMode="numeric"
 					value={(value.quantity as string) ?? ""}
 					onChange={(e) => handleChange("quantity", e.target.value)}
 					disabled={disabled}
@@ -136,6 +139,7 @@ export function JewelryForm({ value, onChange, disabled }: ExtensionFormProps) {
 				</FieldLabel>
 				<Input
 					id="unitPrice"
+					inputMode="decimal"
 					value={(value.unitPrice as string) ?? ""}
 					onChange={(e) => handleChange("unitPrice", e.target.value)}
 					disabled={disabled}

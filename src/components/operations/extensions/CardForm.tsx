@@ -74,6 +74,7 @@ export function CardForm({ value, onChange, disabled }: ExtensionFormProps) {
 				</FieldLabel>
 				<Input
 					id="creditLimit"
+					inputMode="decimal"
 					value={(value.creditLimit as string) ?? ""}
 					onChange={(e) => handleChange("creditLimit", e.target.value)}
 					disabled={disabled}

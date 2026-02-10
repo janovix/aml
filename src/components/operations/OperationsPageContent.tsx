@@ -145,7 +145,7 @@ export function OperationsPageContent(): React.ReactElement {
 			<CreateImportDialog
 				open={isImportDialogOpen}
 				onOpenChange={setIsImportDialogOpen}
-				defaultEntityType="TRANSACTION"
+				defaultEntityType="OPERATION"
 			/>
 		</div>
 	);

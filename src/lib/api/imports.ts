@@ -13,7 +13,7 @@ export type ImportStatus =
 	| "COMPLETED"
 	| "FAILED";
 
-export type ImportEntityType = "CLIENT" | "TRANSACTION";
+export type ImportEntityType = "CLIENT" | "OPERATION";
 
 export type ImportRowStatus =
 	| "PENDING"
@@ -172,6 +172,7 @@ export async function getImportRows(opts: {
 export async function createImport(opts: {
 	file: File;
 	entityType: ImportEntityType;
+	activityCode?: string;
 	baseUrl?: string;
 	jwt?: string;
 }): Promise<{ success: boolean; data: Import }> {
@@ -181,6 +182,9 @@ export async function createImport(opts: {
 	const formData = new FormData();
 	formData.append("file", opts.file);
 	formData.append("entityType", opts.entityType);
+	if (opts.activityCode) {
+		formData.append("activityCode", opts.activityCode);
+	}
 
 	// Need to use fetch directly for FormData
 	const headers: Record<string, string> = {};
@@ -227,8 +231,12 @@ export async function deleteImport(opts: {
  */
 export function getTemplateUrl(
 	entityType: ImportEntityType,
+	activityCode?: string,
 	baseUrl?: string,
 ): string {
 	const base = baseUrl ?? getAmlCoreBaseUrl();
+	if (entityType === "OPERATION" && activityCode) {
+		return `${base}/api/v1/imports/templates/OPERATION/${activityCode}`;
+	}
 	return `${base}/api/v1/imports/templates/${entityType}`;
 }

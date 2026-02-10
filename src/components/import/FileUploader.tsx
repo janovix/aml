@@ -21,9 +21,14 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ImportEntityType } from "@/types/import";
 import { getTemplateUrl } from "@/lib/api/imports";
+import { useOrgSettings } from "@/hooks/useOrgSettings";
 
 interface FileUploaderProps {
-	onFileUpload: (file: File, entityType: ImportEntityType) => void;
+	onFileUpload: (
+		file: File,
+		entityType: ImportEntityType,
+		activityCode?: string,
+	) => void;
 	isUploading?: boolean;
 	disabled?: boolean;
 	/** Pre-select an entity type */
@@ -36,6 +41,8 @@ export function FileUploader({
 	disabled = false,
 	defaultEntityType,
 }: FileUploaderProps) {
+	const { settings } = useOrgSettings();
+	const activityCode = settings?.activityKey;
 	const isDisabled = isUploading || disabled;
 	const [isDragging, setIsDragging] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -84,20 +91,28 @@ export function FileUploader({
 			setIsDragging(false);
 			const file = e.dataTransfer.files[0];
 			if (file && validateFile(file)) {
-				onFileUpload(file, selectedEntityType);
+				onFileUpload(
+					file,
+					selectedEntityType,
+					selectedEntityType === "OPERATION" ? activityCode : undefined,
+				);
 			}
 		},
-		[onFileUpload, validateFile, selectedEntityType],
+		[onFileUpload, validateFile, selectedEntityType, activityCode],
 	);
 
 	const handleFileChange = useCallback(
 		(e: React.ChangeEvent<HTMLInputElement>) => {
 			const file = e.target.files?.[0];
 			if (file && validateFile(file)) {
-				onFileUpload(file, selectedEntityType);
+				onFileUpload(
+					file,
+					selectedEntityType,
+					selectedEntityType === "OPERATION" ? activityCode : undefined,
+				);
 			}
 		},
-		[onFileUpload, validateFile, selectedEntityType],
+		[onFileUpload, validateFile, selectedEntityType, activityCode],
 	);
 
 	return (
@@ -130,20 +145,20 @@ export function FileUploader({
 						</Button>
 						<Button
 							variant={
-								selectedEntityType === "TRANSACTION" ? "default" : "outline"
+								selectedEntityType === "OPERATION" ? "default" : "outline"
 							}
 							className={cn(
 								"h-auto py-4 flex flex-col items-center gap-2",
-								selectedEntityType === "TRANSACTION"
+								selectedEntityType === "OPERATION"
 									? "bg-primary text-primary-foreground"
 									: "bg-secondary/50 border-border hover:bg-secondary hover:border-primary/30",
 							)}
-							onClick={() => setSelectedEntityType("TRANSACTION")}
+							onClick={() => setSelectedEntityType("OPERATION")}
 						>
 							<Receipt className="h-6 w-6" />
-							<span className="text-sm font-medium">Transacciones</span>
+							<span className="text-sm font-medium">Operaciones</span>
 							<span className="text-xs opacity-70">
-								Operaciones de vehículos
+								Operaciones vulnerables
 							</span>
 						</Button>
 					</div>
@@ -250,12 +265,12 @@ export function FileUploader({
 							asChild
 						>
 							<a
-								href={getTemplateUrl("TRANSACTION")}
-								download="plantilla_transacciones.csv"
+								href={getTemplateUrl("OPERATION", activityCode)}
+								download="plantilla_operaciones.csv"
 							>
 								<FileSpreadsheet className="h-6 w-6 text-green-500" />
 								<span className="text-sm font-medium">
-									Plantilla Transacciones
+									Plantilla Operaciones
 								</span>
 								<span className="text-xs text-muted-foreground">CSV</span>
 							</a>

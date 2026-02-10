@@ -130,6 +130,7 @@ export function ValuableForm({
 				</FieldLabel>
 				<Input
 					id="declaredValue"
+					inputMode="decimal"
 					value={(value.declaredValue as string) ?? ""}
 					onChange={(e) => handleChange("declaredValue", e.target.value)}
 					disabled={disabled}
@@ -142,6 +143,7 @@ export function ValuableForm({
 				</FieldLabel>
 				<Input
 					id="insuredValue"
+					inputMode="decimal"
 					value={(value.insuredValue as string) ?? ""}
 					onChange={(e) => handleChange("insuredValue", e.target.value)}
 					disabled={disabled}

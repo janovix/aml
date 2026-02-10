@@ -133,7 +133,7 @@ export function CreateManualAlertView(): React.JSX.Element {
 		const returnUrl = encodeURIComponent(
 			`${orgPath("/alerts/new")}?alertRuleId=${formData.alertRuleId}`,
 		);
-		navigateTo(`/clients/new?returnTo=${returnUrl}`);
+		navigateTo(`/clients/new?returnUrl=${returnUrl}`);
 	};
 
 	const canSubmit = useMemo(() => {

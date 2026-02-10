@@ -32,6 +32,41 @@ vi.mock("@/components/catalogs/CatalogSelector", () => ({
 	),
 }));
 
+// Mock MoneyInput to avoid exchange rate API calls and complex internal state
+vi.mock("./MoneyInput", () => ({
+	MoneyInput: ({
+		amount,
+		onAmountChange,
+		disabled,
+		id,
+	}: {
+		amount: string;
+		currencyCode: string;
+		exchangeRate?: string;
+		onAmountChange: (val: string) => void;
+		onCurrencyChange: (val: string) => void;
+		onExchangeRateChange?: (val: string) => void;
+		mainCurrency?: string;
+		label?: string;
+		placeholder?: string;
+		disabled?: boolean;
+		required?: boolean;
+		tier?: string;
+		id?: string;
+	}) => (
+		<div data-testid="money-input">
+			<input
+				type="text"
+				value={amount}
+				onChange={(e) => onAmountChange(e.target.value)}
+				placeholder="0.00"
+				disabled={disabled}
+				data-testid={id ? `${id}-amount` : "money-amount"}
+			/>
+		</div>
+	),
+}));
+
 const defaultPayment: OperationPaymentInput = {
 	paymentDate: "2024-01-15",
 	paymentFormCode: "",

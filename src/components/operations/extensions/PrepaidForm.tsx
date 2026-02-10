@@ -3,6 +3,7 @@
 import { FieldLabel } from "@/components/completeness/FieldLabel";
 import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { ExtensionFormProps } from ".";
 
@@ -46,12 +47,16 @@ export function PrepaidForm({ value, onChange, disabled }: ExtensionFormProps) {
 				<FieldLabel htmlFor="isInitialLoad" tier="kyc_optional">
 					{t("opFieldIsInitialLoad")}
 				</FieldLabel>
-				<Input
-					id="isInitialLoad"
-					value={(value.isInitialLoad as string) ?? ""}
-					onChange={(e) => handleChange("isInitialLoad", e.target.value)}
-					disabled={disabled}
-				/>
+				<div className="flex items-center h-10">
+					<Switch
+						id="isInitialLoad"
+						checked={(value.isInitialLoad as boolean) ?? false}
+						onCheckedChange={(checked) =>
+							handleChange("isInitialLoad", checked)
+						}
+						disabled={disabled}
+					/>
+				</div>
 			</div>
 
 			<div className="space-y-1">
@@ -60,6 +65,7 @@ export function PrepaidForm({ value, onChange, disabled }: ExtensionFormProps) {
 				</FieldLabel>
 				<Input
 					id="reloadAmount"
+					inputMode="decimal"
 					value={(value.reloadAmount as string) ?? ""}
 					onChange={(e) => handleChange("reloadAmount", e.target.value)}
 					disabled={disabled}
@@ -72,6 +78,7 @@ export function PrepaidForm({ value, onChange, disabled }: ExtensionFormProps) {
 				</FieldLabel>
 				<Input
 					id="currentBalance"
+					inputMode="decimal"
 					value={(value.currentBalance as string) ?? ""}
 					onChange={(e) => handleChange("currentBalance", e.target.value)}
 					disabled={disabled}

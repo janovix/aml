@@ -145,8 +145,7 @@ export function ImportProgress({ state, onReset }: ImportProgressProps) {
 		return "Preparando...";
 	};
 
-	const EntityIcon =
-		state.entityType === "TRANSACTION" ? FileSpreadsheet : Users;
+	const EntityIcon = state.entityType === "OPERATION" ? FileSpreadsheet : Users;
 
 	return (
 		<Card className="bg-card border-border overflow-hidden relative">

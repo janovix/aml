@@ -3,6 +3,7 @@
 import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
 import { FieldLabel } from "@/components/completeness/FieldLabel";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { ExtensionFormProps } from ".";
 import { getCatalogCode } from "@/lib/catalog-utils";
@@ -74,6 +75,7 @@ export function ArtForm({ value, onChange, disabled }: ExtensionFormProps) {
 				</FieldLabel>
 				<Input
 					id="yearCreated"
+					inputMode="numeric"
 					value={(value.yearCreated as string) ?? ""}
 					onChange={(e) => handleChange("yearCreated", e.target.value)}
 					disabled={disabled}
@@ -134,12 +136,14 @@ export function ArtForm({ value, onChange, disabled }: ExtensionFormProps) {
 				<FieldLabel htmlFor="isAntique" tier="kyc_optional">
 					{t("opFieldIsAntique")}
 				</FieldLabel>
-				<Input
-					id="isAntique"
-					value={(value.isAntique as string) ?? ""}
-					onChange={(e) => handleChange("isAntique", e.target.value)}
-					disabled={disabled}
-				/>
+				<div className="flex items-center h-10">
+					<Switch
+						id="isAntique"
+						checked={(value.isAntique as boolean) ?? false}
+						onCheckedChange={(checked) => handleChange("isAntique", checked)}
+						disabled={disabled}
+					/>
+				</div>
 			</div>
 
 			<div className="space-y-1">

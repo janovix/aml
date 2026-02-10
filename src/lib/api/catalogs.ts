@@ -38,6 +38,7 @@ export interface CatalogListResponse {
  */
 export async function listCatalogItems(opts: {
 	catalogKey: string;
+	search?: string;
 	activeOnly?: boolean;
 	page?: number;
 	pageSize?: number;
@@ -47,6 +48,10 @@ export async function listCatalogItems(opts: {
 }): Promise<CatalogListResponse> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL(`/api/v1/catalogs/${opts.catalogKey}`, baseUrl);
+
+	if (opts.search !== undefined && opts.search.trim() !== "") {
+		url.searchParams.set("search", opts.search.trim());
+	}
 
 	if (opts.activeOnly !== undefined) {
 		url.searchParams.set("activeOnly", String(opts.activeOnly));

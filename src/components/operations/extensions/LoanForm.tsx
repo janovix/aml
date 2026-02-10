@@ -25,6 +25,7 @@ export function LoanForm({ value, onChange, disabled }: ExtensionFormProps) {
 				</FieldLabel>
 				<Input
 					id="principalAmount"
+					inputMode="decimal"
 					value={(value.principalAmount as string) ?? ""}
 					onChange={(e) => handleChange("principalAmount", e.target.value)}
 					disabled={disabled}
@@ -37,6 +38,7 @@ export function LoanForm({ value, onChange, disabled }: ExtensionFormProps) {
 				</FieldLabel>
 				<Input
 					id="interestRate"
+					inputMode="decimal"
 					value={(value.interestRate as string) ?? ""}
 					onChange={(e) => handleChange("interestRate", e.target.value)}
 					disabled={disabled}
@@ -49,6 +51,7 @@ export function LoanForm({ value, onChange, disabled }: ExtensionFormProps) {
 				</FieldLabel>
 				<Input
 					id="termMonths"
+					inputMode="numeric"
 					value={(value.termMonths as string) ?? ""}
 					onChange={(e) => handleChange("termMonths", e.target.value)}
 					disabled={disabled}
@@ -87,6 +90,7 @@ export function LoanForm({ value, onChange, disabled }: ExtensionFormProps) {
 				</FieldLabel>
 				<Input
 					id="monthlyPayment"
+					inputMode="decimal"
 					value={(value.monthlyPayment as string) ?? ""}
 					onChange={(e) => handleChange("monthlyPayment", e.target.value)}
 					disabled={disabled}
@@ -137,6 +141,7 @@ export function LoanForm({ value, onChange, disabled }: ExtensionFormProps) {
 				</FieldLabel>
 				<Input
 					id="guaranteeValue"
+					inputMode="decimal"
 					value={(value.guaranteeValue as string) ?? ""}
 					onChange={(e) => handleChange("guaranteeValue", e.target.value)}
 					disabled={disabled}

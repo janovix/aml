@@ -42,6 +42,7 @@ export function TravelerCheckForm({
 				</FieldLabel>
 				<Input
 					id="checkCount"
+					inputMode="numeric"
 					value={(value.checkCount as string) ?? ""}
 					onChange={(e) => handleChange("checkCount", e.target.value)}
 					disabled={disabled}

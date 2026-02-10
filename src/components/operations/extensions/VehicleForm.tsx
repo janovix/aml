@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
 import { FieldLabel } from "@/components/completeness/FieldLabel";
 import { Input } from "@/components/ui/input";
@@ -35,6 +36,49 @@ export function VehicleForm({ value, onChange, disabled }: ExtensionFormProps) {
 
 	const { t } = useLanguage();
 
+	// Determine vehicle type for conditional rendering
+	const vehicleType = (value.vehicleType as string) ?? "";
+	const isLand = vehicleType === "LAND" || vehicleType === "";
+	const isMarineOrAir = vehicleType === "MARINE" || vehicleType === "AIR";
+
+	// Track previous vehicle type to detect changes
+	const prevVehicleTypeRef = useRef<string>(vehicleType);
+
+	// Clear irrelevant fields when vehicle type changes
+	useEffect(() => {
+		const prevType = prevVehicleTypeRef.current;
+		if (prevType !== vehicleType && prevType !== "") {
+			const updates: Record<string, null> = {};
+
+			// If switching FROM land TO marine/air, clear land-specific fields
+			if (
+				prevType === "LAND" &&
+				(vehicleType === "MARINE" || vehicleType === "AIR")
+			) {
+				updates.vin = null;
+				updates.plates = null;
+				updates.repuve = null;
+			}
+
+			// If switching FROM marine/air TO land, clear marine/air-specific fields
+			if (
+				(prevType === "MARINE" || prevType === "AIR") &&
+				vehicleType === "LAND"
+			) {
+				updates.serialNumber = null;
+				updates.flagCountryCode = null;
+				updates.registrationNumber = null;
+			}
+
+			// Apply updates if any
+			if (Object.keys(updates).length > 0) {
+				onChange({ ...value, ...updates });
+			}
+		}
+
+		prevVehicleTypeRef.current = vehicleType;
+	}, [vehicleType, value, onChange]);
+
 	return (
 		<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 			<div className="space-y-1">
@@ -46,7 +90,7 @@ export function VehicleForm({ value, onChange, disabled }: ExtensionFormProps) {
 					onValueChange={(v) => handleChange("vehicleType", v)}
 					disabled={disabled}
 				>
-					<SelectTrigger id="vehicleType">
+					<SelectTrigger id="vehicleType" className="w-full">
 						<SelectValue placeholder={t("selectTypePlaceholder")} />
 					</SelectTrigger>
 					<SelectContent>
@@ -88,74 +132,104 @@ export function VehicleForm({ value, onChange, disabled }: ExtensionFormProps) {
 				</FieldLabel>
 				<Input
 					id="year"
+					inputMode="numeric"
 					value={(value.year as string) ?? ""}
 					onChange={(e) => handleChange("year", e.target.value)}
 					disabled={disabled}
 				/>
 			</div>
 
-			<div className="space-y-1">
-				<FieldLabel htmlFor="vin" tier="alert_required">
-					{t("opFieldVin")}
-				</FieldLabel>
-				<Input
-					id="vin"
-					value={(value.vin as string) ?? ""}
-					onChange={(e) => handleChange("vin", e.target.value)}
-					disabled={disabled}
-				/>
-			</div>
+			{/* LAND only fields */}
+			{isLand && (
+				<>
+					<div className="space-y-1">
+						<FieldLabel htmlFor="vin" tier="alert_required">
+							{t("opFieldVin")}
+						</FieldLabel>
+						<Input
+							id="vin"
+							value={(value.vin as string) ?? ""}
+							onChange={(e) => handleChange("vin", e.target.value)}
+							disabled={disabled}
+						/>
+					</div>
 
-			<div className="space-y-1">
-				<FieldLabel htmlFor="plates" tier="alert_required">
-					{t("opFieldPlates")}
-				</FieldLabel>
-				<Input
-					id="plates"
-					value={(value.plates as string) ?? ""}
-					onChange={(e) => handleChange("plates", e.target.value)}
-					disabled={disabled}
-				/>
-			</div>
+					<div className="space-y-1">
+						<FieldLabel htmlFor="plates" tier="alert_required">
+							{t("opFieldPlates")}
+						</FieldLabel>
+						<Input
+							id="plates"
+							value={(value.plates as string) ?? ""}
+							onChange={(e) => handleChange("plates", e.target.value)}
+							disabled={disabled}
+						/>
+					</div>
 
-			<div className="space-y-1">
-				<FieldLabel htmlFor="repuve" tier="kyc_optional">
-					{t("opFieldRepuve")}
-				</FieldLabel>
-				<Input
-					id="repuve"
-					value={(value.repuve as string) ?? ""}
-					onChange={(e) => handleChange("repuve", e.target.value)}
-					disabled={disabled}
-				/>
-			</div>
+					<div className="space-y-1">
+						<FieldLabel htmlFor="repuve" tier="kyc_optional">
+							{t("opFieldRepuve")}
+						</FieldLabel>
+						<Input
+							id="repuve"
+							value={(value.repuve as string) ?? ""}
+							onChange={(e) => handleChange("repuve", e.target.value)}
+							disabled={disabled}
+						/>
+					</div>
+				</>
+			)}
 
-			<div className="space-y-1">
-				<FieldLabel htmlFor="serialNumber" tier="kyc_optional">
-					{t("opFieldSerialNumber")}
-				</FieldLabel>
-				<Input
-					id="serialNumber"
-					value={(value.serialNumber as string) ?? ""}
-					onChange={(e) => handleChange("serialNumber", e.target.value)}
-					disabled={disabled}
-				/>
-			</div>
+			{/* MARINE and AIR only fields */}
+			{isMarineOrAir && (
+				<>
+					<div className="space-y-1">
+						<FieldLabel htmlFor="serialNumber" tier="sat_required">
+							{t("opFieldSerialNumber")}
+						</FieldLabel>
+						<Input
+							id="serialNumber"
+							value={(value.serialNumber as string) ?? ""}
+							onChange={(e) => handleChange("serialNumber", e.target.value)}
+							disabled={disabled}
+						/>
+					</div>
 
-			<div className="space-y-1">
-				<FieldLabel htmlFor="engineNumber" tier="kyc_optional">
-					{t("opFieldEngineNumber")}
-				</FieldLabel>
-				<Input
-					id="engineNumber"
-					value={(value.engineNumber as string) ?? ""}
-					onChange={(e) => handleChange("engineNumber", e.target.value)}
-					disabled={disabled}
-				/>
-			</div>
+					<div className="space-y-1">
+						<FieldLabel htmlFor="flagCountryCode" tier="kyc_optional">
+							{t("opFieldFlagCountryCode")}
+						</FieldLabel>
+						<CatalogSelector
+							catalogKey="countries"
+							value={(value.flagCountryCode as string) ?? ""}
+							onValueChange={(val) =>
+								handleChange("flagCountryCode", val ?? "")
+							}
+							placeholder={t("selectPlaceholder")}
+							disabled={disabled}
+							getOptionValue={getCatalogCode}
+						/>
+					</div>
 
+					<div className="space-y-1">
+						<FieldLabel htmlFor="registrationNumber" tier="kyc_optional">
+							{t("opFieldRegistrationNumber")}
+						</FieldLabel>
+						<Input
+							id="registrationNumber"
+							value={(value.registrationNumber as string) ?? ""}
+							onChange={(e) =>
+								handleChange("registrationNumber", e.target.value)
+							}
+							disabled={disabled}
+						/>
+					</div>
+				</>
+			)}
+
+			{/* Common fields (all vehicle types) */}
 			<div className="space-y-1">
-				<FieldLabel htmlFor="armorLevelCode" tier="kyc_optional">
+				<FieldLabel htmlFor="armorLevelCode" tier="sat_required">
 					{t("opFieldArmorLevelCode")}
 				</FieldLabel>
 				<CatalogSelector
@@ -168,28 +242,15 @@ export function VehicleForm({ value, onChange, disabled }: ExtensionFormProps) {
 				/>
 			</div>
 
+			{/* Supplementary fields (not in XSD, but useful for internal tracking) */}
 			<div className="space-y-1">
-				<FieldLabel htmlFor="flagCountryCode" tier="kyc_optional">
-					{t("opFieldFlagCountryCode")}
-				</FieldLabel>
-				<CatalogSelector
-					catalogKey="countries"
-					value={(value.flagCountryCode as string) ?? ""}
-					onValueChange={(val) => handleChange("flagCountryCode", val ?? "")}
-					placeholder={t("selectPlaceholder")}
-					disabled={disabled}
-					getOptionValue={getCatalogCode}
-				/>
-			</div>
-
-			<div className="space-y-1">
-				<FieldLabel htmlFor="registrationNumber" tier="kyc_optional">
-					{t("opFieldRegistrationNumber")}
+				<FieldLabel htmlFor="engineNumber" tier="kyc_optional">
+					{t("opFieldEngineNumber")}
 				</FieldLabel>
 				<Input
-					id="registrationNumber"
-					value={(value.registrationNumber as string) ?? ""}
-					onChange={(e) => handleChange("registrationNumber", e.target.value)}
+					id="engineNumber"
+					value={(value.engineNumber as string) ?? ""}
+					onChange={(e) => handleChange("engineNumber", e.target.value)}
 					disabled={disabled}
 				/>
 			</div>

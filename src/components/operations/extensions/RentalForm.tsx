@@ -2,6 +2,7 @@
 
 import { FieldLabel } from "@/components/completeness/FieldLabel";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { ExtensionFormProps } from ".";
@@ -39,6 +40,7 @@ export function RentalForm({ value, onChange, disabled }: ExtensionFormProps) {
 				</FieldLabel>
 				<Input
 					id="monthlyRent"
+					inputMode="decimal"
 					value={(value.monthlyRent as string) ?? ""}
 					onChange={(e) => handleChange("monthlyRent", e.target.value)}
 					disabled={disabled}
@@ -51,6 +53,7 @@ export function RentalForm({ value, onChange, disabled }: ExtensionFormProps) {
 				</FieldLabel>
 				<Input
 					id="depositAmount"
+					inputMode="decimal"
 					value={(value.depositAmount as string) ?? ""}
 					onChange={(e) => handleChange("depositAmount", e.target.value)}
 					disabled={disabled}
@@ -175,6 +178,7 @@ export function RentalForm({ value, onChange, disabled }: ExtensionFormProps) {
 				</FieldLabel>
 				<Input
 					id="rentalPeriodMonths"
+					inputMode="numeric"
 					value={(value.rentalPeriodMonths as string) ?? ""}
 					onChange={(e) => handleChange("rentalPeriodMonths", e.target.value)}
 					disabled={disabled}
@@ -185,12 +189,14 @@ export function RentalForm({ value, onChange, disabled }: ExtensionFormProps) {
 				<FieldLabel htmlFor="isPrepaid" tier="kyc_optional">
 					{t("opFieldIsPrepaid")}
 				</FieldLabel>
-				<Input
-					id="isPrepaid"
-					value={(value.isPrepaid as string) ?? ""}
-					onChange={(e) => handleChange("isPrepaid", e.target.value)}
-					disabled={disabled}
-				/>
+				<div className="flex items-center h-10">
+					<Switch
+						id="isPrepaid"
+						checked={(value.isPrepaid as boolean) ?? false}
+						onCheckedChange={(checked) => handleChange("isPrepaid", checked)}
+						disabled={disabled}
+					/>
+				</div>
 			</div>
 
 			<div className="space-y-1">
@@ -199,6 +205,7 @@ export function RentalForm({ value, onChange, disabled }: ExtensionFormProps) {
 				</FieldLabel>
 				<Input
 					id="prepaidMonths"
+					inputMode="numeric"
 					value={(value.prepaidMonths as string) ?? ""}
 					onChange={(e) => handleChange("prepaidMonths", e.target.value)}
 					disabled={disabled}

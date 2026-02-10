@@ -3,6 +3,7 @@
 import { FieldLabel } from "@/components/completeness/FieldLabel";
 import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { ExtensionFormProps } from ".";
 import { getCatalogCode } from "@/lib/catalog-utils";
@@ -42,12 +43,14 @@ export function DonationForm({
 				<FieldLabel htmlFor="isAnonymous" tier="alert_required">
 					{t("opFieldIsAnonymous")}
 				</FieldLabel>
-				<Input
-					id="isAnonymous"
-					value={(value.isAnonymous as string) ?? ""}
-					onChange={(e) => handleChange("isAnonymous", e.target.value)}
-					disabled={disabled}
-				/>
+				<div className="flex items-center h-10">
+					<Switch
+						id="isAnonymous"
+						checked={(value.isAnonymous as boolean) ?? false}
+						onCheckedChange={(checked) => handleChange("isAnonymous", checked)}
+						disabled={disabled}
+					/>
+				</div>
 			</div>
 
 			<div className="space-y-1">
@@ -95,6 +98,7 @@ export function DonationForm({
 				</FieldLabel>
 				<Input
 					id="itemValue"
+					inputMode="decimal"
 					value={(value.itemValue as string) ?? ""}
 					onChange={(e) => handleChange("itemValue", e.target.value)}
 					disabled={disabled}

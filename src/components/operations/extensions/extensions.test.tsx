@@ -65,6 +65,27 @@ vi.mock("@/components/catalogs/CatalogSelector", () => ({
 	),
 }));
 
+// Mock Switch component used for boolean fields
+vi.mock("@/components/ui/switch", () => ({
+	Switch: ({
+		checked,
+		onCheckedChange,
+		disabled,
+	}: {
+		checked: boolean;
+		onCheckedChange: (val: boolean) => void;
+		disabled?: boolean;
+	}) => (
+		<button
+			role="switch"
+			aria-checked={checked}
+			onClick={() => onCheckedChange(!checked)}
+			disabled={disabled}
+			data-testid="switch"
+		/>
+	),
+}));
+
 /**
  * Helper to test any extension form for basic behavior
  */
@@ -84,10 +105,18 @@ function testExtensionForm(
 			const onChange = vi.fn();
 			renderWithProviders(<FormComponent value={{}} onChange={onChange} />);
 
-			// Find the first text input and type in it
-			const inputs = screen.getAllByRole("textbox");
-			if (inputs.length > 0) {
-				await user.type(inputs[0], "x");
+			// Try text inputs first
+			const textInputs = screen.queryAllByRole("textbox");
+			if (textInputs.length > 0) {
+				await user.type(textInputs[0], "x");
+				expect(onChange).toHaveBeenCalled();
+				return;
+			}
+
+			// Try switches if no text inputs
+			const switches = screen.queryAllByRole("switch");
+			if (switches.length > 0) {
+				await user.click(switches[0]);
 				expect(onChange).toHaveBeenCalled();
 			}
 		});
@@ -98,8 +127,13 @@ function testExtensionForm(
 				<FormComponent value={{}} onChange={onChange} disabled />,
 			);
 
-			const inputs = screen.getAllByRole("textbox");
-			for (const input of inputs) {
+			const textInputs = screen.queryAllByRole("textbox");
+			const switches = screen.queryAllByRole("switch");
+			const selects = screen.queryAllByTestId("catalog-selector");
+
+			const allInputs = [...textInputs, ...switches, ...selects];
+			expect(allInputs.length).toBeGreaterThan(0);
+			for (const input of allInputs) {
 				expect(input).toBeDisabled();
 			}
 		});
@@ -114,8 +148,8 @@ function testExtensionForm(
 			renderWithProviders(<FormComponent value={value} onChange={onChange} />);
 
 			// At least one input should have the test value
-			const inputs = screen.getAllByRole("textbox");
-			const hasValue = inputs.some(
+			const textInputs = screen.queryAllByRole("textbox");
+			const hasValue = textInputs.some(
 				(input) => (input as HTMLInputElement).value === "test-value",
 			);
 			if (requiredFields.some((f) => !f.endsWith("Code"))) {

@@ -41,6 +41,8 @@ import { ClientSelector } from "@/components/clients/ClientSelector";
 import type { CompletenessResult } from "@/types/completeness";
 import { useLanguage } from "@/components/LanguageProvider";
 import { getCatalogCode, getCurrencyCode } from "@/lib/catalog-utils";
+import { fetchExchangeRate } from "@/lib/api/exchange-rates";
+import { BranchZipCodeDisplay } from "./BranchZipCodeDisplay";
 
 interface OperationEditViewProps {
 	operationId: string;
@@ -165,6 +167,40 @@ export function OperationEditView({
 		fetchOperation();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [operationId]);
+
+	// Auto-fetch exchange rate when operation currency changes
+	useEffect(() => {
+		let cancelled = false;
+
+		const fetchRate = async () => {
+			const currency = currencyCode || "MXN";
+
+			// No need to fetch if currency is MXN
+			if (currency === "MXN") {
+				return;
+			}
+
+			// Don't fetch if we already have a rate (from loaded operation)
+			if (exchangeRate && parseFloat(exchangeRate) > 0) {
+				return;
+			}
+
+			// Fetch the exchange rate from operation currency to MXN
+			const rate = await fetchExchangeRate(currency, "MXN");
+
+			if (cancelled) return;
+
+			if (rate) {
+				setExchangeRate(rate.rate.toFixed(6));
+			}
+		};
+
+		void fetchRate();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [currencyCode, exchangeRate]);
 
 	// Auto-calculate operation amount from the sum of payment amounts (with exchange rate conversion)
 	useEffect(() => {
@@ -367,7 +403,7 @@ export function OperationEditView({
 							</div>
 
 							{/* Branch Postal Code */}
-							<div className="space-y-2">
+							<div className="space-y-2 @md/main:col-span-2">
 								<FieldLabel
 									tier="sat_required"
 									htmlFor="branch-postal-code"
@@ -375,13 +411,18 @@ export function OperationEditView({
 								>
 									{t("opBranchCp")}
 								</FieldLabel>
-								<Input
-									id="branch-postal-code"
-									value={branchPostalCode}
-									onChange={(e) => setBranchPostalCode(e.target.value)}
-									placeholder="64000"
-									required
-								/>
+								<div className="grid grid-cols-1 @md/main:grid-cols-2 gap-4">
+									<Input
+										id="branch-postal-code"
+										value={branchPostalCode}
+										onChange={(e) => setBranchPostalCode(e.target.value)}
+										placeholder="64000"
+										required
+									/>
+									<div className="flex items-center">
+										<BranchZipCodeDisplay zipCode={branchPostalCode} />
+									</div>
+								</div>
 							</div>
 						</div>
 					</CardContent>
@@ -400,7 +441,11 @@ export function OperationEditView({
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
-							<ExtensionForm value={extension} onChange={setExtension} />
+							<ExtensionForm
+								value={extension}
+								onChange={setExtension}
+								operationCurrency={currencyCode || "MXN"}
+							/>
 						</CardContent>
 					</Card>
 				)}

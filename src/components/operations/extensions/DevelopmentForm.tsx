@@ -95,6 +95,7 @@ export function DevelopmentForm({
 				</FieldLabel>
 				<Input
 					id="contributionAmount"
+					inputMode="decimal"
 					value={(value.contributionAmount as string) ?? ""}
 					onChange={(e) => handleChange("contributionAmount", e.target.value)}
 					disabled={disabled}

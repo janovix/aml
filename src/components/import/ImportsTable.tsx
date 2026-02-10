@@ -61,7 +61,7 @@ const ENTITY_TYPE_CONFIG: Record<
 	{ label: string; icon: typeof Users }
 > = {
 	CLIENT: { label: "Clientes", icon: Users },
-	TRANSACTION: { label: "Transacciones", icon: FileSpreadsheet },
+	OPERATION: { label: "Operaciones", icon: FileSpreadsheet },
 };
 
 export function ImportsTable({ refreshTrigger }: ImportsTableProps) {

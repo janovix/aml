@@ -119,6 +119,7 @@ export function VirtualAssetForm({
 				</FieldLabel>
 				<Input
 					id="assetQuantity"
+					inputMode="decimal"
 					value={(value.assetQuantity as string) ?? ""}
 					onChange={(e) => handleChange("assetQuantity", e.target.value)}
 					disabled={disabled}
@@ -131,6 +132,7 @@ export function VirtualAssetForm({
 				</FieldLabel>
 				<Input
 					id="assetUnitPrice"
+					inputMode="decimal"
 					value={(value.assetUnitPrice as string) ?? ""}
 					onChange={(e) => handleChange("assetUnitPrice", e.target.value)}
 					disabled={disabled}

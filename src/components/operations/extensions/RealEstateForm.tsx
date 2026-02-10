@@ -91,6 +91,7 @@ export function RealEstateForm({
 				</FieldLabel>
 				<Input
 					id="landAreaM2"
+					inputMode="decimal"
 					value={(value.landAreaM2 as string) ?? ""}
 					onChange={(e) => handleChange("landAreaM2", e.target.value)}
 					disabled={disabled}
@@ -103,6 +104,7 @@ export function RealEstateForm({
 				</FieldLabel>
 				<Input
 					id="constructionAreaM2"
+					inputMode="decimal"
 					value={(value.constructionAreaM2 as string) ?? ""}
 					onChange={(e) => handleChange("constructionAreaM2", e.target.value)}
 					disabled={disabled}
