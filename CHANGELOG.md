@@ -1,3 +1,10 @@
+# [1.4.0-rc.21](https://github.com/janovix/aml/compare/v1.4.0-rc.20...v1.4.0-rc.21) (2026-02-08)
+
+
+### Features
+
+* integrate exchange rate handling in OperationCreateView, OperationEditView, and OperationPaymentForm components ([d44570e](https://github.com/janovix/aml/commit/d44570e23307130b520ee12193bb0df54cffcfea))
+
 # [1.4.0-rc.20](https://github.com/janovix/aml/compare/v1.4.0-rc.19...v1.4.0-rc.20) (2026-02-08)
 
 
