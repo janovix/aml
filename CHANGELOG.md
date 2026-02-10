@@ -1,3 +1,10 @@
+# [1.4.0-rc.22](https://github.com/janovix/aml/compare/v1.4.0-rc.21...v1.4.0-rc.22) (2026-02-10)
+
+
+### Features
+
+* enhance operation forms with new BranchZipCodeDisplay component and improve currency handling in OperationCreateView and OperationEditView ([4ba9080](https://github.com/janovix/aml/commit/4ba9080235c9ab8b53bb69b4c13a3c2b44ee1072))
+
 # [1.4.0-rc.21](https://github.com/janovix/aml/compare/v1.4.0-rc.20...v1.4.0-rc.21) (2026-02-08)
 
 
