@@ -1,3 +1,10 @@
+# [1.4.0-rc.23](https://github.com/janovix/aml/compare/v1.4.0-rc.22...v1.4.0-rc.23) (2026-02-10)
+
+
+### Bug Fixes
+
+* update currency metadata in catalog utilities tests to reflect correct codes and add decimal_places ([5f9b1fb](https://github.com/janovix/aml/commit/5f9b1fb729183360ca242d9aed67c60ad484eb8d))
+
 # [1.4.0-rc.22](https://github.com/janovix/aml/compare/v1.4.0-rc.21...v1.4.0-rc.22) (2026-02-10)
 
 
