@@ -89,12 +89,12 @@ describe("getCatalogCode", () => {
 			name: "Peso Mexicano",
 			normalizedName: "peso mexicano",
 			active: true,
-			metadata: { code: "3", shortName: "MXN" },
+			metadata: { code: "MXN", shortName: "MXN", decimal_places: 2 },
 			createdAt: "2024-01-01T00:00:00Z",
 			updatedAt: "2024-01-01T00:00:00Z",
 		};
 
-		expect(getCatalogCode(item)).toBe("3");
+		expect(getCatalogCode(item)).toBe("MXN");
 	});
 });
 
@@ -106,7 +106,7 @@ describe("getCurrencyCode", () => {
 			name: "Peso Mexicano",
 			normalizedName: "peso mexicano",
 			active: true,
-			metadata: { code: "3", shortName: "MXN" },
+			metadata: { code: "MXN", shortName: "MXN", decimal_places: 2 },
 			createdAt: "2024-01-01T00:00:00Z",
 			updatedAt: "2024-01-01T00:00:00Z",
 		};
@@ -121,7 +121,7 @@ describe("getCurrencyCode", () => {
 			name: "Unknown Currency",
 			normalizedName: "unknown currency",
 			active: true,
-			metadata: { code: "999" },
+			metadata: { code: "UNK" },
 			createdAt: "2024-01-01T00:00:00Z",
 			updatedAt: "2024-01-01T00:00:00Z",
 		};
@@ -151,7 +151,7 @@ describe("getCurrencyCode", () => {
 			name: "Dólar estadounidense",
 			normalizedName: "dolar estadounidense",
 			active: true,
-			metadata: { code: "1", shortName: "USD" },
+			metadata: { code: "USD", shortName: "USD", decimal_places: 2 },
 			createdAt: "2024-01-01T00:00:00Z",
 			updatedAt: "2024-01-01T00:00:00Z",
 		};
@@ -166,7 +166,7 @@ describe("getCurrencyCode", () => {
 			name: "Euro",
 			normalizedName: "euro",
 			active: true,
-			metadata: { code: "2", shortName: "EUR" },
+			metadata: { code: "EUR", shortName: "EUR", decimal_places: 2 },
 			createdAt: "2024-01-01T00:00:00Z",
 			updatedAt: "2024-01-01T00:00:00Z",
 		};
