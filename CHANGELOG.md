@@ -1,3 +1,10 @@
+# [1.4.0-rc.24](https://github.com/janovix/aml/compare/v1.4.0-rc.23...v1.4.0-rc.24) (2026-02-11)
+
+
+### Features
+
+* implement session synchronization across tabs and apps during logout ([f95f7cc](https://github.com/janovix/aml/commit/f95f7ccc7db710708075d51e6c6a8378bdd13692))
+
 # [1.4.0-rc.23](https://github.com/janovix/aml/compare/v1.4.0-rc.22...v1.4.0-rc.23) (2026-02-10)
 
 
