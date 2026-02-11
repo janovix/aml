@@ -10,6 +10,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { OpenCVProvider } from "@/lib/document-scanner/OpenCVProvider";
 import { TesseractProvider } from "@/lib/document-scanner/TesseractLoader";
 import type { OrganizationsData } from "@/lib/auth/organizations-server";
+import { useSessionSync } from "@/lib/auth/useSessionSync";
 
 export default function ClientLayout({
 	children,
@@ -20,6 +21,9 @@ export default function ClientLayout({
 	initialOrganizations?: OrganizationsData | null;
 	initialSidebarCollapsed?: boolean;
 }) {
+	// Activate cross-tab and cross-app session synchronization
+	useSessionSync();
+
 	return (
 		<ThemeProvider>
 			<LanguageProvider>
