@@ -1,3 +1,10 @@
+# [1.4.0-rc.26](https://github.com/janovix/aml/compare/v1.4.0-rc.25...v1.4.0-rc.26) (2026-02-12)
+
+
+### Features
+
+* enhance error handling for usage limits in mutations and add loading state to toasts ([544ebce](https://github.com/janovix/aml/commit/544ebcea261731aa28ff3a1ec76ad37640cba987))
+
 # [1.4.0-rc.25](https://github.com/janovix/aml/compare/v1.4.0-rc.24...v1.4.0-rc.25) (2026-02-12)
 
 
