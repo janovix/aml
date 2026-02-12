@@ -204,12 +204,24 @@ export async function confirmUpload(
 ): Promise<ConfirmUploadResponse> {
 	const headers = await getAuthHeaders();
 
+	// Send flat keys matching doc-svc schema (preferred format)
 	const response = await fetch(
 		`${DOC_SVC_URL}/documents/${documentId}/confirm`,
 		{
 			method: "POST",
 			headers,
-			body: JSON.stringify({ keys, fileName, fileSize }),
+			body: JSON.stringify({
+				fileName,
+				fileSize,
+				pageCount: keys.rasterizedImages.length,
+				rasterizedImages: keys.rasterizedImages,
+				finalPdfKey: keys.finalPdf,
+				// Only include if not empty
+				originalPdfs:
+					keys.originalPdfs.length > 0 ? keys.originalPdfs : undefined,
+				originalImages:
+					keys.originalImages.length > 0 ? keys.originalImages : undefined,
+			}),
 		},
 	);
 
