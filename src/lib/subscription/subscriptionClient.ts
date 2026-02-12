@@ -4,6 +4,7 @@
  * Subscription API client for the aml frontend
  *
  * Provides functions to fetch subscription status from auth-svc.
+ * Supports both Stripe subscriptions and enterprise licenses.
  */
 import { getAuthServiceUrl } from "../auth/config";
 
@@ -16,42 +17,47 @@ export type PlanTier =
 	| "business"
 	| "pro"
 	| "ultra"
-	| "business"
-	| "pro"
 	| "enterprise";
 
-export interface UsageCheckResult {
-	allowed: boolean;
-	used: number;
-	included: number;
-	remaining: number;
-	overage: number;
-	planTier: PlanTier;
+/**
+ * Plan limits returned by auth-svc
+ */
+export interface PlanLimits {
+	maxOrganizations: number;
+	usersPerOrg: number;
+	reportsPerMonth: number;
+	noticesPerMonth: number;
+	alertsPerMonth: number;
+	operationsPerMonth: number;
+	clientsPerMonth: number;
 }
 
+/**
+ * Subscription status aligned with auth-svc UserSubscriptionStatus
+ */
 export interface SubscriptionStatus {
 	hasSubscription: boolean;
-	isEnterprise: boolean;
 	status:
-		| "inactive"
 		| "trialing"
 		| "active"
-		| "past_due"
 		| "canceled"
-		| "unpaid";
-	planTier: PlanTier;
-	planName: string | null;
+		| "past_due"
+		| "unpaid"
+		| "incomplete"
+		| "incomplete_expired"
+		| "paused"
+		| null;
+	plan: PlanTier | null;
+	limits: PlanLimits | null;
+	isTrialing: boolean;
+	trialDaysRemaining: number | null;
 	currentPeriodStart: string | null;
 	currentPeriodEnd: string | null;
 	cancelAtPeriodEnd: boolean;
-	usage: {
-		notices: UsageCheckResult;
-		users: UsageCheckResult;
-		alerts?: UsageCheckResult;
-		operations?: UsageCheckResult;
-	} | null;
-	features: string[];
-	stripeCustomerId: string;
+	// License support (enterprise licenses)
+	isLicenseBased: boolean;
+	licenseExpiresAt: string | null;
+	// Organization stats
 	organizationsOwned: number;
 	organizationsLimit: number;
 }
@@ -63,11 +69,11 @@ interface ApiResponse<T> {
 }
 
 /**
- * Get subscription status for current organization
+ * Get subscription status for current user
  */
 export async function getSubscriptionStatus(): Promise<SubscriptionStatus | null> {
 	try {
-		const response = await fetch(`${getBaseUrl()}/api/subscription`, {
+		const response = await fetch(`${getBaseUrl()}/api/subscription/status`, {
 			credentials: "include",
 		});
 
@@ -85,18 +91,15 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus | null
 }
 
 /**
- * Check if user is on free tier
+ * Check if user is on free tier (no active subscription or license)
  */
 export function isFreeTier(subscription: SubscriptionStatus | null): boolean {
 	if (!subscription) return false;
-	return (
-		subscription.planTier === "free" ||
-		(!!subscription.stripeCustomerId && !subscription.hasSubscription)
-	);
+	return !subscription.hasSubscription;
 }
 
 /**
- * Check if user has any active paid subscription
+ * Check if user has any active paid subscription (Stripe or license)
  */
 export function hasPaidSubscription(
 	subscription: SubscriptionStatus | null,
@@ -104,76 +107,45 @@ export function hasPaidSubscription(
 	if (!subscription) return false;
 	return (
 		subscription.hasSubscription &&
-		subscription.planTier !== "none" &&
-		subscription.planTier !== "free"
+		subscription.plan !== null &&
+		subscription.plan !== "none" &&
+		subscription.plan !== "free"
 	);
 }
 
 /**
- * Get usage percentage for a metric
+ * Check if user has an enterprise license (not Stripe)
  */
-export function getUsagePercentage(usage: UsageCheckResult): number {
-	if (usage.included === -1 || usage.included === 0) return 0; // Unlimited or none
-	return Math.round((usage.used / usage.included) * 100);
+export function isEnterprise(subscription: SubscriptionStatus | null): boolean {
+	if (!subscription) return false;
+	return subscription.isLicenseBased || subscription.plan === "enterprise";
 }
 
 /**
- * Check if usage is at or near limit (>= 80%)
+ * Get usage percentage for a metric (based on limits)
  */
-export function isNearLimit(usage: UsageCheckResult): boolean {
-	const percentage = getUsagePercentage(usage);
-	return percentage >= 80;
+export function getUsagePercentage(used: number, included: number): number {
+	if (included <= 0) return 0; // Unlimited or none
+	return Math.round((used / included) * 100);
 }
 
 /**
- * Check if usage has reached limit (>= 100%)
+ * Check if user has AML product access.
+ * All active subscriptions (Stripe or license) include AML access.
  */
-export function isAtLimit(usage: UsageCheckResult): boolean {
-	const percentage = getUsagePercentage(usage);
-	return percentage >= 100;
-}
-
-/**
- * Product feature types
- */
-export type ProductFeature = "product_aml" | "product_watchlist";
-
-/**
- * Check if user has access to a specific product
- * @param subscription - Current subscription status
- * @param product - Product feature to check ("product_aml" or "product_watchlist")
- * @returns true if user has access to the product
- */
-export function hasProductAccess(
-	subscription: SubscriptionStatus | null,
-	product: ProductFeature,
-): boolean {
+export function hasAMLAccess(subscription: SubscriptionStatus | null): boolean {
 	if (!subscription) return false;
 	if (!subscription.hasSubscription) return false;
 
-	// Check if subscription is active or trialing
-	if (subscription.status !== "active" && subscription.status !== "trialing") {
-		return false;
-	}
-
-	// Check if the product feature is in the features array
-	return subscription.features.includes(product);
-}
-
-/**
- * Check if user has AML access
- * Requires product_aml feature (included in business, pro, ultra plans)
- */
-export function hasAMLAccess(subscription: SubscriptionStatus | null): boolean {
-	return hasProductAccess(subscription, "product_aml");
+	return subscription.status === "active" || subscription.status === "trialing";
 }
 
 /**
  * Check if user has Watchlist access
- * Requires product_watchlist feature (included in all plans)
+ * All active subscriptions include Watchlist access.
  */
 export function hasWatchlistAccess(
 	subscription: SubscriptionStatus | null,
 ): boolean {
-	return hasProductAccess(subscription, "product_watchlist");
+	return hasAMLAccess(subscription);
 }

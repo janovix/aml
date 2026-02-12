@@ -3,18 +3,36 @@ import {
 	getSubscriptionStatus,
 	isFreeTier,
 	hasPaidSubscription,
+	isEnterprise,
 	getUsagePercentage,
-	isNearLimit,
-	isAtLimit,
+	hasAMLAccess,
+	hasWatchlistAccess,
 	type SubscriptionStatus,
-	type PlanTier,
-	type UsageCheckResult,
 } from "./subscriptionClient";
 
 // Mock the auth config
 vi.mock("../auth/config", () => ({
 	getAuthServiceUrl: () => "https://auth-svc.test",
 }));
+
+const createMockSubscription = (
+	overrides: Partial<SubscriptionStatus> = {},
+): SubscriptionStatus => ({
+	hasSubscription: true,
+	status: "active",
+	plan: "business",
+	limits: null,
+	isTrialing: false,
+	trialDaysRemaining: null,
+	currentPeriodStart: "2024-01-01T00:00:00Z",
+	currentPeriodEnd: "2024-02-01T00:00:00Z",
+	cancelAtPeriodEnd: false,
+	isLicenseBased: false,
+	licenseExpiresAt: null,
+	organizationsOwned: 1,
+	organizationsLimit: 3,
+	...overrides,
+});
 
 describe("subscriptionClient", () => {
 	const originalFetch = global.fetch;
@@ -29,39 +47,8 @@ describe("subscriptionClient", () => {
 	});
 
 	describe("getSubscriptionStatus", () => {
-		it("fetches subscription status successfully", async () => {
-			const mockStatus: SubscriptionStatus = {
-				hasSubscription: true,
-				isEnterprise: false,
-				status: "active",
-				planTier: "business",
-				planName: "Business Plan",
-				currentPeriodStart: "2024-01-01T00:00:00Z",
-				currentPeriodEnd: "2024-02-01T00:00:00Z",
-				cancelAtPeriodEnd: false,
-				usage: {
-					notices: {
-						allowed: true,
-						used: 10,
-						included: 100,
-						remaining: 90,
-						overage: 0,
-						planTier: "business",
-					},
-					users: {
-						allowed: true,
-						used: 5,
-						included: 10,
-						remaining: 5,
-						overage: 0,
-						planTier: "business",
-					},
-				},
-				features: ["feature1", "feature2"],
-				stripeCustomerId: "cus_123",
-				organizationsOwned: 1,
-				organizationsLimit: 3,
-			};
+		it("fetches subscription status from /api/subscription/status", async () => {
+			const mockStatus = createMockSubscription();
 
 			vi.mocked(global.fetch).mockResolvedValueOnce({
 				ok: true,
@@ -71,7 +58,7 @@ describe("subscriptionClient", () => {
 			const result = await getSubscriptionStatus();
 
 			expect(global.fetch).toHaveBeenCalledWith(
-				"https://auth-svc.test/api/subscription",
+				"https://auth-svc.test/api/subscription/status",
 				{ credentials: "include" },
 			);
 			expect(result).toEqual(mockStatus);
@@ -80,7 +67,7 @@ describe("subscriptionClient", () => {
 		it("returns null when response is not ok", async () => {
 			vi.mocked(global.fetch).mockResolvedValueOnce({
 				ok: false,
-				status: 404,
+				status: 401,
 			} as Response);
 
 			const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -90,7 +77,7 @@ describe("subscriptionClient", () => {
 			expect(result).toBeNull();
 			expect(consoleSpy).toHaveBeenCalledWith(
 				"Failed to fetch subscription status:",
-				404,
+				401,
 			);
 
 			consoleSpy.mockRestore();
@@ -133,65 +120,50 @@ describe("subscriptionClient", () => {
 
 			expect(result).toBeNull();
 		});
+
+		it("correctly parses license-based subscription", async () => {
+			const mockStatus = createMockSubscription({
+				plan: "enterprise",
+				isLicenseBased: true,
+				licenseExpiresAt: "2025-12-31T00:00:00Z",
+				organizationsLimit: 0, // unlimited
+			});
+
+			vi.mocked(global.fetch).mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({ success: true, data: mockStatus }),
+			} as Response);
+
+			const result = await getSubscriptionStatus();
+
+			expect(result?.isLicenseBased).toBe(true);
+			expect(result?.licenseExpiresAt).toBe("2025-12-31T00:00:00Z");
+			expect(result?.plan).toBe("enterprise");
+		});
 	});
 
 	describe("isFreeTier", () => {
-		it("returns true for free tier plan", () => {
-			const subscription: SubscriptionStatus = {
+		it("returns true when user has no subscription", () => {
+			const subscription = createMockSubscription({
 				hasSubscription: false,
-				isEnterprise: false,
-				status: "inactive",
-				planTier: "free",
-				planName: null,
-				currentPeriodStart: null,
-				currentPeriodEnd: null,
-				cancelAtPeriodEnd: false,
-				usage: null,
-				features: [],
-				stripeCustomerId: "",
-				organizationsOwned: 0,
-				organizationsLimit: 0,
-			};
+				status: null,
+				plan: "none",
+			});
 
 			expect(isFreeTier(subscription)).toBe(true);
 		});
 
-		it("returns true when has stripeCustomerId but no subscription", () => {
-			const subscription: SubscriptionStatus = {
-				hasSubscription: false,
-				isEnterprise: false,
-				status: "inactive",
-				planTier: "none",
-				planName: null,
-				currentPeriodStart: null,
-				currentPeriodEnd: null,
-				cancelAtPeriodEnd: false,
-				usage: null,
-				features: [],
-				stripeCustomerId: "cus_123",
-				organizationsOwned: 0,
-				organizationsLimit: 0,
-			};
+		it("returns false when user has active subscription", () => {
+			const subscription = createMockSubscription();
 
-			expect(isFreeTier(subscription)).toBe(true);
+			expect(isFreeTier(subscription)).toBe(false);
 		});
 
-		it("returns false for paid tier", () => {
-			const subscription: SubscriptionStatus = {
-				hasSubscription: true,
-				isEnterprise: false,
-				status: "active",
-				planTier: "business",
-				planName: "Business Plan",
-				currentPeriodStart: "2024-01-01T00:00:00Z",
-				currentPeriodEnd: "2024-02-01T00:00:00Z",
-				cancelAtPeriodEnd: false,
-				usage: null,
-				features: [],
-				stripeCustomerId: "cus_123",
-				organizationsOwned: 1,
-				organizationsLimit: 3,
-			};
+		it("returns false for license-based subscription", () => {
+			const subscription = createMockSubscription({
+				isLicenseBased: true,
+				plan: "enterprise",
+			});
 
 			expect(isFreeTier(subscription)).toBe(false);
 		});
@@ -203,101 +175,40 @@ describe("subscriptionClient", () => {
 
 	describe("hasPaidSubscription", () => {
 		it("returns true for business plan", () => {
-			const subscription: SubscriptionStatus = {
-				hasSubscription: true,
-				isEnterprise: false,
-				status: "active",
-				planTier: "business",
-				planName: "Business Plan",
-				currentPeriodStart: "2024-01-01T00:00:00Z",
-				currentPeriodEnd: "2024-02-01T00:00:00Z",
-				cancelAtPeriodEnd: false,
-				usage: null,
-				features: [],
-				stripeCustomerId: "cus_123",
-				organizationsOwned: 1,
-				organizationsLimit: 3,
-			};
+			const subscription = createMockSubscription({ plan: "business" });
 
 			expect(hasPaidSubscription(subscription)).toBe(true);
 		});
 
 		it("returns true for pro plan", () => {
-			const subscription: SubscriptionStatus = {
-				hasSubscription: true,
-				isEnterprise: false,
-				status: "active",
-				planTier: "pro",
-				planName: "Pro Plan",
-				currentPeriodStart: "2024-01-01T00:00:00Z",
-				currentPeriodEnd: "2024-02-01T00:00:00Z",
-				cancelAtPeriodEnd: false,
-				usage: null,
-				features: [],
-				stripeCustomerId: "cus_123",
-				organizationsOwned: 2,
-				organizationsLimit: 5,
-			};
+			const subscription = createMockSubscription({ plan: "pro" });
 
 			expect(hasPaidSubscription(subscription)).toBe(true);
 		});
 
-		it("returns false for free tier", () => {
-			const subscription: SubscriptionStatus = {
-				hasSubscription: false,
-				isEnterprise: false,
-				status: "inactive",
-				planTier: "free",
-				planName: null,
-				currentPeriodStart: null,
-				currentPeriodEnd: null,
-				cancelAtPeriodEnd: false,
-				usage: null,
-				features: [],
-				stripeCustomerId: "",
-				organizationsOwned: 0,
-				organizationsLimit: 0,
-			};
+		it("returns true for enterprise license", () => {
+			const subscription = createMockSubscription({
+				plan: "enterprise",
+				isLicenseBased: true,
+			});
 
-			expect(hasPaidSubscription(subscription)).toBe(false);
-		});
-
-		it("returns false for none tier", () => {
-			const subscription: SubscriptionStatus = {
-				hasSubscription: false,
-				isEnterprise: false,
-				status: "inactive",
-				planTier: "none",
-				planName: null,
-				currentPeriodStart: null,
-				currentPeriodEnd: null,
-				cancelAtPeriodEnd: false,
-				usage: null,
-				features: [],
-				stripeCustomerId: "",
-				organizationsOwned: 0,
-				organizationsLimit: 0,
-			};
-
-			expect(hasPaidSubscription(subscription)).toBe(false);
+			expect(hasPaidSubscription(subscription)).toBe(true);
 		});
 
 		it("returns false when hasSubscription is false", () => {
-			const subscription: SubscriptionStatus = {
+			const subscription = createMockSubscription({
 				hasSubscription: false,
-				isEnterprise: false,
-				status: "inactive",
-				planTier: "business",
-				planName: null,
-				currentPeriodStart: null,
-				currentPeriodEnd: null,
-				cancelAtPeriodEnd: false,
-				usage: null,
-				features: [],
-				stripeCustomerId: "",
-				organizationsOwned: 0,
-				organizationsLimit: 0,
-			};
+				plan: "none",
+			});
+
+			expect(hasPaidSubscription(subscription)).toBe(false);
+		});
+
+		it("returns false for none plan", () => {
+			const subscription = createMockSubscription({
+				hasSubscription: false,
+				plan: "none",
+			});
 
 			expect(hasPaidSubscription(subscription)).toBe(false);
 		});
@@ -307,178 +218,110 @@ describe("subscriptionClient", () => {
 		});
 	});
 
+	describe("isEnterprise", () => {
+		it("returns true for license-based subscription", () => {
+			const subscription = createMockSubscription({
+				isLicenseBased: true,
+				plan: "enterprise",
+			});
+
+			expect(isEnterprise(subscription)).toBe(true);
+		});
+
+		it("returns true for enterprise plan even without license flag", () => {
+			const subscription = createMockSubscription({
+				plan: "enterprise",
+				isLicenseBased: false,
+			});
+
+			expect(isEnterprise(subscription)).toBe(true);
+		});
+
+		it("returns false for business plan", () => {
+			const subscription = createMockSubscription({ plan: "business" });
+
+			expect(isEnterprise(subscription)).toBe(false);
+		});
+
+		it("returns false for null subscription", () => {
+			expect(isEnterprise(null)).toBe(false);
+		});
+	});
+
 	describe("getUsagePercentage", () => {
 		it("calculates percentage correctly", () => {
-			const usage: UsageCheckResult = {
-				allowed: true,
-				used: 50,
-				included: 100,
-				remaining: 50,
-				overage: 0,
-				planTier: "business",
-			};
-
-			expect(getUsagePercentage(usage)).toBe(50);
+			expect(getUsagePercentage(50, 100)).toBe(50);
 		});
 
-		it("returns 0 for unlimited (included === -1)", () => {
-			const usage: UsageCheckResult = {
-				allowed: true,
-				used: 1000,
-				included: -1,
-				remaining: -1,
-				overage: 0,
-				planTier: "enterprise",
-			};
-
-			expect(getUsagePercentage(usage)).toBe(0);
-		});
-
-		it("returns 0 when included is 0", () => {
-			const usage: UsageCheckResult = {
-				allowed: false,
-				used: 0,
-				included: 0,
-				remaining: 0,
-				overage: 0,
-				planTier: "none",
-			};
-
-			expect(getUsagePercentage(usage)).toBe(0);
+		it("returns 0 for unlimited (included <= 0)", () => {
+			expect(getUsagePercentage(1000, -1)).toBe(0);
+			expect(getUsagePercentage(0, 0)).toBe(0);
 		});
 
 		it("rounds percentage correctly", () => {
-			const usage: UsageCheckResult = {
-				allowed: true,
-				used: 33,
-				included: 100,
-				remaining: 67,
-				overage: 0,
-				planTier: "business",
-			};
-
-			expect(getUsagePercentage(usage)).toBe(33);
+			expect(getUsagePercentage(33, 100)).toBe(33);
 		});
 
-		it("handles overage correctly", () => {
-			const usage: UsageCheckResult = {
-				allowed: true,
-				used: 150,
-				included: 100,
-				remaining: 0,
-				overage: 50,
-				planTier: "business",
-			};
-
-			expect(getUsagePercentage(usage)).toBe(150);
+		it("handles overage (above 100%)", () => {
+			expect(getUsagePercentage(150, 100)).toBe(150);
 		});
 	});
 
-	describe("isNearLimit", () => {
-		it("returns true when at 80%", () => {
-			const usage: UsageCheckResult = {
-				allowed: true,
-				used: 80,
-				included: 100,
-				remaining: 20,
-				overage: 0,
-				planTier: "business",
-			};
+	describe("hasAMLAccess", () => {
+		it("returns true for active Stripe subscription", () => {
+			const subscription = createMockSubscription({ status: "active" });
 
-			expect(isNearLimit(usage)).toBe(true);
+			expect(hasAMLAccess(subscription)).toBe(true);
 		});
 
-		it("returns true when above 80%", () => {
-			const usage: UsageCheckResult = {
-				allowed: true,
-				used: 90,
-				included: 100,
-				remaining: 10,
-				overage: 0,
-				planTier: "business",
-			};
+		it("returns true for trialing subscription", () => {
+			const subscription = createMockSubscription({
+				status: "trialing",
+				isTrialing: true,
+			});
 
-			expect(isNearLimit(usage)).toBe(true);
+			expect(hasAMLAccess(subscription)).toBe(true);
 		});
 
-		it("returns false when below 80%", () => {
-			const usage: UsageCheckResult = {
-				allowed: true,
-				used: 79,
-				included: 100,
-				remaining: 21,
-				overage: 0,
-				planTier: "business",
-			};
+		it("returns true for active enterprise license", () => {
+			const subscription = createMockSubscription({
+				status: "active",
+				isLicenseBased: true,
+				plan: "enterprise",
+			});
 
-			expect(isNearLimit(usage)).toBe(false);
+			expect(hasAMLAccess(subscription)).toBe(true);
 		});
 
-		it("returns false for unlimited", () => {
-			const usage: UsageCheckResult = {
-				allowed: true,
-				used: 1000,
-				included: -1,
-				remaining: -1,
-				overage: 0,
-				planTier: "enterprise",
-			};
+		it("returns false when no subscription", () => {
+			const subscription = createMockSubscription({
+				hasSubscription: false,
+				status: null,
+			});
 
-			expect(isNearLimit(usage)).toBe(false);
+			expect(hasAMLAccess(subscription)).toBe(false);
+		});
+
+		it("returns false for canceled subscription", () => {
+			const subscription = createMockSubscription({ status: "canceled" });
+
+			expect(hasAMLAccess(subscription)).toBe(false);
+		});
+
+		it("returns false for null subscription", () => {
+			expect(hasAMLAccess(null)).toBe(false);
 		});
 	});
 
-	describe("isAtLimit", () => {
-		it("returns true when at 100%", () => {
-			const usage: UsageCheckResult = {
-				allowed: true,
-				used: 100,
-				included: 100,
-				remaining: 0,
-				overage: 0,
-				planTier: "business",
-			};
+	describe("hasWatchlistAccess", () => {
+		it("returns true for active subscription", () => {
+			const subscription = createMockSubscription({ status: "active" });
 
-			expect(isAtLimit(usage)).toBe(true);
+			expect(hasWatchlistAccess(subscription)).toBe(true);
 		});
 
-		it("returns true when above 100%", () => {
-			const usage: UsageCheckResult = {
-				allowed: true,
-				used: 150,
-				included: 100,
-				remaining: 0,
-				overage: 50,
-				planTier: "business",
-			};
-
-			expect(isAtLimit(usage)).toBe(true);
-		});
-
-		it("returns false when below 100%", () => {
-			const usage: UsageCheckResult = {
-				allowed: true,
-				used: 99,
-				included: 100,
-				remaining: 1,
-				overage: 0,
-				planTier: "business",
-			};
-
-			expect(isAtLimit(usage)).toBe(false);
-		});
-
-		it("returns false for unlimited", () => {
-			const usage: UsageCheckResult = {
-				allowed: true,
-				used: 1000,
-				included: -1,
-				remaining: -1,
-				overage: 0,
-				planTier: "enterprise",
-			};
-
-			expect(isAtLimit(usage)).toBe(false);
+		it("returns false for null subscription", () => {
+			expect(hasWatchlistAccess(null)).toBe(false);
 		});
 	});
 });

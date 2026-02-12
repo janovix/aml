@@ -22,19 +22,9 @@ vi.mock("@/components/LanguageProvider", () => ({
 	useLanguage: () => ({
 		t: (key: string) => {
 			const translations: Record<string, string> = {
-				"subscription.banner.limitReached": "Limit Reached",
-				"subscription.banner.limitReachedDesc":
-					"You have reached your limit for {metrics}",
-				"subscription.banner.nearLimit": "Near Limit",
-				"subscription.banner.nearLimitDesc":
-					"You are approaching your limit for {metrics}",
 				"subscription.banner.freeTier": "Free Tier",
 				"subscription.banner.freeTierDesc": "Upgrade to unlock more features",
 				"subscription.banner.upgrade": "Upgrade",
-				"subscription.metrics.notices": "notices",
-				"subscription.metrics.users": "users",
-				"subscription.metrics.alerts": "alerts",
-				"subscription.metrics.operations": "operations",
 				"common.dismiss": "Dismiss",
 			};
 			return translations[key] || key;
@@ -52,45 +42,28 @@ Object.defineProperty(window, "location", {
 	writable: true,
 });
 
+const createMockSubscription = (
+	overrides?: Partial<SubscriptionStatus>,
+): SubscriptionStatus => ({
+	hasSubscription: false,
+	status: null,
+	plan: "none",
+	limits: null,
+	isTrialing: false,
+	trialDaysRemaining: null,
+	currentPeriodStart: null,
+	currentPeriodEnd: null,
+	cancelAtPeriodEnd: false,
+	isLicenseBased: false,
+	licenseExpiresAt: null,
+	organizationsOwned: 0,
+	organizationsLimit: 0,
+	...overrides,
+});
+
 describe("SubscriptionBanner", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-	});
-
-	const createMockSubscription = (
-		overrides?: Partial<SubscriptionStatus>,
-	): SubscriptionStatus => ({
-		hasSubscription: false,
-		isEnterprise: false,
-		status: "inactive",
-		planTier: "free",
-		planName: null,
-		currentPeriodStart: null,
-		currentPeriodEnd: null,
-		cancelAtPeriodEnd: false,
-		usage: {
-			notices: {
-				allowed: true,
-				used: 10,
-				included: 50,
-				remaining: 40,
-				overage: 0,
-				planTier: "free",
-			},
-			users: {
-				allowed: true,
-				used: 2,
-				included: 3,
-				remaining: 1,
-				overage: 0,
-				planTier: "free",
-			},
-		},
-		features: [],
-		stripeCustomerId: "",
-		organizationsOwned: 0,
-		organizationsLimit: 0,
-		...overrides,
 	});
 
 	it("renders free tier banner", async () => {
@@ -111,78 +84,46 @@ describe("SubscriptionBanner", () => {
 		).toBeInTheDocument();
 	});
 
-	it("renders near limit warning", async () => {
+	it("does not render for active Stripe subscription", async () => {
 		const mockStatus = createMockSubscription({
-			usage: {
-				notices: {
-					allowed: true,
-					used: 80,
-					included: 100,
-					remaining: 20,
-					overage: 0,
-					planTier: "business",
-				},
-				users: {
-					allowed: true,
-					used: 5,
-					included: 10,
-					remaining: 5,
-					overage: 0,
-					planTier: "business",
-				},
-			},
+			hasSubscription: true,
+			status: "active",
+			plan: "business",
 		});
 		vi.spyOn(subscriptionClient, "getSubscriptionStatus").mockResolvedValue(
 			mockStatus,
 		);
 
-		render(
+		const { container } = render(
 			<SubscriptionProvider>
-				<SubscriptionBanner checkMetrics={["notices"]} />
+				<SubscriptionBanner />
 			</SubscriptionProvider>,
 		);
 
-		await screen.findByText("Near Limit");
-		expect(
-			screen.getByText(/You are approaching your limit for notices/),
-		).toBeInTheDocument();
+		await new Promise((resolve) => setTimeout(resolve, 100));
+		expect(container.firstChild).toBeNull();
 	});
 
-	it("renders limit reached urgent warning", async () => {
+	it("does not render for enterprise license", async () => {
 		const mockStatus = createMockSubscription({
-			usage: {
-				notices: {
-					allowed: true,
-					used: 100,
-					included: 100,
-					remaining: 0,
-					overage: 0,
-					planTier: "business",
-				},
-				users: {
-					allowed: true,
-					used: 10,
-					included: 10,
-					remaining: 0,
-					overage: 0,
-					planTier: "business",
-				},
-			},
+			hasSubscription: true,
+			status: "active",
+			plan: "enterprise",
+			isLicenseBased: true,
+			licenseExpiresAt: "2025-12-31T00:00:00Z",
 		});
 		vi.spyOn(subscriptionClient, "getSubscriptionStatus").mockResolvedValue(
 			mockStatus,
 		);
 
-		render(
+		const { container } = render(
 			<SubscriptionProvider>
-				<SubscriptionBanner checkMetrics={["notices", "users"]} />
+				<SubscriptionBanner />
 			</SubscriptionProvider>,
 		);
 
-		await screen.findByText("Limit Reached");
-		expect(
-			screen.getByText(/You have reached your limit for notices, users/),
-		).toBeInTheDocument();
+		await new Promise((resolve) => setTimeout(resolve, 100));
+		expect(container.firstChild).toBeNull();
 	});
 
 	it("does not render when dismissed", async () => {
@@ -205,7 +146,7 @@ describe("SubscriptionBanner", () => {
 		expect(container.firstChild).toBeNull();
 	});
 
-	it("does not render when not dismissible", async () => {
+	it("does not show dismiss button when not dismissible", async () => {
 		const mockStatus = createMockSubscription();
 		vi.spyOn(subscriptionClient, "getSubscriptionStatus").mockResolvedValue(
 			mockStatus,
@@ -232,43 +173,6 @@ describe("SubscriptionBanner", () => {
 		const { container } = render(
 			<SubscriptionProvider>
 				<SubscriptionBanner showFreeTierBanner={false} />
-			</SubscriptionProvider>,
-		);
-
-		await new Promise((resolve) => setTimeout(resolve, 100));
-		expect(container.firstChild).toBeNull();
-	});
-
-	it("does not render when has paid subscription without warnings", async () => {
-		const mockStatus = createMockSubscription({
-			hasSubscription: true,
-			planTier: "business",
-			usage: {
-				notices: {
-					allowed: true,
-					used: 10,
-					included: 100,
-					remaining: 90,
-					overage: 0,
-					planTier: "business",
-				},
-				users: {
-					allowed: true,
-					used: 2,
-					included: 10,
-					remaining: 8,
-					overage: 0,
-					planTier: "business",
-				},
-			},
-		});
-		vi.spyOn(subscriptionClient, "getSubscriptionStatus").mockResolvedValue(
-			mockStatus,
-		);
-
-		const { container } = render(
-			<SubscriptionProvider>
-				<SubscriptionBanner />
 			</SubscriptionProvider>,
 		);
 
@@ -343,87 +247,5 @@ describe("SubscriptionBanner", () => {
 
 		await new Promise((resolve) => setTimeout(resolve, 100));
 		expect(container.firstChild).toBeNull();
-	});
-
-	it("handles multiple metrics at limit", async () => {
-		const mockStatus = createMockSubscription({
-			usage: {
-				notices: {
-					allowed: true,
-					used: 100,
-					included: 100,
-					remaining: 0,
-					overage: 0,
-					planTier: "business",
-				},
-				users: {
-					allowed: true,
-					used: 10,
-					included: 10,
-					remaining: 0,
-					overage: 0,
-					planTier: "business",
-				},
-				alerts: {
-					allowed: true,
-					used: 50,
-					included: 50,
-					remaining: 0,
-					overage: 0,
-					planTier: "business",
-				},
-			},
-		});
-		vi.spyOn(subscriptionClient, "getSubscriptionStatus").mockResolvedValue(
-			mockStatus,
-		);
-
-		render(
-			<SubscriptionProvider>
-				<SubscriptionBanner checkMetrics={["notices", "users", "alerts"]} />
-			</SubscriptionProvider>,
-		);
-
-		await screen.findByText("Limit Reached");
-		expect(
-			screen.getByText(
-				/You have reached your limit for notices, users, alerts/,
-			),
-		).toBeInTheDocument();
-	});
-
-	it("prioritizes at limit over near limit", async () => {
-		const mockStatus = createMockSubscription({
-			usage: {
-				notices: {
-					allowed: true,
-					used: 100,
-					included: 100,
-					remaining: 0,
-					overage: 0,
-					planTier: "business",
-				},
-				users: {
-					allowed: true,
-					used: 80,
-					included: 100,
-					remaining: 20,
-					overage: 0,
-					planTier: "business",
-				},
-			},
-		});
-		vi.spyOn(subscriptionClient, "getSubscriptionStatus").mockResolvedValue(
-			mockStatus,
-		);
-
-		render(
-			<SubscriptionProvider>
-				<SubscriptionBanner checkMetrics={["notices", "users"]} />
-			</SubscriptionProvider>,
-		);
-
-		await screen.findByText("Limit Reached");
-		expect(screen.queryByText("Near Limit")).not.toBeInTheDocument();
 	});
 });

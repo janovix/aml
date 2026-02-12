@@ -9,6 +9,7 @@ import { ScrollRestoration } from "@/components/ScrollRestoration";
 import { Toaster } from "@/components/ui/sonner";
 import { OpenCVProvider } from "@/lib/document-scanner/OpenCVProvider";
 import { TesseractProvider } from "@/lib/document-scanner/TesseractLoader";
+import { SubscriptionProvider } from "@/lib/subscription";
 import type { OrganizationsData } from "@/lib/auth/organizations-server";
 import { useSessionSync } from "@/lib/auth/useSessionSync";
 
@@ -35,11 +36,13 @@ export default function ClientLayout({
 								<OrgBootstrapper
 									initialOrganizations={initialOrganizations || undefined}
 								>
-									<DashboardLayout
-										initialSidebarCollapsed={initialSidebarCollapsed}
-									>
-										{children}
-									</DashboardLayout>
+									<SubscriptionProvider>
+										<DashboardLayout
+											initialSidebarCollapsed={initialSidebarCollapsed}
+										>
+											{children}
+										</DashboardLayout>
+									</SubscriptionProvider>
 								</OrgBootstrapper>
 								<Toaster />
 							</TesseractProvider>

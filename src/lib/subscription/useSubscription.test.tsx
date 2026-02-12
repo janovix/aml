@@ -17,6 +17,25 @@ vi.mock("./subscriptionClient", async (importOriginal) => {
 	};
 });
 
+const createMockSubscription = (
+	overrides: Partial<SubscriptionStatus> = {},
+): SubscriptionStatus => ({
+	hasSubscription: true,
+	status: "active",
+	plan: "business",
+	limits: null,
+	isTrialing: false,
+	trialDaysRemaining: null,
+	currentPeriodStart: "2024-01-01T00:00:00Z",
+	currentPeriodEnd: "2024-02-01T00:00:00Z",
+	cancelAtPeriodEnd: false,
+	isLicenseBased: false,
+	licenseExpiresAt: null,
+	organizationsOwned: 1,
+	organizationsLimit: 3,
+	...overrides,
+});
+
 // Test component that uses the hook
 function TestComponent() {
 	const subscription = useSubscription();
@@ -31,14 +50,12 @@ function TestComponent() {
 			<div data-testid="hasPaidSubscription">
 				{subscription.hasPaidSubscription ? "yes" : "no"}
 			</div>
-			<div data-testid="isNearLimit">
-				{subscription.isNearLimit("notices") ? "yes" : "no"}
+			<div data-testid="isEnterprise">
+				{subscription.isEnterprise ? "yes" : "no"}
 			</div>
-			<div data-testid="isAtLimit">
-				{subscription.isAtLimit("notices") ? "yes" : "no"}
-			</div>
-			<div data-testid="usagePercentage">
-				{subscription.getUsagePercentage("notices")}
+			<div data-testid="plan">{subscription.subscription?.plan ?? "none"}</div>
+			<div data-testid="isLicenseBased">
+				{subscription.subscription?.isLicenseBased ? "yes" : "no"}
 			</div>
 			<button onClick={() => subscription.refresh()}>Refresh</button>
 		</div>
@@ -62,39 +79,8 @@ describe("useSubscription", () => {
 		vi.restoreAllMocks();
 	});
 
-	it("provides subscription context", async () => {
-		const mockStatus: SubscriptionStatus = {
-			hasSubscription: true,
-			isEnterprise: false,
-			status: "active",
-			planTier: "business",
-			planName: "Business Plan",
-			currentPeriodStart: "2024-01-01T00:00:00Z",
-			currentPeriodEnd: "2024-02-01T00:00:00Z",
-			cancelAtPeriodEnd: false,
-			usage: {
-				notices: {
-					allowed: true,
-					used: 80,
-					included: 100,
-					remaining: 20,
-					overage: 0,
-					planTier: "business",
-				},
-				users: {
-					allowed: true,
-					used: 5,
-					included: 10,
-					remaining: 5,
-					overage: 0,
-					planTier: "business",
-				},
-			},
-			features: [],
-			stripeCustomerId: "cus_123",
-			organizationsOwned: 1,
-			organizationsLimit: 3,
-		};
+	it("provides subscription context for Stripe subscription", async () => {
+		const mockStatus = createMockSubscription();
 
 		vi.mocked(subscriptionClient.getSubscriptionStatus).mockResolvedValueOnce(
 			mockStatus,
@@ -114,44 +100,46 @@ describe("useSubscription", () => {
 
 		expect(screen.getByTestId("isFreeTier")).toHaveTextContent("paid");
 		expect(screen.getByTestId("hasPaidSubscription")).toHaveTextContent("yes");
-		expect(screen.getByTestId("isNearLimit")).toHaveTextContent("yes");
-		expect(screen.getByTestId("isAtLimit")).toHaveTextContent("no");
-		expect(screen.getByTestId("usagePercentage")).toHaveTextContent("80");
+		expect(screen.getByTestId("isEnterprise")).toHaveTextContent("no");
+		expect(screen.getByTestId("plan")).toHaveTextContent("business");
+		expect(screen.getByTestId("isLicenseBased")).toHaveTextContent("no");
+	});
+
+	it("provides subscription context for enterprise license", async () => {
+		const mockStatus = createMockSubscription({
+			plan: "enterprise",
+			isLicenseBased: true,
+			licenseExpiresAt: "2025-12-31T00:00:00Z",
+			organizationsLimit: 0, // unlimited
+		});
+
+		vi.mocked(subscriptionClient.getSubscriptionStatus).mockResolvedValueOnce(
+			mockStatus,
+		);
+
+		render(
+			<SubscriptionProvider>
+				<TestComponent />
+			</SubscriptionProvider>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByTestId("loading")).toHaveTextContent("loaded");
+		});
+
+		expect(screen.getByTestId("isFreeTier")).toHaveTextContent("paid");
+		expect(screen.getByTestId("hasPaidSubscription")).toHaveTextContent("yes");
+		expect(screen.getByTestId("isEnterprise")).toHaveTextContent("yes");
+		expect(screen.getByTestId("plan")).toHaveTextContent("enterprise");
+		expect(screen.getByTestId("isLicenseBased")).toHaveTextContent("yes");
 	});
 
 	it("handles free tier subscription", async () => {
-		const mockStatus: SubscriptionStatus = {
+		const mockStatus = createMockSubscription({
 			hasSubscription: false,
-			isEnterprise: false,
-			status: "inactive",
-			planTier: "free",
-			planName: null,
-			currentPeriodStart: null,
-			currentPeriodEnd: null,
-			cancelAtPeriodEnd: false,
-			usage: {
-				notices: {
-					allowed: true,
-					used: 10,
-					included: 50,
-					remaining: 40,
-					overage: 0,
-					planTier: "free",
-				},
-				users: {
-					allowed: true,
-					used: 2,
-					included: 3,
-					remaining: 1,
-					overage: 0,
-					planTier: "free",
-				},
-			},
-			features: [],
-			stripeCustomerId: "",
-			organizationsOwned: 0,
-			organizationsLimit: 0,
-		};
+			status: null,
+			plan: "none",
+		});
 
 		vi.mocked(subscriptionClient.getSubscriptionStatus).mockResolvedValueOnce(
 			mockStatus,
@@ -168,107 +156,11 @@ describe("useSubscription", () => {
 		});
 
 		expect(screen.getByTestId("hasPaidSubscription")).toHaveTextContent("no");
-	});
-
-	it("handles subscription at limit", async () => {
-		const mockStatus: SubscriptionStatus = {
-			hasSubscription: true,
-			isEnterprise: false,
-			status: "active",
-			planTier: "business",
-			planName: "Business Plan",
-			currentPeriodStart: "2024-01-01T00:00:00Z",
-			currentPeriodEnd: "2024-02-01T00:00:00Z",
-			cancelAtPeriodEnd: false,
-			usage: {
-				notices: {
-					allowed: true,
-					used: 100,
-					included: 100,
-					remaining: 0,
-					overage: 0,
-					planTier: "business",
-				},
-				users: {
-					allowed: true,
-					used: 10,
-					included: 10,
-					remaining: 0,
-					overage: 0,
-					planTier: "business",
-				},
-			},
-			features: [],
-			stripeCustomerId: "cus_123",
-			organizationsOwned: 1,
-			organizationsLimit: 3,
-		};
-
-		vi.mocked(subscriptionClient.getSubscriptionStatus).mockResolvedValueOnce(
-			mockStatus,
-		);
-
-		render(
-			<SubscriptionProvider>
-				<TestComponent />
-			</SubscriptionProvider>,
-		);
-
-		await waitFor(() => {
-			expect(screen.getByTestId("isAtLimit")).toHaveTextContent("yes");
-		});
-	});
-
-	it("handles subscription with no usage data", async () => {
-		const mockStatus: SubscriptionStatus = {
-			hasSubscription: true,
-			isEnterprise: false,
-			status: "active",
-			planTier: "business",
-			planName: "Business Plan",
-			currentPeriodStart: "2024-01-01T00:00:00Z",
-			currentPeriodEnd: "2024-02-01T00:00:00Z",
-			cancelAtPeriodEnd: false,
-			usage: null,
-			features: [],
-			stripeCustomerId: "cus_123",
-			organizationsOwned: 1,
-			organizationsLimit: 3,
-		};
-
-		vi.mocked(subscriptionClient.getSubscriptionStatus).mockResolvedValueOnce(
-			mockStatus,
-		);
-
-		render(
-			<SubscriptionProvider>
-				<TestComponent />
-			</SubscriptionProvider>,
-		);
-
-		await waitFor(() => {
-			expect(screen.getByTestId("isNearLimit")).toHaveTextContent("no");
-			expect(screen.getByTestId("isAtLimit")).toHaveTextContent("no");
-			expect(screen.getByTestId("usagePercentage")).toHaveTextContent("0");
-		});
+		expect(screen.getByTestId("isEnterprise")).toHaveTextContent("no");
 	});
 
 	it("handles refresh", async () => {
-		const mockStatus: SubscriptionStatus = {
-			hasSubscription: true,
-			isEnterprise: false,
-			status: "active",
-			planTier: "business",
-			planName: "Business Plan",
-			currentPeriodStart: "2024-01-01T00:00:00Z",
-			currentPeriodEnd: "2024-02-01T00:00:00Z",
-			cancelAtPeriodEnd: false,
-			usage: null,
-			features: [],
-			stripeCustomerId: "cus_123",
-			organizationsOwned: 1,
-			organizationsLimit: 3,
-		};
+		const mockStatus = createMockSubscription();
 
 		vi.mocked(subscriptionClient.getSubscriptionStatus)
 			.mockResolvedValueOnce(mockStatus)
@@ -327,91 +219,23 @@ describe("useSubscription", () => {
 		expect(screen.getByTestId("no-subscription")).toBeInTheDocument();
 	});
 
-	it("handles all metric types", async () => {
-		const mockStatus: SubscriptionStatus = {
-			hasSubscription: true,
-			isEnterprise: false,
-			status: "active",
-			planTier: "business",
-			planName: "Business Plan",
-			currentPeriodStart: "2024-01-01T00:00:00Z",
-			currentPeriodEnd: "2024-02-01T00:00:00Z",
-			cancelAtPeriodEnd: false,
-			usage: {
-				notices: {
-					allowed: true,
-					used: 80,
-					included: 100,
-					remaining: 20,
-					overage: 0,
-					planTier: "business",
-				},
-				users: {
-					allowed: true,
-					used: 5,
-					included: 10,
-					remaining: 5,
-					overage: 0,
-					planTier: "business",
-				},
-				alerts: {
-					allowed: true,
-					used: 50,
-					included: 100,
-					remaining: 50,
-					overage: 0,
-					planTier: "business",
-				},
-				operations: {
-					allowed: true,
-					used: 90,
-					included: 100,
-					remaining: 10,
-					overage: 0,
-					planTier: "business",
-				},
-			},
-			features: [],
-			stripeCustomerId: "cus_123",
-			organizationsOwned: 1,
-			organizationsLimit: 3,
-		};
-
+	it("handles null subscription from API", async () => {
 		vi.mocked(subscriptionClient.getSubscriptionStatus).mockResolvedValueOnce(
-			mockStatus,
+			null,
 		);
-
-		function TestAllMetrics() {
-			const sub = useSubscription();
-			return (
-				<div>
-					<div data-testid="notices-near">
-						{sub.isNearLimit("notices") ? "yes" : "no"}
-					</div>
-					<div data-testid="users-near">
-						{sub.isNearLimit("users") ? "yes" : "no"}
-					</div>
-					<div data-testid="alerts-near">
-						{sub.isNearLimit("alerts") ? "yes" : "no"}
-					</div>
-					<div data-testid="operations-near">
-						{sub.isNearLimit("operations") ? "yes" : "no"}
-					</div>
-				</div>
-			);
-		}
 
 		render(
 			<SubscriptionProvider>
-				<TestAllMetrics />
+				<TestComponent />
 			</SubscriptionProvider>,
 		);
 
 		await waitFor(() => {
-			expect(screen.getByTestId("notices-near")).toHaveTextContent("yes");
-			expect(screen.getByTestId("users-near")).toHaveTextContent("no");
-			expect(screen.getByTestId("alerts-near")).toHaveTextContent("no");
-			expect(screen.getByTestId("operations-near")).toHaveTextContent("yes");
+			expect(screen.getByTestId("loading")).toHaveTextContent("loaded");
 		});
+
+		expect(screen.getByTestId("isFreeTier")).toHaveTextContent("paid");
+		expect(screen.getByTestId("hasPaidSubscription")).toHaveTextContent("no");
+		expect(screen.getByTestId("plan")).toHaveTextContent("none");
 	});
 });

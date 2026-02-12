@@ -80,14 +80,18 @@ export default function OrgSlugLayout({ children }: { children: ReactNode }) {
 		notFound();
 	}
 
-	// Check AML product access
+	// Check AML product access (works for both Stripe and license-based subscriptions)
 	// Show loading state while subscription is being fetched
 	if (subscription?.isLoading) {
 		return <NoAMLAccess isLoading />;
 	}
 
 	// If subscription is loaded but user doesn't have AML access, show blocker
-	if (subscription && !hasAMLAccess(subscription.subscription)) {
+	if (
+		subscription &&
+		!subscription.isLoading &&
+		!hasAMLAccess(subscription.subscription)
+	) {
 		return <NoAMLAccess />;
 	}
 
