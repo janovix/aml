@@ -1,7 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
-import { ApiError } from "./api/http";
+import { ApiError, isUsageLimitError, getUsageLimitDetails } from "./api/http";
 
 /**
  * Extracts validation error messages from Zod error format.
@@ -102,6 +102,35 @@ export function extractErrorMessage(error: unknown): string {
 	return "Ocurrió un error inesperado";
 }
 
+/**
+ * Builds the auth billing URL for upgrade redirects.
+ * Replaces `aml.` in the origin with `auth.` and appends `/settings/billing`.
+ */
+function getBillingUrl(): string {
+	if (typeof window === "undefined") return "/settings/billing";
+	return `${window.location.origin.replace("aml.", "auth.")}/settings/billing`;
+}
+
+/**
+ * Shows a persistent error toast when a usage limit is exceeded.
+ * Includes the error message and an upgrade action button.
+ */
+export function showUsageLimitToast(error: unknown): void {
+	const details = getUsageLimitDetails(error);
+	const message =
+		details?.message ?? "Has alcanzado el límite de uso de tu plan.";
+
+	toast.error(message, {
+		duration: 10_000,
+		action: {
+			label: "Mejorar plan",
+			onClick: () => {
+				window.open(getBillingUrl(), "_blank", "noopener,noreferrer");
+			},
+		},
+	});
+}
+
 export interface MutationOptions<T> {
 	/**
 	 * The mutation function that returns a promise
@@ -148,27 +177,32 @@ export async function executeMutation<T>({
 	error,
 	onSuccess,
 }: MutationOptions<T>): Promise<T> {
-	const promise = mutation();
+	const toastId = toast.loading(loading);
 
-	toast.promise(promise, {
-		loading,
-		success: (data) => {
-			const message = typeof success === "function" ? success(data) : success;
-			if (onSuccess) {
-				// Execute onSuccess callback asynchronously after toast is shown
-				Promise.resolve(onSuccess(data)).catch((err) => {
-					console.error("Error in onSuccess callback:", err);
-				});
-			}
-			return message;
-		},
-		error: (err) => {
-			if (error) {
-				return typeof error === "function" ? error(err) : error;
-			}
-			return extractErrorMessage(err);
-		},
-	});
+	try {
+		const data = await mutation();
+		const message = typeof success === "function" ? success(data) : success;
+		toast.success(message, { id: toastId });
+		if (onSuccess) {
+			Promise.resolve(onSuccess(data)).catch((err) => {
+				console.error("Error in onSuccess callback:", err);
+			});
+		}
+		return data;
+	} catch (err) {
+		// Show a special toast with upgrade action for usage limit errors
+		if (isUsageLimitError(err)) {
+			toast.dismiss(toastId);
+			showUsageLimitToast(err);
+			throw err;
+		}
 
-	return promise;
+		const message = error
+			? typeof error === "function"
+				? error(err)
+				: error
+			: extractErrorMessage(err);
+		toast.error(message, { id: toastId });
+		throw err;
+	}
 }

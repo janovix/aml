@@ -27,7 +27,8 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { extractErrorMessage } from "@/lib/mutations";
+import { extractErrorMessage, showUsageLimitToast } from "@/lib/mutations";
+import { isUsageLimitError } from "@/lib/api/http";
 import { showFetchError } from "@/lib/toast-utils";
 import { useLanguage } from "@/components/LanguageProvider";
 import {
@@ -139,7 +140,11 @@ export function CreateNoticeView(): React.ReactElement {
 			navigateTo(`/notices/${notice.id}`);
 		} catch (error) {
 			console.error("Error creating notice:", error);
-			toast.error(extractErrorMessage(error), { id: "create-notice" });
+			if (isUsageLimitError(error)) {
+				showUsageLimitToast(error);
+			} else {
+				toast.error(extractErrorMessage(error), { id: "create-notice" });
+			}
 		} finally {
 			setIsSubmitting(false);
 		}

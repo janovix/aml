@@ -47,7 +47,8 @@ import {
 	type ReportPreviewResponse,
 } from "@/lib/api/reports";
 import { toast } from "sonner";
-import { extractErrorMessage } from "@/lib/mutations";
+import { extractErrorMessage, showUsageLimitToast } from "@/lib/mutations";
+import { isUsageLimitError } from "@/lib/api/http";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { TranslationKeys } from "@/lib/translations";
 
@@ -325,7 +326,11 @@ export function CreateReportView(): React.ReactElement {
 			navigateTo(`/reports/${report.id}`);
 		} catch (error) {
 			console.error("Error creating report:", error);
-			toast.error(extractErrorMessage(error), { id: "create-report" });
+			if (isUsageLimitError(error)) {
+				showUsageLimitToast(error);
+			} else {
+				toast.error(extractErrorMessage(error), { id: "create-report" });
+			}
 		} finally {
 			setIsSubmitting(false);
 		}

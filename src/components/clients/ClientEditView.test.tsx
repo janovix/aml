@@ -51,6 +51,8 @@ vi.mock("sonner", () => ({
 	toast: Object.assign(vi.fn(), {
 		success: (...args: unknown[]) => mockToastSuccess(...args),
 		error: (...args: unknown[]) => mockToastError(...args),
+		loading: vi.fn().mockReturnValue("loading-toast-id"),
+		dismiss: vi.fn(),
 	}),
 }));
 

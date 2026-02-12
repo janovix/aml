@@ -20,6 +20,51 @@ export class ApiError extends Error {
 }
 
 /**
+ * Check if an error is a usage limit exceeded error (403 with USAGE_LIMIT_EXCEEDED)
+ * This happens when the organization's subscription or license has reached its quota.
+ */
+export function isUsageLimitError(error: unknown): boolean {
+	if (error instanceof ApiError) {
+		return (
+			error.status === 403 &&
+			(error.code === "USAGE_LIMIT_EXCEEDED" ||
+				(typeof error.body === "object" &&
+					error.body !== null &&
+					"upgradeRequired" in error.body &&
+					(error.body as Record<string, unknown>).upgradeRequired === true))
+		);
+	}
+	return false;
+}
+
+/**
+ * Extract usage limit details from a usage limit error.
+ * Returns null if the error is not a usage limit error.
+ */
+export function getUsageLimitDetails(error: unknown): {
+	metric?: string;
+	used?: number;
+	limit?: number;
+	entitlementType?: string;
+	message?: string;
+} | null {
+	if (!isUsageLimitError(error)) return null;
+	const body = (error as ApiError).body;
+	if (typeof body === "object" && body !== null) {
+		const b = body as Record<string, unknown>;
+		return {
+			metric: typeof b.metric === "string" ? b.metric : undefined,
+			used: typeof b.used === "number" ? b.used : undefined,
+			limit: typeof b.limit === "number" ? b.limit : undefined,
+			entitlementType:
+				typeof b.entitlementType === "string" ? b.entitlementType : undefined,
+			message: typeof b.message === "string" ? b.message : undefined,
+		};
+	}
+	return {};
+}
+
+/**
  * Check if an error is an organization required error (409)
  * This happens when the JWT doesn't have an organizationId
  */
