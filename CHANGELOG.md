@@ -1,3 +1,10 @@
+# [1.4.0-rc.28](https://github.com/janovix/aml/compare/v1.4.0-rc.27...v1.4.0-rc.28) (2026-02-12)
+
+
+### Features
+
+* enhance subscription handling by adding support for enterprise licenses and improving access checks ([aacb71f](https://github.com/janovix/aml/commit/aacb71fa8be69dbf15e859b0f27051116d8de4f4))
+
 # [1.4.0-rc.27](https://github.com/janovix/aml/compare/v1.4.0-rc.26...v1.4.0-rc.27) (2026-02-12)
 
 
