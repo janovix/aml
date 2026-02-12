@@ -1,3 +1,10 @@
+# [1.4.0-rc.27](https://github.com/janovix/aml/compare/v1.4.0-rc.26...v1.4.0-rc.27) (2026-02-12)
+
+
+### Features
+
+* add PDF generation from image blobs in document service ([5413d24](https://github.com/janovix/aml/commit/5413d249bdfa29c539934ea3944217aee143e2bd))
+
 # [1.4.0-rc.26](https://github.com/janovix/aml/compare/v1.4.0-rc.25...v1.4.0-rc.26) (2026-02-12)
 
 
