@@ -337,6 +337,54 @@ export async function pollJobUntilComplete(
 }
 
 /**
+ * Generate a PDF from image blobs
+ *
+ * Uses pdf-lib (via @janovix/document-scanner) to create a PDF document
+ * from an array of image blobs. Each image becomes a page sized to its
+ * natural dimensions.
+ *
+ * @param images - Array of image blobs (JPEG or PNG)
+ * @returns PDF blob
+ */
+async function generatePdfFromBlobs(images: Blob[]): Promise<Blob> {
+	if (images.length === 0) {
+		throw new DocSvcError("No images provided for PDF generation", 400);
+	}
+
+	// Dynamically import pdf-lib via document-scanner package
+	const { loadPdfLib } = await import("@janovix/document-scanner");
+	const { PDFDocument } = await loadPdfLib();
+
+	const pdfDoc = await PDFDocument.create();
+
+	for (const imageBlob of images) {
+		const imageBytes = await imageBlob.arrayBuffer();
+
+		// Embed based on MIME type
+		let embeddedImage;
+		if (imageBlob.type === "image/png") {
+			embeddedImage = await pdfDoc.embedPng(imageBytes);
+		} else {
+			// Default to JPEG for jpg, jpeg, and other formats
+			embeddedImage = await pdfDoc.embedJpg(imageBytes);
+		}
+
+		// Add page with image's natural dimensions
+		const page = pdfDoc.addPage([embeddedImage.width, embeddedImage.height]);
+		page.drawImage(embeddedImage, {
+			x: 0,
+			y: 0,
+			width: embeddedImage.width,
+			height: embeddedImage.height,
+		});
+	}
+
+	const pdfBytes = await pdfDoc.save();
+	// Convert to Uint8Array to ensure compatibility with Blob constructor
+	return new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" });
+}
+
+/**
  * Complete upload flow helper
  *
  * @param organizationId - Organization ID
@@ -359,12 +407,19 @@ export async function uploadDocument(
 }> {
 	onProgress?.("Initializing upload...", 10);
 
+	// Auto-generate PDF from images if none provided
+	let pdfToUpload = pdf;
+	if (!pdfToUpload && images.length > 0) {
+		onProgress?.("Generating PDF...", 15);
+		pdfToUpload = await generatePdfFromBlobs(images);
+	}
+
 	// Step 1: Initiate upload
 	const initResult = await initiateUpload(
 		organizationId,
 		userId,
 		images.length,
-		pdf !== null,
+		true, // Always true since we always generate/provide a PDF now
 	);
 
 	onProgress?.("Uploading files...", 20);
@@ -372,12 +427,12 @@ export async function uploadDocument(
 	// Step 2: Upload files to presigned URLs
 	const uploadPromises: Promise<void>[] = [];
 
-	// Upload PDF if present
-	if (pdf && initResult.uploadUrls.finalPdf) {
+	// Upload PDF (always present now)
+	if (pdfToUpload && initResult.uploadUrls.finalPdf) {
 		uploadPromises.push(
 			uploadToPresignedUrl(
 				initResult.uploadUrls.finalPdf,
-				pdf,
+				pdfToUpload,
 				"application/pdf",
 			),
 		);
@@ -402,7 +457,7 @@ export async function uploadDocument(
 
 	// Step 3: Calculate total size
 	let totalSize = 0;
-	if (pdf) totalSize += pdf.size;
+	if (pdfToUpload) totalSize += pdfToUpload.size;
 	for (const img of images) totalSize += img.size;
 
 	// Step 4: Confirm upload
