@@ -1,3 +1,10 @@
+# [1.4.0-rc.25](https://github.com/janovix/aml/compare/v1.4.0-rc.24...v1.4.0-rc.25) (2026-02-12)
+
+
+### Features
+
+* enhance confirmUpload function to include additional document metadata ([88b5b69](https://github.com/janovix/aml/commit/88b5b698526243ad2cfdc236f3c5240e0df79dd2))
+
 # [1.4.0-rc.24](https://github.com/janovix/aml/compare/v1.4.0-rc.23...v1.4.0-rc.24) (2026-02-11)
 
 
