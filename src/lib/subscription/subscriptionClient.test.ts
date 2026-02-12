@@ -47,7 +47,7 @@ describe("subscriptionClient", () => {
 	});
 
 	describe("getSubscriptionStatus", () => {
-		it("fetches subscription status from /api/subscription/status", async () => {
+		it("fetches subscription status from /api/subscription/status with resolveFromOrg", async () => {
 			const mockStatus = createMockSubscription();
 
 			vi.mocked(global.fetch).mockResolvedValueOnce({
@@ -58,7 +58,7 @@ describe("subscriptionClient", () => {
 			const result = await getSubscriptionStatus();
 
 			expect(global.fetch).toHaveBeenCalledWith(
-				"https://auth-svc.test/api/subscription/status",
+				"https://auth-svc.test/api/subscription/status?resolveFromOrg=true",
 				{ credentials: "include" },
 			);
 			expect(result).toEqual(mockStatus);

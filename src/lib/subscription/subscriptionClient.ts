@@ -73,9 +73,12 @@ interface ApiResponse<T> {
  */
 export async function getSubscriptionStatus(): Promise<SubscriptionStatus | null> {
 	try {
-		const response = await fetch(`${getBaseUrl()}/api/subscription/status`, {
-			credentials: "include",
-		});
+		const response = await fetch(
+			`${getBaseUrl()}/api/subscription/status?resolveFromOrg=true`,
+			{
+				credentials: "include",
+			},
+		);
 
 		if (!response.ok) {
 			console.warn("Failed to fetch subscription status:", response.status);
