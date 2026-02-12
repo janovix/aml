@@ -1,3 +1,10 @@
+# [1.4.0-rc.29](https://github.com/janovix/aml/compare/v1.4.0-rc.28...v1.4.0-rc.29) (2026-02-12)
+
+
+### Bug Fixes
+
+* update subscription status API call to include resolveFromOrg query parameter ([5d3c6be](https://github.com/janovix/aml/commit/5d3c6be57e54973d951ba1ec8a55f980bcc5b385))
+
 # [1.4.0-rc.28](https://github.com/janovix/aml/compare/v1.4.0-rc.27...v1.4.0-rc.28) (2026-02-12)
 
 
