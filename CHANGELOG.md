@@ -1,3 +1,10 @@
+# [1.4.0-rc.30](https://github.com/janovix/aml/compare/v1.4.0-rc.29...v1.4.0-rc.30) (2026-02-13)
+
+
+### Features
+
+* allow Next.js prefetch requests to bypass auth check ([5ce7d32](https://github.com/janovix/aml/commit/5ce7d32c9a7cce4fa5b03e81c5343b28a2845d7a))
+
 # [1.4.0-rc.29](https://github.com/janovix/aml/compare/v1.4.0-rc.28...v1.4.0-rc.29) (2026-02-12)
 
 
