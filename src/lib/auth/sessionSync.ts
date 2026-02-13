@@ -115,66 +115,145 @@ export function broadcastSessionUpdate(): void {
 }
 
 /**
+ * Delay helper for retry logic.
+ */
+function delay(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Check if an error is a transient failure (network, server error) vs auth failure.
+ * @param error - Error object from authClient
+ * @returns true if the error is transient and should be retried
+ */
+function isTransientError(error: any): boolean {
+	// Check if there's a status code in the error
+	const status = error?.status;
+
+	if (status) {
+		// 4xx errors (except 408 Request Timeout and 429 Too Many Requests) are auth failures
+		if (status >= 400 && status < 500) {
+			// These specific 4xx codes are transient
+			if (status === 408 || status === 429) {
+				return true;
+			}
+			// All other 4xx are definitive auth failures
+			return false;
+		}
+		// 5xx errors are transient server errors
+		if (status >= 500) {
+			return true;
+		}
+	}
+
+	// No status code means network error or other transient failure
+	return true;
+}
+
+/**
  * Revalidate the session against the server.
  * Updates the session store if valid, clears if invalid.
+ *
+ * Uses exponential backoff retry for transient failures:
+ * - Retries up to 3 times with delays: 1s, 2s, 4s
+ * - Only treats 401/403 as definitive auth failures
+ * - Network errors and 5xx responses trigger retry
  *
  * @returns true if session is valid, false if invalid/expired
  */
 export async function revalidateSession(): Promise<boolean> {
-	try {
-		const result = await authClient.getSession();
+	const MAX_RETRIES = 3;
+	const RETRY_DELAYS = [1000, 2000, 4000]; // ms
 
-		if (result.error || !result.data) {
-			// Session is invalid or expired
+	for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+		try {
+			const result = await authClient.getSession();
+
+			if (result.error) {
+				// Check if this is a transient error that should be retried
+				if (isTransientError(result.error) && attempt < MAX_RETRIES) {
+					console.warn(
+						`[SessionSync] Transient error on attempt ${attempt + 1}/${MAX_RETRIES + 1}, retrying...`,
+						result.error,
+					);
+					await delay(RETRY_DELAYS[attempt]);
+					continue;
+				}
+
+				// Either a definitive auth failure or we've exhausted retries
+				console.error("[SessionSync] Session validation failed:", result.error);
+				clearSession();
+				return false;
+			}
+
+			if (!result.data) {
+				// No error but also no data - treat as invalid session
+				console.error("[SessionSync] No session data returned");
+				clearSession();
+				return false;
+			}
+
+			// Session is valid - update the store
+			const session: Session = {
+				user: {
+					id: result.data.user.id,
+					name: result.data.user.name,
+					email: result.data.user.email,
+					image: result.data.user.image ?? null,
+					emailVerified: result.data.user.emailVerified,
+					createdAt:
+						result.data.user.createdAt instanceof Date
+							? result.data.user.createdAt
+							: new Date(result.data.user.createdAt),
+					updatedAt:
+						result.data.user.updatedAt instanceof Date
+							? result.data.user.updatedAt
+							: new Date(result.data.user.updatedAt),
+				},
+				session: {
+					id: result.data.session.id,
+					userId: result.data.session.userId,
+					token: result.data.session.token,
+					expiresAt:
+						result.data.session.expiresAt instanceof Date
+							? result.data.session.expiresAt
+							: new Date(result.data.session.expiresAt),
+					createdAt:
+						result.data.session.createdAt instanceof Date
+							? result.data.session.createdAt
+							: new Date(result.data.session.createdAt),
+					updatedAt:
+						result.data.session.updatedAt instanceof Date
+							? result.data.session.updatedAt
+							: new Date(result.data.session.updatedAt),
+					ipAddress: result.data.session.ipAddress ?? undefined,
+					userAgent: result.data.session.userAgent ?? undefined,
+				},
+			};
+
+			setSession(session);
+			return true;
+		} catch (err) {
+			// Network error or thrown exception
+			if (attempt < MAX_RETRIES) {
+				console.warn(
+					`[SessionSync] Exception on attempt ${attempt + 1}/${MAX_RETRIES + 1}, retrying...`,
+					err,
+				);
+				await delay(RETRY_DELAYS[attempt]);
+				continue;
+			}
+
+			// Exhausted retries on network errors
+			console.error("[SessionSync] Revalidation failed after retries:", err);
 			clearSession();
 			return false;
 		}
-
-		// Session is valid - update the store
-		const session: Session = {
-			user: {
-				id: result.data.user.id,
-				name: result.data.user.name,
-				email: result.data.user.email,
-				image: result.data.user.image ?? null,
-				emailVerified: result.data.user.emailVerified,
-				createdAt:
-					result.data.user.createdAt instanceof Date
-						? result.data.user.createdAt
-						: new Date(result.data.user.createdAt),
-				updatedAt:
-					result.data.user.updatedAt instanceof Date
-						? result.data.user.updatedAt
-						: new Date(result.data.user.updatedAt),
-			},
-			session: {
-				id: result.data.session.id,
-				userId: result.data.session.userId,
-				token: result.data.session.token,
-				expiresAt:
-					result.data.session.expiresAt instanceof Date
-						? result.data.session.expiresAt
-						: new Date(result.data.session.expiresAt),
-				createdAt:
-					result.data.session.createdAt instanceof Date
-						? result.data.session.createdAt
-						: new Date(result.data.session.createdAt),
-				updatedAt:
-					result.data.session.updatedAt instanceof Date
-						? result.data.session.updatedAt
-						: new Date(result.data.session.updatedAt),
-				ipAddress: result.data.session.ipAddress ?? undefined,
-				userAgent: result.data.session.userAgent ?? undefined,
-			},
-		};
-
-		setSession(session);
-		return true;
-	} catch (err) {
-		console.error("[SessionSync] Revalidation failed:", err);
-		clearSession();
-		return false;
 	}
+
+	// Should not reach here, but handle it
+	clearSession();
+	return false;
 }
 
 /**

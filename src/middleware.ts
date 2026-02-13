@@ -351,8 +351,18 @@ export async function middleware(request: NextRequest) {
 			return redirectToOnboarding(request);
 		}
 	} catch (error) {
-		console.log("[AML Middleware] Error during validation:", error);
-		return redirectToLogin(request);
+		console.error("[AML Middleware] Error during validation:", error);
+
+		// Session cookie exists but we couldn't validate with auth-svc.
+		// This could be a network error, timeout, or auth-svc being unreachable.
+		// Fail-open: allow the request through rather than redirecting to login.
+		// The client-side useSessionSync will handle session revalidation and
+		// redirect if truly invalid. This prevents false positives from transient
+		// network issues when resuming tabs/windows.
+		console.warn(
+			"[AML Middleware] Auth-svc unreachable, allowing request through (session cookie exists)",
+		);
+		return NextResponse.next();
 	}
 
 	const hostname = request.headers.get("host") || "localhost";
