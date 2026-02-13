@@ -372,7 +372,8 @@ export async function middleware(request: NextRequest) {
 			console.log(
 				"[AML Middleware] User needs profile onboarding, redirecting",
 			);
-			return redirectToOnboarding(request);
+			const onboardingResponse = redirectToOnboarding(request);
+			return addAuthCookies(onboardingResponse, authServiceSetCookies);
 		}
 
 		// Fetch user organizations to check if they have any membership
@@ -384,7 +385,8 @@ export async function middleware(request: NextRequest) {
 			console.log(
 				"[AML Middleware] User has no organization membership, redirecting to onboarding",
 			);
-			return redirectToOnboarding(request);
+			const onboardingResponse = redirectToOnboarding(request);
+			return addAuthCookies(onboardingResponse, authServiceSetCookies);
 		}
 	} catch (error) {
 		console.error("[AML Middleware] Error during validation:", error);
@@ -412,7 +414,10 @@ export async function middleware(request: NextRequest) {
 		if (organizations.length === 0) {
 			// User has no orgs - redirect to index to create one
 			// In vanity mode, we need to redirect to a path-based URL
-			return NextResponse.redirect(createExternalUrl("/", request));
+			const redirectResponse = NextResponse.redirect(
+				createExternalUrl("/", request),
+			);
+			return addAuthCookies(redirectResponse, authServiceSetCookies);
 		}
 
 		if (!hasAccessToOrg(organizations, orgSlug)) {
@@ -453,9 +458,10 @@ export async function middleware(request: NextRequest) {
 				console.log(
 					`[AML Middleware] Redirecting from / to /${targetOrg.slug}`,
 				);
-				return NextResponse.redirect(
+				const redirectResponse = NextResponse.redirect(
 					createExternalUrl(`/${targetOrg.slug}`, request),
 				);
+				return addAuthCookies(redirectResponse, authServiceSetCookies);
 			}
 		}
 
@@ -474,7 +480,10 @@ export async function middleware(request: NextRequest) {
 
 		if (organizations.length === 0) {
 			// No orgs - redirect to index to create one
-			return NextResponse.redirect(createExternalUrl("/", request));
+			const redirectResponse = NextResponse.redirect(
+				createExternalUrl("/", request),
+			);
+			return addAuthCookies(redirectResponse, authServiceSetCookies);
 		}
 
 		// Find target org (active or first)
@@ -485,13 +494,17 @@ export async function middleware(request: NextRequest) {
 
 		if (targetOrg) {
 			// Redirect to /{orgSlug}/original-path
-			return NextResponse.redirect(
+			const redirectResponse = NextResponse.redirect(
 				createExternalUrl(`/${targetOrg.slug}${pathname}`, request),
 			);
+			return addAuthCookies(redirectResponse, authServiceSetCookies);
 		}
 
 		// Fallback - shouldn't reach here
-		return NextResponse.redirect(createExternalUrl("/", request));
+		const redirectResponse = NextResponse.redirect(
+			createExternalUrl("/", request),
+		);
+		return addAuthCookies(redirectResponse, authServiceSetCookies);
 	}
 
 	// First segment might be an org slug - validate it
@@ -504,7 +517,10 @@ export async function middleware(request: NextRequest) {
 
 		if (organizations.length === 0) {
 			// User has no orgs - redirect to index to create one
-			return NextResponse.redirect(createExternalUrl("/", request));
+			const redirectResponse = NextResponse.redirect(
+				createExternalUrl("/", request),
+			);
+			return addAuthCookies(redirectResponse, authServiceSetCookies);
 		}
 
 		// Check if user has access to this org

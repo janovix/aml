@@ -1,9 +1,12 @@
 "use client";
 
 /**
- * React hook for cross-tab session synchronization.
+ * React hook for cross-tab session synchronization and tab visibility revalidation.
  *
- * ONLY handles broadcast messages between tabs - does NOT do client-side revalidation.
+ * This hook handles two session synchronization mechanisms:
+ * 1. BroadcastChannel - instant sync between tabs on the same origin
+ * 2. visibilitychange - revalidation when tab gains focus after being hidden >2 minutes
+ *
  * Session validation is handled by middleware on every navigation, which was working
  * reliably before client-side revalidation was added.
  *
@@ -12,9 +15,10 @@
  * - It properly forwards refreshed cookies to the browser
  * - It doesn't suffer from cross-origin CORS issues
  *
- * This hook only handles:
+ * This hook handles:
  * - SESSION_SIGNED_OUT from another tab -> clear local state and redirect
  * - SESSION_UPDATED from another tab -> trigger navigation to force middleware revalidation
+ * - Tab becomes visible after >2 min -> reload page to revalidate session via middleware
  *
  * Usage:
  * Call this hook once in your app's root client component (e.g., ClientLayout).
@@ -68,9 +72,32 @@ export function useSessionSync(): void {
 		// Initialize BroadcastChannel and storage listeners
 		const cleanupSync = initSessionSync(handleMessage);
 
+		// Track when tab was last visible for session revalidation on focus
+		let lastVisibleAt = Date.now();
+		const STALE_THRESHOLD = 2 * 60 * 1000; // 2 minutes
+
+		const handleVisibilityChange = () => {
+			if (document.visibilityState === "visible") {
+				const hiddenDuration = Date.now() - lastVisibleAt;
+				if (hiddenDuration > STALE_THRESHOLD) {
+					// Tab was hidden long enough that cookie cache may have expired
+					// Force a page reload to trigger middleware session validation
+					console.log(
+						`[SessionSync] Tab was hidden for ${Math.round(hiddenDuration / 1000)}s, reloading to revalidate session`,
+					);
+					window.location.reload();
+				}
+			} else {
+				lastVisibleAt = Date.now();
+			}
+		};
+
+		document.addEventListener("visibilitychange", handleVisibilityChange);
+
 		// Cleanup listeners on unmount
 		return () => {
 			cleanupSync();
+			document.removeEventListener("visibilitychange", handleVisibilityChange);
 		};
 	}, []); // Empty deps - only run once on mount
 }
