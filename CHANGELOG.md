@@ -1,3 +1,10 @@
+# [1.4.0-rc.31](https://github.com/janovix/aml/compare/v1.4.0-rc.30...v1.4.0-rc.31) (2026-02-13)
+
+
+### Features
+
+* enhance middleware to forward Set-Cookie headers for session management ([c24e281](https://github.com/janovix/aml/commit/c24e2814b50e56535de7d9f920742f561e9d6406))
+
 # [1.4.0-rc.30](https://github.com/janovix/aml/compare/v1.4.0-rc.29...v1.4.0-rc.30) (2026-02-13)
 
 
