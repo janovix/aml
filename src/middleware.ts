@@ -1,6 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
+/**
+ * Helper to add Set-Cookie headers from auth-svc to a Next.js response.
+ * This is CRITICAL for cookie cache refresh - without forwarding these headers,
+ * the browser never receives refreshed session cookies and sessions expire prematurely.
+ */
+function addAuthCookies(
+	response: NextResponse,
+	cookies: string[],
+): NextResponse {
+	if (!cookies || cookies.length === 0) {
+		return response;
+	}
+
+	// Add the auth-svc Set-Cookie headers to the response
+	for (const cookie of cookies) {
+		response.headers.append("Set-Cookie", cookie);
+	}
+
+	return response;
+}
+
 const getAuthAppUrl = () => {
 	return (
 		process.env.NEXT_PUBLIC_AUTH_APP_URL || "https://auth.janovix.workers.dev"
@@ -301,6 +322,10 @@ export async function middleware(request: NextRequest) {
 
 	let userOrganizations: Organization[] | null = null;
 
+	// Track Set-Cookie headers from auth-svc to forward to the browser
+	// This is CRITICAL for cookie cache refresh to work properly
+	let authServiceSetCookies: string[] = [];
+
 	try {
 		console.log("[AML Middleware] Validating session with auth-svc...");
 		const response = await fetch(
@@ -315,6 +340,17 @@ export async function middleware(request: NextRequest) {
 		);
 
 		console.log("[AML Middleware] Auth-svc response status:", response.status);
+
+		// CRITICAL: Capture Set-Cookie headers from auth-svc
+		// These headers contain refreshed session cookies that MUST be forwarded to the browser
+		// Without this, the cookie cache never refreshes and sessions expire prematurely
+		const setCookies = response.headers.getSetCookie?.();
+		if (setCookies && setCookies.length > 0) {
+			authServiceSetCookies = setCookies;
+			console.log(
+				`[AML Middleware] Captured ${setCookies.length} Set-Cookie headers from auth-svc`,
+			);
+		}
 
 		if (!response.ok) {
 			console.log("[AML Middleware] Response not OK, redirecting to login");
@@ -381,13 +417,15 @@ export async function middleware(request: NextRequest) {
 
 		if (!hasAccessToOrg(organizations, orgSlug)) {
 			// Org doesn't exist or user doesn't have access - show not-found
-			return NextResponse.rewrite(
+			const notFoundResponse = NextResponse.rewrite(
 				createExternalUrl(`/${orgSlug}/not-found`, request),
 			);
+			return addAuthCookies(notFoundResponse, authServiceSetCookies);
 		}
 
 		// Valid org access - rewrite to include org in path
-		return NextResponse.rewrite(rewriteUrl);
+		const rewriteResponse = NextResponse.rewrite(rewriteUrl);
+		return addAuthCookies(rewriteResponse, authServiceSetCookies);
 	}
 
 	// Path-based mode: org slug should be in the path
@@ -395,7 +433,8 @@ export async function middleware(request: NextRequest) {
 	// Check if this is an org-free route
 	for (const route of ORG_FREE_ROUTES) {
 		if (pathname.startsWith(route)) {
-			return NextResponse.next();
+			const nextResponse = NextResponse.next();
+			return addAuthCookies(nextResponse, authServiceSetCookies);
 		}
 	}
 
@@ -421,7 +460,8 @@ export async function middleware(request: NextRequest) {
 		}
 
 		// Fallback: let the index page handle it (shouldn't reach here normally)
-		return NextResponse.next();
+		const nextResponse = NextResponse.next();
+		return addAuthCookies(nextResponse, authServiceSetCookies);
 	}
 
 	const firstSegment = pathSegments[0];
@@ -470,20 +510,23 @@ export async function middleware(request: NextRequest) {
 		// Check if user has access to this org
 		if (!hasAccessToOrg(organizations, orgSlug)) {
 			// No access - show not-found page (org doesn't exist for this user)
-			return NextResponse.rewrite(
+			const rewriteResponse = NextResponse.rewrite(
 				createExternalUrl(`/${orgSlug}/not-found`, request),
 			);
+			return addAuthCookies(rewriteResponse, authServiceSetCookies);
 		}
 
 		// Valid org access - proceed (org root renders dashboard directly)
-		return NextResponse.next();
+		const nextResponse = NextResponse.next();
+		return addAuthCookies(nextResponse, authServiceSetCookies);
 	}
 
 	// Unknown first segment - treat as potential org slug that doesn't exist
 	// Show not-found page
-	return NextResponse.rewrite(
+	const rewriteResponse = NextResponse.rewrite(
 		createExternalUrl(`/${firstSegment}/not-found`, request),
 	);
+	return addAuthCookies(rewriteResponse, authServiceSetCookies);
 }
 
 export const config = {
