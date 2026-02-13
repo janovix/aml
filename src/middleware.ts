@@ -260,6 +260,19 @@ function getTargetOrg(
 }
 
 export async function middleware(request: NextRequest) {
+	// Next.js prefetch requests don't include credentials (cookies) by default.
+	// Detect prefetch and allow them through without auth check to prevent CORS errors.
+	// The actual page navigation will be protected.
+	const purpose = request.headers.get("purpose");
+	const nextRouterPrefetch = request.headers.get("x-nextjs-data");
+	const isPrefetch = purpose === "prefetch" || nextRouterPrefetch !== null;
+
+	if (isPrefetch) {
+		// Allow prefetch requests through without auth check
+		// The actual navigation will be protected when user clicks the link
+		return NextResponse.next();
+	}
+
 	const sessionCookie = getSessionCookie(request);
 
 	// DEBUG: Log session cookie status
