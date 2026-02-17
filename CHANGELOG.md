@@ -1,3 +1,10 @@
+# [1.4.0-rc.32](https://github.com/janovix/aml/compare/v1.4.0-rc.31...v1.4.0-rc.32) (2026-02-17)
+
+
+### Features
+
+* add banned user check in middleware ([ebcda78](https://github.com/janovix/aml/commit/ebcda78ddb3eca2254efd6d935ea5e6fb9a4e330))
+
 # [1.4.0-rc.31](https://github.com/janovix/aml/compare/v1.4.0-rc.30...v1.4.0-rc.31) (2026-02-13)
 
 
