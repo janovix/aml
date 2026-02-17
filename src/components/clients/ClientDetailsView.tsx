@@ -31,6 +31,8 @@ import {
 	ExternalLink,
 	Pencil,
 	ZoomIn,
+	Loader2,
+	Activity,
 } from "lucide-react";
 import type { Client } from "../../types/client";
 import type { Gender, MaritalStatus } from "../../types/client";
@@ -73,6 +75,7 @@ import {
 } from "./DocumentViewerDialog";
 import { UploadedIDDocumentCard } from "./UploadedIDDocumentCard";
 import { WatchlistScreeningSection } from "./WatchlistScreeningSection";
+import { useWatchlistScreening } from "@/hooks/useWatchlistScreening";
 import {
 	getDocumentLabel,
 	ALL_REQUIRED_DOCUMENTS,
@@ -211,6 +214,16 @@ export function ClientDetailsView({
 	>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [openAccordions, setOpenAccordions] = useState<string[]>([]);
+
+	// Real-time watchlist screening data (populated once client is loaded)
+	const {
+		data: screeningData,
+		connectionStatus: screeningConnectionStatus,
+		isComplete: screeningComplete,
+	} = useWatchlistScreening({
+		watchlistQueryId: client?.watchlistQueryId,
+		enabled: !!client?.watchlistQueryId,
+	});
 
 	// Document viewer dialog state
 	const [documentViewer, setDocumentViewer] = useState<{
@@ -985,13 +998,39 @@ export function ClientDetailsView({
 								<span className="font-semibold">{t("clientPepStatus")}</span>
 							</div>
 							<div className="flex items-center gap-2">
-								{client.screeningResult === "clear" ? (
-									<CheckCircle2 className="h-5 w-5 text-green-500" />
-								) : client.screeningResult === "flagged" ? (
-									<AlertTriangle className="h-5 w-5 text-red-500" />
-								) : (
-									<AlertTriangle className="h-5 w-5 text-amber-500" />
+								{/* Live badge when SSE is active */}
+								{screeningConnectionStatus === "connected" && (
+									<Badge
+										variant="outline"
+										className="gap-1 bg-blue-50 dark:bg-blue-950 text-xs"
+									>
+										<Activity className="h-3 w-3 text-blue-500 animate-pulse" />
+										<span className="text-blue-500">En vivo</span>
+									</Badge>
 								)}
+								{!screeningComplete &&
+									screeningConnectionStatus !== "connected" &&
+									client.watchlistQueryId && (
+										<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+									)}
+								{/* Overall result icon */}
+								{(() => {
+									const result = screeningData
+										? (screeningData.ofacCount ?? 0) > 0 ||
+											(screeningData.unCount ?? 0) > 0 ||
+											(screeningData.sat69bCount ?? 0) > 0 ||
+											(screeningData.pepOfficialCount ?? 0) > 0
+											? "flagged"
+											: screeningComplete
+												? "clear"
+												: "pending"
+										: (client.screeningResult ?? "pending");
+									if (result === "clear")
+										return <CheckCircle2 className="h-5 w-5 text-green-500" />;
+									if (result === "flagged")
+										return <AlertTriangle className="h-5 w-5 text-red-500" />;
+									return <AlertTriangle className="h-5 w-5 text-amber-500" />;
+								})()}
 							</div>
 						</div>
 					</AccordionTrigger>
@@ -999,38 +1038,95 @@ export function ClientDetailsView({
 						<dl className="grid grid-cols-1 @xl/main:grid-cols-2 gap-6">
 							<FieldDisplay
 								label="Estado de Screening"
-								value={client.screeningResult || "pending"}
-								isMissing={!client.screeningResult}
+								value={(() => {
+									if (screeningData) {
+										if (!screeningComplete) return "en proceso";
+										const hasMatches =
+											(screeningData.ofacCount ?? 0) > 0 ||
+											(screeningData.unCount ?? 0) > 0 ||
+											(screeningData.sat69bCount ?? 0) > 0 ||
+											(screeningData.pepOfficialCount ?? 0) > 0;
+										return hasMatches ? "flagged" : "clear";
+									}
+									return client.screeningResult || "pending";
+								})()}
+								isMissing={!client.screeningResult && !screeningData}
 								tier={tierMap.isPEP}
 							/>
 							<FieldDisplay
 								label="Fecha de Verificación"
 								value={
-									client.screenedAt ? formatDate(client.screenedAt) : undefined
+									screeningData?.updatedAt
+										? formatDate(screeningData.updatedAt)
+										: client.screenedAt
+											? formatDate(client.screenedAt)
+											: undefined
 								}
 								icon={Calendar}
-								isMissing={!client.screenedAt}
+								isMissing={!client.screenedAt && !screeningData?.updatedAt}
 							/>
 							<FieldDisplay
 								label="¿Es PEP?"
-								value={client.isPEP ? "Sí" : "No"}
+								value={
+									screeningData
+										? (screeningData.pepOfficialCount ?? 0) > 0
+											? "Sí"
+											: "No"
+										: client.isPEP
+											? "Sí"
+											: "No"
+								}
 								tier={tierMap.isPEP}
 							/>
 							<FieldDisplay
 								label="Sancionado OFAC"
-								value={client.ofacSanctioned ? "Sí" : "No"}
+								value={
+									screeningData
+										? (screeningData.ofacCount ?? 0) > 0
+											? "Sí"
+											: "No"
+										: client.ofacSanctioned
+											? "Sí"
+											: "No"
+								}
 							/>
 							<FieldDisplay
 								label="Sancionado UNSC"
-								value={client.unscSanctioned ? "Sí" : "No"}
+								value={
+									screeningData
+										? (screeningData.unCount ?? 0) > 0
+											? "Sí"
+											: "No"
+										: client.unscSanctioned
+											? "Sí"
+											: "No"
+								}
 							/>
 							<FieldDisplay
 								label="Listado SAT 69-B"
-								value={client.sat69bListed ? "Sí" : "No"}
+								value={
+									screeningData
+										? (screeningData.sat69bCount ?? 0) > 0
+											? "Sí"
+											: "No"
+										: client.sat69bListed
+											? "Sí"
+											: "No"
+								}
 							/>
 							<FieldDisplay
 								label="Media Adversa"
-								value={client.adverseMediaFlagged ? "Sí" : "No"}
+								value={
+									screeningData
+										? screeningData.adverseMediaStatus === "completed" &&
+											screeningData.adverseMediaResult !== null &&
+											screeningData.adverseMediaResult !== undefined
+											? "Sí"
+											: "No"
+										: client.adverseMediaFlagged
+											? "Sí"
+											: "No"
+								}
 							/>
 						</dl>
 
