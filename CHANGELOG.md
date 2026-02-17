@@ -1,3 +1,10 @@
+# [1.4.0-rc.34](https://github.com/janovix/aml/compare/v1.4.0-rc.33...v1.4.0-rc.34) (2026-02-17)
+
+
+### Features
+
+* integrate real-time watchlist screening in ClientDetailsView ([cee07cc](https://github.com/janovix/aml/commit/cee07cc04ade3624efb17a74973e729c9bc096b9))
+
 # [1.4.0-rc.33](https://github.com/janovix/aml/compare/v1.4.0-rc.32...v1.4.0-rc.33) (2026-02-17)
 
 
