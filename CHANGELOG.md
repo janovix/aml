@@ -1,3 +1,10 @@
+# [1.4.0-rc.33](https://github.com/janovix/aml/compare/v1.4.0-rc.32...v1.4.0-rc.33) (2026-02-17)
+
+
+### Features
+
+* add beneficial controller and shareholder forms and sections ([b25d070](https://github.com/janovix/aml/commit/b25d070587d6f7ebe17c848e309e0536c70f7d91))
+
 # [1.4.0-rc.32](https://github.com/janovix/aml/compare/v1.4.0-rc.31...v1.4.0-rc.32) (2026-02-17)
 
 
