@@ -315,7 +315,7 @@ export async function middleware(request: NextRequest) {
 
 	interface SessionData {
 		session?: { activeOrganizationId?: string };
-		user?: { name?: string | null };
+		user?: { name?: string | null; banned?: boolean };
 	}
 
 	let sessionData: SessionData | null = null;
@@ -364,6 +364,12 @@ export async function middleware(request: NextRequest) {
 			console.log(
 				"[AML Middleware] No session/user in response, redirecting to login",
 			);
+			return redirectToLogin(request);
+		}
+
+		// Check if user is banned
+		if (sessionData.user?.banned) {
+			console.log("[AML Middleware] User is banned, redirecting to login");
 			return redirectToLogin(request);
 		}
 
