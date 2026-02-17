@@ -1,27 +1,35 @@
 /**
- * API functions for Ultimate Beneficial Owner (UBO) management
+ * API functions for Shareholder management
  */
 
 import { getAmlCoreBaseUrl } from "./config";
 import { fetchJson } from "./http";
 import type {
-	UBO,
-	UBOCreateRequest,
-	UBOPatchRequest,
-	UBOListResponse,
-} from "@/types/ubo";
+	Shareholder,
+	ShareholderCreateRequest,
+	ShareholderPatchRequest,
+	ShareholderListResponse,
+} from "@/types/shareholder";
 
-export async function listClientUBOs(opts: {
+export async function listClientShareholders(opts: {
 	clientId: string;
+	parentShareholderId?: string;
 	baseUrl?: string;
 	signal?: AbortSignal;
 	/** JWT token for authentication */
 	jwt?: string;
-}): Promise<UBOListResponse> {
+}): Promise<ShareholderListResponse> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
-	const url = new URL(`/api/v1/clients/${opts.clientId}/ubos`, baseUrl);
 
-	const { json } = await fetchJson<UBOListResponse>(url.toString(), {
+	// If parentShareholderId is provided, use sub-shareholders endpoint
+	const url = opts.parentShareholderId
+		? new URL(
+				`/api/v1/clients/${opts.clientId}/shareholders/${opts.parentShareholderId}/sub-shareholders`,
+				baseUrl,
+			)
+		: new URL(`/api/v1/clients/${opts.clientId}/shareholders`, baseUrl);
+
+	const { json } = await fetchJson<ShareholderListResponse>(url.toString(), {
 		method: "GET",
 		cache: "no-store",
 		signal: opts.signal,
@@ -30,21 +38,21 @@ export async function listClientUBOs(opts: {
 	return json;
 }
 
-export async function getUBOById(opts: {
+export async function getShareholderById(opts: {
 	clientId: string;
-	uboId: string;
+	shareholderId: string;
 	baseUrl?: string;
 	signal?: AbortSignal;
 	/** JWT token for authentication */
 	jwt?: string;
-}): Promise<UBO> {
+}): Promise<Shareholder> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL(
-		`/api/v1/clients/${opts.clientId}/ubos/${opts.uboId}`,
+		`/api/v1/clients/${opts.clientId}/shareholders/${opts.shareholderId}`,
 		baseUrl,
 	);
 
-	const { json } = await fetchJson<UBO>(url.toString(), {
+	const { json } = await fetchJson<Shareholder>(url.toString(), {
 		method: "GET",
 		cache: "no-store",
 		signal: opts.signal,
@@ -53,18 +61,18 @@ export async function getUBOById(opts: {
 	return json;
 }
 
-export async function createUBO(opts: {
+export async function createShareholder(opts: {
 	clientId: string;
-	input: UBOCreateRequest;
+	input: ShareholderCreateRequest;
 	baseUrl?: string;
 	signal?: AbortSignal;
 	/** JWT token for authentication */
 	jwt?: string;
-}): Promise<UBO> {
+}): Promise<Shareholder> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
-	const url = new URL(`/api/v1/clients/${opts.clientId}/ubos`, baseUrl);
+	const url = new URL(`/api/v1/clients/${opts.clientId}/shareholders`, baseUrl);
 
-	const { json } = await fetchJson<UBO>(url.toString(), {
+	const { json } = await fetchJson<Shareholder>(url.toString(), {
 		method: "POST",
 		cache: "no-store",
 		headers: { "content-type": "application/json" },
@@ -75,22 +83,22 @@ export async function createUBO(opts: {
 	return json;
 }
 
-export async function updateUBO(opts: {
+export async function updateShareholder(opts: {
 	clientId: string;
-	uboId: string;
-	input: UBOCreateRequest;
+	shareholderId: string;
+	input: ShareholderCreateRequest;
 	baseUrl?: string;
 	signal?: AbortSignal;
 	/** JWT token for authentication */
 	jwt?: string;
-}): Promise<UBO> {
+}): Promise<Shareholder> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL(
-		`/api/v1/clients/${opts.clientId}/ubos/${opts.uboId}`,
+		`/api/v1/clients/${opts.clientId}/shareholders/${opts.shareholderId}`,
 		baseUrl,
 	);
 
-	const { json } = await fetchJson<UBO>(url.toString(), {
+	const { json } = await fetchJson<Shareholder>(url.toString(), {
 		method: "PUT",
 		cache: "no-store",
 		headers: { "content-type": "application/json" },
@@ -101,22 +109,22 @@ export async function updateUBO(opts: {
 	return json;
 }
 
-export async function patchUBO(opts: {
+export async function patchShareholder(opts: {
 	clientId: string;
-	uboId: string;
-	input: UBOPatchRequest;
+	shareholderId: string;
+	input: ShareholderPatchRequest;
 	baseUrl?: string;
 	signal?: AbortSignal;
 	/** JWT token for authentication */
 	jwt?: string;
-}): Promise<UBO> {
+}): Promise<Shareholder> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL(
-		`/api/v1/clients/${opts.clientId}/ubos/${opts.uboId}`,
+		`/api/v1/clients/${opts.clientId}/shareholders/${opts.shareholderId}`,
 		baseUrl,
 	);
 
-	const { json } = await fetchJson<UBO>(url.toString(), {
+	const { json } = await fetchJson<Shareholder>(url.toString(), {
 		method: "PATCH",
 		cache: "no-store",
 		headers: { "content-type": "application/json" },
@@ -127,9 +135,9 @@ export async function patchUBO(opts: {
 	return json;
 }
 
-export async function deleteUBO(opts: {
+export async function deleteShareholder(opts: {
 	clientId: string;
-	uboId: string;
+	shareholderId: string;
 	baseUrl?: string;
 	signal?: AbortSignal;
 	/** JWT token for authentication */
@@ -137,7 +145,7 @@ export async function deleteUBO(opts: {
 }): Promise<void> {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL(
-		`/api/v1/clients/${opts.clientId}/ubos/${opts.uboId}`,
+		`/api/v1/clients/${opts.clientId}/shareholders/${opts.shareholderId}`,
 		baseUrl,
 	);
 

@@ -33,7 +33,8 @@ const mockToastError = vi.fn();
 const mockGetClientById = vi.fn();
 const mockUpdateClient = vi.fn();
 const mockListClientDocuments = vi.fn();
-const mockListClientUBOs = vi.fn();
+const mockListClientShareholders = vi.fn();
+const mockListClientBeneficialControllers = vi.fn();
 const originalRequestSubmit = HTMLFormElement.prototype.requestSubmit;
 
 vi.mock("next/navigation", () => ({
@@ -74,8 +75,14 @@ vi.mock("../../lib/api/client-documents", () => ({
 	listClientDocuments: (...args: unknown[]) => mockListClientDocuments(...args),
 }));
 
-vi.mock("../../lib/api/ubos", () => ({
-	listClientUBOs: (...args: unknown[]) => mockListClientUBOs(...args),
+vi.mock("../../lib/api/shareholders", () => ({
+	listClientShareholders: (...args: unknown[]) =>
+		mockListClientShareholders(...args),
+}));
+
+vi.mock("../../lib/api/beneficial-controllers", () => ({
+	listClientBeneficialControllers: (...args: unknown[]) =>
+		mockListClientBeneficialControllers(...args),
 }));
 
 vi.mock("../catalogs/CatalogSelector", () => ({
@@ -125,11 +132,13 @@ describe("ClientEditView", () => {
 		mockToastError.mockReset();
 		mockPush.mockReset();
 		mockListClientDocuments.mockReset();
-		mockListClientUBOs.mockReset();
+		mockListClientShareholders.mockReset();
+		mockListClientBeneficialControllers.mockReset();
 
 		// Default mocks for validation data
 		mockListClientDocuments.mockResolvedValue({ data: [] });
-		mockListClientUBOs.mockResolvedValue({ data: [] });
+		mockListClientShareholders.mockResolvedValue({ data: [] });
+		mockListClientBeneficialControllers.mockResolvedValue({ data: [] });
 	});
 
 	it("renders edit client header", async () => {
@@ -156,7 +165,8 @@ describe("ClientEditView", () => {
 		// Wait for validation data to finish loading
 		await waitFor(() => {
 			expect(mockListClientDocuments).toHaveBeenCalled();
-			expect(mockListClientUBOs).toHaveBeenCalled();
+			expect(mockListClientShareholders).toHaveBeenCalled();
+			expect(mockListClientBeneficialControllers).toHaveBeenCalled();
 		});
 
 		// Find the form element
@@ -243,8 +253,9 @@ describe("ClientEditView", () => {
 			expect(mockListClientDocuments).toHaveBeenCalled();
 		});
 
-		// UBOs should NOT be called for undefined personType
-		expect(mockListClientUBOs).not.toHaveBeenCalled();
+		// Shareholders and BCs should NOT be called for undefined personType
+		expect(mockListClientShareholders).not.toHaveBeenCalled();
+		expect(mockListClientBeneficialControllers).not.toHaveBeenCalled();
 
 		// Form should be present
 		const form = document.getElementById("client-edit-form");

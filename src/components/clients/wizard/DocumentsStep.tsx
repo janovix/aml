@@ -32,8 +32,14 @@ import {
 	type SimpleDocumentUploadData,
 } from "./SimpleDocumentUploadCard";
 import { IDDocumentSelector, type IDDocumentData } from "./IDDocumentSelector";
-import { UBOInlineForm, type UBOWithDocuments } from "./UBOInlineForm";
+import {
+	OwnershipInlineForm,
+	type ShareholderWithDocuments,
+	type BCWithDocuments,
+} from "./OwnershipInlineForm";
 import { MobileUploadCard } from "../MobileUploadCard";
+import { listClientShareholders } from "@/lib/api/shareholders";
+import { listClientBeneficialControllers } from "@/lib/api/beneficial-controllers";
 
 interface DocumentsStepProps {
 	clientId: string;
@@ -62,8 +68,13 @@ export function DocumentsStep({
 	);
 	const [idUploaded, setIdUploaded] = useState(false);
 
-	// UBO state (for moral/trust entities)
-	const [ubos, setUbos] = useState<UBOWithDocuments[]>([]);
+	// Ownership state (for moral/trust entities)
+	const [shareholders, setShareholders] = useState<ShareholderWithDocuments[]>(
+		[],
+	);
+	const [beneficialControllers, setBeneficialControllers] = useState<
+		BCWithDocuments[]
+	>([]);
 
 	const requiredDocs = REQUIRED_DOCUMENTS[personType];
 	const needsUBOs = requiresUBOs(personType);
@@ -252,9 +263,25 @@ export function DocumentsStep({
 		[clientId],
 	);
 
-	const handleUBOsChange = useCallback((newUbos: UBOWithDocuments[]) => {
-		setUbos(newUbos);
-	}, []);
+	const handleShareholdersChange = useCallback(async () => {
+		// Reload shareholders from API
+		try {
+			const response = await listClientShareholders({ clientId });
+			setShareholders(response.data);
+		} catch (error) {
+			console.error("Error reloading shareholders:", error);
+		}
+	}, [clientId]);
+
+	const handleBCsChange = useCallback(async () => {
+		// Reload beneficial controllers from API
+		try {
+			const response = await listClientBeneficialControllers({ clientId });
+			setBeneficialControllers(response.data);
+		} catch (error) {
+			console.error("Error reloading beneficial controllers:", error);
+		}
+	}, [clientId]);
 
 	const handleComplete = () => {
 		Sentry.startSpan(
@@ -278,10 +305,13 @@ export function DocumentsStep({
 					return;
 				}
 
-				// For moral/trust, check if at least one stockholder or legal rep exists
-				if (needsUBOs && ubos.length === 0) {
+				// For moral/trust, check if at least one shareholder and one beneficial controller exists
+				if (
+					needsUBOs &&
+					(shareholders.length === 0 || beneficialControllers.length === 0)
+				) {
 					toast.error(
-						"Debes registrar al menos un accionista o representante legal",
+						"Debes registrar al menos un accionista y un beneficiario controlador",
 					);
 					return;
 				}
@@ -380,12 +410,12 @@ export function DocumentsStep({
 				</div>
 			</div>
 
-			{/* UBO Section (for moral/trust) */}
+			{/* Ownership Section (for moral/trust) */}
 			{needsUBOs && (
 				<div className="space-y-4">
 					<h3 className="text-lg font-semibold flex items-center gap-2">
 						<Users className="h-5 w-5" />
-						Accionistas y Representante Legal
+						Estructura Accionaria y Beneficiarios Controladores
 						<Badge
 							variant="outline"
 							className="text-xs bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
@@ -404,22 +434,25 @@ export function DocumentsStep({
 									</p>
 									<ul className="list-disc list-inside space-y-1 ml-2">
 										<li>
-											<strong>Accionistas:</strong> Personas físicas con 25% o
-											más de participación accionaria
+											<strong>Accionistas:</strong> Personas físicas o morales
+											con participación accionaria
 										</li>
 										<li>
-											<strong>Representante Legal:</strong> Persona autorizada
-											para actuar en nombre de la entidad
+											<strong>Beneficiarios Controladores:</strong> Personas
+											físicas que obtienen el beneficio o ejercen control
+											(LFPIORPI / CFF Art. 32-B)
 										</li>
 									</ul>
 								</div>
 							</div>
 						</CardContent>
 					</Card>
-					<UBOInlineForm
+					<OwnershipInlineForm
 						clientId={clientId}
-						ubos={ubos}
-						onUBOsChange={handleUBOsChange}
+						shareholders={shareholders}
+						beneficialControllers={beneficialControllers}
+						onShareholdersChange={handleShareholdersChange}
+						onBCsChange={handleBCsChange}
 					/>
 				</div>
 			)}
@@ -455,35 +488,21 @@ export function DocumentsStep({
 						{needsUBOs && (
 							<>
 								<div className="flex items-center gap-2">
-									{ubos.filter((u) => u.relationshipType === "SHAREHOLDER")
-										.length > 0 ? (
+									{shareholders.length > 0 ? (
 										<CheckCircle2 className="h-4 w-4 text-green-600" />
 									) : (
 										<div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30" />
 									)}
-									<span>
-										Accionistas (
-										{
-											ubos.filter((u) => u.relationshipType === "SHAREHOLDER")
-												.length
-										}
-										)
-									</span>
+									<span>Accionistas ({shareholders.length})</span>
 								</div>
 								<div className="flex items-center gap-2">
-									{ubos.filter((u) => u.relationshipType === "LEGAL_REP")
-										.length > 0 ? (
+									{beneficialControllers.length > 0 ? (
 										<CheckCircle2 className="h-4 w-4 text-green-600" />
 									) : (
 										<div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30" />
 									)}
 									<span>
-										Representante Legal (
-										{
-											ubos.filter((u) => u.relationshipType === "LEGAL_REP")
-												.length
-										}
-										)
+										Beneficiarios Controladores ({beneficialControllers.length})
 									</span>
 								</div>
 							</>

@@ -32,12 +32,14 @@ import type {
 } from "../../types/client";
 import { KYCProgressIndicator } from "./KYCProgressIndicator";
 import { EditDocumentsSection } from "./EditDocumentsSection";
-import { UBOSection } from "./UBOSection";
+import { ShareholderSection } from "./ShareholderSection";
+import { BeneficialControllerSection } from "./BeneficialControllerSection";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/lib/mutations";
 import { showFetchError } from "@/lib/toast-utils";
 import { getClientById, updateClient } from "../../lib/api/clients";
-import { listClientUBOs } from "../../lib/api/ubos";
+import { listClientShareholders } from "../../lib/api/shareholders";
+import { listClientBeneficialControllers } from "../../lib/api/beneficial-controllers";
 import { listClientDocuments } from "../../lib/api/client-documents";
 import type { ClientDocumentType } from "../../types/client-document";
 import { executeMutation } from "../../lib/mutations";
@@ -148,7 +150,8 @@ export function ClientEditView({
 	const [isLoading, setIsLoading] = useState(true);
 	const [client, setClient] = useState<Client | null>(null);
 	const [documents, setDocuments] = useState<any[]>([]);
-	const [ubos, setUbos] = useState<any[]>([]);
+	const [shareholders, setShareholders] = useState<any[]>([]);
+	const [beneficialControllers, setBeneficialControllers] = useState<any[]>([]);
 	const [isLoadingValidation, setIsLoadingValidation] = useState(true);
 
 	const [formData, setFormData] = useState<ClientFormData>({
@@ -193,16 +196,22 @@ export function ClientEditView({
 	// Track missing information per tab for warning indicators
 	const [tabWarnings, setTabWarnings] = useState<{
 		documents: boolean;
-		ubos: boolean;
+		ownership: boolean;
 	}>({
 		documents: false,
-		ubos: false,
+		ownership: false,
 	});
 
 	// Initialize activeTab from query param or default to "personal"
 	const [activeTab, setActiveTab] = useState(() => {
 		const tabFromUrl = searchParams.get("tab");
-		const validTabs = ["personal", "contact", "address", "documents", "ubos"];
+		const validTabs = [
+			"personal",
+			"contact",
+			"address",
+			"documents",
+			"ownership",
+		];
 		return tabFromUrl && validTabs.includes(tabFromUrl)
 			? tabFromUrl
 			: "personal";
@@ -227,14 +236,19 @@ export function ClientEditView({
 
 		try {
 			setIsLoadingValidation(true);
-			const [docsResponse, ubosResponse] = await Promise.all([
-				listClientDocuments({ clientId }),
-				requiresUBOs(client.personType)
-					? listClientUBOs({ clientId })
-					: Promise.resolve({ data: [] }),
-			]);
+			const [docsResponse, shareholdersResponse, bcsResponse] =
+				await Promise.all([
+					listClientDocuments({ clientId }),
+					requiresUBOs(client.personType)
+						? listClientShareholders({ clientId })
+						: Promise.resolve({ data: [] }),
+					requiresUBOs(client.personType)
+						? listClientBeneficialControllers({ clientId })
+						: Promise.resolve({ data: [] }),
+				]);
 			setDocuments(docsResponse.data);
-			setUbos(ubosResponse.data);
+			setShareholders(shareholdersResponse.data);
+			setBeneficialControllers(bcsResponse.data);
 		} catch (error) {
 			console.error("Error fetching validation data:", error);
 		} finally {
@@ -282,26 +296,29 @@ export function ClientEditView({
 		const needsUBOs = requiresUBOs(client.personType);
 		if (!needsUBOs) return;
 
-		// Check for stockholders (at least one required)
-		const stockholders = ubos.filter(
-			(u) => u.relationshipType === "SHAREHOLDER",
+		// Check for shareholders (at least one required)
+		const hasShareholders = shareholders.length > 0;
+
+		// Check for beneficial controllers (at least one required)
+		const hasBCs = beneficialControllers.length > 0;
+
+		// Check ownership percentage totals to 100%
+		const totalOwnership = shareholders.reduce(
+			(sum, s) => sum + (s.ownershipPercentage || 0),
+			0,
 		);
-		const hasStockholders = stockholders.length > 0;
+		const ownershipValid = totalOwnership >= 99 && totalOwnership <= 101;
 
-		// Check for legal rep with ID document
-		const legalRep = ubos.find((u) => u.relationshipType === "LEGAL_REP");
-		const hasLegalRepWithId = legalRep && legalRep.idDocumentId !== null;
-
-		// Warning if missing stockholders OR missing legal rep with ID
-		const hasMissingInfo = !hasStockholders || !hasLegalRepWithId;
+		// Warning if missing shareholders OR BCs OR invalid ownership
+		const hasMissingInfo = !hasShareholders || !hasBCs || !ownershipValid;
 
 		setTabWarnings((prev) => {
-			if (prev.ubos !== hasMissingInfo) {
-				return { ...prev, ubos: hasMissingInfo };
+			if (prev.ownership !== hasMissingInfo) {
+				return { ...prev, ownership: hasMissingInfo };
 			}
 			return prev;
 		});
-	}, [client, ubos, isLoadingValidation]);
+	}, [client, shareholders, beneficialControllers, isLoadingValidation]);
 
 	useEffect(() => {
 		const fetchClient = async () => {
@@ -651,13 +668,13 @@ export function ClientEditView({
 						</TabsTrigger>
 						{requiresUBOs(client.personType) && (
 							<TabsTrigger
-								value="ubos"
+								value="ownership"
 								className="flex flex-col items-center justify-center gap-1.5 px-3 py-4 min-h-[80px] text-center"
 							>
 								<Users className="h-6 w-6 shrink-0" />
 								<span className="text-xs leading-tight flex items-center gap-1">
-									UBOs
-									{tabWarnings.ubos && (
+									Estructura Accionaria
+									{tabWarnings.ownership && (
 										<AlertCircle className="h-3.5 w-3.5 text-amber-500" />
 									)}
 								</span>
@@ -1355,17 +1372,22 @@ export function ClientEditView({
 						</div>
 					</TabsContent>
 
-					{/* UBOs Tab - Only for moral/trust entities */}
+					{/* Ownership Tab - Only for moral/trust entities */}
 					{requiresUBOs(client.personType) && (
-						<TabsContent value="ubos" className="mt-0">
-							<div id="ubos" className="space-y-6">
-								<UBOSection
+						<TabsContent value="ownership" className="mt-0">
+							<div id="ownership" className="space-y-6">
+								<ShareholderSection
 									clientId={clientId}
 									personType={client.personType}
-									onUBOChange={handleKYCChange}
+									onShareholderChange={handleKYCChange}
+								/>
+								<BeneficialControllerSection
+									clientId={clientId}
+									personType={client.personType}
+									onBCChange={handleKYCChange}
 								/>
 
-								{/* Cancel button only - UBO actions are immediate */}
+								{/* Cancel button */}
 								<div className="flex justify-end">
 									<Button variant="outline" onClick={handleCancel}>
 										{t("cancel")}

@@ -37,12 +37,22 @@ import type { Gender, MaritalStatus } from "../../types/client";
 import { getClientDisplayName } from "../../types/client";
 import { getClientById } from "../../lib/api/clients";
 import { listClientDocuments } from "../../lib/api/client-documents";
-import { listClientUBOs } from "../../lib/api/ubos";
+import { listClientShareholders } from "../../lib/api/shareholders";
+import { listClientBeneficialControllers } from "../../lib/api/beneficial-controllers";
 import type {
 	ClientDocument,
 	ClientDocumentType,
 } from "../../types/client-document";
-import type { UBO } from "../../types/ubo";
+import type { Shareholder } from "../../types/shareholder";
+import type { BeneficialController } from "../../types/beneficial-controller";
+import {
+	getShareholderDisplayName,
+	getEntityTypeLabel,
+} from "../../types/shareholder";
+import {
+	getBCDisplayName,
+	getBCTypeLabel,
+} from "../../types/beneficial-controller";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/lib/mutations";
 import { showFetchError } from "@/lib/toast-utils";
@@ -62,6 +72,7 @@ import {
 	type DocumentImage,
 } from "./DocumentViewerDialog";
 import { UploadedIDDocumentCard } from "./UploadedIDDocumentCard";
+import { WatchlistScreeningSection } from "./WatchlistScreeningSection";
 import {
 	getDocumentLabel,
 	ALL_REQUIRED_DOCUMENTS,
@@ -194,7 +205,10 @@ export function ClientDetailsView({
 	const { activityCode } = useOrgSettings();
 	const [client, setClient] = useState<Client | null>(null);
 	const [documents, setDocuments] = useState<ClientDocument[]>([]);
-	const [ubos, setUbos] = useState<UBO[]>([]);
+	const [shareholders, setShareholders] = useState<Shareholder[]>([]);
+	const [beneficialControllers, setBeneficialControllers] = useState<
+		BeneficialController[]
+	>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [openAccordions, setOpenAccordions] = useState<string[]>([]);
 
@@ -216,17 +230,26 @@ export function ClientDetailsView({
 		const fetchData = async () => {
 			try {
 				setIsLoading(true);
-				const [clientData, docsData, ubosData] = await Promise.all([
-					getClientById({ id: clientId }),
-					listClientDocuments({ clientId }).catch(() => ({
-						data: [],
-						total: 0,
-					})),
-					listClientUBOs({ clientId }).catch(() => ({ data: [], total: 0 })),
-				]);
+				const [clientData, docsData, shareholdersData, bcsData] =
+					await Promise.all([
+						getClientById({ id: clientId }),
+						listClientDocuments({ clientId }).catch(() => ({
+							data: [],
+							total: 0,
+						})),
+						listClientShareholders({ clientId }).catch(() => ({
+							data: [],
+							total: 0,
+						})),
+						listClientBeneficialControllers({ clientId }).catch(() => ({
+							data: [],
+							total: 0,
+						})),
+					]);
 				setClient(clientData);
 				setDocuments(docsData.data);
-				setUbos(ubosData.data);
+				setShareholders(shareholdersData.data);
+				setBeneficialControllers(bcsData.data);
 			} catch (error) {
 				console.error("Error fetching client data:", error);
 				showFetchError("client-details", error);
@@ -303,20 +326,18 @@ export function ClientDetailsView({
 	const hasAllDocs =
 		(needsIdDocument ? hasIdDocument : true) && missingDocs.length === 0;
 
-	// Check UBOs status (for moral/trust)
-	const stockholders = ubos.filter((u) => u.relationshipType === "SHAREHOLDER");
-	const legalRep = ubos.find((u) => u.relationshipType === "LEGAL_REP");
-	const hasStockholders = stockholders.length > 0;
-	const hasLegalRep = !!legalRep;
-	const hasAllUBOs = needsUBOs ? hasStockholders : true; // Legal rep is optional
+	// Check ownership status (for moral/trust)
+	const hasShareholders = shareholders.length > 0;
+	const hasBCs = beneficialControllers.length > 0;
+	const hasAllOwnership = needsUBOs ? hasShareholders && hasBCs : true;
 
-	// Calculate overall document/UBO completion
+	// Calculate overall document/ownership completion
 	const documentsComplete = hasAllDocs;
-	const ubosComplete = hasAllUBOs;
+	const ownershipComplete = hasAllOwnership;
 
 	// Helper to navigate to edit with tab and anchor
 	const navigateToEdit = (
-		tab: "personal" | "contact" | "address" | "documents" | "ubos",
+		tab: "personal" | "contact" | "address" | "documents" | "ownership",
 		anchor?: string,
 	) => {
 		const url = `/clients/${clientId}/edit?tab=${tab}${anchor ? `#${anchor}` : ""}`;
@@ -964,9 +985,10 @@ export function ClientDetailsView({
 								<span className="font-semibold">{t("clientPepStatus")}</span>
 							</div>
 							<div className="flex items-center gap-2">
-								{client.pepStatus === "NOT_PEP" ||
-								client.pepStatus === "CONFIRMED" ? (
+								{client.screeningResult === "clear" ? (
 									<CheckCircle2 className="h-5 w-5 text-green-500" />
+								) : client.screeningResult === "flagged" ? (
+									<AlertTriangle className="h-5 w-5 text-red-500" />
 								) : (
 									<AlertTriangle className="h-5 w-5 text-amber-500" />
 								)}
@@ -976,38 +998,44 @@ export function ClientDetailsView({
 					<AccordionContent className="px-6 pb-4">
 						<dl className="grid grid-cols-1 @xl/main:grid-cols-2 gap-6">
 							<FieldDisplay
-								label={t("clientPepStatus")}
-								value={client.pepStatus}
-								isMissing={!client.pepStatus || client.pepStatus === "PENDING"}
+								label="Estado de Screening"
+								value={client.screeningResult || "pending"}
+								isMissing={!client.screeningResult}
 								tier={tierMap.isPEP}
 							/>
 							<FieldDisplay
-								label={t("clientPepVerifiedOn")}
+								label="Fecha de Verificación"
 								value={
-									client.pepCheckedAt
-										? formatDate(client.pepCheckedAt)
-										: undefined
+									client.screenedAt ? formatDate(client.screenedAt) : undefined
 								}
 								icon={Calendar}
-								isMissing={!client.pepCheckedAt}
+								isMissing={!client.screenedAt}
 							/>
-							{client.pepDetails && (
-								<div className="md:col-span-2">
-									<FieldDisplay
-										label="Detalles PEP"
-										value={client.pepDetails}
-									/>
-								</div>
-							)}
-							{client.pepMatchConfidence && (
-								<FieldDisplay
-									label="Confianza de Coincidencia"
-									value={client.pepMatchConfidence}
-								/>
-							)}
+							<FieldDisplay
+								label="¿Es PEP?"
+								value={client.isPEP ? "Sí" : "No"}
+								tier={tierMap.isPEP}
+							/>
+							<FieldDisplay
+								label="Sancionado OFAC"
+								value={client.ofacSanctioned ? "Sí" : "No"}
+							/>
+							<FieldDisplay
+								label="Sancionado UNSC"
+								value={client.unscSanctioned ? "Sí" : "No"}
+							/>
+							<FieldDisplay
+								label="Listado SAT 69-B"
+								value={client.sat69bListed ? "Sí" : "No"}
+							/>
+							<FieldDisplay
+								label="Media Adversa"
+								value={client.adverseMediaFlagged ? "Sí" : "No"}
+							/>
 						</dl>
 
-						{(!client.pepStatus || client.pepStatus === "PENDING") && (
+						{(!client.screeningResult ||
+							client.screeningResult === "pending") && (
 							<div className="flex justify-end mt-4 pt-4 border-t">
 								<Button
 									variant="outline"
@@ -1288,137 +1316,229 @@ export function ClientDetailsView({
 					</AccordionContent>
 				</AccordionItem>
 
-				{/* UBOs (for moral/trust) */}
+				{/* Shareholders (for moral/trust) */}
 				{needsUBOs && (
 					<AccordionItem
-						value="ubos"
-						id="ubos"
+						value="shareholders"
+						id="shareholders"
+						className="border rounded-lg overflow-hidden bg-card shadow-sm"
+					>
+						<AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50">
+							<div className="flex items-center justify-between w-full pr-4">
+								<div className="flex items-center gap-3">
+									<Building2 className="h-5 w-5" />
+									<span className="font-semibold">Accionistas</span>
+								</div>
+								<div className="flex items-center gap-2">
+									{hasShareholders ? (
+										<CheckCircle2 className="h-5 w-5 text-green-500" />
+									) : (
+										<AlertTriangle className="h-5 w-5 text-amber-500" />
+									)}
+									<Badge variant="secondary">{shareholders.length}</Badge>
+								</div>
+							</div>
+						</AccordionTrigger>
+						<AccordionContent className="px-6 pb-4">
+							{shareholders.length > 0 ? (
+								<div className="space-y-2">
+									{shareholders.map((shareholder) => {
+										const Icon =
+											shareholder.entityType === "COMPANY" ? Building2 : User;
+										return (
+											<div
+												key={shareholder.id}
+												className="p-3 rounded-lg border bg-muted/30"
+											>
+												<div className="flex items-center justify-between">
+													<div>
+														<div className="flex items-center gap-2">
+															<Icon className="h-4 w-4 text-muted-foreground" />
+															<p className="font-medium text-sm">
+																{getShareholderDisplayName(shareholder)}
+															</p>
+															<Badge variant="outline" className="text-xs">
+																{getEntityTypeLabel(shareholder.entityType)}
+															</Badge>
+														</div>
+														<p className="text-xs text-muted-foreground mt-1">
+															Participación: {shareholder.ownershipPercentage}%
+															{shareholder.rfc && ` • RFC: ${shareholder.rfc}`}
+															{shareholder.taxId &&
+																` • Tax ID: ${shareholder.taxId}`}
+														</p>
+													</div>
+												</div>
+											</div>
+										);
+									})}
+								</div>
+							) : (
+								<div className="p-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20">
+									<div className="flex items-center gap-2">
+										<AlertTriangle className="h-4 w-4 text-amber-600" />
+										<span className="text-sm text-amber-700 dark:text-amber-300">
+											No hay accionistas registrados
+										</span>
+									</div>
+								</div>
+							)}
+
+							{/* Edit button */}
+							<div className="mt-4 pt-4 border-t flex justify-end">
+								<Button
+									variant="ghost"
+									size="sm"
+									onClick={() => navigateToEdit("ownership", "shareholders")}
+								>
+									<Pencil className="h-4 w-4 mr-2" />
+									{!hasShareholders ? "Agregar Accionistas" : t("edit")}
+								</Button>
+							</div>
+						</AccordionContent>
+					</AccordionItem>
+				)}
+
+				{/* Beneficial Controllers (for moral/trust) */}
+				{needsUBOs && (
+					<AccordionItem
+						value="beneficial-controllers"
+						id="beneficial-controllers"
 						className="border rounded-lg overflow-hidden bg-card shadow-sm"
 					>
 						<AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50">
 							<div className="flex items-center justify-between w-full pr-4">
 								<div className="flex items-center gap-3">
 									<Users className="h-5 w-5" />
-									<span className="font-semibold">{t("clientUboTitle")}</span>
+									<span className="font-semibold">
+										Beneficiarios Controladores
+									</span>
 								</div>
 								<div className="flex items-center gap-2">
-									{ubosComplete ? (
+									{hasBCs ? (
 										<CheckCircle2 className="h-5 w-5 text-green-500" />
 									) : (
 										<AlertTriangle className="h-5 w-5 text-amber-500" />
 									)}
+									<Badge variant="secondary">
+										{beneficialControllers.length}
+									</Badge>
 								</div>
 							</div>
 						</AccordionTrigger>
 						<AccordionContent className="px-6 pb-4">
-							<div className="space-y-4">
-								{/* Stockholders */}
-								<div>
-									<h4 className="text-sm font-medium text-muted-foreground mb-2">
-										{t("clientShareholders")}
-									</h4>
-									{stockholders.length > 0 ? (
-										<div className="space-y-2">
-											{stockholders.map((ubo) => (
-												<div
-													key={ubo.id}
-													className="p-3 rounded-lg border bg-muted/30"
-												>
-													<div className="flex items-center justify-between">
-														<div>
-															<p className="font-medium text-sm">
-																{ubo.firstName} {ubo.lastName}{" "}
-																{ubo.secondLastName || ""}
-															</p>
-															{ubo.ownershipPercentage && (
-																<p className="text-xs text-muted-foreground">
-																	{ubo.ownershipPercentage}
-																	{t("clientParticipation")}
-																</p>
-															)}
-														</div>
-														{ubo.isPEP && (
-															<Badge variant="destructive" className="text-xs">
-																{t("clientPep")}
+							{beneficialControllers.length > 0 ? (
+								<div className="space-y-2">
+									{beneficialControllers.map((bc) => (
+										<div
+											key={bc.id}
+											className="p-3 rounded-lg border bg-muted/30"
+										>
+											<div className="flex items-center justify-between">
+												<div className="flex-1">
+													<div className="flex items-center gap-2">
+														<User className="h-4 w-4 text-muted-foreground" />
+														<p className="font-medium text-sm">
+															{getBCDisplayName(bc)}
+														</p>
+														<Badge variant="outline" className="text-xs">
+															{getBCTypeLabel(bc.bcType)}
+														</Badge>
+														{bc.isLegalRepresentative && (
+															<Badge variant="secondary" className="text-xs">
+																Rep. Legal
 															</Badge>
 														)}
 													</div>
-												</div>
-											))}
-										</div>
-									) : (
-										<div className="p-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20">
-											<div className="flex items-center gap-2">
-												<AlertTriangle className="h-4 w-4 text-amber-600" />
-												<span className="text-sm text-amber-700 dark:text-amber-300">
-													{t("clientNoShareholders")}
-												</span>
-											</div>
-										</div>
-									)}
-								</div>
-
-								{/* Legal Representative */}
-								<div>
-									<h4 className="text-sm font-medium text-muted-foreground mb-2">
-										{t("clientLegalRep")}
-									</h4>
-									{legalRep ? (
-										<div className="space-y-3">
-											<div className="p-3 rounded-lg border bg-muted/30">
-												<div className="flex items-center justify-between">
-													<div>
-														<p className="font-medium text-sm">
-															{legalRep.firstName} {legalRep.lastName}{" "}
-															{legalRep.secondLastName || ""}
-														</p>
-														{legalRep.birthDate && (
-															<p className="text-xs text-muted-foreground">
-																{formatDate(legalRep.birthDate)}
-															</p>
+													<p className="text-xs text-muted-foreground mt-1">
+														{bc.curp && `CURP: ${bc.curp}`}
+														{bc.rfc && ` • RFC: ${bc.rfc}`}
+													</p>
+													{/* Screening Status */}
+													{bc.screeningResult &&
+														bc.screeningResult !== "pending" && (
+															<div className="flex items-center gap-2 mt-2">
+																{bc.isPEP && (
+																	<Badge
+																		variant="destructive"
+																		className="text-xs"
+																	>
+																		PEP
+																	</Badge>
+																)}
+																{bc.ofacSanctioned && (
+																	<Badge
+																		variant="destructive"
+																		className="text-xs"
+																	>
+																		OFAC
+																	</Badge>
+																)}
+																{bc.unscSanctioned && (
+																	<Badge
+																		variant="destructive"
+																		className="text-xs"
+																	>
+																		UNSC
+																	</Badge>
+																)}
+																{bc.sat69bListed && (
+																	<Badge
+																		variant="destructive"
+																		className="text-xs"
+																	>
+																		SAT 69-B
+																	</Badge>
+																)}
+																{bc.adverseMediaFlagged && (
+																	<Badge
+																		variant="destructive"
+																		className="text-xs"
+																	>
+																		Media Adversa
+																	</Badge>
+																)}
+																{!bc.isPEP &&
+																	!bc.ofacSanctioned &&
+																	!bc.unscSanctioned &&
+																	!bc.sat69bListed &&
+																	!bc.adverseMediaFlagged && (
+																		<Badge
+																			variant="outline"
+																			className="text-xs text-green-600"
+																		>
+																			Sin alertas
+																		</Badge>
+																	)}
+															</div>
 														)}
-													</div>
-													{legalRep.isPEP && (
-														<Badge variant="destructive" className="text-xs">
-															PEP
-														</Badge>
-													)}
 												</div>
 											</div>
-											{/* Legal Rep ID Document Card */}
-											{legalRep.idDocumentId &&
-												(() => {
-													const legalRepIdDoc = documents.find(
-														(d) => d.id === legalRep.idDocumentId,
-													);
-													return legalRepIdDoc ? (
-														<UploadedIDDocumentCard
-															document={legalRepIdDoc}
-															showDelete={false}
-															compact
-														/>
-													) : null;
-												})()}
 										</div>
-									) : (
-										<div className="p-3 rounded-lg border border-muted bg-muted/30">
-											<p className="text-sm text-muted-foreground">
-												{t("clientNoLegalRep")}
-											</p>
-										</div>
-									)}
+									))}
 								</div>
-							</div>
+							) : (
+								<div className="p-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20">
+									<div className="flex items-center gap-2">
+										<AlertTriangle className="h-4 w-4 text-amber-600" />
+										<span className="text-sm text-amber-700 dark:text-amber-300">
+											No hay beneficiarios controladores registrados
+										</span>
+									</div>
+								</div>
+							)}
 
-							{/* Edit button - always visible */}
+							{/* Edit button */}
 							<div className="mt-4 pt-4 border-t flex justify-end">
 								<Button
 									variant="ghost"
 									size="sm"
-									onClick={() => navigateToEdit("documents", "ubos")}
+									onClick={() =>
+										navigateToEdit("ownership", "beneficial-controllers")
+									}
 								>
 									<Pencil className="h-4 w-4 mr-2" />
-									{!ubosComplete ? t("clientAddShareholders") : t("edit")}
+									{!hasBCs ? "Agregar Beneficiarios Controladores" : t("edit")}
 								</Button>
 							</div>
 						</AccordionContent>
@@ -1508,6 +1628,25 @@ export function ClientDetailsView({
 								{t("edit")}
 							</Button>
 						</div>
+					</AccordionContent>
+				</AccordionItem>
+
+				{/* Watchlist Screening */}
+				<AccordionItem
+					value="watchlist"
+					id="watchlist"
+					className="border rounded-lg overflow-hidden bg-card shadow-sm"
+				>
+					<AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50">
+						<div className="flex items-center gap-3">
+							<Shield className="h-5 w-5" />
+							<span className="font-semibold">Watchlist Screening</span>
+						</div>
+					</AccordionTrigger>
+					<AccordionContent className="px-6 pb-4">
+						<WatchlistScreeningSection
+							watchlistQueryId={client.watchlistQueryId}
+						/>
 					</AccordionContent>
 				</AccordionItem>
 			</Accordion>

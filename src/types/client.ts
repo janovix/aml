@@ -7,8 +7,8 @@ export type KYCStatus =
 	| "COMPLETE"
 	| "EXPIRED";
 
-// PEP check status
-export type PEPStatus = "PENDING" | "CONFIRMED" | "NOT_PEP" | "ERROR";
+// Screening result status
+export type ScreeningResult = "pending" | "clear" | "flagged";
 
 // Gender values
 export type Gender = "M" | "F" | "OTHER";
@@ -57,13 +57,15 @@ export interface Client {
 	// KYC status tracking
 	kycStatus?: KYCStatus;
 	kycCompletedAt?: string | null;
-	// PEP status tracking
+	// Watchlist screening status
 	isPEP?: boolean;
-	pepStatus?: PEPStatus;
-	pepDetails?: string | null;
-	pepMatchConfidence?: string | null;
-	pepCheckedAt?: string | null;
-	pepCheckSource?: string | null;
+	watchlistQueryId?: string | null;
+	ofacSanctioned?: boolean;
+	unscSanctioned?: boolean;
+	sat69bListed?: boolean;
+	adverseMediaFlagged?: boolean;
+	screeningResult?: ScreeningResult;
+	screenedAt?: string | null;
 	// Resolved catalog names for *Code fields
 	resolvedNames?: Record<string, string> | null;
 	// Timestamps
