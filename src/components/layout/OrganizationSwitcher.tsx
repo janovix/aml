@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { ChevronsUpDown, Lock, Plus, Settings } from "lucide-react";
+import { authClient } from "@/lib/auth/authClient";
 
 import {
 	DropdownMenu,
@@ -201,6 +202,19 @@ export function OrganizationSwitcher({
 	const { isMobile, state } = useSidebar();
 	const isCollapsed = state === "collapsed";
 	const { t } = useLanguage();
+
+	// Diagnostic: compare what the Better Auth client hook returns vs the server-side fetch.
+	// The hook response is logged to the console so we can verify whether the backend
+	// includes membership/role data in the organization list.
+	const { data: hookOrgs } = authClient.useListOrganizations();
+	React.useEffect(() => {
+		if (hookOrgs) {
+			console.log(
+				"[OrganizationSwitcher] authClient.useListOrganizations():",
+				JSON.stringify(hookOrgs, null, 2),
+			);
+		}
+	}, [hookOrgs]);
 
 	const ownedOrgs = organizations.filter((o) => o.role === "owner");
 	const memberOrgs = organizations.filter((o) => o.role !== "owner");
