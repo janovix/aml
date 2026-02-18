@@ -92,6 +92,10 @@ export const translations = {
 		organizations: "Organizaciones",
 		createOrganization: "Crear organización",
 		orgSettings: "Configuración",
+		myOrganizations: "Mis organizaciones",
+		memberOf: "Miembro de",
+		orgLimitReached:
+			"Has alcanzado el límite de organizaciones. Actualiza tu plan para crear más.",
 
 		// Organization Dialog
 		orgNewTitle: "Nueva organización",
@@ -1562,6 +1566,10 @@ export const translations = {
 		organizations: "Organizations",
 		createOrganization: "Create organization",
 		orgSettings: "Settings",
+		myOrganizations: "My organizations",
+		memberOf: "Member of",
+		orgLimitReached:
+			"You've reached your organization limit. Upgrade your plan to create more.",
 
 		// Organization Dialog
 		orgNewTitle: "New organization",
