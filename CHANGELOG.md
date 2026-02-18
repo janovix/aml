@@ -1,3 +1,10 @@
+# [1.4.0-rc.38](https://github.com/janovix/aml/compare/v1.4.0-rc.37...v1.4.0-rc.38) (2026-02-18)
+
+
+### Features
+
+* add pending invitations feature to AppSidebar with translation support ([de0db08](https://github.com/janovix/aml/commit/de0db084ac60f5f7f5df1b4813e539f9b5292a49))
+
 # [1.4.0-rc.37](https://github.com/janovix/aml/compare/v1.4.0-rc.36...v1.4.0-rc.37) (2026-02-18)
 
 
