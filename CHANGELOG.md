@@ -1,3 +1,10 @@
+# [1.4.0-rc.35](https://github.com/janovix/aml/compare/v1.4.0-rc.34...v1.4.0-rc.35) (2026-02-18)
+
+
+### Features
+
+* implement KYC self-service functionality ([9bd456a](https://github.com/janovix/aml/commit/9bd456ad004556371adfdc9c98bf6b27f4675b03))
+
 # [1.4.0-rc.34](https://github.com/janovix/aml/compare/v1.4.0-rc.33...v1.4.0-rc.34) (2026-02-17)
 
 
