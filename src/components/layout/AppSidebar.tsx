@@ -301,6 +301,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 										>
 											<Link
 												href={item.available ? orgPath(item.href) : "#"}
+												prefetch={false}
 												aria-disabled={!item.available}
 												className={cn(
 													!item.available && "pointer-events-none opacity-50",
@@ -343,6 +344,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 										>
 											<Link
 												href={item.available ? orgPath(item.href) : "#"}
+												prefetch={false}
 												aria-disabled={!item.available}
 												className={cn(
 													!item.available && "pointer-events-none opacity-50",
@@ -385,6 +387,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 										>
 											<Link
 												href={item.available ? orgPath(item.href) : "#"}
+												prefetch={false}
 												aria-disabled={!item.available}
 												className={cn(
 													!item.available && "pointer-events-none opacity-50",
