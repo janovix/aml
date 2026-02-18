@@ -1,3 +1,11 @@
+# [1.4.0-rc.39](https://github.com/janovix/aml/compare/v1.4.0-rc.38...v1.4.0-rc.39) (2026-02-18)
+
+
+### Features
+
+* add user role to organization data in AppSidebar ([fe894e4](https://github.com/janovix/aml/commit/fe894e44fec1081834457d7150c48ca00eac3b92))
+* enhance OrganizationSwitcher with role-based organization grouping and creation functionality ([693a66e](https://github.com/janovix/aml/commit/693a66ee5f371d86b77cf2c0639ec3cdca72f7eb))
+
 # [1.4.0-rc.38](https://github.com/janovix/aml/compare/v1.4.0-rc.37...v1.4.0-rc.38) (2026-02-18)
 
 
