@@ -68,6 +68,9 @@ export const translations = {
 		sidebarProfile: "Perfil",
 		sidebarLogout: "Cerrar sesión",
 		sidebarUser: "Usuario",
+		sidebarPendingInvitations: "Invitaciones Pendientes",
+		sidebarInvitation: "invitación",
+		sidebarInvitations: "invitaciones",
 
 		// App Switcher
 		appSwitcherTitle: "Apps de Janovix",
@@ -1535,6 +1538,9 @@ export const translations = {
 		sidebarProfile: "Profile",
 		sidebarLogout: "Log out",
 		sidebarUser: "User",
+		sidebarPendingInvitations: "Pending Invitations",
+		sidebarInvitation: "invitation",
+		sidebarInvitations: "invitations",
 
 		// App Switcher
 		appSwitcherTitle: "Janovix Apps",

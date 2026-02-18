@@ -14,6 +14,7 @@ import {
 	Settings,
 	Search,
 	Upload,
+	Mail,
 } from "lucide-react";
 
 import {
@@ -44,7 +45,11 @@ import {
 import { NavUser } from "./NavUser";
 import { AppSwitcher } from "./AppSwitcher";
 import { LanguageSwitcher, ThemeSwitcher } from "@algenium/blocks";
-import { getAuthAppUrl, getWatchlistAppUrl } from "@/lib/auth/config";
+import {
+	getAuthAppUrl,
+	getAuthServiceUrl,
+	getWatchlistAppUrl,
+} from "@/lib/auth/config";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { TranslationKeys } from "@/lib/translations";
 
@@ -147,6 +152,36 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 		subscriptionData?.subscription?.organizationsOwned ?? 0;
 	const organizationsLimit =
 		subscriptionData?.subscription?.organizationsLimit ?? 0;
+
+	// Pending invitations to other organizations (displayed in sidebar)
+	const [pendingInvitationsCount, setPendingInvitationsCount] =
+		React.useState(0);
+	React.useEffect(() => {
+		let cancelled = false;
+		async function fetchPendingInvitations() {
+			try {
+				const authServiceUrl = getAuthServiceUrl();
+				const response = await fetch(
+					`${authServiceUrl}/api/subscription/onboarding-status?pendingInvitationsOnly=true`,
+					{ credentials: "include" },
+				);
+				if (!response.ok || cancelled) return;
+				const result = (await response.json()) as {
+					success: boolean;
+					data?: { pendingInvitations?: Array<{ id: string }> };
+				};
+				if (result.success && result.data?.pendingInvitations && !cancelled) {
+					setPendingInvitationsCount(result.data.pendingInvitations.length);
+				}
+			} catch {
+				// Silently fail - pending invitations are optional
+			}
+		}
+		fetchPendingInvitations();
+		return () => {
+			cancelled = true;
+		};
+	}, []);
 
 	// Get org slug from current org or URL
 	const orgSlug = currentOrg?.slug || urlOrgSlug;
@@ -280,6 +315,34 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 						organizationsLimit={organizationsLimit}
 					/>
 				</div>
+
+				{/* Pending Invitations Indicator */}
+				{pendingInvitationsCount > 0 && (
+					<div className="px-2 pt-2">
+						<a
+							href={`${getAuthAppUrl()}/invite`}
+							onClick={handleLinkClick}
+							className="block rounded-lg bg-primary/10 border border-primary/20 p-3 hover:bg-primary/15 transition-colors cursor-pointer no-underline"
+						>
+							<div className="flex items-center gap-3">
+								<div className="h-8 w-8 rounded-md bg-primary/15 flex items-center justify-center shrink-0">
+									<Mail className="h-4 w-4 text-primary" />
+								</div>
+								<div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
+									<p className="text-sm font-medium text-foreground">
+										{t("sidebarPendingInvitations")}
+									</p>
+									<p className="text-xs text-muted-foreground">
+										{pendingInvitationsCount}{" "}
+										{pendingInvitationsCount === 1
+											? t("sidebarInvitation")
+											: t("sidebarInvitations")}
+									</p>
+								</div>
+							</div>
+						</a>
+					</div>
+				)}
 
 				<SidebarGroup>
 					<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
