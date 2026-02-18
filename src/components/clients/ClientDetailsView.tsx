@@ -33,6 +33,7 @@ import {
 	ZoomIn,
 	Loader2,
 	Activity,
+	Link2,
 } from "lucide-react";
 import type { Client } from "../../types/client";
 import type { Gender, MaritalStatus } from "../../types/client";
@@ -76,6 +77,8 @@ import {
 import { UploadedIDDocumentCard } from "./UploadedIDDocumentCard";
 import { WatchlistScreeningSection } from "./WatchlistScreeningSection";
 import { useWatchlistScreening } from "@/hooks/useWatchlistScreening";
+import { KycSessionSection } from "@/components/kyc/KycSessionSection";
+import { getKycBaseUrl } from "@/lib/api/doc-svc";
 import {
 	getDocumentLabel,
 	ALL_REQUIRED_DOCUMENTS,
@@ -1742,6 +1745,27 @@ export function ClientDetailsView({
 					<AccordionContent className="px-6 pb-4">
 						<WatchlistScreeningSection
 							watchlistQueryId={client.watchlistQueryId}
+						/>
+					</AccordionContent>
+				</AccordionItem>
+
+				{/* KYC Self-Service Sessions */}
+				<AccordionItem
+					value="kyc-sessions"
+					id="kyc-sessions"
+					className="border rounded-lg overflow-hidden bg-card shadow-sm"
+				>
+					<AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50">
+						<div className="flex items-center gap-3">
+							<Link2 className="h-5 w-5" />
+							<span className="font-semibold">KYC Autoservicio</span>
+						</div>
+					</AccordionTrigger>
+					<AccordionContent className="px-6 pb-6">
+						<KycSessionSection
+							clientId={client.id}
+							clientEmail={client.email ?? null}
+							kycSelfServiceUrl={getKycBaseUrl()}
 						/>
 					</AccordionContent>
 				</AccordionItem>

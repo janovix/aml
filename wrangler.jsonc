@@ -17,6 +17,7 @@
 	},
 	"upload_source_maps": true,
 	"vars": {
-		"NEXT_PUBLIC_SCAN_APP_URL": "https://scan.janovix.workers.dev",
+		"NEXT_PUBLIC_SCAN_APP_URL": "https://scan.janovix.workers.dev", // backward compat
+		"NEXT_PUBLIC_KYC_SELF_SERVICE_URL": "https://kyc-self-service.janovix.workers.dev",
 	},
 }

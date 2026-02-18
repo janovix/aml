@@ -847,20 +847,43 @@ export function subscribeToUploadLinkEvents(
 }
 
 /**
- * Get the scan app base URL from environment or default
+ * Get the KYC self-service app base URL from environment or default
+ * @deprecated Use NEXT_PUBLIC_KYC_SELF_SERVICE_URL instead
  */
-const SCAN_APP_URL =
-	process.env.NEXT_PUBLIC_SCAN_APP_URL || "https://scan.janovix.com";
+const KYC_SELF_SERVICE_URL =
+	process.env.NEXT_PUBLIC_KYC_SELF_SERVICE_URL ||
+	process.env.NEXT_PUBLIC_SCAN_APP_URL || // backward compat
+	"https://kyc.janovix.com";
 
 /**
- * Generate shareable upload link URL
+ * Generate shareable upload link URL (legacy - for backward compatibility with scan app routes)
  *
  * @param linkId - Upload link ID
- * @param baseUrl - Base URL for scan app (defaults to NEXT_PUBLIC_SCAN_APP_URL)
+ * @param baseUrl - Base URL for KYC self-service app (defaults to NEXT_PUBLIC_KYC_SELF_SERVICE_URL)
  */
 export function getUploadLinkUrl(
 	linkId: string,
-	baseUrl: string = SCAN_APP_URL,
+	baseUrl: string = KYC_SELF_SERVICE_URL,
 ): string {
 	return `${baseUrl}/${linkId}`;
+}
+
+/**
+ * Generate KYC self-service session URL
+ *
+ * @param token - KYC session token
+ * @param baseUrl - Base URL for KYC self-service app
+ */
+export function getKycSessionUrl(
+	token: string,
+	baseUrl: string = KYC_SELF_SERVICE_URL,
+): string {
+	return `${baseUrl}/kyc/${token}`;
+}
+
+/**
+ * Get the KYC self-service app base URL
+ */
+export function getKycBaseUrl(): string {
+	return KYC_SELF_SERVICE_URL;
 }

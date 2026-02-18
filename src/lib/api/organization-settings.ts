@@ -1,11 +1,17 @@
 import { getAmlCoreBaseUrl } from "./config";
 import { fetchJson } from "./http";
 
+export type SelfServiceMode = "disabled" | "manual" | "automatic";
+
 export interface OrganizationSettingsEntity {
 	id: string;
 	organizationId: string;
 	obligatedSubjectKey: string; // RFC (clave_sujeto_obligado)
 	activityKey: string; // Vulnerable activity code (e.g., "VEH")
+	// KYC Self-Service settings
+	selfServiceMode: SelfServiceMode;
+	selfServiceExpiryHours: number;
+	selfServiceRequiredSections: string[] | null;
 	createdAt: string;
 	updatedAt: string;
 }
@@ -13,6 +19,15 @@ export interface OrganizationSettingsEntity {
 export interface OrganizationSettingsUpdateInput {
 	obligatedSubjectKey: string;
 	activityKey: string;
+	selfServiceMode?: SelfServiceMode;
+	selfServiceExpiryHours?: number;
+	selfServiceRequiredSections?: string[] | null;
+}
+
+export interface SelfServiceSettingsUpdateInput {
+	selfServiceMode?: SelfServiceMode;
+	selfServiceExpiryHours?: number;
+	selfServiceRequiredSections?: string[] | null;
 }
 
 /**
@@ -91,5 +106,33 @@ export async function updateOrganizationSettings(opts: {
 	}
 
 	// Fallback for backward compatibility
+	return json as unknown as OrganizationSettingsEntity;
+}
+
+export async function updateSelfServiceSettings(opts: {
+	input: SelfServiceSettingsUpdateInput;
+	baseUrl?: string;
+	signal?: AbortSignal;
+	jwt?: string;
+}): Promise<OrganizationSettingsEntity> {
+	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
+	const url = new URL("/api/v1/organization-settings/self-service", baseUrl);
+
+	const { json } = await fetchJson<OrganizationSettingsResponse>(
+		url.toString(),
+		{
+			method: "PATCH",
+			cache: "no-store",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify(opts.input),
+			signal: opts.signal,
+			jwt: opts.jwt,
+		},
+	);
+
+	if (json && "configured" in json && json.settings) {
+		return json.settings;
+	}
+
 	return json as unknown as OrganizationSettingsEntity;
 }

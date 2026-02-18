@@ -32,6 +32,8 @@ import { getClientStats, type ClientStats } from "@/lib/api/stats";
 import { getOperationStats, type OperationStats } from "@/lib/api/stats";
 import { getLocaleForLanguage } from "@/lib/translations";
 import { cn } from "@/lib/utils";
+import { useOrgSettings } from "@/hooks/useOrgSettings";
+import type { OrganizationSettingsEntity } from "@/lib/api/organization-settings";
 
 interface DashboardData {
 	clientStats: ClientStats | null;
@@ -109,6 +111,12 @@ export function DashboardView(): React.ReactElement {
 	});
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+
+	const {
+		settings: orgSettings,
+		isConfigured: isOrgConfigured,
+		refresh: refreshOrgSettings,
+	} = useOrgSettings();
 
 	// Fetch data when JWT and org are ready
 	useEffect(() => {
