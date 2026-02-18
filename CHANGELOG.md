@@ -1,3 +1,10 @@
+# [1.4.0-rc.37](https://github.com/janovix/aml/compare/v1.4.0-rc.36...v1.4.0-rc.37) (2026-02-18)
+
+
+### Features
+
+* implement PDF upload functionality in NoticeDetailsView ([72eef40](https://github.com/janovix/aml/commit/72eef40b13efd76fe58bbc835c19104a070bf6df))
+
 # [1.4.0-rc.36](https://github.com/janovix/aml/compare/v1.4.0-rc.35...v1.4.0-rc.36) (2026-02-18)
 
 
