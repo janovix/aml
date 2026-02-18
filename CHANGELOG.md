@@ -1,3 +1,10 @@
+# [1.4.0-rc.36](https://github.com/janovix/aml/compare/v1.4.0-rc.35...v1.4.0-rc.36) (2026-02-18)
+
+
+### Features
+
+* enhance WatchlistScreeningSection with clickable Query ID link ([96ede23](https://github.com/janovix/aml/commit/96ede23fb1407abb2c21095bcd595a8a2343b2ff))
+
 # [1.4.0-rc.35](https://github.com/janovix/aml/compare/v1.4.0-rc.34...v1.4.0-rc.35) (2026-02-18)
 
 
