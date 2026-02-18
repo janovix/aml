@@ -147,8 +147,6 @@ export function normalizeOrganization(raw: unknown): Organization {
 	const rawObj = raw as Record<string, unknown>;
 	const metadata = (rawObj.metadata as Record<string, unknown> | null) ?? null;
 
-	const member = rawObj.member as Record<string, unknown> | undefined;
-
 	return {
 		id:
 			(rawObj.id as string) ??
@@ -175,7 +173,6 @@ export function normalizeOrganization(raw: unknown): Organization {
 			(rawObj.updatedAt as string) ??
 			(rawObj.updated_at as string) ??
 			undefined,
-		userRole: (member?.role as Organization["userRole"]) ?? undefined,
 	};
 }
 
