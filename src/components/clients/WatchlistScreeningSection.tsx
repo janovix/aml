@@ -11,8 +11,10 @@ import {
 	Loader2,
 	AlertCircle,
 	Activity,
+	ExternalLink,
 } from "lucide-react";
 import { useWatchlistScreening } from "@/hooks/useWatchlistScreening";
+import { getWatchlistBaseUrl } from "@/lib/api/config";
 import { cn } from "@/lib/utils";
 
 interface WatchlistScreeningSectionProps {
@@ -266,7 +268,17 @@ export function WatchlistScreeningSection({
 				)}
 
 				<div className="mt-4 text-xs text-muted-foreground">
-					<p>Query ID: {data.id}</p>
+					<p>
+						<a
+							href={`${getWatchlistBaseUrl()}/queries/${data.id}`}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+						>
+							Query ID: {data.id}
+							<ExternalLink className="h-3 w-3" />
+						</a>
+					</p>
 					<p>Last Updated: {new Date(data.updatedAt).toLocaleString()}</p>
 				</div>
 			</CardContent>
