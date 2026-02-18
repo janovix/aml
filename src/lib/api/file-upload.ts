@@ -232,6 +232,54 @@ export async function uploadDocumentForKYC(options: {
 }
 
 /**
+ * Minimal 1x1 pixel JPEG for doc-svc PDF-only uploads.
+ * doc-svc requires at least one rasterized image; this satisfies that requirement
+ * when storing a PDF (e.g. SAT submission/acuse receipts) without image content.
+ */
+const MINIMAL_JPEG_BASE64 =
+	"/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBEAAhEAPwCwA//2Q==";
+
+function createMinimalJpegBlob(): Blob {
+	const binary = atob(MINIMAL_JPEG_BASE64);
+	const bytes = new Uint8Array(binary.length);
+	for (let i = 0; i < binary.length; i++) {
+		bytes[i] = binary.charCodeAt(i);
+	}
+	return new Blob([bytes], { type: "image/jpeg" });
+}
+
+/**
+ * Upload a PDF-only document to doc-svc.
+ * Used for SAT submission/acuse PDFs that don't require image processing.
+ * doc-svc requires at least one rasterized image, so a minimal placeholder is used.
+ */
+export async function uploadPdfDocument(options: {
+	organizationId: string;
+	userId: string;
+	pdfFile: File | Blob;
+	fileName?: string;
+	onProgress?: (stage: string, percent: number) => void;
+}): Promise<DocumentUploadResult> {
+	const pdfBlob =
+		options.pdfFile instanceof File ? options.pdfFile : options.pdfFile;
+	const fileName =
+		options.fileName ??
+		(pdfBlob instanceof File ? pdfBlob.name : "document.pdf");
+	const placeholderImage = createMinimalJpegBlob();
+
+	return await uploadDocument({
+		organizationId: options.organizationId,
+		userId: options.userId,
+		primaryFile: placeholderImage,
+		fileName,
+		pageImages: [placeholderImage],
+		pdfFile: pdfBlob,
+		waitForProcessing: false,
+		onProgress: options.onProgress,
+	});
+}
+
+/**
  * Get presigned URLs for document images/PDF from doc-svc
  *
  * Use this to display document images in the UI

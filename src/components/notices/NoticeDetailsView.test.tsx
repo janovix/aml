@@ -9,10 +9,14 @@ import * as noticesApi from "@/lib/api/notices";
 // Mock sonner toast
 const mockToastSuccess = vi.fn();
 const mockToastError = vi.fn();
+const mockToastLoading = vi.fn();
+const mockToastDismiss = vi.fn();
 vi.mock("sonner", () => ({
 	toast: Object.assign(vi.fn(), {
 		success: (...args: unknown[]) => mockToastSuccess(...args),
 		error: (...args: unknown[]) => mockToastError(...args),
+		loading: (...args: unknown[]) => mockToastLoading(...args),
+		dismiss: (...args: unknown[]) => mockToastDismiss(...args),
 	}),
 }));
 
@@ -62,6 +66,12 @@ vi.mock("@/lib/api/notices", () => ({
 	submitNoticeToSat: vi.fn(),
 	acknowledgeNotice: vi.fn(),
 	deleteNotice: vi.fn(),
+}));
+
+// Mock file upload for SAT PDF dialogs
+const mockUploadPdfDocument = vi.fn();
+vi.mock("@/lib/api/file-upload", () => ({
+	uploadPdfDocument: (...args: unknown[]) => mockUploadPdfDocument(...args),
 }));
 
 // Mock notice data
@@ -129,6 +139,7 @@ describe("NoticeDetailsView", () => {
 		});
 		mockUseOrgStore.mockReturnValue({
 			currentOrg: { id: "org-1", name: "Test Org", slug: "test-org" },
+			currentUserId: "user-1",
 		});
 	});
 
@@ -346,6 +357,10 @@ describe("NoticeDetailsView", () => {
 		});
 
 		it("opens submit dialog and handles submit", async () => {
+			mockUploadPdfDocument.mockResolvedValue({
+				documentId: "DOC-test-123",
+				jobId: "job-123",
+			});
 			vi.mocked(noticesApi.submitNoticeToSat).mockResolvedValue({
 				...mockGeneratedNotice,
 				status: "SUBMITTED",
@@ -364,10 +379,20 @@ describe("NoticeDetailsView", () => {
 			await waitFor(() => {
 				expect(
 					screen.getByText(
-						"Confirma que has subido el archivo XML al portal del SAT. Opcionalmente puedes ingresar el número de folio.",
+						"Sube el PDF generado del portal del SAT al confirmar el envío del XML. Opcionalmente puedes ingresar el número de folio.",
 					),
 				).toBeInTheDocument();
 			});
+
+			// Simulate PDF file selection
+			const fileInput = document.querySelector(
+				'input[type="file"][accept="application/pdf"]',
+			) as HTMLInputElement;
+			expect(fileInput).toBeInTheDocument();
+			const pdfFile = new File(["pdf content"], "acuse.pdf", {
+				type: "application/pdf",
+			});
+			await user.upload(fileInput, pdfFile);
 
 			// Fill in optional folio
 			const folioInput = screen.getByPlaceholderText(
@@ -378,8 +403,21 @@ describe("NoticeDetailsView", () => {
 			await user.click(screen.getByText("Confirmar Envío"));
 
 			await waitFor(() => {
+				expect(mockUploadPdfDocument).toHaveBeenCalledWith(
+					expect.objectContaining({
+						organizationId: "org-1",
+						userId: "user-1",
+					}),
+				);
+				expect(mockUploadPdfDocument.mock.calls[0][0].pdfFile).toBeInstanceOf(
+					File,
+				);
+			});
+
+			await waitFor(() => {
 				expect(noticesApi.submitNoticeToSat).toHaveBeenCalledWith({
 					id: "NTC002",
+					docSvcDocumentId: "DOC-test-123",
 					satFolioNumber: "SAT-2024-12345",
 					jwt: "test-jwt-token",
 				});
@@ -418,6 +456,10 @@ describe("NoticeDetailsView", () => {
 		});
 
 		it("opens acknowledge dialog and handles acknowledge", async () => {
+			mockUploadPdfDocument.mockResolvedValue({
+				documentId: "DOC-ack-456",
+				jobId: "job-456",
+			});
 			vi.mocked(noticesApi.acknowledgeNotice).mockResolvedValue({
 				...mockSubmittedNotice,
 				status: "ACKNOWLEDGED",
@@ -437,6 +479,18 @@ describe("NoticeDetailsView", () => {
 				expect(screen.getByText("Registrar Acuse del SAT")).toBeInTheDocument();
 			});
 
+			// Simulate PDF file selection (there are 2 file inputs - submit and ack; get the one in the open dialog)
+			const fileInputs = document.querySelectorAll(
+				'input[type="file"][accept="application/pdf"]',
+			);
+			const ackFileInput = fileInputs[
+				fileInputs.length - 1
+			] as HTMLInputElement;
+			const pdfFile = new File(["ack pdf content"], "acuse_receipt.pdf", {
+				type: "application/pdf",
+			});
+			await user.upload(ackFileInput, pdfFile);
+
 			// Fill in required folio
 			const folioInput = screen.getByPlaceholderText(
 				"Ingresa el folio del acuse",
@@ -453,9 +507,22 @@ describe("NoticeDetailsView", () => {
 			await user.click(registerButton!);
 
 			await waitFor(() => {
+				expect(mockUploadPdfDocument).toHaveBeenCalledWith(
+					expect.objectContaining({
+						organizationId: "org-1",
+						userId: "user-1",
+					}),
+				);
+				expect(mockUploadPdfDocument.mock.calls[0][0].pdfFile).toBeInstanceOf(
+					File,
+				);
+			});
+
+			await waitFor(() => {
 				expect(noticesApi.acknowledgeNotice).toHaveBeenCalledWith({
 					id: "NTC003",
 					satFolioNumber: "SAT-ACK-2024-99999",
+					docSvcDocumentId: "DOC-ack-456",
 					jwt: "test-jwt-token",
 				});
 			});
@@ -465,7 +532,7 @@ describe("NoticeDetailsView", () => {
 			});
 		});
 
-		it("disables acknowledge button when folio is empty", async () => {
+		it("disables acknowledge button when folio or PDF is empty", async () => {
 			const user = userEvent.setup();
 			renderWithProviders(<NoticeDetailsView noticeId="NTC003" />);
 
@@ -479,7 +546,7 @@ describe("NoticeDetailsView", () => {
 				expect(screen.getByText("Registrar Acuse del SAT")).toBeInTheDocument();
 			});
 
-			// Find the "Registrar Acuse" button in the dialog - it should be disabled
+			// Find the "Registrar Acuse" button in the dialog - it should be disabled (no folio, no PDF)
 			const dialogButtons = screen.getAllByRole("button");
 			const registerButton = dialogButtons.find(
 				(btn) =>
@@ -596,6 +663,10 @@ describe("NoticeDetailsView", () => {
 		});
 
 		it("handles submit error gracefully", async () => {
+			mockUploadPdfDocument.mockResolvedValue({
+				documentId: "DOC-err-123",
+				jobId: "job-123",
+			});
 			vi.mocked(noticesApi.submitNoticeToSat).mockRejectedValue(
 				new Error("Submit failed"),
 			);
@@ -612,6 +683,15 @@ describe("NoticeDetailsView", () => {
 			await waitFor(() => {
 				expect(screen.getByText("Confirmar Envío")).toBeInTheDocument();
 			});
+
+			// Select PDF file (required to enable submit button)
+			const fileInput = document.querySelector(
+				'input[type="file"][accept="application/pdf"]',
+			) as HTMLInputElement;
+			const pdfFile = new File(["pdf"], "submit.pdf", {
+				type: "application/pdf",
+			});
+			await user.upload(fileInput, pdfFile);
 
 			await user.click(screen.getByText("Confirmar Envío"));
 

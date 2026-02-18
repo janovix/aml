@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
 	FileWarning,
@@ -14,8 +14,10 @@ import {
 	Clock,
 	Download,
 	Trash2,
+	Upload,
 } from "lucide-react";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
+import { useOrgStore } from "@/lib/org-store";
 import { useJwt } from "@/hooks/useJwt";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,6 +45,8 @@ import {
 	type NoticeWithAlertSummary,
 	type NoticeStatus,
 } from "@/lib/api/notices";
+import { uploadPdfDocument } from "@/lib/api/file-upload";
+import { cn } from "@/lib/utils";
 
 interface NoticeDetailsViewProps {
 	noticeId: string;
@@ -55,6 +59,9 @@ export function NoticeDetailsView({
 	const { navigateTo } = useOrgNavigation();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const { t } = useLanguage();
+	const { currentOrg, currentUserId } = useOrgStore();
+	const submitFileInputRef = useRef<HTMLInputElement>(null);
+	const ackFileInputRef = useRef<HTMLInputElement>(null);
 
 	const statusConfig: Record<
 		NoticeStatus,
@@ -97,6 +104,8 @@ export function NoticeDetailsView({
 	const [showAcknowledgeDialog, setShowAcknowledgeDialog] = useState(false);
 	const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 	const [satFolioNumber, setSatFolioNumber] = useState("");
+	const [submitPdfFile, setSubmitPdfFile] = useState<File | null>(null);
+	const [ackPdfFile, setAckPdfFile] = useState<File | null>(null);
 
 	const loadNotice = async () => {
 		if (!jwt) return;
@@ -144,19 +153,31 @@ export function NoticeDetailsView({
 	};
 
 	const handleSubmit = async () => {
-		if (!jwt || !notice) return;
+		if (!jwt || !notice || !submitPdfFile || !currentOrg?.id || !currentUserId)
+			return;
 		try {
 			setIsSubmitting(true);
+			const { documentId } = await uploadPdfDocument({
+				organizationId: currentOrg.id,
+				userId: currentUserId,
+				pdfFile: submitPdfFile,
+				onProgress: (stage) =>
+					toast.loading(stage, { id: "notice-submit-upload" }),
+			});
+			toast.dismiss("notice-submit-upload");
 			await submitNoticeToSat({
 				id: notice.id,
+				docSvcDocumentId: documentId,
 				satFolioNumber: satFolioNumber || undefined,
 				jwt,
 			});
 			toast.success(t("noticeMarkedSubmitted"));
 			setShowSubmitDialog(false);
 			setSatFolioNumber("");
+			setSubmitPdfFile(null);
 			loadNotice();
 		} catch (error) {
+			toast.dismiss("notice-submit-upload");
 			console.error("Error submitting notice:", error);
 			toast.error(extractErrorMessage(error), { id: "notice-submit" });
 		} finally {
@@ -165,19 +186,38 @@ export function NoticeDetailsView({
 	};
 
 	const handleAcknowledge = async () => {
-		if (!jwt || !notice || !satFolioNumber) return;
+		if (
+			!jwt ||
+			!notice ||
+			!satFolioNumber ||
+			!ackPdfFile ||
+			!currentOrg?.id ||
+			!currentUserId
+		)
+			return;
 		try {
 			setIsAcknowledging(true);
+			const { documentId } = await uploadPdfDocument({
+				organizationId: currentOrg.id,
+				userId: currentUserId,
+				pdfFile: ackPdfFile,
+				onProgress: (stage) =>
+					toast.loading(stage, { id: "notice-ack-upload" }),
+			});
+			toast.dismiss("notice-ack-upload");
 			await acknowledgeNotice({
 				id: notice.id,
 				satFolioNumber,
+				docSvcDocumentId: documentId,
 				jwt,
 			});
 			toast.success(t("noticeAckRegistered"));
 			setShowAcknowledgeDialog(false);
 			setSatFolioNumber("");
+			setAckPdfFile(null);
 			loadNotice();
 		} catch (error) {
+			toast.dismiss("notice-ack-upload");
 			console.error("Error acknowledging notice:", error);
 			toast.error(extractErrorMessage(error), { id: "notice-validate" });
 		} finally {
@@ -462,7 +502,16 @@ export function NoticeDetailsView({
 			</div>
 
 			{/* Submit Dialog */}
-			<Dialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
+			<Dialog
+				open={showSubmitDialog}
+				onOpenChange={(open) => {
+					setShowSubmitDialog(open);
+					if (!open) {
+						setSubmitPdfFile(null);
+						setSatFolioNumber("");
+					}
+				}}
+			>
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>{t("noticeMarkSubmittedTitle")}</DialogTitle>
@@ -471,6 +520,53 @@ export function NoticeDetailsView({
 						</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-4 py-4">
+						<div className="space-y-2">
+							<Label>{t("noticePdfRequired")}</Label>
+							<div
+								className={cn(
+									"border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-muted/50 transition-colors",
+									submitPdfFile
+										? "border-primary bg-primary/5"
+										: "border-muted-foreground/25",
+								)}
+								onClick={() => submitFileInputRef.current?.click()}
+							>
+								{submitPdfFile ? (
+									<div className="flex items-center justify-center gap-2 text-primary">
+										<CheckCircle2 className="h-5 w-5" />
+										<span className="text-sm font-medium">
+											{submitPdfFile.name}
+										</span>
+									</div>
+								) : (
+									<div className="text-muted-foreground">
+										<Upload className="h-6 w-6 mx-auto mb-1" />
+										<p className="text-sm">{t("noticePdfUploadHint")}</p>
+										<p className="text-xs mt-0.5">{t("noticePdfMaxSize")}</p>
+									</div>
+								)}
+							</div>
+							<input
+								ref={submitFileInputRef}
+								type="file"
+								accept="application/pdf"
+								onChange={(e) => {
+									const file = e.target.files?.[0];
+									if (file) {
+										if (file.type !== "application/pdf") {
+											toast.error(t("noticePdfOnlyError"));
+											return;
+										}
+										if (file.size > 10 * 1024 * 1024) {
+											toast.error(t("noticePdfMaxSizeError"));
+											return;
+										}
+										setSubmitPdfFile(file);
+									}
+								}}
+								className="hidden"
+							/>
+						</div>
 						<div className="space-y-2">
 							<Label htmlFor="folioSubmit">{t("noticeFolioOptional")}</Label>
 							<Input
@@ -488,7 +584,10 @@ export function NoticeDetailsView({
 						>
 							{t("cancel")}
 						</Button>
-						<Button onClick={handleSubmit} disabled={isSubmitting}>
+						<Button
+							onClick={handleSubmit}
+							disabled={isSubmitting || !submitPdfFile}
+						>
 							{isSubmitting && (
 								<Loader2 className="h-4 w-4 mr-2 animate-spin" />
 							)}
@@ -501,7 +600,13 @@ export function NoticeDetailsView({
 			{/* Acknowledge Dialog */}
 			<Dialog
 				open={showAcknowledgeDialog}
-				onOpenChange={setShowAcknowledgeDialog}
+				onOpenChange={(open) => {
+					setShowAcknowledgeDialog(open);
+					if (!open) {
+						setAckPdfFile(null);
+						setSatFolioNumber("");
+					}
+				}}
 			>
 				<DialogContent>
 					<DialogHeader>
@@ -509,6 +614,53 @@ export function NoticeDetailsView({
 						<DialogDescription>{t("noticeRegisterAckDesc")}</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-4 py-4">
+						<div className="space-y-2">
+							<Label>{t("noticePdfRequired")}</Label>
+							<div
+								className={cn(
+									"border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-muted/50 transition-colors",
+									ackPdfFile
+										? "border-primary bg-primary/5"
+										: "border-muted-foreground/25",
+								)}
+								onClick={() => ackFileInputRef.current?.click()}
+							>
+								{ackPdfFile ? (
+									<div className="flex items-center justify-center gap-2 text-primary">
+										<CheckCircle2 className="h-5 w-5" />
+										<span className="text-sm font-medium">
+											{ackPdfFile.name}
+										</span>
+									</div>
+								) : (
+									<div className="text-muted-foreground">
+										<Upload className="h-6 w-6 mx-auto mb-1" />
+										<p className="text-sm">{t("noticePdfUploadHint")}</p>
+										<p className="text-xs mt-0.5">{t("noticePdfMaxSize")}</p>
+									</div>
+								)}
+							</div>
+							<input
+								ref={ackFileInputRef}
+								type="file"
+								accept="application/pdf"
+								onChange={(e) => {
+									const file = e.target.files?.[0];
+									if (file) {
+										if (file.type !== "application/pdf") {
+											toast.error(t("noticePdfOnlyError"));
+											return;
+										}
+										if (file.size > 10 * 1024 * 1024) {
+											toast.error(t("noticePdfMaxSizeError"));
+											return;
+										}
+										setAckPdfFile(file);
+									}
+								}}
+								className="hidden"
+							/>
+						</div>
 						<div className="space-y-2">
 							<Label htmlFor="folioAck">{t("noticeFolioRequired")}</Label>
 							<Input
@@ -529,7 +681,7 @@ export function NoticeDetailsView({
 						</Button>
 						<Button
 							onClick={handleAcknowledge}
-							disabled={isAcknowledging || !satFolioNumber}
+							disabled={isAcknowledging || !satFolioNumber || !ackPdfFile}
 						>
 							{isAcknowledging && (
 								<Loader2 className="h-4 w-4 mr-2 animate-spin" />

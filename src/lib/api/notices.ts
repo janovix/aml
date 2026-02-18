@@ -24,6 +24,8 @@ export interface Notice {
 	generatedAt?: string | null;
 	submittedAt?: string | null;
 	satFolioNumber?: string | null;
+	submitPdfDocumentId?: string | null;
+	ackPdfDocumentId?: string | null;
 	createdBy?: string | null;
 	notes?: string | null;
 	createdAt: string;
@@ -366,6 +368,7 @@ export async function getNoticeDownloadUrl(opts: {
  */
 export async function submitNoticeToSat(opts: {
 	id: string;
+	docSvcDocumentId: string;
 	satFolioNumber?: string;
 	baseUrl?: string;
 	signal?: AbortSignal;
@@ -379,6 +382,7 @@ export async function submitNoticeToSat(opts: {
 		cache: "no-store",
 		headers: { "content-type": "application/json" },
 		body: JSON.stringify({
+			docSvcDocumentId: opts.docSvcDocumentId,
 			satFolioNumber: opts.satFolioNumber,
 		}),
 		signal: opts.signal,
@@ -393,6 +397,7 @@ export async function submitNoticeToSat(opts: {
 export async function acknowledgeNotice(opts: {
 	id: string;
 	satFolioNumber: string;
+	docSvcDocumentId: string;
 	baseUrl?: string;
 	signal?: AbortSignal;
 	jwt?: string;
@@ -406,6 +411,7 @@ export async function acknowledgeNotice(opts: {
 		headers: { "content-type": "application/json" },
 		body: JSON.stringify({
 			satFolioNumber: opts.satFolioNumber,
+			docSvcDocumentId: opts.docSvcDocumentId,
 		}),
 		signal: opts.signal,
 		jwt: opts.jwt,

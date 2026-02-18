@@ -647,6 +647,7 @@ describe("api/notices", () => {
 						"https://example.com/api/v1/notices/NOTICE123/submit",
 					);
 					const body = JSON.parse(init?.body as string);
+					expect(body.docSvcDocumentId).toBe("DOC_123");
 					expect(body.satFolioNumber).toBe("SAT-12345");
 					return new Response(JSON.stringify(submittedNotice), {
 						status: 200,
@@ -658,6 +659,7 @@ describe("api/notices", () => {
 
 			const res = await submitNoticeToSat({
 				id: "NOTICE123",
+				docSvcDocumentId: "DOC_123",
 				satFolioNumber: "SAT-12345",
 				baseUrl: "https://example.com",
 			});
@@ -670,6 +672,7 @@ describe("api/notices", () => {
 				async (url: RequestInfo | URL, init?: RequestInit) => {
 					const body = JSON.parse(init?.body as string);
 					expect(body.satFolioNumber).toBeUndefined();
+					expect(body.docSvcDocumentId).toBe("DOC_123");
 					return new Response(JSON.stringify(mockNotice), {
 						status: 200,
 						headers: { "content-type": "application/json" },
@@ -680,6 +683,7 @@ describe("api/notices", () => {
 
 			await submitNoticeToSat({
 				id: "NOTICE123",
+				docSvcDocumentId: "DOC_123",
 				baseUrl: "https://example.com",
 			});
 		});
@@ -702,6 +706,7 @@ describe("api/notices", () => {
 					);
 					const body = JSON.parse(init?.body as string);
 					expect(body.satFolioNumber).toBe("SAT-ACK-12345");
+					expect(body.docSvcDocumentId).toBe("DOC_ack_456");
 					return new Response(JSON.stringify(acknowledgedNotice), {
 						status: 200,
 						headers: { "content-type": "application/json" },
@@ -713,6 +718,7 @@ describe("api/notices", () => {
 			const res = await acknowledgeNotice({
 				id: "NOTICE123",
 				satFolioNumber: "SAT-ACK-12345",
+				docSvcDocumentId: "DOC_ack_456",
 				baseUrl: "https://example.com",
 			});
 			expect(res.status).toBe("ACKNOWLEDGED");
