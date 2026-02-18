@@ -1,3 +1,10 @@
+# [1.4.0-rc.40](https://github.com/janovix/aml/compare/v1.4.0-rc.39...v1.4.0-rc.40) (2026-02-18)
+
+
+### Features
+
+* enrich organization data with user roles and fetch members in parallel ([1352a97](https://github.com/janovix/aml/commit/1352a97e4c9d184a44d1cca4b91f7e0398aeaebe))
+
 # [1.4.0-rc.39](https://github.com/janovix/aml/compare/v1.4.0-rc.38...v1.4.0-rc.39) (2026-02-18)
 
 
