@@ -275,6 +275,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 			name: org.name,
 			slug: org.slug,
 			logo: org.logo ?? undefined,
+			role: org.userRole,
 		}),
 	);
 
