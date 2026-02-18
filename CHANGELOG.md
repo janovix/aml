@@ -1,3 +1,10 @@
+# [1.4.0-rc.41](https://github.com/janovix/aml/compare/v1.4.0-rc.40...v1.4.0-rc.41) (2026-02-18)
+
+
+### Features
+
+* integrate authClient to fetch organization data with user roles in OrganizationSwitcher ([3e11e6d](https://github.com/janovix/aml/commit/3e11e6dd17f6bd618fa0ed98abda3077c7bb9c1b))
+
 # [1.4.0-rc.40](https://github.com/janovix/aml/compare/v1.4.0-rc.39...v1.4.0-rc.40) (2026-02-18)
 
 
