@@ -63,14 +63,12 @@ const listClientsSchema = z.object({
 
 const listOperationsSchema = z.object({
 	clientId: z.string().optional().describe("Filter by client ID"),
-	operationType: z
-		.enum(["PURCHASE", "SALE"])
+	activityCode: z
+		.string()
 		.optional()
-		.describe("Filter by operation type"),
-	vehicleType: z
-		.enum(["LAND", "MARINE", "AIR"])
-		.optional()
-		.describe("Filter by vehicle type"),
+		.describe(
+			"Filter by activity code (e.g. VEH for vehicles, INM for real estate, MJR for jewelry)",
+		),
 	limit: z
 		.number()
 		.min(1)
@@ -135,6 +133,7 @@ export function createDataTools(jwt: string) {
 					}>("/api/v1/clients/stats", jwt);
 					return `Total clients: ${stats.totalClients} (${stats.physicalClients} physical persons, ${stats.moralClients} companies)`;
 				} catch (error) {
+					console.error("[AI Tool] getClientStats error:", error);
 					const msg =
 						error instanceof Error ? error.message : "Failed to fetch stats";
 					return `Error fetching client stats: ${msg}`;
@@ -144,17 +143,18 @@ export function createDataTools(jwt: string) {
 
 		getOperationStats: {
 			description:
-				"Get statistics about operations, including today's count, suspicious count, and total volume",
+				"Get statistics about operations, including total count, today's count, and total volume in MXN",
 			inputSchema: emptySchema,
 			execute: async () => {
 				try {
 					const stats = await fetchWithAuth<{
+						totalOperations: number;
 						operationsToday: number;
-						suspiciousOperations: number;
-						totalVolume: string;
+						totalAmountMxn: string;
 					}>("/api/v1/operations/stats", jwt);
-					return `Operations today: ${stats.operationsToday}, Suspicious: ${stats.suspiciousOperations}, Total volume: ${stats.totalVolume}`;
+					return `Total operations: ${stats.totalOperations}, Operations today: ${stats.operationsToday}, Total volume (MXN): $${stats.totalAmountMxn}`;
 				} catch (error) {
+					console.error("[AI Tool] getOperationStats error:", error);
 					const msg =
 						error instanceof Error ? error.message : "Failed to fetch stats";
 					return `Error fetching operation stats: ${msg}`;
@@ -214,6 +214,7 @@ export function createDataTools(jwt: string) {
 
 					return `Found ${result.pagination.total} clients (showing ${result.data.length} on page ${result.pagination.page}):\n${clientList}`;
 				} catch (error) {
+					console.error("[AI Tool] listClients error:", error);
 					const msg =
 						error instanceof Error ? error.message : "Failed to fetch clients";
 					return `Error fetching clients: ${msg}`;
@@ -227,8 +228,7 @@ export function createDataTools(jwt: string) {
 			inputSchema: listOperationsSchema,
 			execute: async ({
 				clientId,
-				operationType,
-				vehicleType,
+				activityCode,
 				limit = 10,
 				page = 1,
 			}: z.infer<typeof listOperationsSchema>) => {
@@ -238,19 +238,23 @@ export function createDataTools(jwt: string) {
 						page: String(page),
 					};
 					if (clientId) params.clientId = clientId;
-					if (operationType) params.operationType = operationType;
-					if (vehicleType) params.vehicleType = vehicleType;
+					if (activityCode) params.activityCode = activityCode;
 
 					const result = await fetchWithAuth<{
 						data: Array<{
 							id: string;
-							operationType: string;
-							vehicleType: string;
-							vehicleBrand?: string;
-							vehicleModel?: string;
-							vehicleYear?: number;
-							amount: number;
+							activityCode: string;
+							operationTypeCode: string | null;
+							amount: string;
+							currencyCode: string;
+							amountMxn: string | null;
 							operationDate: string;
+							vehicle?: {
+								vehicleType: string;
+								brand: string;
+								model: string;
+								year: number;
+							} | null;
 						}>;
 						pagination: {
 							total: number;
@@ -266,14 +270,19 @@ export function createDataTools(jwt: string) {
 
 					const txList = result.data
 						.map((t) => {
-							const vehicle =
-								`${t.vehicleYear || ""} ${t.vehicleBrand || ""} ${t.vehicleModel || ""}`.trim();
-							return `- ${t.operationType}: ${vehicle} (${t.vehicleType}) - $${t.amount.toLocaleString()} on ${t.operationDate}`;
+							const amountDisplay = t.amountMxn
+								? `$${parseFloat(t.amountMxn).toLocaleString()} MXN`
+								: `$${parseFloat(t.amount).toLocaleString()} ${t.currencyCode}`;
+							const vehicleInfo = t.vehicle
+								? ` (${t.vehicle.year} ${t.vehicle.brand} ${t.vehicle.model}, ${t.vehicle.vehicleType})`
+								: "";
+							return `- [${t.activityCode}]${vehicleInfo} ${amountDisplay} on ${t.operationDate}`;
 						})
 						.join("\n");
 
 					return `Found ${result.pagination.total} operations (showing ${result.data.length} on page ${result.pagination.page}):\n${txList}`;
 				} catch (error) {
+					console.error("[AI Tool] listOperations error:", error);
 					const msg =
 						error instanceof Error
 							? error.message
@@ -331,6 +340,7 @@ export function createDataTools(jwt: string) {
 
 					return `Found ${result.pagination.total} alerts (showing ${result.data.length} on page ${result.pagination.page}):\n${alertList}`;
 				} catch (error) {
+					console.error("[AI Tool] listAlerts error:", error);
 					const msg =
 						error instanceof Error ? error.message : "Failed to fetch alerts";
 					return `Error fetching alerts: ${msg}`;
@@ -386,6 +396,7 @@ export function createDataTools(jwt: string) {
 
 					return `Found ${result.pagination.total} reports (showing ${result.data.length} on page ${result.pagination.page}):\n${reportList}`;
 				} catch (error) {
+					console.error("[AI Tool] listReports error:", error);
 					const msg =
 						error instanceof Error ? error.message : "Failed to fetch reports";
 					return `Error fetching reports: ${msg}`;
