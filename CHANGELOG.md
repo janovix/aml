@@ -1,3 +1,11 @@
+# [1.4.0-rc.46](https://github.com/janovix/aml/compare/v1.4.0-rc.45...v1.4.0-rc.46) (2026-02-19)
+
+
+### Features
+
+* add listInvoicesSchema and getInvoiceStats functionality to enhance invoice management ([0469843](https://github.com/janovix/aml/commit/0469843bd69a3e7a6ccc52c4acef8b0ceefc3169))
+* enhance BeneficialControllerFormDialog and ClientDetailsView with new document upload features and improved UI components ([04b0501](https://github.com/janovix/aml/commit/04b0501a23c5ac95079281cf154798d6f9c66b55))
+
 # [1.4.0-rc.45](https://github.com/janovix/aml/compare/v1.4.0-rc.44...v1.4.0-rc.45) (2026-02-19)
 
 
