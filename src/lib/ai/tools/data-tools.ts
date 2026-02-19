@@ -96,6 +96,42 @@ const listAlertsSchema = z.object({
 	page: z.number().min(1).default(1).describe("Page number"),
 });
 
+const listInvoicesSchema = z.object({
+	issuerRfc: z
+		.string()
+		.optional()
+		.describe(
+			"Filter by issuer RFC (e.g. the company that issued the invoice)",
+		),
+	receiverRfc: z
+		.string()
+		.optional()
+		.describe(
+			"Filter by receiver RFC (e.g. the company that received the invoice)",
+		),
+	voucherTypeCode: z
+		.string()
+		.optional()
+		.describe(
+			"Filter by voucher type: I = ingreso (income), E = egreso (expense), T = traslado, N = nómina, P = pago",
+		),
+	startDate: z
+		.string()
+		.optional()
+		.describe("Filter invoices issued on or after this date (YYYY-MM-DD)"),
+	endDate: z
+		.string()
+		.optional()
+		.describe("Filter invoices issued on or before this date (YYYY-MM-DD)"),
+	limit: z
+		.number()
+		.min(1)
+		.max(50)
+		.default(10)
+		.describe("Number of results to return (max 50)"),
+	page: z.number().min(1).default(1).describe("Page number"),
+});
+
 const listReportsSchema = z.object({
 	type: z
 		.enum(["MONTHLY", "QUARTERLY", "ANNUAL", "CUSTOM"])
@@ -158,6 +194,97 @@ export function createDataTools(jwt: string) {
 					const msg =
 						error instanceof Error ? error.message : "Failed to fetch stats";
 					return `Error fetching operation stats: ${msg}`;
+				}
+			},
+		},
+
+		getInvoiceStats: {
+			description:
+				"Get statistics about CFDI invoices in the organization, including total count and breakdown by voucher type (ingreso/egreso)",
+			inputSchema: emptySchema,
+			execute: async () => {
+				try {
+					const stats = await fetchWithAuth<{
+						totalInvoices: number;
+						ingresoInvoices: number;
+						egresoInvoices: number;
+					}>("/api/v1/invoices/stats", jwt);
+					return `Total invoices: ${stats.totalInvoices} (${stats.ingresoInvoices} ingreso/income, ${stats.egresoInvoices} egreso/expense)`;
+				} catch (error) {
+					console.error("[AI Tool] getInvoiceStats error:", error);
+					const msg =
+						error instanceof Error ? error.message : "Failed to fetch stats";
+					return `Error fetching invoice stats: ${msg}`;
+				}
+			},
+		},
+
+		listInvoices: {
+			description:
+				"List CFDI invoices in the organization with optional filters. Returns paginated results with issuer, receiver, amounts and dates.",
+			inputSchema: listInvoicesSchema,
+			execute: async ({
+				issuerRfc,
+				receiverRfc,
+				voucherTypeCode,
+				startDate,
+				endDate,
+				limit = 10,
+				page = 1,
+			}: z.infer<typeof listInvoicesSchema>) => {
+				try {
+					const params: Record<string, string> = {
+						limit: String(limit),
+						page: String(page),
+					};
+					if (issuerRfc) params.issuerRfc = issuerRfc;
+					if (receiverRfc) params.receiverRfc = receiverRfc;
+					if (voucherTypeCode) params.voucherTypeCode = voucherTypeCode;
+					if (startDate) params.startDate = startDate;
+					if (endDate) params.endDate = endDate;
+
+					const result = await fetchWithAuth<{
+						data: Array<{
+							id: string;
+							uuid: string | null;
+							issuerRfc: string;
+							issuerName: string;
+							receiverRfc: string;
+							receiverName: string;
+							total: string;
+							currencyCode: string;
+							voucherTypeCode: string;
+							issueDate: string;
+							folio: string | null;
+							series: string | null;
+						}>;
+						pagination: {
+							total: number;
+							page: number;
+							limit: number;
+							totalPages: number;
+						};
+					}>("/api/v1/invoices", jwt, params);
+
+					if (result.data.length === 0) {
+						return `No invoices found matching the criteria.`;
+					}
+
+					const invoiceList = result.data
+						.map((inv) => {
+							const ref = inv.series
+								? `${inv.series}-${inv.folio ?? ""}`
+								: (inv.folio ?? inv.uuid ?? inv.id);
+							return `- [${inv.voucherTypeCode}] ${ref}: ${inv.issuerName} → ${inv.receiverName} | $${parseFloat(inv.total).toLocaleString()} ${inv.currencyCode} on ${inv.issueDate}`;
+						})
+						.join("\n");
+
+					return `Found ${result.pagination.total} invoices (showing ${result.data.length} on page ${result.pagination.page}):\n${invoiceList}`;
+				} catch (error) {
+					console.error("[AI Tool] listInvoices error:", error);
+					const msg =
+						error instanceof Error ? error.message : "Failed to fetch invoices";
+					return `Error fetching invoices: ${msg}`;
 				}
 			},
 		},
