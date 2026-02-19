@@ -1,13 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { render } from "@testing-library/react";
 import { Logo } from "./Logo";
-
-vi.mock("next-themes", () => ({
-	useTheme: () => ({
-		resolvedTheme: "light",
-		setTheme: vi.fn(),
-	}),
-}));
 
 describe("Logo", () => {
 	it("renders logo variant by default", () => {
@@ -35,12 +28,9 @@ describe("Logo", () => {
 		expect(logoSvg).toHaveAttribute("height", "24");
 	});
 
-	it("uses forceTheme when provided", () => {
-		render(<Logo forceTheme="dark" />);
-		const logoSvg = document.querySelector('svg[viewBox="0 0 102 16"]');
-		expect(logoSvg).toBeInTheDocument();
-		// Check that dark theme colors are used (color1 should be white in dark theme)
-		const paths = logoSvg?.querySelectorAll("path");
-		expect(paths?.length).toBeGreaterThan(0);
+	it("uses CSS custom properties for colors", () => {
+		const { container } = render(<Logo />);
+		const svg = container.querySelector("svg");
+		expect(svg?.innerHTML).toContain("var(--logo-text-primary)");
 	});
 });
