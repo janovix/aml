@@ -1,3 +1,18 @@
+# [1.4.0-rc.45](https://github.com/janovix/aml/compare/v1.4.0-rc.44...v1.4.0-rc.45) (2026-02-19)
+
+
+### Features
+
+* add rate limit handling and UI feedback for auth service ([040c3ea](https://github.com/janovix/aml/commit/040c3ead6397f108d25c62d42d4d4e4f5e7e7f07))
+
+# [1.4.0-rc.44](https://github.com/janovix/aml/compare/v1.4.0-rc.43...v1.4.0-rc.44) (2026-02-19)
+
+
+### Features
+
+* update listOperationsSchema to use activityCode and enhance operation stats response ([e6ba40b](https://github.com/janovix/aml/commit/e6ba40bd62a01984f8b0c4c986ec152769f04209))
+* update Logo component to use CSS custom properties for colors and enhance global styles ([63ec0b5](https://github.com/janovix/aml/commit/63ec0b58a9e8445b98ad464b03a058d065a85b9e))
+
 # [1.4.0-rc.43](https://github.com/janovix/aml/compare/v1.4.0-rc.42...v1.4.0-rc.43) (2026-02-19)
 
 

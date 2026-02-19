@@ -7,6 +7,7 @@ import { ViewportHeightProvider } from "@/components/ViewportHeightProvider";
 import { OrgBootstrapper } from "@/components/OrgBootstrapper";
 import { ScrollRestoration } from "@/components/ScrollRestoration";
 import { Toaster } from "@/components/ui/sonner";
+import { RateLimitToast } from "@/components/RateLimitToast";
 import { OpenCVProvider } from "@/lib/document-scanner/OpenCVProvider";
 import { TesseractProvider } from "@/lib/document-scanner/TesseractLoader";
 import { SubscriptionProvider } from "@/lib/subscription";
@@ -45,6 +46,7 @@ export default function ClientLayout({
 									</SubscriptionProvider>
 								</OrgBootstrapper>
 								<Toaster />
+								<RateLimitToast />
 							</TesseractProvider>
 						</OpenCVProvider>
 					</ViewportHeightProvider>
