@@ -28,6 +28,28 @@ const getAuthAppUrl = () => {
 	);
 };
 
+const AUTH_SVC_TIMEOUT_MS = 8000;
+
+/**
+ * Wraps fetch() with an AbortController timeout. If auth-svc does not respond
+ * within timeoutMs, the request is aborted and the caller's catch block handles
+ * the resulting AbortError. This prevents unbounded hangs that cause Cloudflare
+ * to kill the middleware Worker with "Network connection lost."
+ */
+async function fetchWithTimeout(
+	url: string,
+	options: RequestInit,
+	timeoutMs = AUTH_SVC_TIMEOUT_MS,
+): Promise<Response> {
+	const controller = new AbortController();
+	const timeout = setTimeout(() => controller.abort(), timeoutMs);
+	try {
+		return await fetch(url, { ...options, signal: controller.signal });
+	} finally {
+		clearTimeout(timeout);
+	}
+}
+
 const getAuthServiceUrl = () => {
 	// For middleware (Edge Runtime), prefer internal URL that doesn't need DNS resolution
 	// This allows local development where hosts file entries aren't available in Edge Runtime
@@ -217,7 +239,7 @@ async function fetchUserOrganizations(
 	cookieHeader: string,
 ): Promise<OrgsResponse | null> {
 	try {
-		const response = await fetch(
+		const response = await fetchWithTimeout(
 			`${getAuthServiceUrl()}/api/auth/organization/list`,
 			{
 				headers: {
@@ -318,7 +340,7 @@ export async function middleware(request: NextRequest) {
 	let authServiceSetCookies: string[] = [];
 
 	try {
-		const response = await fetch(
+		const response = await fetchWithTimeout(
 			`${getAuthServiceUrl()}/api/auth/get-session`,
 			{
 				headers: {
