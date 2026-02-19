@@ -277,37 +277,98 @@ describe("useAutoRefresh", () => {
 		expect(refreshFn).toHaveBeenCalledTimes(1);
 	});
 
-	it("refreshes when tab becomes visible", async () => {
+	it("refreshes when tab becomes visible after being hidden longer than the interval", async () => {
 		const refreshFn = vi.fn().mockResolvedValue(undefined);
+		const INTERVAL = 10000;
 
-		// Start with tab hidden
-		Object.defineProperty(document, "hidden", {
-			value: true,
-			writable: true,
-			configurable: true,
-		});
-
-		renderHook(() =>
-			useAutoRefresh(refreshFn, {
-				interval: 10000, // Long interval so visibility change is the trigger
-				onlyWhenVisible: true,
-			}),
-		);
-
-		// Tab becomes visible
+		// Start with tab visible
 		Object.defineProperty(document, "hidden", {
 			value: false,
 			writable: true,
 			configurable: true,
 		});
 
+		renderHook(() =>
+			useAutoRefresh(refreshFn, {
+				interval: INTERVAL,
+				onlyWhenVisible: true,
+			}),
+		);
+
+		// Tab goes hidden - records hiddenAt
+		Object.defineProperty(document, "hidden", {
+			value: true,
+			writable: true,
+			configurable: true,
+		});
 		await act(async () => {
 			document.dispatchEvent(new Event("visibilitychange"));
-			// Allow promises to resolve
+		});
+
+		// Advance time past the interval while hidden
+		await act(async () => {
+			vi.advanceTimersByTime(INTERVAL);
+		});
+
+		// Tab becomes visible again - hidden duration >= interval, so refresh fires
+		Object.defineProperty(document, "hidden", {
+			value: false,
+			writable: true,
+			configurable: true,
+		});
+		await act(async () => {
+			document.dispatchEvent(new Event("visibilitychange"));
 			await Promise.resolve();
 		});
 
 		expect(refreshFn).toHaveBeenCalledTimes(1);
+	});
+
+	it("does not refresh when tab becomes visible after being hidden less than the interval", async () => {
+		const refreshFn = vi.fn().mockResolvedValue(undefined);
+		const INTERVAL = 10000;
+
+		// Start with tab visible
+		Object.defineProperty(document, "hidden", {
+			value: false,
+			writable: true,
+			configurable: true,
+		});
+
+		renderHook(() =>
+			useAutoRefresh(refreshFn, {
+				interval: INTERVAL,
+				onlyWhenVisible: true,
+			}),
+		);
+
+		// Tab goes hidden - records hiddenAt
+		Object.defineProperty(document, "hidden", {
+			value: true,
+			writable: true,
+			configurable: true,
+		});
+		await act(async () => {
+			document.dispatchEvent(new Event("visibilitychange"));
+		});
+
+		// Advance time less than the interval while hidden
+		await act(async () => {
+			vi.advanceTimersByTime(INTERVAL - 1000);
+		});
+
+		// Tab becomes visible again - hidden duration < interval, no refresh
+		Object.defineProperty(document, "hidden", {
+			value: false,
+			writable: true,
+			configurable: true,
+		});
+		await act(async () => {
+			document.dispatchEvent(new Event("visibilitychange"));
+			await Promise.resolve();
+		});
+
+		expect(refreshFn).not.toHaveBeenCalled();
 	});
 
 	it("skips refresh if already refreshing", async () => {

@@ -81,10 +81,19 @@ export function useAutoRefresh(
 
 		const intervalId = setInterval(doRefresh, interval);
 
-		// Also refresh when tab becomes visible after being hidden
+		// Only refresh on tab return if the tab was hidden longer than the refresh interval.
+		// Quick tab switches don't need an immediate refetch -- the next interval tick covers it.
+		let hiddenAt = 0;
+
 		const handleVisibilityChange = () => {
-			if (!document.hidden && onlyWhenVisible) {
-				doRefresh();
+			if (document.hidden) {
+				hiddenAt = Date.now();
+			} else if (onlyWhenVisible && hiddenAt > 0) {
+				const hiddenDuration = Date.now() - hiddenAt;
+				hiddenAt = 0;
+				if (hiddenDuration >= interval) {
+					void doRefresh();
+				}
 			}
 		};
 
