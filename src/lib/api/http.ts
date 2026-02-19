@@ -65,6 +65,16 @@ export function getUsageLimitDetails(error: unknown): {
 }
 
 /**
+ * Check if an error is a rate limit error (429 Too Many Requests)
+ */
+export function isRateLimitError(error: unknown): boolean {
+	if (error instanceof ApiError) {
+		return error.status === 429;
+	}
+	return false;
+}
+
+/**
  * Check if an error is an organization required error (409)
  * This happens when the JWT doesn't have an organizationId
  */
