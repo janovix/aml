@@ -1,11 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { ChevronsUpDown, Plus, Settings } from "lucide-react";
+import { ChevronsUpDown, Lock, Plus, Settings } from "lucide-react";
 
 import {
 	DropdownMenu,
 	DropdownMenuContent,
+	DropdownMenuGroup,
 	DropdownMenuItem,
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
@@ -31,6 +32,7 @@ export interface Organization {
 	name: string;
 	slug: string;
 	logo?: string;
+	role?: string;
 }
 
 interface OrganizationSwitcherProps {
@@ -109,6 +111,84 @@ function getOrgInitials(name: string): string {
 	);
 }
 
+interface OrgItemProps {
+	org: Organization;
+	onOrganizationChange: (org: Organization) => void;
+}
+
+function OrgItem({ org, onOrganizationChange }: OrgItemProps) {
+	const { t } = useLanguage();
+	return (
+		<DropdownMenuItem
+			key={org.id}
+			onClick={() => onOrganizationChange(org)}
+			className="gap-2 p-2"
+		>
+			{org.logo ? (
+				<img
+					src={org.logo}
+					alt={org.name}
+					className="size-6 rounded-md object-cover"
+				/>
+			) : (
+				<div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground text-xs font-semibold">
+					{getOrgInitials(org.name)}
+				</div>
+			)}
+			<span className="flex-1 truncate">{formatProperNoun(org.name)}</span>
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<a
+						href={`${getAuthAppUrl()}/settings/organization?org=${org.slug}`}
+						onClick={(e) => e.stopPropagation()}
+						className="p-1 rounded hover:bg-muted"
+					>
+						<Settings className="size-3.5 text-muted-foreground" />
+					</a>
+				</TooltipTrigger>
+				<TooltipContent side="right">{t("orgSettings")}</TooltipContent>
+			</Tooltip>
+		</DropdownMenuItem>
+	);
+}
+
+interface CreateOrgItemProps {
+	canCreate: boolean;
+	onCreateOrganization: () => void;
+}
+
+function CreateOrgItem({
+	canCreate,
+	onCreateOrganization,
+}: CreateOrgItemProps) {
+	const { t } = useLanguage();
+
+	if (canCreate) {
+		return (
+			<DropdownMenuItem className="gap-2 p-2" onClick={onCreateOrganization}>
+				<Plus className="size-4" />
+				<span className="text-muted-foreground font-medium">
+					{t("createOrganization")}
+				</span>
+			</DropdownMenuItem>
+		);
+	}
+
+	return (
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<div className="flex items-center gap-2 p-2 rounded-sm text-sm opacity-50 cursor-not-allowed select-none">
+					<Lock className="size-4" />
+					<span className="text-muted-foreground font-medium">
+						{t("createOrganization")}
+					</span>
+				</div>
+			</TooltipTrigger>
+			<TooltipContent side="right">{t("orgLimitReached")}</TooltipContent>
+		</Tooltip>
+	);
+}
+
 export function OrganizationSwitcher({
 	organizations,
 	activeOrganization,
@@ -121,6 +201,11 @@ export function OrganizationSwitcher({
 	const { isMobile, state } = useSidebar();
 	const isCollapsed = state === "collapsed";
 	const { t } = useLanguage();
+
+	const ownedOrgs = organizations.filter((o) => o.role === "owner");
+	const memberOrgs = organizations.filter((o) => o.role !== "owner");
+	const canCreate =
+		organizationsLimit === 0 || organizationsOwned < organizationsLimit;
 
 	if (isLoading) {
 		return (
@@ -187,56 +272,62 @@ export function OrganizationSwitcher({
 									</div>
 								)}
 							</DropdownMenuLabel>
-							{organizations.map((org) => (
-								<DropdownMenuItem
-									key={org.id}
-									onClick={() => onOrganizationChange(org)}
-									className="gap-2 p-2"
-								>
-									{org.logo ? (
-										<img
-											src={org.logo}
-											alt={org.name}
-											className="size-6 rounded-md object-cover"
-										/>
-									) : (
-										<div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground text-xs font-semibold">
-											{getOrgInitials(org.name)}
-										</div>
+
+							{/* Owned organizations */}
+							{(ownedOrgs.length > 0 || onCreateOrganization) && (
+								<DropdownMenuGroup>
+									{ownedOrgs.length > 0 && (
+										<DropdownMenuLabel className="text-xs text-muted-foreground/70 font-normal px-2 py-1">
+											{t("myOrganizations")}
+										</DropdownMenuLabel>
 									)}
-									<span className="flex-1 truncate">
-										{formatProperNoun(org.name)}
-									</span>
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<a
-												href={`${getAuthAppUrl()}/settings/organization?org=${org.slug}`}
-												onClick={(e) => e.stopPropagation()}
-												className="p-1 rounded hover:bg-muted"
-											>
-												<Settings className="size-3.5 text-muted-foreground" />
-											</a>
-										</TooltipTrigger>
-										<TooltipContent side="right">
-											{t("orgSettings")}
-										</TooltipContent>
-									</Tooltip>
-								</DropdownMenuItem>
-							))}
-							{onCreateOrganization && (
+									{ownedOrgs.map((org) => (
+										<OrgItem
+											key={org.id}
+											org={org}
+											onOrganizationChange={onOrganizationChange}
+										/>
+									))}
+									{onCreateOrganization && (
+										<CreateOrgItem
+											canCreate={canCreate}
+											onCreateOrganization={onCreateOrganization}
+										/>
+									)}
+								</DropdownMenuGroup>
+							)}
+
+							{/* Member-of organizations */}
+							{memberOrgs.length > 0 && (
 								<>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem
-										className="gap-2 p-2"
-										onClick={onCreateOrganization}
-									>
-										<Plus className="size-4" />
-										<span className="text-muted-foreground font-medium">
-											{t("createOrganization")}
-										</span>
-									</DropdownMenuItem>
+									{(ownedOrgs.length > 0 || onCreateOrganization) && (
+										<DropdownMenuSeparator />
+									)}
+									<DropdownMenuGroup>
+										<DropdownMenuLabel className="text-xs text-muted-foreground/70 font-normal px-2 py-1">
+											{t("memberOf")}
+										</DropdownMenuLabel>
+										{memberOrgs.map((org) => (
+											<OrgItem
+												key={org.id}
+												org={org}
+												onOrganizationChange={onOrganizationChange}
+											/>
+										))}
+									</DropdownMenuGroup>
 								</>
 							)}
+
+							{/* Fallback: show all orgs without grouping if no roles available */}
+							{ownedOrgs.length === 0 &&
+								memberOrgs.length === 0 &&
+								organizations.map((org) => (
+									<OrgItem
+										key={org.id}
+										org={org}
+										onOrganizationChange={onOrganizationChange}
+									/>
+								))}
 						</DropdownMenuContent>
 					</DropdownMenu>
 				</SidebarMenuItem>
@@ -326,56 +417,62 @@ export function OrganizationSwitcher({
 								</div>
 							)}
 						</DropdownMenuLabel>
-						{organizations.map((org) => (
-							<DropdownMenuItem
-								key={org.id}
-								onClick={() => onOrganizationChange(org)}
-								className="gap-2 p-2"
-							>
-								{org.logo ? (
-									<img
-										src={org.logo}
-										alt={org.name}
-										className="size-6 rounded-md object-cover"
-									/>
-								) : (
-									<div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground text-xs font-semibold">
-										{getOrgInitials(org.name)}
-									</div>
+
+						{/* Owned organizations */}
+						{(ownedOrgs.length > 0 || onCreateOrganization) && (
+							<DropdownMenuGroup>
+								{ownedOrgs.length > 0 && (
+									<DropdownMenuLabel className="text-xs text-muted-foreground/70 font-normal px-2 py-1">
+										{t("myOrganizations")}
+									</DropdownMenuLabel>
 								)}
-								<span className="flex-1 truncate">
-									{formatProperNoun(org.name)}
-								</span>
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<a
-											href={`${getAuthAppUrl()}/settings/organization?org=${org.slug}`}
-											onClick={(e) => e.stopPropagation()}
-											className="p-1 rounded hover:bg-muted"
-										>
-											<Settings className="size-3.5 text-muted-foreground" />
-										</a>
-									</TooltipTrigger>
-									<TooltipContent side="right">
-										{t("orgSettings")}
-									</TooltipContent>
-								</Tooltip>
-							</DropdownMenuItem>
-						))}
-						{onCreateOrganization && (
+								{ownedOrgs.map((org) => (
+									<OrgItem
+										key={org.id}
+										org={org}
+										onOrganizationChange={onOrganizationChange}
+									/>
+								))}
+								{onCreateOrganization && (
+									<CreateOrgItem
+										canCreate={canCreate}
+										onCreateOrganization={onCreateOrganization}
+									/>
+								)}
+							</DropdownMenuGroup>
+						)}
+
+						{/* Member-of organizations */}
+						{memberOrgs.length > 0 && (
 							<>
-								<DropdownMenuSeparator />
-								<DropdownMenuItem
-									className="gap-2 p-2"
-									onClick={onCreateOrganization}
-								>
-									<Plus className="size-4" />
-									<span className="text-muted-foreground font-medium">
-										{t("createOrganization")}
-									</span>
-								</DropdownMenuItem>
+								{(ownedOrgs.length > 0 || onCreateOrganization) && (
+									<DropdownMenuSeparator />
+								)}
+								<DropdownMenuGroup>
+									<DropdownMenuLabel className="text-xs text-muted-foreground/70 font-normal px-2 py-1">
+										{t("memberOf")}
+									</DropdownMenuLabel>
+									{memberOrgs.map((org) => (
+										<OrgItem
+											key={org.id}
+											org={org}
+											onOrganizationChange={onOrganizationChange}
+										/>
+									))}
+								</DropdownMenuGroup>
 							</>
 						)}
+
+						{/* Fallback: show all orgs without grouping if no roles available */}
+						{ownedOrgs.length === 0 &&
+							memberOrgs.length === 0 &&
+							organizations.map((org) => (
+								<OrgItem
+									key={org.id}
+									org={org}
+									onOrganizationChange={onOrganizationChange}
+								/>
+							))}
 					</DropdownMenuContent>
 				</DropdownMenu>
 			</SidebarMenuItem>

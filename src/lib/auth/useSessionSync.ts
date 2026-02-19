@@ -5,20 +5,12 @@
  *
  * This hook handles two session synchronization mechanisms:
  * 1. BroadcastChannel - instant sync between tabs on the same origin
- * 2. visibilitychange - revalidation when tab gains focus after being hidden >2 minutes
- *
- * Session validation is handled by middleware on every navigation, which was working
- * reliably before client-side revalidation was added.
- *
- * The middleware approach is more reliable than direct client-to-auth-svc requests because:
- * - It goes through the same-origin Next.js server
- * - It properly forwards refreshed cookies to the browser
- * - It doesn't suffer from cross-origin CORS issues
+ * 2. visibilitychange - silent session revalidation when tab gains focus after being hidden >5 minutes
  *
  * This hook handles:
  * - SESSION_SIGNED_OUT from another tab -> clear local state and redirect
- * - SESSION_UPDATED from another tab -> trigger navigation to force middleware revalidation
- * - Tab becomes visible after >2 min -> reload page to revalidate session via middleware
+ * - SESSION_UPDATED from another tab -> silent revalidation to pick up fresh session data
+ * - Tab becomes visible after >5 min -> silent revalidateSession(), redirect only if actually invalid
  *
  * Usage:
  * Call this hook once in your app's root client component (e.g., ClientLayout).
@@ -26,9 +18,19 @@
 
 import { useEffect } from "react";
 
-import { initSessionSync, type SessionSyncMessage } from "./sessionSync";
+import {
+	initSessionSync,
+	revalidateSession,
+	type SessionSyncMessage,
+} from "./sessionSync";
 import { clearSession } from "./sessionStore";
 import { getAuthAppUrl } from "./config";
+
+/**
+ * How long the tab must be hidden before triggering a session revalidation on return.
+ * 5 minutes gives plenty of buffer without being overly aggressive.
+ */
+const STALE_THRESHOLD = 5 * 60 * 1000;
 
 /**
  * Hook to enable cross-tab session synchronization.
@@ -47,25 +49,22 @@ export function useSessionSync(): void {
 			return;
 		}
 
+		const authAppLoginUrl = `${getAuthAppUrl()}/login`;
+
+		const redirectToLogin = () => {
+			if (window.location.href !== authAppLoginUrl) {
+				window.location.href = authAppLoginUrl;
+			}
+		};
+
 		// Handle messages from other tabs (BroadcastChannel or localStorage)
 		const handleMessage = (message: SessionSyncMessage) => {
 			if (message.type === "SESSION_SIGNED_OUT") {
-				// Another tab signed out - clear local state and redirect to auth app login
 				clearSession();
-
-				// Redirect to auth app login
-				const authAppLoginUrl = `${getAuthAppUrl()}/login`;
-				if (window.location.href !== authAppLoginUrl) {
-					window.location.href = authAppLoginUrl;
-				}
+				redirectToLogin();
 			} else if (message.type === "SESSION_UPDATED") {
-				// Another tab updated the session
-				// Trigger a page reload to force middleware to run and hydrate fresh session data
-				// The middleware will validate with auth-svc and pass fresh session to the page
-				console.log(
-					"[SessionSync] Session updated in another tab, reloading page",
-				);
-				window.location.reload();
+				// Silently pick up the updated session data without a full page reload
+				void revalidateSession();
 			}
 		};
 
@@ -74,18 +73,17 @@ export function useSessionSync(): void {
 
 		// Track when tab was last visible for session revalidation on focus
 		let lastVisibleAt = Date.now();
-		const STALE_THRESHOLD = 2 * 60 * 1000; // 2 minutes
 
 		const handleVisibilityChange = () => {
 			if (document.visibilityState === "visible") {
 				const hiddenDuration = Date.now() - lastVisibleAt;
 				if (hiddenDuration > STALE_THRESHOLD) {
-					// Tab was hidden long enough that cookie cache may have expired
-					// Force a page reload to trigger middleware session validation
-					console.log(
-						`[SessionSync] Tab was hidden for ${Math.round(hiddenDuration / 1000)}s, reloading to revalidate session`,
-					);
-					window.location.reload();
+					// Silently revalidate -- only redirect if the session is actually invalid
+					void revalidateSession().then((isValid) => {
+						if (!isValid) {
+							redirectToLogin();
+						}
+					});
 				}
 			} else {
 				lastVisibleAt = Date.now();

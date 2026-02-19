@@ -1,3 +1,46 @@
+# [1.4.0-rc.43](https://github.com/janovix/aml/compare/v1.4.0-rc.42...v1.4.0-rc.43) (2026-02-19)
+
+
+### Features
+
+* add polyfill for esbuild's __name helper in RootLayout ([a099568](https://github.com/janovix/aml/commit/a099568774a1d31a14a0be643db84e5fb4c7f29f))
+
+# [1.4.0-rc.42](https://github.com/janovix/aml/compare/v1.4.0-rc.41...v1.4.0-rc.42) (2026-02-19)
+
+
+### Features
+
+* implement fetchWithTimeout to prevent hangs in auth service requests ([7a21caa](https://github.com/janovix/aml/commit/7a21caa80e2450fcb4af08a5afc4cd7ba85b950b))
+
+# [1.4.0-rc.41](https://github.com/janovix/aml/compare/v1.4.0-rc.40...v1.4.0-rc.41) (2026-02-18)
+
+
+### Features
+
+* integrate authClient to fetch organization data with user roles in OrganizationSwitcher ([3e11e6d](https://github.com/janovix/aml/commit/3e11e6dd17f6bd618fa0ed98abda3077c7bb9c1b))
+
+# [1.4.0-rc.40](https://github.com/janovix/aml/compare/v1.4.0-rc.39...v1.4.0-rc.40) (2026-02-18)
+
+
+### Features
+
+* enrich organization data with user roles and fetch members in parallel ([1352a97](https://github.com/janovix/aml/commit/1352a97e4c9d184a44d1cca4b91f7e0398aeaebe))
+
+# [1.4.0-rc.39](https://github.com/janovix/aml/compare/v1.4.0-rc.38...v1.4.0-rc.39) (2026-02-18)
+
+
+### Features
+
+* add user role to organization data in AppSidebar ([fe894e4](https://github.com/janovix/aml/commit/fe894e44fec1081834457d7150c48ca00eac3b92))
+* enhance OrganizationSwitcher with role-based organization grouping and creation functionality ([693a66e](https://github.com/janovix/aml/commit/693a66ee5f371d86b77cf2c0639ec3cdca72f7eb))
+
+# [1.4.0-rc.38](https://github.com/janovix/aml/compare/v1.4.0-rc.37...v1.4.0-rc.38) (2026-02-18)
+
+
+### Features
+
+* add pending invitations feature to AppSidebar with translation support ([de0db08](https://github.com/janovix/aml/commit/de0db084ac60f5f7f5df1b4813e539f9b5292a49))
+
 # [1.4.0-rc.37](https://github.com/janovix/aml/compare/v1.4.0-rc.36...v1.4.0-rc.37) (2026-02-18)
 
 

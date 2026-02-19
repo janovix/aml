@@ -20,6 +20,7 @@ export interface Organization {
 	metadata?: Record<string, unknown> | null;
 	createdAt?: string;
 	updatedAt?: string;
+	userRole?: OrganizationRole;
 }
 
 export interface OrganizationAddress {

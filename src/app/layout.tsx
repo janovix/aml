@@ -53,6 +53,14 @@ export default async function RootLayout({
 
 	return (
 		<html lang="es" suppressHydrationWarning>
+			<head>
+				{/* Polyfill for esbuild's __name helper used by next-themes */}
+				<script
+					dangerouslySetInnerHTML={{
+						__html: `if(typeof __name==="undefined"){window.__name=function(e){return e}}`,
+					}}
+				/>
+			</head>
 			<body className={`${inter.variable} antialiased`}>
 				<SessionHydrator serverSession={session}>
 					<ClientLayout

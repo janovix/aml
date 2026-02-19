@@ -28,6 +28,28 @@ const getAuthAppUrl = () => {
 	);
 };
 
+const AUTH_SVC_TIMEOUT_MS = 8000;
+
+/**
+ * Wraps fetch() with an AbortController timeout. If auth-svc does not respond
+ * within timeoutMs, the request is aborted and the caller's catch block handles
+ * the resulting AbortError. This prevents unbounded hangs that cause Cloudflare
+ * to kill the middleware Worker with "Network connection lost."
+ */
+async function fetchWithTimeout(
+	url: string,
+	options: RequestInit,
+	timeoutMs = AUTH_SVC_TIMEOUT_MS,
+): Promise<Response> {
+	const controller = new AbortController();
+	const timeout = setTimeout(() => controller.abort(), timeoutMs);
+	try {
+		return await fetch(url, { ...options, signal: controller.signal });
+	} finally {
+		clearTimeout(timeout);
+	}
+}
+
 const getAuthServiceUrl = () => {
 	// For middleware (Edge Runtime), prefer internal URL that doesn't need DNS resolution
 	// This allows local development where hosts file entries aren't available in Edge Runtime
@@ -217,7 +239,7 @@ async function fetchUserOrganizations(
 	cookieHeader: string,
 ): Promise<OrgsResponse | null> {
 	try {
-		const response = await fetch(
+		const response = await fetchWithTimeout(
 			`${getAuthServiceUrl()}/api/auth/organization/list`,
 			{
 				headers: {
@@ -296,17 +318,8 @@ export async function middleware(request: NextRequest) {
 
 	const sessionCookie = getSessionCookie(request);
 
-	// DEBUG: Log session cookie status
-	console.log(
-		"[AML Middleware] Session cookie:",
-		sessionCookie ? "EXISTS" : "NULL",
-	);
-	console.log("[AML Middleware] Auth Service URL:", getAuthServiceUrl());
-	console.log("[AML Middleware] Auth App URL (Origin):", getAuthAppUrl());
-
 	// No session cookie → redirect to auth app
 	if (!sessionCookie) {
-		console.log("[AML Middleware] No session cookie, redirecting to login");
 		return redirectToLogin(request);
 	}
 
@@ -327,8 +340,7 @@ export async function middleware(request: NextRequest) {
 	let authServiceSetCookies: string[] = [];
 
 	try {
-		console.log("[AML Middleware] Validating session with auth-svc...");
-		const response = await fetch(
+		const response = await fetchWithTimeout(
 			`${getAuthServiceUrl()}/api/auth/get-session`,
 			{
 				headers: {
@@ -339,45 +351,31 @@ export async function middleware(request: NextRequest) {
 			},
 		);
 
-		console.log("[AML Middleware] Auth-svc response status:", response.status);
-
 		// CRITICAL: Capture Set-Cookie headers from auth-svc
 		// These headers contain refreshed session cookies that MUST be forwarded to the browser
 		// Without this, the cookie cache never refreshes and sessions expire prematurely
 		const setCookies = response.headers.getSetCookie?.();
 		if (setCookies && setCookies.length > 0) {
 			authServiceSetCookies = setCookies;
-			console.log(
-				`[AML Middleware] Captured ${setCookies.length} Set-Cookie headers from auth-svc`,
-			);
 		}
 
 		if (!response.ok) {
-			console.log("[AML Middleware] Response not OK, redirecting to login");
 			return redirectToLogin(request);
 		}
 
 		sessionData = (await response.json()) as SessionData;
-		console.log("[AML Middleware] Session data:", JSON.stringify(sessionData));
 
 		if (!sessionData?.session || !sessionData?.user) {
-			console.log(
-				"[AML Middleware] No session/user in response, redirecting to login",
-			);
 			return redirectToLogin(request);
 		}
 
 		// Check if user is banned
 		if (sessionData.user?.banned) {
-			console.log("[AML Middleware] User is banned, redirecting to login");
 			return redirectToLogin(request);
 		}
 
 		// Check if user needs profile onboarding (no name set)
 		if (needsProfileOnboarding(sessionData.user)) {
-			console.log(
-				"[AML Middleware] User needs profile onboarding, redirecting",
-			);
 			const onboardingResponse = redirectToOnboarding(request);
 			return addAuthCookies(onboardingResponse, authServiceSetCookies);
 		}
@@ -388,9 +386,6 @@ export async function middleware(request: NextRequest) {
 
 		// Check if user has any organization membership
 		if (!hasOrganizationMembership(userOrganizations)) {
-			console.log(
-				"[AML Middleware] User has no organization membership, redirecting to onboarding",
-			);
 			const onboardingResponse = redirectToOnboarding(request);
 			return addAuthCookies(onboardingResponse, authServiceSetCookies);
 		}
@@ -412,10 +407,8 @@ export async function middleware(request: NextRequest) {
 		const rewriteUrl = new URL(internalPath, request.url);
 		rewriteUrl.search = request.nextUrl.search;
 
-		// Continue processing with the rewritten URL
-		// We need to validate the org, so we'll fetch orgs and check access
-		const orgsData = await fetchUserOrganizations(cookieHeader);
-		const organizations = orgsData?.organizations ?? [];
+		// Reuse the org list already fetched during session validation above
+		const organizations = userOrganizations ?? [];
 
 		if (organizations.length === 0) {
 			// User has no orgs - redirect to index to create one
@@ -461,9 +454,6 @@ export async function middleware(request: NextRequest) {
 			const targetOrg = getTargetOrg(userOrganizations, activeOrgId);
 
 			if (targetOrg) {
-				console.log(
-					`[AML Middleware] Redirecting from / to /${targetOrg.slug}`,
-				);
 				const redirectResponse = NextResponse.redirect(
 					createExternalUrl(`/${targetOrg.slug}`, request),
 				);
@@ -481,8 +471,8 @@ export async function middleware(request: NextRequest) {
 	// Check if first segment is a known route (not an org slug)
 	// This means URL is missing org slug: /clients → need to prefix with org
 	if (KNOWN_ROUTES.includes(firstSegment)) {
-		const orgsData = await fetchUserOrganizations(cookieHeader);
-		const organizations = orgsData?.organizations ?? [];
+		// Reuse the org list already fetched during session validation above
+		const organizations = userOrganizations ?? [];
 
 		if (organizations.length === 0) {
 			// No orgs - redirect to index to create one
@@ -492,10 +482,10 @@ export async function middleware(request: NextRequest) {
 			return addAuthCookies(redirectResponse, authServiceSetCookies);
 		}
 
-		// Find target org (active or first)
+		// Find target org (active or first) using activeOrganizationId from session
 		const targetOrg = getTargetOrg(
 			organizations,
-			orgsData?.activeOrganizationId,
+			sessionData?.session?.activeOrganizationId ?? null,
 		);
 
 		if (targetOrg) {
@@ -517,9 +507,8 @@ export async function middleware(request: NextRequest) {
 	if (isValidOrgSlug(firstSegment)) {
 		const orgSlug = firstSegment;
 
-		// Fetch orgs to validate access
-		const orgsData = await fetchUserOrganizations(cookieHeader);
-		const organizations = orgsData?.organizations ?? [];
+		// Reuse the org list already fetched during session validation above
+		const organizations = userOrganizations ?? [];
 
 		if (organizations.length === 0) {
 			// User has no orgs - redirect to index to create one

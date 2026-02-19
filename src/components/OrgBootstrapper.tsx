@@ -275,7 +275,6 @@ export function OrgBootstrapper({
 					return;
 				}
 				orgs = result.data.organizations;
-				setOrganizations(orgs);
 			}
 
 			// Find the org matching the URL slug
@@ -341,13 +340,35 @@ export function OrgBootstrapper({
 				setCurrentOrg(targetOrg);
 			}
 
-			// Fetch members (always do this to ensure fresh data)
-			const membersResult = await listMembers(targetOrg.id);
-			if (membersResult.data) {
-				setMembers(membersResult.data);
-			} else if (membersResult.error) {
+			// Fetch members for all orgs in parallel:
+			// - Enriches each org with the current user's role (for the org switcher)
+			// - Provides the full member list for the current org (for team management)
+			const userId = session?.user?.id;
+			const allMemberResults = await Promise.all(
+				orgs.map((org) => listMembers(org.id)),
+			);
+
+			// Enrich orgs with the current user's role and update the store
+			const enrichedOrgs = orgs.map((org, i) => {
+				const myMember = allMemberResults[i].data?.find(
+					(m) => m.userId === userId,
+				);
+				return myMember ? { ...org, userRole: myMember.role } : org;
+			});
+			setOrganizations(enrichedOrgs);
+
+			// Set the full member list for the current org
+			const targetOrgIndex = enrichedOrgs.findIndex(
+				(o) => o.id === targetOrg.id,
+			);
+			const currentOrgMembers =
+				targetOrgIndex >= 0 ? allMemberResults[targetOrgIndex].data : null;
+
+			if (currentOrgMembers) {
+				setMembers(currentOrgMembers);
+			} else if (allMemberResults[targetOrgIndex]?.error) {
 				toast.error("Failed to load team members", {
-					description: membersResult.error,
+					description: allMemberResults[targetOrgIndex].error ?? undefined,
 				});
 			}
 
