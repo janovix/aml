@@ -1,3 +1,10 @@
+# [1.4.0-rc.45](https://github.com/janovix/aml/compare/v1.4.0-rc.44...v1.4.0-rc.45) (2026-02-19)
+
+
+### Features
+
+* add rate limit handling and UI feedback for auth service ([040c3ea](https://github.com/janovix/aml/commit/040c3ead6397f108d25c62d42d4d4e4f5e7e7f07))
+
 # [1.4.0-rc.44](https://github.com/janovix/aml/compare/v1.4.0-rc.43...v1.4.0-rc.44) (2026-02-19)
 
 
