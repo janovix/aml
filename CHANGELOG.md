@@ -1,3 +1,10 @@
+# [1.4.0-rc.42](https://github.com/janovix/aml/compare/v1.4.0-rc.41...v1.4.0-rc.42) (2026-02-19)
+
+
+### Features
+
+* implement fetchWithTimeout to prevent hangs in auth service requests ([7a21caa](https://github.com/janovix/aml/commit/7a21caa80e2450fcb4af08a5afc4cd7ba85b950b))
+
 # [1.4.0-rc.41](https://github.com/janovix/aml/compare/v1.4.0-rc.40...v1.4.0-rc.41) (2026-02-18)
 
 
