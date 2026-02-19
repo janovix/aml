@@ -744,22 +744,20 @@ export function ClientInfoStep({
 							</p>
 						)}
 					</div>
-					{formData.personType === "physical" && (
-						<CatalogSelector
-							catalogKey="countries"
-							label="Nacionalidad"
-							labelDescription={getFieldDescription("nationality")}
-							tier={fieldTiers.countryCode}
-							value={formData.nationality}
-							searchPlaceholder="Buscar país..."
-							onChange={(option) => {
-								handleInputChange("nationality", option?.id ?? "");
-								const code =
-									(option?.metadata as { code?: string } | null)?.code ?? "";
-								handleInputChange("countryCode", code);
-							}}
-						/>
-					)}
+					<CatalogSelector
+						catalogKey="countries"
+						label="Nacionalidad"
+						labelDescription={getFieldDescription("nationality")}
+						tier={fieldTiers.countryCode}
+						value={formData.nationality}
+						searchPlaceholder="Buscar país..."
+						onChange={(option) => {
+							handleInputChange("nationality", option?.id ?? "");
+							const code =
+								(option?.metadata as { code?: string } | null)?.code ?? "";
+							handleInputChange("countryCode", code);
+						}}
+					/>
 					<CatalogSelector
 						catalogKey="economic-activities"
 						label="Actividad económica"

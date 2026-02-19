@@ -42,9 +42,15 @@ export interface ConfirmUploadResponse {
  * Response from get-urls endpoint
  */
 export interface DocumentUrlsResponse {
-	pdfUrl?: string;
-	imageUrls: string[];
+	finalPdfUrl?: string;
+	rasterizedImageUrls: string[];
+	originalPdfUrls?: string[];
+	originalImageUrls?: string[];
 	expiresAt: string;
+	/** @deprecated Use finalPdfUrl */
+	pdfUrl?: string;
+	/** @deprecated Use rasterizedImageUrls */
+	imageUrls?: string[];
 }
 
 /**

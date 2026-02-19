@@ -14,6 +14,10 @@ const mockResponse: DocumentUrlsResponse = {
 		"https://example.com/page-1.jpg",
 		"https://example.com/page-2.jpg",
 	],
+	rasterizedImageUrls: [
+		"https://example.com/page-1.jpg",
+		"https://example.com/page-2.jpg",
+	],
 	expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
 };
 

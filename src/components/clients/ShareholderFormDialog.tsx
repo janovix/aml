@@ -24,7 +24,6 @@ import { Loader2, Building2, User } from "lucide-react";
 import { toast } from "sonner";
 import {
 	createShareholder,
-	updateShareholder,
 	patchShareholder,
 	listClientShareholders,
 } from "@/lib/api/shareholders";
@@ -34,13 +33,16 @@ import type {
 	ShareholderPatchRequest,
 } from "@/types/shareholder";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PhoneInput } from "@/components/ui/phone-input";
+import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
+import type { CatalogItem } from "@/types/catalog";
 
 interface ShareholderFormDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	clientId: string;
-	shareholder?: Shareholder | null; // Null for create mode
-	onSave: () => void; // Callback after successful save
+	shareholder?: Shareholder | null;
+	onSave: () => void;
 }
 
 export function ShareholderFormDialog({
@@ -52,13 +54,11 @@ export function ShareholderFormDialog({
 }: ShareholderFormDialogProps) {
 	const isEditMode = !!shareholder;
 
-	// Form state
 	const [entityType, setEntityType] = useState<"PERSON" | "COMPANY">(
 		shareholder?.entityType || "PERSON",
 	);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	// Available parent shareholders (only COMPANY type)
 	const [parentShareholders, setParentShareholders] = useState<Shareholder[]>(
 		[],
 	);
@@ -81,6 +81,10 @@ export function ShareholderFormDialog({
 		shareholder?.secondLastName || "",
 	);
 	const [rfc, setRfc] = useState(shareholder?.rfc || "");
+	// Nationality for physical person
+	const [personNationality, setPersonNationality] = useState(
+		shareholder?.entityType === "PERSON" ? shareholder?.nationality || "" : "",
+	);
 
 	// COMPANY fields
 	const [businessName, setBusinessName] = useState(
@@ -92,11 +96,11 @@ export function ShareholderFormDialog({
 			? new Date(shareholder.incorporationDate).toISOString().split("T")[0]
 			: "",
 	);
-	const [nationality, setNationality] = useState(
-		shareholder?.nationality || "",
+	const [companyNationality, setCompanyNationality] = useState(
+		shareholder?.entityType === "COMPANY" ? shareholder?.nationality || "" : "",
 	);
 
-	// COMPANY Anexo 4 representative fields
+	// COMPANY representative fields (Anexo 4)
 	const [representativeName, setRepresentativeName] = useState(
 		shareholder?.representativeName || "",
 	);
@@ -115,7 +119,6 @@ export function ShareholderFormDialog({
 			try {
 				setLoadingParents(true);
 				const response = await listClientShareholders({ clientId });
-				// Only COMPANY shareholders can have sub-shareholders
 				const companyParents = response.data.filter(
 					(s) => s.entityType === "COMPANY" && s.id !== shareholder?.id,
 				);
@@ -143,6 +146,11 @@ export function ShareholderFormDialog({
 		setLastName(shareholder?.lastName || "");
 		setSecondLastName(shareholder?.secondLastName || "");
 		setRfc(shareholder?.rfc || "");
+		setPersonNationality(
+			shareholder?.entityType === "PERSON"
+				? shareholder?.nationality || ""
+				: "",
+		);
 		setBusinessName(shareholder?.businessName || "");
 		setTaxId(shareholder?.taxId || "");
 		setIncorporationDate(
@@ -150,7 +158,11 @@ export function ShareholderFormDialog({
 				? new Date(shareholder.incorporationDate).toISOString().split("T")[0]
 				: "",
 		);
-		setNationality(shareholder?.nationality || "");
+		setCompanyNationality(
+			shareholder?.entityType === "COMPANY"
+				? shareholder?.nationality || ""
+				: "",
+		);
 		setRepresentativeName(shareholder?.representativeName || "");
 		setRepresentativeCurp(shareholder?.representativeCurp || "");
 		setRepresentativeRfc(shareholder?.representativeRfc || "");
@@ -159,7 +171,6 @@ export function ShareholderFormDialog({
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 
-		// Validation
 		const ownership = parseFloat(ownershipPercentage);
 		if (isNaN(ownership) || ownership <= 0 || ownership > 100) {
 			toast.error("La participación debe ser entre 0 y 100%");
@@ -181,15 +192,7 @@ export function ShareholderFormDialog({
 		try {
 			setIsSubmitting(true);
 
-			const baseData = {
-				parentShareholderId: parentShareholderId || null,
-				ownershipPercentage: ownership,
-				email: email || null,
-				phone: phone || null,
-			};
-
 			if (isEditMode) {
-				// Patch mode - only send changed fields
 				const patchData: ShareholderPatchRequest = {};
 
 				if (parentShareholderId !== (shareholder.parentShareholderId || "")) {
@@ -205,7 +208,6 @@ export function ShareholderFormDialog({
 					patchData.phone = phone || null;
 				}
 
-				// Entity-specific fields
 				if (entityType === "PERSON") {
 					if (firstName !== (shareholder.firstName || ""))
 						patchData.firstName = firstName || null;
@@ -214,6 +216,8 @@ export function ShareholderFormDialog({
 					if (secondLastName !== (shareholder.secondLastName || ""))
 						patchData.secondLastName = secondLastName || null;
 					if (rfc !== (shareholder.rfc || "")) patchData.rfc = rfc || null;
+					if (personNationality !== (shareholder.nationality || ""))
+						patchData.nationality = personNationality || null;
 				} else {
 					if (businessName !== (shareholder.businessName || ""))
 						patchData.businessName = businessName || null;
@@ -229,8 +233,8 @@ export function ShareholderFormDialog({
 					) {
 						patchData.incorporationDate = incorporationDate || null;
 					}
-					if (nationality !== (shareholder.nationality || ""))
-						patchData.nationality = nationality || null;
+					if (companyNationality !== (shareholder.nationality || ""))
+						patchData.nationality = companyNationality || null;
 					if (representativeName !== (shareholder.representativeName || ""))
 						patchData.representativeName = representativeName || null;
 					if (representativeCurp !== (shareholder.representativeCurp || ""))
@@ -252,9 +256,11 @@ export function ShareholderFormDialog({
 				});
 				toast.success("Accionista actualizado");
 			} else {
-				// Create mode
 				const createData: ShareholderCreateRequest = {
-					...baseData,
+					parentShareholderId: parentShareholderId || null,
+					ownershipPercentage: ownership,
+					email: email || null,
+					phone: phone || null,
 					entityType,
 					...(entityType === "PERSON"
 						? {
@@ -262,12 +268,13 @@ export function ShareholderFormDialog({
 								lastName: lastName || null,
 								secondLastName: secondLastName || null,
 								rfc: rfc || null,
+								nationality: personNationality || null,
 							}
 						: {
 								businessName: businessName || null,
 								taxId: taxId || null,
 								incorporationDate: incorporationDate || null,
-								nationality: nationality || null,
+								nationality: companyNationality || null,
 								representativeName: representativeName || null,
 								representativeCurp: representativeCurp || null,
 								representativeRfc: representativeRfc || null,
@@ -366,8 +373,10 @@ export function ShareholderFormDialog({
 										<Input
 											id="firstName"
 											value={firstName}
-											onChange={(e) => setFirstName(e.target.value)}
-											placeholder="Nombre"
+											onChange={(e) =>
+												setFirstName(e.target.value.toUpperCase())
+											}
+											placeholder="NOMBRE"
 											required
 										/>
 									</div>
@@ -376,8 +385,10 @@ export function ShareholderFormDialog({
 										<Input
 											id="lastName"
 											value={lastName}
-											onChange={(e) => setLastName(e.target.value)}
-											placeholder="Apellido Paterno"
+											onChange={(e) =>
+												setLastName(e.target.value.toUpperCase())
+											}
+											placeholder="APELLIDO PATERNO"
 											required
 										/>
 									</div>
@@ -388,8 +399,10 @@ export function ShareholderFormDialog({
 										<Input
 											id="secondLastName"
 											value={secondLastName}
-											onChange={(e) => setSecondLastName(e.target.value)}
-											placeholder="Apellido Materno"
+											onChange={(e) =>
+												setSecondLastName(e.target.value.toUpperCase())
+											}
+											placeholder="APELLIDO MATERNO"
 										/>
 									</div>
 									<div className="space-y-2">
@@ -403,6 +416,25 @@ export function ShareholderFormDialog({
 										/>
 									</div>
 								</div>
+								<div className="space-y-2">
+									<CatalogSelector
+										catalogKey="countries"
+										label="Nacionalidad"
+										value={personNationality}
+										onChange={(option: CatalogItem | null) => {
+											const meta = option?.metadata as
+												| { code?: string }
+												| undefined;
+											setPersonNationality(meta?.code || option?.id || "");
+										}}
+										getOptionValue={(option: CatalogItem) => {
+											const meta = option.metadata as
+												| { code?: string }
+												| undefined;
+											return meta?.code || option.id;
+										}}
+									/>
+								</div>
 							</div>
 						)}
 
@@ -414,8 +446,10 @@ export function ShareholderFormDialog({
 									<Input
 										id="businessName"
 										value={businessName}
-										onChange={(e) => setBusinessName(e.target.value)}
-										placeholder="Razón Social"
+										onChange={(e) =>
+											setBusinessName(e.target.value.toUpperCase())
+										}
+										placeholder="RAZÓN SOCIAL"
 										required
 									/>
 								</div>
@@ -426,28 +460,38 @@ export function ShareholderFormDialog({
 											id="taxId"
 											value={taxId}
 											onChange={(e) => setTaxId(e.target.value.toUpperCase())}
-											placeholder="RFC o Tax ID"
+											placeholder="RFC O TAX ID"
 										/>
 									</div>
 									<div className="space-y-2">
-										<Label htmlFor="nationality">Nacionalidad</Label>
+										<Label htmlFor="incorporationDate">
+											Fecha de Constitución
+										</Label>
 										<Input
-											id="nationality"
-											value={nationality}
-											onChange={(e) => setNationality(e.target.value)}
-											placeholder="Nacionalidad"
+											id="incorporationDate"
+											type="date"
+											value={incorporationDate}
+											onChange={(e) => setIncorporationDate(e.target.value)}
 										/>
 									</div>
 								</div>
 								<div className="space-y-2">
-									<Label htmlFor="incorporationDate">
-										Fecha de Constitución
-									</Label>
-									<Input
-										id="incorporationDate"
-										type="date"
-										value={incorporationDate}
-										onChange={(e) => setIncorporationDate(e.target.value)}
+									<CatalogSelector
+										catalogKey="countries"
+										label="Basada en"
+										value={companyNationality}
+										onChange={(option: CatalogItem | null) => {
+											const meta = option?.metadata as
+												| { code?: string }
+												| undefined;
+											setCompanyNationality(meta?.code || option?.id || "");
+										}}
+										getOptionValue={(option: CatalogItem) => {
+											const meta = option.metadata as
+												| { code?: string }
+												| undefined;
+											return meta?.code || option.id;
+										}}
 									/>
 								</div>
 
@@ -456,18 +500,20 @@ export function ShareholderFormDialog({
 									<h4 className="text-sm font-medium">
 										Representante Legal (Anexo 4)
 									</h4>
-									<div className="grid grid-cols-3 gap-4">
-										<div className="space-y-2 col-span-3">
-											<Label htmlFor="representativeName">
-												Nombre del Representante
-											</Label>
-											<Input
-												id="representativeName"
-												value={representativeName}
-												onChange={(e) => setRepresentativeName(e.target.value)}
-												placeholder="Nombre completo"
-											/>
-										</div>
+									<div className="space-y-2">
+										<Label htmlFor="representativeName">
+											Nombre del Representante
+										</Label>
+										<Input
+											id="representativeName"
+											value={representativeName}
+											onChange={(e) =>
+												setRepresentativeName(e.target.value.toUpperCase())
+											}
+											placeholder="NOMBRE COMPLETO"
+										/>
+									</div>
+									<div className="grid grid-cols-2 gap-4">
 										<div className="space-y-2">
 											<Label htmlFor="representativeCurp">CURP</Label>
 											<Input
@@ -529,12 +575,11 @@ export function ShareholderFormDialog({
 								</div>
 								<div className="space-y-2">
 									<Label htmlFor="phone">Teléfono</Label>
-									<Input
+									<PhoneInput
 										id="phone"
-										type="tel"
 										value={phone}
-										onChange={(e) => setPhone(e.target.value)}
-										placeholder="5512345678"
+										onChange={(value) => setPhone(value ?? "")}
+										defaultCountry="MX"
 									/>
 								</div>
 							</div>

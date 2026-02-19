@@ -95,8 +95,8 @@ export function useDocSvcUrls(
 				type,
 			);
 
-			setPdfUrl(result.pdfUrl ?? null);
-			setImageUrls(result.imageUrls);
+			setPdfUrl(result.finalPdfUrl ?? result.pdfUrl ?? null);
+			setImageUrls(result.rasterizedImageUrls ?? result.imageUrls ?? []);
 			setExpiresAt(result.expiresAt);
 		} catch (err) {
 			setError(err instanceof Error ? err : new Error("Failed to fetch URLs"));

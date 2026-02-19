@@ -3,6 +3,7 @@
  * Used to fetch watchlist screening results directly from watchlist-svc
  */
 
+import { tokenCache } from "@/lib/auth/tokenCache";
 import { getWatchlistBaseUrl } from "./config";
 
 /**
@@ -43,20 +44,18 @@ export interface WatchlistQueryResult {
  */
 export async function getQueryResults(
 	queryId: string,
-	options?: {
-		authToken?: string;
-	},
 ): Promise<WatchlistQueryResult | null> {
 	const baseUrl = getWatchlistBaseUrl();
 	const url = `${baseUrl}/queries/${queryId}`;
 
 	try {
+		const token = await tokenCache.getCachedToken();
 		const headers: Record<string, string> = {
 			"Content-Type": "application/json",
 		};
 
-		if (options?.authToken) {
-			headers.Authorization = `Bearer ${options.authToken}`;
+		if (token) {
+			headers.Authorization = `Bearer ${token}`;
 		}
 
 		const response = await fetch(url, {

@@ -45,9 +45,9 @@ interface DocumentViewerDialogProps {
 	docSvcDocumentId?: string | null;
 }
 
-const MIN_ZOOM = 1;
+const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 5;
-const ZOOM_STEP = 0.5;
+const ZOOM_STEP = 0.25;
 
 export function DocumentViewerDialog({
 	open,
@@ -273,7 +273,7 @@ export function DocumentViewerDialog({
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent
-				className="h-dvh w-screen max-w-none max-h-none sm:h-auto sm:w-full sm:max-w-4xl sm:max-h-[calc(100vh-2rem)] p-0 gap-0 overflow-hidden rounded-none sm:rounded-lg top-0 left-0 translate-x-0 translate-y-0 sm:top-[50%] sm:left-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%]"
+				className="h-dvh w-screen max-w-none max-h-none sm:h-auto sm:w-full sm:max-w-4xl sm:max-h-[calc(100vh-2rem)] p-0 gap-0 overflow-hidden rounded-none sm:rounded-lg top-0 left-0 translate-x-0 translate-y-0 sm:top-[50%] sm:left-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] flex flex-col"
 				showCloseButton={false}
 			>
 				<DialogHeader className="p-4 pb-2 sm:p-6 sm:pb-3">
@@ -311,12 +311,13 @@ export function DocumentViewerDialog({
 								>
 									<ZoomIn className="h-4 w-4" />
 								</Button>
-								{zoom > 1 && (
+								{zoom !== 1 && (
 									<Button
 										variant="ghost"
 										size="icon"
 										className="h-7 w-7"
 										onClick={resetZoom}
+										title="Restablecer zoom"
 									>
 										<RotateCcw className="h-3.5 w-3.5" />
 									</Button>
@@ -349,7 +350,7 @@ export function DocumentViewerDialog({
 				{/* Image container with navigation */}
 				<div
 					ref={containerRef}
-					className="relative flex items-center justify-center bg-muted/30 flex-1 sm:min-h-[70vh] overflow-hidden touch-none"
+					className="relative flex items-center justify-center bg-muted/30 flex-1 min-h-0 overflow-hidden touch-none"
 					onWheel={handleWheel}
 					onMouseDown={handleMouseDown}
 					onMouseMove={handleMouseMove}
@@ -429,12 +430,13 @@ export function DocumentViewerDialog({
 						>
 							<ZoomIn className="h-4 w-4" />
 						</Button>
-						{zoom > 1 && (
+						{zoom !== 1 && (
 							<Button
 								variant="ghost"
 								size="icon"
 								className="h-8 w-8 text-white hover:bg-white/20"
 								onClick={resetZoom}
+								title="Restablecer zoom"
 							>
 								<RotateCcw className="h-3.5 w-3.5" />
 							</Button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
 	Dialog,
 	DialogBody,
@@ -26,7 +26,6 @@ import { toast } from "sonner";
 import {
 	createBeneficialController,
 	patchBeneficialController,
-	listClientBeneficialControllers,
 } from "@/lib/api/beneficial-controllers";
 import { listClientShareholders } from "@/lib/api/shareholders";
 import type {
@@ -39,18 +38,22 @@ import type {
 } from "@/types/beneficial-controller";
 import type { Shareholder } from "@/types/shareholder";
 import { ZipCodeAddressFields } from "./ZipCodeAddressFields";
+import { PhoneInput } from "@/components/ui/phone-input";
+import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
+import type { CatalogItem } from "@/types/catalog";
 import {
-	getBCTypeLabel,
-	getIdentificationCriteriaLabel,
-	getIdDocumentTypeLabel,
-} from "@/types/beneficial-controller";
+	SimpleDocumentUploadCard,
+	type SimpleDocumentUploadData,
+} from "./wizard/SimpleDocumentUploadCard";
+import { uploadDocumentForKYC } from "@/lib/api/file-upload";
+import { useOrgStore } from "@/lib/org-store";
 
 interface BeneficialControllerFormDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	clientId: string;
-	beneficialController?: BeneficialController | null; // Null for create mode
-	onSave: () => void; // Callback after successful save
+	beneficialController?: BeneficialController | null;
+	onSave: () => void;
 }
 
 export function BeneficialControllerFormDialog({
@@ -83,7 +86,7 @@ export function BeneficialControllerFormDialog({
 		beneficialController?.shareholderId || "",
 	);
 
-	// Anexo 3: Personal Data (all BCs are natural persons)
+	// Personal Data (Anexo 3)
 	const [firstName, setFirstName] = useState(
 		beneficialController?.firstName || "",
 	);
@@ -98,9 +101,6 @@ export function BeneficialControllerFormDialog({
 			? new Date(beneficialController.birthDate).toISOString().split("T")[0]
 			: "",
 	);
-	const [birthCountry, setBirthCountry] = useState(
-		beneficialController?.birthCountry || "",
-	);
 	const [nationality, setNationality] = useState(
 		beneficialController?.nationality || "",
 	);
@@ -110,7 +110,7 @@ export function BeneficialControllerFormDialog({
 	const [curp, setCurp] = useState(beneficialController?.curp || "");
 	const [rfc, setRfc] = useState(beneficialController?.rfc || "");
 
-	// Anexo 3: ID Document Details
+	// ID Document (Anexo 3)
 	const [idDocumentType, setIdDocumentType] = useState<IdDocumentType>(
 		beneficialController?.idDocumentType || "INE",
 	);
@@ -120,21 +120,28 @@ export function BeneficialControllerFormDialog({
 	const [idDocumentAuthority, setIdDocumentAuthority] = useState(
 		beneficialController?.idDocumentAuthority || "",
 	);
+	// ID document upload state (for uploading the actual ID scan to doc-svc)
+	const [idDocUploadData, setIdDocUploadData] =
+		useState<SimpleDocumentUploadData | null>(null);
+	const [idCopyDocId, setIdCopyDocId] = useState(
+		beneficialController?.idCopyDocId || "",
+	);
 
 	// Contact
 	const [email, setEmail] = useState(beneficialController?.email || "");
 	const [phone, setPhone] = useState(beneficialController?.phone || "");
 
-	// Address (managed by ZipCodeAddressFields)
-	const [country, setCountry] = useState(beneficialController?.country || "MX");
+	// Address
+	const [postalCode, setPostalCode] = useState(
+		beneficialController?.postalCode || "",
+	);
 	const [stateCode, setStateCode] = useState(
 		beneficialController?.stateCode || "",
 	);
 	const [city, setCity] = useState(beneficialController?.city || "");
+	const [municipality, setMunicipality] = useState("");
+	const [neighborhood, setNeighborhood] = useState("");
 	const [street, setStreet] = useState(beneficialController?.street || "");
-	const [postalCode, setPostalCode] = useState(
-		beneficialController?.postalCode || "",
-	);
 
 	// Notes
 	const [notes, setNotes] = useState(beneficialController?.notes || "");
@@ -142,7 +149,6 @@ export function BeneficialControllerFormDialog({
 	// Load shareholders for linking
 	useEffect(() => {
 		if (!open) return;
-
 		const loadShareholders = async () => {
 			try {
 				const response = await listClientShareholders({ clientId });
@@ -151,11 +157,10 @@ export function BeneficialControllerFormDialog({
 				console.error("Error loading shareholders:", error);
 			}
 		};
-
 		loadShareholders();
 	}, [open, clientId]);
 
-	// Reset form when dialog closes or BC changes
+	// Reset form when dialog opens or BC changes
 	useEffect(() => {
 		if (!open) return;
 
@@ -176,7 +181,6 @@ export function BeneficialControllerFormDialog({
 				? new Date(beneficialController.birthDate).toISOString().split("T")[0]
 				: "",
 		);
-		setBirthCountry(beneficialController?.birthCountry || "");
 		setNationality(beneficialController?.nationality || "");
 		setOccupation(beneficialController?.occupation || "");
 		setCurp(beneficialController?.curp || "");
@@ -184,20 +188,67 @@ export function BeneficialControllerFormDialog({
 		setIdDocumentType(beneficialController?.idDocumentType || "INE");
 		setIdDocumentNumber(beneficialController?.idDocumentNumber || "");
 		setIdDocumentAuthority(beneficialController?.idDocumentAuthority || "");
+		setIdDocUploadData(null);
+		setIdCopyDocId(beneficialController?.idCopyDocId || "");
 		setEmail(beneficialController?.email || "");
 		setPhone(beneficialController?.phone || "");
-		setCountry(beneficialController?.country || "MX");
+		setPostalCode(beneficialController?.postalCode || "");
 		setStateCode(beneficialController?.stateCode || "");
 		setCity(beneficialController?.city || "");
+		setMunicipality("");
+		setNeighborhood("");
 		setStreet(beneficialController?.street || "");
-		setPostalCode(beneficialController?.postalCode || "");
 		setNotes(beneficialController?.notes || "");
 	}, [open, beneficialController]);
+
+	// Upload the ID document scan to doc-svc and return the docId
+	const handleIdDocUpload = useCallback(
+		async (data: SimpleDocumentUploadData) => {
+			const { currentOrg, currentUserId } = useOrgStore.getState();
+			if (!currentOrg?.id) {
+				toast.error("No se pudo obtener la organización actual");
+				throw new Error("Organization ID not available");
+			}
+
+			const relatedFiles: Array<{ file: Blob; name: string; type: string }> =
+				[];
+			if (data.rasterizedImages && data.rasterizedImages.length > 0) {
+				data.rasterizedImages.forEach((blob, idx) => {
+					relatedFiles.push({
+						file: blob,
+						name: `page_${idx + 1}.jpg`,
+						type: `rasterized_page_${idx + 1}`,
+					});
+				});
+			}
+
+			const uploadResult = await uploadDocumentForKYC({
+				organizationId: currentOrg.id,
+				userId: currentUserId || "unknown",
+				primaryFile:
+					data.rasterizedImages?.[0] ??
+					(data.file as Blob) ??
+					(data.originalFile as Blob),
+				fileName:
+					data.originalFile?.name || data.file?.name || "id_document.jpg",
+				originalPdf:
+					data.originalFile?.type === "application/pdf"
+						? data.originalFile
+						: null,
+				relatedFiles:
+					relatedFiles.length > 1 ? relatedFiles.slice(1) : undefined,
+				waitForProcessing: false,
+			});
+
+			setIdCopyDocId(uploadResult.documentId);
+			toast.success("Identificación cargada");
+		},
+		[],
+	);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 
-		// Validation
 		if (!firstName.trim() || !lastName.trim()) {
 			toast.error("Nombre y apellido paterno son requeridos");
 			return;
@@ -216,7 +267,7 @@ export function BeneficialControllerFormDialog({
 				lastName,
 				secondLastName: secondLastName || null,
 				birthDate: birthDate || null,
-				birthCountry: birthCountry || null,
+				// birthCountry removed - nationality covers country of origin
 				nationality: nationality || null,
 				occupation: occupation || null,
 				curp: curp || null,
@@ -224,9 +275,10 @@ export function BeneficialControllerFormDialog({
 				idDocumentType: idDocumentType || null,
 				idDocumentNumber: idDocumentNumber || null,
 				idDocumentAuthority: idDocumentAuthority || null,
+				idCopyDocId: idCopyDocId || null,
 				email: email || null,
 				phone: phone || null,
-				country: country || null,
+				country: null, // country is derived from nationality via catalog
 				stateCode: stateCode || null,
 				city: city || null,
 				street: street || null,
@@ -235,9 +287,7 @@ export function BeneficialControllerFormDialog({
 			};
 
 			if (isEditMode) {
-				// Patch mode - send all fields (could optimize to only send changed fields)
 				const patchData: BeneficialControllerPatchRequest = { ...baseData };
-
 				await patchBeneficialController({
 					clientId,
 					bcId: beneficialController.id,
@@ -245,9 +295,7 @@ export function BeneficialControllerFormDialog({
 				});
 				toast.success("Beneficiario controlador actualizado");
 			} else {
-				// Create mode
 				const createData: BeneficialControllerCreateRequest = baseData;
-
 				await createBeneficialController({ clientId, input: createData });
 				toast.success(
 					"Beneficiario controlador creado. El screening se iniciará automáticamente.",
@@ -283,9 +331,9 @@ export function BeneficialControllerFormDialog({
 
 				<form onSubmit={handleSubmit}>
 					<DialogBody className="space-y-6">
-						{/* BC Classification */}
-						<div className="space-y-4 border-b pb-4">
-							<h4 className="text-sm font-medium">Clasificación</h4>
+						{/* ── Clasificación ── */}
+						<section className="space-y-4 border-b pb-4">
+							<h4 className="text-sm font-semibold">Clasificación</h4>
 							<div className="grid grid-cols-2 gap-4">
 								<div className="space-y-2">
 									<Label htmlFor="bcType">Tipo de BC *</Label>
@@ -392,21 +440,23 @@ export function BeneficialControllerFormDialog({
 									/>
 								</div>
 							)}
-						</div>
+						</section>
 
-						{/* Anexo 3: Personal Data */}
-						<div className="space-y-4 border-b pb-4">
-							<h4 className="text-sm font-medium">
+						{/* ── Datos Personales (Anexo 3) ── */}
+						<section className="space-y-4 border-b pb-4">
+							<h4 className="text-sm font-semibold">
 								Datos Personales (Anexo 3)
 							</h4>
-							<div className="grid grid-cols-3 gap-4">
+
+							{/* Name row */}
+							<div className="grid grid-cols-2 gap-4">
 								<div className="space-y-2">
 									<Label htmlFor="firstName">Nombre *</Label>
 									<Input
 										id="firstName"
 										value={firstName}
-										onChange={(e) => setFirstName(e.target.value)}
-										placeholder="Nombre"
+										onChange={(e) => setFirstName(e.target.value.toUpperCase())}
+										placeholder="NOMBRE"
 										required
 									/>
 								</div>
@@ -415,23 +465,26 @@ export function BeneficialControllerFormDialog({
 									<Input
 										id="lastName"
 										value={lastName}
-										onChange={(e) => setLastName(e.target.value)}
-										placeholder="Apellido Paterno"
+										onChange={(e) => setLastName(e.target.value.toUpperCase())}
+										placeholder="APELLIDO PATERNO"
 										required
 									/>
 								</div>
+							</div>
+
+							{/* Second last name + birth date */}
+							<div className="grid grid-cols-2 gap-4">
 								<div className="space-y-2">
 									<Label htmlFor="secondLastName">Apellido Materno</Label>
 									<Input
 										id="secondLastName"
 										value={secondLastName}
-										onChange={(e) => setSecondLastName(e.target.value)}
-										placeholder="Apellido Materno"
+										onChange={(e) =>
+											setSecondLastName(e.target.value.toUpperCase())
+										}
+										placeholder="APELLIDO MATERNO"
 									/>
 								</div>
-							</div>
-
-							<div className="grid grid-cols-4 gap-4">
 								<div className="space-y-2">
 									<Label htmlFor="birthDate">Fecha de Nacimiento</Label>
 									<Input
@@ -441,24 +494,27 @@ export function BeneficialControllerFormDialog({
 										onChange={(e) => setBirthDate(e.target.value)}
 									/>
 								</div>
-								<div className="space-y-2">
-									<Label htmlFor="birthCountry">País de Nacimiento</Label>
-									<Input
-										id="birthCountry"
-										value={birthCountry}
-										onChange={(e) => setBirthCountry(e.target.value)}
-										placeholder="México"
-									/>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="nationality">Nacionalidad</Label>
-									<Input
-										id="nationality"
-										value={nationality}
-										onChange={(e) => setNationality(e.target.value)}
-										placeholder="Mexicana"
-									/>
-								</div>
+							</div>
+
+							{/* Nationality + Occupation */}
+							<div className="grid grid-cols-2 gap-4">
+								<CatalogSelector
+									catalogKey="countries"
+									label="Nacionalidad"
+									value={nationality}
+									onChange={(option: CatalogItem | null) => {
+										const meta = option?.metadata as
+											| { code?: string }
+											| undefined;
+										setNationality(meta?.code || option?.id || "");
+									}}
+									getOptionValue={(option: CatalogItem) => {
+										const meta = option.metadata as
+											| { code?: string }
+											| undefined;
+										return meta?.code || option.id;
+									}}
+								/>
 								<div className="space-y-2">
 									<Label htmlFor="occupation">Ocupación</Label>
 									<Input
@@ -470,6 +526,7 @@ export function BeneficialControllerFormDialog({
 								</div>
 							</div>
 
+							{/* CURP + RFC */}
 							<div className="grid grid-cols-2 gap-4">
 								<div className="space-y-2">
 									<Label htmlFor="curp">CURP</Label>
@@ -492,13 +549,15 @@ export function BeneficialControllerFormDialog({
 									/>
 								</div>
 							</div>
-						</div>
+						</section>
 
-						{/* Anexo 3: ID Document */}
-						<div className="space-y-4 border-b pb-4">
-							<h4 className="text-sm font-medium">
+						{/* ── Documento de Identificación (Anexo 3) ── */}
+						<section className="space-y-4 border-b pb-4">
+							<h4 className="text-sm font-semibold">
 								Documento de Identificación (Anexo 3)
 							</h4>
+
+							{/* Doc type / number / authority */}
 							<div className="grid grid-cols-3 gap-4">
 								<div className="space-y-2">
 									<Label htmlFor="idDocumentType">Tipo de Documento</Label>
@@ -537,11 +596,41 @@ export function BeneficialControllerFormDialog({
 									/>
 								</div>
 							</div>
-						</div>
 
-						{/* Contact */}
-						<div className="space-y-4 border-b pb-4">
-							<h4 className="text-sm font-medium">Contacto</h4>
+							{/* Document scan upload */}
+							{!idCopyDocId ? (
+								<SimpleDocumentUploadCard
+									documentType="NATIONAL_ID"
+									title="Copia del Documento de Identificación"
+									description="Sube una fotografía o PDF del documento de identificación oficial"
+									data={idDocUploadData}
+									onDataChange={setIdDocUploadData}
+									onUpload={handleIdDocUpload}
+								/>
+							) : (
+								<div className="flex items-center justify-between p-3 rounded-lg border border-green-500 bg-green-50/50 dark:bg-green-950/20">
+									<p className="text-sm text-green-700 dark:text-green-300 font-medium">
+										Identificación cargada correctamente
+									</p>
+									<Button
+										type="button"
+										variant="ghost"
+										size="sm"
+										className="text-destructive hover:text-destructive"
+										onClick={() => {
+											setIdCopyDocId("");
+											setIdDocUploadData(null);
+										}}
+									>
+										Cambiar
+									</Button>
+								</div>
+							)}
+						</section>
+
+						{/* ── Contacto ── */}
+						<section className="space-y-4 border-b pb-4">
+							<h4 className="text-sm font-semibold">Contacto</h4>
 							<div className="grid grid-cols-2 gap-4">
 								<div className="space-y-2">
 									<Label htmlFor="email">Email</Label>
@@ -555,62 +644,47 @@ export function BeneficialControllerFormDialog({
 								</div>
 								<div className="space-y-2">
 									<Label htmlFor="phone">Teléfono</Label>
-									<Input
+									<PhoneInput
 										id="phone"
-										type="tel"
 										value={phone}
-										onChange={(e) => setPhone(e.target.value)}
-										placeholder="5512345678"
+										onChange={(value) => setPhone(value ?? "")}
+										defaultCountry="MX"
 									/>
 								</div>
 							</div>
-						</div>
+						</section>
 
-						{/* Address */}
-						<div className="space-y-4 border-b pb-4">
-							<h4 className="text-sm font-medium">Domicilio</h4>
-							<div className="grid grid-cols-2 gap-4">
-								<div className="space-y-2">
-									<Label htmlFor="postalCode">Código Postal</Label>
-									<Input
-										id="postalCode"
-										value={postalCode}
-										onChange={(e) => setPostalCode(e.target.value)}
-										placeholder="64000"
-									/>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="stateCode">Estado</Label>
-									<Input
-										id="stateCode"
-										value={stateCode}
-										onChange={(e) => setStateCode(e.target.value)}
-										placeholder="NL"
-									/>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="city">Ciudad</Label>
-									<Input
-										id="city"
-										value={city}
-										onChange={(e) => setCity(e.target.value)}
-										placeholder="Monterrey"
-									/>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="street">Calle</Label>
-									<Input
-										id="street"
-										value={street}
-										onChange={(e) => setStreet(e.target.value)}
-										placeholder="Av. Constitución"
-									/>
-								</div>
+						{/* ── Domicilio ── */}
+						<section className="space-y-4 border-b pb-4">
+							<h4 className="text-sm font-semibold">Domicilio</h4>
+
+							<ZipCodeAddressFields
+								postalCode={postalCode}
+								onPostalCodeChange={setPostalCode}
+								city={city}
+								onCityChange={setCity}
+								municipality={municipality}
+								onMunicipalityChange={setMunicipality}
+								stateCode={stateCode}
+								onStateCodeChange={setStateCode}
+								neighborhood={neighborhood}
+								onNeighborhoodChange={setNeighborhood}
+								showNeighborhood
+							/>
+
+							<div className="space-y-2">
+								<Label htmlFor="street">Calle y Número</Label>
+								<Input
+									id="street"
+									value={street}
+									onChange={(e) => setStreet(e.target.value)}
+									placeholder="Av. Constitución 100, Col. Centro"
+								/>
 							</div>
-						</div>
+						</section>
 
-						{/* Notes */}
-						<div className="space-y-2">
+						{/* ── Notas ── */}
+						<section className="space-y-2">
 							<Label htmlFor="notes">Notas</Label>
 							<Input
 								id="notes"
@@ -618,7 +692,7 @@ export function BeneficialControllerFormDialog({
 								onChange={(e) => setNotes(e.target.value)}
 								placeholder="Notas adicionales"
 							/>
-						</div>
+						</section>
 					</DialogBody>
 
 					<DialogFooter>

@@ -20,7 +20,6 @@ import { cn } from "@/lib/utils";
 interface WatchlistScreeningSectionProps {
 	watchlistQueryId: string | null | undefined;
 	className?: string;
-	authToken?: string;
 }
 
 const STATUS_CONFIG = {
@@ -106,13 +105,11 @@ function ScreeningResult({
 export function WatchlistScreeningSection({
 	watchlistQueryId,
 	className,
-	authToken,
 }: WatchlistScreeningSectionProps) {
 	const { data, isLoading, error, connectionStatus, isComplete } =
 		useWatchlistScreening({
 			watchlistQueryId,
 			enabled: !!watchlistQueryId,
-			authToken,
 		});
 
 	if (!watchlistQueryId) {

@@ -7,6 +7,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { tokenCache } from "@/lib/auth/tokenCache";
 import { getWatchlistBaseUrl } from "@/lib/api/config";
 import {
 	getQueryResults,
@@ -16,7 +17,6 @@ import {
 export interface UseWatchlistScreeningOptions {
 	watchlistQueryId: string | null | undefined;
 	enabled?: boolean;
-	authToken?: string;
 }
 
 export interface UseWatchlistScreeningResult {
@@ -37,7 +37,7 @@ export interface UseWatchlistScreeningResult {
 export function useWatchlistScreening(
 	opts: UseWatchlistScreeningOptions,
 ): UseWatchlistScreeningResult {
-	const { watchlistQueryId, enabled = true, authToken } = opts;
+	const { watchlistQueryId, enabled = true } = opts;
 
 	const [data, setData] = useState<WatchlistQueryResult | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
@@ -57,7 +57,7 @@ export function useWatchlistScreening(
 		if (!watchlistQueryId) return;
 
 		try {
-			const result = await getQueryResults(watchlistQueryId, { authToken });
+			const result = await getQueryResults(watchlistQueryId);
 			if (result) {
 				setData(result);
 				setError(null);
@@ -72,12 +72,12 @@ export function useWatchlistScreening(
 				err instanceof Error ? err.message : "Failed to fetch screening data",
 			);
 		}
-	}, [watchlistQueryId, authToken]);
+	}, [watchlistQueryId]);
 
 	/**
 	 * Connect to SSE for real-time updates
 	 */
-	const connectSSE = useCallback(() => {
+	const connectSSE = useCallback(async () => {
 		if (!watchlistQueryId || !enabled) {
 			return;
 		}
@@ -89,9 +89,10 @@ export function useWatchlistScreening(
 		}
 
 		const baseUrl = getWatchlistBaseUrl();
-		// Note: SSE doesn't support custom headers, so we pass JWT as query param if needed
-		const url = authToken
-			? `${baseUrl}/events/${watchlistQueryId}?token=${encodeURIComponent(authToken)}`
+		// SSE doesn't support custom headers — pass JWT as query param
+		const token = await tokenCache.getCachedToken();
+		const url = token
+			? `${baseUrl}/events/${watchlistQueryId}?token=${encodeURIComponent(token)}`
 			: `${baseUrl}/events/${watchlistQueryId}`;
 
 		setConnectionStatus("connecting");
@@ -200,7 +201,7 @@ export function useWatchlistScreening(
 			console.error("[useWatchlistScreening] Error connecting to SSE:", err);
 			setConnectionStatus("error");
 		}
-	}, [watchlistQueryId, enabled, authToken]);
+	}, [watchlistQueryId, enabled]);
 
 	/**
 	 * Start polling as fallback

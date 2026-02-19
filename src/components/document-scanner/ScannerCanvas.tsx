@@ -80,7 +80,7 @@ export function ScannerCanvas({
 	});
 
 	// Responsive handle size - larger on touch devices
-	const handleSize = propHandleSize ?? (isTouch ? 44 : 24);
+	const handleSize = propHandleSize ?? (isTouch ? 60 : 44);
 	// Hit area is even larger for easier touch targeting
 	const hitAreaMultiplier = isTouch ? 2.5 : 1.5;
 
@@ -179,7 +179,7 @@ export function ScannerCanvas({
 
 			// Draw connecting lines with primary color
 			ctx.strokeStyle = primaryColor;
-			ctx.lineWidth = 2;
+			ctx.lineWidth = 6;
 			ctx.setLineDash([]);
 			ctx.beginPath();
 			ctx.moveTo(corners.topLeft.x, corners.topLeft.y);
@@ -203,12 +203,12 @@ export function ScannerCanvas({
 						isDragging || isHovered ? primaryColor : "rgba(255, 255, 255, 0.9)";
 					ctx.fill();
 					ctx.strokeStyle = primaryColor;
-					ctx.lineWidth = 2;
+					ctx.lineWidth = 6;
 					ctx.stroke();
 
 					// Inner dot
 					ctx.beginPath();
-					ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+					ctx.arc(point.x, point.y, 8, 0, Math.PI * 2);
 					ctx.fillStyle = isDragging || isHovered ? "white" : primaryColor;
 					ctx.fill();
 				});

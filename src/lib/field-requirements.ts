@@ -73,24 +73,13 @@ const CLIENT_PERSONA_MORAL_RED: FieldRequirement[] = [
 	},
 ];
 
-const CLIENT_YELLOW: FieldRequirement[] = [
+// Fields that apply to all person types
+const CLIENT_YELLOW_SHARED: FieldRequirement[] = [
 	{
 		fieldPath: "client.rfc",
 		tier: "alert_required",
 		label: "RFC",
 		alertCodes: ["WATCHLIST", "INCOME_MATCH"],
-	},
-	{
-		fieldPath: "client.curp",
-		tier: "alert_required",
-		label: "CURP",
-		alertCodes: ["WATCHLIST", "IDENTITY"],
-	},
-	{
-		fieldPath: "client.birthDate",
-		tier: "alert_required",
-		label: "Fecha de nacimiento",
-		alertCodes: ["AGE_RISK", "IDENTITY"],
 	},
 	{
 		fieldPath: "client.phone",
@@ -118,7 +107,48 @@ const CLIENT_YELLOW: FieldRequirement[] = [
 	},
 ];
 
-const CLIENT_GREY: FieldRequirement[] = [
+// Fields exclusive to persona_fisica_type (XSD: curp, fecha_nacimiento)
+const CLIENT_YELLOW_FISICA: FieldRequirement[] = [
+	{
+		fieldPath: "client.curp",
+		tier: "alert_required",
+		label: "CURP",
+		alertCodes: ["WATCHLIST", "IDENTITY"],
+	},
+	{
+		fieldPath: "client.birthDate",
+		tier: "alert_required",
+		label: "Fecha de nacimiento",
+		alertCodes: ["AGE_RISK", "IDENTITY"],
+	},
+];
+
+// Fields exclusive to persona_moral_type / fideicomiso (XSD: fecha_constitucion)
+const CLIENT_YELLOW_MORAL: FieldRequirement[] = [
+	{
+		fieldPath: "client.incorporationDate",
+		tier: "alert_required",
+		label: "Fecha de constitución",
+		alertCodes: ["ENTITY_AGE"],
+	},
+];
+
+// Grey fields that apply to all person types
+const CLIENT_GREY_SHARED: FieldRequirement[] = [
+	{
+		fieldPath: "client.sourceOfFunds",
+		tier: "kyc_optional",
+		label: "Origen de los recursos",
+	},
+	{
+		fieldPath: "client.sourceOfWealth",
+		tier: "kyc_optional",
+		label: "Origen del patrimonio",
+	},
+];
+
+// Grey fields exclusive to persona_fisica_type
+const CLIENT_GREY_FISICA: FieldRequirement[] = [
 	{
 		fieldPath: "client.isPEP",
 		tier: "kyc_optional",
@@ -134,16 +164,6 @@ const CLIENT_GREY: FieldRequirement[] = [
 		fieldPath: "client.occupation",
 		tier: "kyc_optional",
 		label: "Ocupación/Profesión",
-	},
-	{
-		fieldPath: "client.sourceOfFunds",
-		tier: "kyc_optional",
-		label: "Origen de los recursos",
-	},
-	{
-		fieldPath: "client.sourceOfWealth",
-		tier: "kyc_optional",
-		label: "Origen del patrimonio",
 	},
 ];
 
@@ -885,7 +905,23 @@ export function getFieldRequirements(
 					: personType === "moral" || personType === "trust"
 						? CLIENT_PERSONA_MORAL_RED
 						: [...CLIENT_PERSONA_FISICA_RED, ...CLIENT_PERSONA_MORAL_RED];
-			return [...redFields, ...CLIENT_YELLOW, ...CLIENT_GREY];
+			const yellowFields =
+				personType === "physical"
+					? [...CLIENT_YELLOW_SHARED, ...CLIENT_YELLOW_FISICA]
+					: personType === "moral" || personType === "trust"
+						? [...CLIENT_YELLOW_SHARED, ...CLIENT_YELLOW_MORAL]
+						: [
+								...CLIENT_YELLOW_SHARED,
+								...CLIENT_YELLOW_FISICA,
+								...CLIENT_YELLOW_MORAL,
+							];
+			const greyFields =
+				personType === "physical"
+					? [...CLIENT_GREY_SHARED, ...CLIENT_GREY_FISICA]
+					: personType === "moral" || personType === "trust"
+						? [...CLIENT_GREY_SHARED]
+						: [...CLIENT_GREY_SHARED, ...CLIENT_GREY_FISICA];
+			return [...redFields, ...yellowFields, ...greyFields];
 		}
 		case "payment":
 			return [...PAYMENT_RED, ...PAYMENT_YELLOW, ...PAYMENT_GREY];
@@ -1021,7 +1057,16 @@ export function getClientFieldTierMap(
 			? CLIENT_PERSONA_FISICA_RED
 			: CLIENT_PERSONA_MORAL_RED;
 
-	const allFields = [...redFields, ...CLIENT_YELLOW, ...CLIENT_GREY];
+	const yellowFields =
+		personType === "physical"
+			? [...CLIENT_YELLOW_SHARED, ...CLIENT_YELLOW_FISICA]
+			: [...CLIENT_YELLOW_SHARED, ...CLIENT_YELLOW_MORAL];
+	const greyFields =
+		personType === "physical"
+			? [...CLIENT_GREY_SHARED, ...CLIENT_GREY_FISICA]
+			: [...CLIENT_GREY_SHARED];
+
+	const allFields = [...redFields, ...yellowFields, ...greyFields];
 	const map: Record<string, FieldTier> = {};
 
 	for (const req of allFields) {

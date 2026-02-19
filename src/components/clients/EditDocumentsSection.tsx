@@ -14,14 +14,7 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-	FileText,
-	CheckCircle2,
-	AlertCircle,
-	ExternalLink,
-	Trash2,
-	ZoomIn,
-} from "lucide-react";
+import { FileText, CheckCircle2, AlertCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
 	listClientDocuments,
@@ -30,13 +23,11 @@ import {
 } from "@/lib/api/client-documents";
 import { uploadDocumentForKYC } from "@/lib/api/file-upload";
 import { useOrgStore } from "@/lib/org-store";
-import { DocSvcImage } from "@/components/DocSvcImage";
 import type { PersonType } from "@/types/client";
 import type {
 	ClientDocumentType,
 	ClientDocumentCreateRequest,
 	ClientDocument,
-	DocumentFileMetadata,
 } from "@/types/client-document";
 import {
 	DOCUMENT_TYPE_CONFIG,
@@ -57,7 +48,7 @@ import {
 	DocumentViewerDialog,
 	type DocumentImage,
 } from "./DocumentViewerDialog";
-import { MobileUploadCard } from "./MobileUploadCard";
+import { DocumentThumbnailRow } from "./DocumentThumbnailRow";
 
 interface EditDocumentsSectionProps {
 	clientId: string;
@@ -384,7 +375,7 @@ export function EditDocumentsSection({
 					</div>
 
 					{/* Missing documents warning */}
-					{(missingDocs.length > 0 || !hasIdDocument) && (
+					{(missingDocs.length > 0 || (!needsUBOs && !hasIdDocument)) && (
 						<div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg">
 							<p className="text-sm font-medium text-amber-800 dark:text-amber-200 flex items-center gap-2 mb-2">
 								<AlertCircle className="h-4 w-4" />
@@ -408,18 +399,6 @@ export function EditDocumentsSection({
 					)}
 				</CardContent>
 			</Card>
-
-			{/* Mobile upload link */}
-			<MobileUploadCard
-				clientId={clientId}
-				clientName={clientName}
-				clientType={personType}
-				uploadedDocuments={Array.from(uploadedDocTypes) as ClientDocumentType[]}
-				onUploadComplete={() => {
-					fetchDocuments();
-					onDocumentChange?.();
-				}}
-			/>
 
 			{/* ID Document Section (Physical persons only) */}
 			{!needsUBOs && (
@@ -464,192 +443,21 @@ export function EditDocumentsSection({
 									</p>
 								</div>
 
-								{/* Show thumbnails if metadata has image URLs - horizontal scrolling */}
-								{existingIdDocument.metadata && (
-									<div className="relative pt-2">
-										<div className="flex gap-3 overflow-x-auto pb-2">
-											{(existingIdDocument.metadata as any).ineFrontUrl && (
-												<div className="flex-shrink-0 space-y-1">
-													<p className="text-xs text-muted-foreground text-center">
-														Frente
-													</p>
-													<div
-														className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group h-24"
-														onClick={() => {
-															const images: DocumentImage[] = [];
-															if (
-																(existingIdDocument.metadata as any).ineFrontUrl
-															) {
-																images.push({
-																	src: (existingIdDocument.metadata as any)
-																		.ineFrontUrl,
-																	title: "Frente de INE",
-																});
-															}
-															if (
-																(existingIdDocument.metadata as any).ineBackUrl
-															) {
-																images.push({
-																	src: (existingIdDocument.metadata as any)
-																		.ineBackUrl,
-																	title: "Reverso de INE",
-																});
-															}
-															setDocumentViewer({
-																open: true,
-																images,
-																initialIndex: 0,
-																originalFileUrl: (
-																	existingIdDocument.metadata as any
-																)?.originalFileUrl,
-															});
-														}}
-													>
-														{existingIdDocument.docSvcDocumentId &&
-														currentOrg?.id ? (
-															<DocSvcImage
-																organizationId={currentOrg.id}
-																documentId={existingIdDocument.docSvcDocumentId}
-																imageIndex={0}
-																alt="Frente de INE"
-																className="h-24 w-auto object-contain"
-															/>
-														) : (
-															<img
-																src={
-																	(existingIdDocument.metadata as any)
-																		.ineFrontUrl
-																}
-																alt="Frente de INE"
-																className="h-24 w-auto object-contain"
-																crossOrigin="anonymous"
-															/>
-														)}
-														<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-															<ZoomIn className="h-6 w-6 text-white" />
-														</div>
-													</div>
-												</div>
-											)}
-											{(existingIdDocument.metadata as any).ineBackUrl && (
-												<div className="flex-shrink-0 space-y-1">
-													<p className="text-xs text-muted-foreground text-center">
-														Reverso
-													</p>
-													<div
-														className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group h-24"
-														onClick={() => {
-															const images: DocumentImage[] = [];
-															if (
-																(existingIdDocument.metadata as any).ineFrontUrl
-															) {
-																images.push({
-																	src: (existingIdDocument.metadata as any)
-																		.ineFrontUrl,
-																	title: "Frente de INE",
-																});
-															}
-															if (
-																(existingIdDocument.metadata as any).ineBackUrl
-															) {
-																images.push({
-																	src: (existingIdDocument.metadata as any)
-																		.ineBackUrl,
-																	title: "Reverso de INE",
-																});
-															}
-															setDocumentViewer({
-																open: true,
-																images,
-																initialIndex: 1,
-																originalFileUrl: (
-																	existingIdDocument.metadata as any
-																)?.originalFileUrl,
-															});
-														}}
-													>
-														{existingIdDocument.docSvcDocumentId &&
-														currentOrg?.id ? (
-															<DocSvcImage
-																organizationId={currentOrg.id}
-																documentId={existingIdDocument.docSvcDocumentId}
-																imageIndex={1}
-																alt="Reverso de INE"
-																className="h-24 w-auto object-contain"
-															/>
-														) : (
-															<img
-																src={
-																	(existingIdDocument.metadata as any)
-																		.ineBackUrl
-																}
-																alt="Reverso de INE"
-																className="h-24 w-auto object-contain"
-																crossOrigin="anonymous"
-															/>
-														)}
-														<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-															<ZoomIn className="h-6 w-6 text-white" />
-														</div>
-													</div>
-												</div>
-											)}
-											{(existingIdDocument.metadata as any).primaryFileUrl &&
-												!(existingIdDocument.metadata as any).ineFrontUrl && (
-													<div className="flex-shrink-0 space-y-1">
-														<p className="text-xs text-muted-foreground text-center">
-															Documento
-														</p>
-														<div
-															className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group h-24"
-															onClick={() => {
-																const images: DocumentImage[] = [
-																	{
-																		src: (existingIdDocument.metadata as any)
-																			.primaryFileUrl,
-																		title: "Documento",
-																	},
-																];
-																setDocumentViewer({
-																	open: true,
-																	images,
-																	initialIndex: 0,
-																	originalFileUrl: (
-																		existingIdDocument.metadata as any
-																	)?.originalFileUrl,
-																});
-															}}
-														>
-															{existingIdDocument.docSvcDocumentId &&
-															currentOrg?.id ? (
-																<DocSvcImage
-																	organizationId={currentOrg.id}
-																	documentId={
-																		existingIdDocument.docSvcDocumentId
-																	}
-																	imageIndex={0}
-																	alt="Documento"
-																	className="h-24 w-auto object-contain"
-																/>
-															) : (
-																<img
-																	src={
-																		(existingIdDocument.metadata as any)
-																			.primaryFileUrl
-																	}
-																	alt="Documento"
-																	className="h-24 w-auto object-contain"
-																	crossOrigin="anonymous"
-																/>
-															)}
-															<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-																<ZoomIn className="h-6 w-6 text-white" />
-															</div>
-														</div>
-													</div>
-												)}
-										</div>
-									</div>
+								{/* Page thumbnails */}
+								{currentOrg?.id && (
+									<DocumentThumbnailRow
+										document={existingIdDocument}
+										orgId={currentOrg.id}
+										onImageClick={(images, idx) =>
+											setDocumentViewer({
+												open: true,
+												images,
+												initialIndex: idx,
+												originalFileUrl: (existingIdDocument.metadata as any)
+													?.originalFileUrl,
+											})
+										}
+									/>
 								)}
 
 								{/* Action buttons */}
@@ -712,15 +520,6 @@ export function EditDocumentsSection({
 						const isUploaded = !!existingDoc;
 
 						if (isUploaded && existingDoc) {
-							// Show uploaded document card with thumbnails
-							const metadata =
-								existingDoc.metadata as DocumentFileMetadata | null;
-							const hasImages =
-								metadata &&
-								(metadata.primaryFileUrl ||
-									(metadata.rasterizedPageUrls &&
-										metadata.rasterizedPageUrls.length > 0));
-
 							return (
 								<Card
 									key={docType}
@@ -739,131 +538,21 @@ export function EditDocumentsSection({
 										</CardTitle>
 									</CardHeader>
 									<CardContent className="space-y-3">
-										{/* Show thumbnails if available */}
-										{hasImages && (
-											<div className="relative">
-												<div className="flex gap-3 overflow-x-auto pb-2">
-													{/* Primary file */}
-													{metadata.primaryFileUrl && (
-														<div className="flex-shrink-0 space-y-1">
-															<p className="text-xs text-muted-foreground text-center">
-																Documento
-															</p>
-															<div
-																className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group h-24"
-																onClick={() => {
-																	const images: DocumentImage[] = [];
-																	if (metadata.primaryFileUrl) {
-																		images.push({
-																			src: metadata.primaryFileUrl,
-																			title: "Documento",
-																		});
-																	}
-																	if (metadata.rasterizedPageUrls) {
-																		(
-																			metadata.rasterizedPageUrls as string[]
-																		).forEach((url, idx) => {
-																			images.push({
-																				src: url,
-																				title: `Página ${idx + 1}`,
-																			});
-																		});
-																	}
-																	setDocumentViewer({
-																		open: true,
-																		images,
-																		initialIndex: 0,
-																		originalFileUrl: metadata.originalFileUrl,
-																	});
-																}}
-															>
-																{existingDoc.docSvcDocumentId &&
-																currentOrg?.id ? (
-																	<DocSvcImage
-																		organizationId={currentOrg.id}
-																		documentId={existingDoc.docSvcDocumentId}
-																		imageIndex={0}
-																		alt="Documento"
-																		className="h-24 w-auto object-contain"
-																	/>
-																) : (
-																	<img
-																		src={metadata.primaryFileUrl}
-																		alt="Documento"
-																		className="h-24 w-auto object-contain"
-																		crossOrigin="anonymous"
-																	/>
-																)}
-																<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-																	<ZoomIn className="h-6 w-6 text-white" />
-																</div>
-															</div>
-														</div>
-													)}
-
-													{/* Rasterized pages */}
-													{metadata.rasterizedPageUrls &&
-														(metadata.rasterizedPageUrls as string[]).map(
-															(url, idx) => (
-																<div
-																	key={idx}
-																	className="flex-shrink-0 space-y-1"
-																>
-																	<p className="text-xs text-muted-foreground text-center">
-																		Página {idx + 1}
-																	</p>
-																	<div
-																		className="relative rounded-lg overflow-hidden bg-muted/30 border cursor-pointer group h-24"
-																		onClick={() => {
-																			const allPages =
-																				metadata.rasterizedPageUrls as string[];
-																			const images: DocumentImage[] =
-																				allPages.map(
-																					(
-																						pageUrl: string,
-																						pageIdx: number,
-																					) => ({
-																						src: pageUrl,
-																						title: `Página ${pageIdx + 1}`,
-																					}),
-																				);
-																			setDocumentViewer({
-																				open: true,
-																				images,
-																				initialIndex: idx,
-																				originalFileUrl:
-																					metadata.originalFileUrl,
-																			});
-																		}}
-																	>
-																		{existingDoc.docSvcDocumentId &&
-																		currentOrg?.id ? (
-																			<DocSvcImage
-																				organizationId={currentOrg.id}
-																				documentId={
-																					existingDoc.docSvcDocumentId
-																				}
-																				imageIndex={idx + 1}
-																				alt={`Página ${idx + 1}`}
-																				className="h-24 w-auto object-contain"
-																			/>
-																		) : (
-																			<img
-																				src={url}
-																				alt={`Página ${idx + 1}`}
-																				className="h-24 w-auto object-contain"
-																				crossOrigin="anonymous"
-																			/>
-																		)}
-																		<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-																			<ZoomIn className="h-6 w-6 text-white" />
-																		</div>
-																	</div>
-																</div>
-															),
-														)}
-												</div>
-											</div>
+										{/* Page thumbnails */}
+										{currentOrg?.id && (
+											<DocumentThumbnailRow
+												document={existingDoc}
+												orgId={currentOrg.id}
+												onImageClick={(images, idx) =>
+													setDocumentViewer({
+														open: true,
+														images,
+														initialIndex: idx,
+														originalFileUrl: (existingDoc.metadata as any)
+															?.originalFileUrl,
+													})
+												}
+											/>
 										)}
 
 										{/* Action buttons */}

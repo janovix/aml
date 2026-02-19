@@ -30,7 +30,6 @@ import {
 	Shield,
 	ExternalLink,
 	Pencil,
-	ZoomIn,
 	Loader2,
 	Activity,
 	Link2,
@@ -69,13 +68,11 @@ import type { TranslationKeys } from "@/lib/translations";
 import { CircularProgress } from "@/components/ui/circular-progress";
 import { calculateKYCStatus, type KYCSectionStatus } from "@/lib/kyc-status";
 import { cn } from "@/lib/utils";
-import { DocSvcImage } from "@/components/DocSvcImage";
 import {
 	DocumentViewerDialog,
 	type DocumentImage,
 } from "./DocumentViewerDialog";
 import { UploadedIDDocumentCard } from "./UploadedIDDocumentCard";
-import { WatchlistScreeningSection } from "./WatchlistScreeningSection";
 import { useWatchlistScreening } from "@/hooks/useWatchlistScreening";
 import { KycSessionSection } from "@/components/kyc/KycSessionSection";
 import { getKycBaseUrl } from "@/lib/api/doc-svc";
@@ -94,9 +91,142 @@ import {
 import type { FieldTier } from "@/types/completeness";
 import { TIER_COLORS } from "@/types/completeness";
 import { useOrgSettings } from "@/hooks/useOrgSettings";
+import { DocumentThumbnailRow } from "./DocumentThumbnailRow";
 
 interface ClientDetailsViewProps {
 	clientId: string;
+}
+
+// ─── Watchlist screening helpers ─────────────────────────────────────────────
+
+type WatchlistStatus =
+	| "pending"
+	| "processing"
+	| "completed"
+	| "failed"
+	| "skipped";
+type AdverseRiskLevel = "none" | "low" | "medium" | "high";
+
+type AdverseMediaResultShape = {
+	risk_level?: AdverseRiskLevel;
+	findings?: { es?: string; en?: string };
+	sources?: unknown[];
+};
+
+const WATCHLIST_STATUS_CONFIG: Record<
+	WatchlistStatus,
+	{ label: string; badgeClass: string; dotClass: string }
+> = {
+	pending: {
+		label: "Pendiente",
+		badgeClass:
+			"border-gray-200 bg-gray-50 text-gray-500 dark:bg-gray-800/50 dark:text-gray-400 dark:border-gray-700",
+		dotClass: "bg-gray-400",
+	},
+	processing: {
+		label: "En proceso",
+		badgeClass:
+			"border-blue-200 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
+		dotClass: "bg-blue-500 animate-pulse",
+	},
+	completed: {
+		label: "Completado",
+		badgeClass:
+			"border-green-200 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800",
+		dotClass: "bg-green-500",
+	},
+	failed: {
+		label: "Error",
+		badgeClass:
+			"border-red-200 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800",
+		dotClass: "bg-red-500",
+	},
+	skipped: {
+		label: "Omitido",
+		badgeClass:
+			"border-gray-100 bg-gray-50 text-gray-400 dark:bg-gray-800/30 dark:text-gray-500 dark:border-gray-700",
+		dotClass: "bg-gray-300",
+	},
+};
+
+const ADVERSE_RISK_CONFIG: Record<
+	AdverseRiskLevel,
+	{ label: string; badgeClass: string }
+> = {
+	none: {
+		label: "Ninguno",
+		badgeClass:
+			"border-green-200 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800",
+	},
+	low: {
+		label: "Bajo",
+		badgeClass:
+			"border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800",
+	},
+	medium: {
+		label: "Medio",
+		badgeClass:
+			"border-orange-200 bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800",
+	},
+	high: {
+		label: "Alto",
+		badgeClass:
+			"border-red-200 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800",
+	},
+};
+
+interface ScreeningSourceRowProps {
+	label: string;
+	status: string;
+	count?: number;
+	matchLabel?: string;
+	riskBadge?: React.ReactNode;
+	findingsText?: string;
+}
+
+function ScreeningSourceRow({
+	label,
+	status,
+	count,
+	matchLabel = "coincidencia",
+	riskBadge,
+	findingsText,
+}: ScreeningSourceRowProps) {
+	const cfg =
+		WATCHLIST_STATUS_CONFIG[status as WatchlistStatus] ??
+		WATCHLIST_STATUS_CONFIG.pending;
+	const hasMatches = typeof count === "number" && count > 0;
+
+	return (
+		<div className="py-3 px-4 bg-background">
+			<div className="flex items-center gap-2 flex-wrap">
+				<span className="text-sm font-medium flex-1">{label}</span>
+				<span
+					className={cn(
+						"inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full border font-medium",
+						cfg.badgeClass,
+					)}
+				>
+					<span
+						className={cn("h-1.5 w-1.5 rounded-full shrink-0", cfg.dotClass)}
+					/>
+					{cfg.label}
+				</span>
+				{hasMatches && (
+					<span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-red-200 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800 font-medium">
+						<AlertTriangle className="h-3 w-3" />
+						{count} {count === 1 ? matchLabel : `${matchLabel}s`}
+					</span>
+				)}
+				{riskBadge}
+			</div>
+			{findingsText && (
+				<p className="mt-1.5 text-xs text-muted-foreground italic">
+					{findingsText}
+				</p>
+			)}
+		</div>
+	);
 }
 
 /**
@@ -205,7 +335,7 @@ export function ClientDetailsView({
 	clientId,
 }: ClientDetailsViewProps): React.JSX.Element {
 	const { navigateTo } = useOrgNavigation();
-	const { t } = useLanguage();
+	const { t, language } = useLanguage();
 	const { getStateName } = useStatesCatalog();
 	const { currentOrg } = useOrgStore();
 	const { activityCode } = useOrgSettings();
@@ -486,7 +616,48 @@ export function ClientDetailsView({
 			</Card>
 
 			{/* Completeness Banner */}
-			{completenessResult && <CompletenessBanner result={completenessResult} />}
+			{completenessResult && (
+				<CompletenessBanner
+					result={completenessResult}
+					onNavigateToField={(fieldPath) => {
+						// Map field paths to the correct edit tab and anchor
+						if (
+							fieldPath.startsWith("client.firstName") ||
+							fieldPath.startsWith("client.lastName") ||
+							fieldPath.startsWith("client.secondLastName") ||
+							fieldPath.startsWith("client.businessName") ||
+							fieldPath.startsWith("client.countryCode") ||
+							fieldPath.startsWith("client.economicActivityCode") ||
+							fieldPath.startsWith("client.rfc") ||
+							fieldPath.startsWith("client.curp") ||
+							fieldPath.startsWith("client.birthDate") ||
+							fieldPath.startsWith("client.nationality") ||
+							fieldPath.startsWith("client.gender") ||
+							fieldPath.startsWith("client.maritalStatus") ||
+							fieldPath.startsWith("client.occupation") ||
+							fieldPath.startsWith("client.sourceOfFunds") ||
+							fieldPath.startsWith("client.sourceOfWealth")
+						) {
+							navigateToEdit("personal", "personal-info");
+						} else if (
+							fieldPath.startsWith("client.phone") ||
+							fieldPath.startsWith("client.email")
+						) {
+							navigateToEdit("contact", "contact-info");
+						} else if (
+							fieldPath.startsWith("client.street") ||
+							fieldPath.startsWith("client.postalCode") ||
+							fieldPath.startsWith("client.city") ||
+							fieldPath.startsWith("client.stateCode") ||
+							fieldPath.startsWith("client.country")
+						) {
+							navigateToEdit("address", "address-info");
+						} else {
+							navigateToEdit("personal");
+						}
+					}}
+				/>
+			)}
 
 			{/* Accordion Sections */}
 			<Accordion
@@ -1037,115 +1208,200 @@ export function ClientDetailsView({
 							</div>
 						</div>
 					</AccordionTrigger>
-					<AccordionContent className="px-6 pb-4">
-						<dl className="grid grid-cols-1 @xl/main:grid-cols-2 gap-6">
-							<FieldDisplay
-								label="Estado de Screening"
-								value={(() => {
-									if (screeningData) {
-										if (!screeningComplete) return "en proceso";
-										const hasMatches =
-											(screeningData.ofacCount ?? 0) > 0 ||
-											(screeningData.unCount ?? 0) > 0 ||
-											(screeningData.sat69bCount ?? 0) > 0 ||
-											(screeningData.pepOfficialCount ?? 0) > 0;
-										return hasMatches ? "flagged" : "clear";
-									}
-									return client.screeningResult || "pending";
-								})()}
-								isMissing={!client.screeningResult && !screeningData}
-								tier={tierMap.isPEP}
-							/>
-							<FieldDisplay
-								label="Fecha de Verificación"
-								value={
-									screeningData?.updatedAt
-										? formatDate(screeningData.updatedAt)
-										: client.screenedAt
-											? formatDate(client.screenedAt)
-											: undefined
-								}
-								icon={Calendar}
-								isMissing={!client.screenedAt && !screeningData?.updatedAt}
-							/>
-							<FieldDisplay
-								label="¿Es PEP?"
-								value={
-									screeningData
-										? (screeningData.pepOfficialCount ?? 0) > 0
-											? "Sí"
-											: "No"
-										: client.isPEP
-											? "Sí"
-											: "No"
-								}
-								tier={tierMap.isPEP}
-							/>
-							<FieldDisplay
-								label="Sancionado OFAC"
-								value={
-									screeningData
-										? (screeningData.ofacCount ?? 0) > 0
-											? "Sí"
-											: "No"
-										: client.ofacSanctioned
-											? "Sí"
-											: "No"
-								}
-							/>
-							<FieldDisplay
-								label="Sancionado UNSC"
-								value={
-									screeningData
-										? (screeningData.unCount ?? 0) > 0
-											? "Sí"
-											: "No"
-										: client.unscSanctioned
-											? "Sí"
-											: "No"
-								}
-							/>
-							<FieldDisplay
-								label="Listado SAT 69-B"
-								value={
-									screeningData
-										? (screeningData.sat69bCount ?? 0) > 0
-											? "Sí"
-											: "No"
-										: client.sat69bListed
-											? "Sí"
-											: "No"
-								}
-							/>
-							<FieldDisplay
-								label="Media Adversa"
-								value={
-									screeningData
-										? screeningData.adverseMediaStatus === "completed" &&
-											screeningData.adverseMediaResult !== null &&
-											screeningData.adverseMediaResult !== undefined
-											? "Sí"
-											: "No"
-										: client.adverseMediaFlagged
-											? "Sí"
-											: "No"
-								}
-							/>
-						</dl>
+					<AccordionContent className="px-6 pb-6">
+						{(() => {
+							const src = screeningData;
+							const adverseResult = src?.adverseMediaResult as
+								| AdverseMediaResultShape
+								| null
+								| undefined;
+							const riskLevel: AdverseRiskLevel =
+								adverseResult?.risk_level ?? "none";
+							const findingsText =
+								language === "es"
+									? adverseResult?.findings?.es
+									: adverseResult?.findings?.en;
 
-						{(!client.screeningResult ||
-							client.screeningResult === "pending") && (
-							<div className="flex justify-end mt-4 pt-4 border-t">
-								<Button
-									variant="outline"
-									size="sm"
-									onClick={() => navigateToEdit("personal", "pep-info")}
-								>
-									<Shield className="h-4 w-4 mr-2" />
-									{t("clientVerifyPep")}
-								</Button>
-							</div>
-						)}
+							const hasListMatches =
+								(src?.ofacCount ?? 0) > 0 ||
+								(src?.unCount ?? 0) > 0 ||
+								(src?.sat69bCount ?? 0) > 0 ||
+								(src?.pepOfficialCount ?? 0) > 0;
+							const isFlagged = hasListMatches || riskLevel !== "none";
+
+							const verificationDate = src?.updatedAt
+								? formatDate(src.updatedAt)
+								: client.screenedAt
+									? formatDate(client.screenedAt)
+									: null;
+
+							let bannerClass: string;
+							let BannerIcon: React.ElementType;
+							let bannerTitle: string;
+							let bannerSub: string;
+							let bannerIconClass: string;
+
+							if (!src && !client.screeningResult) {
+								bannerClass = "bg-muted/50 border";
+								BannerIcon = Shield;
+								bannerTitle = "Sin verificar";
+								bannerSub =
+									"No se ha iniciado una verificación para este cliente";
+								bannerIconClass = "text-muted-foreground";
+							} else if (src && !screeningComplete) {
+								bannerClass =
+									"bg-blue-50 border border-blue-200 dark:bg-blue-900/20 dark:border-blue-800";
+								BannerIcon = Loader2;
+								bannerTitle = "Verificación en proceso";
+								bannerSub = "Esperando resultados de búsquedas asíncronas...";
+								bannerIconClass = "text-blue-500 animate-spin";
+							} else if (isFlagged) {
+								bannerClass =
+									"bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800";
+								BannerIcon = AlertTriangle;
+								bannerTitle = "Coincidencias detectadas";
+								bannerSub =
+									"Se encontraron coincidencias en una o más listas. Se requiere revisión.";
+								bannerIconClass = "text-red-500";
+							} else {
+								bannerClass =
+									"bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800";
+								BannerIcon = CheckCircle2;
+								bannerTitle = "Sin coincidencias";
+								bannerSub =
+									"El cliente no aparece en ninguna lista de vigilancia";
+								bannerIconClass = "text-green-500";
+							}
+
+							return (
+								<div className="space-y-4">
+									{/* Overall status banner */}
+									<div
+										className={cn(
+											"flex items-start gap-3 rounded-lg p-3",
+											bannerClass,
+										)}
+									>
+										<BannerIcon
+											className={cn("h-5 w-5 mt-0.5 shrink-0", bannerIconClass)}
+										/>
+										<div className="flex-1">
+											<p className="text-sm font-semibold">{bannerTitle}</p>
+											<p className="text-xs text-muted-foreground">
+												{bannerSub}
+											</p>
+										</div>
+										{verificationDate && (
+											<div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+												<Calendar className="h-3 w-3" />
+												{verificationDate}
+											</div>
+										)}
+									</div>
+
+									{/* Per-source rows */}
+									{(src ?? client.screeningResult) && (
+										<div className="rounded-lg border overflow-hidden divide-y">
+											<ScreeningSourceRow
+												label="OFAC"
+												status={
+													src?.ofacStatus ??
+													(client.ofacSanctioned ? "completed" : "pending")
+												}
+												count={
+													src
+														? (src.ofacCount ?? 0)
+														: client.ofacSanctioned
+															? 1
+															: 0
+												}
+												matchLabel="sanción"
+											/>
+											<ScreeningSourceRow
+												label="Naciones Unidas (UNSC)"
+												status={
+													src?.unStatus ??
+													(client.unscSanctioned ? "completed" : "pending")
+												}
+												count={
+													src
+														? (src.unCount ?? 0)
+														: client.unscSanctioned
+															? 1
+															: 0
+												}
+												matchLabel="sanción"
+											/>
+											<ScreeningSourceRow
+												label="SAT 69-B (México)"
+												status={
+													src?.sat69bStatus ??
+													(client.sat69bListed ? "completed" : "pending")
+												}
+												count={
+													src
+														? (src.sat69bCount ?? 0)
+														: client.sat69bListed
+															? 1
+															: 0
+												}
+												matchLabel="registro"
+											/>
+											<ScreeningSourceRow
+												label="PEP Oficial (Transparencia)"
+												status={src?.pepOfficialStatus ?? "pending"}
+												count={src?.pepOfficialCount ?? 0}
+												matchLabel="registro PEP"
+											/>
+											<ScreeningSourceRow
+												label="Detección PEP por IA"
+												status={src?.pepAiStatus ?? "pending"}
+											/>
+											<ScreeningSourceRow
+												label="Media Adversa"
+												status={
+													src?.adverseMediaStatus ??
+													(client.adverseMediaFlagged ? "completed" : "pending")
+												}
+												riskBadge={
+													src ? (
+														<span
+															className={cn(
+																"inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium",
+																ADVERSE_RISK_CONFIG[riskLevel].badgeClass,
+															)}
+														>
+															Riesgo: {ADVERSE_RISK_CONFIG[riskLevel].label}
+														</span>
+													) : client.adverseMediaFlagged ? (
+														<span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-red-200 bg-red-50 text-red-700 font-medium">
+															<AlertTriangle className="h-3 w-3" />
+															Media adversa
+														</span>
+													) : undefined
+												}
+												findingsText={findingsText}
+											/>
+										</div>
+									)}
+
+									{/* Trigger screening button */}
+									{(!client.screeningResult ||
+										client.screeningResult === "pending") && (
+										<div className="flex justify-end pt-2">
+											<Button
+												variant="outline"
+												size="sm"
+												onClick={() => navigateToEdit("personal", "pep-info")}
+											>
+												<Shield className="h-4 w-4 mr-2" />
+												{t("clientVerifyPep")}
+											</Button>
+										</div>
+									)}
+								</div>
+							);
+						})()}
 					</AccordionContent>
 				</AccordionItem>
 
@@ -1215,49 +1471,6 @@ export function ClientDetailsView({
 									const hasDoc = !!item.doc;
 									const doc = item.doc;
 
-									// Get page images for display
-									type PageImage = {
-										src: string;
-										title: string;
-										label: string;
-									};
-									const getPageImages = (): PageImage[] => {
-										if (!doc?.metadata) return [];
-										const metadata = doc.metadata as any;
-
-										// Check rasterized pages first
-										if (metadata.rasterizedPageUrls?.length > 0) {
-											return metadata.rasterizedPageUrls.map(
-												(url: string, idx: number) => ({
-													src: url,
-													title: `Página ${idx + 1}`,
-													label: `Pág. ${idx + 1}`,
-												}),
-											);
-										}
-
-										// INE front/back fallback
-										const images: PageImage[] = [];
-										if (metadata.ineFrontUrl) {
-											images.push({
-												src: metadata.ineFrontUrl,
-												title: "Frente",
-												label: "Frente",
-											});
-										}
-										if (metadata.ineBackUrl) {
-											images.push({
-												src: metadata.ineBackUrl,
-												title: "Reverso",
-												label: "Reverso",
-											});
-										}
-										return images;
-									};
-
-									const pageImages: PageImage[] = hasDoc ? getPageImages() : [];
-									const hasImages = pageImages.length > 0;
-
 									return (
 										<Card
 											key={item.type}
@@ -1291,69 +1504,21 @@ export function ClientDetailsView({
 													</Badge>
 												</div>
 
-												{/* Document images */}
-												{hasImages && (
-													<div className="flex gap-2 overflow-x-auto pb-1">
-														{pageImages.slice(0, 4).map((img, idx) => (
-															<div
-																key={idx}
-																className="relative rounded-md overflow-hidden bg-muted/30 border cursor-pointer group h-24 shrink-0"
-																onClick={() => {
-																	setDocumentViewer({
-																		open: true,
-																		images: pageImages.map((p) => ({
-																			src: p.src,
-																			title: p.title,
-																		})),
-																		initialIndex: idx,
-																		originalFileUrl: (doc?.metadata as any)
-																			?.originalFileUrl,
-																	});
-																}}
-															>
-																{doc?.docSvcDocumentId && currentOrg?.id ? (
-																	<DocSvcImage
-																		organizationId={currentOrg.id}
-																		documentId={doc.docSvcDocumentId}
-																		imageIndex={idx}
-																		alt={img.title}
-																		className="h-full w-auto object-contain"
-																	/>
-																) : (
-																	<img
-																		src={img.src}
-																		alt={img.title}
-																		className="h-full w-auto object-contain"
-																		crossOrigin="anonymous"
-																	/>
-																)}
-																<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-																	<ZoomIn className="h-4 w-4 text-white" />
-																</div>
-															</div>
-														))}
-														{pageImages.length > 4 && (
-															<div
-																className="h-24 px-3 shrink-0 rounded-md border bg-muted/50 flex items-center justify-center cursor-pointer hover:bg-muted/70 transition-colors"
-																onClick={() => {
-																	setDocumentViewer({
-																		open: true,
-																		images: pageImages.map((p) => ({
-																			src: p.src,
-																			title: p.title,
-																		})),
-																		initialIndex: 4,
-																		originalFileUrl: (doc?.metadata as any)
-																			?.originalFileUrl,
-																	});
-																}}
-															>
-																<span className="text-xs text-muted-foreground font-medium">
-																	+{pageImages.length - 4}
-																</span>
-															</div>
-														)}
-													</div>
+												{/* Document page thumbnails */}
+												{hasDoc && doc && currentOrg?.id && (
+													<DocumentThumbnailRow
+														document={doc}
+														orgId={currentOrg.id}
+														onImageClick={(images, idx) => {
+															setDocumentViewer({
+																open: true,
+																images,
+																initialIndex: idx,
+																originalFileUrl: (doc.metadata as any)
+																	?.originalFileUrl,
+															});
+														}}
+													/>
 												)}
 
 												{/* Expiry date if available - shown below images */}
@@ -1727,25 +1892,6 @@ export function ClientDetailsView({
 								{t("edit")}
 							</Button>
 						</div>
-					</AccordionContent>
-				</AccordionItem>
-
-				{/* Watchlist Screening */}
-				<AccordionItem
-					value="watchlist"
-					id="watchlist"
-					className="border rounded-lg overflow-hidden bg-card shadow-sm"
-				>
-					<AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50">
-						<div className="flex items-center gap-3">
-							<Shield className="h-5 w-5" />
-							<span className="font-semibold">Watchlist Screening</span>
-						</div>
-					</AccordionTrigger>
-					<AccordionContent className="px-6 pb-4">
-						<WatchlistScreeningSection
-							watchlistQueryId={client.watchlistQueryId}
-						/>
 					</AccordionContent>
 				</AccordionItem>
 

@@ -40,6 +40,33 @@ describe("field-requirements", () => {
 			// Moral person should NOT have firstName
 			const firstNameReq = reqs.find((r) => r.fieldPath === "client.firstName");
 			expect(firstNameReq).toBeUndefined();
+
+			// Moral person should NOT have CURP or birthDate (persona_fisica_type fields)
+			expect(reqs.find((r) => r.fieldPath === "client.curp")).toBeUndefined();
+			expect(
+				reqs.find((r) => r.fieldPath === "client.birthDate"),
+			).toBeUndefined();
+
+			// Moral person SHOULD have incorporationDate (fecha_constitucion)
+			const incorporationReq = reqs.find(
+				(r) => r.fieldPath === "client.incorporationDate",
+			);
+			expect(incorporationReq).toBeDefined();
+		});
+
+		it("returns CURP and birthDate only for physical person", () => {
+			const physicalReqs = getFieldRequirements("VEH", "client", {
+				personType: "physical",
+			});
+			expect(
+				physicalReqs.find((r) => r.fieldPath === "client.curp"),
+			).toBeDefined();
+			expect(
+				physicalReqs.find((r) => r.fieldPath === "client.birthDate"),
+			).toBeDefined();
+			expect(
+				physicalReqs.find((r) => r.fieldPath === "client.incorporationDate"),
+			).toBeUndefined();
 		});
 
 		it("returns both physical and moral fields when personType is unset", () => {

@@ -37,7 +37,6 @@ import {
 	type ShareholderWithDocuments,
 	type BCWithDocuments,
 } from "./OwnershipInlineForm";
-import { MobileUploadCard } from "../MobileUploadCard";
 import { listClientShareholders } from "@/lib/api/shareholders";
 import { listClientBeneficialControllers } from "@/lib/api/beneficial-controllers";
 
@@ -347,27 +346,6 @@ export function DocumentsStep({
 					</div>
 				</CardContent>
 			</Card>
-
-			{/* Mobile upload link */}
-			<MobileUploadCard
-				clientId={clientId}
-				clientName={
-					client.firstName
-						? `${client.firstName} ${client.lastName || ""}`.trim()
-						: client.businessName || ""
-				}
-				clientType={personType}
-				uploadedDocuments={[
-					...(idUploaded ? ["NATIONAL_ID" as ClientDocumentType] : []),
-					...Array.from(uploadedDocs),
-				]}
-				onUploadComplete={() => {
-					// Refresh the page or refetch documents
-					toast.info(
-						"Documento recibido - actualiza la página para ver los cambios",
-					);
-				}}
-			/>
 
 			{/* ID Document Section (Physical persons only) */}
 			{idRequired && (
