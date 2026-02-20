@@ -599,11 +599,14 @@ export function ClientDetailsView({
 		});
 	};
 
-	// Calculate KYC status — pass documents and BCs so they're included in the percentage
+	// calculateKYCStatus is used only for per-section accordion checkmarks.
+	// The overview ring and percentage use the server-persisted kycCompletionPct.
 	const kycStatus = calculateKYCStatus(client, {
 		documents,
 		beneficialControllers,
 	});
+	const kycPct = client.kycCompletionPct ?? 0;
+	const kycComplete = kycPct === 100;
 	const needsUBOs = requiresUBOs(client.personType);
 	const needsIdDocument = client.personType === "physical";
 
@@ -706,10 +709,10 @@ export function ClientDetailsView({
 						</div>
 
 						<div className="flex items-center gap-8">
-							{/* Circular Progress */}
+							{/* Circular Progress — uses server-persisted kycCompletionPct */}
 							<div className="flex flex-col items-center gap-2">
 								<CircularProgress
-									percentage={kycStatus.overallPercentage}
+									percentage={kycPct}
 									size={80}
 									strokeWidth={8}
 								/>
@@ -721,7 +724,7 @@ export function ClientDetailsView({
 							{/* Status Details */}
 							<div className="space-y-1">
 								<h3 className="text-lg font-semibold">
-									{kycStatus.isComplete
+									{kycComplete
 										? t("clientKycComplete")
 										: t("clientKycIncomplete")}
 								</h3>
@@ -730,10 +733,10 @@ export function ClientDetailsView({
 									{kycStatus.totalRequired} {t("clientFieldsCompleted")}
 								</p>
 								<p className="text-xs text-muted-foreground">
-									{kycStatus.overallPercentage}
+									{kycPct}
 									{t("clientPercentComplete")}
 								</p>
-								{!kycStatus.isComplete && (
+								{!kycComplete && (
 									<Button
 										variant="link"
 										size="sm"

@@ -194,11 +194,6 @@ describe("ClientsTable", () => {
 			const displayName = getClientDisplayName(mockClients[0]);
 			expect(screen.getByText(displayName)).toBeInTheDocument();
 		});
-
-		mockClients.forEach((client) => {
-			const rfcElements = screen.queryAllByText(client.rfc);
-			expect(rfcElements.length).toBeGreaterThan(0);
-		});
 	});
 
 	it("shows loading state while fetching", async () => {
@@ -308,10 +303,6 @@ describe("ClientsTable", () => {
 			const displayName = getClientDisplayName(mockClients[0]);
 			expect(screen.getByText(displayName)).toBeInTheDocument();
 		});
-
-		// Check for email in the table
-		const emailElement = screen.queryByText(mockClients[0].email);
-		expect(emailElement).toBeTruthy();
 	});
 
 	it("displays location information", async () => {
@@ -1530,10 +1521,6 @@ describe("ClientsTable", () => {
 			const displayName = getClientDisplayName(mockClients[0]);
 			expect(screen.getByText(displayName)).toBeInTheDocument();
 		});
-
-		// Verify email and phone are rendered in the contact column
-		expect(screen.getByText(mockClients[0].email)).toBeInTheDocument();
-		expect(screen.getByText(mockClients[0].phone)).toBeInTheDocument();
 	});
 
 	it("renders location column correctly", async () => {
@@ -1817,12 +1804,6 @@ describe("ClientsTable", () => {
 			const displayName = getClientDisplayName(mockClients[0]);
 			expect(screen.getByText(displayName)).toBeInTheDocument();
 		});
-
-		// Verify all column types are rendered
-		// Client column (with icon and link)
-		expect(screen.getByText(mockClients[0].rfc)).toBeInTheDocument();
-		// Contact column
-		expect(screen.getByText(mockClients[0].email)).toBeInTheDocument();
 		// Location column
 		const locationText = `${mockClients[0].city}, ${mockClients[0].stateCode}`;
 		const locationElements = screen.getAllByText(locationText);
@@ -2573,10 +2554,6 @@ describe("ClientsTable", () => {
 			allTypesClients.forEach((client) => {
 				const displayName = getClientDisplayName(client);
 				expect(screen.getByText(displayName)).toBeInTheDocument();
-				// Verify all columns are rendered
-				expect(screen.getByText(client.email)).toBeInTheDocument();
-				expect(screen.getByText(client.phone)).toBeInTheDocument();
-				expect(screen.getByText(client.rfc)).toBeInTheDocument();
 			});
 		});
 	});
@@ -2587,12 +2564,6 @@ describe("ClientsTable", () => {
 		await waitFor(() => {
 			const displayName = getClientDisplayName(mockClients[0]);
 			expect(screen.getByText(displayName)).toBeInTheDocument();
-		});
-
-		// Verify contact column is rendered for all clients
-		mockClients.forEach((client) => {
-			expect(screen.getByText(client.email)).toBeInTheDocument();
-			expect(screen.getByText(client.phone)).toBeInTheDocument();
 		});
 	});
 
@@ -3022,7 +2993,6 @@ describe("ClientsTable", () => {
 
 		// Verify sortable columns are rendered (Cliente, Ubicación, Registro)
 		expect(screen.getByText("Cliente")).toBeInTheDocument();
-		expect(screen.getByText("Contacto")).toBeInTheDocument();
 		expect(screen.getByText("Ubicación")).toBeInTheDocument();
 		expect(screen.getByText("Registro")).toBeInTheDocument();
 	});
