@@ -1,3 +1,11 @@
+# [1.4.0-rc.47](https://github.com/janovix/aml/compare/v1.4.0-rc.46...v1.4.0-rc.47) (2026-02-20)
+
+
+### Features
+
+* add new KYC progress fields to Client interface for enhanced tracking ([2214401](https://github.com/janovix/aml/commit/221440197bfc48d678c10e5062eaebdb296f5780))
+* enhance ClientDetailsView and ClientEditView with new KYC status calculations and UI improvements ([ff85586](https://github.com/janovix/aml/commit/ff85586280be1d9bad91ac6da48f25fc297d0fdb))
+
 # [1.4.0-rc.46](https://github.com/janovix/aml/compare/v1.4.0-rc.45...v1.4.0-rc.46) (2026-02-19)
 
 
