@@ -57,7 +57,7 @@ type WizardStep = 1 | 2 | 3;
 /**
  * Skeleton for CfdiReviewView loading state
  */
-function CfdiReviewSkeleton(): React.ReactElement {
+export function CfdiReviewSkeleton(): React.ReactElement {
 	return (
 		<div className="space-y-6">
 			<PageHeroSkeleton

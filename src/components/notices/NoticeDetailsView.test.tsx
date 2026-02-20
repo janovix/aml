@@ -144,7 +144,7 @@ describe("NoticeDetailsView", () => {
 	});
 
 	describe("Loading and Error States", () => {
-		it("shows loading state while fetching notice", async () => {
+		it("shows skeleton loading state while fetching notice", async () => {
 			vi.mocked(noticesApi.getNoticeById).mockImplementation(
 				() => new Promise(() => {}), // Never resolves
 			);
@@ -152,11 +152,10 @@ describe("NoticeDetailsView", () => {
 			renderWithProviders(<NoticeDetailsView noticeId="NTC001" />);
 
 			await waitFor(() => {
-				// Check for any loader icon (lucide-loader-2 or lucide-loader-circle)
-				const loader = document.querySelector(
-					'[class*="lucide-loader"], [class*="animate-spin"]',
-				);
-				expect(loader).toBeInTheDocument();
+				// The loading state now renders the NoticeDetailsSkeleton which uses
+				// Skeleton elements with data-slot="skeleton"
+				const skeletons = document.querySelectorAll('[data-slot="skeleton"]');
+				expect(skeletons.length).toBeGreaterThan(0);
 			});
 		});
 

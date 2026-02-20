@@ -5,6 +5,7 @@ import { render } from "@testing-library/react";
 vi.unmock("@/lib/view-skeletons");
 
 import { getViewSkeleton, VIEW_SKELETON_MAP } from "./view-skeletons";
+import { REQUIRED_SKELETON_ROUTES } from "./constants/skeleton-patterns";
 
 describe("view-skeletons", () => {
 	describe("getViewSkeleton", () => {
@@ -73,6 +74,43 @@ describe("view-skeletons", () => {
 			expect(Skeleton).toBe(VIEW_SKELETON_MAP["/reports/[id]"]);
 		});
 
+		it("returns notices list skeleton for /notices", () => {
+			const Skeleton = getViewSkeleton("/notices");
+			expect(Skeleton).toBe(VIEW_SKELETON_MAP["/notices"]);
+		});
+
+		it("returns notice details skeleton for /notices/[id]", () => {
+			const Skeleton = getViewSkeleton("/notices/notice-123");
+			expect(Skeleton).toBe(VIEW_SKELETON_MAP["/notices/[id]"]);
+		});
+
+		it("returns invoices list skeleton for /invoices", () => {
+			const Skeleton = getViewSkeleton("/invoices");
+			expect(Skeleton).toBe(VIEW_SKELETON_MAP["/invoices"]);
+		});
+
+		it("returns invoice details skeleton for /invoices/[id]", () => {
+			const Skeleton = getViewSkeleton("/invoices/inv-456");
+			expect(Skeleton).toBe(VIEW_SKELETON_MAP["/invoices/[id]"]);
+		});
+
+		it("returns cfdi review skeleton for /invoices/[id]/create-operation", () => {
+			const Skeleton = getViewSkeleton("/invoices/inv-456/create-operation");
+			expect(Skeleton).toBe(
+				VIEW_SKELETON_MAP["/invoices/[id]/create-operation"],
+			);
+		});
+
+		it("returns import list skeleton for /import", () => {
+			const Skeleton = getViewSkeleton("/import");
+			expect(Skeleton).toBe(VIEW_SKELETON_MAP["/import"]);
+		});
+
+		it("returns import detail skeleton for /import/[importId]", () => {
+			const Skeleton = getViewSkeleton("/import/import-789");
+			expect(Skeleton).toBe(VIEW_SKELETON_MAP["/import/[importId]"]);
+		});
+
 		it("returns settings skeleton for /settings", () => {
 			const Skeleton = getViewSkeleton("/settings");
 			expect(Skeleton).toBe(VIEW_SKELETON_MAP["/settings"]);
@@ -110,6 +148,24 @@ describe("view-skeletons", () => {
 			const Skeleton = VIEW_SKELETON_MAP["/clients/new"];
 			const { container } = render(<Skeleton />);
 			expect(container.firstChild).not.toBeNull();
+		});
+	});
+
+	describe("skeleton coverage", () => {
+		it("VIEW_SKELETON_MAP has entries for all required routes", () => {
+			const missingRoutes = REQUIRED_SKELETON_ROUTES.filter(
+				(route) => !(route in VIEW_SKELETON_MAP),
+			);
+			expect(missingRoutes).toEqual([]);
+		});
+
+		it("all skeleton entries are callable functions", () => {
+			for (const [route, skeleton] of Object.entries(VIEW_SKELETON_MAP)) {
+				expect(
+					typeof skeleton,
+					`Skeleton for ${route} must be a function`,
+				).toBe("function");
+			}
 		});
 	});
 });

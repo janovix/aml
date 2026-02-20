@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams, notFound } from "next/navigation";
+import { useParams, usePathname, notFound } from "next/navigation";
 import { type ReactNode } from "react";
 import { useSubscriptionSafe } from "@/lib/subscription";
 import { hasAMLAccess } from "@/lib/subscription";
@@ -8,8 +8,16 @@ import { NoAMLAccess } from "@/components/subscription";
 import { OrgSlugContext } from "@/hooks/useOrgSlug";
 import { useOrgSettings } from "@/hooks/useOrgSettings";
 import { ObligatedSubjectSetup } from "@/components/onboarding/ObligatedSubjectSetup";
-import { Skeleton } from "@/components/ui/skeleton";
 import { getAuthAppUrl } from "@/lib/auth/config";
+import { getViewSkeleton } from "@/lib/view-skeletons";
+
+/**
+ * Derive the view path (without orgSlug prefix) from the full pathname.
+ * e.g. "/acme/clients/123/edit" -> "/clients/123/edit"
+ */
+function getViewPath(pathname: string): string {
+	return pathname.replace(/^\/[^/]+/, "") || "/";
+}
 
 /**
  * Validate and extract orgSlug from useParams result
@@ -33,20 +41,15 @@ function validateOrgSlug(rawOrgSlug: string | string[] | undefined): string {
 /**
  * Guard that blocks access until the organization has configured
  * its obligated subject (RFC) and vulnerable activity.
+ * Shows the route-aware view skeleton while loading to avoid CLS.
  */
 function OrgSettingsGuard({ children }: { children: ReactNode }) {
 	const { isConfigured, isLoading, refresh } = useOrgSettings();
+	const pathname = usePathname();
 
 	if (isLoading) {
-		return (
-			<div className="flex min-h-screen items-center justify-center bg-background">
-				<div className="flex flex-col items-center gap-4">
-					<Skeleton className="h-12 w-12 rounded-full" />
-					<Skeleton className="h-4 w-48" />
-					<Skeleton className="h-4 w-32" />
-				</div>
-			</div>
-		);
+		const ViewSkeleton = getViewSkeleton(getViewPath(pathname ?? "/"));
+		return <ViewSkeleton />;
 	}
 
 	if (!isConfigured) {
@@ -66,6 +69,7 @@ function OrgSettingsGuard({ children }: { children: ReactNode }) {
 
 export default function OrgSlugLayout({ children }: { children: ReactNode }) {
 	const params = useParams();
+	const pathname = usePathname();
 	const subscription = useSubscriptionSafe();
 
 	// Defensive validation of params
@@ -81,9 +85,10 @@ export default function OrgSlugLayout({ children }: { children: ReactNode }) {
 	}
 
 	// Check AML product access (works for both Stripe and license-based subscriptions)
-	// Show loading state while subscription is being fetched
+	// Show the route-aware view skeleton while loading to avoid CLS.
 	if (subscription?.isLoading) {
-		return <NoAMLAccess isLoading />;
+		const ViewSkeleton = getViewSkeleton(getViewPath(pathname ?? "/"));
+		return <ViewSkeleton />;
 	}
 
 	// If subscription is loaded but user doesn't have AML access, show blocker

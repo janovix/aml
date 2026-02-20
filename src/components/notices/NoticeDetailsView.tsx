@@ -21,6 +21,7 @@ import { useOrgStore } from "@/lib/org-store";
 import { useJwt } from "@/hooks/useJwt";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -35,6 +36,7 @@ import { toast } from "sonner";
 import { extractErrorMessage } from "@/lib/mutations";
 import { showFetchError } from "@/lib/toast-utils";
 import { useLanguage } from "@/components/LanguageProvider";
+import { PageHeroSkeleton } from "@/components/skeletons";
 import {
 	getNoticeById,
 	generateNoticeFile,
@@ -50,6 +52,66 @@ import { cn } from "@/lib/utils";
 
 interface NoticeDetailsViewProps {
 	noticeId: string;
+}
+
+/**
+ * Skeleton for NoticeDetailsView — matches the header + 2-column card layout.
+ */
+export function NoticeDetailsSkeleton(): React.ReactElement {
+	return (
+		<div className="space-y-6">
+			{/* Custom header skeleton (notice uses its own header, not PageHero) */}
+			<div className="flex items-center justify-between">
+				<div className="flex items-center gap-4">
+					<Skeleton className="h-10 w-10 rounded-md shrink-0" />
+					<div className="space-y-2">
+						<div className="flex items-center gap-3">
+							<Skeleton className="h-8 w-48" />
+							<Skeleton className="h-6 w-24 rounded-full" />
+						</div>
+						<Skeleton className="h-4 w-40" />
+					</div>
+				</div>
+				<div className="flex items-center gap-2">
+					<Skeleton className="h-9 w-24 rounded-md" />
+					<Skeleton className="h-9 w-32 rounded-md" />
+				</div>
+			</div>
+
+			{/* 2-column cards grid */}
+			<div className="grid gap-6 @xl/main:grid-cols-2">
+				{[1, 2].map((i) => (
+					<Card key={i}>
+						<CardHeader>
+							<Skeleton className="h-6 w-40" />
+						</CardHeader>
+						<CardContent>
+							<div className="grid grid-cols-2 gap-4">
+								{[1, 2, 3, 4].map((j) => (
+									<div key={j} className="space-y-1.5">
+										<Skeleton className="h-4 w-24" />
+										<Skeleton className="h-5 w-32" />
+									</div>
+								))}
+							</div>
+						</CardContent>
+					</Card>
+				))}
+			</div>
+
+			{/* Alerts section card */}
+			<Card>
+				<CardHeader>
+					<Skeleton className="h-6 w-32" />
+				</CardHeader>
+				<CardContent className="space-y-3">
+					{[1, 2, 3].map((i) => (
+						<Skeleton key={i} className="h-12 w-full" />
+					))}
+				</CardContent>
+			</Card>
+		</div>
+	);
 }
 
 export function NoticeDetailsView({
@@ -242,11 +304,7 @@ export function NoticeDetailsView({
 	};
 
 	if (isLoading || isJwtLoading) {
-		return (
-			<div className="flex items-center justify-center py-12">
-				<Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-			</div>
-		);
+		return <NoticeDetailsSkeleton />;
 	}
 
 	if (!notice) {
