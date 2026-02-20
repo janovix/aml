@@ -12,13 +12,17 @@ import { OperationDetailsSkeleton } from "@/components/operations/OperationDetai
 import { OperationEditSkeleton } from "@/components/operations/OperationEditView";
 import { AlertDetailsSkeleton } from "@/components/alerts/AlertDetailsView";
 import { ReportDetailsSkeleton } from "@/components/reports/ReportDetailsView";
+import { NoticeDetailsSkeleton } from "@/components/notices/NoticeDetailsView";
+import { InvoiceDetailsSkeleton } from "@/components/invoices/InvoiceDetailsView";
+import { CfdiReviewSkeleton } from "@/components/invoices/CfdiReviewView";
+import { ImportDetailsSkeleton } from "@/components/import/ImportViewContent";
 import { PageHeroSkeleton } from "@/components/skeletons";
 import { TableSkeleton } from "@/components/skeletons";
 
 /**
  * Generic skeleton for list/table views (clients, operations, alerts, reports)
  */
-function ListViewSkeleton(): React.ReactElement {
+export function ListViewSkeleton(): React.ReactElement {
 	return (
 		<div className="space-y-6">
 			<PageHeroSkeleton showStats={false} showActions={true} actionCount={1} />
@@ -30,7 +34,7 @@ function ListViewSkeleton(): React.ReactElement {
 /**
  * Generic skeleton for create/edit form views
  */
-function FormViewSkeleton(): React.ReactElement {
+export function FormViewSkeleton(): React.ReactElement {
 	return (
 		<div className="space-y-6">
 			<PageHeroSkeleton
@@ -52,7 +56,13 @@ function FormViewSkeleton(): React.ReactElement {
 
 /**
  * Route pattern to skeleton component mapping
- * Patterns are matched against the pathname (without orgSlug prefix)
+ * Patterns are matched against the pathname (without orgSlug prefix).
+ *
+ * Rules for adding new routes:
+ *  - List/table views → ListViewSkeleton (or a custom skeleton)
+ *  - Create/edit form views → FormViewSkeleton (or a custom skeleton)
+ *  - Detail views → a co-located *DetailsSkeleton exported from the view file
+ *  - Dynamic segments use bracket notation: [id], [importId], etc.
  */
 export const VIEW_SKELETON_MAP: Record<string, () => React.ReactElement> = {
 	// Dashboard
@@ -81,18 +91,33 @@ export const VIEW_SKELETON_MAP: Record<string, () => React.ReactElement> = {
 	"/reports/new": FormViewSkeleton,
 	"/reports/[id]": ReportDetailsSkeleton,
 
-	// Settings and team (use generic form skeleton)
+	// Notice views
+	"/notices": ListViewSkeleton,
+	"/notices/new": FormViewSkeleton,
+	"/notices/[id]": NoticeDetailsSkeleton,
+
+	// Invoice views
+	"/invoices": ListViewSkeleton,
+	"/invoices/upload": FormViewSkeleton,
+	"/invoices/[id]": InvoiceDetailsSkeleton,
+	"/invoices/[id]/create-operation": CfdiReviewSkeleton,
+
+	// Import views
+	"/import": ListViewSkeleton,
+	"/import/[importId]": ImportDetailsSkeleton,
+
+	// Settings and team
 	"/settings": FormViewSkeleton,
 	"/team": ListViewSkeleton,
 };
 
 /**
- * Get the appropriate skeleton component for a given pathname
- * @param pathname - The pathname (e.g., "/clients/123/edit")
- * @returns The skeleton component function, or a default skeleton if no match
+ * Get the appropriate skeleton component for a given pathname.
+ * @param pathname - The view path (without orgSlug prefix), e.g. "/clients/123/edit"
+ * @returns The skeleton component function, or FormViewSkeleton as a safe default
  */
 export function getViewSkeleton(pathname: string): () => React.ReactElement {
-	// Remove leading/trailing slashes and normalize
+	// Normalize: remove leading/trailing slashes then re-add a single leading slash
 	const normalized = pathname.replace(/^\/+|\/+$/g, "");
 
 	// Try exact match first
@@ -100,11 +125,11 @@ export function getViewSkeleton(pathname: string): () => React.ReactElement {
 		return VIEW_SKELETON_MAP[`/${normalized}`];
 	}
 
-	// Try pattern matching for dynamic routes
+	// Try pattern matching for dynamic routes.
+	// Convert bracket segments like [id] or [importId] to a non-slash wildcard.
 	for (const [pattern, skeleton] of Object.entries(VIEW_SKELETON_MAP)) {
-		// Convert pattern to regex (e.g., "/clients/[id]" -> "^/clients/[^/]+$")
 		const regexPattern = pattern
-			.replace(/\[id\]/g, "[^/]+")
+			.replace(/\[[^\]]+\]/g, "[^/]+") // any [param] → one path segment
 			.replace(/\//g, "\\/");
 		const regex = new RegExp(`^${regexPattern}$`);
 

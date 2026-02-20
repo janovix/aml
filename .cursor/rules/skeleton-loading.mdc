@@ -1,0 +1,141 @@
+---
+description: Skeleton loading patterns for CLS-free views in AML
+globs:
+  - "src/app/**/*.{ts,tsx}"
+  - "src/components/**/*.{ts,tsx}"
+  - "src/lib/view-skeletons.tsx"
+---
+
+## Skeleton Loading Rule (AML)
+
+Every view must show a **structural skeleton** that matches the final rendered layout during all loading states. Never use full-page spinners (e.g. `min-h-screen` + `Loader2`). This prevents Cumulative Layout Shift (CLS).
+
+---
+
+### 1. New page routes
+
+Every new route group under `src/app/[orgSlug]/` MUST have a `loading.tsx` file that exports the matching skeleton as the default:
+
+```tsx
+// src/app/[orgSlug]/my-feature/loading.tsx
+import { MyFeatureSkeleton } from "@/components/my-feature/MyFeatureView";
+
+export default function Loading() {
+  return <MyFeatureSkeleton />;
+}
+```
+
+---
+
+### 2. New view components
+
+Every new view component that fetches data on mount MUST:
+
+1. **Export a co-located skeleton** named `<ViewName>Skeleton` from the same file:
+
+```tsx
+// src/components/my-feature/MyFeatureView.tsx
+
+export function MyFeatureSkeleton(): React.ReactElement {
+  return (
+    <ViewSkeleton hero={<PageHeroSkeleton showBackButton actionCount={2} />}>
+      {/* Mirror the real layout with Skeleton elements */}
+      <Card>
+        <CardHeader><Skeleton className="h-6 w-48" /></CardHeader>
+        <CardContent className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-5 w-full" />
+          ))}
+        </CardContent>
+      </Card>
+    </ViewSkeleton>
+  );
+}
+
+export function MyFeatureView() {
+  const { isLoading } = useData();
+  if (isLoading) return <MyFeatureSkeleton />;
+  // ...
+}
+```
+
+2. **Use `ViewSkeleton` from `@/components/skeletons`** as the outer wrapper to guarantee consistent spacing.
+
+3. **Use `PageHeroSkeleton` from `@/components/skeletons`** whenever the real view uses `PageHero`.
+
+---
+
+### 3. View-skeletons map
+
+Every new route MUST be added to `src/lib/view-skeletons.tsx` (`VIEW_SKELETON_MAP`). This map is consumed by `OrgBootstrapper` and the `[orgSlug]/layout.tsx` guards to show the correct skeleton while auth/subscription/settings are loading.
+
+```tsx
+// src/lib/view-skeletons.tsx
+import { MyFeatureSkeleton } from "@/components/my-feature/MyFeatureView";
+
+export const VIEW_SKELETON_MAP = {
+  // ...existing entries...
+  "/my-feature": ListViewSkeleton,          // list views
+  "/my-feature/new": FormViewSkeleton,      // create forms
+  "/my-feature/[id]": MyFeatureSkeleton,    // detail views
+  "/my-feature/[id]/edit": FormViewSkeleton, // edit forms
+};
+```
+
+Dynamic segments use bracket notation: `[id]`, `[importId]`, etc. The matcher handles any bracket pattern.
+
+---
+
+### 4. Generic skeleton reference
+
+| View type | Skeleton to use |
+|---|---|
+| List + table | `ListViewSkeleton` from `@/lib/view-skeletons` |
+| Create / edit form | `FormViewSkeleton` from `@/lib/view-skeletons` |
+| Detail page | A co-located `*DetailsSkeleton` exported from the view file |
+| Dashboard | `DashboardSkeleton` from `@/components/dashboard/DashboardView` |
+
+---
+
+### 5. What NOT to do
+
+```tsx
+// ❌ Full-page spinner — causes CLS
+if (isLoading) {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <Loader2 className="animate-spin" />
+    </div>
+  );
+}
+
+// ❌ Centered skeleton circles — not matching the real layout
+if (isLoading) {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <Skeleton className="h-12 w-12 rounded-full" />
+    </div>
+  );
+}
+
+// ✅ Route-aware structural skeleton
+if (isLoading) return <MyFeatureSkeleton />;
+```
+
+Button/action spinners are OK — they don't cause CLS:
+```tsx
+// ✅ Action spinner (fine — doesn't shift layout)
+<Button disabled={isSaving}>
+  {isSaving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+  Guardar
+</Button>
+```
+
+---
+
+### 6. Responsiveness
+
+Skeletons must be responsive using the same container query classes as the real components:
+- Use `@md/main`, `@lg/main`, `@xl/main`, `@2xl/main` from `DashboardLayout`'s `@container/main`
+- Grid columns should match the real layout: `grid-cols-1 @xl/main:grid-cols-2`
+- Do NOT hardcode pixel widths for skeleton content — use responsive fractions or container queries

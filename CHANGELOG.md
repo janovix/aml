@@ -1,3 +1,17 @@
+# [1.4.0-rc.49](https://github.com/janovix/aml/compare/v1.4.0-rc.48...v1.4.0-rc.49) (2026-02-20)
+
+
+### Features
+
+* implement skeleton loading patterns for AML views to prevent Cumulative Layout Shift (CLS); add loading components for various routes and enhance view skeleton structure ([157291f](https://github.com/janovix/aml/commit/157291ff5bb2409a7c2bb89dac2cd0e20e338d38))
+
+# [1.4.0-rc.48](https://github.com/janovix/aml/compare/v1.4.0-rc.47...v1.4.0-rc.48) (2026-02-20)
+
+
+### Features
+
+* enhance middleware and layout components to forward session and organization data, reducing redundant API calls ([bea8372](https://github.com/janovix/aml/commit/bea8372b238e4958a396ce854bf199ec0b662255))
+
 # [1.4.0-rc.47](https://github.com/janovix/aml/compare/v1.4.0-rc.46...v1.4.0-rc.47) (2026-02-20)
 
 

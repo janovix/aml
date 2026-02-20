@@ -41,7 +41,7 @@ interface InvoiceDetailsViewProps {
 /**
  * Skeleton component for InvoiceDetailsView
  */
-function InvoiceDetailsSkeleton(): React.ReactElement {
+export function InvoiceDetailsSkeleton(): React.ReactElement {
 	return (
 		<div className="space-y-6">
 			<PageHeroSkeleton
