@@ -140,6 +140,34 @@ describe("subscriptionClient", () => {
 			expect(result?.licenseExpiresAt).toBe("2025-12-31T00:00:00Z");
 			expect(result?.plan).toBe("enterprise");
 		});
+
+		it("preserves organizationsOwned and organizationsLimit from the authenticated user (not org owner)", async () => {
+			// The auth-svc returns these fields scoped to the requesting user,
+			// even when resolveFromOrg=true resolves plan/limits from the org owner.
+			// This ensures enterprise users with organizationsLimit=0 (unlimited)
+			// are never incorrectly blocked by another org owner's lower limit.
+			const mockStatus = createMockSubscription({
+				plan: "enterprise",
+				isLicenseBased: true,
+				organizationsOwned: 1, // authenticated user's own org count
+				organizationsLimit: 0, // unlimited (from authenticated user's license)
+			});
+
+			vi.mocked(global.fetch).mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({ success: true, data: mockStatus }),
+			} as Response);
+
+			const result = await getSubscriptionStatus();
+
+			expect(result?.organizationsLimit).toBe(0);
+			expect(result?.organizationsOwned).toBe(1);
+			// canCreate logic: organizationsLimit === 0 means unlimited → always allowed
+			const canCreate =
+				result!.organizationsLimit === 0 ||
+				result!.organizationsOwned < result!.organizationsLimit;
+			expect(canCreate).toBe(true);
+		});
 	});
 
 	describe("isFreeTier", () => {

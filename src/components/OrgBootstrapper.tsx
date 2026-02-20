@@ -366,16 +366,15 @@ export function OrgBootstrapper({
 
 			// Fetch members + JWT + subscription in parallel to eliminate sequential loading.
 			// JWT is fetched here so org settings can use it in the next step.
-			// Subscription is only fetched on initial/full sync (alreadySwitched keeps the prior value).
+			// Subscription is always re-fetched because resolveFromOrg=true resolves plan/limits
+			// from the active org's owner, which changes when switching between orgs with different owners.
 			const [allMemberResults, jwt, subscriptionResult] = await Promise.all([
 				// Members: enrich orgs with user role + provide full member list for current org
 				Promise.all(orgs.map((org) => listMembers(org.id))),
 				// JWT: needed immediately for org settings fetch below
 				tokenCache.getToken(targetOrg.id),
-				// Subscription: skip on alreadySwitched (plan doesn't change on org switch)
-				alreadySwitched
-					? Promise.resolve(null as SubscriptionStatus | null)
-					: getSubscriptionStatus().catch(() => null),
+				// Subscription: always fetch to reflect the active org's owner entitlements
+				getSubscriptionStatus().catch(() => null),
 			]);
 
 			// Fetch org settings (requires JWT) — done after the parallel step since it depends on JWT
@@ -412,11 +411,9 @@ export function OrgBootstrapper({
 				});
 			}
 
-			// Update bootstrap data — preserves prior subscription when alreadySwitched
+			// Update bootstrap data with fresh subscription and org settings
 			setBootstrapData((prev) => ({
-				subscription: alreadySwitched
-					? (prev?.subscription ?? null)
-					: subscriptionResult,
+				subscription: subscriptionResult ?? prev?.subscription ?? null,
 				orgSettings,
 			}));
 
