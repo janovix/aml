@@ -36,6 +36,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
 import type { CatalogItem } from "@/types/catalog";
+import { validateRFC } from "@/lib/utils";
 
 interface ShareholderFormDialogProps {
 	open: boolean;
@@ -81,6 +82,7 @@ export function ShareholderFormDialog({
 		shareholder?.secondLastName || "",
 	);
 	const [rfc, setRfc] = useState(shareholder?.rfc || "");
+	const [rfcError, setRfcError] = useState<string | undefined>();
 	// Nationality for physical person
 	const [personNationality, setPersonNationality] = useState(
 		shareholder?.entityType === "PERSON" ? shareholder?.nationality || "" : "",
@@ -146,6 +148,7 @@ export function ShareholderFormDialog({
 		setLastName(shareholder?.lastName || "");
 		setSecondLastName(shareholder?.secondLastName || "");
 		setRfc(shareholder?.rfc || "");
+		setRfcError(undefined);
 		setPersonNationality(
 			shareholder?.entityType === "PERSON"
 				? shareholder?.nationality || ""
@@ -181,6 +184,13 @@ export function ShareholderFormDialog({
 			if (!firstName.trim() || !lastName.trim()) {
 				toast.error("Nombre y apellido son requeridos");
 				return;
+			}
+			if (rfc.trim()) {
+				const rfcValidation = validateRFC(rfc, "physical");
+				if (!rfcValidation.isValid) {
+					setRfcError(rfcValidation.error);
+					return;
+				}
 			}
 		} else {
 			if (!businessName.trim()) {
@@ -410,10 +420,25 @@ export function ShareholderFormDialog({
 										<Input
 											id="rfc"
 											value={rfc}
-											onChange={(e) => setRfc(e.target.value.toUpperCase())}
+											onChange={(e) => {
+												const val = e.target.value.toUpperCase();
+												setRfc(val);
+												if (val.trim()) {
+													const result = validateRFC(val, "physical");
+													setRfcError(
+														result.isValid ? undefined : result.error,
+													);
+												} else {
+													setRfcError(undefined);
+												}
+											}}
 											placeholder="RFC"
 											maxLength={13}
+											className={rfcError ? "border-destructive" : ""}
 										/>
+										{rfcError && (
+											<p className="text-xs text-destructive">{rfcError}</p>
+										)}
 									</div>
 								</div>
 								<div className="space-y-2">
@@ -546,7 +571,7 @@ export function ShareholderFormDialog({
 						{/* Common Fields */}
 						<div className="border-t pt-4 space-y-4">
 							<h4 className="text-sm font-medium">Participación y Contacto</h4>
-							<div className="grid grid-cols-3 gap-4">
+							<div className="grid grid-cols-[1fr_2fr_2fr] gap-4">
 								<div className="space-y-2">
 									<Label htmlFor="ownershipPercentage">
 										Participación (%) *

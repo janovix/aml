@@ -86,6 +86,12 @@ interface CatalogSelectorProps {
 	 * stores the raw text value without modifying the catalog.
 	 */
 	allowCustomValue?: boolean;
+	/**
+	 * Pre-resolved display name from server (e.g., from resolvedNames).
+	 * When provided, shows the name immediately while loading the full catalog item.
+	 * Prevents flashing raw codes during initial render.
+	 */
+	resolvedName?: string;
 }
 
 function Spinner({
@@ -337,6 +343,7 @@ export function CatalogSelector({
 	vaCode,
 	excludeAutomatable,
 	allowCustomValue = false,
+	resolvedName,
 }: CatalogSelectorProps): React.ReactElement {
 	const labelId = useId();
 	const listRef = useRef<HTMLDivElement>(null);
@@ -347,9 +354,9 @@ export function CatalogSelector({
 	const resolvedType = typeLabel ?? label?.toLowerCase() ?? "opción";
 	const isControlled = value !== undefined;
 
-	// Initialize selectedLabel as empty - don't use value directly as it may be an ID
+	// Initialize selectedLabel with resolvedName if provided, empty otherwise
 	// The label will be resolved once items are loaded and matched
-	const [selectedLabel, setSelectedLabel] = useState("");
+	const [selectedLabel, setSelectedLabel] = useState(resolvedName || "");
 	const [selectedOption, setSelectedOption] = useState<CatalogItem | null>(
 		null,
 	);
@@ -406,6 +413,13 @@ export function CatalogSelector({
 			fetchedByIdForValueRef.current = undefined;
 		}
 	}, [value, lastSearchedValue]);
+
+	// Effect to update selectedLabel if resolvedName changes and we haven't found an item yet
+	useEffect(() => {
+		if (resolvedName && !selectedOption) {
+			setSelectedLabel(resolvedName);
+		}
+	}, [resolvedName, selectedOption]);
 
 	// Helper to get the value from an option
 	const getOptionValueResolved = (option: CatalogItem): string => {

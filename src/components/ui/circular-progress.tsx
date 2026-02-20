@@ -37,6 +37,24 @@ export function CircularProgress({
 
 	const colorClass = getColor();
 
+	// When complete, skip the ring entirely and render a standalone check icon
+	if (isComplete && showCheckWhenComplete) {
+		return (
+			<div
+				className={cn("inline-flex items-center justify-center", className)}
+				style={{ width: size, height: size }}
+			>
+				<div className="rounded-full bg-green-500 p-2.5">
+					<Check
+						style={{ width: size * 0.42, height: size * 0.42 }}
+						className="text-white"
+						strokeWidth={3}
+					/>
+				</div>
+			</div>
+		);
+	}
+
 	return (
 		<div
 			className={cn(
@@ -71,15 +89,9 @@ export function CircularProgress({
 			</svg>
 			{/* Center content */}
 			<div className="absolute inset-0 flex items-center justify-center">
-				{isComplete && showCheckWhenComplete ? (
-					<div className={cn("rounded-full bg-green-500 p-2")}>
-						<Check className="h-5 w-5 text-white" strokeWidth={3} />
-					</div>
-				) : (
-					<span className={cn("text-sm font-semibold", colorClass)}>
-						{percentage}%
-					</span>
-				)}
+				<span className={cn("text-sm font-semibold", colorClass)}>
+					{percentage}%
+				</span>
 			</div>
 		</div>
 	);

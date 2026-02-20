@@ -917,6 +917,7 @@ export function ClientEditView({
 											tier={fieldTiers.countryCode}
 											value={formData.nationality}
 											searchPlaceholder={t("clientSearchCountry")}
+											resolvedName={client?.resolvedNames?.nationality}
 											onChange={(option) => {
 												handleInputChange("nationality", option?.id ?? "");
 												handleInputChange(
@@ -936,6 +937,7 @@ export function ClientEditView({
 											tier={fieldTiers.countryCode}
 											value={formData.countryCode}
 											searchPlaceholder={t("clientSearchCountry")}
+											resolvedName={client?.resolvedNames?.countryCode}
 											onChange={(option) => {
 												handleInputChange(
 													"countryCode",
@@ -953,6 +955,7 @@ export function ClientEditView({
 										tier={fieldTiers.economicActivityCode}
 										value={formData.economicActivityCode}
 										searchPlaceholder="Buscar actividad económica..."
+										resolvedName={client?.resolvedNames?.economicActivityCode}
 										onValueChange={(value) =>
 											handleInputChange("economicActivityCode", value ?? "")
 										}
@@ -994,80 +997,90 @@ export function ClientEditView({
 									</p>
 								</CardHeader>
 								<CardContent className="space-y-4">
-									<div className="grid grid-cols-1 @xl/main:grid-cols-2 gap-4">
-										<div className="space-y-2">
-											<LabelWithInfo
-												htmlFor="gender"
-												description="Género del cliente"
-												tier={fieldTiers.gender}
-											>
-												Género
-											</LabelWithInfo>
-											<Select
-												value={formData.gender || undefined}
-												onValueChange={(value) =>
-													handleInputChange("gender", value)
-												}
-											>
-												<SelectTrigger id="gender">
-													<SelectValue placeholder="Seleccionar género" />
-												</SelectTrigger>
-												<SelectContent>
-													<SelectItem value="M">Masculino</SelectItem>
-													<SelectItem value="F">Femenino</SelectItem>
-													<SelectItem value="OTHER">Otro</SelectItem>
-												</SelectContent>
-											</Select>
-										</div>
-										<div className="space-y-2">
-											<LabelWithInfo
-												htmlFor="maritalStatus"
-												description="Estado civil del cliente"
-												tier={fieldTiers.maritalStatus}
-											>
-												Estado civil
-											</LabelWithInfo>
-											<Select
-												value={formData.maritalStatus || undefined}
-												onValueChange={(value) =>
-													handleInputChange("maritalStatus", value)
-												}
-											>
-												<SelectTrigger id="maritalStatus">
-													<SelectValue placeholder="Seleccionar estado civil" />
-												</SelectTrigger>
-												<SelectContent>
-													<SelectItem value="SINGLE">Soltero/a</SelectItem>
-													<SelectItem value="MARRIED">Casado/a</SelectItem>
-													<SelectItem value="DIVORCED">Divorciado/a</SelectItem>
-													<SelectItem value="WIDOWED">Viudo/a</SelectItem>
-													<SelectItem value="OTHER">Otro</SelectItem>
-												</SelectContent>
-											</Select>
-										</div>
-									</div>
-									<div className="space-y-2">
-										<LabelWithInfo
-											htmlFor="occupation"
-											description="Ocupación o profesión del cliente"
-											tier={fieldTiers.occupation}
-										>
-											Ocupación / Profesión
-										</LabelWithInfo>
-										<Input
-											id="occupation"
-											value={formData.occupation}
-											onChange={(e) =>
-												handleInputChange("occupation", e.target.value)
-											}
-											placeholder="Ej. Empresario, Abogado, Médico"
-										/>
-									</div>
+									{formData.personType === "physical" && (
+										<>
+											<div className="grid grid-cols-1 @xl/main:grid-cols-2 gap-4">
+												<div className="space-y-2">
+													<LabelWithInfo
+														htmlFor="gender"
+														description="Género del cliente"
+														tier={fieldTiers.gender}
+													>
+														Género
+													</LabelWithInfo>
+													<Select
+														value={formData.gender || undefined}
+														onValueChange={(value) =>
+															handleInputChange("gender", value)
+														}
+													>
+														<SelectTrigger id="gender">
+															<SelectValue placeholder="Seleccionar género" />
+														</SelectTrigger>
+														<SelectContent>
+															<SelectItem value="M">Masculino</SelectItem>
+															<SelectItem value="F">Femenino</SelectItem>
+															<SelectItem value="OTHER">Otro</SelectItem>
+														</SelectContent>
+													</Select>
+												</div>
+												<div className="space-y-2">
+													<LabelWithInfo
+														htmlFor="maritalStatus"
+														description="Estado civil del cliente"
+														tier={fieldTiers.maritalStatus}
+													>
+														Estado civil
+													</LabelWithInfo>
+													<Select
+														value={formData.maritalStatus || undefined}
+														onValueChange={(value) =>
+															handleInputChange("maritalStatus", value)
+														}
+													>
+														<SelectTrigger id="maritalStatus">
+															<SelectValue placeholder="Seleccionar estado civil" />
+														</SelectTrigger>
+														<SelectContent>
+															<SelectItem value="SINGLE">Soltero/a</SelectItem>
+															<SelectItem value="MARRIED">Casado/a</SelectItem>
+															<SelectItem value="DIVORCED">
+																Divorciado/a
+															</SelectItem>
+															<SelectItem value="WIDOWED">Viudo/a</SelectItem>
+															<SelectItem value="OTHER">Otro</SelectItem>
+														</SelectContent>
+													</Select>
+												</div>
+											</div>
+											<div className="space-y-2">
+												<LabelWithInfo
+													htmlFor="occupation"
+													description="Ocupación o profesión del cliente"
+													tier={fieldTiers.occupation}
+												>
+													Ocupación / Profesión
+												</LabelWithInfo>
+												<Input
+													id="occupation"
+													value={formData.occupation}
+													onChange={(e) =>
+														handleInputChange("occupation", e.target.value)
+													}
+													placeholder="Ej. Empresario, Abogado, Médico"
+												/>
+											</div>
+										</>
+									)}
 									<div className="grid grid-cols-1 @xl/main:grid-cols-2 gap-4">
 										<div className="space-y-2">
 											<LabelWithInfo
 												htmlFor="sourceOfFunds"
-												description="De dónde provienen los recursos utilizados en la operación"
+												description={
+													formData.personType === "physical"
+														? "De dónde provienen los recursos utilizados en la operación"
+														: "De dónde provienen los recursos de la empresa utilizados en la operación"
+												}
 												tier={fieldTiers.sourceOfFunds}
 											>
 												Origen de los recursos
@@ -1078,13 +1091,21 @@ export function ClientEditView({
 												onChange={(e) =>
 													handleInputChange("sourceOfFunds", e.target.value)
 												}
-												placeholder="Ej. Salario, Inversiones, Herencia"
+												placeholder={
+													formData.personType === "physical"
+														? "Ej. Salario, Inversiones, Herencia"
+														: "Ej. Actividad empresarial, Ventas, Prestación de servicios"
+												}
 											/>
 										</div>
 										<div className="space-y-2">
 											<LabelWithInfo
 												htmlFor="sourceOfWealth"
-												description="Origen general del patrimonio del cliente"
+												description={
+													formData.personType === "physical"
+														? "Origen general del patrimonio del cliente"
+														: "Origen general del patrimonio de la empresa"
+												}
 												tier={fieldTiers.sourceOfWealth}
 											>
 												Origen del patrimonio
@@ -1095,7 +1116,11 @@ export function ClientEditView({
 												onChange={(e) =>
 													handleInputChange("sourceOfWealth", e.target.value)
 												}
-												placeholder="Ej. Actividad empresarial, Profesión"
+												placeholder={
+													formData.personType === "physical"
+														? "Ej. Actividad empresarial, Profesión"
+														: "Ej. Capital social, Utilidades retenidas"
+												}
 											/>
 										</div>
 									</div>
@@ -1320,6 +1345,7 @@ export function ClientEditView({
 										onReferenceChange={(value) =>
 											handleInputChange("reference", value)
 										}
+										resolvedStateCodeName={client?.resolvedNames?.stateCode}
 										showNeighborhood={true}
 										showReference={true}
 									/>

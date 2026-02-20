@@ -85,13 +85,16 @@ export function useImportSSE(opts: UseImportSSEOptions): UseImportSSEResult {
 		eventSource.addEventListener("connected", (event) => {
 			setConnectionStatus("connected");
 			const data = JSON.parse((event as MessageEvent).data);
+			// Use actual counts from the server so the indicator reflects real
+			// progress immediately (e.g. reconnects, or navigating to an import
+			// that is already partially complete).
 			setProgress({
 				status: data.status,
-				processedRows: 0,
-				totalRows: 0,
-				successCount: 0,
-				warningCount: 0,
-				errorCount: 0,
+				processedRows: data.processedRows ?? 0,
+				totalRows: data.totalRows ?? 0,
+				successCount: data.successCount ?? 0,
+				warningCount: data.warningCount ?? 0,
+				errorCount: data.errorCount ?? 0,
 			});
 		});
 

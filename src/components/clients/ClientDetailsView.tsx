@@ -5,7 +5,6 @@ import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import {
 	Accordion,
 	AccordionContent,
@@ -33,6 +32,7 @@ import {
 	Loader2,
 	Activity,
 	Link2,
+	ChevronDown,
 } from "lucide-react";
 import type { Client } from "../../types/client";
 import type { Gender, MaritalStatus } from "../../types/client";
@@ -112,6 +112,129 @@ type AdverseMediaResultShape = {
 	findings?: { es?: string; en?: string };
 	sources?: unknown[];
 };
+
+interface PepOfficialRecord {
+	id: string;
+	nombre: string;
+	denominacion: string;
+	areaadscripcion: string;
+	sujetoobligado: string;
+	entidadfederativa: string;
+	periodoreporta: string;
+	informacionPrincipal?: {
+		telefono?: string;
+		correo?: string;
+		direccion?: string;
+	};
+}
+
+interface PepOfficialResultShape {
+	query?: string;
+	total_results?: number;
+	results?: PepOfficialRecord[];
+	results_sent?: number;
+}
+
+interface PepAiResultShape {
+	probability?: number;
+	summary?: { es?: string; en?: string };
+	sources?: string[];
+}
+
+interface Sat69bPhase {
+	satNotice: string | null;
+	satDate: string | null;
+	dofNotice: string | null;
+	dofDate: string | null;
+}
+
+interface Sat69bMatch {
+	target: {
+		id: string;
+		rfc: string;
+		taxpayerName: string;
+		taxpayerStatus: string;
+		presumptionPhase: Sat69bPhase | null;
+		rebuttalPhase: Sat69bPhase | null;
+		definitivePhase: Sat69bPhase | null;
+		favorablePhase: Sat69bPhase | null;
+	};
+	score: number;
+	breakdown: {
+		vectorScore: number;
+		nameScore: number;
+		metaScore: number;
+		identifierMatch: boolean;
+	};
+}
+
+interface Sat69bResultShape {
+	matches: Sat69bMatch[];
+	count: number;
+}
+
+interface OfacMatch {
+	target: {
+		id: string;
+		partyType: string;
+		primaryName: string;
+		aliases: string[] | null;
+		birthDate: string | null;
+		birthPlace: string | null;
+		addresses: string[] | null;
+		identifiers: Array<{
+			type?: string;
+			number?: string;
+			country?: string;
+		}> | null;
+		remarks: string | null;
+		sourceList: string;
+	};
+	score: number;
+	breakdown: {
+		vectorScore: number;
+		nameScore: number;
+		metaScore: number;
+		identifierMatch: boolean;
+	};
+}
+
+interface OfacResultShape {
+	matches: OfacMatch[];
+	count: number;
+}
+
+interface UnMatch {
+	target: {
+		id: string;
+		partyType: string;
+		primaryName: string;
+		aliases: string[] | null;
+		birthDate: string | null;
+		birthPlace: string | null;
+		gender: string | null;
+		nationalities: string[] | null;
+		addresses: string[] | null;
+		identifiers: Array<{ type?: string; number?: string }> | null;
+		designations: string[] | null;
+		remarks: string | null;
+		unListType: string;
+		referenceNumber: string | null;
+		listedOn: string | null;
+	};
+	score: number;
+	breakdown: {
+		vectorScore: number;
+		nameScore: number;
+		metaScore: number;
+		identifierMatch: boolean;
+	};
+}
+
+interface UnResultShape {
+	matches: UnMatch[];
+	count: number;
+}
 
 const WATCHLIST_STATUS_CONFIG: Record<
 	WatchlistStatus,
@@ -226,6 +349,26 @@ function ScreeningSourceRow({
 				</p>
 			)}
 		</div>
+	);
+}
+
+function ScoreBadge({ score }: { score: number }) {
+	const pct = Math.round(score * 100);
+	const cls =
+		pct >= 80
+			? "border-red-200 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800"
+			: pct >= 50
+				? "border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800"
+				: "border-green-200 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800";
+	return (
+		<span
+			className={cn(
+				"inline-flex items-center text-xs px-1.5 py-0.5 rounded border font-medium tabular-nums",
+				cls,
+			)}
+		>
+			{pct}% sim.
+		</span>
 	);
 }
 
@@ -347,6 +490,10 @@ export function ClientDetailsView({
 	>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [openAccordions, setOpenAccordions] = useState<string[]>([]);
+	const [pepRecordsExpanded, setPepRecordsExpanded] = useState(false);
+	const [ofacExpanded, setOfacExpanded] = useState(false);
+	const [unExpanded, setUnExpanded] = useState(false);
+	const [sat69bExpanded, setSat69bExpanded] = useState(false);
 
 	// Real-time watchlist screening data (populated once client is loaded)
 	const {
@@ -452,8 +599,11 @@ export function ClientDetailsView({
 		});
 	};
 
-	// Calculate KYC status
-	const kycStatus = calculateKYCStatus(client);
+	// Calculate KYC status — pass documents and BCs so they're included in the percentage
+	const kycStatus = calculateKYCStatus(client, {
+		documents,
+		beneficialControllers,
+	});
 	const needsUBOs = requiresUBOs(client.personType);
 	const needsIdDocument = client.personType === "physical";
 
@@ -533,65 +683,8 @@ export function ClientDetailsView({
 			{/* KYC Status Overview Card */}
 			<Card>
 				<CardContent className="p-6">
-					<div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-						{/* Circular Progress */}
-						<div className="flex flex-col items-center gap-2">
-							<CircularProgress
-								percentage={kycStatus.overallPercentage}
-								size={80}
-								strokeWidth={8}
-							/>
-							<p className="text-xs text-muted-foreground font-medium">
-								{t("clientKycStatus")}
-							</p>
-						</div>
-
-						{/* Status Details */}
-						<div className="flex-1 space-y-3">
-							<div>
-								<h3 className="text-lg font-semibold mb-1">
-									{kycStatus.isComplete
-										? t("clientKycComplete")
-										: t("clientKycIncomplete")}
-								</h3>
-								<p className="text-sm text-muted-foreground">
-									{kycStatus.totalCompleted} {t("clientFieldsOf")}{" "}
-									{kycStatus.totalRequired} {t("clientFieldsCompleted")}
-								</p>
-							</div>
-
-							{/* Progress bar */}
-							<div className="space-y-2">
-								<Progress
-									value={kycStatus.overallPercentage}
-									className={cn(
-										"h-2",
-										kycStatus.isComplete
-											? "[&>div]:bg-green-500"
-											: "[&>div]:bg-yellow-500",
-									)}
-								/>
-								<div className="flex items-center justify-between text-xs">
-									<span className="text-muted-foreground">
-										{kycStatus.overallPercentage}
-										{t("clientPercentComplete")}
-									</span>
-									{!kycStatus.isComplete && (
-										<Button
-											variant="link"
-											size="sm"
-											className="h-auto p-0 text-xs"
-											onClick={() => navigateToEdit("personal")}
-										>
-											{t("clientCompleteInfo")}
-											<ExternalLink className="h-3 w-3 ml-1" />
-										</Button>
-									)}
-								</div>
-							</div>
-						</div>
-
-						{/* Person Type Badge */}
+					<div className="flex flex-col sm:flex-row items-center gap-6 sm:justify-around">
+						{/* Person Type Badge — comes first */}
 						<div
 							className={`flex items-center gap-3 rounded-xl border ${personTypeStyle.borderColor} ${personTypeStyle.bgColor} p-4`}
 						>
@@ -609,6 +702,48 @@ export function ClientDetailsView({
 								<p className="text-xs text-muted-foreground">
 									{personTypeStyle.description}
 								</p>
+							</div>
+						</div>
+
+						<div className="flex items-center gap-8">
+							{/* Circular Progress */}
+							<div className="flex flex-col items-center gap-2">
+								<CircularProgress
+									percentage={kycStatus.overallPercentage}
+									size={80}
+									strokeWidth={8}
+								/>
+								<p className="text-xs text-muted-foreground font-medium">
+									{t("clientKycStatus")}
+								</p>
+							</div>
+
+							{/* Status Details */}
+							<div className="space-y-1">
+								<h3 className="text-lg font-semibold">
+									{kycStatus.isComplete
+										? t("clientKycComplete")
+										: t("clientKycIncomplete")}
+								</h3>
+								<p className="text-sm text-muted-foreground">
+									{kycStatus.totalCompleted} {t("clientFieldsOf")}{" "}
+									{kycStatus.totalRequired} {t("clientFieldsCompleted")}
+								</p>
+								<p className="text-xs text-muted-foreground">
+									{kycStatus.overallPercentage}
+									{t("clientPercentComplete")}
+								</p>
+								{!kycStatus.isComplete && (
+									<Button
+										variant="link"
+										size="sm"
+										className="h-auto p-0 text-xs"
+										onClick={() => navigateToEdit("personal")}
+									>
+										{t("clientCompleteInfo")}
+										<ExternalLink className="h-3 w-3 ml-1" />
+									</Button>
+								)}
 							</div>
 						</div>
 					</div>
@@ -1058,108 +1193,120 @@ export function ClientDetailsView({
 					</AccordionContent>
 				</AccordionItem>
 
-				{/* KYC Enhanced Information (Physical persons only) */}
-				{client.personType === "physical" && (
-					<AccordionItem
-						value="kyc-info"
-						id="kyc-info"
-						className="border rounded-lg overflow-hidden bg-card shadow-sm"
-					>
-						<AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50">
-							<div className="flex items-center justify-between w-full pr-4">
-								<div className="flex items-center gap-3">
-									<Briefcase className="h-5 w-5" />
-									<span className="font-semibold">
-										{t("clientKycAdditionalInfo")}
-									</span>
-								</div>
-								<div className="flex items-center gap-2">
-									{(() => {
-										const sectionStatus = getSectionStatus("kycInfo");
-										if (!sectionStatus) return null;
-										return sectionStatus.isComplete ? (
-											<CheckCircle2 className="h-5 w-5 text-green-500" />
-										) : (
-											<AlertTriangle className="h-5 w-5 text-amber-500" />
-										);
-									})()}
-								</div>
+				{/* KYC Enhanced Information */}
+				<AccordionItem
+					value="kyc-info"
+					id="kyc-info"
+					className="border rounded-lg overflow-hidden bg-card shadow-sm"
+				>
+					<AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50">
+						<div className="flex items-center justify-between w-full pr-4">
+							<div className="flex items-center gap-3">
+								<Briefcase className="h-5 w-5" />
+								<span className="font-semibold">
+									{t("clientKycAdditionalInfo")}
+								</span>
 							</div>
-						</AccordionTrigger>
-						<AccordionContent className="px-6 pb-4">
-							<dl className="grid grid-cols-1 @xl/main:grid-cols-2 gap-6">
-								<FieldDisplay
-									label={t("clientGender")}
-									value={
-										client.gender ? t(GENDER_LABELS[client.gender]) : undefined
-									}
-									isMissing={!client.gender}
-									tier={tierMap.gender}
-								/>
-								<FieldDisplay
-									label={t("clientMaritalStatus")}
-									value={
-										client.maritalStatus
-											? t(MARITAL_STATUS_LABELS[client.maritalStatus])
-											: undefined
-									}
-									isMissing={!client.maritalStatus}
-									tier={tierMap.maritalStatus}
-								/>
-								<FieldDisplay
-									label={t("clientOccupationProfession")}
-									value={client.occupation}
-									isMissing={!client.occupation}
-									tier={tierMap.occupation}
-								/>
-								<FieldDisplay
-									label={t("clientResourceOrigin")}
-									value={client.sourceOfFunds}
-									isMissing={!client.sourceOfFunds}
-									tier={tierMap.sourceOfFunds}
-								/>
-								<FieldDisplay
-									label={t("clientPatrimonyOrigin")}
-									value={client.sourceOfWealth}
-									tier={tierMap.sourceOfWealth}
-								/>
-							</dl>
-
-							{(() => {
-								const sectionStatus = getSectionStatus("kycInfo");
-								if (sectionStatus && !sectionStatus.isComplete) {
-									return (
-										<div className="mt-4 pt-4 border-t">
-											<Button
-												variant="outline"
-												size="sm"
-												onClick={() => navigateToEdit("personal", "kyc-info")}
-											>
-												<Edit className="h-4 w-4 mr-2" />
-												{t("clientCompleteKyc")}
-											</Button>
-										</div>
+							<div className="flex items-center gap-2">
+								{(() => {
+									const sectionStatus = getSectionStatus("kycInfo");
+									if (!sectionStatus) return null;
+									return sectionStatus.isComplete ? (
+										<CheckCircle2 className="h-5 w-5 text-green-500" />
+									) : (
+										<AlertTriangle className="h-5 w-5 text-amber-500" />
 									);
-								}
-								return null;
-							})()}
-
-							{/* Edit button - always visible */}
-							<div className="mt-4 pt-4 border-t flex justify-end">
-								<Button
-									variant="ghost"
-									size="sm"
-									onClick={() => navigateToEdit("personal", "kyc-info")}
-								>
-									<Pencil className="h-4 w-4 mr-2" />
-									Editar
-								</Button>
+								})()}
 							</div>
-						</AccordionContent>
-					</AccordionItem>
-				)}
+						</div>
+					</AccordionTrigger>
+					<AccordionContent className="px-6 pb-4">
+						<dl className="grid grid-cols-1 @xl/main:grid-cols-2 gap-6">
+							{client.personType === "physical" && (
+								<>
+									<FieldDisplay
+										label={t("clientGender")}
+										value={
+											client.gender
+												? t(GENDER_LABELS[client.gender])
+												: undefined
+										}
+										isMissing={!client.gender}
+										tier={tierMap.gender}
+									/>
+									<FieldDisplay
+										label={t("clientMaritalStatus")}
+										value={
+											client.maritalStatus
+												? t(MARITAL_STATUS_LABELS[client.maritalStatus])
+												: undefined
+										}
+										isMissing={!client.maritalStatus}
+										tier={tierMap.maritalStatus}
+									/>
+									<FieldDisplay
+										label={t("clientOccupationProfession")}
+										value={client.occupation}
+										isMissing={!client.occupation}
+										tier={tierMap.occupation}
+									/>
+								</>
+							)}
+							<FieldDisplay
+								label={
+									client.personType === "physical"
+										? t("clientResourceOrigin")
+										: "Origen de los recursos de la empresa"
+								}
+								value={client.sourceOfFunds}
+								isMissing={!client.sourceOfFunds}
+								tier={tierMap.sourceOfFunds}
+							/>
+							<FieldDisplay
+								label={
+									client.personType === "physical"
+										? t("clientPatrimonyOrigin")
+										: "Origen del patrimonio de la empresa"
+								}
+								value={client.sourceOfWealth}
+								tier={tierMap.sourceOfWealth}
+							/>
+						</dl>
 
-				{/* PEP Status */}
+						{(() => {
+							const sectionStatus = getSectionStatus("kycInfo");
+							if (sectionStatus && !sectionStatus.isComplete) {
+								return (
+									<div className="mt-4 pt-4 border-t">
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={() => navigateToEdit("personal", "kyc-info")}
+										>
+											<Edit className="h-4 w-4 mr-2" />
+											{t("clientCompleteKyc")}
+										</Button>
+									</div>
+								);
+							}
+							return null;
+						})()}
+
+						{/* Edit button - always visible */}
+						<div className="mt-4 pt-4 border-t flex justify-end">
+							<Button
+								variant="ghost"
+								size="sm"
+								onClick={() => navigateToEdit("personal", "kyc-info")}
+							>
+								<Pencil className="h-4 w-4 mr-2" />
+								Editar
+							</Button>
+						</div>
+					</AccordionContent>
+				</AccordionItem>
+
+				{/* Regulatory Screening (PEP, OFAC, UN, SAT69b, Adverse Media) */}
 				<AccordionItem
 					value="pep-info"
 					id="pep-info"
@@ -1221,6 +1368,48 @@ export function ClientDetailsView({
 								language === "es"
 									? adverseResult?.findings?.es
 									: adverseResult?.findings?.en;
+
+							const ofacResultRaw = src?.ofacResult as
+								| OfacResultShape
+								| null
+								| undefined;
+							const ofacMatches: OfacMatch[] = ofacResultRaw?.matches ?? [];
+
+							const unResultRaw = src?.unResult as
+								| UnResultShape
+								| null
+								| undefined;
+							const unMatches: UnMatch[] = unResultRaw?.matches ?? [];
+
+							const sat69bResultRaw = src?.sat69bResult as
+								| Sat69bResultShape
+								| null
+								| undefined;
+							const sat69bMatches: Sat69bMatch[] =
+								sat69bResultRaw?.matches ?? [];
+
+							const pepOfficialResultRaw = src?.pepOfficialResult as
+								| PepOfficialResultShape
+								| null
+								| undefined;
+							const pepOfficialRecords: PepOfficialRecord[] =
+								pepOfficialResultRaw?.results ?? [];
+							const pepOfficialCfg =
+								WATCHLIST_STATUS_CONFIG[
+									(src?.pepOfficialStatus as WatchlistStatus) ?? "pending"
+								] ?? WATCHLIST_STATUS_CONFIG.pending;
+							const pepAiResult = src?.pepAiResult as
+								| PepAiResultShape
+								| null
+								| undefined;
+							const pepAiCfg =
+								WATCHLIST_STATUS_CONFIG[
+									(src?.pepAiStatus as WatchlistStatus) ?? "pending"
+								] ?? WATCHLIST_STATUS_CONFIG.pending;
+							const pepAiSummary =
+								language === "es"
+									? pepAiResult?.summary?.es
+									: pepAiResult?.summary?.en;
 
 							const hasListMatches =
 								(src?.ofacCount ?? 0) > 0 ||
@@ -1302,61 +1491,731 @@ export function ClientDetailsView({
 									{/* Per-source rows */}
 									{(src ?? client.screeningResult) && (
 										<div className="rounded-lg border overflow-hidden divide-y">
-											<ScreeningSourceRow
-												label="OFAC"
-												status={
-													src?.ofacStatus ??
-													(client.ofacSanctioned ? "completed" : "pending")
-												}
-												count={
-													src
-														? (src.ofacCount ?? 0)
-														: client.ofacSanctioned
-															? 1
-															: 0
-												}
-												matchLabel="sanción"
-											/>
-											<ScreeningSourceRow
-												label="Naciones Unidas (UNSC)"
-												status={
-													src?.unStatus ??
-													(client.unscSanctioned ? "completed" : "pending")
-												}
-												count={
-													src
-														? (src.unCount ?? 0)
-														: client.unscSanctioned
-															? 1
-															: 0
-												}
-												matchLabel="sanción"
-											/>
-											<ScreeningSourceRow
-												label="SAT 69-B (México)"
-												status={
-													src?.sat69bStatus ??
-													(client.sat69bListed ? "completed" : "pending")
-												}
-												count={
-													src
-														? (src.sat69bCount ?? 0)
-														: client.sat69bListed
-															? 1
-															: 0
-												}
-												matchLabel="registro"
-											/>
-											<ScreeningSourceRow
-												label="PEP Oficial (Transparencia)"
-												status={src?.pepOfficialStatus ?? "pending"}
-												count={src?.pepOfficialCount ?? 0}
-												matchLabel="registro PEP"
-											/>
-											<ScreeningSourceRow
-												label="Detección PEP por IA"
-												status={src?.pepAiStatus ?? "pending"}
-											/>
+											{/* OFAC — expandable matches */}
+											<div className="bg-background">
+												<div className="py-3 px-4">
+													<div className="flex items-center gap-2 flex-wrap">
+														<span className="text-sm font-medium flex-1">
+															OFAC
+														</span>
+														<span
+															className={cn(
+																"inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full border font-medium",
+																(
+																	WATCHLIST_STATUS_CONFIG[
+																		(src?.ofacStatus as WatchlistStatus) ??
+																			"pending"
+																	] ?? WATCHLIST_STATUS_CONFIG.pending
+																).badgeClass,
+															)}
+														>
+															<span
+																className={cn(
+																	"h-1.5 w-1.5 rounded-full shrink-0",
+																	(
+																		WATCHLIST_STATUS_CONFIG[
+																			(src?.ofacStatus as WatchlistStatus) ??
+																				"pending"
+																		] ?? WATCHLIST_STATUS_CONFIG.pending
+																	).dotClass,
+																)}
+															/>
+															{
+																(
+																	WATCHLIST_STATUS_CONFIG[
+																		(src?.ofacStatus as WatchlistStatus) ??
+																			"pending"
+																	] ?? WATCHLIST_STATUS_CONFIG.pending
+																).label
+															}
+														</span>
+														{(() => {
+															const cnt = src
+																? (src.ofacCount ?? 0)
+																: client.ofacSanctioned
+																	? 1
+																	: 0;
+															return cnt > 0 ? (
+																<span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-red-200 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800 font-medium">
+																	<AlertTriangle className="h-3 w-3" />
+																	{cnt} {cnt === 1 ? "sanción" : "sanciones"}
+																</span>
+															) : null;
+														})()}
+														{ofacMatches.length > 0 && (
+															<button
+																type="button"
+																onClick={() => setOfacExpanded((v) => !v)}
+																className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+															>
+																{ofacExpanded ? "Ocultar" : "Ver detalle"}
+																<ChevronDown
+																	className={cn(
+																		"h-3 w-3 transition-transform duration-200",
+																		ofacExpanded && "rotate-180",
+																	)}
+																/>
+															</button>
+														)}
+													</div>
+												</div>
+												{ofacExpanded && ofacMatches.length > 0 && (
+													<div className="border-t px-4 py-3 bg-muted/20">
+														<div className="max-h-80 overflow-y-auto space-y-2 pr-1">
+															{ofacMatches.map((match, idx) => (
+																<div
+																	key={match.target.id ?? idx}
+																	className="rounded-md border bg-background p-3 space-y-1.5 text-xs"
+																>
+																	<div className="flex items-start justify-between gap-2">
+																		<p className="font-semibold text-sm leading-snug">
+																			{match.target.primaryName}
+																		</p>
+																		<div className="flex items-center gap-1 shrink-0">
+																			<ScoreBadge score={match.score} />
+																			<span className="text-xs text-muted-foreground bg-muted rounded px-1.5 py-0.5 tabular-nums">
+																				{idx + 1}/{ofacMatches.length}
+																			</span>
+																		</div>
+																	</div>
+																	<div className="flex flex-wrap gap-1">
+																		<span className="text-xs px-1.5 py-0.5 rounded bg-muted border text-muted-foreground">
+																			{match.target.partyType}
+																		</span>
+																		<span className="text-xs px-1.5 py-0.5 rounded bg-muted border text-muted-foreground">
+																			{match.target.sourceList}
+																		</span>
+																		{match.breakdown.identifierMatch && (
+																			<span className="text-xs px-1.5 py-0.5 rounded bg-red-50 border border-red-200 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800 font-medium">
+																				ID exacto
+																			</span>
+																		)}
+																	</div>
+																	{match.target.aliases &&
+																		match.target.aliases.length > 0 && (
+																			<div className="flex items-start gap-1.5 text-muted-foreground">
+																				<User className="h-3 w-3 shrink-0 mt-0.5" />
+																				<span>
+																					{match.target.aliases.join(", ")}
+																				</span>
+																			</div>
+																		)}
+																	{(match.target.birthDate ||
+																		match.target.birthPlace) && (
+																		<div className="grid grid-cols-2 gap-1.5">
+																			{match.target.birthDate && (
+																				<div className="flex items-center gap-1.5 text-muted-foreground">
+																					<Calendar className="h-3 w-3 shrink-0" />
+																					<span>
+																						{match.target.birthDate.slice(
+																							0,
+																							10,
+																						)}
+																					</span>
+																				</div>
+																			)}
+																			{match.target.birthPlace && (
+																				<div className="flex items-center gap-1.5 text-muted-foreground">
+																					<MapPin className="h-3 w-3 shrink-0" />
+																					<span>{match.target.birthPlace}</span>
+																				</div>
+																			)}
+																		</div>
+																	)}
+																	{match.target.addresses &&
+																		match.target.addresses.length > 0 && (
+																			<div className="flex items-start gap-1.5 text-muted-foreground">
+																				<Building2 className="h-3 w-3 shrink-0 mt-0.5" />
+																				<span>
+																					{match.target.addresses.join(" · ")}
+																				</span>
+																			</div>
+																		)}
+																	{match.target.identifiers &&
+																		match.target.identifiers.length > 0 && (
+																			<div className="flex flex-wrap gap-1 pt-1 border-t">
+																				{match.target.identifiers.map(
+																					(ident, i) => (
+																						<span
+																							key={i}
+																							className="text-xs px-1.5 py-0.5 rounded bg-muted border text-muted-foreground"
+																						>
+																							{ident.type}: {ident.number}
+																							{ident.country
+																								? ` (${ident.country})`
+																								: ""}
+																						</span>
+																					),
+																				)}
+																			</div>
+																		)}
+																	{match.target.remarks && (
+																		<p className="italic text-muted-foreground pt-1 border-t">
+																			{match.target.remarks}
+																		</p>
+																	)}
+																</div>
+															))}
+														</div>
+													</div>
+												)}
+											</div>
+											{/* UN — expandable matches */}
+											<div className="bg-background">
+												<div className="py-3 px-4">
+													<div className="flex items-center gap-2 flex-wrap">
+														<span className="text-sm font-medium flex-1">
+															Naciones Unidas (UNSC)
+														</span>
+														<span
+															className={cn(
+																"inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full border font-medium",
+																(
+																	WATCHLIST_STATUS_CONFIG[
+																		(src?.unStatus as WatchlistStatus) ??
+																			"pending"
+																	] ?? WATCHLIST_STATUS_CONFIG.pending
+																).badgeClass,
+															)}
+														>
+															<span
+																className={cn(
+																	"h-1.5 w-1.5 rounded-full shrink-0",
+																	(
+																		WATCHLIST_STATUS_CONFIG[
+																			(src?.unStatus as WatchlistStatus) ??
+																				"pending"
+																		] ?? WATCHLIST_STATUS_CONFIG.pending
+																	).dotClass,
+																)}
+															/>
+															{
+																(
+																	WATCHLIST_STATUS_CONFIG[
+																		(src?.unStatus as WatchlistStatus) ??
+																			"pending"
+																	] ?? WATCHLIST_STATUS_CONFIG.pending
+																).label
+															}
+														</span>
+														{(() => {
+															const cnt = src
+																? (src.unCount ?? 0)
+																: client.unscSanctioned
+																	? 1
+																	: 0;
+															return cnt > 0 ? (
+																<span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-red-200 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800 font-medium">
+																	<AlertTriangle className="h-3 w-3" />
+																	{cnt} {cnt === 1 ? "sanción" : "sanciones"}
+																</span>
+															) : null;
+														})()}
+														{unMatches.length > 0 && (
+															<button
+																type="button"
+																onClick={() => setUnExpanded((v) => !v)}
+																className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+															>
+																{unExpanded ? "Ocultar" : "Ver detalle"}
+																<ChevronDown
+																	className={cn(
+																		"h-3 w-3 transition-transform duration-200",
+																		unExpanded && "rotate-180",
+																	)}
+																/>
+															</button>
+														)}
+													</div>
+												</div>
+												{unExpanded && unMatches.length > 0 && (
+													<div className="border-t px-4 py-3 bg-muted/20">
+														<div className="max-h-80 overflow-y-auto space-y-2 pr-1">
+															{unMatches.map((match, idx) => (
+																<div
+																	key={match.target.id ?? idx}
+																	className="rounded-md border bg-background p-3 space-y-1.5 text-xs"
+																>
+																	<div className="flex items-start justify-between gap-2">
+																		<p className="font-semibold text-sm leading-snug">
+																			{match.target.primaryName}
+																		</p>
+																		<div className="flex items-center gap-1 shrink-0">
+																			<ScoreBadge score={match.score} />
+																			<span className="text-xs text-muted-foreground bg-muted rounded px-1.5 py-0.5 tabular-nums">
+																				{idx + 1}/{unMatches.length}
+																			</span>
+																		</div>
+																	</div>
+																	<div className="flex flex-wrap gap-1">
+																		<span className="text-xs px-1.5 py-0.5 rounded bg-muted border text-muted-foreground">
+																			{match.target.partyType}
+																		</span>
+																		<span className="text-xs px-1.5 py-0.5 rounded bg-muted border text-muted-foreground">
+																			{match.target.unListType}
+																		</span>
+																		{match.target.referenceNumber && (
+																			<span className="text-xs px-1.5 py-0.5 rounded bg-muted border text-muted-foreground">
+																				Ref: {match.target.referenceNumber}
+																			</span>
+																		)}
+																		{match.breakdown.identifierMatch && (
+																			<span className="text-xs px-1.5 py-0.5 rounded bg-red-50 border border-red-200 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800 font-medium">
+																				ID exacto
+																			</span>
+																		)}
+																	</div>
+																	{match.target.aliases &&
+																		match.target.aliases.length > 0 && (
+																			<div className="flex items-start gap-1.5 text-muted-foreground">
+																				<User className="h-3 w-3 shrink-0 mt-0.5" />
+																				<span>
+																					{match.target.aliases.join(", ")}
+																				</span>
+																			</div>
+																		)}
+																	{match.target.designations &&
+																		match.target.designations.length > 0 && (
+																			<div className="flex items-start gap-1.5 text-muted-foreground">
+																				<Briefcase className="h-3 w-3 shrink-0 mt-0.5" />
+																				<span>
+																					{match.target.designations.join("; ")}
+																				</span>
+																			</div>
+																		)}
+																	{(match.target.birthDate ||
+																		match.target.birthPlace ||
+																		match.target.gender) && (
+																		<div className="grid grid-cols-2 gap-1.5">
+																			{match.target.birthDate && (
+																				<div className="flex items-center gap-1.5 text-muted-foreground">
+																					<Calendar className="h-3 w-3 shrink-0" />
+																					<span>
+																						{match.target.birthDate.slice(
+																							0,
+																							10,
+																						)}
+																					</span>
+																				</div>
+																			)}
+																			{match.target.birthPlace && (
+																				<div className="flex items-center gap-1.5 text-muted-foreground">
+																					<MapPin className="h-3 w-3 shrink-0" />
+																					<span>{match.target.birthPlace}</span>
+																				</div>
+																			)}
+																			{match.target.gender && (
+																				<div className="flex items-center gap-1.5 text-muted-foreground">
+																					<User className="h-3 w-3 shrink-0" />
+																					<span>{match.target.gender}</span>
+																				</div>
+																			)}
+																			{match.target.nationalities &&
+																				match.target.nationalities.length >
+																					0 && (
+																					<div className="flex items-center gap-1.5 text-muted-foreground">
+																						<Flag className="h-3 w-3 shrink-0" />
+																						<span>
+																							{match.target.nationalities.join(
+																								", ",
+																							)}
+																						</span>
+																					</div>
+																				)}
+																		</div>
+																	)}
+																	{match.target.listedOn && (
+																		<div className="flex items-center gap-1.5 text-muted-foreground">
+																			<Calendar className="h-3 w-3 shrink-0" />
+																			<span>
+																				Listado:{" "}
+																				{match.target.listedOn.slice(0, 10)}
+																			</span>
+																		</div>
+																	)}
+																	{match.target.addresses &&
+																		match.target.addresses.length > 0 && (
+																			<div className="flex items-start gap-1.5 text-muted-foreground">
+																				<Building2 className="h-3 w-3 shrink-0 mt-0.5" />
+																				<span>
+																					{match.target.addresses.join(" · ")}
+																				</span>
+																			</div>
+																		)}
+																	{match.target.identifiers &&
+																		match.target.identifiers.length > 0 && (
+																			<div className="flex flex-wrap gap-1 pt-1 border-t">
+																				{match.target.identifiers.map(
+																					(ident, i) => (
+																						<span
+																							key={i}
+																							className="text-xs px-1.5 py-0.5 rounded bg-muted border text-muted-foreground"
+																						>
+																							{ident.type}: {ident.number}
+																						</span>
+																					),
+																				)}
+																			</div>
+																		)}
+																	{match.target.remarks && (
+																		<p className="italic text-muted-foreground pt-1 border-t">
+																			{match.target.remarks}
+																		</p>
+																	)}
+																</div>
+															))}
+														</div>
+													</div>
+												)}
+											</div>
+											{/* SAT 69-B — expandable matches */}
+											<div className="bg-background">
+												<div className="py-3 px-4">
+													<div className="flex items-center gap-2 flex-wrap">
+														<span className="text-sm font-medium flex-1">
+															SAT 69-B (México)
+														</span>
+														<span
+															className={cn(
+																"inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full border font-medium",
+																(
+																	WATCHLIST_STATUS_CONFIG[
+																		(src?.sat69bStatus as WatchlistStatus) ??
+																			"pending"
+																	] ?? WATCHLIST_STATUS_CONFIG.pending
+																).badgeClass,
+															)}
+														>
+															<span
+																className={cn(
+																	"h-1.5 w-1.5 rounded-full shrink-0",
+																	(
+																		WATCHLIST_STATUS_CONFIG[
+																			(src?.sat69bStatus as WatchlistStatus) ??
+																				"pending"
+																		] ?? WATCHLIST_STATUS_CONFIG.pending
+																	).dotClass,
+																)}
+															/>
+															{
+																(
+																	WATCHLIST_STATUS_CONFIG[
+																		(src?.sat69bStatus as WatchlistStatus) ??
+																			"pending"
+																	] ?? WATCHLIST_STATUS_CONFIG.pending
+																).label
+															}
+														</span>
+														{(() => {
+															const cnt = src
+																? (src.sat69bCount ?? 0)
+																: client.sat69bListed
+																	? 1
+																	: 0;
+															return cnt > 0 ? (
+																<span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-red-200 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800 font-medium">
+																	<AlertTriangle className="h-3 w-3" />
+																	{cnt} {cnt === 1 ? "registro" : "registros"}
+																</span>
+															) : null;
+														})()}
+														{sat69bMatches.length > 0 && (
+															<button
+																type="button"
+																onClick={() => setSat69bExpanded((v) => !v)}
+																className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+															>
+																{sat69bExpanded ? "Ocultar" : "Ver detalle"}
+																<ChevronDown
+																	className={cn(
+																		"h-3 w-3 transition-transform duration-200",
+																		sat69bExpanded && "rotate-180",
+																	)}
+																/>
+															</button>
+														)}
+													</div>
+												</div>
+												{sat69bExpanded && sat69bMatches.length > 0 && (
+													<div className="border-t px-4 py-3 bg-muted/20">
+														<div className="max-h-80 overflow-y-auto space-y-2 pr-1">
+															{sat69bMatches.map((match, idx) => {
+																const statusColor =
+																	match.target.taxpayerStatus ===
+																	"Sentencia Favorable"
+																		? "border-green-200 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800"
+																		: match.target.taxpayerStatus.startsWith(
+																					"Definitivo",
+																			  )
+																			? "border-red-200 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800"
+																			: "border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800";
+																const phases: Array<{
+																	label: string;
+																	data: typeof match.target.presumptionPhase;
+																}> = [
+																	{
+																		label: "Presunción",
+																		data: match.target.presumptionPhase,
+																	},
+																	{
+																		label: "Desvirtuación",
+																		data: match.target.rebuttalPhase,
+																	},
+																	{
+																		label: "Definitivo",
+																		data: match.target.definitivePhase,
+																	},
+																	{
+																		label: "Sentencia Favorable",
+																		data: match.target.favorablePhase,
+																	},
+																].filter(
+																	(p) => p.data?.satDate || p.data?.dofDate,
+																);
+																return (
+																	<div
+																		key={match.target.id ?? idx}
+																		className="rounded-md border bg-background p-3 space-y-1.5 text-xs"
+																	>
+																		<div className="flex items-start justify-between gap-2">
+																			<p className="font-semibold text-sm leading-snug">
+																				{match.target.taxpayerName}
+																			</p>
+																			<div className="flex items-center gap-1 shrink-0">
+																				<ScoreBadge score={match.score} />
+																				<span className="text-xs text-muted-foreground bg-muted rounded px-1.5 py-0.5 tabular-nums">
+																					{idx + 1}/{sat69bMatches.length}
+																				</span>
+																			</div>
+																		</div>
+																		<div className="flex flex-wrap gap-1">
+																			<div className="flex items-center gap-1.5 text-muted-foreground">
+																				<Hash className="h-3 w-3 shrink-0" />
+																				<span className="font-mono">
+																					{match.target.rfc}
+																				</span>
+																			</div>
+																			<span
+																				className={cn(
+																					"text-xs px-1.5 py-0.5 rounded border font-medium",
+																					statusColor,
+																				)}
+																			>
+																				{match.target.taxpayerStatus}
+																			</span>
+																			{match.breakdown.identifierMatch && (
+																				<span className="text-xs px-1.5 py-0.5 rounded bg-red-50 border border-red-200 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800 font-medium">
+																					RFC exacto
+																				</span>
+																			)}
+																		</div>
+																		{phases.length > 0 && (
+																			<div className="space-y-1 pt-1.5 border-t">
+																				{phases.map((phase) => (
+																					<div
+																						key={phase.label}
+																						className="space-y-0.5"
+																					>
+																						<p className="font-medium text-foreground/80">
+																							{phase.label}
+																						</p>
+																						{phase.data?.satNotice && (
+																							<p className="text-muted-foreground pl-2">
+																								SAT: {phase.data.satNotice}
+																							</p>
+																						)}
+																						{phase.data?.dofNotice && (
+																							<p className="text-muted-foreground pl-2">
+																								DOF: {phase.data.dofNotice}
+																							</p>
+																						)}
+																					</div>
+																				))}
+																			</div>
+																		)}
+																	</div>
+																);
+															})}
+														</div>
+													</div>
+												)}
+											</div>
+											{/* PEP Oficial (Transparencia) — expandable records */}
+											<div className="bg-background">
+												<div className="py-3 px-4">
+													<div className="flex items-center gap-2 flex-wrap">
+														<span className="text-sm font-medium flex-1">
+															PEP Oficial (Transparencia)
+														</span>
+														<span
+															className={cn(
+																"inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full border font-medium",
+																pepOfficialCfg.badgeClass,
+															)}
+														>
+															<span
+																className={cn(
+																	"h-1.5 w-1.5 rounded-full shrink-0",
+																	pepOfficialCfg.dotClass,
+																)}
+															/>
+															{pepOfficialCfg.label}
+														</span>
+														{(src?.pepOfficialCount ?? 0) > 0 && (
+															<span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-red-200 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800 font-medium">
+																<AlertTriangle className="h-3 w-3" />
+																{src?.pepOfficialCount}{" "}
+																{(src?.pepOfficialCount ?? 0) === 1
+																	? "registro PEP"
+																	: "registros PEPs"}
+															</span>
+														)}
+														{pepOfficialRecords.length > 0 && (
+															<button
+																type="button"
+																onClick={() => setPepRecordsExpanded((v) => !v)}
+																className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+															>
+																{pepRecordsExpanded ? "Ocultar" : "Ver detalle"}
+																<ChevronDown
+																	className={cn(
+																		"h-3 w-3 transition-transform duration-200",
+																		pepRecordsExpanded && "rotate-180",
+																	)}
+																/>
+															</button>
+														)}
+													</div>
+												</div>
+												{pepRecordsExpanded &&
+													pepOfficialRecords.length > 0 && (
+														<div className="border-t px-4 py-3 bg-muted/20">
+															<div className="max-h-80 overflow-y-auto space-y-2 pr-1">
+																{pepOfficialRecords.map((record, idx) => (
+																	<div
+																		key={record.id ?? idx}
+																		className="rounded-md border bg-background p-3 space-y-1.5 text-xs"
+																	>
+																		<div className="flex items-start justify-between gap-2">
+																			<p className="font-semibold text-sm leading-snug">
+																				{record.nombre}
+																			</p>
+																			<span className="shrink-0 text-xs text-muted-foreground bg-muted rounded px-1.5 py-0.5 tabular-nums">
+																				{idx + 1}/{pepOfficialRecords.length}
+																			</span>
+																		</div>
+																		<div className="flex items-center gap-1.5 text-muted-foreground">
+																			<Briefcase className="h-3 w-3 shrink-0" />
+																			<span>{record.denominacion}</span>
+																		</div>
+																		<div className="flex items-center gap-1.5 text-muted-foreground">
+																			<Users className="h-3 w-3 shrink-0" />
+																			<span>{record.areaadscripcion}</span>
+																		</div>
+																		<div className="flex items-center gap-1.5 text-muted-foreground">
+																			<Building2 className="h-3 w-3 shrink-0" />
+																			<span>{record.sujetoobligado}</span>
+																		</div>
+																		<div className="grid grid-cols-2 gap-1.5">
+																			<div className="flex items-center gap-1.5 text-muted-foreground">
+																				<MapPin className="h-3 w-3 shrink-0" />
+																				<span>{record.entidadfederativa}</span>
+																			</div>
+																			<div className="flex items-center gap-1.5 text-muted-foreground">
+																				<Calendar className="h-3 w-3 shrink-0" />
+																				<span>{record.periodoreporta}</span>
+																			</div>
+																		</div>
+																		{(record.informacionPrincipal?.telefono ||
+																			record.informacionPrincipal?.correo) && (
+																			<div className="flex flex-wrap gap-x-4 gap-y-1 pt-1.5 border-t">
+																				{record.informacionPrincipal
+																					?.telefono && (
+																					<div className="flex items-center gap-1.5 text-muted-foreground">
+																						<Phone className="h-3 w-3 shrink-0" />
+																						<span>
+																							{
+																								record.informacionPrincipal
+																									.telefono
+																							}
+																						</span>
+																					</div>
+																				)}
+																				{record.informacionPrincipal
+																					?.correo && (
+																					<div className="flex items-center gap-1.5 text-muted-foreground">
+																						<Mail className="h-3 w-3 shrink-0" />
+																						<span>
+																							{
+																								record.informacionPrincipal
+																									.correo
+																							}
+																						</span>
+																					</div>
+																				)}
+																			</div>
+																		)}
+																	</div>
+																))}
+															</div>
+														</div>
+													)}
+											</div>
+
+											{/* Detección PEP por IA */}
+											<div className="py-3 px-4 bg-background">
+												<div className="flex items-center gap-2 flex-wrap">
+													<span className="text-sm font-medium flex-1">
+														Detección PEP por IA
+													</span>
+													<span
+														className={cn(
+															"inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full border font-medium",
+															pepAiCfg.badgeClass,
+														)}
+													>
+														<span
+															className={cn(
+																"h-1.5 w-1.5 rounded-full shrink-0",
+																pepAiCfg.dotClass,
+															)}
+														/>
+														{pepAiCfg.label}
+													</span>
+													{pepAiResult &&
+														typeof pepAiResult.probability === "number" && (
+															<span
+																className={cn(
+																	"inline-flex items-center text-xs px-2 py-0.5 rounded-full border font-medium",
+																	pepAiResult.probability > 0.5
+																		? "border-red-200 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800"
+																		: "border-green-200 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800",
+																)}
+															>
+																Prob. PEP:{" "}
+																{Math.round(pepAiResult.probability * 100)}%
+															</span>
+														)}
+												</div>
+												{pepAiSummary && (
+													<p className="mt-1.5 text-xs text-muted-foreground italic">
+														{pepAiSummary}
+													</p>
+												)}
+												{pepAiResult?.sources &&
+													pepAiResult.sources.length > 0 && (
+														<div className="mt-1.5 flex flex-wrap gap-1">
+															{pepAiResult.sources.map((source, i) => (
+																<span
+																	key={i}
+																	className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground border"
+																>
+																	{source}
+																</span>
+															))}
+														</div>
+													)}
+											</div>
 											<ScreeningSourceRow
 												label="Media Adversa"
 												status={
@@ -1385,17 +2244,19 @@ export function ClientDetailsView({
 										</div>
 									)}
 
-									{/* Trigger screening button */}
-									{(!client.screeningResult ||
-										client.screeningResult === "pending") && (
+									{/* View watchlist query button */}
+									{client.watchlistQueryId && (
 										<div className="flex justify-end pt-2">
 											<Button
 												variant="outline"
 												size="sm"
-												onClick={() => navigateToEdit("personal", "pep-info")}
+												onClick={() => {
+													const watchlistUrl = `https://watchlist.janovix.workers.dev/queries/${client.watchlistQueryId}`;
+													window.open(watchlistUrl, "_blank");
+												}}
 											>
-												<Shield className="h-4 w-4 mr-2" />
-												{t("clientVerifyPep")}
+												<ExternalLink className="h-4 w-4 mr-2" />
+												{t("clientViewWatchlistQuery")}
 											</Button>
 										</div>
 									)}

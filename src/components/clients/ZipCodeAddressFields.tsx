@@ -52,6 +52,9 @@ interface ZipCodeAddressFieldsProps {
 
 	// Disable auto-lookup (for testing or manual entry)
 	disableAutoLookup?: boolean;
+
+	// Optional: Pre-resolved state code name from server
+	resolvedStateCodeName?: string;
 }
 
 /**
@@ -83,6 +86,7 @@ export function ZipCodeAddressFields({
 	showNeighborhood = true,
 	showReference = true,
 	disableAutoLookup = false,
+	resolvedStateCodeName,
 }: ZipCodeAddressFieldsProps): React.JSX.Element {
 	const { lookup, loading } = useZipCodeLookup();
 
@@ -514,6 +518,7 @@ export function ZipCodeAddressFields({
 								value={stateCode}
 								searchPlaceholder="Buscar estado..."
 								placeholder="Seleccionar estado"
+								resolvedName={resolvedStateCodeName}
 								onChange={handleStateCodeChange}
 								getOptionValue={(option) => {
 									// Use the state code from metadata
