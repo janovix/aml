@@ -57,6 +57,18 @@ export interface Client {
 	// KYC status tracking
 	kycStatus?: KYCStatus;
 	kycCompletedAt?: string | null;
+	// KYC progress (persisted fields)
+	kycCompletionPct?: number;
+	documentsComplete?: number;
+	documentsCount?: number;
+	documentsRequired?: number;
+	shareholdersCount?: number;
+	beneficialControllersCount?: number;
+	// Threshold-aware KYC (Art. 17 LFPIORPI)
+	identificationRequired?: boolean;
+	identificationTier?: "ALWAYS" | "ABOVE_THRESHOLD" | "BELOW_THRESHOLD";
+	identificationThresholdMxn?: number | null;
+	noticeThresholdMxn?: number | null;
 	// Watchlist screening status
 	isPEP?: boolean;
 	watchlistQueryId?: string | null;
