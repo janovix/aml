@@ -30,7 +30,7 @@ import type {
 	ClientCreateRequest,
 	Client,
 } from "../../types/client";
-import { KYCProgressIndicator } from "./KYCProgressIndicator";
+import { CircularProgress } from "@/components/ui/circular-progress";
 import { EditDocumentsSection } from "./EditDocumentsSection";
 import { ShareholderSection } from "./ShareholderSection";
 import { BeneficialControllerSection } from "./BeneficialControllerSection";
@@ -191,8 +191,6 @@ export function ClientEditView({
 		curp?: string;
 		phone?: string;
 	}>({});
-	const [kycRefreshTrigger, setKycRefreshTrigger] = useState(0);
-
 	// Track missing information per tab for warning indicators
 	const [tabWarnings, setTabWarnings] = useState<{
 		documents: boolean;
@@ -216,11 +214,6 @@ export function ClientEditView({
 			? tabFromUrl
 			: "personal";
 	});
-
-	// Callback to refresh KYC status when documents or UBOs change
-	const handleKYCChange = useCallback(() => {
-		setKycRefreshTrigger((prev) => prev + 1);
-	}, []);
 
 	// Update URL when tab changes
 	const handleTabChange = (newTab: string) => {
@@ -261,7 +254,7 @@ export function ClientEditView({
 		if (client) {
 			fetchValidationData();
 		}
-	}, [client, kycRefreshTrigger, fetchValidationData]);
+	}, [client, fetchValidationData]);
 
 	// Calculate validation status for documents tab
 	useEffect(() => {
@@ -595,13 +588,15 @@ export function ClientEditView({
 						</div>
 
 						{/* KYC Status - Compact */}
-						<div className="lg:ml-auto">
-							<KYCProgressIndicator
-								clientId={clientId}
-								personType={client.personType}
-								refreshTrigger={kycRefreshTrigger}
-								compact
+						<div className="lg:ml-auto flex items-center gap-2">
+							<CircularProgress
+								percentage={client.kycCompletionPct ?? 0}
+								size={32}
+								strokeWidth={3}
 							/>
+							<span className="text-sm text-muted-foreground font-medium">
+								KYC {client.kycCompletionPct ?? 0}%
+							</span>
 						</div>
 					</div>
 				</CardContent>
@@ -1386,7 +1381,6 @@ export function ClientEditView({
 							<EditDocumentsSection
 								clientId={clientId}
 								personType={client.personType}
-								onDocumentChange={handleKYCChange}
 							/>
 
 							{/* Cancel button only - document actions are immediate */}
@@ -1405,12 +1399,10 @@ export function ClientEditView({
 								<ShareholderSection
 									clientId={clientId}
 									personType={client.personType}
-									onShareholderChange={handleKYCChange}
 								/>
 								<BeneficialControllerSection
 									clientId={clientId}
 									personType={client.personType}
-									onBCChange={handleKYCChange}
 								/>
 
 								{/* Cancel button */}

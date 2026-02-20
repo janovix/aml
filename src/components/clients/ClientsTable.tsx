@@ -58,6 +58,7 @@ import {
 import { useLanguage } from "@/components/LanguageProvider";
 import { getLocaleForLanguage } from "@/lib/translations";
 import { useStatesCatalog } from "@/hooks/useStatesCatalog";
+import { CircularProgress } from "@/components/ui/circular-progress";
 
 /**
  * Client row with computed display name
@@ -292,7 +293,7 @@ export function ClientsTable(): React.ReactElement {
 								<Tooltip>
 									<TooltipTrigger asChild>
 										<span
-											className={`flex items-center justify-center h-8 w-8 rounded-lg ${config.bgColor}`}
+											className={`flex items-center justify-center h-8 w-8 shrink-0 rounded-lg ${config.bgColor}`}
 										>
 											{config.icon}
 										</span>
@@ -302,7 +303,24 @@ export function ClientsTable(): React.ReactElement {
 									</TooltipContent>
 								</Tooltip>
 							</TooltipProvider>
-							<div className="flex flex-col min-w-0">
+							{/* KYC circular progress */}
+							<TooltipProvider>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<span className="shrink-0 flex items-center justify-center">
+											<CircularProgress
+												percentage={item.kycCompletionPct ?? 0}
+												size={22}
+												strokeWidth={2.5}
+											/>
+										</span>
+									</TooltipTrigger>
+									<TooltipContent side="right">
+										<p>KYC: {item.kycCompletionPct ?? 0}%</p>
+									</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
+							<div className="flex flex-col min-w-0 gap-0.5">
 								<Link
 									href={orgPath(`/clients/${item.id}`)}
 									className="font-medium text-foreground hover:text-primary truncate"
@@ -310,27 +328,65 @@ export function ClientsTable(): React.ReactElement {
 								>
 									{item.displayName}
 								</Link>
-								<span className="text-xs text-muted-foreground font-mono">
-									{item.rfc}
-								</span>
+								{/* Screening badges below the name */}
+								{(() => {
+									const flags: { label: string; className: string }[] = [];
+									if (item.isPEP)
+										flags.push({
+											label: "PEP",
+											className: "bg-red-500/15 text-red-500 border-red-500/30",
+										});
+									if (item.ofacSanctioned)
+										flags.push({
+											label: "OFAC",
+											className: "bg-red-500/15 text-red-500 border-red-500/30",
+										});
+									if (item.unscSanctioned)
+										flags.push({
+											label: "UN",
+											className: "bg-red-500/15 text-red-500 border-red-500/30",
+										});
+									if (item.sat69bListed)
+										flags.push({
+											label: "EFOS",
+											className:
+												"bg-orange-500/15 text-orange-500 border-orange-500/30",
+										});
+									if (item.adverseMediaFlagged)
+										flags.push({
+											label: t("screeningMedia"),
+											className:
+												"bg-amber-500/15 text-amber-600 border-amber-500/30",
+										});
+
+									if (flags.length > 0) {
+										return (
+											<div className="flex flex-wrap gap-1">
+												{flags.map((flag) => (
+													<span
+														key={flag.label}
+														className={`inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-semibold leading-none ${flag.className}`}
+													>
+														{flag.label}
+													</span>
+												))}
+											</div>
+										);
+									}
+									if (item.screeningResult === "clear") {
+										return (
+											<span className="inline-flex items-center gap-1 text-[10px] font-medium leading-none text-green-600">
+												<span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+												{t("screeningClear")}
+											</span>
+										);
+									}
+									return null;
+								})()}
 							</div>
 						</div>
 					);
 				},
-			},
-			{
-				id: "contact",
-				header: t("tableContact"),
-				accessorKey: "email",
-				hideOnMobile: true,
-				cell: (item) => (
-					<div className="flex flex-col">
-						<span className="text-sm text-foreground truncate max-w-[180px]">
-							{item.email}
-						</span>
-						<span className="text-xs text-muted-foreground">{item.phone}</span>
-					</div>
-				),
 			},
 			{
 				id: "location",

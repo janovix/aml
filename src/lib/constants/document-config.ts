@@ -7,7 +7,6 @@
  * - EditDocumentsSection.tsx
  * - wizard/DocumentsStep.tsx
  * - ClientDetailsView.tsx
- * - KYCProgressIndicator.tsx
  */
 
 import type { ClientDocumentType } from "@/types/client-document";
