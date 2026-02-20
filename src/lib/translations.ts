@@ -681,6 +681,11 @@ export const translations = {
 			"Necesitas iniciar sesión para acceder a esta página.",
 		errorUnauthorizedReason:
 			"Si llegaste aquí desde un enlace compartido o un marcador, inicia sesión e inténtalo de nuevo.",
+		errorRateLimitTitle: "Demasiadas solicitudes",
+		errorRateLimitDescription:
+			"Estamos recibiendo demasiadas solicitudes desde tu IP. Por favor espera {seconds} segundos.",
+		errorRateLimitDescriptionReady: "Ya puedes intentarlo de nuevo.",
+		errorRateLimitRetry: "Reintentar",
 
 		// Subscription banner
 		"subscription.banner.freeTier": "Plan Gratuito",
@@ -2150,6 +2155,11 @@ export const translations = {
 		errorUnauthorizedDescription: "You need to sign in to access this page.",
 		errorUnauthorizedReason:
 			"If you arrived here from a bookmark or shared link, sign in and try again.",
+		errorRateLimitTitle: "Too many requests",
+		errorRateLimitDescription:
+			"We're receiving too many requests from your IP. Please wait {seconds} seconds.",
+		errorRateLimitDescriptionReady: "You can try again now.",
+		errorRateLimitRetry: "Retry",
 
 		// Subscription banner
 		"subscription.banner.freeTier": "Free Plan",
