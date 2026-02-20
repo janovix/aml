@@ -100,6 +100,36 @@ function createExternalUrl(path: string, request: NextRequest): URL {
 	return new URL(path, getExternalOrigin(request));
 }
 
+/**
+ * Build request headers that carry already-fetched session and org data forward to
+ * server components. This lets the root layout skip the duplicate auth-svc API calls
+ * it would otherwise make, saving 2 round-trips per page load.
+ *
+ * We only inject headers when we're doing a NextResponse.next() (or rewrite) after
+ * full validation, so the data is guaranteed to be present and correct.
+ */
+function buildDataHeaders(
+	original: Headers,
+	sessionData: { session?: unknown; user?: unknown } | null,
+	userOrganizations: Array<{ id: string; slug: string; name: string }> | null,
+	activeOrganizationId: string | null | undefined,
+): Headers {
+	const headers = new Headers(original);
+	if (sessionData) {
+		headers.set("x-aml-session", JSON.stringify(sessionData));
+	}
+	if (userOrganizations !== null) {
+		headers.set(
+			"x-aml-organizations",
+			JSON.stringify({
+				organizations: userOrganizations,
+				activeOrganizationId: activeOrganizationId ?? null,
+			}),
+		);
+	}
+	return headers;
+}
+
 function redirectToLogin(request: NextRequest): NextResponse {
 	const authAppUrl = getAuthAppUrl();
 	const returnUrl = encodeURIComponent(getExternalUrl(request));
@@ -397,6 +427,7 @@ export async function middleware(request: NextRequest) {
 	const hostname = request.headers.get("host") || "localhost";
 	const pathname = request.nextUrl.pathname;
 	const vanityMode = isVanityMode(hostname);
+	const activeOrganizationId = sessionData?.session?.activeOrganizationId;
 
 	// In vanity mode, rewrite URL to include org slug in path
 	if (vanityMode) {
@@ -427,8 +458,17 @@ export async function middleware(request: NextRequest) {
 			return addAuthCookies(notFoundResponse, authServiceSetCookies);
 		}
 
-		// Valid org access - rewrite to include org in path
-		const rewriteResponse = NextResponse.rewrite(rewriteUrl);
+		// Valid org access - rewrite to include org in path, forwarding pre-fetched data
+		const rewriteResponse = NextResponse.rewrite(rewriteUrl, {
+			request: {
+				headers: buildDataHeaders(
+					request.headers,
+					sessionData,
+					organizations,
+					activeOrganizationId,
+				),
+			},
+		});
 		return addAuthCookies(rewriteResponse, authServiceSetCookies);
 	}
 
@@ -450,8 +490,7 @@ export async function middleware(request: NextRequest) {
 		// We know the user has orgs (checked at line 334)
 		if (userOrganizations && userOrganizations.length > 0) {
 			// Find the active org or use the first one
-			const activeOrgId = sessionData?.session?.activeOrganizationId;
-			const targetOrg = getTargetOrg(userOrganizations, activeOrgId);
+			const targetOrg = getTargetOrg(userOrganizations, activeOrganizationId);
 
 			if (targetOrg) {
 				const redirectResponse = NextResponse.redirect(
@@ -483,10 +522,7 @@ export async function middleware(request: NextRequest) {
 		}
 
 		// Find target org (active or first) using activeOrganizationId from session
-		const targetOrg = getTargetOrg(
-			organizations,
-			sessionData?.session?.activeOrganizationId ?? null,
-		);
+		const targetOrg = getTargetOrg(organizations, activeOrganizationId ?? null);
 
 		if (targetOrg) {
 			// Redirect to /{orgSlug}/original-path
@@ -527,8 +563,17 @@ export async function middleware(request: NextRequest) {
 			return addAuthCookies(rewriteResponse, authServiceSetCookies);
 		}
 
-		// Valid org access - proceed (org root renders dashboard directly)
-		const nextResponse = NextResponse.next();
+		// Valid org access - proceed, forwarding pre-fetched session and org data
+		const nextResponse = NextResponse.next({
+			request: {
+				headers: buildDataHeaders(
+					request.headers,
+					sessionData,
+					organizations,
+					activeOrganizationId,
+				),
+			},
+		});
 		return addAuthCookies(nextResponse, authServiceSetCookies);
 	}
 

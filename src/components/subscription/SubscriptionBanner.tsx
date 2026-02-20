@@ -4,7 +4,7 @@ import { useSubscriptionSafe } from "@/lib/subscription";
 import { useLanguage } from "@/components/LanguageProvider";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Zap, AlertTriangle, X, ShieldCheck } from "lucide-react";
+import { Zap, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 

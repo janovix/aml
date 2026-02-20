@@ -1,3 +1,10 @@
+# [1.4.0-rc.48](https://github.com/janovix/aml/compare/v1.4.0-rc.47...v1.4.0-rc.48) (2026-02-20)
+
+
+### Features
+
+* enhance middleware and layout components to forward session and organization data, reducing redundant API calls ([bea8372](https://github.com/janovix/aml/commit/bea8372b238e4958a396ce854bf199ec0b662255))
+
 # [1.4.0-rc.47](https://github.com/janovix/aml/compare/v1.4.0-rc.46...v1.4.0-rc.47) (2026-02-20)
 
 

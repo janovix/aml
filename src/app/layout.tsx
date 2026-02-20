@@ -2,9 +2,11 @@ import ClientLayout from "@/components/ClientLayout";
 import { getServerSession } from "@/lib/auth/getServerSession";
 import { SessionHydrator } from "@/lib/auth/useAuthSession";
 import { listOrganizationsServer } from "@/lib/auth/organizations-server";
+import { normalizeOrganization } from "@/lib/auth/organizations";
 import { getSidebarCollapsedServer } from "@/lib/settings/settingsServer";
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { headers } from "next/headers";
 import "./globals.css";
 
 const inter = Inter({
@@ -47,8 +49,33 @@ export default async function RootLayout({
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
-	const session = await getServerSession();
-	const initialOrganizations = await listOrganizationsServer();
+	const requestHeaders = await headers();
+
+	// Use session and org data forwarded by middleware to avoid duplicate auth-svc
+	// API calls. Middleware already validates these on every request, so re-fetching
+	// here would be redundant. Fall back to direct API calls when headers are absent
+	// (e.g. direct server invocations, tests, or routes that bypass the middleware).
+	const rawSession = requestHeaders.get("x-aml-session");
+	const rawOrgs = requestHeaders.get("x-aml-organizations");
+
+	const session = rawSession
+		? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+			(JSON.parse(rawSession) as any)
+		: await getServerSession();
+
+	const initialOrganizations = rawOrgs
+		? (() => {
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				const parsed = JSON.parse(rawOrgs) as any;
+				return {
+					organizations: (parsed.organizations ?? []).map(
+						normalizeOrganization,
+					),
+					activeOrganizationId: parsed.activeOrganizationId ?? null,
+				};
+			})()
+		: await listOrganizationsServer();
+
 	const initialSidebarCollapsed = await getSidebarCollapsedServer();
 
 	return (

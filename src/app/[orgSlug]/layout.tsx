@@ -2,14 +2,13 @@
 
 import { useParams, usePathname, notFound } from "next/navigation";
 import { type ReactNode } from "react";
-import { useSubscriptionSafe } from "@/lib/subscription";
-import { hasAMLAccess } from "@/lib/subscription";
-import { NoAMLAccess } from "@/components/subscription";
 import { OrgSlugContext } from "@/hooks/useOrgSlug";
 import { useOrgSettings } from "@/hooks/useOrgSettings";
 import { ObligatedSubjectSetup } from "@/components/onboarding/ObligatedSubjectSetup";
 import { getAuthAppUrl } from "@/lib/auth/config";
 import { getViewSkeleton } from "@/lib/view-skeletons";
+import { hasAMLAccess, useSubscriptionSafe } from "@/lib/subscription";
+import { NoAMLAccess } from "@/components/subscription";
 
 /**
  * Derive the view path (without orgSlug prefix) from the full pathname.
@@ -102,7 +101,7 @@ export default function OrgSlugLayout({ children }: { children: ReactNode }) {
 
 	return (
 		<OrgSlugContext.Provider value={{ orgSlug }}>
-			<OrgSettingsGuard>{children}</OrgSettingsGuard>
+			{children}
 		</OrgSlugContext.Provider>
 	);
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { useOrgStore } from "@/lib/org-store";
 import { useAuthSession } from "@/lib/auth/useAuthSession";
@@ -15,6 +15,24 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getViewSkeleton } from "@/lib/view-skeletons";
 import * as Sentry from "@sentry/nextjs";
+import {
+	getSubscriptionStatus,
+	hasAMLAccess,
+	type SubscriptionStatus,
+} from "@/lib/subscription/subscriptionClient";
+import { SubscriptionProvider } from "@/lib/subscription";
+import {
+	getOrganizationSettings,
+	type OrganizationSettingsEntity,
+} from "@/lib/api/organization-settings";
+import { NoAMLAccess } from "@/components/subscription";
+import { ObligatedSubjectSetup } from "@/components/onboarding/ObligatedSubjectSetup";
+import { getAuthAppUrl } from "@/lib/auth/config";
+
+interface BootstrapData {
+	subscription: SubscriptionStatus | null;
+	orgSettings: OrganizationSettingsEntity | null;
+}
 
 // Must match the cookie name in sidebar.tsx
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
@@ -209,6 +227,9 @@ export function OrgBootstrapper({
 
 	const [isReady, setIsReady] = useState(false);
 	const [isRedirecting, setIsRedirecting] = useState(false);
+	const [bootstrapData, setBootstrapData] = useState<BootstrapData | null>(
+		null,
+	);
 	const lastSyncedOrgRef = useRef<string | null | undefined>(null);
 
 	// Set current user ID from session
@@ -223,6 +244,7 @@ export function OrgBootstrapper({
 		// No org slug in URL - this is the fallback index page (rarely reached)
 		// Middleware should redirect to /{orgSlug}, but if we reach here, just mark ready
 		if (!urlOrgSlug) {
+			setBootstrapData({ subscription: null, orgSettings: null });
 			setIsReady(true);
 			return;
 		}
@@ -340,13 +362,31 @@ export function OrgBootstrapper({
 				setCurrentOrg(targetOrg);
 			}
 
-			// Fetch members for all orgs in parallel:
-			// - Enriches each org with the current user's role (for the org switcher)
-			// - Provides the full member list for the current org (for team management)
 			const userId = session?.user?.id;
-			const allMemberResults = await Promise.all(
-				orgs.map((org) => listMembers(org.id)),
-			);
+
+			// Fetch members + JWT + subscription in parallel to eliminate sequential loading.
+			// JWT is fetched here so org settings can use it in the next step.
+			// Subscription is only fetched on initial/full sync (alreadySwitched keeps the prior value).
+			const [allMemberResults, jwt, subscriptionResult] = await Promise.all([
+				// Members: enrich orgs with user role + provide full member list for current org
+				Promise.all(orgs.map((org) => listMembers(org.id))),
+				// JWT: needed immediately for org settings fetch below
+				tokenCache.getToken(targetOrg.id),
+				// Subscription: skip on alreadySwitched (plan doesn't change on org switch)
+				alreadySwitched
+					? Promise.resolve(null as SubscriptionStatus | null)
+					: getSubscriptionStatus().catch(() => null),
+			]);
+
+			// Fetch org settings (requires JWT) — done after the parallel step since it depends on JWT
+			let orgSettings: OrganizationSettingsEntity | null = null;
+			if (jwt) {
+				try {
+					orgSettings = await getOrganizationSettings({ jwt });
+				} catch {
+					orgSettings = null;
+				}
+			}
 
 			// Enrich orgs with the current user's role and update the store
 			const enrichedOrgs = orgs.map((org, i) => {
@@ -372,6 +412,14 @@ export function OrgBootstrapper({
 				});
 			}
 
+			// Update bootstrap data — preserves prior subscription when alreadySwitched
+			setBootstrapData((prev) => ({
+				subscription: alreadySwitched
+					? (prev?.subscription ?? null)
+					: subscriptionResult,
+				orgSettings,
+			}));
+
 			lastSyncedOrgRef.current = urlOrgSlug;
 			setLoading(false);
 			setIsReady(true);
@@ -391,6 +439,18 @@ export function OrgBootstrapper({
 		// which is unnecessary and causes issues in tests.
 	]);
 
+	// Refresh org settings after ObligatedSubjectSetup completes
+	const handleOrgSettingsComplete = useCallback(async () => {
+		const jwt = await tokenCache.getToken(currentOrg?.id ?? null);
+		if (!jwt) return;
+		try {
+			const orgSettings = await getOrganizationSettings({ jwt });
+			setBootstrapData((prev) => (prev ? { ...prev, orgSettings } : prev));
+		} catch {
+			// ignore — user can retry
+		}
+	}, [currentOrg?.id]);
+
 	// Check if we're on an error page (not-found, forbidden)
 	// These pages should ALWAYS render immediately, even without currentOrg
 	const isErrorPage =
@@ -406,10 +466,40 @@ export function OrgBootstrapper({
 		return <AppSkeletonWithView pathname={pathname || "/"} />;
 	}
 
-	// Show loading skeleton while syncing org
-	if (!isReady || (urlOrgSlug && !currentOrg)) {
+	// Show loading skeleton while syncing org and fetching all bootstrap data
+	if (!isReady || (urlOrgSlug && !currentOrg) || !bootstrapData) {
 		return <AppSkeletonWithView pathname={pathname || "/"} />;
 	}
 
-	return <>{children}</>;
+	// Subscription gate: block access if user has no active AML subscription
+	if (urlOrgSlug && !hasAMLAccess(bootstrapData.subscription)) {
+		return <NoAMLAccess />;
+	}
+
+	// Org settings gate: require obligated subject setup before accessing the app
+	if (urlOrgSlug && !bootstrapData.orgSettings) {
+		// Provide other orgs for the inline switcher, excluding the current one
+		const otherOrgs = organizations
+			.filter((o) => o.slug !== urlOrgSlug)
+			.map((o) => ({ id: o.id, name: o.name, slug: o.slug }));
+
+		return (
+			<ObligatedSubjectSetup
+				onComplete={handleOrgSettingsComplete}
+				onSwitchOrg={() => {
+					window.location.href = getAuthAppUrl();
+				}}
+				organizations={otherOrgs}
+				onSelectOrg={(slug) => router.push(`/${slug}`)}
+			/>
+		);
+	}
+
+	// All checks passed — mount SubscriptionProvider with pre-fetched data so it
+	// starts fully initialized (isLoading: false) without triggering a second fetch.
+	return (
+		<SubscriptionProvider initialData={bootstrapData.subscription}>
+			{children}
+		</SubscriptionProvider>
+	);
 }
