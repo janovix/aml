@@ -39,13 +39,22 @@ const SubscriptionContext = createContext<SubscriptionContextValue | null>(
 
 interface SubscriptionProviderProps {
 	children: ReactNode;
+	/**
+	 * Pre-fetched subscription data (e.g. from OrgBootstrapper).
+	 * When provided the provider starts fully initialized and skips the initial fetch,
+	 * eliminating the subscription loading state on hard refresh.
+	 */
+	initialData?: SubscriptionStatus | null;
 }
 
-export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
+export function SubscriptionProvider({
+	children,
+	initialData,
+}: SubscriptionProviderProps) {
 	const [subscription, setSubscription] = useState<SubscriptionStatus | null>(
-		null,
+		initialData ?? null,
 	);
-	const [isLoading, setIsLoading] = useState(true);
+	const [isLoading, setIsLoading] = useState(initialData === undefined);
 	const [error, setError] = useState<Error | null>(null);
 
 	const refresh = useCallback(async () => {
@@ -61,10 +70,12 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 		}
 	}, []);
 
-	// Initial fetch
+	// Only fetch on mount when no initialData was provided
 	useEffect(() => {
-		refresh();
-	}, [refresh]);
+		if (initialData === undefined) {
+			refresh();
+		}
+	}, [refresh, initialData]);
 
 	const value: SubscriptionContextValue = {
 		subscription,
