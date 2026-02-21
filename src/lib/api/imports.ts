@@ -60,17 +60,11 @@ export interface ImportWithResults extends Import {
 	rowResults: ImportRowResult[];
 }
 
-export interface Pagination {
-	page: number;
-	limit: number;
-	total: number;
-	totalPages: number;
-}
+import type { Pagination, ListResult } from "@/types/list-result";
 
-export interface ImportsListResponse {
-	data: Import[];
-	pagination: Pagination;
-}
+export type { Pagination };
+
+export type ImportsListResponse = ListResult<Import>;
 
 export interface ImportRowsListResponse {
 	data: ImportRowResult[];
@@ -82,6 +76,8 @@ export interface ListImportsOptions {
 	limit?: number;
 	status?: ImportStatus;
 	entityType?: ImportEntityType;
+	/** Generic additional filters (passed as query params) */
+	filters?: Record<string, string | string[]>;
 	baseUrl?: string;
 	signal?: AbortSignal;
 	jwt?: string;
@@ -100,6 +96,16 @@ export async function listImports(
 	if (opts?.limit) url.searchParams.set("limit", String(opts.limit));
 	if (opts?.status) url.searchParams.set("status", opts.status);
 	if (opts?.entityType) url.searchParams.set("entityType", opts.entityType);
+
+	if (opts?.filters) {
+		for (const [key, value] of Object.entries(opts.filters)) {
+			if (Array.isArray(value)) {
+				value.forEach((v) => url.searchParams.append(key, v));
+			} else {
+				url.searchParams.set(key, value);
+			}
+		}
+	}
 
 	const { json } = await fetchJson<ImportsListResponse>(url.toString(), {
 		method: "GET",

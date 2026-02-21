@@ -85,7 +85,9 @@ export function ShareholderFormDialog({
 	const [rfcError, setRfcError] = useState<string | undefined>();
 	// Nationality for physical person
 	const [personNationality, setPersonNationality] = useState(
-		shareholder?.entityType === "PERSON" ? shareholder?.nationality || "" : "",
+		shareholder?.entityType === "PERSON"
+			? shareholder?.nationality || "MX"
+			: "MX",
 	);
 
 	// COMPANY fields
@@ -99,7 +101,9 @@ export function ShareholderFormDialog({
 			: "",
 	);
 	const [companyNationality, setCompanyNationality] = useState(
-		shareholder?.entityType === "COMPANY" ? shareholder?.nationality || "" : "",
+		shareholder?.entityType === "COMPANY"
+			? shareholder?.nationality || "MX"
+			: "MX",
 	);
 
 	// COMPANY representative fields (Anexo 4)
@@ -151,8 +155,8 @@ export function ShareholderFormDialog({
 		setRfcError(undefined);
 		setPersonNationality(
 			shareholder?.entityType === "PERSON"
-				? shareholder?.nationality || ""
-				: "",
+				? shareholder?.nationality || "MX"
+				: "MX",
 		);
 		setBusinessName(shareholder?.businessName || "");
 		setTaxId(shareholder?.taxId || "");
@@ -163,8 +167,8 @@ export function ShareholderFormDialog({
 		);
 		setCompanyNationality(
 			shareholder?.entityType === "COMPANY"
-				? shareholder?.nationality || ""
-				: "",
+				? shareholder?.nationality || "MX"
+				: "MX",
 		);
 		setRepresentativeName(shareholder?.representativeName || "");
 		setRepresentativeCurp(shareholder?.representativeCurp || "");
@@ -571,7 +575,7 @@ export function ShareholderFormDialog({
 						{/* Common Fields */}
 						<div className="border-t pt-4 space-y-4">
 							<h4 className="text-sm font-medium">Participación y Contacto</h4>
-							<div className="grid grid-cols-[1fr_2fr_2fr] gap-4">
+							<div className="space-y-4">
 								<div className="space-y-2">
 									<Label htmlFor="ownershipPercentage">
 										Participación (%) *

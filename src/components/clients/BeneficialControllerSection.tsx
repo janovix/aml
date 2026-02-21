@@ -106,7 +106,7 @@ export function BeneficialControllerSection({
 	return (
 		<Card>
 			<CardHeader>
-				<div className="flex items-center justify-between">
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 					<div>
 						<CardTitle>Beneficiarios Controladores</CardTitle>
 						<CardDescription>
@@ -114,7 +114,11 @@ export function BeneficialControllerSection({
 							la entidad, conforme a la LFPIORPI y el CFF Art. 32-B.
 						</CardDescription>
 					</div>
-					<Button size="sm" onClick={handleOpenCreate}>
+					<Button
+						size="sm"
+						className="w-full sm:w-auto shrink-0"
+						onClick={handleOpenCreate}
+					>
 						<Plus className="h-4 w-4 mr-2" />
 						Agregar Beneficiario Controlador
 					</Button>
@@ -148,7 +152,7 @@ export function BeneficialControllerSection({
 									className="flex items-center justify-between p-3 border rounded-lg bg-muted/30"
 								>
 									<div className="min-w-0 flex-1">
-										<div className="flex items-center gap-2">
+										<div className="flex flex-wrap items-center gap-2">
 											<User className="h-4 w-4 text-muted-foreground shrink-0" />
 											<span className="font-medium truncate">
 												{getBCDisplayName(bc)}
@@ -162,7 +166,7 @@ export function BeneficialControllerSection({
 												</Badge>
 											)}
 										</div>
-										<div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+										<div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1 text-sm text-muted-foreground">
 											<span>
 												{getIdentificationCriteriaLabel(
 													bc.identificationCriteria,
@@ -172,7 +176,7 @@ export function BeneficialControllerSection({
 											{bc.rfc && <span>• RFC: {bc.rfc}</span>}
 										</div>
 										{hasScreening && (
-											<div className="flex items-center gap-2 mt-1 text-xs">
+											<div className="flex flex-wrap items-center gap-2 mt-1 text-xs">
 												<PEPIcon className={`h-3.5 w-3.5 ${pepColor}`} />
 												<span className={pepColor}>
 													{bc.isPEP ? "PEP Detectado" : "No PEP"}
@@ -206,7 +210,7 @@ export function BeneficialControllerSection({
 											</div>
 										)}
 									</div>
-									<div className="flex gap-2 ml-4">
+									<div className="flex gap-2 ml-2 sm:ml-4 shrink-0">
 										<Button
 											variant="ghost"
 											size="sm"

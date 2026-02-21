@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import {
 	AlertTriangle,
 	Bell,
@@ -17,10 +17,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
-import { useDataTableUrlFilters } from "@/hooks/useDataTableUrlFilters";
-import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { useServerTable } from "@/hooks/useServerTable";
 
-// Filter IDs for URL persistence
 const ALERT_FILTER_IDS = ["status", "severity", "isOverdue"];
 import { Button } from "@/components/ui/button";
 import {
@@ -36,18 +34,8 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useJwt } from "@/hooks/useJwt";
-import { showFetchError } from "@/lib/toast-utils";
-import { useOrgStore } from "@/lib/org-store";
-import {
-	listAlerts,
-	getAlertById,
-	type Alert,
-	type AlertStatus,
-	type AlertSeverity,
-	type ListAlertsOptions,
-} from "@/lib/api/alerts";
 import { getClientById } from "@/lib/api/clients";
+import { showFetchError } from "@/lib/toast-utils";
 import type { Client } from "@/types/client";
 import { getClientDisplayName } from "@/types/client";
 import {
@@ -59,10 +47,14 @@ import { formatProperNoun } from "@/lib/utils";
 import { PageHero, type StatCard } from "@/components/page-hero";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { TranslationKeys } from "@/lib/translations";
+import {
+	listAlerts,
+	type Alert,
+	type AlertStatus,
+	type AlertSeverity,
+	type ListAlertsOptions,
+} from "@/lib/api/alerts";
 
-/**
- * Extended alert row with resolved client and rule names
- */
 interface AlertRow {
 	id: string;
 	alertRuleId: string;
@@ -123,254 +115,85 @@ interface AlertsTableProps {
 }
 
 export function AlertsTable({
-	filters,
+	filters: fixedFilters,
 }: AlertsTableProps = {}): React.ReactElement {
 	const { navigateTo, orgPath } = useOrgNavigation();
-	const { jwt, isLoading: isJwtLoading } = useJwt();
-	const { currentOrg } = useOrgStore();
-	const urlFilters = useDataTableUrlFilters(ALERT_FILTER_IDS);
 	const { t } = useLanguage();
-	const [alerts, setAlerts] = useState<Alert[]>([]);
+
 	const [clients, setClients] = useState<Map<string, Client>>(new Map());
-	const [isLoading, setIsLoading] = useState(true);
-	const [isLoadingMore, setIsLoadingMore] = useState(false);
-	const [currentPage, setCurrentPage] = useState(1);
-	const [hasMore, setHasMore] = useState(true);
-	const ITEMS_PER_PAGE = 20;
+	const fetchedClientIdsRef = useRef<Set<string>>(new Set());
 
-	// Fetch client information for alerts - optimized to only fetch missing clients
-	const fetchClientsForAlerts = useCallback(
-		async (alertList: Alert[]) => {
-			const uniqueClientIds = [
-				...new Set(alertList.map((alert) => alert.clientId)),
-			];
+	const fetchClientsForAlerts = useCallback(async (alertList: Alert[]) => {
+		const uniqueClientIds = [...new Set(alertList.map((a) => a.clientId))];
+		const missingIds = uniqueClientIds.filter(
+			(id) => !fetchedClientIdsRef.current.has(id),
+		);
+		if (!missingIds.length) return;
 
-			// Filter out clients we already have
-			const missingClientIds = uniqueClientIds.filter(
-				(clientId) => !clients.has(clientId),
-			);
-
-			// If all clients are already loaded, skip fetching
-			if (missingClientIds.length === 0) {
-				return;
+		missingIds.forEach((id) => fetchedClientIdsRef.current.add(id));
+		const results = await Promise.allSettled(
+			missingIds.map((clientId) =>
+				getClientById({ id: clientId }).then((c) => ({ clientId, client: c })),
+			),
+		);
+		setClients((prev) => {
+			const merged = new Map(prev);
+			for (const r of results) {
+				if (r.status === "fulfilled")
+					merged.set(r.value.clientId, r.value.client);
 			}
+			return merged;
+		});
+	}, []);
 
-			// Fetch only missing clients in parallel
-			const clientPromises = missingClientIds.map(async (clientId) => {
-				try {
-					const client = await getClientById({
-						id: clientId,
-						jwt: jwt ?? undefined,
-					});
-					return { clientId, client };
-				} catch (error) {
-					console.error(`Error fetching client ${clientId}:`, error);
-					return null;
-				}
-			});
-
-			const results = await Promise.all(clientPromises);
-
-			setClients((prev) => {
-				const merged = new Map(prev);
-				results.forEach((result) => {
-					if (result) {
-						merged.set(result.clientId, result.client);
-					}
-				});
-				return merged;
-			});
-		},
-		[jwt, clients],
-	);
-
-	// Track if initial load has happened for current org
-	const hasLoadedForOrgRef = useRef<string | null>(null);
-	// Track previous filters to detect changes
-	const prevFiltersRef = useRef<typeof filters | null>(null);
-
-	// Initial load - refetch when organization changes (not on JWT refresh)
-	useEffect(() => {
-		// Wait for JWT to be ready and organization to be selected
-		// Without an organization, the API will return 403 "Organization Required"
-		if (isJwtLoading || !jwt || !currentOrg?.id) {
-			// If no org selected, clear data and stop loading
-			if (!currentOrg?.id && !isJwtLoading) {
-				setAlerts([]);
-				setClients(new Map());
-				setIsLoading(false);
-				hasLoadedForOrgRef.current = null;
-			}
-			return;
-		}
-
-		// Skip if we've already loaded for this org (JWT refresh shouldn't trigger reload)
-		if (hasLoadedForOrgRef.current === currentOrg.id) {
-			return;
-		}
-
-		const fetchAlerts = async () => {
-			try {
-				setIsLoading(true);
-				setCurrentPage(1);
-				// Clear existing data when org changes
-				setAlerts([]);
-				setClients(new Map());
-
-				const response = await listAlerts({
-					page: 1,
-					limit: ITEMS_PER_PAGE,
-					jwt,
-					...filters,
-				});
-				setAlerts(response.data);
-				setHasMore(response.pagination.page < response.pagination.totalPages);
-				hasLoadedForOrgRef.current = currentOrg.id;
-
-				await fetchClientsForAlerts(response.data);
-			} catch (error) {
-				hasLoadedForOrgRef.current = currentOrg.id;
-				console.error("Error fetching alerts:", error);
-				showFetchError("alerts-table", error);
-			} finally {
-				setIsLoading(false);
-			}
-		};
-		fetchAlerts();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [jwt, isJwtLoading, currentOrg?.id]);
-
-	// Refetch when filters change (after initial load, skip first run)
-	useEffect(() => {
-		// Skip if not loaded yet
-		if (!hasLoadedForOrgRef.current || !jwt || !currentOrg?.id) {
-			prevFiltersRef.current = filters;
-			return;
-		}
-
-		// Skip on first run (initial load already fetched)
-		if (prevFiltersRef.current === null) {
-			prevFiltersRef.current = filters;
-			return;
-		}
-
-		// Only refetch if filters actually changed
-		if (JSON.stringify(prevFiltersRef.current) === JSON.stringify(filters)) {
-			return;
-		}
-
-		prevFiltersRef.current = filters;
-
-		const refetchWithFilters = async () => {
-			try {
-				setIsLoading(true);
-				setCurrentPage(1);
-				setAlerts([]);
-
-				const response = await listAlerts({
-					page: 1,
-					limit: ITEMS_PER_PAGE,
-					jwt,
-					...filters,
-				});
-				setAlerts(response.data);
-				setHasMore(response.pagination.page < response.pagination.totalPages);
-				await fetchClientsForAlerts(response.data);
-			} catch (error) {
-				console.error("Error fetching alerts:", error);
-				showFetchError("alerts-table-filter", error);
-			} finally {
-				setIsLoading(false);
-			}
-		};
-		refetchWithFilters();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [filters]);
-
-	// Load more alerts for infinite scroll
-	const handleLoadMore = useCallback(async () => {
-		if (isLoadingMore || !hasMore || isJwtLoading || !jwt || !currentOrg?.id)
-			return;
-
-		try {
-			setIsLoadingMore(true);
-			const nextPage = currentPage + 1;
-			const response = await listAlerts({
-				page: nextPage,
-				limit: ITEMS_PER_PAGE,
-				jwt,
-				...filters,
-			});
-
-			setAlerts((prev) => [...prev, ...response.data]);
-			setCurrentPage(nextPage);
-			setHasMore(response.pagination.page < response.pagination.totalPages);
-
-			await fetchClientsForAlerts(response.data);
-		} catch (error) {
-			console.error("Error loading more alerts:", error);
-			showFetchError("alerts-table-more", error);
-		} finally {
-			setIsLoadingMore(false);
-		}
-	}, [
-		currentPage,
-		hasMore,
+	const {
+		data: alerts,
+		isLoading,
 		isLoadingMore,
-		isJwtLoading,
-		jwt,
-		filters,
-		fetchClientsForAlerts,
-		currentOrg?.id,
-	]);
-
-	// Silent refresh for auto-refresh (doesn't show loading state)
-	const silentRefresh = useCallback(async () => {
-		if (!jwt || isJwtLoading || !currentOrg?.id) return;
-
-		try {
+		hasMore,
+		pagination,
+		filterMeta,
+		handleLoadMore,
+		urlFilterProps,
+	} = useServerTable<Alert>({
+		fetcher: async ({ page, limit, filters, jwt }) => {
 			const response = await listAlerts({
-				page: 1,
-				limit: ITEMS_PER_PAGE,
-				jwt,
-				...filters,
+				page,
+				limit,
+				jwt: jwt ?? undefined,
+				...(fixedFilters ?? {}),
+				filters,
 			});
-			setAlerts(response.data);
-			setCurrentPage(1);
-			setHasMore(response.pagination.page < response.pagination.totalPages);
-			await fetchClientsForAlerts(response.data);
-		} catch {
-			// Silently ignore errors for background refresh
-		}
-	}, [jwt, isJwtLoading, filters, fetchClientsForAlerts, currentOrg?.id]);
-
-	// Auto-refresh every 30 seconds (only when on first page to avoid disrupting infinite scroll)
-	useAutoRefresh(silentRefresh, {
-		enabled: !isLoading && !!jwt && !!currentOrg?.id && currentPage === 1,
-		interval: 30000,
+			void fetchClientsForAlerts(response.data);
+			return response;
+		},
+		allowedFilterIds: ALERT_FILTER_IDS,
+		paginationMode: "infinite-scroll",
+		itemsPerPage: 20,
+		onError: (error) => showFetchError("alerts-table", error),
 	});
 
-	// Transform Alert to AlertRow format
-	const alertsData: AlertRow[] = useMemo(() => {
-		return alerts.map((alert) => {
-			const client = clients.get(alert.clientId);
-			return {
-				id: alert.id,
-				alertRuleId: alert.alertRuleId,
-				ruleName: alert.alertRule?.name || "Regla desconocida",
-				clientId: alert.clientId,
-				clientName: client ? getClientDisplayName(client) : alert.clientId,
-				status: alert.status,
-				severity: alert.severity,
-				submissionDeadline: alert.submissionDeadline,
-				isOverdue: alert.isOverdue,
-				notes: alert.notes,
-				createdAt: alert.createdAt,
-			};
-		});
-	}, [alerts, clients]);
+	const alertsData: AlertRow[] = useMemo(
+		() =>
+			alerts.map((alert) => {
+				const client = clients.get(alert.clientId);
+				return {
+					id: alert.id,
+					alertRuleId: alert.alertRuleId,
+					ruleName: alert.alertRule?.name ?? "Regla desconocida",
+					clientId: alert.clientId,
+					clientName: client ? getClientDisplayName(client) : alert.clientId,
+					status: alert.status,
+					severity: alert.severity,
+					submissionDeadline: alert.submissionDeadline,
+					isOverdue: alert.isOverdue,
+					notes: alert.notes,
+					createdAt: alert.createdAt,
+				};
+			}),
+		[alerts, clients],
+	);
 
-	// Column definitions
 	const columns: ColumnDef<AlertRow>[] = useMemo(
 		() => [
 			{
@@ -383,7 +206,6 @@ export function AlertsTable({
 
 					return (
 						<div className="flex items-center gap-3">
-							{/* Status icon */}
 							<TooltipProvider>
 								<Tooltip>
 									<TooltipTrigger asChild>
@@ -505,10 +327,9 @@ export function AlertsTable({
 				},
 			},
 		],
-		[t],
+		[orgPath, t],
 	);
 
-	// Filter definitions
 	const filterDefs: FilterDef[] = useMemo(
 		() => [
 			{
@@ -611,7 +432,6 @@ export function AlertsTable({
 		[t],
 	);
 
-	// Row actions
 	const renderActions = (item: AlertRow) => (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
@@ -657,17 +477,14 @@ export function AlertsTable({
 		</DropdownMenu>
 	);
 
-	// Convert isOverdue boolean to string for filtering
-	const alertsWithStringOverdue = useMemo(() => {
-		return alertsData.map((alert) => ({
-			...alert,
-			isOverdue: String(alert.isOverdue),
-		}));
-	}, [alertsData]);
+	// isOverdue is client-side filter (no server support); convert to string for DataTable filtering
+	const alertsWithStringOverdue = useMemo(
+		() => alertsData.map((a) => ({ ...a, isOverdue: String(a.isOverdue) })),
+		[alertsData],
+	);
 
-	// Compute stats from alerts data
 	const stats: StatCard[] = useMemo(() => {
-		const totalAlerts = alertsData.length;
+		const totalAlerts = pagination?.total ?? alertsData.length;
 		const detectedAlerts = alertsData.filter(
 			(a) => a.status === "DETECTED",
 		).length;
@@ -677,29 +494,17 @@ export function AlertsTable({
 		).length;
 
 		return [
-			{
-				label: t("statsTotalAlerts"),
-				value: totalAlerts,
-				icon: Bell,
-			},
+			{ label: t("statsTotalAlerts"), value: totalAlerts, icon: Bell },
 			{
 				label: t("alertStatusDetected"),
 				value: detectedAlerts,
 				icon: AlertTriangle,
 				variant: "primary",
 			},
-			{
-				label: t("alertStatusOverdue"),
-				value: overdueAlerts,
-				icon: Clock,
-			},
-			{
-				label: t("alertStatusSubmitted"),
-				value: submittedAlerts,
-				icon: Send,
-			},
+			{ label: t("alertStatusOverdue"), value: overdueAlerts, icon: Clock },
+			{ label: t("alertStatusSubmitted"), value: submittedAlerts, icon: Send },
 		];
-	}, [alertsData, t]);
+	}, [alertsData, pagination?.total, t]);
 
 	return (
 		<div className="space-y-6">
@@ -716,6 +521,8 @@ export function AlertsTable({
 				data={alertsWithStringOverdue as unknown as AlertRow[]}
 				columns={columns}
 				filters={filterDefs}
+				serverFilterMeta={filterMeta}
+				serverTotal={pagination?.total}
 				searchKeys={["ruleName", "clientName", "clientId", "notes"]}
 				searchPlaceholder={t("alertsSearchPlaceholder")}
 				emptyMessage={t("alertNoAlerts")}
@@ -729,13 +536,7 @@ export function AlertsTable({
 				onLoadMore={handleLoadMore}
 				hasMore={hasMore}
 				isLoadingMore={isLoadingMore}
-				// URL persistence
-				initialFilters={urlFilters.initialFilters}
-				initialSearch={urlFilters.initialSearch}
-				initialSort={urlFilters.initialSort}
-				onFiltersChange={urlFilters.onFiltersChange}
-				onSearchChange={urlFilters.onSearchChange}
-				onSortChange={urlFilters.onSortChange}
+				{...urlFilterProps}
 			/>
 		</div>
 	);

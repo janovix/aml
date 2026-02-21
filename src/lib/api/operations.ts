@@ -4,9 +4,11 @@ import type {
 	OperationEntity,
 	OperationCreateRequest,
 	OperationUpdateRequest,
-	OperationListResponse,
 	ActivityCode,
 } from "@/types/operation";
+
+import type { ListResult } from "@/types/list-result";
+export type OperationsListResponse = ListResult<OperationEntity>;
 
 export interface ListOperationsOptions {
 	page?: number;
@@ -18,10 +20,13 @@ export interface ListOperationsOptions {
 	branchPostalCode?: string;
 	alertTypeCode?: string;
 	watchlistStatus?: string;
+	dataSource?: string;
 	startDate?: string;
 	endDate?: string;
 	minAmount?: string;
 	maxAmount?: string;
+	/** Generic additional filters (passed as query params) */
+	filters?: Record<string, string | string[]>;
 	baseUrl?: string;
 	signal?: AbortSignal;
 	/** JWT token for authentication */
@@ -30,7 +35,7 @@ export interface ListOperationsOptions {
 
 export async function listOperations(
 	opts?: ListOperationsOptions,
-): Promise<OperationListResponse> {
+): Promise<OperationsListResponse> {
 	const baseUrl = opts?.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL("/api/v1/operations", baseUrl);
 
@@ -48,12 +53,24 @@ export async function listOperations(
 		url.searchParams.set("alertTypeCode", opts.alertTypeCode);
 	if (opts?.watchlistStatus)
 		url.searchParams.set("watchlistStatus", opts.watchlistStatus);
+	if (opts?.dataSource) url.searchParams.set("dataSource", opts.dataSource);
 	if (opts?.startDate) url.searchParams.set("startDate", opts.startDate);
 	if (opts?.endDate) url.searchParams.set("endDate", opts.endDate);
 	if (opts?.minAmount) url.searchParams.set("minAmount", opts.minAmount);
 	if (opts?.maxAmount) url.searchParams.set("maxAmount", opts.maxAmount);
 
-	const { json } = await fetchJson<OperationListResponse>(url.toString(), {
+	// Apply generic filter params
+	if (opts?.filters) {
+		for (const [key, value] of Object.entries(opts.filters)) {
+			if (Array.isArray(value)) {
+				value.forEach((v) => url.searchParams.append(key, v));
+			} else {
+				url.searchParams.set(key, value);
+			}
+		}
+	}
+
+	const { json } = await fetchJson<OperationsListResponse>(url.toString(), {
 		method: "GET",
 		cache: "no-store",
 		signal: opts?.signal,

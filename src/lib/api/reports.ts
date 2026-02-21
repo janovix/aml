@@ -83,6 +83,8 @@ export interface ListReportsOptions {
 	limit?: number;
 	periodType?: ReportType;
 	status?: ReportStatus;
+	/** Generic additional filters (passed as query params) */
+	filters?: Record<string, string | string[]>;
 	baseUrl?: string;
 	signal?: AbortSignal;
 	jwt?: string;
@@ -101,6 +103,16 @@ export async function listReports(
 	if (opts?.limit) url.searchParams.set("limit", String(opts.limit));
 	if (opts?.periodType) url.searchParams.set("periodType", opts.periodType);
 	if (opts?.status) url.searchParams.set("status", opts.status);
+
+	if (opts?.filters) {
+		for (const [key, value] of Object.entries(opts.filters)) {
+			if (Array.isArray(value)) {
+				value.forEach((v) => url.searchParams.append(key, v));
+			} else {
+				url.searchParams.set(key, value);
+			}
+		}
+	}
 
 	const { json } = await fetchJson<ReportsListResponse>(url.toString(), {
 		method: "GET",

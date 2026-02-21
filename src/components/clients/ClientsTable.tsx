@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
 	Users,
 	Building2,
@@ -13,7 +13,6 @@ import {
 	Flag,
 	FileText,
 	Trash2,
-	UserPlus,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -40,13 +39,10 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useJwt } from "@/hooks/useJwt";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
-import { useDataTableUrlFilters } from "@/hooks/useDataTableUrlFilters";
-import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { useServerTable } from "@/hooks/useServerTable";
 import { executeMutation } from "@/lib/mutations";
 import { toast } from "sonner";
-import { useOrgStore } from "@/lib/org-store";
 import type { Client, PersonType } from "@/types/client";
 import { getClientDisplayName } from "@/types/client";
 import { listClients, deleteClient } from "@/lib/api/clients";
@@ -79,16 +75,15 @@ const personTypeBgColors: Record<PersonType, string> = {
 	trust: "bg-amber-500/20 text-amber-400",
 };
 
-// Filter IDs for URL persistence
 const CLIENT_FILTER_IDS = ["personType", "stateCode"];
 
 export function ClientsTable(): React.ReactElement {
 	const { navigateTo, orgPath } = useOrgNavigation();
-	const { jwt, isLoading: isJwtLoading } = useJwt();
-	const { currentOrg } = useOrgStore();
-	const urlFilters = useDataTableUrlFilters(CLIENT_FILTER_IDS);
 	const { t, language } = useLanguage();
 	const { states, getStateName } = useStatesCatalog();
+
+	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+	const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
 
 	// Build person type config with translations
 	const personTypeConfig = useMemo(
@@ -111,119 +106,49 @@ export function ClientsTable(): React.ReactElement {
 		}),
 		[t],
 	);
-	const [clients, setClients] = useState<Client[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const [isLoadingMore, setIsLoadingMore] = useState(false);
-	const [currentPage, setCurrentPage] = useState(1);
-	const [hasMore, setHasMore] = useState(true);
-	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-	const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
-	const ITEMS_PER_PAGE = 20;
 
-	// Track if initial load has happened for current org
-	const hasLoadedForOrgRef = useRef<string | null>(null);
+	const handleFetchError = useCallback(() => {
+		toast.error("No se pudieron cargar los clientes.", { id: "clients-table" });
+	}, []);
 
-	// Initial load - refetch when organization changes (not on JWT refresh)
-	useEffect(() => {
-		// Wait for JWT to be ready and organization to be selected
-		// Without an organization, the API will return 403
-		if (isJwtLoading || !jwt || !currentOrg?.id) {
-			// If no org selected, clear data and stop loading
-			if (!currentOrg?.id && !isJwtLoading) {
-				setClients([]);
-				setIsLoading(false);
-				hasLoadedForOrgRef.current = null;
-			}
-			return;
-		}
-
-		// Skip if we've already loaded for this org (JWT refresh shouldn't trigger reload)
-		if (hasLoadedForOrgRef.current === currentOrg.id) {
-			return;
-		}
-
-		const fetchClients = async () => {
-			try {
-				setIsLoading(true);
-				setCurrentPage(1);
-				// Clear existing data when org changes
-				setClients([]);
-				const response = await listClients({
-					page: 1,
-					limit: ITEMS_PER_PAGE,
-					jwt,
-				});
-				setClients(response.data);
-				setHasMore(response.pagination.page < response.pagination.totalPages);
-				hasLoadedForOrgRef.current = currentOrg.id;
-			} catch (error) {
-				hasLoadedForOrgRef.current = currentOrg.id;
-				console.error("Error fetching clients:", error);
-				toast.error(t("clientsLoadError"), { id: "clients-table" });
-			} finally {
-				setIsLoading(false);
-			}
-		};
-		fetchClients();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [jwt, isJwtLoading, currentOrg?.id]);
-
-	// Load more clients for infinite scroll
-	const handleLoadMore = useCallback(async () => {
-		if (isLoadingMore || !hasMore || isJwtLoading || !jwt || !currentOrg?.id)
-			return;
-
-		try {
-			setIsLoadingMore(true);
-			const nextPage = currentPage + 1;
+	// -------------------------------------------------------------------------
+	// Server-driven table: useServerTable handles fetch, filters, pagination, URL
+	// -------------------------------------------------------------------------
+	const {
+		data: clients,
+		isLoading,
+		isLoadingMore,
+		hasMore,
+		pagination,
+		filterMeta,
+		handleLoadMore,
+		urlFilterProps,
+	} = useServerTable<Client>({
+		fetcher: async ({ page, limit, filters, search, jwt }) => {
 			const response = await listClients({
-				page: nextPage,
-				limit: ITEMS_PER_PAGE,
-				jwt,
+				page,
+				limit,
+				search: search || undefined,
+				filters,
+				jwt: jwt ?? undefined,
 			});
-
-			setClients((prev) => [...prev, ...response.data]);
-			setCurrentPage(nextPage);
-			setHasMore(response.pagination.page < response.pagination.totalPages);
-		} catch (error) {
-			console.error("Error loading more clients:", error);
-			toast.error(t("clientsLoadMoreError"), { id: "clients-table-more" });
-		} finally {
-			setIsLoadingMore(false);
-		}
-	}, [currentPage, hasMore, isLoadingMore, isJwtLoading, jwt, currentOrg?.id]);
-
-	// Silent refresh for auto-refresh (doesn't show loading state)
-	const silentRefresh = useCallback(async () => {
-		if (!jwt || isJwtLoading || !currentOrg?.id) return;
-
-		try {
-			const response = await listClients({
-				page: 1,
-				limit: ITEMS_PER_PAGE,
-				jwt,
-			});
-			setClients(response.data);
-			setCurrentPage(1);
-			setHasMore(response.pagination.page < response.pagination.totalPages);
-		} catch {
-			// Silently ignore errors for background refresh
-		}
-	}, [jwt, isJwtLoading, currentOrg?.id]);
-
-	// Auto-refresh every 30 seconds (only when on first page to avoid disrupting infinite scroll)
-	useAutoRefresh(silentRefresh, {
-		enabled: !isLoading && !!jwt && !!currentOrg?.id && currentPage === 1,
-		interval: 30000,
+			return response;
+		},
+		allowedFilterIds: CLIENT_FILTER_IDS,
+		paginationMode: "infinite-scroll",
+		itemsPerPage: 20,
+		onError: handleFetchError,
 	});
 
 	// Transform clients to include display name
-	const clientsData: ClientRow[] = useMemo(() => {
-		return clients.map((client) => ({
-			...client,
-			displayName: getClientDisplayName(client),
-		}));
-	}, [clients]);
+	const clientsData: ClientRow[] = useMemo(
+		() =>
+			clients.map((client) => ({
+				...client,
+				displayName: getClientDisplayName(client),
+			})),
+		[clients],
+	);
 
 	const handleGenerateReport = (client: Client): void => {
 		const reportData = JSON.stringify(client, null, 2);
@@ -261,12 +186,9 @@ export function ClientsTable(): React.ReactElement {
 
 		try {
 			await executeMutation({
-				mutation: () => deleteClient({ id: clientId, jwt: jwt ?? undefined }),
+				mutation: () => deleteClient({ id: clientId }),
 				loading: t("clientDeleting"),
 				success: `${clientName} ${t("clientDeleted")}`,
-				onSuccess: () => {
-					setClients(clients.filter((c) => c.id !== clientId));
-				},
 			});
 		} catch {
 			// Error is already handled by executeMutation via Sonner
@@ -550,6 +472,8 @@ export function ClientsTable(): React.ReactElement {
 				data={clientsData}
 				columns={columns}
 				filters={filterDefs}
+				serverFilterMeta={filterMeta}
+				serverTotal={pagination?.total}
 				searchKeys={[
 					"displayName",
 					"rfc",
@@ -573,13 +497,7 @@ export function ClientsTable(): React.ReactElement {
 				onLoadMore={handleLoadMore}
 				hasMore={hasMore}
 				isLoadingMore={isLoadingMore}
-				// URL persistence
-				initialFilters={urlFilters.initialFilters}
-				initialSearch={urlFilters.initialSearch}
-				initialSort={urlFilters.initialSort}
-				onFiltersChange={urlFilters.onFiltersChange}
-				onSearchChange={urlFilters.onSearchChange}
-				onSortChange={urlFilters.onSortChange}
+				{...urlFilterProps}
 			/>
 
 			<AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

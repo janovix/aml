@@ -19,18 +19,69 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SKELETON_HEIGHTS } from "@/lib/constants/skeleton-heights";
-import type { DataTableProps, SortState, ActiveFilter } from "./types";
+import type {
+	DataTableProps,
+	SortState,
+	ActiveFilter,
+	FilterDef,
+} from "./types";
 import { FilterDrawer } from "./filter-drawer";
 import { FilterPopover } from "./filter-popover";
 import { ClientFilterPopover } from "./client-filter-popover";
 import { InlineFilterSummary } from "./inline-filter-summary";
+import { DateRangeFilter } from "./date-range-filter";
+import { NumberRangeFilter } from "./number-range-filter";
+import type { FilterMetaDef } from "@/types/list-result";
 
 const ITEMS_PER_PAGE = 10;
+
+/**
+ * Merge server FilterMetaDef[] into static FilterDef[].
+ *
+ * For each enum server meta entry:
+ * - If a matching static FilterDef exists (by id), keep its icon and merge the
+ *   server's options (preserving existing icons/colors per option, adding counts).
+ * - If no matching static def exists, create a basic one without an icon.
+ *
+ * Range filters are excluded – they are rendered by DateRangeFilter / NumberRangeFilter.
+ */
+function mergeServerMeta(
+	staticFilters: FilterDef[],
+	meta: FilterMetaDef[],
+): FilterDef[] {
+	return meta
+		.filter((m) => m.type === "enum")
+		.map((m) => {
+			const existing = staticFilters.find((f) => f.id === m.id);
+			const options = (m.options ?? []).map((o) => {
+				const existingOpt = existing?.options.find((e) => e.value === o.value);
+				return {
+					...existingOpt,
+					value: o.value,
+					label: o.label,
+					count: o.count,
+				};
+			});
+
+			if (existing) {
+				return { ...existing, options };
+			}
+
+			return {
+				id: m.id,
+				label: m.label,
+				icon: (() => null) as unknown as import("lucide-react").LucideIcon,
+				options,
+			};
+		});
+}
 
 export function DataTable<T extends object>({
 	data,
 	columns,
-	filters,
+	filters: staticFilters,
+	serverFilterMeta,
+	serverTotal,
 	searchKeys,
 	searchPlaceholder = "Buscar...",
 	emptyMessage = "No se encontraron resultados",
@@ -70,6 +121,27 @@ export function DataTable<T extends object>({
 	initialSort,
 	onSortChange,
 }: DataTableProps<T>) {
+	// When serverFilterMeta is provided, merge it into the static filter defs
+	// so icons/colors are preserved while counts and options come from the server.
+	const isServerDriven = Boolean(
+		serverFilterMeta && serverFilterMeta.length > 0,
+	);
+	const filters: FilterDef[] = useMemo(
+		() =>
+			isServerDriven
+				? mergeServerMeta(staticFilters, serverFilterMeta ?? [])
+				: staticFilters,
+		[isServerDriven, serverFilterMeta, staticFilters],
+	);
+	// Range filter metas (only relevant in server-driven mode)
+	const rangeFilterMeta = useMemo(
+		() =>
+			(serverFilterMeta ?? []).filter(
+				(m) => m.type === "date-range" || m.type === "number-range",
+			),
+		[serverFilterMeta],
+	);
+
 	const isMobile = useIsMobile();
 	const [searchQuery, setSearchQuery] = useState(initialSearch ?? "");
 	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -217,8 +289,16 @@ export function DataTable<T extends object>({
 		}, obj);
 	};
 
-	// Filter and sort data
+	// Filter and sort data.
+	// When the table is server-driven, skip client-side filtering/sorting entirely
+	// since the server has already applied all filters and returned the correct page.
 	const filteredData = useMemo(() => {
+		if (isServerDriven) {
+			// In server-driven mode the `data` prop already contains the correct
+			// filtered / sorted page of results.
+			return data;
+		}
+
 		let result = data.filter((item) => {
 			// Search filter
 			const matchesSearch =
@@ -260,7 +340,7 @@ export function DataTable<T extends object>({
 		}
 
 		return result;
-	}, [data, searchQuery, searchKeys, activeFilters, sortState]);
+	}, [data, isServerDriven, searchQuery, searchKeys, activeFilters, sortState]);
 
 	// Pagination or Infinite Scroll
 	const totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -378,6 +458,48 @@ export function DataTable<T extends object>({
 										activeValues={activeFilters[filter.id] || []}
 										onToggleFilter={(value) => toggleFilter(filter.id, value)}
 										onClear={() => clearFilterGroup(filter.id)}
+										clearText={clearText}
+									/>
+								);
+							})}
+							{/* Server-driven range filters */}
+							{rangeFilterMeta.map((meta) => {
+								const activeVals = activeFilters[meta.id] ?? [];
+								if (meta.type === "date-range") {
+									return (
+										<DateRangeFilter
+											key={meta.id}
+											id={meta.id}
+											label={meta.label}
+											min={meta.min}
+											max={meta.max}
+											activeValues={activeVals}
+											onChangeRange={(from, to) =>
+												setActiveFilters((prev) => ({
+													...prev,
+													[meta.id]: [from, to].filter(Boolean),
+												}))
+											}
+											onClear={() => clearFilterGroup(meta.id)}
+											clearText={clearText}
+										/>
+									);
+								}
+								return (
+									<NumberRangeFilter
+										key={meta.id}
+										id={meta.id}
+										label={meta.label}
+										min={meta.min}
+										max={meta.max}
+										activeValues={activeVals}
+										onChangeRange={(from, to) =>
+											setActiveFilters((prev) => ({
+												...prev,
+												[meta.id]: [from, to].filter(Boolean),
+											}))
+										}
+										onClear={() => clearFilterGroup(meta.id)}
 										clearText={clearText}
 									/>
 								);
@@ -664,8 +786,14 @@ export function DataTable<T extends object>({
 				{/* Footer with Pagination or Results Count */}
 				<div className="border-t border-border px-3 py-2 flex items-center justify-between text-sm text-muted-foreground bg-muted/20">
 					<div className="flex items-center gap-2">
-						<span className="tabular-nums">{filteredData.length}</span>
-						<span>{filteredData.length !== 1 ? resultsText : resultText}</span>
+						<span className="tabular-nums">
+							{serverTotal ?? filteredData.length}
+						</span>
+						<span>
+							{(serverTotal ?? filteredData.length) !== 1
+								? resultsText
+								: resultText}
+						</span>
 						{selectedRows.size > 0 && (
 							<span className="text-primary">
 								• {selectedRows.size}{" "}

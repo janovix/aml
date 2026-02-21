@@ -47,20 +47,14 @@ export interface NoticeWithAlertSummary extends Notice {
 /**
  * Pagination metadata
  */
-export interface Pagination {
-	page: number;
-	limit: number;
-	total: number;
-	totalPages: number;
-}
+import type { Pagination, ListResult } from "@/types/list-result";
+
+export type { Pagination };
 
 /**
  * Notice list response from backend
  */
-export interface NoticesListResponse {
-	data: Notice[];
-	pagination: Pagination;
-}
+export type NoticesListResponse = ListResult<Notice>;
 
 /**
  * Notice preview response
@@ -101,6 +95,8 @@ export interface ListNoticesOptions {
 	limit?: number;
 	status?: NoticeStatus;
 	year?: number;
+	/** Generic additional filters (passed as query params) */
+	filters?: Record<string, string | string[]>;
 	baseUrl?: string;
 	signal?: AbortSignal;
 	jwt?: string;
@@ -119,6 +115,16 @@ export async function listNotices(
 	if (opts?.limit) url.searchParams.set("limit", String(opts.limit));
 	if (opts?.status) url.searchParams.set("status", opts.status);
 	if (opts?.year) url.searchParams.set("year", String(opts.year));
+
+	if (opts?.filters) {
+		for (const [key, value] of Object.entries(opts.filters)) {
+			if (Array.isArray(value)) {
+				value.forEach((v) => url.searchParams.append(key, v));
+			} else {
+				url.searchParams.set(key, value);
+			}
+		}
+	}
 
 	const { json } = await fetchJson<NoticesListResponse>(url.toString(), {
 		method: "GET",

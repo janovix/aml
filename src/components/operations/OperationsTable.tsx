@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { MoreHorizontal, Eye, Edit, FileText, Users } from "lucide-react";
 import Link from "next/link";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
-import { useDataTableUrlFilters } from "@/hooks/useDataTableUrlFilters";
-import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { useServerTable } from "@/hooks/useServerTable";
+import { useJwt } from "@/hooks/useJwt";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -15,13 +14,11 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useJwt } from "@/hooks/useJwt";
-import { showFetchError } from "@/lib/toast-utils";
-import { useOrgStore } from "@/lib/org-store";
 import {
 	listOperations,
 	type ListOperationsOptions,
 } from "@/lib/api/operations";
+import type { ActivityCode } from "@/types/operation";
 import { getClientById } from "@/lib/api/clients";
 import type { OperationEntity } from "@/types/operation";
 import type { Client } from "@/types/client";
@@ -63,10 +60,11 @@ interface OperationsTableProps {
 }
 
 export function OperationsTable({
-	filters,
+	filters: fixedFilters,
 }: OperationsTableProps = {}): React.ReactElement {
 	const { t } = useLanguage();
 	const { navigateTo, orgPath } = useOrgNavigation();
+	const { jwt } = useJwt();
 
 	const DATA_SOURCE_LABELS: Record<string, string> = {
 		MANUAL: t("opDataSourceManual"),
@@ -74,171 +72,89 @@ export function OperationsTable({
 		IMPORT: t("opDataSourceImport"),
 		ENRICHED: t("opDataSourceEnriched"),
 	};
-	const { jwt, isLoading: isJwtLoading } = useJwt();
-	const { currentOrg } = useOrgStore();
-	const searchParams = useSearchParams();
-	const urlFilters = useDataTableUrlFilters(OPERATION_FILTER_IDS);
 
-	const [operations, setOperations] = useState<OperationEntity[]>([]);
+	// Track client info separately (operations don't embed client details)
 	const [clients, setClients] = useState<Map<string, Client>>(new Map());
-	const [isLoading, setIsLoading] = useState(true);
-	const [isLoadingMore, setIsLoadingMore] = useState(false);
-	const [currentPage, setCurrentPage] = useState(1);
-	const [hasMore, setHasMore] = useState(true);
-	const ITEMS_PER_PAGE = 20;
-
 	const fetchedClientIdsRef = useRef<Set<string>>(new Set());
-	const hasLoadedForOrgRef = useRef<string | null>(null);
 
-	// Fetch client information for operations
 	const fetchClientsForOperations = useCallback(
 		async (opList: OperationEntity[]) => {
 			const uniqueClientIds = [...new Set(opList.map((op) => op.clientId))];
 			const missingClientIds = uniqueClientIds.filter(
-				(clientId) => !fetchedClientIdsRef.current.has(clientId),
+				(id) => !fetchedClientIdsRef.current.has(id),
 			);
-
-			if (missingClientIds.length === 0) return;
+			if (!missingClientIds.length) return;
 
 			missingClientIds.forEach((id) => fetchedClientIdsRef.current.add(id));
-
-			const clientPromises = missingClientIds.map(async (clientId) => {
-				try {
-					const client = await getClientById({
-						id: clientId,
-						jwt: jwt ?? undefined,
-					});
-					return { clientId, client };
-				} catch (error) {
-					console.error(`Error fetching client ${clientId}:`, error);
-					return null;
-				}
-			});
-
-			const results = await Promise.all(clientPromises);
-			const validResults = results.filter(
-				(result): result is { clientId: string; client: Client } =>
-					result !== null,
+			const results = await Promise.allSettled(
+				missingClientIds.map((clientId) =>
+					getClientById({ id: clientId }).then((c) => ({
+						clientId,
+						client: c,
+					})),
+				),
 			);
-
-			if (validResults.length > 0) {
-				setClients((prev) => {
-					const merged = new Map(prev);
-					validResults.forEach((result) => {
-						merged.set(result.clientId, result.client);
-					});
-					return merged;
-				});
-			}
+			setClients((prev) => {
+				const merged = new Map(prev);
+				for (const r of results) {
+					if (r.status === "fulfilled")
+						merged.set(r.value.clientId, r.value.client);
+				}
+				return merged;
+			});
 		},
-		[jwt],
+		[],
 	);
 
-	// Initial load
-	useEffect(() => {
-		if (isJwtLoading || !jwt || !currentOrg?.id) {
-			if (!currentOrg?.id && !isJwtLoading) {
-				setOperations([]);
-				setClients(new Map());
-				fetchedClientIdsRef.current.clear();
-				setIsLoading(false);
-				hasLoadedForOrgRef.current = null;
-			}
-			return;
-		}
+	// Build fixed filters from props (e.g., { clientId: "xxx" })
+	const fixedFilterParams = useMemo<Record<string, string>>(() => {
+		const out: Record<string, string> = {};
+		if (fixedFilters?.clientId) out.clientId = fixedFilters.clientId;
+		if (fixedFilters?.invoiceId) out.invoiceId = fixedFilters.invoiceId;
+		return out;
+	}, [fixedFilters]);
 
-		if (hasLoadedForOrgRef.current === currentOrg.id) return;
-
-		const fetchOperations = async () => {
-			try {
-				setIsLoading(true);
-				setCurrentPage(1);
-				setOperations([]);
-				setClients(new Map());
-				fetchedClientIdsRef.current.clear();
-
-				const response = await listOperations({
-					page: 1,
-					limit: ITEMS_PER_PAGE,
-					jwt,
-					...filters,
-				});
-				setOperations(response.data);
-				setHasMore(response.pagination.page < response.pagination.totalPages);
-				hasLoadedForOrgRef.current = currentOrg.id;
-				await fetchClientsForOperations(response.data);
-			} catch (error) {
-				hasLoadedForOrgRef.current = currentOrg.id;
-				console.error("Error fetching operations:", error);
-				showFetchError("operations-table", error);
-			} finally {
-				setIsLoading(false);
-			}
-		};
-		fetchOperations();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [jwt, isJwtLoading, currentOrg?.id]);
-
-	// Load more
-	const handleLoadMore = useCallback(async () => {
-		if (isLoadingMore || !hasMore || isJwtLoading || !jwt || !currentOrg?.id)
-			return;
-
-		try {
-			setIsLoadingMore(true);
-			const nextPage = currentPage + 1;
-			const response = await listOperations({
-				page: nextPage,
-				limit: ITEMS_PER_PAGE,
-				jwt,
-				...filters,
-			});
-
-			setOperations((prev) => [...prev, ...response.data]);
-			setCurrentPage(nextPage);
-			setHasMore(response.pagination.page < response.pagination.totalPages);
-			await fetchClientsForOperations(response.data);
-		} catch (error) {
-			console.error("Error loading more operations:", error);
-			showFetchError("operations-table-more", error);
-		} finally {
-			setIsLoadingMore(false);
-		}
-	}, [
-		currentPage,
-		hasMore,
+	// -------------------------------------------------------------------------
+	// Server-driven table
+	// -------------------------------------------------------------------------
+	const {
+		data: operations,
+		isLoading,
 		isLoadingMore,
-		isJwtLoading,
-		jwt,
-		filters,
-		fetchClientsForOperations,
-		currentOrg?.id,
-	]);
-
-	// Silent refresh
-	const silentRefresh = useCallback(async () => {
-		if (!jwt || isJwtLoading || !currentOrg?.id) return;
-
-		try {
+		hasMore,
+		pagination,
+		filterMeta,
+		handleLoadMore: baseHandleLoadMore,
+		urlFilterProps,
+	} = useServerTable<OperationEntity>({
+		fetcher: async ({
+			page,
+			limit,
+			filters: activeFilters,
+			fixedFilters: fixed,
+			jwt: jwtParam,
+		}) => {
 			const response = await listOperations({
-				page: 1,
-				limit: ITEMS_PER_PAGE,
-				jwt,
-				...filters,
+				page,
+				limit,
+				jwt: jwtParam ?? undefined,
+				clientId: fixed?.clientId,
+				invoiceId: fixed?.invoiceId,
+				filters: activeFilters,
 			});
-			setOperations(response.data);
-			setCurrentPage(1);
-			setHasMore(response.pagination.page < response.pagination.totalPages);
-			await fetchClientsForOperations(response.data);
-		} catch {
-			// Silently ignore
-		}
-	}, [jwt, isJwtLoading, filters, fetchClientsForOperations, currentOrg?.id]);
-
-	useAutoRefresh(silentRefresh, {
-		enabled: !isLoading && !!jwt && !!currentOrg?.id && currentPage === 1,
-		interval: 30000,
+			// Fire-and-forget client enrichment
+			void fetchClientsForOperations(response.data);
+			return response;
+		},
+		allowedFilterIds: OPERATION_FILTER_IDS,
+		paginationMode: "infinite-scroll",
+		itemsPerPage: 20,
+		fixedFilters: fixedFilterParams,
 	});
+
+	const handleLoadMore = useCallback(async () => {
+		await baseHandleLoadMore();
+	}, [baseHandleLoadMore]);
 
 	// Build rows
 	const operationsData: OperationRow[] = useMemo(() => {
@@ -464,6 +380,8 @@ export function OperationsTable({
 			data={operationsData}
 			columns={columns}
 			filters={filterDefs}
+			serverFilterMeta={filterMeta}
+			serverTotal={pagination?.total}
 			searchKeys={["clientName", "clientId", "shortId"]}
 			searchPlaceholder={t("opSearchPlaceholder")}
 			emptyMessage={t("opNoResults")}
@@ -479,12 +397,7 @@ export function OperationsTable({
 			onLoadMore={handleLoadMore}
 			hasMore={hasMore}
 			isLoadingMore={isLoadingMore}
-			initialFilters={urlFilters.initialFilters}
-			initialSearch={urlFilters.initialSearch}
-			initialSort={urlFilters.initialSort}
-			onFiltersChange={urlFilters.onFiltersChange}
-			onSearchChange={urlFilters.onSearchChange}
-			onSortChange={urlFilters.onSortChange}
+			{...urlFilterProps}
 		/>
 	);
 }

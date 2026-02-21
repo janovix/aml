@@ -463,7 +463,7 @@ export function ChatSidebar({ className }: ChatSidebarProps) {
 		<aside
 			ref={sidebarRef}
 			className={cn(
-				"relative hidden lg:flex h-screen flex-col border-l bg-background shrink-0",
+				"relative hidden lg:flex h-full flex-col border-l bg-background shrink-0",
 				isResizing && "select-none",
 				className,
 			)}
