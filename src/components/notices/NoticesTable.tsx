@@ -15,6 +15,8 @@ import {
 	Trash2,
 	Plus,
 	AlertCircle,
+	XCircle,
+	Undo2,
 } from "lucide-react";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { useServerTable } from "@/hooks/useServerTable";
@@ -89,6 +91,12 @@ const statusConfig: Record<
 		icon: <CheckCircle2 className="h-4 w-4" />,
 		color: "text-emerald-400",
 		bgColor: "bg-emerald-500/20",
+	},
+	REBUKED: {
+		label: "statusRebuked",
+		icon: <XCircle className="h-4 w-4" />,
+		color: "text-red-400",
+		bgColor: "bg-red-500/20",
 	},
 };
 
@@ -218,6 +226,16 @@ export function NoticesTable({
 									>
 										{formatProperNoun(item.name)}
 									</Link>
+									{item.amendmentCycle > 0 && (
+										<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/20 text-amber-400">
+											Enmienda #{item.amendmentCycle}
+										</span>
+									)}
+									{item.recordCount === 0 && (
+										<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-zinc-500/20 text-zinc-400">
+											Sin actividad
+										</span>
+									)}
 									<TooltipProvider>
 										<Tooltip>
 											<TooltipTrigger asChild>
@@ -353,6 +371,11 @@ export function NoticesTable({
 						label: t("noticeFilterAcknowledged"),
 						icon: <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />,
 					},
+					{
+						value: "REBUKED",
+						label: t("statusRebuked"),
+						icon: <XCircle className="h-3.5 w-3.5 text-red-400" />,
+					},
 				],
 			},
 		],
@@ -390,6 +413,24 @@ export function NoticesTable({
 					>
 						<Send className="h-4 w-4" />
 						{t("noticeSendToSat")}
+					</DropdownMenuItem>
+				)}
+				{item.status === "SUBMITTED" && (
+					<DropdownMenuItem
+						className="gap-2"
+						onClick={() => navigateTo(`/notices/${item.id}`)}
+					>
+						<XCircle className="h-4 w-4" />
+						Reportar Rechazo
+					</DropdownMenuItem>
+				)}
+				{item.status === "REBUKED" && (
+					<DropdownMenuItem
+						className="gap-2"
+						onClick={() => navigateTo(`/notices/${item.id}`)}
+					>
+						<Undo2 className="h-4 w-4" />
+						Revertir a Borrador
 					</DropdownMenuItem>
 				)}
 				<DropdownMenuSeparator />

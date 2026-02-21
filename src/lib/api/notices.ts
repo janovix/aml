@@ -2,14 +2,13 @@ import { getAmlCoreBaseUrl } from "./config";
 import { fetchJson } from "./http";
 import { downloadFile } from "./download";
 
-/**
- * Notice status enum matching backend
- */
-export type NoticeStatus = "DRAFT" | "GENERATED" | "SUBMITTED" | "ACKNOWLEDGED";
+export type NoticeStatus =
+	| "DRAFT"
+	| "GENERATED"
+	| "SUBMITTED"
+	| "ACKNOWLEDGED"
+	| "REBUKED";
 
-/**
- * Notice entity from backend
- */
 export interface Notice {
 	id: string;
 	organizationId: string;
@@ -23,18 +22,50 @@ export interface Notice {
 	fileSize?: number | null;
 	generatedAt?: string | null;
 	submittedAt?: string | null;
-	satFolioNumber?: string | null;
-	submitPdfDocumentId?: string | null;
-	ackPdfDocumentId?: string | null;
+	amendmentCycle: number;
 	createdBy?: string | null;
 	notes?: string | null;
 	createdAt: string;
 	updatedAt: string;
 }
 
-/**
- * Notice with alert summary from backend
- */
+export type NoticeEventType =
+	| "CREATED"
+	| "GENERATED"
+	| "SUBMITTED"
+	| "ACKNOWLEDGED"
+	| "REBUKED"
+	| "REVERTED"
+	| "ALERTS_MODIFIED";
+
+export interface NoticeEvent {
+	id: string;
+	noticeId: string;
+	organizationId: string;
+	eventType: NoticeEventType;
+	fromStatus?: string | null;
+	toStatus: string;
+	cycle: number;
+	pdfDocumentId?: string | null;
+	xmlFileUrl?: string | null;
+	fileSize?: number | null;
+	notes?: string | null;
+	createdBy?: string | null;
+	createdAt: string;
+}
+
+export interface NoticeAlertDetail {
+	id: string;
+	clientId: string;
+	clientName: string;
+	operationId?: string | null;
+	alertRuleName: string;
+	severity: string;
+	status: string;
+	createdAt: string;
+	activityCode?: string | null;
+}
+
 export interface NoticeWithAlertSummary extends Notice {
 	alertSummary: {
 		total: number;
@@ -42,27 +73,33 @@ export interface NoticeWithAlertSummary extends Notice {
 		byStatus: Record<string, number>;
 		byRule: Array<{ ruleId: string; ruleName: string; count: number }>;
 	};
+	events: NoticeEvent[];
+	alerts: NoticeAlertDetail[];
 }
 
-/**
- * Pagination metadata
- */
 import type { Pagination, ListResult } from "@/types/list-result";
 
 export type { Pagination };
 
-/**
- * Notice list response from backend
- */
 export type NoticesListResponse = ListResult<Notice>;
 
-/**
- * Notice preview response
- */
+export interface PreviewAlert {
+	id: string;
+	clientId: string;
+	clientName: string;
+	operationId?: string | null;
+	alertRuleName: string;
+	severity: string;
+	status: string;
+	createdAt: string;
+	activityCode?: string | null;
+}
+
 export interface NoticePreviewResponse {
 	total: number;
 	bySeverity: Record<string, number>;
 	byStatus: Record<string, number>;
+	alerts: PreviewAlert[];
 	periodStart: string;
 	periodEnd: string;
 	reportedMonth: string;
@@ -70,41 +107,27 @@ export interface NoticePreviewResponse {
 	submissionDeadline: string;
 }
 
-/**
- * Available month for notice creation
- */
 export interface AvailableMonth {
 	year: number;
 	month: number;
 	displayName: string;
-	/** True if a pending notice exists (blocks creation) - kept for backward compatibility */
 	hasNotice: boolean;
-	/** True if there is a DRAFT or GENERATED notice for this period */
 	hasPendingNotice: boolean;
-	/** True if there is a SUBMITTED or ACKNOWLEDGED notice for this period */
 	hasSubmittedNotice: boolean;
-	/** Total number of notices for this period */
 	noticeCount: number;
 }
 
-/**
- * Options for listing notices
- */
 export interface ListNoticesOptions {
 	page?: number;
 	limit?: number;
 	status?: NoticeStatus;
 	year?: number;
-	/** Generic additional filters (passed as query params) */
 	filters?: Record<string, string | string[]>;
 	baseUrl?: string;
 	signal?: AbortSignal;
 	jwt?: string;
 }
 
-/**
- * List notices with optional filters and pagination
- */
 export async function listNotices(
 	opts?: ListNoticesOptions,
 ): Promise<NoticesListResponse> {
@@ -135,9 +158,6 @@ export async function listNotices(
 	return json;
 }
 
-/**
- * Get a single notice by ID with alert summary
- */
 export async function getNoticeById(opts: {
 	id: string;
 	baseUrl?: string;
@@ -156,9 +176,6 @@ export async function getNoticeById(opts: {
 	return json;
 }
 
-/**
- * Preview alerts for a potential notice
- */
 export async function previewNotice(opts: {
 	year: number;
 	month: number;
@@ -181,9 +198,6 @@ export async function previewNotice(opts: {
 	return json;
 }
 
-/**
- * Get available months for creating notices
- */
 export async function getAvailableMonths(opts?: {
 	baseUrl?: string;
 	signal?: AbortSignal;
@@ -204,14 +218,12 @@ export async function getAvailableMonths(opts?: {
 	return json;
 }
 
-/**
- * Create a new notice
- */
 export async function createNotice(opts: {
 	name: string;
 	year: number;
 	month: number;
 	notes?: string | null;
+	alertIds?: string[];
 	baseUrl?: string;
 	signal?: AbortSignal;
 	jwt?: string;
@@ -219,30 +231,29 @@ export async function createNotice(opts: {
 	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL("/api/v1/notices", baseUrl);
 
+	const body: Record<string, unknown> = {
+		name: opts.name,
+		year: opts.year,
+		month: opts.month,
+		notes: opts.notes,
+	};
+	if (opts.alertIds !== undefined) body.alertIds = opts.alertIds;
+
 	const { json } = await fetchJson<Notice>(url.toString(), {
 		method: "POST",
 		cache: "no-store",
 		headers: { "content-type": "application/json" },
-		body: JSON.stringify({
-			name: opts.name,
-			year: opts.year,
-			month: opts.month,
-			notes: opts.notes,
-		}),
+		body: JSON.stringify(body),
 		signal: opts.signal,
 		jwt: opts.jwt,
 	});
 	return json;
 }
 
-/**
- * Update a notice
- */
 export async function updateNotice(opts: {
 	id: string;
 	name?: string;
 	notes?: string | null;
-	satFolioNumber?: string | null;
 	baseUrl?: string;
 	signal?: AbortSignal;
 	jwt?: string;
@@ -253,8 +264,6 @@ export async function updateNotice(opts: {
 	const body: Record<string, unknown> = {};
 	if (opts.name !== undefined) body.name = opts.name;
 	if (opts.notes !== undefined) body.notes = opts.notes;
-	if (opts.satFolioNumber !== undefined)
-		body.satFolioNumber = opts.satFolioNumber;
 
 	const { json } = await fetchJson<Notice>(url.toString(), {
 		method: "PATCH",
@@ -267,9 +276,6 @@ export async function updateNotice(opts: {
 	return json;
 }
 
-/**
- * Delete a notice (only DRAFT status)
- */
 export async function deleteNotice(opts: {
 	id: string;
 	baseUrl?: string;
@@ -287,9 +293,6 @@ export async function deleteNotice(opts: {
 	});
 }
 
-/**
- * Generate XML file for a notice
- */
 export async function generateNoticeFile(opts: {
 	id: string;
 	baseUrl?: string;
@@ -317,10 +320,6 @@ export async function generateNoticeFile(opts: {
 	return json;
 }
 
-/**
- * Download the generated notice XML file
- * Fetches the file as a blob and triggers a download in the browser
- */
 export async function downloadNoticeXml(opts: {
 	id: string;
 	fileName?: string;
@@ -337,45 +336,9 @@ export async function downloadNoticeXml(opts: {
 	});
 }
 
-/**
- * @deprecated Use downloadNoticeXml instead - this function no longer works as the backend now streams the file directly
- * Get download URL for a generated notice XML
- */
-export async function getNoticeDownloadUrl(opts: {
-	id: string;
-	baseUrl?: string;
-	signal?: AbortSignal;
-	jwt?: string;
-}): Promise<{
-	fileUrl: string;
-	fileSize?: number | null;
-	format: "xml";
-}> {
-	// This is deprecated - the backend now streams the file directly
-	// Keep for backwards compatibility but it will fail
-	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
-	const url = new URL(`/api/v1/notices/${opts.id}/download`, baseUrl);
-
-	const { json } = await fetchJson<{
-		fileUrl: string;
-		fileSize?: number | null;
-		format: "xml";
-	}>(url.toString(), {
-		method: "GET",
-		cache: "no-store",
-		signal: opts.signal,
-		jwt: opts.jwt,
-	});
-	return json;
-}
-
-/**
- * Submit a notice to SAT
- */
 export async function submitNoticeToSat(opts: {
 	id: string;
 	docSvcDocumentId: string;
-	satFolioNumber?: string;
 	baseUrl?: string;
 	signal?: AbortSignal;
 	jwt?: string;
@@ -389,7 +352,6 @@ export async function submitNoticeToSat(opts: {
 		headers: { "content-type": "application/json" },
 		body: JSON.stringify({
 			docSvcDocumentId: opts.docSvcDocumentId,
-			satFolioNumber: opts.satFolioNumber,
 		}),
 		signal: opts.signal,
 		jwt: opts.jwt,
@@ -397,12 +359,8 @@ export async function submitNoticeToSat(opts: {
 	return json;
 }
 
-/**
- * Record SAT acknowledgment for a notice
- */
 export async function acknowledgeNotice(opts: {
 	id: string;
-	satFolioNumber: string;
 	docSvcDocumentId: string;
 	baseUrl?: string;
 	signal?: AbortSignal;
@@ -416,7 +374,6 @@ export async function acknowledgeNotice(opts: {
 		cache: "no-store",
 		headers: { "content-type": "application/json" },
 		body: JSON.stringify({
-			satFolioNumber: opts.satFolioNumber,
 			docSvcDocumentId: opts.docSvcDocumentId,
 		}),
 		signal: opts.signal,
@@ -425,12 +382,92 @@ export async function acknowledgeNotice(opts: {
 	return json;
 }
 
-/**
- * Calculate SAT notice period dates (17th-16th cycle)
- * @param year - The year of the notice
- * @param month - The month of the notice (1-12)
- * @returns Period start and end dates, reported month, and submission deadline
- */
+export async function rebukeNotice(opts: {
+	id: string;
+	docSvcDocumentId: string;
+	notes?: string | null;
+	baseUrl?: string;
+	signal?: AbortSignal;
+	jwt?: string;
+}): Promise<Notice> {
+	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
+	const url = new URL(`/api/v1/notices/${opts.id}/rebuke`, baseUrl);
+
+	const { json } = await fetchJson<Notice>(url.toString(), {
+		method: "POST",
+		cache: "no-store",
+		headers: { "content-type": "application/json" },
+		body: JSON.stringify({
+			docSvcDocumentId: opts.docSvcDocumentId,
+			notes: opts.notes,
+		}),
+		signal: opts.signal,
+		jwt: opts.jwt,
+	});
+	return json;
+}
+
+export async function revertNoticeToDraft(opts: {
+	id: string;
+	baseUrl?: string;
+	signal?: AbortSignal;
+	jwt?: string;
+}): Promise<Notice> {
+	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
+	const url = new URL(`/api/v1/notices/${opts.id}/revert`, baseUrl);
+
+	const { json } = await fetchJson<Notice>(url.toString(), {
+		method: "POST",
+		cache: "no-store",
+		headers: { "content-type": "application/json" },
+		signal: opts.signal,
+		jwt: opts.jwt,
+	});
+	return json;
+}
+
+export async function addAlertsToNotice(opts: {
+	id: string;
+	alertIds: string[];
+	baseUrl?: string;
+	signal?: AbortSignal;
+	jwt?: string;
+}): Promise<{ added: number }> {
+	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
+	const url = new URL(`/api/v1/notices/${opts.id}/alerts/add`, baseUrl);
+
+	const { json } = await fetchJson<{ added: number }>(url.toString(), {
+		method: "POST",
+		cache: "no-store",
+		headers: { "content-type": "application/json" },
+		body: JSON.stringify({ alertIds: opts.alertIds }),
+		signal: opts.signal,
+		jwt: opts.jwt,
+	});
+	return json;
+}
+
+export async function removeAlertsFromNotice(opts: {
+	id: string;
+	alertIds: string[];
+	baseUrl?: string;
+	signal?: AbortSignal;
+	jwt?: string;
+}): Promise<{ removed: number }> {
+	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
+	const url = new URL(`/api/v1/notices/${opts.id}/alerts/remove`, baseUrl);
+
+	const { json } = await fetchJson<{ removed: number }>(url.toString(), {
+		method: "POST",
+		cache: "no-store",
+		headers: { "content-type": "application/json" },
+		body: JSON.stringify({ alertIds: opts.alertIds }),
+		signal: opts.signal,
+		jwt: opts.jwt,
+	});
+	return json;
+}
+
 export function calculateNoticePeriod(
 	year: number,
 	month: number,
@@ -456,7 +493,6 @@ export function calculateNoticePeriod(
 		"Diciembre",
 	];
 
-	// Calculate start month (previous month)
 	let startMonth = month - 1;
 	let startYear = year;
 	if (startMonth === 0) {
@@ -464,15 +500,11 @@ export function calculateNoticePeriod(
 		startYear = year - 1;
 	}
 
-	// Period starts on day 17 of previous month
 	const periodStart = new Date(
 		Date.UTC(startYear, startMonth - 1, 17, 0, 0, 0, 0),
 	);
-
-	// Period ends on day 16 of current month at end of day
 	const periodEnd = new Date(Date.UTC(year, month - 1, 16, 23, 59, 59, 999));
 
-	// Submission deadline is day 17 of following month
 	let deadlineMonth = month + 1;
 	let deadlineYear = year;
 	if (deadlineMonth > 12) {
@@ -495,28 +527,24 @@ export function calculateNoticePeriod(
 	};
 }
 
-/**
- * Get status badge color
- */
 export function getNoticeStatusColor(status: NoticeStatus): string {
 	const colors: Record<NoticeStatus, string> = {
 		DRAFT: "bg-gray-100 text-gray-800",
 		GENERATED: "bg-blue-100 text-blue-800",
 		SUBMITTED: "bg-yellow-100 text-yellow-800",
 		ACKNOWLEDGED: "bg-green-100 text-green-800",
+		REBUKED: "bg-red-100 text-red-800",
 	};
 	return colors[status] || "bg-gray-100 text-gray-800";
 }
 
-/**
- * Get status label in Spanish
- */
 export function getNoticeStatusLabel(status: NoticeStatus): string {
 	const labels: Record<NoticeStatus, string> = {
 		DRAFT: "Borrador",
 		GENERATED: "Generado",
 		SUBMITTED: "Enviado",
 		ACKNOWLEDGED: "Acusado",
+		REBUKED: "Rechazado",
 	};
 	return labels[status] || status;
 }

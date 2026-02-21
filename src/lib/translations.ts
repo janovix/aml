@@ -775,6 +775,7 @@ export const translations = {
 		statusGenerated: "Generado",
 		statusSubmitted: "Enviado al SAT",
 		statusAcknowledged: "Acusado por SAT",
+		statusRebuked: "Rechazado por SAT",
 		statusPending: "Pendiente",
 		statusInQueue: "En cola",
 		statusVerifying: "Verificando",
@@ -1005,7 +1006,6 @@ export const translations = {
 		noticeAlerts: "Alertas",
 		noticePeriodStart: "Inicio",
 		noticePeriodEnd: "Fin",
-		noticeSatFolio: "Folio SAT",
 		noticeSubmissionDate: "Fecha de Envío",
 		noticeAlertsSummary: "Resumen de Alertas",
 		noticeBySeverity: "Por Severidad",
@@ -1014,14 +1014,10 @@ export const translations = {
 		noticeMarkSubmittedTitle: "Marcar como Enviado",
 		noticeMarkSubmittedDesc:
 			"Sube el PDF generado del portal del SAT al confirmar el envío del XML. Opcionalmente puedes ingresar el número de folio.",
-		noticeFolioOptional: "Número de Folio (opcional)",
-		noticeFolioPlaceholder: "Ingresa el folio del SAT",
 		noticeConfirmSubmission: "Confirmar Envío",
 		noticeRegisterAckTitle: "Registrar Acuse del SAT",
 		noticeRegisterAckDesc:
 			"Sube el PDF del acuse de recibo generado en el portal del SAT e ingresa el número de folio.",
-		noticeFolioRequired: "Número de Folio *",
-		noticeFolioAckPlaceholder: "Ingresa el folio del acuse",
 		noticePdfRequired: "Archivo PDF *",
 		noticePdfUploadHint: "Clic para seleccionar un archivo PDF",
 		noticePdfMaxSize: "Solo PDF, máx. 10MB",
@@ -1035,6 +1031,36 @@ export const translations = {
 		noticeAckRegistered: "El acuse del SAT ha sido registrado",
 		noticeDeleted: "ha sido eliminado",
 		noticeTotalAlerts: "Total Alertas",
+
+		// Notice rebuke/amendment workflow
+		noticeRebuked: "Rechazado",
+		noticeRebuke: "Reportar Rechazo",
+		noticeRebukeDesc: "Adjunte el documento de rechazo de SAT",
+		noticeRebukeNotes: "Notas sobre el rechazo",
+		noticeRebukeNotesPlaceholder: "Describa los errores indicados por SAT...",
+		noticeRevert: "Revertir a Borrador",
+		noticeRevertConfirm:
+			"¿Desea revertir este aviso a borrador para realizar correcciones?",
+		noticeAmendment: "Enmienda",
+
+		// Notice event timeline
+		noticeHistory: "Historial",
+		noticeEventCreated: "Creado",
+		noticeEventGenerated: "Generado",
+		noticeEventSubmitted: "Enviado",
+		noticeEventAcknowledged: "Acusado",
+		noticeEventRebuked: "Rechazado",
+		noticeEventReverted: "Revertido a borrador",
+		noticeEventAlertsModified: "Alertas modificadas",
+
+		// Notice document upload
+		noticeUploadDocument: "Subir documento PDF",
+		noticeUploadDocumentDesc: "Seleccione un archivo PDF (máximo 10MB)",
+
+		// Notice amendment guidance
+		noticeAmendmentGuide:
+			"Para corregir el aviso: 1) Revise el documento de rechazo, 2) Corrija los datos en los registros de Cliente u Operación correspondientes, 3) Agregue o elimine alertas si es necesario, 4) Regenere el archivo XML, 5) Reenvíe a SAT",
+		noticeRebukeReview: "SAT reportó un rechazo — revise el documento adjunto",
 
 		// Notice create view
 		noticeSatPeriod: "Período SAT",
@@ -1303,6 +1329,35 @@ export const translations = {
 		noticeNoAlerts: "No hay alertas disponibles para este período",
 		noticeSelectPeriodPreview: "Selecciona un período para ver la vista previa",
 		noticeCreateButton: "Crear Aviso",
+
+		// Notice alert selection
+		noticeSelectAll: "Seleccionar todas",
+		noticeDeselectAll: "Deseleccionar todas",
+		noticeSelectedCount: "{selected} de {total} alertas seleccionadas",
+		noticeAlertClient: "Cliente",
+		noticeAlertRule: "Regla",
+		noticeAlertSeverity: "Severidad",
+		noticeAlertDate: "Fecha",
+
+		// Notice empty/LFPIORPI compliance
+		noticeEmptyNoAlerts:
+			"No se detectaron operaciones vulnerables en este periodo. Se creará un aviso informativo sin actividad.",
+		noticeEmptyWithAlertsTitle: "Aviso sin alertas seleccionadas",
+		noticeEmptyWithAlertsBody:
+			"Se han detectado {count} operaciones vulnerables en este periodo que no serán incluidas en el aviso. Conforme al Art. 53, fracción VI de la LFPIORPI, la omisión en la presentación de avisos puede resultar en multas de 10,000 a 65,000 veces el valor diario de la UMA, o del 10% al 100% del valor de la operación (Art. 54, fracción III).",
+		noticeEmptyWithAlertsNote:
+			"La finalidad de este sistema es identificar y reportar operaciones vulnerables. Enviar un aviso vacío cuando existen alertas detectadas anula el propósito del monitoreo y puede constituir negligencia regulatoria.",
+		noticeEmptyConfirmCheckbox:
+			"Entiendo que estoy omitiendo {count} alertas detectadas y asumo la responsabilidad regulatoria",
+		noticePartialDeselection:
+			"{deselected} de {total} alertas no serán incluidas en este aviso. Asegúrese de que las alertas omitidas serán reportadas en otro aviso o canceladas con justificación.",
+		noticeEmptyBadge: "Sin actividad",
+
+		// Notice alert management
+		noticeAddAlerts: "Agregar Alertas",
+		noticeRemoveAlert: "Remover",
+		noticeNoAlertsInNotice: "Este aviso no tiene alertas asignadas",
+		noticeEligibleAlerts: "Alertas elegibles",
 
 		// Report detail view (expanded)
 		reportNotFound: "Reporte no encontrado",
@@ -2254,6 +2309,7 @@ export const translations = {
 		statusGenerated: "Generated",
 		statusSubmitted: "Submitted to SAT",
 		statusAcknowledged: "Acknowledged by SAT",
+		statusRebuked: "Rebuked by SAT",
 		statusPending: "Pending",
 		statusInQueue: "In queue",
 		statusVerifying: "Verifying",
@@ -2485,7 +2541,6 @@ export const translations = {
 		noticeAlerts: "Alerts",
 		noticePeriodStart: "Start",
 		noticePeriodEnd: "End",
-		noticeSatFolio: "SAT Folio",
 		noticeSubmissionDate: "Submission Date",
 		noticeAlertsSummary: "Alerts Summary",
 		noticeBySeverity: "By Severity",
@@ -2494,14 +2549,10 @@ export const translations = {
 		noticeMarkSubmittedTitle: "Mark as Submitted",
 		noticeMarkSubmittedDesc:
 			"Upload the PDF generated from the SAT portal when confirming the XML submission. You may optionally enter the folio number.",
-		noticeFolioOptional: "Folio Number (optional)",
-		noticeFolioPlaceholder: "Enter SAT folio",
 		noticeConfirmSubmission: "Confirm Submission",
 		noticeRegisterAckTitle: "Register SAT Acknowledgement",
 		noticeRegisterAckDesc:
 			"Upload the PDF of the acknowledgement receipt generated on the SAT portal and enter the folio number.",
-		noticeFolioRequired: "Folio Number *",
-		noticeFolioAckPlaceholder: "Enter acknowledgement folio",
 		noticePdfRequired: "PDF File *",
 		noticePdfUploadHint: "Click to select a PDF file",
 		noticePdfMaxSize: "PDF only, max. 10MB",
@@ -2515,6 +2566,36 @@ export const translations = {
 		noticeAckRegistered: "The SAT acknowledgement has been registered",
 		noticeDeleted: "has been deleted",
 		noticeTotalAlerts: "Total Alerts",
+
+		// Notice rebuke/amendment workflow
+		noticeRebuked: "Rechazado",
+		noticeRebuke: "Reportar Rechazo",
+		noticeRebukeDesc: "Adjunte el documento de rechazo de SAT",
+		noticeRebukeNotes: "Notas sobre el rechazo",
+		noticeRebukeNotesPlaceholder: "Describa los errores indicados por SAT...",
+		noticeRevert: "Revertir a Borrador",
+		noticeRevertConfirm:
+			"¿Desea revertir este aviso a borrador para realizar correcciones?",
+		noticeAmendment: "Enmienda",
+
+		// Notice event timeline
+		noticeHistory: "Historial",
+		noticeEventCreated: "Creado",
+		noticeEventGenerated: "Generado",
+		noticeEventSubmitted: "Enviado",
+		noticeEventAcknowledged: "Acusado",
+		noticeEventRebuked: "Rechazado",
+		noticeEventReverted: "Revertido a borrador",
+		noticeEventAlertsModified: "Alertas modificadas",
+
+		// Notice document upload
+		noticeUploadDocument: "Subir documento PDF",
+		noticeUploadDocumentDesc: "Seleccione un archivo PDF (máximo 10MB)",
+
+		// Notice amendment guidance
+		noticeAmendmentGuide:
+			"Para corregir el aviso: 1) Revise el documento de rechazo, 2) Corrija los datos en los registros de Cliente u Operación correspondientes, 3) Agregue o elimine alertas si es necesario, 4) Regenere el archivo XML, 5) Reenvíe a SAT",
+		noticeRebukeReview: "SAT reportó un rechazo — revise el documento adjunto",
 
 		// Notice create view
 		noticeSatPeriod: "SAT Period",
@@ -2781,6 +2862,35 @@ export const translations = {
 		noticeNoAlerts: "No alerts available for this period",
 		noticeSelectPeriodPreview: "Select a period to see the preview",
 		noticeCreateButton: "Create Notice",
+
+		// Notice alert selection
+		noticeSelectAll: "Seleccionar todas",
+		noticeDeselectAll: "Deseleccionar todas",
+		noticeSelectedCount: "{selected} de {total} alertas seleccionadas",
+		noticeAlertClient: "Cliente",
+		noticeAlertRule: "Regla",
+		noticeAlertSeverity: "Severidad",
+		noticeAlertDate: "Fecha",
+
+		// Notice empty/LFPIORPI compliance
+		noticeEmptyNoAlerts:
+			"No se detectaron operaciones vulnerables en este periodo. Se creará un aviso informativo sin actividad.",
+		noticeEmptyWithAlertsTitle: "Aviso sin alertas seleccionadas",
+		noticeEmptyWithAlertsBody:
+			"Se han detectado {count} operaciones vulnerables en este periodo que no serán incluidas en el aviso. Conforme al Art. 53, fracción VI de la LFPIORPI, la omisión en la presentación de avisos puede resultar en multas de 10,000 a 65,000 veces el valor diario de la UMA, o del 10% al 100% del valor de la operación (Art. 54, fracción III).",
+		noticeEmptyWithAlertsNote:
+			"La finalidad de este sistema es identificar y reportar operaciones vulnerables. Enviar un aviso vacío cuando existen alertas detectadas anula el propósito del monitoreo y puede constituir negligencia regulatoria.",
+		noticeEmptyConfirmCheckbox:
+			"Entiendo que estoy omitiendo {count} alertas detectadas y asumo la responsabilidad regulatoria",
+		noticePartialDeselection:
+			"{deselected} de {total} alertas no serán incluidas en este aviso. Asegúrese de que las alertas omitidas serán reportadas en otro aviso o canceladas con justificación.",
+		noticeEmptyBadge: "Sin actividad",
+
+		// Notice alert management
+		noticeAddAlerts: "Agregar Alertas",
+		noticeRemoveAlert: "Remover",
+		noticeNoAlertsInNotice: "Este aviso no tiene alertas asignadas",
+		noticeEligibleAlerts: "Alertas elegibles",
 
 		// Report detail view (expanded)
 		reportNotFound: "Report not found",
