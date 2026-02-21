@@ -15,9 +15,7 @@ vi.mock("@/lib/api/organization-settings", () => ({
 
 describe("ObligatedSubjectSetup", () => {
 	it("renders the setup form", () => {
-		renderWithProviders(
-			<ObligatedSubjectSetup onComplete={vi.fn()} onSwitchOrg={vi.fn()} />,
-		);
+		renderWithProviders(<ObligatedSubjectSetup onComplete={vi.fn()} />);
 
 		expect(
 			screen.getByText("Configuración de Sujeto Obligado"),
@@ -27,9 +25,7 @@ describe("ObligatedSubjectSetup", () => {
 	});
 
 	it("renders all activity options", () => {
-		renderWithProviders(
-			<ObligatedSubjectSetup onComplete={vi.fn()} onSwitchOrg={vi.fn()} />,
-		);
+		renderWithProviders(<ObligatedSubjectSetup onComplete={vi.fn()} />);
 
 		// Should see activity codes
 		expect(screen.getByText("VEH")).toBeInTheDocument();
@@ -38,9 +34,7 @@ describe("ObligatedSubjectSetup", () => {
 	});
 
 	it("has disabled submit button initially", () => {
-		renderWithProviders(
-			<ObligatedSubjectSetup onComplete={vi.fn()} onSwitchOrg={vi.fn()} />,
-		);
+		renderWithProviders(<ObligatedSubjectSetup onComplete={vi.fn()} />);
 
 		const submitBtn = screen.getByText("Guardar configuración");
 		expect(submitBtn.closest("button")).toBeDisabled();
@@ -48,9 +42,7 @@ describe("ObligatedSubjectSetup", () => {
 
 	it("validates RFC format", async () => {
 		const user = userEvent.setup();
-		renderWithProviders(
-			<ObligatedSubjectSetup onComplete={vi.fn()} onSwitchOrg={vi.fn()} />,
-		);
+		renderWithProviders(<ObligatedSubjectSetup onComplete={vi.fn()} />);
 
 		const rfcInput = screen.getByPlaceholderText("Ej. XAXX010101000");
 		await user.type(rfcInput, "INVALID");
@@ -60,9 +52,7 @@ describe("ObligatedSubjectSetup", () => {
 
 	it("shows person type for valid RFC", async () => {
 		const user = userEvent.setup();
-		renderWithProviders(
-			<ObligatedSubjectSetup onComplete={vi.fn()} onSwitchOrg={vi.fn()} />,
-		);
+		renderWithProviders(<ObligatedSubjectSetup onComplete={vi.fn()} />);
 
 		const rfcInput = screen.getByPlaceholderText("Ej. XAXX010101000");
 		await user.type(rfcInput, "XAXX010101000");
@@ -72,9 +62,7 @@ describe("ObligatedSubjectSetup", () => {
 
 	it("shows Persona Moral for 12 character RFC", async () => {
 		const user = userEvent.setup();
-		renderWithProviders(
-			<ObligatedSubjectSetup onComplete={vi.fn()} onSwitchOrg={vi.fn()} />,
-		);
+		renderWithProviders(<ObligatedSubjectSetup onComplete={vi.fn()} />);
 
 		const rfcInput = screen.getByPlaceholderText("Ej. XAXX010101000");
 		await user.type(rfcInput, "XAX010101AB1");
@@ -82,21 +70,8 @@ describe("ObligatedSubjectSetup", () => {
 		expect(screen.getByText("Persona Moral")).toBeInTheDocument();
 	});
 
-	it("calls onSwitchOrg when switch org button is clicked", async () => {
-		const user = userEvent.setup();
-		const onSwitchOrg = vi.fn();
-		renderWithProviders(
-			<ObligatedSubjectSetup onComplete={vi.fn()} onSwitchOrg={onSwitchOrg} />,
-		);
-
-		await user.click(screen.getByText("Cambiar organización"));
-		expect(onSwitchOrg).toHaveBeenCalled();
-	});
-
 	it("shows permanent warning", () => {
-		renderWithProviders(
-			<ObligatedSubjectSetup onComplete={vi.fn()} onSwitchOrg={vi.fn()} />,
-		);
+		renderWithProviders(<ObligatedSubjectSetup onComplete={vi.fn()} />);
 
 		expect(
 			screen.getByText("Esta selección es permanente y no se puede cambiar."),

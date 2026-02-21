@@ -5,7 +5,6 @@ import { type ReactNode } from "react";
 import { OrgSlugContext } from "@/hooks/useOrgSlug";
 import { useOrgSettings } from "@/hooks/useOrgSettings";
 import { ObligatedSubjectSetup } from "@/components/onboarding/ObligatedSubjectSetup";
-import { getAuthAppUrl } from "@/lib/auth/config";
 import { getViewSkeleton } from "@/lib/view-skeletons";
 import { hasAMLAccess, useSubscriptionSafe } from "@/lib/subscription";
 import { NoAMLAccess } from "@/components/subscription";
@@ -52,15 +51,7 @@ function OrgSettingsGuard({ children }: { children: ReactNode }) {
 	}
 
 	if (!isConfigured) {
-		return (
-			<ObligatedSubjectSetup
-				onComplete={refresh}
-				onSwitchOrg={() => {
-					const authUrl = getAuthAppUrl();
-					window.location.href = authUrl;
-				}}
-			/>
-		);
+		return <ObligatedSubjectSetup onComplete={refresh} />;
 	}
 
 	return <>{children}</>;

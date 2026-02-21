@@ -28,6 +28,8 @@ interface DashboardLayoutProps {
 	children: React.ReactNode;
 	/** Initial sidebar collapsed state from server */
 	initialSidebarCollapsed?: boolean;
+	/** When true, hides sidebar navigation groups and the top navbar */
+	hideNavigation?: boolean;
 }
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
@@ -141,6 +143,7 @@ function Navbar() {
 export function DashboardLayout({
 	children,
 	initialSidebarCollapsed = false,
+	hideNavigation = false,
 }: DashboardLayoutProps) {
 	// Sidebar state - initialized with server-side value
 	const [isCollapsed, setIsCollapsed] = useState(initialSidebarCollapsed);
@@ -236,9 +239,9 @@ export function DashboardLayout({
 						open={!isCollapsed}
 						onOpenChange={handleSidebarOpenChange}
 					>
-						<AppSidebar />
+						<AppSidebar hideNavigation={hideNavigation} />
 						<SidebarInset className="flex h-screen flex-col overflow-hidden">
-							<Navbar />
+							{!hideNavigation && <Navbar />}
 							<main className="@container/main flex min-h-0 flex-1 flex-col overflow-y-auto">
 								<div className="flex flex-col p-4 pb-8 @md/main:p-6 @md/main:pb-12 @lg/main:p-8 @lg/main:pb-16">
 									{children}

@@ -27,7 +27,7 @@ import {
 } from "@/lib/api/organization-settings";
 import { NoAMLAccess } from "@/components/subscription";
 import { ObligatedSubjectSetup } from "@/components/onboarding/ObligatedSubjectSetup";
-import { getAuthAppUrl } from "@/lib/auth/config";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
 interface BootstrapData {
 	subscription: SubscriptionStatus | null;
@@ -263,6 +263,17 @@ export function OrgBootstrapper({
 			isSubsequentNavigation && storeState.currentOrg?.slug === urlOrgSlug;
 
 		async function syncOrg() {
+			// When switching to a DIFFERENT org (not the initial load), reset bootstrap data
+			// immediately to prevent stale data from the previous org from leaking through
+			// child guards (OrgSettingsGuard) while the async fetch is in flight.
+			if (
+				lastSyncedOrgRef.current !== null &&
+				lastSyncedOrgRef.current !== urlOrgSlug
+			) {
+				setBootstrapData(null);
+				setIsReady(false);
+			}
+
 			// Only show loading state if we need to do a full sync
 			if (!alreadySwitched) {
 				setLoading(true);
@@ -463,8 +474,23 @@ export function OrgBootstrapper({
 		return <AppSkeletonWithView pathname={pathname || "/"} />;
 	}
 
+	// Detect an in-flight org switch on the very first render after the URL slug changes.
+	// lastSyncedOrgRef is only updated at the end of a successful syncOrg(), so when
+	// urlOrgSlug differs from it (and it's not the initial load where it's null), we know
+	// the async fetch hasn't finished yet. Show the skeleton immediately — before any
+	// effect or state update fires — to prevent stale data from the previous org leaking
+	// through child guards (OrgSettingsGuard) for even one render cycle.
+	const isOrgSwitching =
+		lastSyncedOrgRef.current !== null &&
+		lastSyncedOrgRef.current !== urlOrgSlug;
+
 	// Show loading skeleton while syncing org and fetching all bootstrap data
-	if (!isReady || (urlOrgSlug && !currentOrg) || !bootstrapData) {
+	if (
+		!isReady ||
+		(urlOrgSlug && !currentOrg) ||
+		!bootstrapData ||
+		isOrgSwitching
+	) {
 		return <AppSkeletonWithView pathname={pathname || "/"} />;
 	}
 
@@ -475,20 +501,12 @@ export function OrgBootstrapper({
 
 	// Org settings gate: require obligated subject setup before accessing the app
 	if (urlOrgSlug && !bootstrapData.orgSettings) {
-		// Provide other orgs for the inline switcher, excluding the current one
-		const otherOrgs = organizations
-			.filter((o) => o.slug !== urlOrgSlug)
-			.map((o) => ({ id: o.id, name: o.name, slug: o.slug }));
-
 		return (
-			<ObligatedSubjectSetup
-				onComplete={handleOrgSettingsComplete}
-				onSwitchOrg={() => {
-					window.location.href = getAuthAppUrl();
-				}}
-				organizations={otherOrgs}
-				onSelectOrg={(slug) => router.push(`/${slug}`)}
-			/>
+			<SubscriptionProvider initialData={bootstrapData.subscription}>
+				<DashboardLayout hideNavigation initialSidebarCollapsed={false}>
+					<ObligatedSubjectSetup onComplete={handleOrgSettingsComplete} />
+				</DashboardLayout>
+			</SubscriptionProvider>
 		);
 	}
 

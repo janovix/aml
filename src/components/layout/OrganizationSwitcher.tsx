@@ -259,18 +259,19 @@ export function OrganizationSwitcher({
 						>
 							<DropdownMenuLabel className="flex items-center justify-between text-xs text-muted-foreground">
 								<span>{t("organizations")}</span>
-								{organizationsLimit > 0 && (
-									<div className="flex items-center gap-1.5">
+								<div className="flex items-center gap-1.5">
+									{organizationsLimit > 0 && (
 										<CircularProgress
 											value={organizationsOwned}
 											max={organizationsLimit}
 											size={16}
 										/>
-										<span className="tabular-nums">
-											{organizationsOwned}/{organizationsLimit}
-										</span>
-									</div>
-								)}
+									)}
+									<span className="tabular-nums">
+										{organizationsOwned}/
+										{organizationsLimit === 0 ? "∞" : organizationsLimit}
+									</span>
+								</div>
 							</DropdownMenuLabel>
 
 							{/* Owned organizations */}
@@ -404,18 +405,19 @@ export function OrganizationSwitcher({
 					>
 						<DropdownMenuLabel className="flex items-center justify-between text-xs text-muted-foreground">
 							<span>{t("organizations")}</span>
-							{organizationsLimit > 0 && (
-								<div className="flex items-center gap-1.5">
+							<div className="flex items-center gap-1.5">
+								{organizationsLimit > 0 && (
 									<CircularProgress
 										value={organizationsOwned}
 										max={organizationsLimit}
 										size={16}
 									/>
-									<span className="tabular-nums">
-										{organizationsOwned}/{organizationsLimit}
-									</span>
-								</div>
-							)}
+								)}
+								<span className="tabular-nums">
+									{organizationsOwned}/
+									{organizationsLimit === 0 ? "∞" : organizationsLimit}
+								</span>
+							</div>
 						</DropdownMenuLabel>
 
 						{/* Owned organizations */}

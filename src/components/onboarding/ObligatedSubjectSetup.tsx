@@ -16,21 +16,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-	AlertTriangle,
-	Building2,
-	Loader2,
-	Check,
-	ChevronDown,
-} from "lucide-react";
+import { AlertTriangle, Building2, Loader2, Check } from "lucide-react";
 import { getAllActivityVisuals } from "@/lib/activity-registry";
 import type { ActivityCode } from "@/types/operation";
 import { ENABLED_ACTIVITY_CODES } from "@/types/operation";
@@ -39,20 +25,8 @@ import { useJwt } from "@/hooks/useJwt";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-interface OrgOption {
-	id: string;
-	name: string;
-	slug: string;
-}
-
 interface ObligatedSubjectSetupProps {
 	onComplete: () => void;
-	onSwitchOrg: () => void;
-	/** Other organizations the user belongs to. When provided, the "Cambiar
-	 *  organización" button shows an inline picker instead of redirecting away. */
-	organizations?: OrgOption[];
-	/** Called when the user selects a different org from the inline picker. */
-	onSelectOrg?: (slug: string) => void;
 }
 
 const RFC_PATTERN = /^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/;
@@ -61,9 +35,6 @@ const enabledSet = new Set<string>(ENABLED_ACTIVITY_CODES);
 
 export function ObligatedSubjectSetup({
 	onComplete,
-	onSwitchOrg,
-	organizations,
-	onSelectOrg,
 }: ObligatedSubjectSetupProps) {
 	const { jwt } = useJwt();
 	const [selectedActivity, setSelectedActivity] = useState<ActivityCode | null>(
@@ -111,7 +82,7 @@ export function ObligatedSubjectSetup({
 	}
 
 	return (
-		<div className="min-h-screen bg-linear-to-br from-background via-muted/50 to-background flex items-start sm:items-center justify-center px-0 py-3 sm:p-4 overflow-y-auto">
+		<div className="flex flex-1 flex-col items-start sm:items-center justify-center px-0 py-3 sm:p-4">
 			<Card className="w-full max-w-3xl shadow-lg rounded-none border-x-0 sm:rounded-xl sm:border-x">
 				<CardHeader className="text-center space-y-2 sm:space-y-3 px-4 pt-4 pb-2 sm:px-6 sm:pt-6 sm:pb-4">
 					<div className="mx-auto flex h-10 w-10 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-primary/10">
@@ -261,7 +232,7 @@ export function ObligatedSubjectSetup({
 					</div>
 
 					{/* Submit */}
-					<div className="flex flex-col gap-2 sm:gap-3 pt-1 sm:pt-2 pb-1 sm:pb-0">
+					<div className="pt-1 sm:pt-2 pb-1 sm:pb-0">
 						<Button
 							size="lg"
 							className="w-full"
@@ -273,48 +244,6 @@ export function ObligatedSubjectSetup({
 							)}
 							Guardar configuración
 						</Button>
-
-						{/* Org switcher — show inline picker when the user belongs to
-						    multiple orgs, otherwise fall back to the external redirect */}
-						{organizations && organizations.length > 0 && onSelectOrg ? (
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button
-										variant="ghost"
-										size="sm"
-										className="text-muted-foreground"
-									>
-										Cambiar organización
-										<ChevronDown className="ml-1.5 h-3.5 w-3.5" />
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent align="center" className="w-56">
-									<DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
-										Selecciona una organización
-									</DropdownMenuLabel>
-									<DropdownMenuSeparator />
-									{organizations.map((org) => (
-										<DropdownMenuItem
-											key={org.id}
-											onSelect={() => onSelectOrg(org.slug)}
-											className="cursor-pointer"
-										>
-											<Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
-											{org.name}
-										</DropdownMenuItem>
-									))}
-								</DropdownMenuContent>
-							</DropdownMenu>
-						) : (
-							<Button
-								variant="ghost"
-								size="sm"
-								className="text-muted-foreground"
-								onClick={onSwitchOrg}
-							>
-								Cambiar organización
-							</Button>
-						)}
 					</div>
 				</CardContent>
 			</Card>

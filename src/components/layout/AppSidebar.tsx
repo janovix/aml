@@ -129,7 +129,10 @@ const getProductsNavItems = (): NavItem[] => [
 	},
 ];
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({
+	hideNavigation = false,
+	...props
+}: React.ComponentProps<typeof Sidebar> & { hideNavigation?: boolean }) {
 	const { t } = useLanguage();
 	const pathname = usePathname();
 	const router = useRouter();
@@ -318,7 +321,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				</div>
 
 				{/* Pending Invitations Indicator */}
-				{pendingInvitationsCount > 0 && (
+				{!hideNavigation && pendingInvitationsCount > 0 && (
 					<div className="px-2 pt-2">
 						<a
 							href={`${getAuthAppUrl()}/invite`}
@@ -345,164 +348,176 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 					</div>
 				)}
 
-				<SidebarGroup>
-					<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
-						{t("navTransaction")}
-					</SidebarGroupLabel>
-					<SidebarGroupContent>
-						<SidebarMenu>
-							{mainNavItems.map((item) => {
-								const Icon = item.icon;
-								const isActive = isNavActive(item.href);
-								const title = t(item.titleKey);
+				{!hideNavigation && (
+					<SidebarGroup>
+						<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
+							{t("navTransaction")}
+						</SidebarGroupLabel>
+						<SidebarGroupContent>
+							<SidebarMenu>
+								{mainNavItems.map((item) => {
+									const Icon = item.icon;
+									const isActive = isNavActive(item.href);
+									const title = t(item.titleKey);
 
-								return (
-									<SidebarMenuItem key={item.href}>
-										<SidebarMenuButton
-											asChild
-											isActive={isActive}
-											tooltip={title}
-										>
-											<Link
-												href={item.available ? orgPath(item.href) : "#"}
-												prefetch={false}
-												aria-disabled={!item.available}
-												className={cn(
-													!item.available && "pointer-events-none opacity-50",
-												)}
-												onClick={item.available ? handleLinkClick : undefined}
+									return (
+										<SidebarMenuItem key={item.href}>
+											<SidebarMenuButton
+												asChild
+												isActive={isActive}
+												tooltip={title}
 											>
-												<Icon />
-												<span>{title}</span>
-												{!item.available && (
-													<span className="ml-auto text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded group-data-[collapsible=icon]:hidden">
-														{t("navComingSoon")}
-													</span>
-												)}
-											</Link>
-										</SidebarMenuButton>
-									</SidebarMenuItem>
-								);
-							})}
-						</SidebarMenu>
-					</SidebarGroupContent>
-				</SidebarGroup>
+												<Link
+													href={item.available ? orgPath(item.href) : "#"}
+													prefetch={false}
+													aria-disabled={!item.available}
+													className={cn(
+														!item.available && "pointer-events-none opacity-50",
+													)}
+													onClick={item.available ? handleLinkClick : undefined}
+												>
+													<Icon />
+													<span>{title}</span>
+													{!item.available && (
+														<span className="ml-auto text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded group-data-[collapsible=icon]:hidden">
+															{t("navComingSoon")}
+														</span>
+													)}
+												</Link>
+											</SidebarMenuButton>
+										</SidebarMenuItem>
+									);
+								})}
+							</SidebarMenu>
+						</SidebarGroupContent>
+					</SidebarGroup>
+				)}
 
-				<SidebarGroup>
-					<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
-						{t("navCompliance")}
-					</SidebarGroupLabel>
-					<SidebarGroupContent>
-						<SidebarMenu>
-							{complianceNavItems.map((item) => {
-								const Icon = item.icon;
-								const isActive = isNavActive(item.href);
-								const title = t(item.titleKey);
+				{!hideNavigation && (
+					<>
+						<SidebarGroup>
+							<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
+								{t("navCompliance")}
+							</SidebarGroupLabel>
+							<SidebarGroupContent>
+								<SidebarMenu>
+									{complianceNavItems.map((item) => {
+										const Icon = item.icon;
+										const isActive = isNavActive(item.href);
+										const title = t(item.titleKey);
 
-								return (
-									<SidebarMenuItem key={item.href}>
-										<SidebarMenuButton
-											asChild
-											isActive={isActive}
-											tooltip={title}
-										>
-											<Link
-												href={item.available ? orgPath(item.href) : "#"}
-												prefetch={false}
-												aria-disabled={!item.available}
-												className={cn(
-													!item.available && "pointer-events-none opacity-50",
-												)}
-												onClick={item.available ? handleLinkClick : undefined}
-											>
-												<Icon />
-												<span>{title}</span>
-												{!item.available && (
-													<span className="ml-auto text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded group-data-[collapsible=icon]:hidden">
-														{t("navComingSoon")}
-													</span>
-												)}
-											</Link>
-										</SidebarMenuButton>
-									</SidebarMenuItem>
-								);
-							})}
-						</SidebarMenu>
-					</SidebarGroupContent>
-				</SidebarGroup>
+										return (
+											<SidebarMenuItem key={item.href}>
+												<SidebarMenuButton
+													asChild
+													isActive={isActive}
+													tooltip={title}
+												>
+													<Link
+														href={item.available ? orgPath(item.href) : "#"}
+														prefetch={false}
+														aria-disabled={!item.available}
+														className={cn(
+															!item.available &&
+																"pointer-events-none opacity-50",
+														)}
+														onClick={
+															item.available ? handleLinkClick : undefined
+														}
+													>
+														<Icon />
+														<span>{title}</span>
+														{!item.available && (
+															<span className="ml-auto text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded group-data-[collapsible=icon]:hidden">
+																{t("navComingSoon")}
+															</span>
+														)}
+													</Link>
+												</SidebarMenuButton>
+											</SidebarMenuItem>
+										);
+									})}
+								</SidebarMenu>
+							</SidebarGroupContent>
+						</SidebarGroup>
 
-				<SidebarGroup>
-					<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
-						{t("navDataManagement")}
-					</SidebarGroupLabel>
-					<SidebarGroupContent>
-						<SidebarMenu>
-							{dataManagementNavItems.map((item) => {
-								const Icon = item.icon;
-								const isActive = isNavActive(item.href);
-								const title = t(item.titleKey);
+						<SidebarGroup>
+							<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
+								{t("navDataManagement")}
+							</SidebarGroupLabel>
+							<SidebarGroupContent>
+								<SidebarMenu>
+									{dataManagementNavItems.map((item) => {
+										const Icon = item.icon;
+										const isActive = isNavActive(item.href);
+										const title = t(item.titleKey);
 
-								return (
-									<SidebarMenuItem key={item.href}>
-										<SidebarMenuButton
-											asChild
-											isActive={isActive}
-											tooltip={title}
-										>
-											<Link
-												href={item.available ? orgPath(item.href) : "#"}
-												prefetch={false}
-												aria-disabled={!item.available}
-												className={cn(
-													!item.available && "pointer-events-none opacity-50",
-												)}
-												onClick={item.available ? handleLinkClick : undefined}
-											>
-												<Icon />
-												<span>{title}</span>
-												{!item.available && (
-													<span className="ml-auto text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded group-data-[collapsible=icon]:hidden">
-														{t("navComingSoon")}
-													</span>
-												)}
-											</Link>
-										</SidebarMenuButton>
-									</SidebarMenuItem>
-								);
-							})}
-						</SidebarMenu>
-					</SidebarGroupContent>
-				</SidebarGroup>
+										return (
+											<SidebarMenuItem key={item.href}>
+												<SidebarMenuButton
+													asChild
+													isActive={isActive}
+													tooltip={title}
+												>
+													<Link
+														href={item.available ? orgPath(item.href) : "#"}
+														prefetch={false}
+														aria-disabled={!item.available}
+														className={cn(
+															!item.available &&
+																"pointer-events-none opacity-50",
+														)}
+														onClick={
+															item.available ? handleLinkClick : undefined
+														}
+													>
+														<Icon />
+														<span>{title}</span>
+														{!item.available && (
+															<span className="ml-auto text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded group-data-[collapsible=icon]:hidden">
+																{t("navComingSoon")}
+															</span>
+														)}
+													</Link>
+												</SidebarMenuButton>
+											</SidebarMenuItem>
+										);
+									})}
+								</SidebarMenu>
+							</SidebarGroupContent>
+						</SidebarGroup>
 
-				<SidebarGroup>
-					<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
-						{t("navProducts")}
-					</SidebarGroupLabel>
-					<SidebarGroupContent>
-						<SidebarMenu>
-							{getProductsNavItems().map((item) => {
-								const Icon = item.icon;
-								const title = t(item.titleKey);
+						<SidebarGroup>
+							<SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
+								{t("navProducts")}
+							</SidebarGroupLabel>
+							<SidebarGroupContent>
+								<SidebarMenu>
+									{getProductsNavItems().map((item) => {
+										const Icon = item.icon;
+										const title = t(item.titleKey);
 
-								return (
-									<SidebarMenuItem key={item.titleKey}>
-										<SidebarMenuButton asChild tooltip={title}>
-											<a
-												href={item.externalUrl}
-												onClick={handleLinkClick}
-												target="_blank"
-												rel="noopener noreferrer"
-											>
-												<Icon />
-												<span>{title}</span>
-											</a>
-										</SidebarMenuButton>
-									</SidebarMenuItem>
-								);
-							})}
-						</SidebarMenu>
-					</SidebarGroupContent>
-				</SidebarGroup>
+										return (
+											<SidebarMenuItem key={item.titleKey}>
+												<SidebarMenuButton asChild tooltip={title}>
+													<a
+														href={item.externalUrl}
+														onClick={handleLinkClick}
+														target="_blank"
+														rel="noopener noreferrer"
+													>
+														<Icon />
+														<span>{title}</span>
+													</a>
+												</SidebarMenuButton>
+											</SidebarMenuItem>
+										);
+									})}
+								</SidebarMenu>
+							</SidebarGroupContent>
+						</SidebarGroup>
+					</>
+				)}
 			</SidebarContent>
 
 			<SidebarFooter className="border-t border-sidebar-border">
