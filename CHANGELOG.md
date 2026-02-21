@@ -1,3 +1,10 @@
+# [1.4.0-rc.51](https://github.com/janovix/aml/compare/v1.4.0-rc.50...v1.4.0-rc.51) (2026-02-21)
+
+
+### Features
+
+* enhance CreateNoticeView and NoticeDetailsView with alert management features; update tests and translations for rebuke functionality ([db5376a](https://github.com/janovix/aml/commit/db5376a54544f0332568a42c439aca09b98e26c7))
+
 # [1.4.0-rc.50](https://github.com/janovix/aml/compare/v1.4.0-rc.49...v1.4.0-rc.50) (2026-02-21)
 
 
