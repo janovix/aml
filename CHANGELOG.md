@@ -1,3 +1,10 @@
+# [1.4.0-rc.50](https://github.com/janovix/aml/compare/v1.4.0-rc.49...v1.4.0-rc.50) (2026-02-21)
+
+
+### Features
+
+* add fullscreenMobile prop to DialogContent component for improved mobile responsiveness; update various dialog components to utilize this feature ([eb1324f](https://github.com/janovix/aml/commit/eb1324fc5b9fbed0f19ec482d3e46dbd8bb04567))
+
 # [1.4.0-rc.49](https://github.com/janovix/aml/compare/v1.4.0-rc.48...v1.4.0-rc.49) (2026-02-20)
 
 
