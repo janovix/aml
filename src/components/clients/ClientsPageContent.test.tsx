@@ -37,6 +37,14 @@ vi.mock("@/lib/api/stats", () => ({
 	}),
 }));
 
+vi.mock("@/lib/api/clients", () => ({
+	listClients: vi.fn().mockResolvedValue({
+		data: [],
+		pagination: { page: 1, totalPages: 1, total: 0, limit: 20 },
+	}),
+	deleteClient: vi.fn().mockResolvedValue(undefined),
+}));
+
 const mockPush = vi.fn();
 
 vi.mock("next/navigation", () => ({
