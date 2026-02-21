@@ -348,7 +348,7 @@ export function MobileUploadQR({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-sm">
+			<DialogContent className="sm:max-w-sm" fullscreenMobile>
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
 						<Smartphone className="h-5 w-5" />

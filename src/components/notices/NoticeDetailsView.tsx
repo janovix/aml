@@ -570,7 +570,7 @@ export function NoticeDetailsView({
 					}
 				}}
 			>
-				<DialogContent>
+				<DialogContent fullscreenMobile>
 					<DialogHeader>
 						<DialogTitle>{t("noticeMarkSubmittedTitle")}</DialogTitle>
 						<DialogDescription>
@@ -666,7 +666,7 @@ export function NoticeDetailsView({
 					}
 				}}
 			>
-				<DialogContent>
+				<DialogContent fullscreenMobile>
 					<DialogHeader>
 						<DialogTitle>{t("noticeRegisterAckTitle")}</DialogTitle>
 						<DialogDescription>{t("noticeRegisterAckDesc")}</DialogDescription>
@@ -752,7 +752,7 @@ export function NoticeDetailsView({
 
 			{/* Delete Dialog */}
 			<Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-				<DialogContent>
+				<DialogContent fullscreenMobile>
 					<DialogHeader>
 						<DialogTitle>{t("noticeDeleteTitle")}</DialogTitle>
 						<DialogDescription>{t("noticeDeleteDesc")}</DialogDescription>

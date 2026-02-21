@@ -1717,7 +1717,7 @@ export function DocumentScannerModal({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-w-4xl max-h-[90vh] flex flex-col sm:max-h-[90vh] max-sm:h-dvh max-sm:max-h-dvh max-sm:w-full max-sm:max-w-full max-sm:rounded-none max-sm:border-0 max-sm:p-4">
+			<DialogContent className="sm:max-w-4xl max-sm:p-4" fullscreenMobile>
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
 						<ImageIcon className="h-5 w-5" />

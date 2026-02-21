@@ -257,7 +257,7 @@ export function DocumentViewerDialog({
 	if (isDocSvcMode && docSvcLoading) {
 		return (
 			<Dialog open={open} onOpenChange={onOpenChange}>
-				<DialogContent className="sm:max-w-md">
+				<DialogContent className="sm:max-w-md" fullscreenMobile>
 					<div className="flex items-center justify-center p-8">
 						<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
 					</div>
@@ -273,8 +273,9 @@ export function DocumentViewerDialog({
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent
-				className="h-dvh w-screen max-w-none max-h-none sm:h-auto sm:w-full sm:max-w-4xl sm:max-h-[calc(100vh-2rem)] p-0 gap-0 overflow-hidden rounded-none sm:rounded-lg top-0 left-0 translate-x-0 translate-y-0 sm:top-[50%] sm:left-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] flex flex-col"
+				className="sm:max-w-4xl p-0 gap-0 overflow-hidden"
 				showCloseButton={false}
+				fullscreenMobile
 			>
 				<DialogHeader className="p-4 pb-2 sm:p-6 sm:pb-3">
 					<div className="flex items-center justify-between gap-3">

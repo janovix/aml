@@ -77,7 +77,7 @@ export function CreateImportDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
-			<DialogContent className="max-w-2xl">
+			<DialogContent className="sm:max-w-2xl" fullscreenMobile>
 				<DialogHeader>
 					<DialogTitle>Nueva Importación</DialogTitle>
 					<DialogDescription>

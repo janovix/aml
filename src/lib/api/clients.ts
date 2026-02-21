@@ -102,6 +102,33 @@ export async function getClientByRfc(opts: {
 	return json.data[0];
 }
 
+export interface CheckRfcResult {
+	exists: boolean;
+	clientId?: string;
+	clientName?: string;
+}
+
+export async function checkRfcExists(opts: {
+	rfc: string;
+	baseUrl?: string;
+	signal?: AbortSignal;
+	jwt?: string;
+}): Promise<CheckRfcResult> {
+	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
+	const url = new URL(
+		`/api/v1/clients/check-rfc/${encodeURIComponent(opts.rfc)}`,
+		baseUrl,
+	);
+
+	const { json } = await fetchJson<CheckRfcResult>(url.toString(), {
+		method: "GET",
+		cache: "no-store",
+		signal: opts.signal,
+		jwt: opts.jwt,
+	});
+	return json;
+}
+
 export async function createClient(opts: {
 	input: ClientCreateRequest;
 	baseUrl?: string;

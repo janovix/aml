@@ -373,7 +373,7 @@ export function DocumentUploadSection({
 
 			{/* Upload Dialog */}
 			<Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-				<DialogContent className="max-w-md">
+				<DialogContent className="sm:max-w-md" fullscreenMobile>
 					<DialogHeader>
 						<DialogTitle>Agregar Documento</DialogTitle>
 						<DialogDescription>

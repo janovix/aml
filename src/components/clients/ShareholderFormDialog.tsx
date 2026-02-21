@@ -311,7 +311,7 @@ export function ShareholderFormDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+			<DialogContent className="sm:max-w-3xl" fullscreenMobile>
 				<DialogHeader>
 					<DialogTitle>
 						{isEditMode ? "Editar Accionista" : "Agregar Accionista"}
@@ -323,7 +323,7 @@ export function ShareholderFormDialog({
 					</DialogDescription>
 				</DialogHeader>
 
-				<form onSubmit={handleSubmit}>
+				<form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
 					<DialogBody className="space-y-6">
 						{/* Entity Type Selection (only for create mode) */}
 						{!isEditMode && (

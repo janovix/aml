@@ -57,9 +57,10 @@ import { PhoneInput } from "@/components/ui/phone-input";
 import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
 import type { CatalogItem } from "@/types/catalog";
 import {
-	SimpleDocumentUploadCard,
-	type SimpleDocumentUploadData,
-} from "./wizard/SimpleDocumentUploadCard";
+	IDDocumentSelector,
+	type IDDocumentData,
+	type IDType,
+} from "./wizard/IDDocumentSelector";
 import { uploadDocumentForKYC } from "@/lib/api/file-upload";
 import { useOrgStore } from "@/lib/org-store";
 
@@ -125,19 +126,26 @@ export function BeneficialControllerFormDialog({
 	const [curp, setCurp] = useState(beneficialController?.curp || "");
 	const [rfc, setRfc] = useState(beneficialController?.rfc || "");
 
-	// ID Document (Anexo 3)
-	const [idDocumentType, setIdDocumentType] = useState<IdDocumentType>(
-		beneficialController?.idDocumentType || "INE",
-	);
-	const [idDocumentNumber, setIdDocumentNumber] = useState(
-		beneficialController?.idDocumentNumber || "",
+	// ID Document (Anexo 3) — uses the reusable IDDocumentSelector
+	const [idDocumentData, setIdDocumentData] = useState<IDDocumentData | null>(
+		() => {
+			if (!beneficialController?.idDocumentType) return null;
+			const idType: IDType =
+				beneficialController.idDocumentType === "PASSPORT"
+					? "PASSPORT"
+					: "NATIONAL_ID";
+			return {
+				idType,
+				documentType: idType,
+				documentNumber: beneficialController.idDocumentNumber || "",
+				isUploaded: !!beneficialController.idCopyDocId,
+				isUploading: false,
+			};
+		},
 	);
 	const [idDocumentAuthority, setIdDocumentAuthority] = useState(
 		beneficialController?.idDocumentAuthority || "",
 	);
-	// ID document upload state (for uploading the actual ID scan to doc-svc)
-	const [idDocUploadData, setIdDocUploadData] =
-		useState<SimpleDocumentUploadData | null>(null);
 	const [idCopyDocId, setIdCopyDocId] = useState(
 		beneficialController?.idCopyDocId || "",
 	);
@@ -200,10 +208,22 @@ export function BeneficialControllerFormDialog({
 		setOccupation(beneficialController?.occupation || "");
 		setCurp(beneficialController?.curp || "");
 		setRfc(beneficialController?.rfc || "");
-		setIdDocumentType(beneficialController?.idDocumentType || "INE");
-		setIdDocumentNumber(beneficialController?.idDocumentNumber || "");
+		if (beneficialController?.idDocumentType) {
+			const idType: IDType =
+				beneficialController.idDocumentType === "PASSPORT"
+					? "PASSPORT"
+					: "NATIONAL_ID";
+			setIdDocumentData({
+				idType,
+				documentType: idType,
+				documentNumber: beneficialController.idDocumentNumber || "",
+				isUploaded: !!beneficialController.idCopyDocId,
+				isUploading: false,
+			});
+		} else {
+			setIdDocumentData(null);
+		}
 		setIdDocumentAuthority(beneficialController?.idDocumentAuthority || "");
-		setIdDocUploadData(null);
 		setIdCopyDocId(beneficialController?.idCopyDocId || "");
 		setEmail(beneficialController?.email || "");
 		setPhone(beneficialController?.phone || "");
@@ -216,50 +236,61 @@ export function BeneficialControllerFormDialog({
 		setNotes(beneficialController?.notes || "");
 	}, [open, beneficialController]);
 
-	// Upload the ID document scan to doc-svc and return the docId
-	const handleIdDocUpload = useCallback(
-		async (data: SimpleDocumentUploadData) => {
-			const { currentOrg, currentUserId } = useOrgStore.getState();
-			if (!currentOrg?.id) {
-				toast.error("No se pudo obtener la organización actual");
-				throw new Error("Organization ID not available");
-			}
+	const handleIdDocUpload = useCallback(async (data: IDDocumentData) => {
+		const { currentOrg, currentUserId } = useOrgStore.getState();
+		if (!currentOrg?.id) {
+			toast.error("No se pudo obtener la organización actual");
+			throw new Error("Organization ID not available");
+		}
 
-			const relatedFiles: Array<{ file: Blob; name: string; type: string }> =
-				[];
-			if (data.rasterizedImages && data.rasterizedImages.length > 0) {
-				data.rasterizedImages.forEach((blob, idx) => {
-					relatedFiles.push({
-						file: blob,
-						name: `page_${idx + 1}.jpg`,
-						type: `rasterized_page_${idx + 1}`,
-					});
+		const relatedFiles: Array<{ file: Blob; name: string; type: string }> = [];
+
+		if (data.rasterizedImages && data.rasterizedImages.length > 0) {
+			data.rasterizedImages.forEach((blob, idx) => {
+				relatedFiles.push({
+					file: blob,
+					name: `rasterized_page_${idx + 1}.jpg`,
+					type: `rasterized_page_${idx + 1}`,
 				});
-			}
-
-			const uploadResult = await uploadDocumentForKYC({
-				organizationId: currentOrg.id,
-				userId: currentUserId || "unknown",
-				primaryFile:
-					data.rasterizedImages?.[0] ??
-					(data.file as Blob) ??
-					(data.originalFile as Blob),
-				fileName:
-					data.originalFile?.name || data.file?.name || "id_document.jpg",
-				originalPdf:
-					data.originalFile?.type === "application/pdf"
-						? data.originalFile
-						: null,
-				relatedFiles:
-					relatedFiles.length > 1 ? relatedFiles.slice(1) : undefined,
-				waitForProcessing: false,
 			});
+		}
+		if (data.ineFrontBlob) {
+			relatedFiles.push({
+				file: data.ineFrontBlob,
+				name: "ine_front.jpg",
+				type: "ine_front",
+			});
+		}
+		if (data.ineBackBlob) {
+			relatedFiles.push({
+				file: data.ineBackBlob,
+				name: "ine_back.jpg",
+				type: "ine_back",
+			});
+		}
 
-			setIdCopyDocId(uploadResult.documentId);
-			toast.success("Identificación cargada");
-		},
-		[],
-	);
+		const primaryFile = data.processedBlob ?? data.file;
+		if (!primaryFile) {
+			toast.error("No se encontró el archivo de identificación");
+			throw new Error("No primary file available");
+		}
+
+		const uploadResult = await uploadDocumentForKYC({
+			organizationId: currentOrg.id,
+			userId: currentUserId || "unknown",
+			primaryFile,
+			fileName: data.originalFile?.name || data.file?.name || "id_document.jpg",
+			originalPdf:
+				data.originalFile?.type === "application/pdf"
+					? data.originalFile
+					: null,
+			relatedFiles: relatedFiles.length > 0 ? relatedFiles : undefined,
+			waitForProcessing: false,
+		});
+
+		setIdCopyDocId(uploadResult.documentId);
+		toast.success("Identificación cargada");
+	}, []);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -272,6 +303,13 @@ export function BeneficialControllerFormDialog({
 		try {
 			setIsSubmitting(true);
 
+			const mappedIdDocType: IdDocumentType | null =
+				idDocumentData?.idType === "NATIONAL_ID"
+					? "INE"
+					: idDocumentData?.idType === "PASSPORT"
+						? "PASSPORT"
+						: null;
+
 			const baseData = {
 				bcType,
 				identificationCriteria,
@@ -282,13 +320,12 @@ export function BeneficialControllerFormDialog({
 				lastName,
 				secondLastName: secondLastName || null,
 				birthDate: birthDate || null,
-				// birthCountry removed - nationality covers country of origin
 				nationality: nationality || null,
 				occupation: occupation || null,
 				curp: curp || null,
 				rfc: rfc || null,
-				idDocumentType: idDocumentType || null,
-				idDocumentNumber: idDocumentNumber || null,
+				idDocumentType: mappedIdDocType,
+				idDocumentNumber: idDocumentData?.documentNumber || null,
 				idDocumentAuthority: idDocumentAuthority || null,
 				idCopyDocId: idCopyDocId || null,
 				email: email || null,
@@ -331,7 +368,7 @@ export function BeneficialControllerFormDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-3xl">
+			<DialogContent className="sm:max-w-3xl" fullscreenMobile>
 				<DialogHeader>
 					<DialogTitle>
 						{isEditMode
@@ -344,7 +381,7 @@ export function BeneficialControllerFormDialog({
 					</DialogDescription>
 				</DialogHeader>
 
-				<form onSubmit={handleSubmit}>
+				<form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
 					<DialogBody className="space-y-6">
 						{/* ── Clasificación ── */}
 						<section className="space-y-4">
@@ -584,81 +621,39 @@ export function BeneficialControllerFormDialog({
 									<span className="flex items-center gap-2 text-sm font-semibold">
 										<CreditCard className="h-4 w-4 text-primary" />
 										Documento de Identificación
-										{idCopyDocId && (
+										{(idCopyDocId || idDocumentData?.isUploaded) && (
 											<span className="ml-1 inline-flex h-2 w-2 rounded-full bg-green-500" />
 										)}
 									</span>
 								</AccordionTrigger>
 								<AccordionContent className="space-y-4">
-									<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-										<div className="space-y-2">
-											<Label htmlFor="idDocumentType">Tipo</Label>
-											<Select
-												value={idDocumentType}
-												onValueChange={(v) =>
-													setIdDocumentType(v as IdDocumentType)
-												}
-											>
-												<SelectTrigger id="idDocumentType">
-													<SelectValue />
-												</SelectTrigger>
-												<SelectContent>
-													<SelectItem value="INE">INE/IFE</SelectItem>
-													<SelectItem value="PASSPORT">Pasaporte</SelectItem>
-													<SelectItem value="OTHER">Otro Documento</SelectItem>
-												</SelectContent>
-											</Select>
-										</div>
-										<div className="space-y-2">
-											<Label htmlFor="idDocumentNumber">Número</Label>
-											<Input
-												id="idDocumentNumber"
-												value={idDocumentNumber}
-												onChange={(e) => setIdDocumentNumber(e.target.value)}
-												placeholder="Número de documento"
-											/>
-										</div>
-										<div className="space-y-2">
-											<Label htmlFor="idDocumentAuthority">
-												Autoridad Emisora
-											</Label>
-											<Input
-												id="idDocumentAuthority"
-												value={idDocumentAuthority}
-												onChange={(e) => setIdDocumentAuthority(e.target.value)}
-												placeholder="INE, SRE, etc."
-											/>
-										</div>
-									</div>
+									<IDDocumentSelector
+										required={false}
+										disabled={isSubmitting}
+										data={idDocumentData}
+										onDataChange={setIdDocumentData}
+										onUpload={handleIdDocUpload}
+										label="Identificación Oficial"
+										personalData={{
+											firstName,
+											lastName,
+											secondLastName,
+											curp,
+											birthDate,
+										}}
+									/>
 
-									{!idCopyDocId ? (
-										<SimpleDocumentUploadCard
-											documentType="NATIONAL_ID"
-											title="Copia del Documento"
-											description="Sube una fotografía o PDF del documento de identificación oficial"
-											data={idDocUploadData}
-											onDataChange={setIdDocUploadData}
-											onUpload={handleIdDocUpload}
+									<div className="space-y-2">
+										<Label htmlFor="idDocumentAuthority">
+											Autoridad Emisora
+										</Label>
+										<Input
+											id="idDocumentAuthority"
+											value={idDocumentAuthority}
+											onChange={(e) => setIdDocumentAuthority(e.target.value)}
+											placeholder="INE, SRE, etc."
 										/>
-									) : (
-										<div className="flex items-center justify-between p-3 rounded-lg border border-green-500 bg-green-50/50 dark:bg-green-950/20">
-											<p className="text-sm text-green-700 dark:text-green-300 font-medium">
-												Identificación cargada correctamente
-											</p>
-											<Button
-												type="button"
-												variant="ghost"
-												size="sm"
-												className="text-destructive hover:text-destructive"
-												onClick={() => {
-													setIdCopyDocId("");
-													setIdDocUploadData(null);
-												}}
-											>
-												Cambiar
-											</Button>
-										</div>
-									)}
+									</div>
 								</AccordionContent>
 							</AccordionItem>
 

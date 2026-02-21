@@ -40,7 +40,10 @@ import {
 	type AlertSeverity,
 } from "@/lib/api/alerts";
 import { getClientById } from "@/lib/api/clients";
+import { getOperationById } from "@/lib/api/operations";
 import type { Client } from "@/types/client";
+import type { OperationEntity } from "@/types/operation";
+import { ActivityBadge } from "@/components/operations/ActivityBadge";
 import { getClientDisplayName } from "@/types/client";
 import { PageHero } from "@/components/page-hero";
 import { PageHeroSkeleton } from "@/components/skeletons";
@@ -137,6 +140,8 @@ export function AlertDetailsView({
 	const [alert, setAlert] = useState<Alert | null>(null);
 	const [client, setClient] = useState<Client | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
+	const [operations, setOperations] = useState<OperationEntity[]>([]);
+	const [operationsLoading, setOperationsLoading] = useState(false);
 	const { navigateTo, orgPath } = useOrgNavigation();
 	const { jwt } = useJwt();
 	const { t } = useLanguage();
@@ -161,6 +166,35 @@ export function AlertDetailsView({
 					} catch (error) {
 						console.error("Error fetching client:", error);
 					}
+				}
+
+				// Extract operation IDs from metadata (supports both key names) and legacy field
+				const idsFromMetadata: string[] = [
+					...(Array.isArray(alertData.metadata?.operationIds)
+						? (alertData.metadata.operationIds as string[])
+						: []),
+					...(Array.isArray(alertData.metadata?.transactionIds)
+						? (alertData.metadata.transactionIds as string[])
+						: []),
+				];
+				const legacyId = alertData.transactionId
+					? [alertData.transactionId]
+					: [];
+				const operationIds = [...new Set([...idsFromMetadata, ...legacyId])];
+
+				if (operationIds.length > 0) {
+					setOperationsLoading(true);
+					const results = await Promise.allSettled(
+						operationIds.map((id) => getOperationById({ id, jwt })),
+					);
+					const fetched = results
+						.filter(
+							(r): r is PromiseFulfilledResult<OperationEntity> =>
+								r.status === "fulfilled",
+						)
+						.map((r) => r.value);
+					setOperations(fetched);
+					setOperationsLoading(false);
 				}
 			} catch (error) {
 				console.error("Error fetching alert:", error);
@@ -522,78 +556,98 @@ export function AlertDetailsView({
 						</Card>
 					)}
 
-					{(() => {
-						// Extract all operation IDs from metadata and transactionId field
-						const operationIdsFromMetadata = Array.isArray(
-							alert.metadata?.transactionIds,
-						)
-							? (alert.metadata.transactionIds as string[])
-							: [];
-						const singleOperationId = alert.transactionId
-							? [alert.transactionId]
-							: [];
-
-						// Combine and deduplicate operation IDs
-						const allOperationIds = [
-							...new Set([...operationIdsFromMetadata, ...singleOperationId]),
-						];
-
-						if (allOperationIds.length === 0) {
-							return null;
-						}
-
-						const isMultiple = allOperationIds.length > 1;
-
-						return (
-							<Card>
-								<CardHeader>
-									<div className="flex items-center justify-between">
-										<div className="flex items-center gap-2">
-											<Receipt className="h-5 w-5 text-muted-foreground" />
-											<CardTitle>
-												{isMultiple
-													? t("alertRelatedOperations")
-													: t("alertRelatedOperation")}
-											</CardTitle>
-										</div>
-										{isMultiple && (
-											<Badge variant="secondary" className="font-mono">
-												{allOperationIds.length}
-											</Badge>
-										)}
+					{(operations.length > 0 || operationsLoading) && (
+						<Card>
+							<CardHeader>
+								<div className="flex items-center justify-between">
+									<div className="flex items-center gap-2">
+										<Receipt className="h-5 w-5 text-muted-foreground" />
+										<CardTitle>
+											{operations.length === 1
+												? t("alertRelatedOperation")
+												: t("alertRelatedOperations")}
+										</CardTitle>
 									</div>
-								</CardHeader>
-								<CardContent>
+									{operations.length > 1 && (
+										<Badge variant="secondary" className="font-mono">
+											{operations.length}
+										</Badge>
+									)}
+								</div>
+							</CardHeader>
+							<CardContent>
+								{operationsLoading ? (
 									<div className="space-y-2">
-										{allOperationIds.map((txId, index) => (
-											<Link
-												key={txId}
-												href={orgPath(`/operations/${txId}`)}
-												className="group flex items-center gap-3 rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/50 hover:bg-accent/50"
+										{[1, 2].map((i) => (
+											<div
+												key={i}
+												className="flex items-center gap-3 rounded-lg border border-border p-3"
 											>
-												<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary group-hover:bg-primary/20">
-													<Receipt className="h-4 w-4" />
+												<Skeleton className="h-8 w-8 rounded-md shrink-0" />
+												<div className="flex-1 space-y-1.5">
+													<Skeleton className="h-4 w-32" />
+													<Skeleton className="h-3 w-48" />
 												</div>
-												<div className="flex-1 min-w-0">
-													<div className="flex items-center gap-2">
-														<span className="text-sm font-medium text-foreground">
-															{txId}
-														</span>
-														<ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-													</div>
-													{isMultiple && (
-														<p className="text-xs text-muted-foreground mt-0.5">
-															Operación {index + 1} de {allOperationIds.length}
-														</p>
-													)}
-												</div>
-											</Link>
+												<Skeleton className="h-4 w-16 shrink-0" />
+											</div>
 										))}
 									</div>
-								</CardContent>
-							</Card>
-						);
-					})()}
+								) : (
+									<div className="space-y-2">
+										{operations.map((op) => {
+											const formattedAmount = new Intl.NumberFormat("es-MX", {
+												minimumFractionDigits: 2,
+												maximumFractionDigits: 2,
+											}).format(Number(op.amount));
+
+											const formattedDate = new Date(
+												op.operationDate,
+											).toLocaleDateString("es-MX", {
+												day: "2-digit",
+												month: "short",
+												year: "numeric",
+											});
+
+											return (
+												<Link
+													key={op.id}
+													href={orgPath(`/operations/${op.id}`)}
+													className="group flex items-center gap-3 rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/50 hover:bg-accent/50"
+												>
+													<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary group-hover:bg-primary/20">
+														<Receipt className="h-4 w-4" />
+													</div>
+													<div className="flex-1 min-w-0">
+														<div className="flex items-center gap-2 flex-wrap">
+															<ActivityBadge
+																code={op.activityCode}
+																variant="short"
+															/>
+															<span className="text-sm text-muted-foreground">
+																{formattedDate}
+															</span>
+														</div>
+														<p className="text-xs text-muted-foreground mt-0.5 font-mono truncate">
+															{op.id}
+														</p>
+													</div>
+													<div className="flex items-center gap-2 shrink-0">
+														<span className="text-sm font-semibold tabular-nums">
+															{formattedAmount}{" "}
+															<span className="font-normal text-muted-foreground">
+																{op.currencyCode}
+															</span>
+														</span>
+														<ExternalLink className="h-3.5 w-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+													</div>
+												</Link>
+											);
+										})}
+									</div>
+								)}
+							</CardContent>
+						</Card>
+					)}
 
 					{Object.keys(alert.metadata || {}).length > 0 && (
 						<Card className="md:col-span-2">
