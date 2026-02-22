@@ -723,19 +723,19 @@ describe("api/notices", () => {
 			expect(result.periodEnd.getUTCMilliseconds()).toBe(999);
 		});
 
-		it("includes submission deadline", () => {
-			// January 2024 notice: deadline is Feb 17, 2024
+		it("includes submission deadline on the 17th of the reported month", () => {
+			// January 2024 period (Dec 17 - Jan 16): deadline is Jan 17, 2024
 			const result = calculateNoticePeriod(2024, 1);
 			expect(result.submissionDeadline.getUTCFullYear()).toBe(2024);
-			expect(result.submissionDeadline.getUTCMonth()).toBe(1); // February
+			expect(result.submissionDeadline.getUTCMonth()).toBe(0); // January
 			expect(result.submissionDeadline.getUTCDate()).toBe(17);
 		});
 
-		it("handles year rollover for December deadline", () => {
-			// December 2024 notice: deadline is Jan 17, 2025
+		it("keeps December deadline in the same year", () => {
+			// December 2024 period (Nov 17 - Dec 16): deadline is Dec 17, 2024
 			const result = calculateNoticePeriod(2024, 12);
-			expect(result.submissionDeadline.getUTCFullYear()).toBe(2025);
-			expect(result.submissionDeadline.getUTCMonth()).toBe(0); // January
+			expect(result.submissionDeadline.getUTCFullYear()).toBe(2024);
+			expect(result.submissionDeadline.getUTCMonth()).toBe(11); // December
 			expect(result.submissionDeadline.getUTCDate()).toBe(17);
 		});
 	});

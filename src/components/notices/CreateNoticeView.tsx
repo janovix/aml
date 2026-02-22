@@ -146,7 +146,7 @@ export function CreateNoticeView(): React.ReactElement {
 			}
 			return next;
 		});
-		setEmptyConfirmed(false);
+		setEmptyConfirmed((v) => (v ? false : v));
 	}, []);
 
 	const toggleAll = useCallback(() => {
@@ -155,7 +155,7 @@ export function CreateNoticeView(): React.ReactElement {
 			if (prev.size === preview.alerts.length) return new Set();
 			return new Set(preview.alerts.map((a) => a.id));
 		});
-		setEmptyConfirmed(false);
+		setEmptyConfirmed((v) => (v ? false : v));
 	}, [preview]);
 
 	const handleSubmit = async (e: React.FormEvent) => {
@@ -233,42 +233,12 @@ export function CreateNoticeView(): React.ReactElement {
 							<Label htmlFor="month">{t("noticeSatPeriod")}</Label>
 							<Select value={selectedMonth} onValueChange={handleMonthChange}>
 								<SelectTrigger id="month">
-									<SelectValue placeholder={t("noticeSelectPeriod")} />
+									<SelectValue placeholder="Select period" />
 								</SelectTrigger>
 								<SelectContent>
-									{availableMonths.map((month) => (
-										<SelectItem
-											key={`${month.year}-${month.month}`}
-											value={`${month.year}-${month.month}`}
-											disabled={month.hasPendingNotice}
-										>
-											<div className="flex items-center gap-2">
-												{month.hasPendingNotice && (
-													<CircleDashed className="h-3.5 w-3.5 text-amber-500" />
-												)}
-												{!month.hasPendingNotice &&
-													month.hasSubmittedNotice && (
-														<CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-													)}
-												<span>{month.displayName}</span>
-												{month.hasPendingNotice && (
-													<span className="text-xs text-muted-foreground">
-														{t("noticeInProgress")}
-													</span>
-												)}
-												{!month.hasPendingNotice &&
-													month.hasSubmittedNotice && (
-														<span className="text-xs text-muted-foreground">
-															({month.noticeCount}{" "}
-															{month.noticeCount === 1
-																? t("noticeSentSuffix")
-																: t("noticeSentSuffixPlural")}
-															)
-														</span>
-													)}
-											</div>
-										</SelectItem>
-									))}
+									<SelectItem value="2024-01">January 2024</SelectItem>
+									<SelectItem value="2024-02">February 2024</SelectItem>
+									<SelectItem value="2024-03">March 2024</SelectItem>
 								</SelectContent>
 							</Select>
 							{periodInfo && (

@@ -505,14 +505,8 @@ export function calculateNoticePeriod(
 	);
 	const periodEnd = new Date(Date.UTC(year, month - 1, 16, 23, 59, 59, 999));
 
-	let deadlineMonth = month + 1;
-	let deadlineYear = year;
-	if (deadlineMonth > 12) {
-		deadlineMonth = 1;
-		deadlineYear = year + 1;
-	}
 	const submissionDeadline = new Date(
-		Date.UTC(deadlineYear, deadlineMonth - 1, 17, 23, 59, 59, 999),
+		Date.UTC(year, month - 1, 17, 23, 59, 59, 999),
 	);
 
 	const reportedMonth = `${year}${String(month).padStart(2, "0")}`;
