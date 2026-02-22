@@ -1,3 +1,10 @@
+# [1.4.0-rc.52](https://github.com/janovix/aml/compare/v1.4.0-rc.51...v1.4.0-rc.52) (2026-02-22)
+
+
+### Bug Fixes
+
+* update CreateNoticeView to improve empty confirmation logic and refine notice period calculations; enhance related tests for clarity ([5506167](https://github.com/janovix/aml/commit/5506167d9baf23931790824bd150259eaf30fd72))
+
 # [1.4.0-rc.51](https://github.com/janovix/aml/compare/v1.4.0-rc.50...v1.4.0-rc.51) (2026-02-21)
 
 
