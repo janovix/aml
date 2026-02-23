@@ -241,7 +241,13 @@ export function DashboardLayout({
 					>
 						<AppSidebar hideNavigation={hideNavigation} />
 						<SidebarInset className="flex h-screen flex-col overflow-hidden">
-							{!hideNavigation && <Navbar />}
+							{hideNavigation ? (
+								<header className="z-50 flex h-16 shrink-0 items-center border-b bg-background px-4 shadow-xs md:hidden">
+									<SidebarTrigger className="-ml-1" />
+								</header>
+							) : (
+								<Navbar />
+							)}
 							<main className="@container/main flex min-h-0 flex-1 flex-col overflow-y-auto">
 								<div className="flex flex-col p-4 pb-8 @md/main:p-6 @md/main:pb-12 @lg/main:p-8 @lg/main:pb-16">
 									{children}
