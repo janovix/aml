@@ -6,6 +6,46 @@
 import { tokenCache } from "@/lib/auth/tokenCache";
 import { getWatchlistBaseUrl } from "./config";
 
+// ---------------------------------------------------------------------------
+// Feature flags from watchlist-svc /config
+// ---------------------------------------------------------------------------
+
+export interface WatchlistFeatures {
+	pepSearch: boolean;
+	pepGrok: boolean;
+	adverseMedia: boolean;
+}
+
+const DEFAULT_FEATURES: WatchlistFeatures = {
+	pepSearch: true,
+	pepGrok: true,
+	adverseMedia: true,
+};
+
+export async function fetchWatchlistConfig(): Promise<WatchlistFeatures> {
+	try {
+		const baseUrl = getWatchlistBaseUrl();
+		const res = await fetch(`${baseUrl}/config`);
+		if (!res.ok) {
+			console.warn(
+				`[WatchlistConfig] /config returned ${res.status}, using defaults`,
+			);
+			return DEFAULT_FEATURES;
+		}
+		const data = (await res.json()) as {
+			success: boolean;
+			result: { features: WatchlistFeatures };
+		};
+		return data.result.features;
+	} catch (error) {
+		console.warn(
+			"[WatchlistConfig] Failed to fetch config, using defaults:",
+			error,
+		);
+		return DEFAULT_FEATURES;
+	}
+}
+
 /**
  * Search query result from watchlist-svc
  */

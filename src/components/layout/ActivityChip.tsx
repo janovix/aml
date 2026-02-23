@@ -29,16 +29,16 @@ export function ActivityChip(): React.ReactElement | null {
 	return (
 		<div className="border-b border-sidebar-border">
 			{/* Expanded state */}
-			<div className="flex items-center gap-2.5 px-3 py-2 group-data-[collapsible=icon]:hidden">
+			<div className="flex items-center gap-2 px-4 py-2 group-data-[collapsible=icon]:hidden">
 				<div
 					className={cn(
-						"h-6 w-6 rounded border flex items-center justify-center shrink-0",
+						"size-8 rounded-lg border flex items-center justify-center shrink-0",
 						visual.color.background,
 						visual.color.border,
 					)}
 				>
 					<Icon
-						className={cn("h-3.5 w-3.5", visual.color.icon)}
+						className={cn("h-5 w-5 translate-y-px", visual.color.icon)}
 						strokeWidth={2}
 					/>
 				</div>
@@ -59,13 +59,13 @@ export function ActivityChip(): React.ReactElement | null {
 						<TooltipTrigger asChild>
 							<div
 								className={cn(
-									"h-7 w-7 rounded border flex items-center justify-center cursor-default",
+									"size-8 rounded-lg border flex items-center justify-center cursor-default",
 									visual.color.background,
 									visual.color.border,
 								)}
 							>
 								<Icon
-									className={cn("h-4 w-4", visual.color.icon)}
+									className={cn("h-5 w-5 translate-y-px", visual.color.icon)}
 									strokeWidth={2}
 								/>
 							</div>

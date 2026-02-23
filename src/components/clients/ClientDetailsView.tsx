@@ -74,9 +74,13 @@ import {
 } from "./DocumentViewerDialog";
 import { UploadedIDDocumentCard } from "./UploadedIDDocumentCard";
 import { useWatchlistScreening } from "@/hooks/useWatchlistScreening";
+import { useWatchlistConfig } from "@/hooks/useWatchlistConfig";
 import {
 	ExternalLinkDialog,
 	useExternalLinkRedirect,
+	looksLikeUrl,
+	ensureProtocol,
+	extractHostname,
 } from "@/components/ExternalLinkDialog";
 import { KycSessionSection } from "@/components/kyc/KycSessionSection";
 import { getKycBaseUrl } from "@/lib/api/doc-svc";
@@ -309,6 +313,7 @@ interface ScreeningSourceRowProps {
 	matchLabel?: string;
 	riskBadge?: React.ReactNode;
 	findingsText?: string;
+	children?: React.ReactNode;
 }
 
 function ScreeningSourceRow({
@@ -318,6 +323,7 @@ function ScreeningSourceRow({
 	matchLabel = "coincidencia",
 	riskBadge,
 	findingsText,
+	children,
 }: ScreeningSourceRowProps) {
 	const cfg =
 		WATCHLIST_STATUS_CONFIG[status as WatchlistStatus] ??
@@ -352,6 +358,7 @@ function ScreeningSourceRow({
 					{findingsText}
 				</p>
 			)}
+			{children}
 		</div>
 	);
 }
@@ -508,6 +515,11 @@ export function ClientDetailsView({
 		watchlistQueryId: client?.watchlistQueryId,
 		enabled: !!client?.watchlistQueryId,
 	});
+
+	const { features: watchlistFeatures } = useWatchlistConfig();
+	const showPepSearch = watchlistFeatures.pepSearch;
+	const showPepGrok = watchlistFeatures.pepGrok;
+	const showAdverseMedia = watchlistFeatures.adverseMedia;
 
 	// Document viewer dialog state
 	const [documentViewer, setDocumentViewer] = useState<{
@@ -2050,228 +2062,278 @@ export function ClientDetailsView({
 												)}
 											</div>
 											{/* PEP Oficial (Transparencia) — expandable records */}
-											<div className="bg-background">
-												<div className="py-3 px-4">
+											{showPepSearch && (
+												<div className="bg-background">
+													<div className="py-3 px-4">
+														<div className="flex items-center gap-2 flex-wrap">
+															<span className="text-sm font-medium flex-1">
+																PEP Oficial (Transparencia)
+															</span>
+															<span
+																className={cn(
+																	"inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full border font-medium",
+																	pepOfficialCfg.badgeClass,
+																)}
+															>
+																<span
+																	className={cn(
+																		"h-1.5 w-1.5 rounded-full shrink-0",
+																		pepOfficialCfg.dotClass,
+																	)}
+																/>
+																{pepOfficialCfg.label}
+															</span>
+															{(src?.pepOfficialCount ?? 0) > 0 && (
+																<span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-red-200 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800 font-medium">
+																	<AlertTriangle className="h-3 w-3" />
+																	{src?.pepOfficialCount}{" "}
+																	{(src?.pepOfficialCount ?? 0) === 1
+																		? "registro PEP"
+																		: "registros PEPs"}
+																</span>
+															)}
+															{pepOfficialRecords.length > 0 && (
+																<button
+																	type="button"
+																	onClick={() =>
+																		setPepRecordsExpanded((v) => !v)
+																	}
+																	className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+																>
+																	{pepRecordsExpanded
+																		? "Ocultar"
+																		: "Ver detalle"}
+																	<ChevronDown
+																		className={cn(
+																			"h-3 w-3 transition-transform duration-200",
+																			pepRecordsExpanded && "rotate-180",
+																		)}
+																	/>
+																</button>
+															)}
+														</div>
+													</div>
+													{pepRecordsExpanded &&
+														pepOfficialRecords.length > 0 && (
+															<div className="border-t px-4 py-3 bg-muted/20">
+																<div className="max-h-80 overflow-y-auto space-y-2 pr-1">
+																	{pepOfficialRecords.map((record, idx) => (
+																		<div
+																			key={record.id ?? idx}
+																			className="rounded-md border bg-background p-3 space-y-1.5 text-xs"
+																		>
+																			<div className="flex items-start justify-between gap-2">
+																				<p className="font-semibold text-sm leading-snug">
+																					{record.nombre}
+																				</p>
+																				<span className="shrink-0 text-xs text-muted-foreground bg-muted rounded px-1.5 py-0.5 tabular-nums">
+																					{idx + 1}/{pepOfficialRecords.length}
+																				</span>
+																			</div>
+																			<div className="flex items-center gap-1.5 text-muted-foreground">
+																				<Briefcase className="h-3 w-3 shrink-0" />
+																				<span>{record.denominacion}</span>
+																			</div>
+																			<div className="flex items-center gap-1.5 text-muted-foreground">
+																				<Users className="h-3 w-3 shrink-0" />
+																				<span>{record.areaadscripcion}</span>
+																			</div>
+																			<div className="flex items-center gap-1.5 text-muted-foreground">
+																				<Building2 className="h-3 w-3 shrink-0" />
+																				<span>{record.sujetoobligado}</span>
+																			</div>
+																			<div className="grid grid-cols-2 gap-1.5">
+																				<div className="flex items-center gap-1.5 text-muted-foreground">
+																					<MapPin className="h-3 w-3 shrink-0" />
+																					<span>
+																						{record.entidadfederativa}
+																					</span>
+																				</div>
+																				<div className="flex items-center gap-1.5 text-muted-foreground">
+																					<Calendar className="h-3 w-3 shrink-0" />
+																					<span>{record.periodoreporta}</span>
+																				</div>
+																			</div>
+																			{(record.informacionPrincipal?.telefono ||
+																				record.informacionPrincipal
+																					?.correo) && (
+																				<div className="flex flex-wrap gap-x-4 gap-y-1 pt-1.5 border-t">
+																					{record.informacionPrincipal
+																						?.telefono && (
+																						<div className="flex items-center gap-1.5 text-muted-foreground">
+																							<Phone className="h-3 w-3 shrink-0" />
+																							<span>
+																								{
+																									record.informacionPrincipal
+																										.telefono
+																								}
+																							</span>
+																						</div>
+																					)}
+																					{record.informacionPrincipal
+																						?.correo && (
+																						<div className="flex items-center gap-1.5 text-muted-foreground">
+																							<Mail className="h-3 w-3 shrink-0" />
+																							<span>
+																								{
+																									record.informacionPrincipal
+																										.correo
+																								}
+																							</span>
+																						</div>
+																					)}
+																				</div>
+																			)}
+																		</div>
+																	))}
+																</div>
+															</div>
+														)}
+												</div>
+											)}
+
+											{/* Detección PEP por IA */}
+											{showPepGrok && (
+												<div className="py-3 px-4 bg-background">
 													<div className="flex items-center gap-2 flex-wrap">
 														<span className="text-sm font-medium flex-1">
-															PEP Oficial (Transparencia)
+															Detección PEP por IA
 														</span>
 														<span
 															className={cn(
 																"inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full border font-medium",
-																pepOfficialCfg.badgeClass,
+																pepAiCfg.badgeClass,
 															)}
 														>
 															<span
 																className={cn(
 																	"h-1.5 w-1.5 rounded-full shrink-0",
-																	pepOfficialCfg.dotClass,
+																	pepAiCfg.dotClass,
 																)}
 															/>
-															{pepOfficialCfg.label}
+															{pepAiCfg.label}
 														</span>
-														{(src?.pepOfficialCount ?? 0) > 0 && (
-															<span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-red-200 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800 font-medium">
-																<AlertTriangle className="h-3 w-3" />
-																{src?.pepOfficialCount}{" "}
-																{(src?.pepOfficialCount ?? 0) === 1
-																	? "registro PEP"
-																	: "registros PEPs"}
-															</span>
-														)}
-														{pepOfficialRecords.length > 0 && (
-															<button
-																type="button"
-																onClick={() => setPepRecordsExpanded((v) => !v)}
-																className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-															>
-																{pepRecordsExpanded ? "Ocultar" : "Ver detalle"}
-																<ChevronDown
+														{pepAiResult &&
+															typeof pepAiResult.probability === "number" && (
+																<span
 																	className={cn(
-																		"h-3 w-3 transition-transform duration-200",
-																		pepRecordsExpanded && "rotate-180",
+																		"inline-flex items-center text-xs px-2 py-0.5 rounded-full border font-medium",
+																		pepAiResult.probability > 0.5
+																			? "border-red-200 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800"
+																			: "border-green-200 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800",
 																	)}
-																/>
-															</button>
-														)}
-													</div>
-												</div>
-												{pepRecordsExpanded &&
-													pepOfficialRecords.length > 0 && (
-														<div className="border-t px-4 py-3 bg-muted/20">
-															<div className="max-h-80 overflow-y-auto space-y-2 pr-1">
-																{pepOfficialRecords.map((record, idx) => (
-																	<div
-																		key={record.id ?? idx}
-																		className="rounded-md border bg-background p-3 space-y-1.5 text-xs"
-																	>
-																		<div className="flex items-start justify-between gap-2">
-																			<p className="font-semibold text-sm leading-snug">
-																				{record.nombre}
-																			</p>
-																			<span className="shrink-0 text-xs text-muted-foreground bg-muted rounded px-1.5 py-0.5 tabular-nums">
-																				{idx + 1}/{pepOfficialRecords.length}
-																			</span>
-																		</div>
-																		<div className="flex items-center gap-1.5 text-muted-foreground">
-																			<Briefcase className="h-3 w-3 shrink-0" />
-																			<span>{record.denominacion}</span>
-																		</div>
-																		<div className="flex items-center gap-1.5 text-muted-foreground">
-																			<Users className="h-3 w-3 shrink-0" />
-																			<span>{record.areaadscripcion}</span>
-																		</div>
-																		<div className="flex items-center gap-1.5 text-muted-foreground">
-																			<Building2 className="h-3 w-3 shrink-0" />
-																			<span>{record.sujetoobligado}</span>
-																		</div>
-																		<div className="grid grid-cols-2 gap-1.5">
-																			<div className="flex items-center gap-1.5 text-muted-foreground">
-																				<MapPin className="h-3 w-3 shrink-0" />
-																				<span>{record.entidadfederativa}</span>
-																			</div>
-																			<div className="flex items-center gap-1.5 text-muted-foreground">
-																				<Calendar className="h-3 w-3 shrink-0" />
-																				<span>{record.periodoreporta}</span>
-																			</div>
-																		</div>
-																		{(record.informacionPrincipal?.telefono ||
-																			record.informacionPrincipal?.correo) && (
-																			<div className="flex flex-wrap gap-x-4 gap-y-1 pt-1.5 border-t">
-																				{record.informacionPrincipal
-																					?.telefono && (
-																					<div className="flex items-center gap-1.5 text-muted-foreground">
-																						<Phone className="h-3 w-3 shrink-0" />
-																						<span>
-																							{
-																								record.informacionPrincipal
-																									.telefono
-																							}
-																						</span>
-																					</div>
-																				)}
-																				{record.informacionPrincipal
-																					?.correo && (
-																					<div className="flex items-center gap-1.5 text-muted-foreground">
-																						<Mail className="h-3 w-3 shrink-0" />
-																						<span>
-																							{
-																								record.informacionPrincipal
-																									.correo
-																							}
-																						</span>
-																					</div>
-																				)}
-																			</div>
-																		)}
-																	</div>
-																))}
-															</div>
-														</div>
-													)}
-											</div>
-
-											{/* Detección PEP por IA */}
-											<div className="py-3 px-4 bg-background">
-												<div className="flex items-center gap-2 flex-wrap">
-													<span className="text-sm font-medium flex-1">
-														Detección PEP por IA
-													</span>
-													<span
-														className={cn(
-															"inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full border font-medium",
-															pepAiCfg.badgeClass,
-														)}
-													>
-														<span
-															className={cn(
-																"h-1.5 w-1.5 rounded-full shrink-0",
-																pepAiCfg.dotClass,
+																>
+																	Prob. PEP:{" "}
+																	{Math.round(pepAiResult.probability * 100)}%
+																</span>
 															)}
-														/>
-														{pepAiCfg.label}
-													</span>
-													{pepAiResult &&
-														typeof pepAiResult.probability === "number" && (
+													</div>
+													{pepAiSummary && (
+														<p className="mt-1.5 text-xs text-muted-foreground italic">
+															{pepAiSummary}
+														</p>
+													)}
+													{pepAiResult?.sources &&
+														pepAiResult.sources.length > 0 && (
+															<div className="mt-1.5 flex flex-wrap gap-1">
+																{pepAiResult.sources.map((source, i) => {
+																	const isLink = looksLikeUrl(source);
+																	const href = isLink
+																		? ensureProtocol(source)
+																		: null;
+																	return isLink && href ? (
+																		<a
+																			key={i}
+																			href={href}
+																			onClick={(e) =>
+																				extLink.handleExternalLink(href, e)
+																			}
+																			className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground border hover:text-foreground hover:border-foreground/30 transition-colors cursor-pointer"
+																		>
+																			<Link2 className="h-3 w-3 shrink-0" />
+																			{extractHostname(source)}
+																			<ExternalLink className="h-2.5 w-2.5 shrink-0" />
+																		</a>
+																	) : (
+																		<span
+																			key={i}
+																			className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground border"
+																		>
+																			{source}
+																		</span>
+																	);
+																})}
+															</div>
+														)}
+												</div>
+											)}
+											{showAdverseMedia && (
+												<ScreeningSourceRow
+													label="Media Adversa"
+													status={
+														src?.adverseMediaStatus ??
+														(client.adverseMediaFlagged
+															? "completed"
+															: "pending")
+													}
+													riskBadge={
+														src ? (
 															<span
 																className={cn(
-																	"inline-flex items-center text-xs px-2 py-0.5 rounded-full border font-medium",
-																	pepAiResult.probability > 0.5
-																		? "border-red-200 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800"
-																		: "border-green-200 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800",
+																	"inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium",
+																	ADVERSE_RISK_CONFIG[riskLevel].badgeClass,
 																)}
 															>
-																Prob. PEP:{" "}
-																{Math.round(pepAiResult.probability * 100)}%
+																Riesgo: {ADVERSE_RISK_CONFIG[riskLevel].label}
 															</span>
-														)}
-												</div>
-												{pepAiSummary && (
-													<p className="mt-1.5 text-xs text-muted-foreground italic">
-														{pepAiSummary}
-													</p>
-												)}
-												{pepAiResult?.sources &&
-													pepAiResult.sources.length > 0 && (
-														<div className="mt-1.5 flex flex-wrap gap-1">
-															{pepAiResult.sources.map((source, i) => {
-																const isUrl = /^https?:\/\//i.test(source);
-																return isUrl ? (
-																	<a
-																		key={i}
-																		href={source}
-																		onClick={(e) =>
-																			extLink.handleExternalLink(source, e)
-																		}
-																		className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground border hover:text-foreground hover:border-foreground/30 transition-colors cursor-pointer"
-																	>
-																		<Link2 className="h-3 w-3 shrink-0" />
-																		{(() => {
-																			try {
-																				return new URL(source).hostname;
-																			} catch {
-																				return source;
+														) : client.adverseMediaFlagged ? (
+															<span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-red-200 bg-red-50 text-red-700 font-medium">
+																<AlertTriangle className="h-3 w-3" />
+																Media adversa
+															</span>
+														) : undefined
+													}
+													findingsText={findingsText}
+												>
+													{(() => {
+														const sources = adverseResult?.sources as
+															| string[]
+															| undefined;
+														if (!sources || sources.length === 0) return null;
+														return (
+															<div className="mt-1.5 flex flex-wrap gap-1">
+																{sources.map((source, i) => {
+																	const isLink = looksLikeUrl(source);
+																	const href = isLink
+																		? ensureProtocol(source)
+																		: null;
+																	return isLink && href ? (
+																		<a
+																			key={i}
+																			href={href}
+																			onClick={(e) =>
+																				extLink.handleExternalLink(href, e)
 																			}
-																		})()}
-																		<ExternalLink className="h-2.5 w-2.5 shrink-0" />
-																	</a>
-																) : (
-																	<span
-																		key={i}
-																		className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground border"
-																	>
-																		{source}
-																	</span>
-																);
-															})}
-														</div>
-													)}
-											</div>
-											<ScreeningSourceRow
-												label="Media Adversa"
-												status={
-													src?.adverseMediaStatus ??
-													(client.adverseMediaFlagged ? "completed" : "pending")
-												}
-												riskBadge={
-													src ? (
-														<span
-															className={cn(
-																"inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium",
-																ADVERSE_RISK_CONFIG[riskLevel].badgeClass,
-															)}
-														>
-															Riesgo: {ADVERSE_RISK_CONFIG[riskLevel].label}
-														</span>
-													) : client.adverseMediaFlagged ? (
-														<span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-red-200 bg-red-50 text-red-700 font-medium">
-															<AlertTriangle className="h-3 w-3" />
-															Media adversa
-														</span>
-													) : undefined
-												}
-												findingsText={findingsText}
-											/>
+																			className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground border hover:text-foreground hover:border-foreground/30 transition-colors cursor-pointer"
+																		>
+																			<Link2 className="h-3 w-3 shrink-0" />
+																			{extractHostname(source)}
+																			<ExternalLink className="h-2.5 w-2.5 shrink-0" />
+																		</a>
+																	) : (
+																		<span
+																			key={i}
+																			className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground border"
+																		>
+																			{source}
+																		</span>
+																	);
+																})}
+															</div>
+														);
+													})()}
+												</ScreeningSourceRow>
+											)}
 										</div>
 									)}
 

@@ -20,6 +20,7 @@ import {
 	ExternalLinkDialog,
 	useExternalLinkRedirect,
 } from "@/components/ExternalLinkDialog";
+import { useWatchlistConfig } from "@/hooks/useWatchlistConfig";
 
 interface WatchlistScreeningSectionProps {
 	watchlistQueryId: string | null | undefined;
@@ -116,6 +117,7 @@ export function WatchlistScreeningSection({
 			enabled: !!watchlistQueryId,
 		});
 	const extLink = useExternalLinkRedirect();
+	const { features } = useWatchlistConfig();
 
 	if (!watchlistQueryId) {
 		return (
@@ -247,16 +249,25 @@ export function WatchlistScreeningSection({
 					/>
 
 					{/* Asynchronous results */}
-					<ScreeningResult
-						label="PEP Official (Transparency)"
-						status={data.pepOfficialStatus}
-						count={data.pepOfficialCount}
-					/>
-					<ScreeningResult label="PEP AI Detection" status={data.pepAiStatus} />
-					<ScreeningResult
-						label="Adverse Media"
-						status={data.adverseMediaStatus}
-					/>
+					{features.pepSearch && (
+						<ScreeningResult
+							label="PEP Official (Transparency)"
+							status={data.pepOfficialStatus}
+							count={data.pepOfficialCount}
+						/>
+					)}
+					{features.pepGrok && (
+						<ScreeningResult
+							label="PEP AI Detection"
+							status={data.pepAiStatus}
+						/>
+					)}
+					{features.adverseMedia && (
+						<ScreeningResult
+							label="Adverse Media"
+							status={data.adverseMediaStatus}
+						/>
+					)}
 				</div>
 
 				{hasAnyMatches && (
