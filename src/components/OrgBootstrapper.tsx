@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { useOrgStore } from "@/lib/org-store";
 import { useAuthSession } from "@/lib/auth/useAuthSession";
@@ -15,6 +15,24 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getViewSkeleton } from "@/lib/view-skeletons";
 import * as Sentry from "@sentry/nextjs";
+import {
+	getSubscriptionStatus,
+	hasAMLAccess,
+	type SubscriptionStatus,
+} from "@/lib/subscription/subscriptionClient";
+import { SubscriptionProvider } from "@/lib/subscription";
+import {
+	getOrganizationSettings,
+	type OrganizationSettingsEntity,
+} from "@/lib/api/organization-settings";
+import { NoAMLAccess } from "@/components/subscription";
+import { ObligatedSubjectSetup } from "@/components/onboarding/ObligatedSubjectSetup";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+
+interface BootstrapData {
+	subscription: SubscriptionStatus | null;
+	orgSettings: OrganizationSettingsEntity | null;
+}
 
 // Must match the cookie name in sidebar.tsx
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
@@ -209,6 +227,9 @@ export function OrgBootstrapper({
 
 	const [isReady, setIsReady] = useState(false);
 	const [isRedirecting, setIsRedirecting] = useState(false);
+	const [bootstrapData, setBootstrapData] = useState<BootstrapData | null>(
+		null,
+	);
 	const lastSyncedOrgRef = useRef<string | null | undefined>(null);
 
 	// Set current user ID from session
@@ -223,6 +244,7 @@ export function OrgBootstrapper({
 		// No org slug in URL - this is the fallback index page (rarely reached)
 		// Middleware should redirect to /{orgSlug}, but if we reach here, just mark ready
 		if (!urlOrgSlug) {
+			setBootstrapData({ subscription: null, orgSettings: null });
 			setIsReady(true);
 			return;
 		}
@@ -241,6 +263,17 @@ export function OrgBootstrapper({
 			isSubsequentNavigation && storeState.currentOrg?.slug === urlOrgSlug;
 
 		async function syncOrg() {
+			// When switching to a DIFFERENT org (not the initial load), reset bootstrap data
+			// immediately to prevent stale data from the previous org from leaking through
+			// child guards (OrgSettingsGuard) while the async fetch is in flight.
+			if (
+				lastSyncedOrgRef.current !== null &&
+				lastSyncedOrgRef.current !== urlOrgSlug
+			) {
+				setBootstrapData(null);
+				setIsReady(false);
+			}
+
 			// Only show loading state if we need to do a full sync
 			if (!alreadySwitched) {
 				setLoading(true);
@@ -275,7 +308,6 @@ export function OrgBootstrapper({
 					return;
 				}
 				orgs = result.data.organizations;
-				setOrganizations(orgs);
 			}
 
 			// Find the org matching the URL slug
@@ -341,15 +373,60 @@ export function OrgBootstrapper({
 				setCurrentOrg(targetOrg);
 			}
 
-			// Fetch members (always do this to ensure fresh data)
-			const membersResult = await listMembers(targetOrg.id);
-			if (membersResult.data) {
-				setMembers(membersResult.data);
-			} else if (membersResult.error) {
+			const userId = session?.user?.id;
+
+			// Fetch members + JWT + subscription in parallel to eliminate sequential loading.
+			// JWT is fetched here so org settings can use it in the next step.
+			// Subscription is always re-fetched because resolveFromOrg=true resolves plan/limits
+			// from the active org's owner, which changes when switching between orgs with different owners.
+			const [allMemberResults, jwt, subscriptionResult] = await Promise.all([
+				// Members: enrich orgs with user role + provide full member list for current org
+				Promise.all(orgs.map((org) => listMembers(org.id))),
+				// JWT: needed immediately for org settings fetch below
+				tokenCache.getToken(targetOrg.id),
+				// Subscription: always fetch to reflect the active org's owner entitlements
+				getSubscriptionStatus().catch(() => null),
+			]);
+
+			// Fetch org settings (requires JWT) — done after the parallel step since it depends on JWT
+			let orgSettings: OrganizationSettingsEntity | null = null;
+			if (jwt) {
+				try {
+					orgSettings = await getOrganizationSettings({ jwt });
+				} catch {
+					orgSettings = null;
+				}
+			}
+
+			// Enrich orgs with the current user's role and update the store
+			const enrichedOrgs = orgs.map((org, i) => {
+				const myMember = allMemberResults[i].data?.find(
+					(m) => m.userId === userId,
+				);
+				return myMember ? { ...org, userRole: myMember.role } : org;
+			});
+			setOrganizations(enrichedOrgs);
+
+			// Set the full member list for the current org
+			const targetOrgIndex = enrichedOrgs.findIndex(
+				(o) => o.id === targetOrg.id,
+			);
+			const currentOrgMembers =
+				targetOrgIndex >= 0 ? allMemberResults[targetOrgIndex].data : null;
+
+			if (currentOrgMembers) {
+				setMembers(currentOrgMembers);
+			} else if (allMemberResults[targetOrgIndex]?.error) {
 				toast.error("Failed to load team members", {
-					description: membersResult.error,
+					description: allMemberResults[targetOrgIndex].error ?? undefined,
 				});
 			}
+
+			// Update bootstrap data with fresh subscription and org settings
+			setBootstrapData((prev) => ({
+				subscription: subscriptionResult ?? prev?.subscription ?? null,
+				orgSettings,
+			}));
 
 			lastSyncedOrgRef.current = urlOrgSlug;
 			setLoading(false);
@@ -370,6 +447,18 @@ export function OrgBootstrapper({
 		// which is unnecessary and causes issues in tests.
 	]);
 
+	// Refresh org settings after ObligatedSubjectSetup completes
+	const handleOrgSettingsComplete = useCallback(async () => {
+		const jwt = await tokenCache.getToken(currentOrg?.id ?? null);
+		if (!jwt) return;
+		try {
+			const orgSettings = await getOrganizationSettings({ jwt });
+			setBootstrapData((prev) => (prev ? { ...prev, orgSettings } : prev));
+		} catch {
+			// ignore — user can retry
+		}
+	}, [currentOrg?.id]);
+
 	// Check if we're on an error page (not-found, forbidden)
 	// These pages should ALWAYS render immediately, even without currentOrg
 	const isErrorPage =
@@ -385,10 +474,47 @@ export function OrgBootstrapper({
 		return <AppSkeletonWithView pathname={pathname || "/"} />;
 	}
 
-	// Show loading skeleton while syncing org
-	if (!isReady || (urlOrgSlug && !currentOrg)) {
+	// Detect an in-flight org switch on the very first render after the URL slug changes.
+	// lastSyncedOrgRef is only updated at the end of a successful syncOrg(), so when
+	// urlOrgSlug differs from it (and it's not the initial load where it's null), we know
+	// the async fetch hasn't finished yet. Show the skeleton immediately — before any
+	// effect or state update fires — to prevent stale data from the previous org leaking
+	// through child guards (OrgSettingsGuard) for even one render cycle.
+	const isOrgSwitching =
+		lastSyncedOrgRef.current !== null &&
+		lastSyncedOrgRef.current !== urlOrgSlug;
+
+	// Show loading skeleton while syncing org and fetching all bootstrap data
+	if (
+		!isReady ||
+		(urlOrgSlug && !currentOrg) ||
+		!bootstrapData ||
+		isOrgSwitching
+	) {
 		return <AppSkeletonWithView pathname={pathname || "/"} />;
 	}
 
-	return <>{children}</>;
+	// Subscription gate: block access if user has no active AML subscription
+	if (urlOrgSlug && !hasAMLAccess(bootstrapData.subscription)) {
+		return <NoAMLAccess />;
+	}
+
+	// Org settings gate: require obligated subject setup before accessing the app
+	if (urlOrgSlug && !bootstrapData.orgSettings) {
+		return (
+			<SubscriptionProvider initialData={bootstrapData.subscription}>
+				<DashboardLayout hideNavigation initialSidebarCollapsed={false}>
+					<ObligatedSubjectSetup onComplete={handleOrgSettingsComplete} />
+				</DashboardLayout>
+			</SubscriptionProvider>
+		);
+	}
+
+	// All checks passed — mount SubscriptionProvider with pre-fetched data so it
+	// starts fully initialized (isLoading: false) without triggering a second fetch.
+	return (
+		<SubscriptionProvider initialData={bootstrapData.subscription}>
+			{children}
+		</SubscriptionProvider>
+	);
 }

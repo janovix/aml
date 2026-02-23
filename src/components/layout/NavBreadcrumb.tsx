@@ -36,12 +36,15 @@ import type { TranslationKeys } from "@/lib/translations";
 const ROUTE_LABEL_KEYS: Record<string, TranslationKeys> = {
 	clients: "navClients",
 	transactions: "navTransactions",
+	operations: "navOperations",
+	invoices: "navInvoices",
 	alerts: "navAlerts",
 	notices: "navNotices",
 	reports: "navReports",
 	import: "navImport",
 	new: "breadcrumbNew",
 	edit: "breadcrumbEdit",
+	upload: "breadcrumbUpload",
 };
 
 /**
@@ -98,7 +101,7 @@ interface BreadcrumbSegment {
 	/** ID for dynamic entities (e.g., client ID, report ID) that need name lookup */
 	entityId?: string;
 	/** Type of entity for dynamic lookup */
-	entityType?: "client" | "report";
+	entityType?: "client" | "report" | "operation";
 }
 
 export function NavBreadcrumb() {
@@ -144,6 +147,9 @@ export function NavBreadcrumb() {
 			const isClientId = prevSegment === "clients" && isIdSegment(segment);
 			// Check if this segment is a report ID (segment after "reports")
 			const isReportId = prevSegment === "reports" && isIdSegment(segment);
+			// Check if this segment is an operation ID (segment after "operations")
+			const isOperationId =
+				prevSegment === "operations" && isIdSegment(segment);
 
 			// Get translation key or fallback
 			const labelKey = ROUTE_LABEL_KEYS[segment];
@@ -157,13 +163,16 @@ export function NavBreadcrumb() {
 			}
 
 			// Determine entity type for dynamic lookup
-			let entityType: "client" | "report" | undefined;
+			let entityType: "client" | "report" | "operation" | undefined;
 			let entityId: string | undefined;
 			if (isClientId) {
 				entityType = "client";
 				entityId = segment;
 			} else if (isReportId) {
 				entityType = "report";
+				entityId = segment;
+			} else if (isOperationId) {
+				entityType = "operation";
 				entityId = segment;
 			}
 

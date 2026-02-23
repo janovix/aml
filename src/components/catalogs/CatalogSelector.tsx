@@ -54,8 +54,12 @@ type OptionRenderer = (
 
 interface CatalogSelectorProps {
 	catalogKey: string;
+	/** HTML id attribute for the trigger button (for form label association) */
+	id?: string;
 	label?: string;
 	labelDescription?: string;
+	/** Field tier for 3-tier completeness indicators (RED/YELLOW/GREY dot) */
+	tier?: import("@/types/completeness").FieldTier;
 	value?: string;
 	placeholder?: string;
 	searchPlaceholder?: string;
@@ -72,6 +76,22 @@ interface CatalogSelectorProps {
 	getOptionValue?: (option: CatalogItem) => string;
 	renderOption?: OptionRenderer;
 	className?: string;
+	/** Filter by va_code in metadata (for alert types) */
+	vaCode?: string;
+	/** Exclude automatable items (for alert types) */
+	excludeAutomatable?: boolean;
+	/**
+	 * Allow the user to use a custom free-text value that is not in the catalog.
+	 * Unlike `allowNewItems` (which creates a new catalog entry), this simply
+	 * stores the raw text value without modifying the catalog.
+	 */
+	allowCustomValue?: boolean;
+	/**
+	 * Pre-resolved display name from server (e.g., from resolvedNames).
+	 * When provided, shows the name immediately while loading the full catalog item.
+	 * Prevents flashing raw codes during initial render.
+	 */
+	resolvedName?: string;
 }
 
 function Spinner({
@@ -120,7 +140,9 @@ interface CatalogSelectorCommandContentProps {
 	mappedItems: Array<{ item: CatalogItem; value: string; label: string }>;
 	emptyState: string;
 	allowNewItems: boolean;
+	allowCustomValue: boolean;
 	onAddNewClick: () => void;
+	onUseCustomValue: (value: string) => void;
 	selectedOption: CatalogItem | null;
 	getOptionValue?: (option: CatalogItem) => string;
 	renderOption: OptionRenderer;
@@ -142,7 +164,9 @@ function CatalogSelectorCommandContent({
 	mappedItems,
 	emptyState,
 	allowNewItems,
+	allowCustomValue,
 	onAddNewClick,
+	onUseCustomValue,
 	selectedOption,
 	getOptionValue,
 	renderOption,
@@ -191,6 +215,17 @@ function CatalogSelectorCommandContent({
 							<CommandEmpty>
 								<div className="flex flex-col items-center gap-2 py-2 px-3">
 									<span>{emptyState}</span>
+									{allowCustomValue && searchTerm.trim() && (
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											onClick={() => onUseCustomValue(searchTerm.trim())}
+											className="mt-2 bg-transparent"
+										>
+											Usar &quot;{searchTerm.trim()}&quot;
+										</Button>
+									)}
 									{allowNewItems && searchTerm.trim() && (
 										<Button
 											type="button"
@@ -226,6 +261,18 @@ function CatalogSelectorCommandContent({
 										</CommandItem>
 									);
 								})}
+								{allowCustomValue && searchTerm.trim() && (
+									<CommandItem
+										key="__custom_value__"
+										value="__custom_value__"
+										onSelect={() => onUseCustomValue(searchTerm.trim())}
+										className={cn("text-muted-foreground", isMobile && "py-3")}
+									>
+										<div className="flex items-center gap-2">
+											<span>Usar &quot;{searchTerm.trim()}&quot;</span>
+										</div>
+									</CommandItem>
+								)}
 								{allowNewItems && searchTerm.trim() && (
 									<CommandItem
 										key="__add_new__"
@@ -273,8 +320,10 @@ function CatalogSelectorCommandContent({
 
 export function CatalogSelector({
 	catalogKey,
+	id,
 	label,
 	labelDescription,
+	tier,
 	value,
 	placeholder,
 	searchPlaceholder = "Buscar en el catálogo...",
@@ -291,6 +340,10 @@ export function CatalogSelector({
 	getOptionValue,
 	renderOption = defaultRenderOption,
 	className,
+	vaCode,
+	excludeAutomatable,
+	allowCustomValue = false,
+	resolvedName,
 }: CatalogSelectorProps): React.ReactElement {
 	const labelId = useId();
 	const listRef = useRef<HTMLDivElement>(null);
@@ -301,9 +354,9 @@ export function CatalogSelector({
 	const resolvedType = typeLabel ?? label?.toLowerCase() ?? "opción";
 	const isControlled = value !== undefined;
 
-	// Initialize selectedLabel as empty - don't use value directly as it may be an ID
+	// Initialize selectedLabel with resolvedName if provided, empty otherwise
 	// The label will be resolved once items are loaded and matched
-	const [selectedLabel, setSelectedLabel] = useState("");
+	const [selectedLabel, setSelectedLabel] = useState(resolvedName || "");
 	const [selectedOption, setSelectedOption] = useState<CatalogItem | null>(
 		null,
 	);
@@ -334,6 +387,8 @@ export function CatalogSelector({
 		pageSize,
 		debounceMs,
 		enabled: !disabled,
+		vaCode,
+		excludeAutomatable,
 	});
 
 	// State for "Add new item" dialog
@@ -359,6 +414,13 @@ export function CatalogSelector({
 		}
 	}, [value, lastSearchedValue]);
 
+	// Effect to update selectedLabel if resolvedName changes and we haven't found an item yet
+	useEffect(() => {
+		if (resolvedName && !selectedOption) {
+			setSelectedLabel(resolvedName);
+		}
+	}, [resolvedName, selectedOption]);
+
 	// Helper to get the value from an option
 	const getOptionValueResolved = (option: CatalogItem): string => {
 		return getOptionValue ? getOptionValue(option) : (option.id ?? option.name);
@@ -367,8 +429,12 @@ export function CatalogSelector({
 	// Helper to check if an option matches a given value
 	// This handles lookups by ID, shortName (metadata.shortName), or code (metadata.code)
 	const optionMatchesValue = (option: CatalogItem, val: string): boolean => {
-		// Check by ID or custom getOptionValue
+		// Check by custom getOptionValue result (e.g., name, shortName, code)
 		if (getOptionValueResolved(option) === val) {
+			return true;
+		}
+		// Always check by ID for backward compatibility with stored UUIDs
+		if (option.id === val) {
 			return true;
 		}
 		// Check by metadata.shortName (e.g., "MXN" for currencies)
@@ -379,9 +445,9 @@ export function CatalogSelector({
 		if (metadata?.shortName === val) {
 			return true;
 		}
-		// Check by metadata.code ONLY for 2-letter codes (country codes like "MX")
-		// This prevents matching currency codes like "MXN" against numeric SAT codes
-		if (metadata?.code === val && /^[A-Z]{2}$/.test(val)) {
+		// Check by metadata.code
+		// This matches both 2-letter country codes (e.g., "MX") and numeric SAT codes (e.g., "01", "03")
+		if (metadata?.code === val) {
 			return true;
 		}
 		return false;
@@ -443,6 +509,16 @@ export function CatalogSelector({
 			setSelectedLabel(match.name);
 			setPagesSearchedForValue(0); // Reset search counter when found
 		} else if (
+			allowCustomValue &&
+			!loading &&
+			!loadingMore &&
+			!match &&
+			items.length > 0
+		) {
+			// When allowCustomValue is enabled and the value doesn't match any catalog item,
+			// display the raw value as-is (it's a user-entered custom value)
+			setSelectedLabel(value);
+		} else if (
 			!loading &&
 			!loadingMore &&
 			items.length > 0 &&
@@ -501,6 +577,7 @@ export function CatalogSelector({
 		selectedOption,
 		catalogKey,
 		fetchingById,
+		allowCustomValue,
 	]);
 
 	const handleSelect = (optionValue: string): void => {
@@ -538,6 +615,19 @@ export function CatalogSelector({
 		setOpen(false);
 		setAddDialogOpen(true);
 	}, []);
+
+	const handleUseCustomValue = useCallback(
+		(customValue: string): void => {
+			setSelectedOption(null);
+			setSelectedLabel(customValue);
+			setSearchTerm("");
+			setShowResults(false);
+			setOpen(false);
+			onValueChange?.(customValue);
+			onChange?.(null);
+		},
+		[onValueChange, onChange, setSearchTerm],
+	);
 
 	const handleItemCreated = useCallback(
 		(newItem: CatalogItem): void => {
@@ -721,6 +811,7 @@ export function CatalogSelector({
 
 	const triggerButton = (
 		<Button
+			id={id}
 			variant="outline"
 			role="combobox"
 			aria-expanded={open}
@@ -749,7 +840,9 @@ export function CatalogSelector({
 		mappedItems,
 		emptyState,
 		allowNewItems,
+		allowCustomValue,
 		onAddNewClick: handleAddNewClick,
+		onUseCustomValue: handleUseCustomValue,
 		selectedOption,
 		getOptionValue,
 		renderOption,
@@ -764,11 +857,12 @@ export function CatalogSelector({
 	return (
 		<div className={cn("space-y-2", className)}>
 			{label &&
-				(labelDescription ? (
+				(labelDescription || tier ? (
 					<LabelWithInfo
 						htmlFor={labelId}
 						description={labelDescription}
 						required={required}
+						tier={tier}
 					>
 						{label}
 					</LabelWithInfo>

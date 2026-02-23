@@ -19,7 +19,7 @@ export function useOrgNavigation() {
 
 	/**
 	 * Build an org-prefixed path
-	 * @param path - Path without org prefix (e.g., "/clients", "/transactions/123")
+	 * @param path - Path without org prefix (e.g., "/clients", "/operations/123")
 	 * @returns Full path with org prefix (e.g., "/algenium/clients")
 	 */
 	const orgPath = useCallback(
@@ -63,11 +63,11 @@ export function useOrgNavigation() {
 				detail: (id: string) => orgPath(`/clients/${id}`),
 				edit: (id: string) => orgPath(`/clients/${id}/edit`),
 			},
-			transactions: {
-				list: () => orgPath("/transactions"),
-				new: () => orgPath("/transactions/new"),
-				detail: (id: string) => orgPath(`/transactions/${id}`),
-				edit: (id: string) => orgPath(`/transactions/${id}/edit`),
+			operations: {
+				list: () => orgPath("/operations"),
+				new: () => orgPath("/operations/new"),
+				detail: (id: string) => orgPath(`/operations/${id}`),
+				edit: (id: string) => orgPath(`/operations/${id}/edit`),
 			},
 			alerts: {
 				list: () => orgPath("/alerts"),

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useOrgStore } from "@/lib/org-store";
+import * as Sentry from "@sentry/nextjs";
 import {
 	FileText,
 	CheckCircle2,
@@ -15,20 +16,29 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { createClientDocument } from "@/lib/api/client-documents";
-import { uploadDocumentFiles } from "@/lib/api/file-upload";
+import { uploadDocumentForKYC } from "@/lib/api/file-upload";
 import type { Client, PersonType } from "@/types/client";
 import type {
 	ClientDocumentType,
 	ClientDocumentCreateRequest,
-	DocumentFileMetadata,
 } from "@/types/client-document";
+import {
+	DOCUMENT_TYPE_CONFIG,
+	REQUIRED_DOCUMENTS,
+	requiresUBOs,
+} from "@/lib/constants";
 import {
 	SimpleDocumentUploadCard,
 	type SimpleDocumentUploadData,
 } from "./SimpleDocumentUploadCard";
 import { IDDocumentSelector, type IDDocumentData } from "./IDDocumentSelector";
-import { UBOInlineForm, type UBOWithDocuments } from "./UBOInlineForm";
-import { FormActionBar } from "@/components/ui/FormActionBar";
+import {
+	OwnershipInlineForm,
+	type ShareholderWithDocuments,
+	type BCWithDocuments,
+} from "./OwnershipInlineForm";
+import { listClientShareholders } from "@/lib/api/shareholders";
+import { listClientBeneficialControllers } from "@/lib/api/beneficial-controllers";
 
 interface DocumentsStepProps {
 	clientId: string;
@@ -37,94 +47,6 @@ interface DocumentsStepProps {
 	onComplete: () => void;
 	onSkip: () => void;
 }
-
-// Document configuration per type
-const DOCUMENT_CONFIG: Record<
-	ClientDocumentType,
-	{
-		title: string;
-		description: string;
-		showExpiryDate: boolean;
-	}
-> = {
-	NATIONAL_ID: {
-		title: "INE/IFE",
-		description: "Credencial para Votar del INE",
-		showExpiryDate: true,
-	},
-	PASSPORT: {
-		title: "Pasaporte",
-		description: "Pasaporte mexicano vigente",
-		showExpiryDate: true,
-	},
-	DRIVERS_LICENSE: {
-		title: "Licencia de Conducir",
-		description: "Licencia de conducir vigente",
-		showExpiryDate: true,
-	},
-	CEDULA_PROFESIONAL: {
-		title: "Cédula Profesional",
-		description: "Cédula profesional expedida por SEP",
-		showExpiryDate: false,
-	},
-	CARTILLA_MILITAR: {
-		title: "Cartilla Militar",
-		description: "Cartilla del servicio militar nacional",
-		showExpiryDate: false,
-	},
-	TAX_ID: {
-		title: "Constancia de Situación Fiscal",
-		description: "Constancia de situación fiscal emitida por el SAT (RFC)",
-		showExpiryDate: false,
-	},
-	PROOF_OF_ADDRESS: {
-		title: "Comprobante de Domicilio",
-		description: "Recibo de servicios con antigüedad no mayor a 3 meses",
-		showExpiryDate: false,
-	},
-	UTILITY_BILL: {
-		title: "Recibo de Servicios",
-		description: "Recibo de luz, agua, gas o teléfono",
-		showExpiryDate: false,
-	},
-	BANK_STATEMENT: {
-		title: "Estado de Cuenta Bancario",
-		description: "Estado de cuenta bancario reciente",
-		showExpiryDate: false,
-	},
-	ACTA_CONSTITUTIVA: {
-		title: "Acta Constitutiva",
-		description: "Escritura pública de constitución de la empresa",
-		showExpiryDate: false,
-	},
-	PODER_NOTARIAL: {
-		title: "Poder Notarial",
-		description: "Poder otorgado ante notario público al representante legal",
-		showExpiryDate: false,
-	},
-	TRUST_AGREEMENT: {
-		title: "Contrato de Fideicomiso",
-		description: "Contrato del fideicomiso debidamente protocolizado",
-		showExpiryDate: false,
-	},
-	CORPORATE_BYLAWS: {
-		title: "Estatutos Sociales",
-		description: "Estatutos de la sociedad",
-		showExpiryDate: false,
-	},
-	OTHER: {
-		title: "Otro Documento",
-		description: "Otro tipo de documento",
-		showExpiryDate: false,
-	},
-};
-
-// Required documents per person type (excluding ID which is handled separately)
-const REQUIRED_DOCUMENTS: Record<PersonType, ClientDocumentType[]> = {
-	physical: ["PROOF_OF_ADDRESS", "TAX_ID"],
-	moral: ["ACTA_CONSTITUTIVA", "PODER_NOTARIAL", "TAX_ID", "PROOF_OF_ADDRESS"],
-	trust: ["TRUST_AGREEMENT", "TAX_ID", "PROOF_OF_ADDRESS"],
-};
 
 export function DocumentsStep({
 	clientId,
@@ -145,11 +67,16 @@ export function DocumentsStep({
 	);
 	const [idUploaded, setIdUploaded] = useState(false);
 
-	// UBO state (for moral/trust entities)
-	const [ubos, setUbos] = useState<UBOWithDocuments[]>([]);
+	// Ownership state (for moral/trust entities)
+	const [shareholders, setShareholders] = useState<ShareholderWithDocuments[]>(
+		[],
+	);
+	const [beneficialControllers, setBeneficialControllers] = useState<
+		BCWithDocuments[]
+	>([]);
 
 	const requiredDocs = REQUIRED_DOCUMENTS[personType];
-	const needsUBOs = personType === "moral" || personType === "trust";
+	const needsUBOs = requiresUBOs(personType);
 	const idRequired = !needsUBOs; // ID only required for physical persons
 
 	// Calculate progress
@@ -163,28 +90,23 @@ export function DocumentsStep({
 
 	const handleIdUpload = useCallback(
 		async (data: IDDocumentData) => {
-			const { currentOrg } = useOrgStore.getState();
+			const { currentOrg, currentUserId } = useOrgStore.getState();
 
 			if (!currentOrg?.id) {
 				toast.error("No se pudo obtener la organización actual");
 				throw new Error("Organization ID not available");
 			}
 
+			const userId = currentUserId || "unknown";
+
 			try {
-				// Build base document input
-				const input: ClientDocumentCreateRequest = {
-					documentType: data.documentType,
-					documentNumber: data.documentNumber,
-					status: "PENDING",
-					expiryDate: data.expiryDate,
-				};
+				// Upload files to doc-svc if available
+				let docSvcDocumentId: string | undefined;
+				let docSvcJobId: string | undefined;
 
-				// Upload all files if available
 				if (data.processedBlob) {
-					// First create the document to get an ID
-					const createdDoc = await createClientDocument({ clientId, input });
-
-					const filesToUpload: Array<{
+					// Build related files for doc-svc upload
+					const relatedFiles: Array<{
 						file: Blob;
 						name: string;
 						type: string;
@@ -193,7 +115,7 @@ export function DocumentsStep({
 					// Add rasterized images if PDF was processed
 					if (data.rasterizedImages && data.rasterizedImages.length > 0) {
 						data.rasterizedImages.forEach((blob, index) => {
-							filesToUpload.push({
+							relatedFiles.push({
 								file: blob,
 								name: `rasterized_page_${index + 1}.jpg`,
 								type: `rasterized_page_${index + 1}`,
@@ -203,77 +125,49 @@ export function DocumentsStep({
 
 					// Add INE front/back if available
 					if (data.ineFrontBlob) {
-						filesToUpload.push({
+						relatedFiles.push({
 							file: data.ineFrontBlob,
 							name: "ine_front.jpg",
 							type: "ine_front",
 						});
 					}
 					if (data.ineBackBlob) {
-						filesToUpload.push({
+						relatedFiles.push({
 							file: data.ineBackBlob,
 							name: "ine_back.jpg",
 							type: "ine_back",
 						});
 					}
 
-					// Upload all files
-					const uploadResult = await uploadDocumentFiles({
-						primaryFile: data.processedBlob,
-						originalFile: data.originalFile,
-						relatedFiles: filesToUpload.length > 0 ? filesToUpload : undefined,
+					// Upload to doc-svc
+					const uploadResult = await uploadDocumentForKYC({
 						organizationId: currentOrg.id,
-						clientId,
-						documentId: createdDoc.id,
+						userId,
+						primaryFile: data.processedBlob,
+						fileName: data.originalFile?.name || "id_document.jpg",
+						originalPdf:
+							data.originalFile?.type === "application/pdf"
+								? data.originalFile
+								: null,
+						relatedFiles: relatedFiles.length > 0 ? relatedFiles : undefined,
+						waitForProcessing: false, // Don't block - webhook will update
 					});
 
-					// Build metadata with all file URLs
-					const fileMetadata: DocumentFileMetadata = {
-						primaryFileUrl: uploadResult.primary.url,
-						originalFileUrl: uploadResult.original?.url,
-					};
-
-					// Add INE URLs if available
-					const ineFront = uploadResult.related.find((r) =>
-						r.key.includes("ine_front"),
-					);
-					const ineBack = uploadResult.related.find((r) =>
-						r.key.includes("ine_back"),
-					);
-					if (ineFront) fileMetadata.ineFrontUrl = ineFront.url;
-					if (ineBack) fileMetadata.ineBackUrl = ineBack.url;
-
-					// Add rasterized page URLs if available
-					const rasterizedPages = uploadResult.related.filter((r) =>
-						r.key.includes("rasterized_page"),
-					);
-					if (rasterizedPages.length > 0) {
-						fileMetadata.rasterizedPageUrls = rasterizedPages.map((r) => r.url);
-					}
-
-					// Update document with file URLs using PATCH
-					const patchIdResponse = await fetch(
-						`/api/aml-core/clients/${clientId}/documents/${createdDoc.id}`,
-						{
-							method: "PATCH",
-							headers: { "Content-Type": "application/json" },
-							body: JSON.stringify({
-								fileUrl: uploadResult.primary.url,
-								metadata: fileMetadata,
-							}),
-						},
-					);
-
-					if (!patchIdResponse.ok) {
-						const errorText = await patchIdResponse.text();
-						throw new Error(
-							`Failed to update ID document metadata: ${errorText}`,
-						);
-					}
-				} else {
-					// No files to upload, just create the document record
-					await createClientDocument({ clientId, input });
+					docSvcDocumentId = uploadResult.documentId;
+					docSvcJobId = uploadResult.jobId;
 				}
+
+				// Create client document record with doc-svc references
+				const input: ClientDocumentCreateRequest = {
+					documentType: data.documentType,
+					documentNumber: data.documentNumber,
+					status: "PENDING",
+					expiryDate: data.expiryDate,
+					docSvcDocumentId,
+					docSvcJobId,
+				};
+
+				await createClientDocument({ clientId, input });
 
 				setIdUploaded(true);
 				toast.success("Identificación guardada exitosamente");
@@ -298,84 +192,64 @@ export function DocumentsStep({
 
 	const handleDocUpload = useCallback(
 		async (data: SimpleDocumentUploadData) => {
-			const { currentOrg } = useOrgStore.getState();
+			const { currentOrg, currentUserId } = useOrgStore.getState();
 
 			if (!currentOrg?.id) {
 				toast.error("No se pudo obtener la organización actual");
 				throw new Error("Organization ID not available");
 			}
 
+			const userId = currentUserId || "unknown";
+
 			try {
-				// Build base document input (no document number needed for simple documents)
-				const input: ClientDocumentCreateRequest = {
-					documentType: data.documentType,
-					documentNumber: "N/A", // Not required for these documents
-					status: "PENDING",
-				};
+				// Upload files to doc-svc if available
+				let docSvcDocumentId: string | undefined;
+				let docSvcJobId: string | undefined;
 
-				// Upload all files if available
 				if (data.rasterizedImages && data.rasterizedImages.length > 0) {
-					// First create the document to get an ID
-					const createdDoc = await createClientDocument({ clientId, input });
-
 					// Prepare rasterized images for upload
-					const filesToUpload: Array<{
+					const relatedFiles: Array<{
 						file: Blob;
 						name: string;
 						type: string;
 					}> = [];
 					data.rasterizedImages.forEach((blob, index) => {
-						filesToUpload.push({
+						relatedFiles.push({
 							file: blob,
 							name: `page_${index + 1}.jpg`,
 							type: `rasterized_page_${index + 1}`,
 						});
 					});
 
-					// Upload all files (primary = first page, rest as related)
-					const uploadResult = await uploadDocumentFiles({
-						primaryFile: data.rasterizedImages[0],
-						originalFile: data.originalFile,
-						relatedFiles: filesToUpload.slice(1), // Skip first page as it's the primary
+					// Upload to doc-svc
+					const uploadResult = await uploadDocumentForKYC({
 						organizationId: currentOrg.id,
-						clientId,
-						documentId: createdDoc.id,
+						userId,
+						primaryFile: data.rasterizedImages[0],
+						fileName: data.originalFile?.name || "document.jpg",
+						originalPdf:
+							data.originalFile?.type === "application/pdf"
+								? data.originalFile
+								: null,
+						relatedFiles:
+							relatedFiles.length > 1 ? relatedFiles.slice(1) : undefined,
+						waitForProcessing: false, // Don't block - webhook will update
 					});
 
-					// Build metadata with all file URLs
-					const fileMetadata: DocumentFileMetadata = {
-						primaryFileUrl: uploadResult.primary.url,
-						originalFileUrl: uploadResult.original?.url,
-					};
-
-					// Add all rasterized page URLs
-					const allPageUrls = [uploadResult.primary.url];
-					if (uploadResult.related.length > 0) {
-						allPageUrls.push(...uploadResult.related.map((r) => r.url));
-					}
-					fileMetadata.rasterizedPageUrls = allPageUrls;
-
-					// Update document with file URLs using PATCH
-					const patchDocResponse = await fetch(
-						`/api/aml-core/clients/${clientId}/documents/${createdDoc.id}`,
-						{
-							method: "PATCH",
-							headers: { "Content-Type": "application/json" },
-							body: JSON.stringify({
-								fileUrl: uploadResult.primary.url,
-								metadata: fileMetadata,
-							}),
-						},
-					);
-
-					if (!patchDocResponse.ok) {
-						const errorText = await patchDocResponse.text();
-						throw new Error(`Failed to update document metadata: ${errorText}`);
-					}
-				} else {
-					// No files to upload, just create the document record
-					await createClientDocument({ clientId, input });
+					docSvcDocumentId = uploadResult.documentId;
+					docSvcJobId = uploadResult.jobId;
 				}
+
+				// Create client document record with doc-svc references
+				const input: ClientDocumentCreateRequest = {
+					documentType: data.documentType,
+					documentNumber: "N/A", // Not required for these documents
+					status: "PENDING",
+					docSvcDocumentId,
+					docSvcJobId,
+				};
+
+				await createClientDocument({ clientId, input });
 
 				setUploadedDocs((prev) => new Set([...prev, data.documentType]));
 				toast.success("Documento guardado exitosamente");
@@ -388,35 +262,69 @@ export function DocumentsStep({
 		[clientId],
 	);
 
-	const handleUBOsChange = useCallback((newUbos: UBOWithDocuments[]) => {
-		setUbos(newUbos);
-	}, []);
+	const handleShareholdersChange = useCallback(async () => {
+		// Reload shareholders from API
+		try {
+			const response = await listClientShareholders({ clientId });
+			setShareholders(response.data);
+		} catch (error) {
+			console.error("Error reloading shareholders:", error);
+		}
+	}, [clientId]);
+
+	const handleBCsChange = useCallback(async () => {
+		// Reload beneficial controllers from API
+		try {
+			const response = await listClientBeneficialControllers({ clientId });
+			setBeneficialControllers(response.data);
+		} catch (error) {
+			console.error("Error reloading beneficial controllers:", error);
+		}
+	}, [clientId]);
 
 	const handleComplete = () => {
-		// Check ID requirement (only for physical persons)
-		if (idRequired && !idUploaded) {
-			toast.error("Debes cargar una identificación oficial");
-			return;
-		}
+		Sentry.startSpan(
+			{ op: "ui.click", name: "DocumentsStep.complete" },
+			(span) => {
+				span.setAttribute("clientId", clientId);
+				span.setAttribute("completedDocs", completedDocs);
 
-		// Check if at least some documents are uploaded
-		const minDocs = idRequired ? 2 : 1; // Physical: ID + 1 doc, Moral/Trust: 1 doc
-		if (completedDocs < minDocs) {
-			toast.error(
-				`Debes cargar al menos ${minDocs} documento${minDocs > 1 ? "s" : ""}`,
-			);
-			return;
-		}
+				// Check ID requirement (only for physical persons)
+				if (idRequired && !idUploaded) {
+					toast.error("Debes cargar una identificación oficial");
+					return;
+				}
 
-		// For moral/trust, check if at least one stockholder or legal rep exists
-		if (needsUBOs && ubos.length === 0) {
-			toast.error(
-				"Debes registrar al menos un accionista o representante legal",
-			);
-			return;
-		}
+				// Check if at least some documents are uploaded
+				const minDocs = idRequired ? 2 : 1; // Physical: ID + 1 doc, Moral/Trust: 1 doc
+				if (completedDocs < minDocs) {
+					toast.error(
+						`Debes cargar al menos ${minDocs} documento${minDocs > 1 ? "s" : ""}`,
+					);
+					return;
+				}
 
-		onComplete();
+				// For moral/trust, check if at least one shareholder and one beneficial controller exists
+				if (
+					needsUBOs &&
+					(shareholders.length === 0 || beneficialControllers.length === 0)
+				) {
+					toast.error(
+						"Debes registrar al menos un accionista y un beneficiario controlador",
+					);
+					return;
+				}
+
+				onComplete();
+			},
+		);
+	};
+
+	const handleSkipClick = () => {
+		Sentry.startSpan({ op: "ui.click", name: "DocumentsStep.skip" }, (span) => {
+			span.setAttribute("clientId", clientId);
+			onSkip();
+		});
 	};
 
 	return (
@@ -451,7 +359,6 @@ export function DocumentsStep({
 						data={idDocumentData}
 						onDataChange={handleIdDataChange}
 						onUpload={handleIdUpload}
-						clientId={clientId}
 					/>
 				</div>
 			)}
@@ -464,12 +371,12 @@ export function DocumentsStep({
 				</h3>
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 					{requiredDocs.map((docType) => {
-						const config = DOCUMENT_CONFIG[docType];
+						const config = DOCUMENT_TYPE_CONFIG[docType];
 						return (
 							<SimpleDocumentUploadCard
 								key={docType}
 								documentType={docType}
-								title={config.title}
+								title={config.label}
 								description={config.description}
 								required
 								data={documentData[docType] || null}
@@ -481,12 +388,12 @@ export function DocumentsStep({
 				</div>
 			</div>
 
-			{/* UBO Section (for moral/trust) */}
+			{/* Ownership Section (for moral/trust) */}
 			{needsUBOs && (
 				<div className="space-y-4">
 					<h3 className="text-lg font-semibold flex items-center gap-2">
 						<Users className="h-5 w-5" />
-						Accionistas y Representante Legal
+						Estructura Accionaria y Beneficiarios Controladores
 						<Badge
 							variant="outline"
 							className="text-xs bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
@@ -505,22 +412,25 @@ export function DocumentsStep({
 									</p>
 									<ul className="list-disc list-inside space-y-1 ml-2">
 										<li>
-											<strong>Accionistas:</strong> Personas físicas con 25% o
-											más de participación accionaria
+											<strong>Accionistas:</strong> Personas físicas o morales
+											con participación accionaria
 										</li>
 										<li>
-											<strong>Representante Legal:</strong> Persona autorizada
-											para actuar en nombre de la entidad
+											<strong>Beneficiarios Controladores:</strong> Personas
+											físicas que obtienen el beneficio o ejercen control
+											(LFPIORPI / CFF Art. 32-B)
 										</li>
 									</ul>
 								</div>
 							</div>
 						</CardContent>
 					</Card>
-					<UBOInlineForm
+					<OwnershipInlineForm
 						clientId={clientId}
-						ubos={ubos}
-						onUBOsChange={handleUBOsChange}
+						shareholders={shareholders}
+						beneficialControllers={beneficialControllers}
+						onShareholdersChange={handleShareholdersChange}
+						onBCsChange={handleBCsChange}
 					/>
 				</div>
 			)}
@@ -550,41 +460,27 @@ export function DocumentsStep({
 								) : (
 									<div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30" />
 								)}
-								<span>{DOCUMENT_CONFIG[docType].title}</span>
+								<span>{DOCUMENT_TYPE_CONFIG[docType].label}</span>
 							</div>
 						))}
 						{needsUBOs && (
 							<>
 								<div className="flex items-center gap-2">
-									{ubos.filter((u) => u.relationshipType === "SHAREHOLDER")
-										.length > 0 ? (
+									{shareholders.length > 0 ? (
 										<CheckCircle2 className="h-4 w-4 text-green-600" />
 									) : (
 										<div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30" />
 									)}
-									<span>
-										Accionistas (
-										{
-											ubos.filter((u) => u.relationshipType === "SHAREHOLDER")
-												.length
-										}
-										)
-									</span>
+									<span>Accionistas ({shareholders.length})</span>
 								</div>
 								<div className="flex items-center gap-2">
-									{ubos.filter((u) => u.relationshipType === "LEGAL_REP")
-										.length > 0 ? (
+									{beneficialControllers.length > 0 ? (
 										<CheckCircle2 className="h-4 w-4 text-green-600" />
 									) : (
 										<div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30" />
 									)}
 									<span>
-										Representante Legal (
-										{
-											ubos.filter((u) => u.relationshipType === "LEGAL_REP")
-												.length
-										}
-										)
+										Beneficiarios Controladores ({beneficialControllers.length})
 									</span>
 								</div>
 							</>
@@ -593,21 +489,16 @@ export function DocumentsStep({
 				</CardContent>
 			</Card>
 
-			{/* Fixed Action Bar */}
-			<FormActionBar
-				actions={[
-					{
-						label: "Finalizar",
-						icon: CheckCircle2,
-						onClick: handleComplete,
-					},
-					{
-						label: "Completar después",
-						onClick: onSkip,
-						variant: "outline",
-					},
-				]}
-			/>
+			{/* Action buttons */}
+			<div className="flex justify-end gap-3">
+				<Button variant="outline" onClick={handleSkipClick}>
+					Completar después
+				</Button>
+				<Button onClick={handleComplete}>
+					<CheckCircle2 className="h-4 w-4 mr-2" />
+					Finalizar
+				</Button>
+			</div>
 		</div>
 	);
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
 	Users,
 	Building2,
@@ -13,7 +13,6 @@ import {
 	Flag,
 	FileText,
 	Trash2,
-	UserPlus,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -40,13 +39,10 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useJwt } from "@/hooks/useJwt";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
-import { useDataTableUrlFilters } from "@/hooks/useDataTableUrlFilters";
-import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { useServerTable } from "@/hooks/useServerTable";
 import { executeMutation } from "@/lib/mutations";
 import { toast } from "sonner";
-import { useOrgStore } from "@/lib/org-store";
 import type { Client, PersonType } from "@/types/client";
 import { getClientDisplayName } from "@/types/client";
 import { listClients, deleteClient } from "@/lib/api/clients";
@@ -57,6 +53,8 @@ import {
 } from "@/components/data-table";
 import { useLanguage } from "@/components/LanguageProvider";
 import { getLocaleForLanguage } from "@/lib/translations";
+import { useStatesCatalog } from "@/hooks/useStatesCatalog";
+import { CircularProgress } from "@/components/ui/circular-progress";
 
 /**
  * Client row with computed display name
@@ -77,15 +75,15 @@ const personTypeBgColors: Record<PersonType, string> = {
 	trust: "bg-amber-500/20 text-amber-400",
 };
 
-// Filter IDs for URL persistence
 const CLIENT_FILTER_IDS = ["personType", "stateCode"];
 
 export function ClientsTable(): React.ReactElement {
 	const { navigateTo, orgPath } = useOrgNavigation();
-	const { jwt, isLoading: isJwtLoading } = useJwt();
-	const { currentOrg } = useOrgStore();
-	const urlFilters = useDataTableUrlFilters(CLIENT_FILTER_IDS);
 	const { t, language } = useLanguage();
+	const { states, getStateName } = useStatesCatalog();
+
+	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+	const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
 
 	// Build person type config with translations
 	const personTypeConfig = useMemo(
@@ -108,118 +106,49 @@ export function ClientsTable(): React.ReactElement {
 		}),
 		[t],
 	);
-	const [clients, setClients] = useState<Client[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const [isLoadingMore, setIsLoadingMore] = useState(false);
-	const [currentPage, setCurrentPage] = useState(1);
-	const [hasMore, setHasMore] = useState(true);
-	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-	const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
-	const ITEMS_PER_PAGE = 20;
 
-	// Track if initial load has happened for current org
-	const hasLoadedForOrgRef = useRef<string | null>(null);
+	const handleFetchError = useCallback(() => {
+		toast.error("No se pudieron cargar los clientes.", { id: "clients-table" });
+	}, []);
 
-	// Initial load - refetch when organization changes (not on JWT refresh)
-	useEffect(() => {
-		// Wait for JWT to be ready and organization to be selected
-		// Without an organization, the API will return 403
-		if (isJwtLoading || !jwt || !currentOrg?.id) {
-			// If no org selected, clear data and stop loading
-			if (!currentOrg?.id && !isJwtLoading) {
-				setClients([]);
-				setIsLoading(false);
-				hasLoadedForOrgRef.current = null;
-			}
-			return;
-		}
-
-		// Skip if we've already loaded for this org (JWT refresh shouldn't trigger reload)
-		if (hasLoadedForOrgRef.current === currentOrg.id) {
-			return;
-		}
-
-		const fetchClients = async () => {
-			try {
-				setIsLoading(true);
-				setCurrentPage(1);
-				// Clear existing data when org changes
-				setClients([]);
-				const response = await listClients({
-					page: 1,
-					limit: ITEMS_PER_PAGE,
-					jwt,
-				});
-				setClients(response.data);
-				setHasMore(response.pagination.page < response.pagination.totalPages);
-				hasLoadedForOrgRef.current = currentOrg.id;
-			} catch (error) {
-				console.error("Error fetching clients:", error);
-				toast.error(t("clientsLoadError"));
-			} finally {
-				setIsLoading(false);
-			}
-		};
-		fetchClients();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [jwt, isJwtLoading, currentOrg?.id]);
-
-	// Load more clients for infinite scroll
-	const handleLoadMore = useCallback(async () => {
-		if (isLoadingMore || !hasMore || isJwtLoading || !jwt || !currentOrg?.id)
-			return;
-
-		try {
-			setIsLoadingMore(true);
-			const nextPage = currentPage + 1;
+	// -------------------------------------------------------------------------
+	// Server-driven table: useServerTable handles fetch, filters, pagination, URL
+	// -------------------------------------------------------------------------
+	const {
+		data: clients,
+		isLoading,
+		isLoadingMore,
+		hasMore,
+		pagination,
+		filterMeta,
+		handleLoadMore,
+		urlFilterProps,
+	} = useServerTable<Client>({
+		fetcher: async ({ page, limit, filters, search, jwt }) => {
 			const response = await listClients({
-				page: nextPage,
-				limit: ITEMS_PER_PAGE,
-				jwt,
+				page,
+				limit,
+				search: search || undefined,
+				filters,
+				jwt: jwt ?? undefined,
 			});
-
-			setClients((prev) => [...prev, ...response.data]);
-			setCurrentPage(nextPage);
-			setHasMore(response.pagination.page < response.pagination.totalPages);
-		} catch (error) {
-			console.error("Error loading more clients:", error);
-			toast.error(t("clientsLoadMoreError"));
-		} finally {
-			setIsLoadingMore(false);
-		}
-	}, [currentPage, hasMore, isLoadingMore, isJwtLoading, jwt, currentOrg?.id]);
-
-	// Silent refresh for auto-refresh (doesn't show loading state)
-	const silentRefresh = useCallback(async () => {
-		if (!jwt || isJwtLoading || !currentOrg?.id) return;
-
-		try {
-			const response = await listClients({
-				page: 1,
-				limit: ITEMS_PER_PAGE,
-				jwt,
-			});
-			setClients(response.data);
-			setCurrentPage(1);
-			setHasMore(response.pagination.page < response.pagination.totalPages);
-		} catch {
-			// Silently ignore errors for background refresh
-		}
-	}, [jwt, isJwtLoading, currentOrg?.id]);
-
-	// Auto-refresh every 30 seconds (only when on first page to avoid disrupting infinite scroll)
-	useAutoRefresh(silentRefresh, {
-		enabled: !isLoading && !!jwt && !!currentOrg?.id && currentPage === 1,
-		interval: 30000,
+			return response;
+		},
+		allowedFilterIds: CLIENT_FILTER_IDS,
+		paginationMode: "infinite-scroll",
+		itemsPerPage: 20,
+		onError: handleFetchError,
 	});
 
 	// Transform clients to include display name
-	const clientsData: ClientRow[] = useMemo(() => {
-		return clients.map((client) => ({
-			...client,
-			displayName: getClientDisplayName(client),
-		}));
-	}, [clients]);
+	const clientsData: ClientRow[] = useMemo(
+		() =>
+			clients.map((client) => ({
+				...client,
+				displayName: getClientDisplayName(client),
+			})),
+		[clients],
+	);
 
 	const handleGenerateReport = (client: Client): void => {
 		const reportData = JSON.stringify(client, null, 2);
@@ -257,12 +186,9 @@ export function ClientsTable(): React.ReactElement {
 
 		try {
 			await executeMutation({
-				mutation: () => deleteClient({ id: clientId, jwt: jwt ?? undefined }),
+				mutation: () => deleteClient({ id: clientId }),
 				loading: t("clientDeleting"),
 				success: `${clientName} ${t("clientDeleted")}`,
-				onSuccess: () => {
-					setClients(clients.filter((c) => c.id !== clientId));
-				},
 			});
 		} catch {
 			// Error is already handled by executeMutation via Sonner
@@ -289,7 +215,7 @@ export function ClientsTable(): React.ReactElement {
 								<Tooltip>
 									<TooltipTrigger asChild>
 										<span
-											className={`flex items-center justify-center h-8 w-8 rounded-lg ${config.bgColor}`}
+											className={`flex items-center justify-center h-8 w-8 shrink-0 rounded-lg ${config.bgColor}`}
 										>
 											{config.icon}
 										</span>
@@ -299,7 +225,24 @@ export function ClientsTable(): React.ReactElement {
 									</TooltipContent>
 								</Tooltip>
 							</TooltipProvider>
-							<div className="flex flex-col min-w-0">
+							{/* KYC circular progress */}
+							<TooltipProvider>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<span className="shrink-0 flex items-center justify-center">
+											<CircularProgress
+												percentage={item.kycCompletionPct ?? 0}
+												size={22}
+												strokeWidth={2.5}
+											/>
+										</span>
+									</TooltipTrigger>
+									<TooltipContent side="right">
+										<p>KYC: {item.kycCompletionPct ?? 0}%</p>
+									</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
+							<div className="flex flex-col min-w-0 gap-0.5">
 								<Link
 									href={orgPath(`/clients/${item.id}`)}
 									className="font-medium text-foreground hover:text-primary truncate"
@@ -307,27 +250,65 @@ export function ClientsTable(): React.ReactElement {
 								>
 									{item.displayName}
 								</Link>
-								<span className="text-xs text-muted-foreground font-mono">
-									{item.rfc}
-								</span>
+								{/* Screening badges below the name */}
+								{(() => {
+									const flags: { label: string; className: string }[] = [];
+									if (item.isPEP)
+										flags.push({
+											label: "PEP",
+											className: "bg-red-500/15 text-red-500 border-red-500/30",
+										});
+									if (item.ofacSanctioned)
+										flags.push({
+											label: "OFAC",
+											className: "bg-red-500/15 text-red-500 border-red-500/30",
+										});
+									if (item.unscSanctioned)
+										flags.push({
+											label: "UN",
+											className: "bg-red-500/15 text-red-500 border-red-500/30",
+										});
+									if (item.sat69bListed)
+										flags.push({
+											label: "EFOS",
+											className:
+												"bg-orange-500/15 text-orange-500 border-orange-500/30",
+										});
+									if (item.adverseMediaFlagged)
+										flags.push({
+											label: t("screeningMedia"),
+											className:
+												"bg-amber-500/15 text-amber-600 border-amber-500/30",
+										});
+
+									if (flags.length > 0) {
+										return (
+											<div className="flex flex-wrap gap-1">
+												{flags.map((flag) => (
+													<span
+														key={flag.label}
+														className={`inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-semibold leading-none ${flag.className}`}
+													>
+														{flag.label}
+													</span>
+												))}
+											</div>
+										);
+									}
+									if (item.screeningResult === "clear") {
+										return (
+											<span className="inline-flex items-center gap-1 text-[10px] font-medium leading-none text-green-600">
+												<span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+												{t("screeningClear")}
+											</span>
+										);
+									}
+									return null;
+								})()}
 							</div>
 						</div>
 					);
 				},
-			},
-			{
-				id: "contact",
-				header: t("tableContact"),
-				accessorKey: "email",
-				hideOnMobile: true,
-				cell: (item) => (
-					<div className="flex flex-col">
-						<span className="text-sm text-foreground truncate max-w-[180px]">
-							{item.email}
-						</span>
-						<span className="text-xs text-muted-foreground">{item.phone}</span>
-					</div>
-				),
 			},
 			{
 				id: "location",
@@ -337,9 +318,9 @@ export function ClientsTable(): React.ReactElement {
 				hideOnMobile: true,
 				cell: (item) => (
 					<div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-						<MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+						<MapPin className="h-3.5 w-3.5 shrink-0" />
 						<span className="truncate">
-							{item.city}, {item.stateCode}
+							{item.city}, {getStateName(item.stateCode)}
 						</span>
 					</div>
 				),
@@ -367,7 +348,7 @@ export function ClientsTable(): React.ReactElement {
 				},
 			},
 		],
-		[t, personTypeConfig, orgPath, language],
+		[t, personTypeConfig, orgPath, language, getStateName],
 	);
 
 	// Filter definitions
@@ -411,16 +392,18 @@ export function ClientsTable(): React.ReactElement {
 				id: "stateCode",
 				label: t("filterState"),
 				icon: MapPin,
-				options: [
-					{ value: "CDMX", label: "Ciudad de México" },
-					{ value: "JAL", label: "Jalisco" },
-					{ value: "NLE", label: "Nuevo León" },
-					{ value: "QRO", label: "Querétaro" },
-					{ value: "MEX", label: "Estado de México" },
-				],
+				options: states
+					.map((state) => {
+						const metadata = state.metadata as { code?: string } | null;
+						return {
+							value: metadata?.code || state.id,
+							label: state.name,
+						};
+					})
+					.sort((a, b) => a.label.localeCompare(b.label, "es")),
 			},
 		],
-		[t],
+		[t, states],
 	);
 
 	// Row actions
@@ -455,9 +438,9 @@ export function ClientsTable(): React.ReactElement {
 				</DropdownMenuItem>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem
-					onClick={() => navigateTo(`/transactions?clientId=${item.id}`)}
+					onClick={() => navigateTo(`/operations?clientId=${item.id}`)}
 				>
-					{t("actionViewTransactions")}
+					{t("actionViewOperations")}
 				</DropdownMenuItem>
 				<DropdownMenuItem
 					onClick={() => navigateTo(`/alerts?clientId=${item.id}`)}
@@ -489,6 +472,8 @@ export function ClientsTable(): React.ReactElement {
 				data={clientsData}
 				columns={columns}
 				filters={filterDefs}
+				serverFilterMeta={filterMeta}
+				serverTotal={pagination?.total}
 				searchKeys={[
 					"displayName",
 					"rfc",
@@ -512,13 +497,7 @@ export function ClientsTable(): React.ReactElement {
 				onLoadMore={handleLoadMore}
 				hasMore={hasMore}
 				isLoadingMore={isLoadingMore}
-				// URL persistence
-				initialFilters={urlFilters.initialFilters}
-				initialSearch={urlFilters.initialSearch}
-				initialSort={urlFilters.initialSort}
-				onFiltersChange={urlFilters.onFiltersChange}
-				onSearchChange={urlFilters.onSearchChange}
-				onSortChange={urlFilters.onSortChange}
+				{...urlFilterProps}
 			/>
 
 			<AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

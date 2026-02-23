@@ -11,6 +11,18 @@ vi.mock("@sentry/nextjs", () => {
 		init: vi.fn(),
 		replayIntegration: vi.fn(() => ({})),
 		captureRouterTransitionStart: vi.fn(),
+		// Sentry.startSpan mock - executes the callback immediately
+		startSpan: vi.fn((options, callback) =>
+			callback({ setAttribute: vi.fn() }),
+		),
+		// Sentry.logger mock
+		logger: {
+			info: vi.fn(),
+			warn: vi.fn(),
+			error: vi.fn(),
+			fmt: (strings: TemplateStringsArray, ...values: unknown[]) =>
+				strings.reduce((acc, str, i) => acc + str + (values[i] ?? ""), ""),
+		},
 	};
 });
 

@@ -3,6 +3,7 @@
 import { useSearchParams, usePathname, useRouter } from "next/navigation";
 import { useCallback, useMemo, useRef, useEffect } from "react";
 import type { SortState } from "@/components/data-table/types";
+import { sanitizeString } from "@/lib/utils";
 
 /**
  * URL parameter keys for DataTable state
@@ -20,16 +21,6 @@ const URL_PARAMS = {
 const MAX_SEARCH_LENGTH = 256;
 const MAX_FILTER_VALUE_LENGTH = 128;
 const MAX_FILTER_VALUES = 20;
-
-/**
- * Sanitize a string value - removes control characters and limits length
- */
-function sanitizeString(value: string, maxLength: number): string {
-	return String(value)
-		.trim()
-		.slice(0, maxLength)
-		.replace(/[\x00-\x1F\x7F]/g, "");
-}
 
 /**
  * Parse filters from URL search params

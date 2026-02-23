@@ -2,6 +2,7 @@
 
 import { useSearchParams, usePathname, useRouter } from "next/navigation";
 import { useCallback, useMemo, useRef, useEffect } from "react";
+import { sanitizeString } from "@/lib/utils";
 
 /**
  * Allowed filter value types
@@ -52,16 +53,6 @@ interface UseUrlFiltersConfig {
 	 * @default 300
 	 */
 	debounceMs?: number;
-}
-
-/**
- * Sanitize a string value
- */
-function sanitizeString(value: string, maxLength: number): string {
-	// Trim and limit length
-	const trimmed = String(value).trim().slice(0, maxLength);
-	// Remove any null bytes or control characters
-	return trimmed.replace(/[\x00-\x1F\x7F]/g, "");
 }
 
 /**

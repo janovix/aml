@@ -343,7 +343,7 @@ export function ChatSidebar({ className }: ChatSidebarProps) {
 			const newWidth = startWidthRef.current + delta;
 			const clampedWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, newWidth));
 			setWidth(clampedWidth);
-			// Dispatch event so other components (like FormActionBar) can react
+			// Dispatch event so other components can react to width changes
 			window.dispatchEvent(
 				new CustomEvent("chat-width-change", {
 					detail: { width: clampedWidth },
@@ -463,7 +463,7 @@ export function ChatSidebar({ className }: ChatSidebarProps) {
 		<aside
 			ref={sidebarRef}
 			className={cn(
-				"relative hidden lg:flex h-screen flex-col border-l bg-background shrink-0",
+				"relative hidden lg:flex h-full flex-col border-l bg-background shrink-0",
 				isResizing && "select-none",
 				className,
 			)}

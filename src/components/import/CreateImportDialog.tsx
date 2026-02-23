@@ -37,7 +37,7 @@ export function CreateImportDialog({
 	const [error, setError] = useState<string | null>(null);
 
 	const handleFileUpload = useCallback(
-		async (file: File, entityType: ImportEntityType) => {
+		async (file: File, entityType: ImportEntityType, activityCode?: string) => {
 			if (!jwt) {
 				setError("Authentication required. Please sign in again.");
 				return;
@@ -47,7 +47,12 @@ export function CreateImportDialog({
 			setError(null);
 
 			try {
-				const result = await createImport({ file, entityType, jwt });
+				const result = await createImport({
+					file,
+					entityType,
+					activityCode,
+					jwt,
+				});
 
 				// Close dialog and navigate to the import view
 				onOpenChange(false);
@@ -72,12 +77,12 @@ export function CreateImportDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
-			<DialogContent className="max-w-2xl">
+			<DialogContent className="sm:max-w-2xl" fullscreenMobile>
 				<DialogHeader>
 					<DialogTitle>Nueva Importación</DialogTitle>
 					<DialogDescription>
-						Sube un archivo CSV o Excel para importar clientes o transacciones
-						de forma masiva.
+						Sube un archivo CSV o Excel para importar clientes u operaciones de
+						forma masiva.
 					</DialogDescription>
 				</DialogHeader>
 

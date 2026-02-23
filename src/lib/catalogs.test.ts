@@ -616,7 +616,7 @@ describe("catalogs", () => {
 				name: "Mexican Peso",
 				normalizedName: "mexican peso",
 				active: true,
-				metadata: { shortName: "MXN", code: "3" },
+				metadata: { code: "MXN", shortName: "MXN", decimal_places: 2 },
 				createdAt: "2024-01-01T00:00:00Z",
 				updatedAt: "2024-01-01T00:00:00Z",
 			};
@@ -641,14 +641,14 @@ describe("catalogs", () => {
 			);
 		});
 
-		it("fetches catalog item by code (e.g., '3' for MXN)", async () => {
+		it("fetches catalog item by code (e.g., 'MXN' for MXN)", async () => {
 			const mockItem = {
 				id: "currency-mxn-id",
 				catalogId: "catalog-1",
 				name: "Mexican Peso",
 				normalizedName: "mexican peso",
 				active: true,
-				metadata: { shortName: "MXN", code: "3" },
+				metadata: { code: "MXN", shortName: "MXN", decimal_places: 2 },
 				createdAt: "2024-01-01T00:00:00Z",
 				updatedAt: "2024-01-01T00:00:00Z",
 			};

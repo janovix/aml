@@ -7,7 +7,7 @@ import {
 	updateNotice,
 	deleteNotice,
 	generateNoticeFile,
-	getNoticeDownloadUrl,
+	downloadNoticeXml,
 	submitNoticeToSat,
 	acknowledgeNotice,
 	calculateNoticePeriod,
@@ -29,7 +29,7 @@ const mockNotice: Notice = {
 	fileSize: null,
 	generatedAt: null,
 	submittedAt: null,
-	satFolioNumber: null,
+	amendmentCycle: 0,
 	createdBy: "user-123",
 	notes: null,
 	createdAt: "2024-01-15T10:00:00Z",
@@ -47,6 +47,8 @@ const mockNoticeWithSummary: NoticeWithAlertSummary = {
 			{ ruleId: "RULE002", ruleName: "Rule 2", count: 5 },
 		],
 	},
+	events: [],
+	alerts: [],
 };
 
 describe("api/notices", () => {
@@ -189,6 +191,7 @@ describe("api/notices", () => {
 				reportedMonth: "202401",
 				displayName: "Enero 2024",
 				submissionDeadline: "2024-02-17T23:59:59.999Z",
+				alerts: [],
 			};
 
 			const fetchSpy = vi.fn(
@@ -307,33 +310,12 @@ describe("api/notices", () => {
 			expect(res.name).toBe("Updated Name");
 		});
 
-		it("handles satFolioNumber", async () => {
-			const fetchSpy = vi.fn(
-				async (url: RequestInfo | URL, init?: RequestInit) => {
-					const body = JSON.parse(init?.body as string);
-					expect(body.satFolioNumber).toBe("SAT-12345");
-					return new Response(JSON.stringify(mockNotice), {
-						status: 200,
-						headers: { "content-type": "application/json" },
-					});
-				},
-			);
-			vi.stubGlobal("fetch", fetchSpy);
-
-			await updateNotice({
-				id: "NOTICE123",
-				satFolioNumber: "SAT-12345",
-				baseUrl: "https://example.com",
-			});
-		});
-
 		it("only includes defined fields in body", async () => {
 			const fetchSpy = vi.fn(
 				async (url: RequestInfo | URL, init?: RequestInit) => {
 					const body = JSON.parse(init?.body as string);
 					expect(body).toEqual({ name: "Updated Name" });
 					expect(body).not.toHaveProperty("notes");
-					expect(body).not.toHaveProperty("satFolioNumber");
 					return new Response(JSON.stringify(mockNotice), {
 						status: 200,
 						headers: { "content-type": "application/json" },
@@ -403,35 +385,31 @@ describe("api/notices", () => {
 		});
 	});
 
-	describe("getNoticeDownloadUrl", () => {
-		it("requests download URL", async () => {
-			const downloadResponse = {
-				fileUrl: "https://example.com/files/notice.xml",
-				fileSize: 1024,
-				format: "xml" as const,
-			};
-
+	describe("downloadNoticeXml", () => {
+		it("calls download endpoint", async () => {
+			const blob = new Blob(["<xml/>"], { type: "application/xml" });
 			const fetchSpy = vi.fn(
-				async (url: RequestInfo | URL, init?: RequestInit) => {
-					expect((init?.method ?? "GET").toUpperCase()).toBe("GET");
+				async (url: RequestInfo | URL, _init?: RequestInit) => {
 					const u = new URL(typeof url === "string" ? url : url.toString());
 					expect(u.origin + u.pathname).toBe(
 						"https://example.com/api/v1/notices/NOTICE123/download",
 					);
-					return new Response(JSON.stringify(downloadResponse), {
+					return new Response(blob, {
 						status: 200,
-						headers: { "content-type": "application/json" },
+						headers: {
+							"content-type": "application/xml",
+							"content-disposition": 'attachment; filename="notice.xml"',
+						},
 					});
 				},
 			);
 			vi.stubGlobal("fetch", fetchSpy);
 
-			const res = await getNoticeDownloadUrl({
+			await downloadNoticeXml({
 				id: "NOTICE123",
 				baseUrl: "https://example.com",
 			});
-			expect(res.fileUrl).toBe("https://example.com/files/notice.xml");
-			expect(res.format).toBe("xml");
+			expect(fetchSpy).toHaveBeenCalled();
 		});
 	});
 
@@ -631,11 +609,10 @@ describe("api/notices", () => {
 	});
 
 	describe("submitNoticeToSat", () => {
-		it("sends POST to /submit endpoint with satFolioNumber", async () => {
+		it("sends POST to /submit endpoint with docSvcDocumentId", async () => {
 			const submittedNotice: Notice = {
 				...mockNotice,
 				status: "SUBMITTED",
-				satFolioNumber: "SAT-12345",
 				submittedAt: "2024-01-20T10:00:00Z",
 			};
 
@@ -647,7 +624,7 @@ describe("api/notices", () => {
 						"https://example.com/api/v1/notices/NOTICE123/submit",
 					);
 					const body = JSON.parse(init?.body as string);
-					expect(body.satFolioNumber).toBe("SAT-12345");
+					expect(body.docSvcDocumentId).toBe("DOC_123");
 					return new Response(JSON.stringify(submittedNotice), {
 						status: 200,
 						headers: { "content-type": "application/json" },
@@ -658,39 +635,18 @@ describe("api/notices", () => {
 
 			const res = await submitNoticeToSat({
 				id: "NOTICE123",
-				satFolioNumber: "SAT-12345",
+				docSvcDocumentId: "DOC_123",
 				baseUrl: "https://example.com",
 			});
 			expect(res.status).toBe("SUBMITTED");
-			expect(res.satFolioNumber).toBe("SAT-12345");
-		});
-
-		it("omits satFolioNumber when not provided", async () => {
-			const fetchSpy = vi.fn(
-				async (url: RequestInfo | URL, init?: RequestInit) => {
-					const body = JSON.parse(init?.body as string);
-					expect(body.satFolioNumber).toBeUndefined();
-					return new Response(JSON.stringify(mockNotice), {
-						status: 200,
-						headers: { "content-type": "application/json" },
-					});
-				},
-			);
-			vi.stubGlobal("fetch", fetchSpy);
-
-			await submitNoticeToSat({
-				id: "NOTICE123",
-				baseUrl: "https://example.com",
-			});
 		});
 	});
 
 	describe("acknowledgeNotice", () => {
-		it("sends POST to /acknowledge endpoint with satFolioNumber", async () => {
+		it("sends POST to /acknowledge endpoint with docSvcDocumentId", async () => {
 			const acknowledgedNotice: Notice = {
 				...mockNotice,
 				status: "ACKNOWLEDGED",
-				satFolioNumber: "SAT-ACK-12345",
 			};
 
 			const fetchSpy = vi.fn(
@@ -701,7 +657,7 @@ describe("api/notices", () => {
 						"https://example.com/api/v1/notices/NOTICE123/acknowledge",
 					);
 					const body = JSON.parse(init?.body as string);
-					expect(body.satFolioNumber).toBe("SAT-ACK-12345");
+					expect(body.docSvcDocumentId).toBe("DOC_ack_456");
 					return new Response(JSON.stringify(acknowledgedNotice), {
 						status: 200,
 						headers: { "content-type": "application/json" },
@@ -712,11 +668,10 @@ describe("api/notices", () => {
 
 			const res = await acknowledgeNotice({
 				id: "NOTICE123",
-				satFolioNumber: "SAT-ACK-12345",
+				docSvcDocumentId: "DOC_ack_456",
 				baseUrl: "https://example.com",
 			});
 			expect(res.status).toBe("ACKNOWLEDGED");
-			expect(res.satFolioNumber).toBe("SAT-ACK-12345");
 		});
 	});
 
@@ -768,19 +723,19 @@ describe("api/notices", () => {
 			expect(result.periodEnd.getUTCMilliseconds()).toBe(999);
 		});
 
-		it("includes submission deadline", () => {
-			// January 2024 notice: deadline is Feb 17, 2024
+		it("includes submission deadline on the 17th of the reported month", () => {
+			// January 2024 period (Dec 17 - Jan 16): deadline is Jan 17, 2024
 			const result = calculateNoticePeriod(2024, 1);
 			expect(result.submissionDeadline.getUTCFullYear()).toBe(2024);
-			expect(result.submissionDeadline.getUTCMonth()).toBe(1); // February
+			expect(result.submissionDeadline.getUTCMonth()).toBe(0); // January
 			expect(result.submissionDeadline.getUTCDate()).toBe(17);
 		});
 
-		it("handles year rollover for December deadline", () => {
-			// December 2024 notice: deadline is Jan 17, 2025
+		it("keeps December deadline in the same year", () => {
+			// December 2024 period (Nov 17 - Dec 16): deadline is Dec 17, 2024
 			const result = calculateNoticePeriod(2024, 12);
-			expect(result.submissionDeadline.getUTCFullYear()).toBe(2025);
-			expect(result.submissionDeadline.getUTCMonth()).toBe(0); // January
+			expect(result.submissionDeadline.getUTCFullYear()).toBe(2024);
+			expect(result.submissionDeadline.getUTCMonth()).toBe(11); // December
 			expect(result.submissionDeadline.getUTCDate()).toBe(17);
 		});
 	});

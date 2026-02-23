@@ -94,7 +94,7 @@ export async function POST(request: Request) {
 			systemPrompt += `\n\n## Current File Upload
 A user has uploaded a file for import:
 - **File name**: ${fileUpload.fileName}
-- **Type**: ${fileUpload.entityType === "CLIENT" ? "Clients (KYC data)" : "Transactions"}
+- **Type**: ${fileUpload.entityType === "CLIENT" ? "Clients (KYC data)" : "Operations"}
 
 You have access to the \`processImport\` tool to process this file. When the user asks to import or doesn't provide additional instructions, use the tool to process the file immediately.`;
 		}

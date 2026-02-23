@@ -14,6 +14,8 @@ interface UseCatalogSearchOptions {
 	debounceMs?: number;
 	enabled?: boolean;
 	initialSearch?: string;
+	vaCode?: string; // Filter by va_code in metadata
+	excludeAutomatable?: boolean; // Exclude automatable items
 }
 
 interface UseCatalogSearchResult {
@@ -36,6 +38,8 @@ export function useCatalogSearch({
 	debounceMs = 350,
 	enabled = true,
 	initialSearch = "",
+	vaCode,
+	excludeAutomatable,
 }: UseCatalogSearchOptions): UseCatalogSearchResult {
 	const [searchTerm, setSearchTerm] = useState(initialSearch);
 	const [debouncedSearch, setDebouncedSearch] = useState(initialSearch.trim());
@@ -90,6 +94,10 @@ export function useCatalogSearch({
 				search: debouncedSearch,
 				page: 1,
 				pageSize,
+				extra: {
+					vaCode,
+					excludeAutomatable,
+				},
 			},
 			{ signal: controller.signal },
 		)
@@ -142,6 +150,10 @@ export function useCatalogSearch({
 				search: debouncedSearch,
 				page: nextPage,
 				pageSize,
+				extra: {
+					vaCode,
+					excludeAutomatable,
+				},
 			});
 
 			setItems((prev) => [...prev, ...response.data]);

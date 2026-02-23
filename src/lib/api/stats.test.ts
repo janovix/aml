@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { getClientStats, getTransactionStats } from "./stats";
+import { getClientStats, getOperationStats } from "./stats";
 import * as http from "./http";
 import * as config from "./config";
 
@@ -22,6 +22,7 @@ describe("api/stats", () => {
 			totalClients: 150,
 			physicalClients: 100,
 			moralClients: 50,
+			trustClients: 0,
 		};
 
 		it("fetches client stats from the API", async () => {
@@ -90,42 +91,42 @@ describe("api/stats", () => {
 		});
 	});
 
-	describe("getTransactionStats", () => {
-		const mockTransactionStats = {
-			transactionsToday: 25,
-			suspiciousTransactions: 3,
+	describe("getOperationStats", () => {
+		const mockOperationStats = {
+			operationsToday: 25,
+			suspiciousOperations: 3,
 			totalVolume: "15000000.50",
 			totalVehicles: 120,
 		};
 
-		it("fetches transaction stats from the API", async () => {
+		it("fetches operation stats from the API", async () => {
 			vi.mocked(http.fetchJson).mockResolvedValue({
 				status: 200,
-				json: mockTransactionStats,
+				json: mockOperationStats,
 			});
 
-			const result = await getTransactionStats();
+			const result = await getOperationStats();
 
 			expect(http.fetchJson).toHaveBeenCalledWith(
-				"https://test-api.example.com/api/v1/transactions/stats",
+				"https://test-api.example.com/api/v1/operations/stats",
 				expect.objectContaining({
 					method: "GET",
 					cache: "no-store",
 				}),
 			);
-			expect(result).toEqual(mockTransactionStats);
+			expect(result).toEqual(mockOperationStats);
 		});
 
 		it("uses custom baseUrl when provided", async () => {
 			vi.mocked(http.fetchJson).mockResolvedValue({
 				status: 200,
-				json: mockTransactionStats,
+				json: mockOperationStats,
 			});
 
-			await getTransactionStats({ baseUrl: "https://custom-api.example.com" });
+			await getOperationStats({ baseUrl: "https://custom-api.example.com" });
 
 			expect(http.fetchJson).toHaveBeenCalledWith(
-				"https://custom-api.example.com/api/v1/transactions/stats",
+				"https://custom-api.example.com/api/v1/operations/stats",
 				expect.anything(),
 			);
 		});
@@ -134,10 +135,10 @@ describe("api/stats", () => {
 			const controller = new AbortController();
 			vi.mocked(http.fetchJson).mockResolvedValue({
 				status: 200,
-				json: mockTransactionStats,
+				json: mockOperationStats,
 			});
 
-			await getTransactionStats({ signal: controller.signal });
+			await getOperationStats({ signal: controller.signal });
 
 			expect(http.fetchJson).toHaveBeenCalledWith(
 				expect.any(String),
@@ -150,10 +151,10 @@ describe("api/stats", () => {
 		it("passes jwt option when provided", async () => {
 			vi.mocked(http.fetchJson).mockResolvedValue({
 				status: 200,
-				json: mockTransactionStats,
+				json: mockOperationStats,
 			});
 
-			await getTransactionStats({ jwt: "test-token" });
+			await getOperationStats({ jwt: "test-token" });
 
 			expect(http.fetchJson).toHaveBeenCalledWith(
 				expect.any(String),

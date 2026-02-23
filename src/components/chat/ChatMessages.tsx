@@ -250,7 +250,7 @@ function FileAttachmentPreview({
 							<Receipt className="h-2.5 w-2.5" />
 						)}
 						<span>
-							{isClient ? t("chatImportClients") : t("chatImportTransactions")}
+							{isClient ? t("chatImportClients") : t("chatImportOperations")}
 						</span>
 					</div>
 				</div>

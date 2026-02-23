@@ -91,10 +91,10 @@ export function PageHero({
 	const hasStats = stats && stats.length > 0;
 
 	return (
-		<div className={cn("space-y-6", className)}>
+		<div className={cn("space-y-4 @lg/main:space-y-6", className)}>
 			{/* Title row with actions */}
-			<div className="flex items-start justify-between gap-4">
-				<div className="flex items-start gap-3 min-w-0">
+			<div className="flex flex-col @lg/main:flex-row @lg/main:items-start @lg/main:justify-between gap-3 @lg/main:gap-4">
+				<div className="flex items-start gap-2 @lg/main:gap-3 min-w-0 flex-1">
 					{/* Back button */}
 					{backButton && (
 						<TooltipProvider>
@@ -104,10 +104,10 @@ export function PageHero({
 										variant="ghost"
 										size="icon"
 										onClick={backButton.onClick}
-										className="shrink-0 -ml-2"
+										className="shrink-0 -ml-2 h-8 w-8 @lg/main:h-10 @lg/main:w-10"
 										aria-label={backButton.label ?? t("back")}
 									>
-										<ArrowLeft className="h-5 w-5" />
+										<ArrowLeft className="h-4 w-4 @lg/main:h-5 @lg/main:w-5" />
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent side="bottom">
@@ -117,83 +117,58 @@ export function PageHero({
 						</TooltipProvider>
 					)}
 					{/* Icon */}
-					<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
-						<PageIcon className="h-5 w-5" />
+					<div className="flex h-8 w-8 @lg/main:h-10 @lg/main:w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+						<PageIcon className="h-4 w-4 @lg/main:h-5 @lg/main:w-5" />
 					</div>
 					{/* Title and subtitle */}
-					<div className="min-w-0">
-						<h1 className="text-2xl font-semibold text-foreground tracking-tight">
+					<div className="min-w-0 flex-1">
+						<h1 className="text-base @lg/main:text-2xl font-semibold text-foreground tracking-tight wrap-break-word leading-snug">
 							{title}
 						</h1>
-						<p className="text-sm text-muted-foreground mt-0.5">{subtitle}</p>
+						<p className="text-xs @lg/main:text-sm text-muted-foreground mt-0.5">
+							{subtitle}
+						</p>
 					</div>
 				</div>
 
 				{/* Actions - uses container queries for responsive behavior */}
 				{resolvedActions.length > 0 && (
 					<div className="flex items-center gap-2 shrink-0">
-						{/* Compact view (narrow container): icon buttons + dropdown */}
-						<div className="flex items-center gap-2 @md/main:hidden">
+						{/* Compact view (narrow container): show all buttons */}
+						<div className="flex items-center gap-2 @lg/main:hidden">
+							{secondaryActions.map((action) => {
+								const ActionIcon = action.icon;
+								return (
+									<Button
+										key={action.label}
+										onClick={action.onClick}
+										variant={action.variant ?? "outline"}
+										disabled={action.disabled}
+										size="sm"
+										className="gap-1.5"
+									>
+										{ActionIcon && <ActionIcon className="h-3.5 w-3.5" />}
+										<span className="text-xs">{action.label}</span>
+									</Button>
+								);
+							})}
 							{primaryAction && (
-								<TooltipProvider>
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<Button
-												onClick={primaryAction.onClick}
-												variant={primaryAction.variant ?? "default"}
-												size="icon"
-												disabled={primaryAction.disabled}
-												aria-label={primaryAction.label}
-											>
-												{primaryAction.icon ? (
-													<primaryAction.icon className="h-4 w-4" />
-												) : (
-													<Plus className="h-4 w-4" />
-												)}
-											</Button>
-										</TooltipTrigger>
-										<TooltipContent side="left">
-											<p>{primaryAction.tooltip ?? primaryAction.label}</p>
-										</TooltipContent>
-									</Tooltip>
-								</TooltipProvider>
-							)}
-							{secondaryActions.length > 0 && (
-								<DropdownMenu>
-									<DropdownMenuTrigger asChild>
-										<Button
-											variant="outline"
-											size="icon"
-											aria-label={t("pageHeroMoreActions")}
-										>
-											<MoreHorizontal className="h-4 w-4" />
-										</Button>
-									</DropdownMenuTrigger>
-									<DropdownMenuContent align="end">
-										{secondaryActions.map((action) => {
-											const ActionIcon = action.icon;
-											return (
-												<DropdownMenuItem
-													key={action.label}
-													onClick={action.onClick}
-													disabled={action.disabled}
-													variant={
-														action.variant === "destructive"
-															? "destructive"
-															: "default"
-													}
-												>
-													{ActionIcon && <ActionIcon className="h-4 w-4" />}
-													{action.label}
-												</DropdownMenuItem>
-											);
-										})}
-									</DropdownMenuContent>
-								</DropdownMenu>
+								<Button
+									onClick={primaryAction.onClick}
+									variant={primaryAction.variant ?? "default"}
+									disabled={primaryAction.disabled}
+									size="sm"
+									className="gap-1.5"
+								>
+									{primaryAction.icon && (
+										<primaryAction.icon className="h-3.5 w-3.5" />
+									)}
+									<span className="text-xs">{primaryAction.label}</span>
+								</Button>
 							)}
 						</div>
 						{/* Full view (wide container): show all actions as buttons */}
-						<div className="hidden @md/main:flex items-center gap-2">
+						<div className="hidden @lg/main:flex items-center gap-2">
 							{/* Secondary actions first (left side) */}
 							{secondaryActions.map((action) => {
 								const ActionIcon = action.icon;
@@ -231,7 +206,7 @@ export function PageHero({
 
 			{/* Stats cards - only render if stats are provided */}
 			{hasStats && (
-				<div className="grid grid-cols-1 gap-3 @md/main:grid-cols-2 @2xl/main:grid-cols-3">
+				<div className="grid grid-cols-1 gap-3 @lg/main:grid-cols-2 @2xl/main:grid-cols-3">
 					{stats.slice(0, 3).map((stat) => {
 						const StatIcon = stat.icon;
 						const isPrimary = stat.variant === "primary";

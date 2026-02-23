@@ -22,7 +22,7 @@ export function ImportPageContent() {
 					<div>
 						<h1 className="text-2xl font-bold tracking-tight">Importaciones</h1>
 						<p className="text-muted-foreground">
-							Importa clientes y transacciones de forma masiva
+							Importa clientes y operaciones de forma masiva
 						</p>
 					</div>
 					<Button onClick={() => setIsCreateDialogOpen(true)}>

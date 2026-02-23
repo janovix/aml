@@ -1,16 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
 	FileWarning,
 	Calendar,
 	ArrowLeft,
 	Loader2,
-	AlertCircle,
-	CheckCircle2,
 	Clock,
-	CircleDashed,
+	AlertTriangle,
+	Info,
 } from "lucide-react";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { useJwt } from "@/hooks/useJwt";
@@ -19,6 +18,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 import {
 	Select,
 	SelectContent,
@@ -27,7 +36,10 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { extractErrorMessage } from "@/lib/mutations";
+import { extractErrorMessage, showUsageLimitToast } from "@/lib/mutations";
+import { isUsageLimitError } from "@/lib/api/http";
+import { showFetchError } from "@/lib/toast-utils";
+import { useLanguage } from "@/components/LanguageProvider";
 import {
 	createNotice,
 	previewNotice,
@@ -39,8 +51,9 @@ import {
 
 export function CreateNoticeView(): React.ReactElement {
 	const router = useRouter();
-	const { navigateTo, orgPath } = useOrgNavigation();
+	const { navigateTo } = useOrgNavigation();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
+	const { t } = useLanguage();
 
 	const [isLoading, setIsLoading] = useState(true);
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -50,6 +63,10 @@ export function CreateNoticeView(): React.ReactElement {
 	const [name, setName] = useState("");
 	const [notes, setNotes] = useState("");
 	const [preview, setPreview] = useState<NoticePreviewResponse | null>(null);
+	const [selectedAlertIds, setSelectedAlertIds] = useState<Set<string>>(
+		new Set(),
+	);
+	const [emptyConfirmed, setEmptyConfirmed] = useState(false);
 
 	// Load available months
 	useEffect(() => {
@@ -70,7 +87,7 @@ export function CreateNoticeView(): React.ReactElement {
 				}
 			} catch (error) {
 				console.error("Error loading available months:", error);
-				toast.error(extractErrorMessage(error));
+				showFetchError("create-notice-load", error);
 			} finally {
 				setIsLoading(false);
 			}
@@ -79,10 +96,11 @@ export function CreateNoticeView(): React.ReactElement {
 		loadAvailableMonths();
 	}, [jwt, isJwtLoading]);
 
-	// Load preview when month changes
 	useEffect(() => {
 		if (!jwt || !selectedMonth) {
 			setPreview(null);
+			setSelectedAlertIds(new Set());
+			setEmptyConfirmed(false);
 			return;
 		}
 
@@ -94,9 +112,12 @@ export function CreateNoticeView(): React.ReactElement {
 				setIsPreviewLoading(true);
 				const response = await previewNotice({ year, month, jwt });
 				setPreview(response);
+				setSelectedAlertIds(new Set(response.alerts.map((a) => a.id)));
+				setEmptyConfirmed(false);
 			} catch (error) {
 				console.error("Error loading preview:", error);
 				setPreview(null);
+				setSelectedAlertIds(new Set());
 			} finally {
 				setIsPreviewLoading(false);
 			}
@@ -105,13 +126,40 @@ export function CreateNoticeView(): React.ReactElement {
 		loadPreview();
 	}, [jwt, selectedMonth]);
 
-	const handleMonthChange = (value: string) => {
-		setSelectedMonth(value);
-		const month = availableMonths.find((m) => `${m.year}-${m.month}` === value);
-		if (month) {
-			setName(`Aviso ${month.displayName}`);
-		}
-	};
+	const handleMonthChange = useCallback(
+		(value: string) => {
+			setSelectedMonth(value);
+			const month = availableMonths.find(
+				(m) => `${m.year}-${m.month}` === value,
+			);
+			if (month) {
+				setName(`Aviso ${month.displayName}`);
+			}
+		},
+		[availableMonths],
+	);
+
+	const toggleAlert = useCallback((alertId: string) => {
+		setSelectedAlertIds((prev) => {
+			const next = new Set(prev);
+			if (next.has(alertId)) {
+				next.delete(alertId);
+			} else {
+				next.add(alertId);
+			}
+			return next;
+		});
+		setEmptyConfirmed((v) => (v ? false : v));
+	}, []);
+
+	const toggleAll = useCallback(() => {
+		if (!preview) return;
+		setSelectedAlertIds((prev) => {
+			if (prev.size === preview.alerts.length) return new Set();
+			return new Set(preview.alerts.map((a) => a.id));
+		});
+		setEmptyConfirmed((v) => (v ? false : v));
+	}, [preview]);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -127,6 +175,7 @@ export function CreateNoticeView(): React.ReactElement {
 				year,
 				month,
 				notes: notes || null,
+				alertIds: Array.from(selectedAlertIds),
 				jwt,
 			});
 
@@ -136,19 +185,30 @@ export function CreateNoticeView(): React.ReactElement {
 			navigateTo(`/notices/${notice.id}`);
 		} catch (error) {
 			console.error("Error creating notice:", error);
-			toast.error(extractErrorMessage(error));
-		} finally {
+			if (isUsageLimitError(error)) {
+				showUsageLimitToast(error);
+			} else {
+				toast.error(extractErrorMessage(error), { id: "create-notice" });
+			}
 			setIsSubmitting(false);
 		}
 	};
 
-	const selectedMonthData = selectedMonth
-		? availableMonths.find((m) => `${m.year}-${m.month}` === selectedMonth)
-		: null;
+	const selectedMonthData = useMemo(
+		() =>
+			selectedMonth
+				? availableMonths.find((m) => `${m.year}-${m.month}` === selectedMonth)
+				: null,
+		[selectedMonth, availableMonths],
+	);
 
-	const periodInfo = selectedMonthData
-		? calculateNoticePeriod(selectedMonthData.year, selectedMonthData.month)
-		: null;
+	const periodInfo = useMemo(
+		() =>
+			selectedMonthData
+				? calculateNoticePeriod(selectedMonthData.year, selectedMonthData.month)
+				: null,
+		[selectedMonthData],
+	);
 
 	if (isLoading || isJwtLoading) {
 		return (
@@ -167,86 +227,68 @@ export function CreateNoticeView(): React.ReactElement {
 				<div>
 					<h1 className="text-2xl font-semibold flex items-center gap-2">
 						<FileWarning className="h-6 w-6 text-primary" />
-						Nuevo Aviso SAT
+						{t("noticeNewTitle")}
 					</h1>
-					<p className="text-muted-foreground">
-						Crear un nuevo aviso para envío al portal SAT
-					</p>
+					<p className="text-muted-foreground">{t("noticeNewSubtitle")}</p>
 				</div>
 			</div>
 
 			<form onSubmit={handleSubmit} className="grid gap-6 @xl/main:grid-cols-2">
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">Configuración del Aviso</CardTitle>
+						<CardTitle className="text-lg">{t("noticeConfigTitle")}</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="space-y-2">
-							<Label htmlFor="month">Período SAT</Label>
+							<Label htmlFor="month">{t("noticeSatPeriod")}</Label>
 							<Select value={selectedMonth} onValueChange={handleMonthChange}>
 								<SelectTrigger id="month">
-									<SelectValue placeholder="Seleccionar período" />
+									<SelectValue placeholder="Select period" />
 								</SelectTrigger>
 								<SelectContent>
-									{availableMonths.map((month) => (
-										<SelectItem
-											key={`${month.year}-${month.month}`}
-											value={`${month.year}-${month.month}`}
-											disabled={month.hasPendingNotice}
-										>
-											<div className="flex items-center gap-2">
-												{month.hasPendingNotice && (
-													<CircleDashed className="h-3.5 w-3.5 text-amber-500" />
-												)}
-												{!month.hasPendingNotice &&
-													month.hasSubmittedNotice && (
-														<CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-													)}
-												<span>{month.displayName}</span>
-												{month.hasPendingNotice && (
-													<span className="text-xs text-muted-foreground">
-														(en progreso)
-													</span>
-												)}
-												{!month.hasPendingNotice &&
-													month.hasSubmittedNotice && (
-														<span className="text-xs text-muted-foreground">
-															({month.noticeCount}{" "}
-															{month.noticeCount === 1 ? "enviado" : "enviados"}
-															)
-														</span>
-													)}
-											</div>
-										</SelectItem>
-									))}
+									{availableMonths.map((m) => {
+										const key = `${m.year}-${m.month}`;
+										return (
+											<SelectItem
+												key={key}
+												value={key}
+												disabled={m.hasPendingNotice}
+											>
+												{m.displayName}
+												{m.hasPendingNotice && " (aviso pendiente)"}
+											</SelectItem>
+										);
+									})}
 								</SelectContent>
 							</Select>
 							{periodInfo && (
 								<p className="text-xs text-muted-foreground">
-									Período: {periodInfo.periodStart.toLocaleDateString("es-MX")}{" "}
-									al {periodInfo.periodEnd.toLocaleDateString("es-MX")}
+									{t("noticePeriodLabel")}
+									{periodInfo.periodStart.toLocaleDateString("es-MX")}{" "}
+									{t("noticePeriodTo")}
+									{periodInfo.periodEnd.toLocaleDateString("es-MX")}
 								</p>
 							)}
 						</div>
 
 						<div className="space-y-2">
-							<Label htmlFor="name">Nombre del Aviso</Label>
+							<Label htmlFor="name">{t("noticeNameLabel")}</Label>
 							<Input
 								id="name"
 								value={name}
 								onChange={(e) => setName(e.target.value)}
-								placeholder="Aviso Diciembre 2024"
+								placeholder={t("noticeNamePlaceholder")}
 								required
 							/>
 						</div>
 
 						<div className="space-y-2">
-							<Label htmlFor="notes">Notas (opcional)</Label>
+							<Label htmlFor="notes">{t("noticeNotesLabel")}</Label>
 							<Textarea
 								id="notes"
 								value={notes}
 								onChange={(e) => setNotes(e.target.value)}
-								placeholder="Notas o comentarios sobre este aviso..."
+								placeholder={t("noticeNotesPlaceholder")}
 								rows={3}
 							/>
 						</div>
@@ -255,7 +297,7 @@ export function CreateNoticeView(): React.ReactElement {
 
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-lg">Vista Previa</CardTitle>
+						<CardTitle className="text-lg">{t("noticePreview")}</CardTitle>
 					</CardHeader>
 					<CardContent>
 						{isPreviewLoading ? (
@@ -268,7 +310,7 @@ export function CreateNoticeView(): React.ReactElement {
 									<div className="p-4 bg-muted/50 rounded-lg">
 										<p className="text-2xl font-bold">{preview.total}</p>
 										<p className="text-sm text-muted-foreground">
-											Alertas disponibles
+											{t("noticeAvailableAlerts")}
 										</p>
 									</div>
 									<div className="p-4 bg-muted/50 rounded-lg">
@@ -282,7 +324,9 @@ export function CreateNoticeView(): React.ReactElement {
 								{preview.total > 0 ? (
 									<>
 										<div className="space-y-2">
-											<p className="text-sm font-medium">Por Severidad</p>
+											<p className="text-sm font-medium">
+												{t("noticeBySeverity")}
+											</p>
 											<div className="flex flex-wrap gap-2">
 												{Object.entries(preview.bySeverity).map(
 													([severity, count]) => (
@@ -305,11 +349,94 @@ export function CreateNoticeView(): React.ReactElement {
 											</div>
 										</div>
 
+										<div className="flex items-center justify-between text-sm text-muted-foreground">
+											<span>
+												{selectedAlertIds.size} de {preview.alerts.length}{" "}
+												alertas seleccionadas
+											</span>
+										</div>
+
+										<div className="max-h-72 overflow-y-auto rounded-md border">
+											<Table>
+												<TableHeader>
+													<TableRow>
+														<TableHead
+															className="w-10 cursor-pointer"
+															onClick={toggleAll}
+														>
+															<Checkbox
+																checked={
+																	selectedAlertIds.size ===
+																	preview.alerts.length
+																		? true
+																		: selectedAlertIds.size > 0
+																			? "indeterminate"
+																			: false
+																}
+																className="pointer-events-none"
+																tabIndex={-1}
+																aria-label="Seleccionar todas"
+															/>
+														</TableHead>
+														<TableHead>Cliente</TableHead>
+														<TableHead>Regla</TableHead>
+														<TableHead>Severidad</TableHead>
+														<TableHead>Actividad</TableHead>
+													</TableRow>
+												</TableHeader>
+												<TableBody>
+													{preview.alerts.map((alert) => (
+														<TableRow
+															key={alert.id}
+															className="cursor-pointer"
+															onClick={() => toggleAlert(alert.id)}
+															data-state={
+																selectedAlertIds.has(alert.id)
+																	? "selected"
+																	: undefined
+															}
+														>
+															<TableCell>
+																<Checkbox
+																	checked={selectedAlertIds.has(alert.id)}
+																	className="pointer-events-none"
+																	tabIndex={-1}
+																	aria-hidden
+																/>
+															</TableCell>
+															<TableCell className="font-medium">
+																{alert.clientName}
+															</TableCell>
+															<TableCell className="text-xs">
+																{alert.alertRuleName}
+															</TableCell>
+															<TableCell>
+																<Badge
+																	variant={
+																		alert.severity === "CRITICAL" ||
+																		alert.severity === "HIGH"
+																			? "destructive"
+																			: "secondary"
+																	}
+																	className="text-[10px]"
+																>
+																	{alert.severity}
+																</Badge>
+															</TableCell>
+															<TableCell className="text-xs text-muted-foreground">
+																{alert.activityCode ?? "—"}
+															</TableCell>
+														</TableRow>
+													))}
+												</TableBody>
+											</Table>
+										</div>
+
 										<div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
 											<div className="flex items-center gap-2 text-amber-600">
 												<Clock className="h-4 w-4" />
 												<p className="text-sm font-medium">
-													Fecha límite de envío
+													{t("noticeSubmissionDeadline")}
 												</p>
 											</div>
 											<p className="text-sm text-amber-600/80 mt-1">
@@ -323,13 +450,77 @@ export function CreateNoticeView(): React.ReactElement {
 												})}
 											</p>
 										</div>
+
+										{selectedAlertIds.size === 0 && (
+											<div className="p-4 bg-amber-500/15 border border-amber-500/30 rounded-lg space-y-3">
+												<div className="flex items-start gap-2 text-amber-600">
+													<AlertTriangle className="h-5 w-5 mt-0.5 shrink-0" />
+													<div>
+														<p className="text-sm font-semibold">
+															Aviso sin alertas seleccionadas
+														</p>
+														<p className="text-xs mt-1 text-amber-600/80">
+															De acuerdo con la LFPIORPI, omitir operaciones
+															vulnerables detectadas en un aviso puede derivar
+															en sanciones administrativas y económicas. Solo
+															proceda si está seguro de que estas alertas no
+															corresponden a operaciones reportables.
+														</p>
+													</div>
+												</div>
+												<div
+													className="flex items-center gap-2 cursor-pointer"
+													onClick={() => setEmptyConfirmed((v) => !v)}
+													onKeyDown={(e) => {
+														if (e.key === " " || e.key === "Enter") {
+															e.preventDefault();
+															setEmptyConfirmed((v) => !v);
+														}
+													}}
+													role="checkbox"
+													aria-checked={emptyConfirmed}
+													tabIndex={0}
+												>
+													<Checkbox
+														checked={emptyConfirmed}
+														className="pointer-events-none"
+														tabIndex={-1}
+													/>
+													<span className="text-xs text-amber-700">
+														Confirmo que deseo crear el aviso sin alertas
+													</span>
+												</div>
+											</div>
+										)}
+
+										{selectedAlertIds.size > 0 &&
+											selectedAlertIds.size < preview.alerts.length && (
+												<div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+													<div className="flex items-start gap-2 text-blue-600">
+														<Info className="h-4 w-4 mt-0.5 shrink-0" />
+														<p className="text-xs">
+															{preview.alerts.length - selectedAlertIds.size}{" "}
+															alerta(s) no serán incluidas en este aviso. Podrá
+															agregarlas posteriormente si es necesario.
+														</p>
+													</div>
+												</div>
+											)}
 									</>
 								) : (
-									<div className="flex flex-col items-center justify-center py-8 text-center">
-										<AlertCircle className="h-8 w-8 text-muted-foreground mb-2" />
-										<p className="text-sm text-muted-foreground">
-											No hay alertas disponibles para este período
-										</p>
+									<div className="p-4 bg-muted/50 border border-border rounded-lg">
+										<div className="flex items-start gap-3">
+											<Info className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+											<div>
+												<p className="text-sm font-medium">
+													Sin actividad vulnerable
+												</p>
+												<p className="text-xs text-muted-foreground mt-1">
+													No se detectaron operaciones vulnerables en este
+													periodo. Se creará un aviso informativo sin actividad.
+												</p>
+											</div>
+										</div>
 									</div>
 								)}
 							</div>
@@ -337,7 +528,7 @@ export function CreateNoticeView(): React.ReactElement {
 							<div className="flex flex-col items-center justify-center py-8 text-center">
 								<Calendar className="h-8 w-8 text-muted-foreground mb-2" />
 								<p className="text-sm text-muted-foreground">
-									Selecciona un período para ver la vista previa
+									{t("noticeSelectPeriodPreview")}
 								</p>
 							</div>
 						)}
@@ -350,7 +541,7 @@ export function CreateNoticeView(): React.ReactElement {
 						variant="outline"
 						onClick={() => navigateTo("/notices")}
 					>
-						Cancelar
+						{t("cancel")}
 					</Button>
 					<Button
 						type="submit"
@@ -358,11 +549,14 @@ export function CreateNoticeView(): React.ReactElement {
 							isSubmitting ||
 							!selectedMonth ||
 							!name ||
-							(preview?.total ?? 0) === 0
+							!preview ||
+							(preview.total > 0 &&
+								selectedAlertIds.size === 0 &&
+								!emptyConfirmed)
 						}
 					>
 						{isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-						Crear Aviso
+						{t("noticeCreateButton")}
 					</Button>
 				</div>
 			</form>

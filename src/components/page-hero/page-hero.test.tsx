@@ -107,7 +107,8 @@ describe("PageHero", () => {
 			/>,
 		);
 
-		expect(screen.getByText("Nuevo Registro")).toBeInTheDocument();
+		// Button appears twice (mobile and desktop), check that at least one exists
+		expect(screen.getAllByText("Nuevo Registro")[0]).toBeInTheDocument();
 	});
 
 	it("does not render CTA button when onCtaClick is not provided", () => {
@@ -137,7 +138,10 @@ describe("PageHero", () => {
 			/>,
 		);
 
-		const ctaButton = screen.getByText("Nuevo Registro").closest("button");
+		// Button appears twice (mobile and desktop), get the first one
+		const ctaButton = screen
+			.getAllByText("Nuevo Registro")[0]
+			.closest("button");
 		if (ctaButton) {
 			await user.click(ctaButton);
 			expect(handleClick).toHaveBeenCalledTimes(1);
@@ -157,7 +161,8 @@ describe("PageHero", () => {
 			/>,
 		);
 
-		expect(screen.getByText("Custom CTA")).toBeInTheDocument();
+		// Button appears twice (mobile and desktop), check that at least one exists
+		expect(screen.getAllByText("Custom CTA")[0]).toBeInTheDocument();
 	});
 
 	it("applies primary variant styling to primary stats", () => {
@@ -304,7 +309,8 @@ describe("PageHero", () => {
 				/>,
 			);
 
-			expect(screen.getByText("Create")).toBeInTheDocument();
+			// Button appears twice (mobile and desktop), check that at least one exists
+			expect(screen.getAllByText("Create")[0]).toBeInTheDocument();
 		});
 
 		it("renders multiple actions on desktop", () => {
@@ -335,9 +341,10 @@ describe("PageHero", () => {
 				/>,
 			);
 
-			expect(screen.getByText("Create")).toBeInTheDocument();
-			expect(screen.getByText("Edit")).toBeInTheDocument();
-			expect(screen.getByText("Delete")).toBeInTheDocument();
+			// Buttons appear twice (mobile and desktop), check that at least one of each exists
+			expect(screen.getAllByText("Create")[0]).toBeInTheDocument();
+			expect(screen.getAllByText("Edit")[0]).toBeInTheDocument();
+			expect(screen.getAllByText("Delete")[0]).toBeInTheDocument();
 		});
 
 		it("calls action onClick when clicked", async () => {
@@ -353,7 +360,8 @@ describe("PageHero", () => {
 				/>,
 			);
 
-			const saveButton = screen.getByText("Save").closest("button");
+			// Button appears twice (mobile and desktop), get the first one
+			const saveButton = screen.getAllByText("Save")[0].closest("button");
 			if (saveButton) {
 				await user.click(saveButton);
 				expect(handleClick).toHaveBeenCalledTimes(1);
@@ -374,7 +382,8 @@ describe("PageHero", () => {
 				/>,
 			);
 
-			const saveButton = screen.getByText("Save").closest("button");
+			// Button appears twice (mobile and desktop), get the first one
+			const saveButton = screen.getAllByText("Save")[0].closest("button");
 			expect(saveButton).toBeDisabled();
 		});
 
@@ -390,7 +399,8 @@ describe("PageHero", () => {
 				/>,
 			);
 
-			const button = screen.getByText("Primary Action").closest("button");
+			// Button appears twice (mobile and desktop), get the first one
+			const button = screen.getAllByText("Primary Action")[0].closest("button");
 			// Default variant should not have "outline" or "destructive" classes
 			expect(button).not.toHaveClass("border-input");
 		});
@@ -409,8 +419,9 @@ describe("PageHero", () => {
 				/>,
 			);
 
-			expect(screen.getByText("Outline")).toBeInTheDocument();
-			expect(screen.getByText("Destructive")).toBeInTheDocument();
+			// Buttons appear twice (mobile and desktop), check that at least one of each exists
+			expect(screen.getAllByText("Outline")[0]).toBeInTheDocument();
+			expect(screen.getAllByText("Destructive")[0]).toBeInTheDocument();
 		});
 	});
 
@@ -486,7 +497,8 @@ describe("PageHero", () => {
 				/>,
 			);
 
-			const button = screen.getByText("Legacy CTA").closest("button");
+			// Button appears twice (mobile and desktop), get the first one
+			const button = screen.getAllByText("Legacy CTA")[0].closest("button");
 			if (button) {
 				await user.click(button);
 				expect(handleClick).toHaveBeenCalledTimes(1);
@@ -509,7 +521,8 @@ describe("PageHero", () => {
 			);
 
 			// New action should be rendered, not legacy
-			expect(screen.getByText("New Action")).toBeInTheDocument();
+			// Button appears twice (mobile and desktop), check that at least one exists
+			expect(screen.getAllByText("New Action")[0]).toBeInTheDocument();
 			expect(screen.queryByText("Legacy CTA")).not.toBeInTheDocument();
 		});
 	});

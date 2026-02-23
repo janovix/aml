@@ -9,11 +9,23 @@ import * as noticesApi from "@/lib/api/notices";
 // Mock sonner toast
 const mockToastSuccess = vi.fn();
 const mockToastError = vi.fn();
+const mockToastLoading = vi.fn();
+const mockToastDismiss = vi.fn();
 vi.mock("sonner", () => ({
 	toast: Object.assign(vi.fn(), {
 		success: (...args: unknown[]) => mockToastSuccess(...args),
 		error: (...args: unknown[]) => mockToastError(...args),
+		loading: (...args: unknown[]) => mockToastLoading(...args),
+		dismiss: (...args: unknown[]) => mockToastDismiss(...args),
 	}),
+}));
+
+// Mock toast-utils to bypass dedup and forward to toast.error
+vi.mock("@/lib/toast-utils", () => ({
+	showFetchError: (_id: string, error: unknown) => {
+		const msg = error instanceof Error ? error.message : "Error desconocido";
+		mockToastError(msg, { id: _id });
+	},
 }));
 
 vi.mock("@/hooks/use-mobile", () => ({
@@ -56,6 +68,12 @@ vi.mock("@/lib/api/notices", () => ({
 	deleteNotice: vi.fn(),
 }));
 
+// Mock file upload for SAT PDF dialogs
+const mockUploadPdfDocument = vi.fn();
+vi.mock("@/lib/api/file-upload", () => ({
+	uploadPdfDocument: (...args: unknown[]) => mockUploadPdfDocument(...args),
+}));
+
 // Mock notice data
 const mockDraftNotice: noticesApi.NoticeWithAlertSummary = {
 	id: "NTC001",
@@ -70,11 +88,13 @@ const mockDraftNotice: noticesApi.NoticeWithAlertSummary = {
 	fileSize: null,
 	generatedAt: null,
 	submittedAt: null,
-	satFolioNumber: null,
+	amendmentCycle: 0,
 	createdBy: "user-1",
 	notes: null,
 	createdAt: "2024-12-01T00:00:00Z",
 	updatedAt: "2024-12-01T00:00:00Z",
+	events: [],
+	alerts: [],
 	alertSummary: {
 		total: 10,
 		bySeverity: { CRITICAL: 2, HIGH: 5, MEDIUM: 3 },
@@ -107,7 +127,6 @@ const mockAcknowledgedNotice: noticesApi.NoticeWithAlertSummary = {
 	...mockSubmittedNotice,
 	id: "NTC004",
 	status: "ACKNOWLEDGED",
-	satFolioNumber: "SAT-2024-12345",
 };
 
 describe("NoticeDetailsView", () => {
@@ -121,11 +140,12 @@ describe("NoticeDetailsView", () => {
 		});
 		mockUseOrgStore.mockReturnValue({
 			currentOrg: { id: "org-1", name: "Test Org", slug: "test-org" },
+			currentUserId: "user-1",
 		});
 	});
 
 	describe("Loading and Error States", () => {
-		it("shows loading state while fetching notice", async () => {
+		it("shows skeleton loading state while fetching notice", async () => {
 			vi.mocked(noticesApi.getNoticeById).mockImplementation(
 				() => new Promise(() => {}), // Never resolves
 			);
@@ -133,11 +153,10 @@ describe("NoticeDetailsView", () => {
 			renderWithProviders(<NoticeDetailsView noticeId="NTC001" />);
 
 			await waitFor(() => {
-				// Check for any loader icon (lucide-loader-2 or lucide-loader-circle)
-				const loader = document.querySelector(
-					'[class*="lucide-loader"], [class*="animate-spin"]',
-				);
-				expect(loader).toBeInTheDocument();
+				// The loading state now renders the NoticeDetailsSkeleton which uses
+				// Skeleton elements with data-slot="skeleton"
+				const skeletons = document.querySelectorAll('[data-slot="skeleton"]');
+				expect(skeletons.length).toBeGreaterThan(0);
 			});
 		});
 
@@ -338,6 +357,10 @@ describe("NoticeDetailsView", () => {
 		});
 
 		it("opens submit dialog and handles submit", async () => {
+			mockUploadPdfDocument.mockResolvedValue({
+				documentId: "DOC-test-123",
+				jobId: "job-123",
+			});
 			vi.mocked(noticesApi.submitNoticeToSat).mockResolvedValue({
 				...mockGeneratedNotice,
 				status: "SUBMITTED",
@@ -354,25 +377,37 @@ describe("NoticeDetailsView", () => {
 			await user.click(screen.getByText("Marcar como Enviado"));
 
 			await waitFor(() => {
-				expect(
-					screen.getByText(
-						"Confirma que has subido el archivo XML al portal del SAT. Opcionalmente puedes ingresar el número de folio.",
-					),
-				).toBeInTheDocument();
+				expect(screen.getByText("Confirmar Envío")).toBeInTheDocument();
 			});
 
-			// Fill in optional folio
-			const folioInput = screen.getByPlaceholderText(
-				"Ingresa el folio del SAT",
-			);
-			await user.type(folioInput, "SAT-2024-12345");
+			// Simulate PDF file selection
+			const fileInput = document.querySelector(
+				'input[type="file"][accept="application/pdf"]',
+			) as HTMLInputElement;
+			expect(fileInput).toBeInTheDocument();
+			const pdfFile = new File(["pdf content"], "acuse.pdf", {
+				type: "application/pdf",
+			});
+			await user.upload(fileInput, pdfFile);
 
 			await user.click(screen.getByText("Confirmar Envío"));
 
 			await waitFor(() => {
+				expect(mockUploadPdfDocument).toHaveBeenCalledWith(
+					expect.objectContaining({
+						organizationId: "org-1",
+						userId: "user-1",
+					}),
+				);
+				expect(mockUploadPdfDocument.mock.calls[0][0].pdfFile).toBeInstanceOf(
+					File,
+				);
+			});
+
+			await waitFor(() => {
 				expect(noticesApi.submitNoticeToSat).toHaveBeenCalledWith({
 					id: "NTC002",
-					satFolioNumber: "SAT-2024-12345",
+					docSvcDocumentId: "DOC-test-123",
 					jwt: "test-jwt-token",
 				});
 			});
@@ -410,10 +445,13 @@ describe("NoticeDetailsView", () => {
 		});
 
 		it("opens acknowledge dialog and handles acknowledge", async () => {
+			mockUploadPdfDocument.mockResolvedValue({
+				documentId: "DOC-ack-456",
+				jobId: "job-456",
+			});
 			vi.mocked(noticesApi.acknowledgeNotice).mockResolvedValue({
 				...mockSubmittedNotice,
 				status: "ACKNOWLEDGED",
-				satFolioNumber: "SAT-ACK-2024-99999",
 			});
 
 			const user = userEvent.setup();
@@ -429,11 +467,17 @@ describe("NoticeDetailsView", () => {
 				expect(screen.getByText("Registrar Acuse del SAT")).toBeInTheDocument();
 			});
 
-			// Fill in required folio
-			const folioInput = screen.getByPlaceholderText(
-				"Ingresa el folio del acuse",
+			// Simulate PDF file selection (there are multiple file inputs; get the last one in the open dialog)
+			const fileInputs = document.querySelectorAll(
+				'input[type="file"][accept="application/pdf"]',
 			);
-			await user.type(folioInput, "SAT-ACK-2024-99999");
+			const ackFileInput = fileInputs[
+				fileInputs.length - 1
+			] as HTMLInputElement;
+			const pdfFile = new File(["ack pdf content"], "acuse_receipt.pdf", {
+				type: "application/pdf",
+			});
+			await user.upload(ackFileInput, pdfFile);
 
 			// Find the "Registrar Acuse" button in the dialog
 			const dialogButtons = screen.getAllByRole("button");
@@ -445,9 +489,21 @@ describe("NoticeDetailsView", () => {
 			await user.click(registerButton!);
 
 			await waitFor(() => {
+				expect(mockUploadPdfDocument).toHaveBeenCalledWith(
+					expect.objectContaining({
+						organizationId: "org-1",
+						userId: "user-1",
+					}),
+				);
+				expect(mockUploadPdfDocument.mock.calls[0][0].pdfFile).toBeInstanceOf(
+					File,
+				);
+			});
+
+			await waitFor(() => {
 				expect(noticesApi.acknowledgeNotice).toHaveBeenCalledWith({
 					id: "NTC003",
-					satFolioNumber: "SAT-ACK-2024-99999",
+					docSvcDocumentId: "DOC-ack-456",
 					jwt: "test-jwt-token",
 				});
 			});
@@ -457,7 +513,7 @@ describe("NoticeDetailsView", () => {
 			});
 		});
 
-		it("disables acknowledge button when folio is empty", async () => {
+		it("disables acknowledge button when PDF is not selected", async () => {
 			const user = userEvent.setup();
 			renderWithProviders(<NoticeDetailsView noticeId="NTC003" />);
 
@@ -471,7 +527,7 @@ describe("NoticeDetailsView", () => {
 				expect(screen.getByText("Registrar Acuse del SAT")).toBeInTheDocument();
 			});
 
-			// Find the "Registrar Acuse" button in the dialog - it should be disabled
+			// Find the "Registrar Acuse" button in the dialog - it should be disabled (no PDF selected)
 			const dialogButtons = screen.getAllByRole("button");
 			const registerButton = dialogButtons.find(
 				(btn) =>
@@ -503,12 +559,42 @@ describe("NoticeDetailsView", () => {
 			expect(screen.queryByText("Generar XML")).not.toBeInTheDocument();
 		});
 
-		it("shows SAT folio number", async () => {
+		it("shows event timeline for acknowledged notice with events", async () => {
+			const acknowledgedWithEvents: noticesApi.NoticeWithAlertSummary = {
+				...mockAcknowledgedNotice,
+				events: [
+					{
+						id: "evt-1",
+						noticeId: "NTC004",
+						organizationId: "org-1",
+						eventType: "CREATED",
+						toStatus: "DRAFT",
+						cycle: 0,
+						createdAt: "2024-12-01T00:00:00Z",
+					},
+					{
+						id: "evt-2",
+						noticeId: "NTC004",
+						organizationId: "org-1",
+						eventType: "ACKNOWLEDGED",
+						fromStatus: "SUBMITTED",
+						toStatus: "ACKNOWLEDGED",
+						cycle: 0,
+						pdfDocumentId: "DOC-ack-789",
+						createdAt: "2024-12-22T12:00:00Z",
+					},
+				],
+			};
+			vi.mocked(noticesApi.getNoticeById).mockResolvedValue(
+				acknowledgedWithEvents,
+			);
+
 			renderWithProviders(<NoticeDetailsView noticeId="NTC004" />);
 
 			await waitFor(() => {
-				expect(screen.getByText("Folio SAT")).toBeInTheDocument();
-				expect(screen.getByText("SAT-2024-12345")).toBeInTheDocument();
+				expect(screen.getByText("Historial")).toBeInTheDocument();
+				expect(screen.getByText("Acuse registrado")).toBeInTheDocument();
+				expect(screen.getByText("Aviso creado")).toBeInTheDocument();
 			});
 		});
 
@@ -588,6 +674,10 @@ describe("NoticeDetailsView", () => {
 		});
 
 		it("handles submit error gracefully", async () => {
+			mockUploadPdfDocument.mockResolvedValue({
+				documentId: "DOC-err-123",
+				jobId: "job-123",
+			});
 			vi.mocked(noticesApi.submitNoticeToSat).mockRejectedValue(
 				new Error("Submit failed"),
 			);
@@ -604,6 +694,15 @@ describe("NoticeDetailsView", () => {
 			await waitFor(() => {
 				expect(screen.getByText("Confirmar Envío")).toBeInTheDocument();
 			});
+
+			// Select PDF file (required to enable submit button)
+			const fileInput = document.querySelector(
+				'input[type="file"][accept="application/pdf"]',
+			) as HTMLInputElement;
+			const pdfFile = new File(["pdf"], "submit.pdf", {
+				type: "application/pdf",
+			});
+			await user.upload(fileInput, pdfFile);
 
 			await user.click(screen.getByText("Confirmar Envío"));
 

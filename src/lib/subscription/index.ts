@@ -5,16 +5,13 @@ export {
 	getSubscriptionStatus,
 	isFreeTier,
 	hasPaidSubscription,
-	isNearLimit,
-	isAtLimit,
+	isEnterprise,
 	getUsagePercentage,
-	hasProductAccess,
 	hasAMLAccess,
 	hasWatchlistAccess,
 	type SubscriptionStatus,
-	type UsageCheckResult,
+	type PlanLimits,
 	type PlanTier,
-	type ProductFeature,
 } from "./subscriptionClient";
 
 export {

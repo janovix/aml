@@ -7,8 +7,8 @@ export type KYCStatus =
 	| "COMPLETE"
 	| "EXPIRED";
 
-// PEP check status
-export type PEPStatus = "PENDING" | "CONFIRMED" | "NOT_PEP" | "ERROR";
+// Screening result status
+export type ScreeningResult = "pending" | "clear" | "flagged";
 
 // Gender values
 export type Gender = "M" | "F" | "OTHER";
@@ -33,6 +33,8 @@ export interface Client {
 	incorporationDate?: string | null; // date-time format for moral/trust
 	rfc: string; // Primary key - RFC (Registro Federal de Contribuyentes)
 	nationality?: string | null;
+	countryCode?: string | null; // Reference to countries catalog (metadata.code)
+	economicActivityCode?: string | null; // Reference to economic-activities catalog (7-digit code)
 	email: string;
 	phone: string;
 	country: string;
@@ -55,13 +57,29 @@ export interface Client {
 	// KYC status tracking
 	kycStatus?: KYCStatus;
 	kycCompletedAt?: string | null;
-	// PEP status tracking
+	// KYC progress (persisted fields)
+	kycCompletionPct?: number;
+	documentsComplete?: number;
+	documentsCount?: number;
+	documentsRequired?: number;
+	shareholdersCount?: number;
+	beneficialControllersCount?: number;
+	// Threshold-aware KYC (Art. 17 LFPIORPI)
+	identificationRequired?: boolean;
+	identificationTier?: "ALWAYS" | "ABOVE_THRESHOLD" | "BELOW_THRESHOLD";
+	identificationThresholdMxn?: number | null;
+	noticeThresholdMxn?: number | null;
+	// Watchlist screening status
 	isPEP?: boolean;
-	pepStatus?: PEPStatus;
-	pepDetails?: string | null;
-	pepMatchConfidence?: string | null;
-	pepCheckedAt?: string | null;
-	pepCheckSource?: string | null;
+	watchlistQueryId?: string | null;
+	ofacSanctioned?: boolean;
+	unscSanctioned?: boolean;
+	sat69bListed?: boolean;
+	adverseMediaFlagged?: boolean;
+	screeningResult?: ScreeningResult;
+	screenedAt?: string | null;
+	// Resolved catalog names for *Code fields
+	resolvedNames?: Record<string, string> | null;
 	// Timestamps
 	createdAt: string; // date-time format
 	updatedAt: string; // date-time format
@@ -82,6 +100,8 @@ export interface ClientCreateRequest {
 	// Common fields
 	rfc: string;
 	nationality?: string | null;
+	countryCode?: string | null;
+	economicActivityCode?: string | null;
 	email: string;
 	phone: string;
 	country: string;

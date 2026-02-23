@@ -12,14 +12,11 @@ import {
 	getSubscriptionStatus,
 	isFreeTier as checkIsFreeTier,
 	hasPaidSubscription as checkHasPaidSubscription,
-	isNearLimit as checkIsNearLimit,
-	isAtLimit as checkIsAtLimit,
-	getUsagePercentage,
+	isEnterprise as checkIsEnterprise,
 	type SubscriptionStatus,
-	type UsageCheckResult,
 } from "./subscriptionClient";
 
-interface SubscriptionContextValue {
+export interface SubscriptionContextValue {
 	/** Current subscription status */
 	subscription: SubscriptionStatus | null;
 	/** Whether data is loading */
@@ -28,26 +25,12 @@ interface SubscriptionContextValue {
 	error: Error | null;
 	/** Refresh subscription status */
 	refresh: () => Promise<void>;
-	/** Check if on free tier */
+	/** Check if on free tier (no active subscription) */
 	isFreeTier: boolean;
-	/** Check if has paid subscription */
+	/** Check if has paid subscription (Stripe or license) */
 	hasPaidSubscription: boolean;
-	/** Get usage info for a specific metric */
-	getUsage: (
-		metric: "notices" | "users" | "alerts" | "transactions",
-	) => UsageCheckResult | null;
-	/** Check if a metric is near limit */
-	isNearLimit: (
-		metric: "notices" | "users" | "alerts" | "transactions",
-	) => boolean;
-	/** Check if a metric is at limit */
-	isAtLimit: (
-		metric: "notices" | "users" | "alerts" | "transactions",
-	) => boolean;
-	/** Get usage percentage for a metric */
-	getUsagePercentage: (
-		metric: "notices" | "users" | "alerts" | "transactions",
-	) => number;
+	/** Check if on enterprise license */
+	isEnterprise: boolean;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextValue | null>(
@@ -56,13 +39,22 @@ const SubscriptionContext = createContext<SubscriptionContextValue | null>(
 
 interface SubscriptionProviderProps {
 	children: ReactNode;
+	/**
+	 * Pre-fetched subscription data (e.g. from OrgBootstrapper).
+	 * When provided the provider starts fully initialized and skips the initial fetch,
+	 * eliminating the subscription loading state on hard refresh.
+	 */
+	initialData?: SubscriptionStatus | null;
 }
 
-export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
+export function SubscriptionProvider({
+	children,
+	initialData,
+}: SubscriptionProviderProps) {
 	const [subscription, setSubscription] = useState<SubscriptionStatus | null>(
-		null,
+		initialData ?? null,
 	);
-	const [isLoading, setIsLoading] = useState(true);
+	const [isLoading, setIsLoading] = useState(initialData === undefined);
 	const [error, setError] = useState<Error | null>(null);
 
 	const refresh = useCallback(async () => {
@@ -78,45 +70,12 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 		}
 	}, []);
 
-	// Initial fetch
+	// Only fetch on mount when no initialData was provided
 	useEffect(() => {
-		refresh();
-	}, [refresh]);
-
-	const getUsage = useCallback(
-		(metric: "notices" | "users" | "alerts" | "transactions") => {
-			if (!subscription?.usage) return null;
-			return subscription.usage[metric] ?? null;
-		},
-		[subscription],
-	);
-
-	const isNearLimit = useCallback(
-		(metric: "notices" | "users" | "alerts" | "transactions") => {
-			const usage = getUsage(metric);
-			if (!usage) return false;
-			return checkIsNearLimit(usage);
-		},
-		[getUsage],
-	);
-
-	const isAtLimit = useCallback(
-		(metric: "notices" | "users" | "alerts" | "transactions") => {
-			const usage = getUsage(metric);
-			if (!usage) return false;
-			return checkIsAtLimit(usage);
-		},
-		[getUsage],
-	);
-
-	const getMetricUsagePercentage = useCallback(
-		(metric: "notices" | "users" | "alerts" | "transactions") => {
-			const usage = getUsage(metric);
-			if (!usage) return 0;
-			return getUsagePercentage(usage);
-		},
-		[getUsage],
-	);
+		if (initialData === undefined) {
+			refresh();
+		}
+	}, [refresh, initialData]);
 
 	const value: SubscriptionContextValue = {
 		subscription,
@@ -125,10 +84,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 		refresh,
 		isFreeTier: checkIsFreeTier(subscription),
 		hasPaidSubscription: checkHasPaidSubscription(subscription),
-		getUsage,
-		isNearLimit,
-		isAtLimit,
-		getUsagePercentage: getMetricUsagePercentage,
+		isEnterprise: checkIsEnterprise(subscription),
 	};
 
 	return (

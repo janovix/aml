@@ -8,11 +8,59 @@ import { useImportSSE } from "@/hooks/useImportSSE";
 import { useJwt } from "@/hooks/useJwt";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { getImport } from "@/lib/api/imports";
+import { Skeleton } from "@/components/ui/skeleton";
 import type {
 	ImportState,
 	ImportEntityType,
 	RowDisplayData,
 } from "@/types/import";
+
+/**
+ * Skeleton for ImportViewContent — mirrors the progress card + rows table layout.
+ */
+export function ImportDetailsSkeleton(): React.ReactElement {
+	return (
+		<div className="h-full flex flex-col overflow-hidden bg-background">
+			<div className="flex-1 overflow-hidden p-4">
+				<div className="h-full flex flex-col gap-4">
+					{/* Progress card skeleton */}
+					<div className="flex-shrink-0">
+						<div className="rounded-lg border bg-card p-6 space-y-4">
+							<div className="flex items-center justify-between">
+								<Skeleton className="h-6 w-48" />
+								<Skeleton className="h-8 w-24 rounded-md" />
+							</div>
+							<Skeleton className="h-3 w-full rounded-full" />
+							<div className="grid grid-cols-4 gap-4">
+								{[1, 2, 3, 4].map((i) => (
+									<div key={i} className="space-y-1.5">
+										<Skeleton className="h-4 w-20" />
+										<Skeleton className="h-7 w-12" />
+									</div>
+								))}
+							</div>
+						</div>
+					</div>
+					{/* Row status table skeleton */}
+					<div className="flex-1 min-h-0 rounded-lg border bg-card overflow-hidden">
+						<div className="p-4 border-b">
+							<Skeleton className="h-5 w-32" />
+						</div>
+						<div className="divide-y">
+							{[1, 2, 3, 4, 5, 6].map((i) => (
+								<div key={i} className="flex items-center gap-4 px-4 py-3">
+									<Skeleton className="h-5 w-8 shrink-0" />
+									<Skeleton className="h-5 w-20 shrink-0" />
+									<Skeleton className="h-4 flex-1" />
+								</div>
+							))}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	);
+}
 
 interface ImportViewContentProps {
 	importId: string;
@@ -238,16 +286,7 @@ export function ImportViewContent({ importId }: ImportViewContentProps) {
 
 	// Show loading state
 	if (isLoading || isJwtLoading) {
-		return (
-			<div className="h-full flex items-center justify-center bg-background">
-				<div className="flex flex-col items-center gap-3">
-					<div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-					<p className="text-sm text-muted-foreground">
-						Cargando importación...
-					</p>
-				</div>
-			</div>
-		);
+		return <ImportDetailsSkeleton />;
 	}
 
 	return (

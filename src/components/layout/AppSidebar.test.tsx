@@ -196,6 +196,10 @@ vi.mock("./NavUser", () => ({
 	),
 }));
 
+vi.mock("./ActivityChip", () => ({
+	ActivityChip: () => null,
+}));
+
 describe("AppSidebar", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -220,7 +224,7 @@ describe("AppSidebar", () => {
 		renderWithProviders(<AppSidebar />);
 
 		expect(screen.getByText("Clientes")).toBeInTheDocument();
-		expect(screen.getByText("Transacciones")).toBeInTheDocument();
+		expect(screen.getByText("Operaciones")).toBeInTheDocument();
 	});
 
 	it("renders organization switcher and nav user", () => {
@@ -338,11 +342,11 @@ describe("AppSidebar", () => {
 	});
 
 	it("handles different pathnames for active navigation", () => {
-		mockUsePathname.mockReturnValue("/transactions");
+		mockUsePathname.mockReturnValue("/operations");
 
 		renderWithProviders(<AppSidebar />);
 
-		expect(screen.getByText("Transacciones")).toBeInTheDocument();
+		expect(screen.getByText("Operaciones")).toBeInTheDocument();
 	});
 
 	it("handles pathname with subpath for active navigation", () => {
@@ -600,7 +604,7 @@ describe("AppSidebar", () => {
 		// All main nav items should be visible
 		expect(screen.getByText("Inicio")).toBeInTheDocument();
 		expect(screen.getByText("Clientes")).toBeInTheDocument();
-		expect(screen.getByText("Transacciones")).toBeInTheDocument();
+		expect(screen.getByText("Operaciones")).toBeInTheDocument();
 		expect(screen.getByText("Alertas")).toBeInTheDocument();
 		expect(screen.getByText("Reportes")).toBeInTheDocument();
 		// Products section items

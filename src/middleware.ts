@@ -1,11 +1,54 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
+/**
+ * Helper to add Set-Cookie headers from auth-svc to a Next.js response.
+ * This is CRITICAL for cookie cache refresh - without forwarding these headers,
+ * the browser never receives refreshed session cookies and sessions expire prematurely.
+ */
+function addAuthCookies(
+	response: NextResponse,
+	cookies: string[],
+): NextResponse {
+	if (!cookies || cookies.length === 0) {
+		return response;
+	}
+
+	// Add the auth-svc Set-Cookie headers to the response
+	for (const cookie of cookies) {
+		response.headers.append("Set-Cookie", cookie);
+	}
+
+	return response;
+}
+
 const getAuthAppUrl = () => {
 	return (
 		process.env.NEXT_PUBLIC_AUTH_APP_URL || "https://auth.janovix.workers.dev"
 	);
 };
+
+const AUTH_SVC_TIMEOUT_MS = 8000;
+
+/**
+ * Wraps fetch() with an AbortController timeout. If auth-svc does not respond
+ * within timeoutMs, the request is aborted and the caller's catch block handles
+ * the resulting AbortError. This prevents unbounded hangs that cause Cloudflare
+ * to kill the middleware Worker with "Network connection lost."
+ */
+async function fetchWithTimeout(
+	url: string,
+	options: RequestInit,
+	timeoutMs = AUTH_SVC_TIMEOUT_MS,
+): Promise<Response> {
+	const controller = new AbortController();
+	const timeout = setTimeout(() => controller.abort(), timeoutMs);
+	try {
+		return await fetch(url, { ...options, signal: controller.signal });
+	} finally {
+		clearTimeout(timeout);
+	}
+}
 
 const getAuthServiceUrl = () => {
 	// For middleware (Edge Runtime), prefer internal URL that doesn't need DNS resolution
@@ -55,6 +98,36 @@ function getExternalUrl(request: NextRequest): string {
  */
 function createExternalUrl(path: string, request: NextRequest): URL {
 	return new URL(path, getExternalOrigin(request));
+}
+
+/**
+ * Build request headers that carry already-fetched session and org data forward to
+ * server components. This lets the root layout skip the duplicate auth-svc API calls
+ * it would otherwise make, saving 2 round-trips per page load.
+ *
+ * We only inject headers when we're doing a NextResponse.next() (or rewrite) after
+ * full validation, so the data is guaranteed to be present and correct.
+ */
+function buildDataHeaders(
+	original: Headers,
+	sessionData: { session?: unknown; user?: unknown } | null,
+	userOrganizations: Array<{ id: string; slug: string; name: string }> | null,
+	activeOrganizationId: string | null | undefined,
+): Headers {
+	const headers = new Headers(original);
+	if (sessionData) {
+		headers.set("x-aml-session", JSON.stringify(sessionData));
+	}
+	if (userOrganizations !== null) {
+		headers.set(
+			"x-aml-organizations",
+			JSON.stringify({
+				organizations: userOrganizations,
+				activeOrganizationId: activeOrganizationId ?? null,
+			}),
+		);
+	}
+	return headers;
 }
 
 function redirectToLogin(request: NextRequest): NextResponse {
@@ -118,7 +191,7 @@ const ORG_FREE_ROUTES = ["/invitations"];
  */
 const KNOWN_ROUTES = [
 	"clients",
-	"transactions",
+	"operations",
 	"alerts",
 	"reports",
 	"team",
@@ -196,7 +269,7 @@ async function fetchUserOrganizations(
 	cookieHeader: string,
 ): Promise<OrgsResponse | null> {
 	try {
-		const response = await fetch(
+		const response = await fetchWithTimeout(
 			`${getAuthServiceUrl()}/api/auth/organization/list`,
 			{
 				headers: {
@@ -260,19 +333,23 @@ function getTargetOrg(
 }
 
 export async function middleware(request: NextRequest) {
-	const sessionCookie = getSessionCookie(request);
+	// Next.js prefetch requests don't include credentials (cookies) by default.
+	// Detect prefetch and allow them through without auth check to prevent CORS errors.
+	// The actual page navigation will be protected.
+	const purpose = request.headers.get("purpose");
+	const nextRouterPrefetch = request.headers.get("x-nextjs-data");
+	const isPrefetch = purpose === "prefetch" || nextRouterPrefetch !== null;
 
-	// DEBUG: Log session cookie status
-	console.log(
-		"[AML Middleware] Session cookie:",
-		sessionCookie ? "EXISTS" : "NULL",
-	);
-	console.log("[AML Middleware] Auth Service URL:", getAuthServiceUrl());
-	console.log("[AML Middleware] Auth App URL (Origin):", getAuthAppUrl());
+	if (isPrefetch) {
+		// Allow prefetch requests through without auth check
+		// The actual navigation will be protected when user clicks the link
+		return NextResponse.next();
+	}
+
+	const sessionCookie = getSessionCookie(request);
 
 	// No session cookie → redirect to auth app
 	if (!sessionCookie) {
-		console.log("[AML Middleware] No session cookie, redirecting to login");
 		return redirectToLogin(request);
 	}
 
@@ -281,16 +358,19 @@ export async function middleware(request: NextRequest) {
 
 	interface SessionData {
 		session?: { activeOrganizationId?: string };
-		user?: { name?: string | null };
+		user?: { name?: string | null; banned?: boolean };
 	}
 
 	let sessionData: SessionData | null = null;
 
 	let userOrganizations: Organization[] | null = null;
 
+	// Track Set-Cookie headers from auth-svc to forward to the browser
+	// This is CRITICAL for cookie cache refresh to work properly
+	let authServiceSetCookies: string[] = [];
+
 	try {
-		console.log("[AML Middleware] Validating session with auth-svc...");
-		const response = await fetch(
+		const response = await fetchWithTimeout(
 			`${getAuthServiceUrl()}/api/auth/get-session`,
 			{
 				headers: {
@@ -301,29 +381,33 @@ export async function middleware(request: NextRequest) {
 			},
 		);
 
-		console.log("[AML Middleware] Auth-svc response status:", response.status);
+		// CRITICAL: Capture Set-Cookie headers from auth-svc
+		// These headers contain refreshed session cookies that MUST be forwarded to the browser
+		// Without this, the cookie cache never refreshes and sessions expire prematurely
+		const setCookies = response.headers.getSetCookie?.();
+		if (setCookies && setCookies.length > 0) {
+			authServiceSetCookies = setCookies;
+		}
 
 		if (!response.ok) {
-			console.log("[AML Middleware] Response not OK, redirecting to login");
 			return redirectToLogin(request);
 		}
 
 		sessionData = (await response.json()) as SessionData;
-		console.log("[AML Middleware] Session data:", JSON.stringify(sessionData));
 
 		if (!sessionData?.session || !sessionData?.user) {
-			console.log(
-				"[AML Middleware] No session/user in response, redirecting to login",
-			);
+			return redirectToLogin(request);
+		}
+
+		// Check if user is banned
+		if (sessionData.user?.banned) {
 			return redirectToLogin(request);
 		}
 
 		// Check if user needs profile onboarding (no name set)
 		if (needsProfileOnboarding(sessionData.user)) {
-			console.log(
-				"[AML Middleware] User needs profile onboarding, redirecting",
-			);
-			return redirectToOnboarding(request);
+			const onboardingResponse = redirectToOnboarding(request);
+			return addAuthCookies(onboardingResponse, authServiceSetCookies);
 		}
 
 		// Fetch user organizations to check if they have any membership
@@ -332,19 +416,18 @@ export async function middleware(request: NextRequest) {
 
 		// Check if user has any organization membership
 		if (!hasOrganizationMembership(userOrganizations)) {
-			console.log(
-				"[AML Middleware] User has no organization membership, redirecting to onboarding",
-			);
-			return redirectToOnboarding(request);
+			const onboardingResponse = redirectToOnboarding(request);
+			return addAuthCookies(onboardingResponse, authServiceSetCookies);
 		}
 	} catch (error) {
-		console.log("[AML Middleware] Error during validation:", error);
+		console.error("[AML Middleware] Error during validation:", error);
 		return redirectToLogin(request);
 	}
 
 	const hostname = request.headers.get("host") || "localhost";
 	const pathname = request.nextUrl.pathname;
 	const vanityMode = isVanityMode(hostname);
+	const activeOrganizationId = sessionData?.session?.activeOrganizationId;
 
 	// In vanity mode, rewrite URL to include org slug in path
 	if (vanityMode) {
@@ -355,26 +438,38 @@ export async function middleware(request: NextRequest) {
 		const rewriteUrl = new URL(internalPath, request.url);
 		rewriteUrl.search = request.nextUrl.search;
 
-		// Continue processing with the rewritten URL
-		// We need to validate the org, so we'll fetch orgs and check access
-		const orgsData = await fetchUserOrganizations(cookieHeader);
-		const organizations = orgsData?.organizations ?? [];
+		// Reuse the org list already fetched during session validation above
+		const organizations = userOrganizations ?? [];
 
 		if (organizations.length === 0) {
 			// User has no orgs - redirect to index to create one
 			// In vanity mode, we need to redirect to a path-based URL
-			return NextResponse.redirect(createExternalUrl("/", request));
+			const redirectResponse = NextResponse.redirect(
+				createExternalUrl("/", request),
+			);
+			return addAuthCookies(redirectResponse, authServiceSetCookies);
 		}
 
 		if (!hasAccessToOrg(organizations, orgSlug)) {
 			// Org doesn't exist or user doesn't have access - show not-found
-			return NextResponse.rewrite(
+			const notFoundResponse = NextResponse.rewrite(
 				createExternalUrl(`/${orgSlug}/not-found`, request),
 			);
+			return addAuthCookies(notFoundResponse, authServiceSetCookies);
 		}
 
-		// Valid org access - rewrite to include org in path
-		return NextResponse.rewrite(rewriteUrl);
+		// Valid org access - rewrite to include org in path, forwarding pre-fetched data
+		const rewriteResponse = NextResponse.rewrite(rewriteUrl, {
+			request: {
+				headers: buildDataHeaders(
+					request.headers,
+					sessionData,
+					organizations,
+					activeOrganizationId,
+				),
+			},
+		});
+		return addAuthCookies(rewriteResponse, authServiceSetCookies);
 	}
 
 	// Path-based mode: org slug should be in the path
@@ -382,7 +477,8 @@ export async function middleware(request: NextRequest) {
 	// Check if this is an org-free route
 	for (const route of ORG_FREE_ROUTES) {
 		if (pathname.startsWith(route)) {
-			return NextResponse.next();
+			const nextResponse = NextResponse.next();
+			return addAuthCookies(nextResponse, authServiceSetCookies);
 		}
 	}
 
@@ -394,21 +490,19 @@ export async function middleware(request: NextRequest) {
 		// We know the user has orgs (checked at line 334)
 		if (userOrganizations && userOrganizations.length > 0) {
 			// Find the active org or use the first one
-			const activeOrgId = sessionData?.session?.activeOrganizationId;
-			const targetOrg = getTargetOrg(userOrganizations, activeOrgId);
+			const targetOrg = getTargetOrg(userOrganizations, activeOrganizationId);
 
 			if (targetOrg) {
-				console.log(
-					`[AML Middleware] Redirecting from / to /${targetOrg.slug}`,
-				);
-				return NextResponse.redirect(
+				const redirectResponse = NextResponse.redirect(
 					createExternalUrl(`/${targetOrg.slug}`, request),
 				);
+				return addAuthCookies(redirectResponse, authServiceSetCookies);
 			}
 		}
 
 		// Fallback: let the index page handle it (shouldn't reach here normally)
-		return NextResponse.next();
+		const nextResponse = NextResponse.next();
+		return addAuthCookies(nextResponse, authServiceSetCookies);
 	}
 
 	const firstSegment = pathSegments[0];
@@ -416,61 +510,79 @@ export async function middleware(request: NextRequest) {
 	// Check if first segment is a known route (not an org slug)
 	// This means URL is missing org slug: /clients → need to prefix with org
 	if (KNOWN_ROUTES.includes(firstSegment)) {
-		const orgsData = await fetchUserOrganizations(cookieHeader);
-		const organizations = orgsData?.organizations ?? [];
+		// Reuse the org list already fetched during session validation above
+		const organizations = userOrganizations ?? [];
 
 		if (organizations.length === 0) {
 			// No orgs - redirect to index to create one
-			return NextResponse.redirect(createExternalUrl("/", request));
+			const redirectResponse = NextResponse.redirect(
+				createExternalUrl("/", request),
+			);
+			return addAuthCookies(redirectResponse, authServiceSetCookies);
 		}
 
-		// Find target org (active or first)
-		const targetOrg = getTargetOrg(
-			organizations,
-			orgsData?.activeOrganizationId,
-		);
+		// Find target org (active or first) using activeOrganizationId from session
+		const targetOrg = getTargetOrg(organizations, activeOrganizationId ?? null);
 
 		if (targetOrg) {
 			// Redirect to /{orgSlug}/original-path
-			return NextResponse.redirect(
+			const redirectResponse = NextResponse.redirect(
 				createExternalUrl(`/${targetOrg.slug}${pathname}`, request),
 			);
+			return addAuthCookies(redirectResponse, authServiceSetCookies);
 		}
 
 		// Fallback - shouldn't reach here
-		return NextResponse.redirect(createExternalUrl("/", request));
+		const redirectResponse = NextResponse.redirect(
+			createExternalUrl("/", request),
+		);
+		return addAuthCookies(redirectResponse, authServiceSetCookies);
 	}
 
 	// First segment might be an org slug - validate it
 	if (isValidOrgSlug(firstSegment)) {
 		const orgSlug = firstSegment;
 
-		// Fetch orgs to validate access
-		const orgsData = await fetchUserOrganizations(cookieHeader);
-		const organizations = orgsData?.organizations ?? [];
+		// Reuse the org list already fetched during session validation above
+		const organizations = userOrganizations ?? [];
 
 		if (organizations.length === 0) {
 			// User has no orgs - redirect to index to create one
-			return NextResponse.redirect(createExternalUrl("/", request));
+			const redirectResponse = NextResponse.redirect(
+				createExternalUrl("/", request),
+			);
+			return addAuthCookies(redirectResponse, authServiceSetCookies);
 		}
 
 		// Check if user has access to this org
 		if (!hasAccessToOrg(organizations, orgSlug)) {
 			// No access - show not-found page (org doesn't exist for this user)
-			return NextResponse.rewrite(
+			const rewriteResponse = NextResponse.rewrite(
 				createExternalUrl(`/${orgSlug}/not-found`, request),
 			);
+			return addAuthCookies(rewriteResponse, authServiceSetCookies);
 		}
 
-		// Valid org access - proceed (org root renders dashboard directly)
-		return NextResponse.next();
+		// Valid org access - proceed, forwarding pre-fetched session and org data
+		const nextResponse = NextResponse.next({
+			request: {
+				headers: buildDataHeaders(
+					request.headers,
+					sessionData,
+					organizations,
+					activeOrganizationId,
+				),
+			},
+		});
+		return addAuthCookies(nextResponse, authServiceSetCookies);
 	}
 
 	// Unknown first segment - treat as potential org slug that doesn't exist
 	// Show not-found page
-	return NextResponse.rewrite(
+	const rewriteResponse = NextResponse.rewrite(
 		createExternalUrl(`/${firstSegment}/not-found`, request),
 	);
+	return addAuthCookies(rewriteResponse, authServiceSetCookies);
 }
 
 export const config = {

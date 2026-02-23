@@ -1,32 +1,24 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Eye,
 	Trash2,
 	FileSpreadsheet,
 	Users,
-	RefreshCw,
-	ChevronLeft,
-	ChevronRight,
+	MoreHorizontal,
 } from "lucide-react";
-import { useJwt } from "@/hooks/useJwt";
-import { useOrgNavigation } from "@/hooks/useOrgNavigation";
-import { listImports, deleteImport, type Import } from "@/lib/api/imports";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -37,6 +29,14 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
+import { useServerTable } from "@/hooks/useServerTable";
+import { listImports, deleteImport, type Import } from "@/lib/api/imports";
+import {
+	DataTable,
+	type ColumnDef,
+	type FilterDef,
+} from "@/components/data-table";
 
 interface ImportsTableProps {
 	refreshTrigger?: number;
@@ -61,59 +61,51 @@ const ENTITY_TYPE_CONFIG: Record<
 	{ label: string; icon: typeof Users }
 > = {
 	CLIENT: { label: "Clientes", icon: Users },
-	TRANSACTION: { label: "Transacciones", icon: FileSpreadsheet },
+	OPERATION: { label: "Operaciones", icon: FileSpreadsheet },
 };
 
-export function ImportsTable({ refreshTrigger }: ImportsTableProps) {
-	const { jwt, isLoading: isJwtLoading } = useJwt();
+const IMPORT_FILTER_IDS = ["status", "entityType"];
+
+export function ImportsTable({
+	refreshTrigger: _refreshTrigger,
+}: ImportsTableProps) {
 	const { navigateTo } = useOrgNavigation();
-	const [imports, setImports] = useState<Import[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const [page, setPage] = useState(1);
-	const [totalPages, setTotalPages] = useState(1);
-	const [total, setTotal] = useState(0);
 	const [deleteId, setDeleteId] = useState<string | null>(null);
 	const [isDeleting, setIsDeleting] = useState(false);
-	const pageSize = 10;
 
-	const fetchImports = useCallback(async () => {
-		if (!jwt) return;
-
-		setIsLoading(true);
-		try {
-			const result = await listImports({
-				jwt,
+	const {
+		data: imports,
+		isLoading,
+		isLoadingMore,
+		hasMore,
+		pagination,
+		filterMeta,
+		handleLoadMore,
+		refresh,
+		urlFilterProps,
+	} = useServerTable<Import>({
+		fetcher: async ({ page, limit, filters, jwt }) => {
+			const response = await listImports({
 				page,
-				limit: pageSize,
+				limit,
+				jwt: jwt ?? undefined,
+				filters,
 			});
-			setImports(result.data);
-			setTotal(result.pagination.total);
-			setTotalPages(result.pagination.totalPages);
-		} catch (error) {
-			console.error("Failed to fetch imports:", error);
-		} finally {
-			setIsLoading(false);
-		}
-	}, [jwt, page, pageSize]);
-
-	useEffect(() => {
-		if (!isJwtLoading && jwt) {
-			fetchImports();
-		}
-	}, [fetchImports, isJwtLoading, jwt, refreshTrigger]);
-
-	const handleView = (importId: string) => {
-		navigateTo(`/import/${importId}`);
-	};
+			return response;
+		},
+		allowedFilterIds: IMPORT_FILTER_IDS,
+		paginationMode: "infinite-scroll",
+		itemsPerPage: 20,
+		autoRefresh: true,
+	});
 
 	const handleDelete = async () => {
-		if (!deleteId || !jwt) return;
-
+		if (!deleteId) return;
 		setIsDeleting(true);
 		try {
-			await deleteImport({ id: deleteId, jwt });
+			await deleteImport({ id: deleteId });
 			setDeleteId(null);
-			fetchImports();
+			refresh();
 		} catch (error) {
 			console.error("Failed to delete import:", error);
 		} finally {
@@ -121,238 +113,196 @@ export function ImportsTable({ refreshTrigger }: ImportsTableProps) {
 		}
 	};
 
-	const formatDate = (dateString: string) => {
-		try {
-			return formatDistanceToNow(new Date(dateString), {
-				addSuffix: true,
-				locale: es,
-			});
-		} catch {
-			return dateString;
-		}
-	};
+	const columns: ColumnDef<Import>[] = useMemo(
+		() => [
+			{
+				id: "file",
+				header: "Archivo",
+				accessorKey: "fileName",
+				sortable: true,
+				cell: (item) => (
+					<div className="flex flex-col">
+						<span className="font-medium truncate max-w-[200px]">
+							{item.fileName}
+						</span>
+						<span className="text-xs text-muted-foreground font-mono">
+							{item.id.slice(0, 8)}...
+						</span>
+					</div>
+				),
+			},
+			{
+				id: "entityType",
+				header: "Tipo",
+				accessorKey: "entityType",
+				cell: (item) => {
+					const config =
+						ENTITY_TYPE_CONFIG[item.entityType] ?? ENTITY_TYPE_CONFIG.CLIENT;
+					const EntityIcon = config.icon;
+					return (
+						<div className="flex items-center gap-2">
+							<EntityIcon className="h-4 w-4 text-muted-foreground" />
+							<span className="text-sm">{config.label}</span>
+						</div>
+					);
+				},
+			},
+			{
+				id: "status",
+				header: "Estado",
+				accessorKey: "status",
+				cell: (item) => {
+					const config = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.PENDING;
+					return <Badge variant={config.variant}>{config.label}</Badge>;
+				},
+			},
+			{
+				id: "progress",
+				header: "Progreso",
+				accessorKey: "processedRows",
+				hideOnMobile: true,
+				cell: (item) => {
+					const progress =
+						item.totalRows > 0
+							? Math.round((item.processedRows / item.totalRows) * 100)
+							: 0;
+					return (
+						<div className="flex flex-col gap-1 min-w-[120px]">
+							<div className="flex items-center gap-2">
+								<div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden">
+									<div
+										className={cn(
+											"h-full transition-all duration-300",
+											item.status === "FAILED"
+												? "bg-destructive"
+												: item.status === "COMPLETED"
+													? "bg-green-500"
+													: "bg-primary",
+										)}
+										style={{ width: `${progress}%` }}
+									/>
+								</div>
+								<span className="text-xs text-muted-foreground tabular-nums">
+									{progress}%
+								</span>
+							</div>
+							<div className="flex gap-2 text-[10px] text-muted-foreground">
+								<span className="text-green-600">{item.successCount} ✓</span>
+								<span className="text-yellow-600">{item.warningCount} ⚠</span>
+								<span className="text-red-600">{item.errorCount} ✗</span>
+							</div>
+						</div>
+					);
+				},
+			},
+			{
+				id: "createdAt",
+				header: "Fecha",
+				accessorKey: "createdAt",
+				sortable: true,
+				cell: (item) => {
+					try {
+						return (
+							<span className="text-sm text-muted-foreground">
+								{formatDistanceToNow(new Date(item.createdAt), {
+									addSuffix: true,
+									locale: es,
+								})}
+							</span>
+						);
+					} catch {
+						return (
+							<span className="text-sm text-muted-foreground">
+								{item.createdAt}
+							</span>
+						);
+					}
+				},
+			},
+		],
+		[],
+	);
 
-	if (isLoading || isJwtLoading) {
-		return (
-			<div className="space-y-4">
-				<div className="flex items-center justify-between">
-					<Skeleton className="h-8 w-48" />
-					<Skeleton className="h-8 w-24" />
-				</div>
-				<div className="border rounded-lg">
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>Archivo</TableHead>
-								<TableHead>Tipo</TableHead>
-								<TableHead>Estado</TableHead>
-								<TableHead>Progreso</TableHead>
-								<TableHead>Fecha</TableHead>
-								<TableHead className="w-[100px]">Acciones</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{[...Array(5)].map((_, i) => (
-								<TableRow key={i}>
-									<TableCell>
-										<Skeleton className="h-5 w-32" />
-									</TableCell>
-									<TableCell>
-										<Skeleton className="h-5 w-24" />
-									</TableCell>
-									<TableCell>
-										<Skeleton className="h-5 w-20" />
-									</TableCell>
-									<TableCell>
-										<Skeleton className="h-5 w-28" />
-									</TableCell>
-									<TableCell>
-										<Skeleton className="h-5 w-24" />
-									</TableCell>
-									<TableCell>
-										<Skeleton className="h-8 w-16" />
-									</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
-				</div>
-			</div>
-		);
-	}
+	const filterDefs: FilterDef[] = useMemo(
+		() => [
+			{
+				id: "status",
+				label: "Estado",
+				icon: FileSpreadsheet,
+				options: [
+					{ value: "PENDING", label: "Pendiente" },
+					{ value: "VALIDATING", label: "Validando" },
+					{ value: "PROCESSING", label: "Procesando" },
+					{ value: "COMPLETED", label: "Completado" },
+					{ value: "FAILED", label: "Fallido" },
+				],
+			},
+			{
+				id: "entityType",
+				label: "Tipo",
+				icon: Users,
+				options: [
+					{ value: "CLIENT", label: "Clientes" },
+					{ value: "OPERATION", label: "Operaciones" },
+				],
+			},
+		],
+		[],
+	);
 
-	if (imports.length === 0) {
-		return (
-			<div className="flex flex-col items-center justify-center py-12 text-center">
-				<FileSpreadsheet className="h-12 w-12 text-muted-foreground mb-4" />
-				<h3 className="text-lg font-semibold">No hay importaciones</h3>
-				<p className="text-muted-foreground mt-1">
-					Crea tu primera importación para comenzar
-				</p>
-			</div>
-		);
-	}
+	const renderActions = (item: Import) => (
+		<DropdownMenu>
+			<DropdownMenuTrigger asChild>
+				<Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+					<MoreHorizontal className="h-4 w-4" />
+				</Button>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align="end" className="w-40">
+				<DropdownMenuItem
+					className="gap-2"
+					onClick={() => navigateTo(`/import/${item.id}`)}
+				>
+					<Eye className="h-4 w-4" />
+					Ver detalle
+				</DropdownMenuItem>
+				<DropdownMenuItem
+					className="gap-2 text-destructive"
+					onClick={() => setDeleteId(item.id)}
+					disabled={
+						item.status === "PROCESSING" || item.status === "VALIDATING"
+					}
+				>
+					<Trash2 className="h-4 w-4" />
+					Eliminar
+				</DropdownMenuItem>
+			</DropdownMenuContent>
+		</DropdownMenu>
+	);
 
 	return (
-		<div className="space-y-4">
-			<div className="flex items-center justify-between">
-				<p className="text-sm text-muted-foreground">
-					{total} importación{total !== 1 ? "es" : ""} encontrada
-					{total !== 1 ? "s" : ""}
-				</p>
-				<Button variant="ghost" size="sm" onClick={fetchImports}>
-					<RefreshCw className="h-4 w-4 mr-2" />
-					Actualizar
-				</Button>
-			</div>
+		<>
+			<DataTable
+				data={imports}
+				columns={columns}
+				filters={filterDefs}
+				serverFilterMeta={filterMeta}
+				serverTotal={pagination?.total}
+				searchKeys={["fileName", "id"]}
+				searchPlaceholder="Buscar importaciones..."
+				emptyMessage="No hay importaciones"
+				emptyIcon={FileSpreadsheet}
+				loadingMessage="Cargando importaciones..."
+				isLoading={isLoading}
+				getId={(item) => item.id}
+				actions={renderActions}
+				onRowClick={(item) => navigateTo(`/import/${item.id}`)}
+				paginationMode="infinite-scroll"
+				onLoadMore={handleLoadMore}
+				hasMore={hasMore}
+				isLoadingMore={isLoadingMore}
+				{...urlFilterProps}
+			/>
 
-			<div className="border rounded-lg">
-				<Table>
-					<TableHeader>
-						<TableRow>
-							<TableHead>Archivo</TableHead>
-							<TableHead>Tipo</TableHead>
-							<TableHead>Estado</TableHead>
-							<TableHead>Progreso</TableHead>
-							<TableHead>Fecha</TableHead>
-							<TableHead className="w-[100px]">Acciones</TableHead>
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{imports.map((imp) => {
-							const statusConfig =
-								STATUS_CONFIG[imp.status] || STATUS_CONFIG.PENDING;
-							const entityConfig =
-								ENTITY_TYPE_CONFIG[imp.entityType] || ENTITY_TYPE_CONFIG.CLIENT;
-							const EntityIcon = entityConfig.icon;
-							const progress =
-								imp.totalRows > 0
-									? Math.round((imp.processedRows / imp.totalRows) * 100)
-									: 0;
-
-							return (
-								<TableRow
-									key={imp.id}
-									className="cursor-pointer hover:bg-muted/50"
-									onClick={() => handleView(imp.id)}
-								>
-									<TableCell>
-										<div className="flex flex-col">
-											<span className="font-medium truncate max-w-[200px]">
-												{imp.fileName}
-											</span>
-											<span className="text-xs text-muted-foreground">
-												{imp.id}
-											</span>
-										</div>
-									</TableCell>
-									<TableCell>
-										<div className="flex items-center gap-2">
-											<EntityIcon className="h-4 w-4 text-muted-foreground" />
-											<span>{entityConfig.label}</span>
-										</div>
-									</TableCell>
-									<TableCell>
-										<Badge variant={statusConfig.variant}>
-											{statusConfig.label}
-										</Badge>
-									</TableCell>
-									<TableCell>
-										<div className="flex flex-col gap-1">
-											<div className="flex items-center gap-2">
-												<div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
-													<div
-														className={cn(
-															"h-full transition-all duration-300",
-															imp.status === "FAILED"
-																? "bg-destructive"
-																: imp.status === "COMPLETED"
-																	? "bg-green-500"
-																	: "bg-primary",
-														)}
-														style={{ width: `${progress}%` }}
-													/>
-												</div>
-												<span className="text-xs text-muted-foreground">
-													{progress}%
-												</span>
-											</div>
-											<div className="flex gap-2 text-xs text-muted-foreground">
-												<span className="text-green-600">
-													{imp.successCount} ✓
-												</span>
-												<span className="text-yellow-600">
-													{imp.warningCount} ⚠
-												</span>
-												<span className="text-red-600">{imp.errorCount} ✗</span>
-											</div>
-										</div>
-									</TableCell>
-									<TableCell>
-										<span className="text-sm text-muted-foreground">
-											{formatDate(imp.createdAt)}
-										</span>
-									</TableCell>
-									<TableCell>
-										<div
-											className="flex items-center gap-1"
-											onClick={(e) => e.stopPropagation()}
-										>
-											<Button
-												variant="ghost"
-												size="icon"
-												onClick={() => handleView(imp.id)}
-											>
-												<Eye className="h-4 w-4" />
-											</Button>
-											<Button
-												variant="ghost"
-												size="icon"
-												onClick={() => setDeleteId(imp.id)}
-												disabled={
-													imp.status === "PROCESSING" ||
-													imp.status === "VALIDATING"
-												}
-											>
-												<Trash2 className="h-4 w-4 text-destructive" />
-											</Button>
-										</div>
-									</TableCell>
-								</TableRow>
-							);
-						})}
-					</TableBody>
-				</Table>
-			</div>
-
-			{/* Pagination */}
-			{totalPages > 1 && (
-				<div className="flex items-center justify-between">
-					<p className="text-sm text-muted-foreground">
-						Página {page} de {totalPages}
-					</p>
-					<div className="flex items-center gap-2">
-						<Button
-							variant="outline"
-							size="sm"
-							onClick={() => setPage((p) => Math.max(1, p - 1))}
-							disabled={page === 1}
-						>
-							<ChevronLeft className="h-4 w-4" />
-						</Button>
-						<Button
-							variant="outline"
-							size="sm"
-							onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-							disabled={page === totalPages}
-						>
-							<ChevronRight className="h-4 w-4" />
-						</Button>
-					</div>
-				</div>
-			)}
-
-			{/* Delete confirmation dialog */}
 			<AlertDialog
 				open={!!deleteId}
 				onOpenChange={(open) => !open && setDeleteId(null)}
@@ -362,7 +312,7 @@ export function ImportsTable({ refreshTrigger }: ImportsTableProps) {
 						<AlertDialogTitle>¿Eliminar importación?</AlertDialogTitle>
 						<AlertDialogDescription>
 							Esta acción no se puede deshacer. Se eliminará la importación y
-							todos sus resultados de fila asociados.
+							todos sus resultados asociados.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
@@ -379,6 +329,6 @@ export function ImportsTable({ refreshTrigger }: ImportsTableProps) {
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
-		</div>
+		</>
 	);
 }

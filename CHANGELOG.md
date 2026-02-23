@@ -46,6 +46,398 @@
 * update AppSidebar and NavUser components to use external links for auth app settings ([845aacc](https://github.com/janovix/aml/commit/845aacc998b537148d4d90ec3f95adff9737924e))
 * **utils:** enhance RFC validation by adding prefix format checks and corresponding error messages ([4439298](https://github.com/janovix/aml/commit/4439298f2ceba0eae653ca42d6047dae105778ae))
 
+# [1.4.0-rc.55](https://github.com/janovix/aml/compare/v1.4.0-rc.54...v1.4.0-rc.55) (2026-02-23)
+
+
+### Features
+
+* implement watchlist configuration hooks and enhance external link handling in client views ([39c16b6](https://github.com/janovix/aml/commit/39c16b679025ed62c69e89de61cd6d38f36a0e1d))
+
+# [1.4.0-rc.54](https://github.com/janovix/aml/compare/v1.4.0-rc.53...v1.4.0-rc.54) (2026-02-23)
+
+
+### Features
+
+* enhance CreateNoticeView with availableAlertCount for better alert management; update tests for clarity and accuracy ([ff4e39b](https://github.com/janovix/aml/commit/ff4e39bd4729800c2deef3d14d5aff931b61bdc5))
+
+# [1.4.0-rc.53](https://github.com/janovix/aml/compare/v1.4.0-rc.52...v1.4.0-rc.53) (2026-02-23)
+
+
+### Features
+
+* add ActivityChip component to display organization's vulnerable activity in the sidebar ([7c52c8c](https://github.com/janovix/aml/commit/7c52c8c61bc3ecd1c1d570fe7fbc32b9d110b28b))
+
+# [1.4.0-rc.52](https://github.com/janovix/aml/compare/v1.4.0-rc.51...v1.4.0-rc.52) (2026-02-22)
+
+
+### Bug Fixes
+
+* update CreateNoticeView to improve empty confirmation logic and refine notice period calculations; enhance related tests for clarity ([5506167](https://github.com/janovix/aml/commit/5506167d9baf23931790824bd150259eaf30fd72))
+
+# [1.4.0-rc.51](https://github.com/janovix/aml/compare/v1.4.0-rc.50...v1.4.0-rc.51) (2026-02-21)
+
+
+### Features
+
+* enhance CreateNoticeView and NoticeDetailsView with alert management features; update tests and translations for rebuke functionality ([db5376a](https://github.com/janovix/aml/commit/db5376a54544f0332568a42c439aca09b98e26c7))
+
+# [1.4.0-rc.50](https://github.com/janovix/aml/compare/v1.4.0-rc.49...v1.4.0-rc.50) (2026-02-21)
+
+
+### Features
+
+* add fullscreenMobile prop to DialogContent component for improved mobile responsiveness; update various dialog components to utilize this feature ([eb1324f](https://github.com/janovix/aml/commit/eb1324fc5b9fbed0f19ec482d3e46dbd8bb04567))
+
+# [1.4.0-rc.49](https://github.com/janovix/aml/compare/v1.4.0-rc.48...v1.4.0-rc.49) (2026-02-20)
+
+
+### Features
+
+* implement skeleton loading patterns for AML views to prevent Cumulative Layout Shift (CLS); add loading components for various routes and enhance view skeleton structure ([157291f](https://github.com/janovix/aml/commit/157291ff5bb2409a7c2bb89dac2cd0e20e338d38))
+
+# [1.4.0-rc.48](https://github.com/janovix/aml/compare/v1.4.0-rc.47...v1.4.0-rc.48) (2026-02-20)
+
+
+### Features
+
+* enhance middleware and layout components to forward session and organization data, reducing redundant API calls ([bea8372](https://github.com/janovix/aml/commit/bea8372b238e4958a396ce854bf199ec0b662255))
+
+# [1.4.0-rc.47](https://github.com/janovix/aml/compare/v1.4.0-rc.46...v1.4.0-rc.47) (2026-02-20)
+
+
+### Features
+
+* add new KYC progress fields to Client interface for enhanced tracking ([2214401](https://github.com/janovix/aml/commit/221440197bfc48d678c10e5062eaebdb296f5780))
+* enhance ClientDetailsView and ClientEditView with new KYC status calculations and UI improvements ([ff85586](https://github.com/janovix/aml/commit/ff85586280be1d9bad91ac6da48f25fc297d0fdb))
+
+# [1.4.0-rc.46](https://github.com/janovix/aml/compare/v1.4.0-rc.45...v1.4.0-rc.46) (2026-02-19)
+
+
+### Features
+
+* add listInvoicesSchema and getInvoiceStats functionality to enhance invoice management ([0469843](https://github.com/janovix/aml/commit/0469843bd69a3e7a6ccc52c4acef8b0ceefc3169))
+* enhance BeneficialControllerFormDialog and ClientDetailsView with new document upload features and improved UI components ([04b0501](https://github.com/janovix/aml/commit/04b0501a23c5ac95079281cf154798d6f9c66b55))
+
+# [1.4.0-rc.45](https://github.com/janovix/aml/compare/v1.4.0-rc.44...v1.4.0-rc.45) (2026-02-19)
+
+
+### Features
+
+* add rate limit handling and UI feedback for auth service ([040c3ea](https://github.com/janovix/aml/commit/040c3ead6397f108d25c62d42d4d4e4f5e7e7f07))
+
+# [1.4.0-rc.44](https://github.com/janovix/aml/compare/v1.4.0-rc.43...v1.4.0-rc.44) (2026-02-19)
+
+
+### Features
+
+* update listOperationsSchema to use activityCode and enhance operation stats response ([e6ba40b](https://github.com/janovix/aml/commit/e6ba40bd62a01984f8b0c4c986ec152769f04209))
+* update Logo component to use CSS custom properties for colors and enhance global styles ([63ec0b5](https://github.com/janovix/aml/commit/63ec0b58a9e8445b98ad464b03a058d065a85b9e))
+
+# [1.4.0-rc.43](https://github.com/janovix/aml/compare/v1.4.0-rc.42...v1.4.0-rc.43) (2026-02-19)
+
+
+### Features
+
+* add polyfill for esbuild's __name helper in RootLayout ([a099568](https://github.com/janovix/aml/commit/a099568774a1d31a14a0be643db84e5fb4c7f29f))
+
+# [1.4.0-rc.42](https://github.com/janovix/aml/compare/v1.4.0-rc.41...v1.4.0-rc.42) (2026-02-19)
+
+
+### Features
+
+* implement fetchWithTimeout to prevent hangs in auth service requests ([7a21caa](https://github.com/janovix/aml/commit/7a21caa80e2450fcb4af08a5afc4cd7ba85b950b))
+
+# [1.4.0-rc.41](https://github.com/janovix/aml/compare/v1.4.0-rc.40...v1.4.0-rc.41) (2026-02-18)
+
+
+### Features
+
+* integrate authClient to fetch organization data with user roles in OrganizationSwitcher ([3e11e6d](https://github.com/janovix/aml/commit/3e11e6dd17f6bd618fa0ed98abda3077c7bb9c1b))
+
+# [1.4.0-rc.40](https://github.com/janovix/aml/compare/v1.4.0-rc.39...v1.4.0-rc.40) (2026-02-18)
+
+
+### Features
+
+* enrich organization data with user roles and fetch members in parallel ([1352a97](https://github.com/janovix/aml/commit/1352a97e4c9d184a44d1cca4b91f7e0398aeaebe))
+
+# [1.4.0-rc.39](https://github.com/janovix/aml/compare/v1.4.0-rc.38...v1.4.0-rc.39) (2026-02-18)
+
+
+### Features
+
+* add user role to organization data in AppSidebar ([fe894e4](https://github.com/janovix/aml/commit/fe894e44fec1081834457d7150c48ca00eac3b92))
+* enhance OrganizationSwitcher with role-based organization grouping and creation functionality ([693a66e](https://github.com/janovix/aml/commit/693a66ee5f371d86b77cf2c0639ec3cdca72f7eb))
+
+# [1.4.0-rc.38](https://github.com/janovix/aml/compare/v1.4.0-rc.37...v1.4.0-rc.38) (2026-02-18)
+
+
+### Features
+
+* add pending invitations feature to AppSidebar with translation support ([de0db08](https://github.com/janovix/aml/commit/de0db084ac60f5f7f5df1b4813e539f9b5292a49))
+
+# [1.4.0-rc.37](https://github.com/janovix/aml/compare/v1.4.0-rc.36...v1.4.0-rc.37) (2026-02-18)
+
+
+### Features
+
+* implement PDF upload functionality in NoticeDetailsView ([72eef40](https://github.com/janovix/aml/commit/72eef40b13efd76fe58bbc835c19104a070bf6df))
+
+# [1.4.0-rc.36](https://github.com/janovix/aml/compare/v1.4.0-rc.35...v1.4.0-rc.36) (2026-02-18)
+
+
+### Features
+
+* enhance WatchlistScreeningSection with clickable Query ID link ([96ede23](https://github.com/janovix/aml/commit/96ede23fb1407abb2c21095bcd595a8a2343b2ff))
+
+# [1.4.0-rc.35](https://github.com/janovix/aml/compare/v1.4.0-rc.34...v1.4.0-rc.35) (2026-02-18)
+
+
+### Features
+
+* implement KYC self-service functionality ([9bd456a](https://github.com/janovix/aml/commit/9bd456ad004556371adfdc9c98bf6b27f4675b03))
+
+# [1.4.0-rc.34](https://github.com/janovix/aml/compare/v1.4.0-rc.33...v1.4.0-rc.34) (2026-02-17)
+
+
+### Features
+
+* integrate real-time watchlist screening in ClientDetailsView ([cee07cc](https://github.com/janovix/aml/commit/cee07cc04ade3624efb17a74973e729c9bc096b9))
+
+# [1.4.0-rc.33](https://github.com/janovix/aml/compare/v1.4.0-rc.32...v1.4.0-rc.33) (2026-02-17)
+
+
+### Features
+
+* add beneficial controller and shareholder forms and sections ([b25d070](https://github.com/janovix/aml/commit/b25d070587d6f7ebe17c848e309e0536c70f7d91))
+
+# [1.4.0-rc.32](https://github.com/janovix/aml/compare/v1.4.0-rc.31...v1.4.0-rc.32) (2026-02-17)
+
+
+### Features
+
+* add banned user check in middleware ([ebcda78](https://github.com/janovix/aml/commit/ebcda78ddb3eca2254efd6d935ea5e6fb9a4e330))
+
+# [1.4.0-rc.31](https://github.com/janovix/aml/compare/v1.4.0-rc.30...v1.4.0-rc.31) (2026-02-13)
+
+
+### Features
+
+* enhance middleware to forward Set-Cookie headers for session management ([c24e281](https://github.com/janovix/aml/commit/c24e2814b50e56535de7d9f920742f561e9d6406))
+
+# [1.4.0-rc.30](https://github.com/janovix/aml/compare/v1.4.0-rc.29...v1.4.0-rc.30) (2026-02-13)
+
+
+### Features
+
+* allow Next.js prefetch requests to bypass auth check ([5ce7d32](https://github.com/janovix/aml/commit/5ce7d32c9a7cce4fa5b03e81c5343b28a2845d7a))
+* improve session revalidation and error handling ([7a1e6a3](https://github.com/janovix/aml/commit/7a1e6a3688559e6829022c9851a0e86e417f33c7))
+
+# [1.4.0-rc.30](https://github.com/janovix/aml/compare/v1.4.0-rc.29...v1.4.0-rc.30) (2026-02-13)
+
+
+### Features
+
+* allow Next.js prefetch requests to bypass auth check ([5ce7d32](https://github.com/janovix/aml/commit/5ce7d32c9a7cce4fa5b03e81c5343b28a2845d7a))
+* improve session revalidation and error handling ([7a1e6a3](https://github.com/janovix/aml/commit/7a1e6a3688559e6829022c9851a0e86e417f33c7))
+
+# [1.4.0-rc.30](https://github.com/janovix/aml/compare/v1.4.0-rc.29...v1.4.0-rc.30) (2026-02-13)
+
+
+### Features
+
+* allow Next.js prefetch requests to bypass auth check ([5ce7d32](https://github.com/janovix/aml/commit/5ce7d32c9a7cce4fa5b03e81c5343b28a2845d7a))
+
+# [1.4.0-rc.29](https://github.com/janovix/aml/compare/v1.4.0-rc.28...v1.4.0-rc.29) (2026-02-12)
+
+
+### Bug Fixes
+
+* update subscription status API call to include resolveFromOrg query parameter ([5d3c6be](https://github.com/janovix/aml/commit/5d3c6be57e54973d951ba1ec8a55f980bcc5b385))
+
+# [1.4.0-rc.28](https://github.com/janovix/aml/compare/v1.4.0-rc.27...v1.4.0-rc.28) (2026-02-12)
+
+
+### Features
+
+* enhance subscription handling by adding support for enterprise licenses and improving access checks ([aacb71f](https://github.com/janovix/aml/commit/aacb71fa8be69dbf15e859b0f27051116d8de4f4))
+
+# [1.4.0-rc.27](https://github.com/janovix/aml/compare/v1.4.0-rc.26...v1.4.0-rc.27) (2026-02-12)
+
+
+### Features
+
+* add PDF generation from image blobs in document service ([5413d24](https://github.com/janovix/aml/commit/5413d249bdfa29c539934ea3944217aee143e2bd))
+
+# [1.4.0-rc.26](https://github.com/janovix/aml/compare/v1.4.0-rc.25...v1.4.0-rc.26) (2026-02-12)
+
+
+### Features
+
+* enhance error handling for usage limits in mutations and add loading state to toasts ([544ebce](https://github.com/janovix/aml/commit/544ebcea261731aa28ff3a1ec76ad37640cba987))
+
+# [1.4.0-rc.25](https://github.com/janovix/aml/compare/v1.4.0-rc.24...v1.4.0-rc.25) (2026-02-12)
+
+
+### Features
+
+* enhance confirmUpload function to include additional document metadata ([88b5b69](https://github.com/janovix/aml/commit/88b5b698526243ad2cfdc236f3c5240e0df79dd2))
+
+# [1.4.0-rc.24](https://github.com/janovix/aml/compare/v1.4.0-rc.23...v1.4.0-rc.24) (2026-02-11)
+
+
+### Features
+
+* implement session synchronization across tabs and apps during logout ([f95f7cc](https://github.com/janovix/aml/commit/f95f7ccc7db710708075d51e6c6a8378bdd13692))
+
+# [1.4.0-rc.23](https://github.com/janovix/aml/compare/v1.4.0-rc.22...v1.4.0-rc.23) (2026-02-10)
+
+
+### Bug Fixes
+
+* update currency metadata in catalog utilities tests to reflect correct codes and add decimal_places ([5f9b1fb](https://github.com/janovix/aml/commit/5f9b1fb729183360ca242d9aed67c60ad484eb8d))
+
+# [1.4.0-rc.22](https://github.com/janovix/aml/compare/v1.4.0-rc.21...v1.4.0-rc.22) (2026-02-10)
+
+
+### Features
+
+* enhance operation forms with new BranchZipCodeDisplay component and improve currency handling in OperationCreateView and OperationEditView ([4ba9080](https://github.com/janovix/aml/commit/4ba9080235c9ab8b53bb69b4c13a3c2b44ee1072))
+
+# [1.4.0-rc.21](https://github.com/janovix/aml/compare/v1.4.0-rc.20...v1.4.0-rc.21) (2026-02-08)
+
+
+### Features
+
+* integrate exchange rate handling in OperationCreateView, OperationEditView, and OperationPaymentForm components ([d44570e](https://github.com/janovix/aml/commit/d44570e23307130b520ee12193bb0df54cffcfea))
+
+# [1.4.0-rc.20](https://github.com/janovix/aml/compare/v1.4.0-rc.19...v1.4.0-rc.20) (2026-02-08)
+
+
+### Features
+
+* enhance Operation forms with currency selector and catalog name utility ([758caec](https://github.com/janovix/aml/commit/758caec40439b4b7834fcfa3cf3aa2e3e3c3e146))
+
+# [1.4.0-rc.19](https://github.com/janovix/aml/compare/v1.4.0-rc.18...v1.4.0-rc.19) (2026-02-08)
+
+
+### Features
+
+* add getCurrencyCode utility and integrate it into operation forms for improved currency handling ([1a9adc6](https://github.com/janovix/aml/commit/1a9adc600fdf4670baf3e8db836c320294a821f7))
+
+# [1.4.0-rc.18](https://github.com/janovix/aml/compare/v1.4.0-rc.17...v1.4.0-rc.18) (2026-02-07)
+
+
+### Features
+
+* add support for custom free-text values in CatalogSelector component ([5f96eab](https://github.com/janovix/aml/commit/5f96eaba79b60d6b20da4b3517799d5057e1a61c))
+
+# [1.4.0-rc.17](https://github.com/janovix/aml/compare/v1.4.0-rc.16...v1.4.0-rc.17) (2026-02-07)
+
+
+### Features
+
+* implement auto-calculation of operation amount and exchange rate fetching in payment forms ([8d37335](https://github.com/janovix/aml/commit/8d37335beedcaa9f4ac09d8a199b5dab945d702a))
+
+# [1.4.0-rc.16](https://github.com/janovix/aml/compare/v1.4.0-rc.15...v1.4.0-rc.16) (2026-02-07)
+
+
+### Features
+
+* integrate getCatalogCode utility across various forms for improved catalog item handling ([6910ee9](https://github.com/janovix/aml/commit/6910ee90a70f25e6ef18180d365b68299cd07070))
+
+# [1.4.0-rc.15](https://github.com/janovix/aml/compare/v1.4.0-rc.14...v1.4.0-rc.15) (2026-02-07)
+
+
+### Features
+
+* add environment variable for scan app URL in wrangler configuration ([2698734](https://github.com/janovix/aml/commit/26987341eaaea40919fa878ac4605dbebf0f8b13))
+
+# [1.4.0-rc.14](https://github.com/janovix/aml/compare/v1.4.0-rc.13...v1.4.0-rc.14) (2026-02-07)
+
+
+### Bug Fixes
+
+* address CodeRabbit review issues ([af5f143](https://github.com/janovix/aml/commit/af5f1430f878fd0bfcb702237291c788e6155d31))
+* address CodeRabbit review issues ([6fd10c2](https://github.com/janovix/aml/commit/6fd10c2110bf8afc0974818a007b296a8b7c22d7))
+* updated janovix and algenium deps ([980679e](https://github.com/janovix/aml/commit/980679ed9b1fa2b1eaaedf7b9da0a33b05ecaeb4))
+
+
+### Features
+
+* Added new components for document upload and management, enhancing the document handling capabilities. ([8637b8d](https://github.com/janovix/aml/commit/8637b8dc33e45c12ec0891c0d7005a52ee175ca1))
+* implement presigned URL generation and document viewer components ([b81d75c](https://github.com/janovix/aml/commit/b81d75c3b64520838dd2fdef170df1a691282b4f))
+
+# [1.4.0-rc.13](https://github.com/janovix/aml/compare/v1.4.0-rc.12...v1.4.0-rc.13) (2026-01-30)
+
+
+### Bug Fixes
+
+* **styles:** scan blocks package for Tailwind classes ([d4187af](https://github.com/janovix/aml/commit/d4187af8801138a0fdf16682a021dd4cccfae024))
+
+# [1.4.0-rc.12](https://github.com/janovix/aml/compare/v1.4.0-rc.11...v1.4.0-rc.12) (2026-01-29)
+
+
+### Bug Fixes
+
+* simplify dashboard skeleton to simple card placeholders ([d9bea0a](https://github.com/janovix/aml/commit/d9bea0afb9b3275d89d54b8825f485b74141b0c1))
+
+# [1.4.0-rc.11](https://github.com/janovix/aml/compare/v1.4.0-rc.10...v1.4.0-rc.11) (2026-01-29)
+
+
+### Bug Fixes
+
+* adjust dashboard skeleton to match actual loaded card layouts ([1e08876](https://github.com/janovix/aml/commit/1e0887689d442d493c00bdb0496b1f94d026b151))
+
+# [1.4.0-rc.10](https://github.com/janovix/aml/compare/v1.4.0-rc.9...v1.4.0-rc.10) (2026-01-28)
+
+
+### Bug Fixes
+
+* enhance alignment of client stats labels in DashboardView ([8099c43](https://github.com/janovix/aml/commit/8099c43fb183f87fd845f0578dc44381f84bfaa2))
+
+# [1.4.0-rc.9](https://github.com/janovix/aml/compare/v1.4.0-rc.8...v1.4.0-rc.9) (2026-01-28)
+
+
+### Bug Fixes
+
+* improve client stats grid alignment for 4 columns ([568d5da](https://github.com/janovix/aml/commit/568d5da5a0721ceb8cb0fe6af7c0cdb08aedd224))
+
+# [1.4.0-rc.8](https://github.com/janovix/aml/compare/v1.4.0-rc.7...v1.4.0-rc.8) (2026-01-28)
+
+
+### Features
+
+* add trust clients as separate category in statistics ([628e66a](https://github.com/janovix/aml/commit/628e66a3835de1e50c31f88aabdbab879b1c7f75))
+
+# [1.4.0-rc.7](https://github.com/janovix/aml/compare/v1.4.0-rc.6...v1.4.0-rc.7) (2026-01-28)
+
+
+### Bug Fixes
+
+* relax RFC validation for moral persons ([12d14d0](https://github.com/janovix/aml/commit/12d14d03c0e17870c3791c99a69e809f5faac6ea))
+
+# [1.4.0-rc.6](https://github.com/janovix/aml/compare/v1.4.0-rc.5...v1.4.0-rc.6) (2026-01-28)
+
+
+### Features
+
+* integrate Sentry for enhanced error tracking in NotificationsProvider ([1d6f4c3](https://github.com/janovix/aml/commit/1d6f4c3f047a23bbf4395a5cad062d333b45361f))
+
+# [1.4.0-rc.5](https://github.com/janovix/aml/compare/v1.4.0-rc.4...v1.4.0-rc.5) (2026-01-27)
+
+
+### Features
+
+* integrate notifications system with Janovix Blocks ([2b37aa1](https://github.com/janovix/aml/commit/2b37aa1fd90d96fd2e4f550b73f5d46cf57f0654))
+
+# [1.4.0-rc.4](https://github.com/janovix/aml/compare/v1.4.0-rc.3...v1.4.0-rc.4) (2026-01-27)
+
+
+### Features
+
+* add file proxy API route and utility functions for authenticated file requests ([0b7293f](https://github.com/janovix/aml/commit/0b7293fe7b651219624712e6816ef0caaac7d48b))
+
 # [1.4.0-rc.3](https://github.com/janovix/aml/compare/v1.4.0-rc.2...v1.4.0-rc.3) (2026-01-21)
 
 

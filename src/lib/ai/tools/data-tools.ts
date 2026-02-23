@@ -61,16 +61,14 @@ const listClientsSchema = z.object({
 	page: z.number().min(1).default(1).describe("Page number"),
 });
 
-const listTransactionsSchema = z.object({
+const listOperationsSchema = z.object({
 	clientId: z.string().optional().describe("Filter by client ID"),
-	operationType: z
-		.enum(["PURCHASE", "SALE"])
+	activityCode: z
+		.string()
 		.optional()
-		.describe("Filter by operation type"),
-	vehicleType: z
-		.enum(["LAND", "MARINE", "AIR"])
-		.optional()
-		.describe("Filter by vehicle type"),
+		.describe(
+			"Filter by activity code (e.g. VEH for vehicles, INM for real estate, MJR for jewelry)",
+		),
 	limit: z
 		.number()
 		.min(1)
@@ -89,6 +87,42 @@ const listAlertsSchema = z.object({
 		.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"])
 		.optional()
 		.describe("Filter by severity level"),
+	limit: z
+		.number()
+		.min(1)
+		.max(50)
+		.default(10)
+		.describe("Number of results to return (max 50)"),
+	page: z.number().min(1).default(1).describe("Page number"),
+});
+
+const listInvoicesSchema = z.object({
+	issuerRfc: z
+		.string()
+		.optional()
+		.describe(
+			"Filter by issuer RFC (e.g. the company that issued the invoice)",
+		),
+	receiverRfc: z
+		.string()
+		.optional()
+		.describe(
+			"Filter by receiver RFC (e.g. the company that received the invoice)",
+		),
+	voucherTypeCode: z
+		.string()
+		.optional()
+		.describe(
+			"Filter by voucher type: I = ingreso (income), E = egreso (expense), T = traslado, N = nómina, P = pago",
+		),
+	startDate: z
+		.string()
+		.optional()
+		.describe("Filter invoices issued on or after this date (YYYY-MM-DD)"),
+	endDate: z
+		.string()
+		.optional()
+		.describe("Filter invoices issued on or before this date (YYYY-MM-DD)"),
 	limit: z
 		.number()
 		.min(1)
@@ -135,6 +169,7 @@ export function createDataTools(jwt: string) {
 					}>("/api/v1/clients/stats", jwt);
 					return `Total clients: ${stats.totalClients} (${stats.physicalClients} physical persons, ${stats.moralClients} companies)`;
 				} catch (error) {
+					console.error("[AI Tool] getClientStats error:", error);
 					const msg =
 						error instanceof Error ? error.message : "Failed to fetch stats";
 					return `Error fetching client stats: ${msg}`;
@@ -142,22 +177,114 @@ export function createDataTools(jwt: string) {
 			},
 		},
 
-		getTransactionStats: {
+		getOperationStats: {
 			description:
-				"Get statistics about transactions, including today's count, suspicious count, and total volume",
+				"Get statistics about operations, including total count, today's count, and total volume in MXN",
 			inputSchema: emptySchema,
 			execute: async () => {
 				try {
 					const stats = await fetchWithAuth<{
-						transactionsToday: number;
-						suspiciousTransactions: number;
-						totalVolume: string;
-					}>("/api/v1/transactions/stats", jwt);
-					return `Transactions today: ${stats.transactionsToday}, Suspicious: ${stats.suspiciousTransactions}, Total volume: ${stats.totalVolume}`;
+						totalOperations: number;
+						operationsToday: number;
+						totalAmountMxn: string;
+					}>("/api/v1/operations/stats", jwt);
+					return `Total operations: ${stats.totalOperations}, Operations today: ${stats.operationsToday}, Total volume (MXN): $${stats.totalAmountMxn}`;
 				} catch (error) {
+					console.error("[AI Tool] getOperationStats error:", error);
 					const msg =
 						error instanceof Error ? error.message : "Failed to fetch stats";
-					return `Error fetching transaction stats: ${msg}`;
+					return `Error fetching operation stats: ${msg}`;
+				}
+			},
+		},
+
+		getInvoiceStats: {
+			description:
+				"Get statistics about CFDI invoices in the organization, including total count and breakdown by voucher type (ingreso/egreso)",
+			inputSchema: emptySchema,
+			execute: async () => {
+				try {
+					const stats = await fetchWithAuth<{
+						totalInvoices: number;
+						ingresoInvoices: number;
+						egresoInvoices: number;
+					}>("/api/v1/invoices/stats", jwt);
+					return `Total invoices: ${stats.totalInvoices} (${stats.ingresoInvoices} ingreso/income, ${stats.egresoInvoices} egreso/expense)`;
+				} catch (error) {
+					console.error("[AI Tool] getInvoiceStats error:", error);
+					const msg =
+						error instanceof Error ? error.message : "Failed to fetch stats";
+					return `Error fetching invoice stats: ${msg}`;
+				}
+			},
+		},
+
+		listInvoices: {
+			description:
+				"List CFDI invoices in the organization with optional filters. Returns paginated results with issuer, receiver, amounts and dates.",
+			inputSchema: listInvoicesSchema,
+			execute: async ({
+				issuerRfc,
+				receiverRfc,
+				voucherTypeCode,
+				startDate,
+				endDate,
+				limit = 10,
+				page = 1,
+			}: z.infer<typeof listInvoicesSchema>) => {
+				try {
+					const params: Record<string, string> = {
+						limit: String(limit),
+						page: String(page),
+					};
+					if (issuerRfc) params.issuerRfc = issuerRfc;
+					if (receiverRfc) params.receiverRfc = receiverRfc;
+					if (voucherTypeCode) params.voucherTypeCode = voucherTypeCode;
+					if (startDate) params.startDate = startDate;
+					if (endDate) params.endDate = endDate;
+
+					const result = await fetchWithAuth<{
+						data: Array<{
+							id: string;
+							uuid: string | null;
+							issuerRfc: string;
+							issuerName: string;
+							receiverRfc: string;
+							receiverName: string;
+							total: string;
+							currencyCode: string;
+							voucherTypeCode: string;
+							issueDate: string;
+							folio: string | null;
+							series: string | null;
+						}>;
+						pagination: {
+							total: number;
+							page: number;
+							limit: number;
+							totalPages: number;
+						};
+					}>("/api/v1/invoices", jwt, params);
+
+					if (result.data.length === 0) {
+						return `No invoices found matching the criteria.`;
+					}
+
+					const invoiceList = result.data
+						.map((inv) => {
+							const ref = inv.series
+								? `${inv.series}-${inv.folio ?? ""}`
+								: (inv.folio ?? inv.uuid ?? inv.id);
+							return `- [${inv.voucherTypeCode}] ${ref}: ${inv.issuerName} → ${inv.receiverName} | $${parseFloat(inv.total).toLocaleString()} ${inv.currencyCode} on ${inv.issueDate}`;
+						})
+						.join("\n");
+
+					return `Found ${result.pagination.total} invoices (showing ${result.data.length} on page ${result.pagination.page}):\n${invoiceList}`;
+				} catch (error) {
+					console.error("[AI Tool] listInvoices error:", error);
+					const msg =
+						error instanceof Error ? error.message : "Failed to fetch invoices";
+					return `Error fetching invoices: ${msg}`;
 				}
 			},
 		},
@@ -214,6 +341,7 @@ export function createDataTools(jwt: string) {
 
 					return `Found ${result.pagination.total} clients (showing ${result.data.length} on page ${result.pagination.page}):\n${clientList}`;
 				} catch (error) {
+					console.error("[AI Tool] listClients error:", error);
 					const msg =
 						error instanceof Error ? error.message : "Failed to fetch clients";
 					return `Error fetching clients: ${msg}`;
@@ -221,36 +349,39 @@ export function createDataTools(jwt: string) {
 			},
 		},
 
-		listTransactions: {
+		listOperations: {
 			description:
-				"List transactions in the organization with optional filters. Returns paginated results.",
-			inputSchema: listTransactionsSchema,
+				"List operations in the organization with optional filters. Returns paginated results.",
+			inputSchema: listOperationsSchema,
 			execute: async ({
 				clientId,
-				operationType,
-				vehicleType,
+				activityCode,
 				limit = 10,
 				page = 1,
-			}: z.infer<typeof listTransactionsSchema>) => {
+			}: z.infer<typeof listOperationsSchema>) => {
 				try {
 					const params: Record<string, string> = {
 						limit: String(limit),
 						page: String(page),
 					};
 					if (clientId) params.clientId = clientId;
-					if (operationType) params.operationType = operationType;
-					if (vehicleType) params.vehicleType = vehicleType;
+					if (activityCode) params.activityCode = activityCode;
 
 					const result = await fetchWithAuth<{
 						data: Array<{
 							id: string;
-							operationType: string;
-							vehicleType: string;
-							vehicleBrand?: string;
-							vehicleModel?: string;
-							vehicleYear?: number;
-							amount: number;
+							activityCode: string;
+							operationTypeCode: string | null;
+							amount: string;
+							currencyCode: string;
+							amountMxn: string | null;
 							operationDate: string;
+							vehicle?: {
+								vehicleType: string;
+								brand: string;
+								model: string;
+								year: number;
+							} | null;
 						}>;
 						pagination: {
 							total: number;
@@ -258,27 +389,32 @@ export function createDataTools(jwt: string) {
 							limit: number;
 							totalPages: number;
 						};
-					}>("/api/v1/transactions", jwt, params);
+					}>("/api/v1/operations", jwt, params);
 
 					if (result.data.length === 0) {
-						return `No transactions found matching the criteria.`;
+						return `No operations found matching the criteria.`;
 					}
 
 					const txList = result.data
 						.map((t) => {
-							const vehicle =
-								`${t.vehicleYear || ""} ${t.vehicleBrand || ""} ${t.vehicleModel || ""}`.trim();
-							return `- ${t.operationType}: ${vehicle} (${t.vehicleType}) - $${t.amount.toLocaleString()} on ${t.operationDate}`;
+							const amountDisplay = t.amountMxn
+								? `$${parseFloat(t.amountMxn).toLocaleString()} MXN`
+								: `$${parseFloat(t.amount).toLocaleString()} ${t.currencyCode}`;
+							const vehicleInfo = t.vehicle
+								? ` (${t.vehicle.year} ${t.vehicle.brand} ${t.vehicle.model}, ${t.vehicle.vehicleType})`
+								: "";
+							return `- [${t.activityCode}]${vehicleInfo} ${amountDisplay} on ${t.operationDate}`;
 						})
 						.join("\n");
 
-					return `Found ${result.pagination.total} transactions (showing ${result.data.length} on page ${result.pagination.page}):\n${txList}`;
+					return `Found ${result.pagination.total} operations (showing ${result.data.length} on page ${result.pagination.page}):\n${txList}`;
 				} catch (error) {
+					console.error("[AI Tool] listOperations error:", error);
 					const msg =
 						error instanceof Error
 							? error.message
-							: "Failed to fetch transactions";
-					return `Error fetching transactions: ${msg}`;
+							: "Failed to fetch operations";
+					return `Error fetching operations: ${msg}`;
 				}
 			},
 		},
@@ -331,6 +467,7 @@ export function createDataTools(jwt: string) {
 
 					return `Found ${result.pagination.total} alerts (showing ${result.data.length} on page ${result.pagination.page}):\n${alertList}`;
 				} catch (error) {
+					console.error("[AI Tool] listAlerts error:", error);
 					const msg =
 						error instanceof Error ? error.message : "Failed to fetch alerts";
 					return `Error fetching alerts: ${msg}`;
@@ -386,6 +523,7 @@ export function createDataTools(jwt: string) {
 
 					return `Found ${result.pagination.total} reports (showing ${result.data.length} on page ${result.pagination.page}):\n${reportList}`;
 				} catch (error) {
+					console.error("[AI Tool] listReports error:", error);
 					const msg =
 						error instanceof Error ? error.message : "Failed to fetch reports";
 					return `Error fetching reports: ${msg}`;

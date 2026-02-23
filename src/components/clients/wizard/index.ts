@@ -11,4 +11,8 @@ export {
 	type IDDocumentData,
 	type IDType,
 } from "./IDDocumentSelector";
-export { UBOInlineForm, type UBOWithDocuments } from "./UBOInlineForm";
+export {
+	OwnershipInlineForm,
+	type ShareholderWithDocuments,
+	type BCWithDocuments,
+} from "./OwnershipInlineForm";

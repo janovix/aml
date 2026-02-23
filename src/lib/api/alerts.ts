@@ -107,6 +107,8 @@ export interface ListAlertsOptions {
 	status?: AlertStatus;
 	severity?: AlertSeverity;
 	isManual?: boolean;
+	/** Generic additional filters (passed as query params) */
+	filters?: Record<string, string | string[]>;
 	baseUrl?: string;
 	signal?: AbortSignal;
 	/** JWT token for authentication */
@@ -130,6 +132,16 @@ export async function listAlerts(
 	if (opts?.severity) url.searchParams.set("severity", opts.severity);
 	if (opts?.isManual !== undefined)
 		url.searchParams.set("isManual", String(opts.isManual));
+
+	if (opts?.filters) {
+		for (const [key, value] of Object.entries(opts.filters)) {
+			if (Array.isArray(value)) {
+				value.forEach((v) => url.searchParams.append(key, v));
+			} else {
+				url.searchParams.set(key, value);
+			}
+		}
+	}
 
 	const { json } = await fetchJson<AlertsListResponse>(url.toString(), {
 		method: "GET",

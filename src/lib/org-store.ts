@@ -20,6 +20,7 @@ export interface Organization {
 	metadata?: Record<string, unknown> | null;
 	createdAt?: string;
 	updatedAt?: string;
+	userRole?: OrganizationRole;
 }
 
 export interface OrganizationAddress {
@@ -94,10 +95,10 @@ export type Permission =
 	| "clients:read"
 	| "clients:update"
 	| "clients:delete"
-	| "transactions:create"
-	| "transactions:read"
-	| "transactions:update"
-	| "transactions:delete"
+	| "operations:create"
+	| "operations:read"
+	| "operations:update"
+	| "operations:delete"
 	| "alerts:read"
 	| "alerts:update"
 	| "alerts:acknowledge"
@@ -115,10 +116,10 @@ export const rolePermissions: Record<OrganizationRole, Permission[]> = {
 		"clients:read",
 		"clients:update",
 		"clients:delete",
-		"transactions:create",
-		"transactions:read",
-		"transactions:update",
-		"transactions:delete",
+		"operations:create",
+		"operations:read",
+		"operations:update",
+		"operations:delete",
 		"alerts:read",
 		"alerts:update",
 		"alerts:acknowledge",
@@ -134,10 +135,10 @@ export const rolePermissions: Record<OrganizationRole, Permission[]> = {
 		"clients:read",
 		"clients:update",
 		"clients:delete",
-		"transactions:create",
-		"transactions:read",
-		"transactions:update",
-		"transactions:delete",
+		"operations:create",
+		"operations:read",
+		"operations:update",
+		"operations:delete",
 		"alerts:read",
 		"alerts:update",
 		"alerts:acknowledge",
@@ -152,9 +153,9 @@ export const rolePermissions: Record<OrganizationRole, Permission[]> = {
 		"clients:create",
 		"clients:read",
 		"clients:update",
-		"transactions:create",
-		"transactions:read",
-		"transactions:update",
+		"operations:create",
+		"operations:read",
+		"operations:update",
 		"alerts:read",
 		"alerts:update",
 		"alerts:acknowledge",
@@ -166,27 +167,22 @@ export const rolePermissions: Record<OrganizationRole, Permission[]> = {
 	member: [
 		"clients:read",
 		"clients:update",
-		"transactions:create",
-		"transactions:read",
-		"transactions:update",
+		"operations:create",
+		"operations:read",
+		"operations:update",
 		"alerts:read",
 		"alerts:acknowledge",
 		"reports:read",
 	],
 	analyst: [
 		"clients:read",
-		"transactions:read",
+		"operations:read",
 		"alerts:read",
 		"alerts:acknowledge",
 		"reports:read",
 		"reports:generate",
 	],
-	readonly: [
-		"clients:read",
-		"transactions:read",
-		"alerts:read",
-		"reports:read",
-	],
+	readonly: ["clients:read", "operations:read", "alerts:read", "reports:read"],
 };
 
 // Organization Store

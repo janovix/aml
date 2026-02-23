@@ -20,11 +20,16 @@ import {
 } from "@/lib/settings/settingsClient";
 import { ChatProvider, ChatSidebar, NavbarChatButton } from "@/components/chat";
 import { PageStatusProvider } from "@/components/PageStatusProvider";
+import { NotificationsWidget } from "@algenium/blocks";
+import { NotificationsProvider } from "@/contexts/notifications-context";
+import { useRouter } from "next/navigation";
 
 interface DashboardLayoutProps {
 	children: React.ReactNode;
 	/** Initial sidebar collapsed state from server */
 	initialSidebarCollapsed?: boolean;
+	/** When true, hides sidebar navigation groups and the top navbar */
+	hideNavigation?: boolean;
 }
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
@@ -38,6 +43,41 @@ function setCookieValue(name: string, value: string, maxAge: number): void {
 }
 
 function Navbar() {
+	const router = useRouter();
+
+	const handleNotificationClick = React.useCallback(
+		(notification: { href?: string }) => {
+			if (notification.href) {
+				router.push(notification.href);
+			}
+		},
+		[router],
+	);
+
+	return (
+		<header className="z-50 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 shadow-xs">
+			<SidebarTrigger className="-ml-1" />
+			<Separator orientation="vertical" className="mx-2 h-6" />
+			<div className="flex-1 min-w-0">
+				<NavBreadcrumb />
+			</div>
+			<div className="flex shrink-0 items-center gap-2">
+				<NotificationsWidget
+					onNotificationClick={handleNotificationClick}
+					size="md"
+					maxVisible={50}
+					playSound={true}
+					showPulse={true}
+					soundType="chime"
+					pulseStyle="ring"
+				/>
+				<NavbarChatButton />
+			</div>
+		</header>
+	);
+}
+
+function DashboardFooter() {
 	const currentOrg = useOrgStore((state) => state.currentOrg);
 	const orgTimezone =
 		currentOrg?.settings?.timezone || DEFAULT_ORG_SETTINGS.timezone;
@@ -96,13 +136,8 @@ function Navbar() {
 	}, []);
 
 	return (
-		<header className="z-50 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 shadow-xs">
-			<SidebarTrigger className="-ml-1" />
-			<Separator orientation="vertical" className="mx-2 h-6" />
-			<div className="flex-1 min-w-0">
-				<NavBreadcrumb />
-			</div>
-			<div className="flex shrink-0 items-center gap-2">
+		<footer className="flex shrink-0 items-center justify-between border-t px-4 py-3">
+			<div className="flex items-center gap-2">
 				<NavbarClock
 					timezone={effectiveTimezone}
 					defaultFormat={effectiveClockFormat}
@@ -110,15 +145,16 @@ function Navbar() {
 					showTimezoneMismatch={true}
 				/>
 				<UmaBadge />
-				<NavbarChatButton />
 			</div>
-		</header>
+			<Logo variant="logo" className="opacity-40" />
+		</footer>
 	);
 }
 
 export function DashboardLayout({
 	children,
 	initialSidebarCollapsed = false,
+	hideNavigation = false,
 }: DashboardLayoutProps) {
 	// Sidebar state - initialized with server-side value
 	const [isCollapsed, setIsCollapsed] = useState(initialSidebarCollapsed);
@@ -209,24 +245,30 @@ export function DashboardLayout({
 	return (
 		<PageStatusProvider>
 			<ChatProvider>
-				<SidebarProvider
-					open={!isCollapsed}
-					onOpenChange={handleSidebarOpenChange}
-				>
-					<AppSidebar />
-					<SidebarInset className="flex h-screen flex-col overflow-hidden">
-						<Navbar />
-						<main className="@container/main flex min-h-0 flex-1 flex-col overflow-y-auto">
-							<div className="flex flex-1 flex-col p-4 pb-8 @md/main:p-6 @md/main:pb-12 @lg/main:p-8 @lg/main:pb-16">
-								{children}
-							</div>
-							<footer className="flex shrink-0 items-center justify-center py-6 opacity-40">
-								<Logo variant="logo" />
-							</footer>
-						</main>
-					</SidebarInset>
-					<ChatSidebar />
-				</SidebarProvider>
+				<NotificationsProvider>
+					<SidebarProvider
+						open={!isCollapsed}
+						onOpenChange={handleSidebarOpenChange}
+					>
+						<AppSidebar hideNavigation={hideNavigation} />
+						<SidebarInset className="flex h-screen flex-col overflow-hidden">
+							{hideNavigation ? (
+								<header className="z-50 flex h-16 shrink-0 items-center border-b bg-background px-4 shadow-xs md:hidden">
+									<SidebarTrigger className="-ml-1" />
+								</header>
+							) : (
+								<Navbar />
+							)}
+							<main className="@container/main flex min-h-0 flex-1 flex-col overflow-y-auto">
+								<div className="flex flex-1 flex-col p-4 pb-8 @md/main:p-6 @md/main:pb-12 @lg/main:p-8 @lg/main:pb-16">
+									{children}
+								</div>
+								<DashboardFooter />
+							</main>
+						</SidebarInset>
+						<ChatSidebar />
+					</SidebarProvider>
+				</NotificationsProvider>
 			</ChatProvider>
 		</PageStatusProvider>
 	);

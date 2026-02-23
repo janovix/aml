@@ -498,15 +498,6 @@ export {
 	type OCRProgressCallback,
 } from "./TesseractLoader";
 
-// Re-export AI extraction utilities
-export {
-	extractWithAI,
-	isAIExtractionAvailable,
-	normalizeAIFields,
-	type AIExtractionResult,
-	type AIExtractedField,
-} from "./ai-extraction";
-
 // Re-export MRZ parser utilities
 export {
 	parseMRZ,
@@ -552,7 +543,7 @@ export interface DocumentComparisonResult {
 	/** Whether the values match */
 	matches: boolean;
 	/** Source of the document value */
-	source: "MRZ" | "OCR" | "AI" | "NONE";
+	source: "MRZ" | "OCR" | "NONE";
 	/** Confidence of the extracted value (0-1) */
 	confidence: number;
 }

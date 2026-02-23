@@ -67,10 +67,10 @@ describe("utils", () => {
 			expect(result.error).toBe("RFC debe tener 13 caracteres");
 		});
 
-		it("returns error for RFC with invalid format", () => {
+		it("validates moral RFC with any 12 characters (format validation removed)", () => {
+			// For moral persons, we only validate length, not format
 			const result = validateRFC("123456789012", "moral");
-			expect(result.isValid).toBe(false);
-			expect(result.error).toContain("RFC no tiene el formato correcto");
+			expect(result.isValid).toBe(true);
 		});
 
 		it("normalizes RFC to uppercase", () => {
@@ -265,8 +265,8 @@ describe("utils", () => {
 			expect(result.isValid).toBe(true);
 		});
 
-		it("validates moral RFC even if rest of name doesn't match (only first letter matters)", () => {
-			// First letter 'A' matches 'Acme', rest can be different
+		it("validates moral RFC with any first 3 characters (only date validation)", () => {
+			// For moral persons, we only validate the incorporation date
 			const result = validateRFCMatch("AXY2002031A2", "moral", {
 				businessName: "Acme SA de CV",
 				incorporationDate: "2020-02-03",
@@ -274,15 +274,14 @@ describe("utils", () => {
 			expect(result.isValid).toBe(true);
 		});
 
-		it("returns error when moral RFC first letter does not match business name", () => {
+		it("validates moral RFC with any first 3 characters (first letter check removed)", () => {
+			// First letter validation has been removed for moral persons
+			// Only date validation remains
 			const result = validateRFCMatch("BCM2002031A2", "moral", {
 				businessName: "Acme SA de CV",
 				incorporationDate: "2020-02-03",
 			});
-			expect(result.isValid).toBe(false);
-			expect(result.error).toBe(
-				"La primera letra del RFC debe coincidir con la primera letra de la razón social",
-			);
+			expect(result.isValid).toBe(true);
 		});
 
 		it("returns error when moral RFC date does not match incorporation date", () => {
@@ -304,8 +303,9 @@ describe("utils", () => {
 			expect(result.isValid).toBe(true);
 		});
 
-		it("ignores special characters when extracting first letter from business name", () => {
-			const result = validateRFCMatch("ACM2002031A2", "moral", {
+		it("ignores business name when validating moral RFC (first letter check removed)", () => {
+			// Special characters in business name no longer matter since first letter check is removed
+			const result = validateRFCMatch("BCM2002031A2", "moral", {
 				businessName: "& Acme SA de CV", // & should be ignored
 				incorporationDate: "2020-02-03",
 			});

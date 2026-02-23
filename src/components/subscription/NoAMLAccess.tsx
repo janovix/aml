@@ -20,8 +20,8 @@ interface NoAMLAccessProps {
 /**
  * Full-page blocker shown when user doesn't have AML product access
  *
- * This is displayed when a user has a Watchlist-only subscription
- * and tries to access the AML application.
+ * This is displayed when a user doesn't have an active subscription
+ * (Stripe or enterprise license) and tries to access the AML application.
  */
 export function NoAMLAccess({ isLoading = false }: NoAMLAccessProps) {
 	const { t } = useLanguage();

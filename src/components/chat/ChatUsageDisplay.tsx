@@ -11,7 +11,7 @@
  * - Add service bindings from auth-svc to aml-svc, watchlist-svc for tools
  * - Context-aware tools based on calling app
  * - Future: MCP server with OAuth/OpenID for user access to their data
- *   (settings, organizations, members, transactions, etc.)
+ *   (settings, organizations, members, operations, etc.)
  */
 
 import { Progress } from "@/components/ui/progress";

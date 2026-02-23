@@ -1,7 +1,8 @@
 // Fallback example URL - will fail if NEXT_PUBLIC_AML_CORE_URL is not set
 // This helps detect missing environment variable configuration
 const DEFAULT_AML_CORE_URL = "https://aml-svc.janovix.workers.dev";
-const DEFAULT_UMA_SERVICE_URL = "https://uma-aml-svc.janovix.workers.dev";
+const DEFAULT_WATCHLIST_API_BASE_URL =
+	"https://watchlist-svc.janovix.workers.dev";
 export const DEFAULT_API_BASE_URL =
 	"https://backend-template.algtools.workers.dev";
 
@@ -23,17 +24,15 @@ export function getAmlCoreBaseUrl(): string {
 }
 
 /**
- * Base URL for the upstream API (backward compatibility).
+ * Base URL for the Watchlist Service API.
  *
- * - Server: prefer `ALGTOOLS_API_BASE_URL`
- * - Client (if you ever call upstream directly): `NEXT_PUBLIC_ALGTOOLS_API_BASE_URL`
- *
- * In this repo we mainly call upstream from Next Route Handlers, so CORS/auth stay server-side.
+ * Uses NEXT_PUBLIC_WATCHLIST_API_BASE_URL environment variable.
+ * Falls back to production URL if not set.
  */
-export function getUpstreamApiBaseUrl() {
-	return (
-		process.env.ALGTOOLS_API_BASE_URL ??
-		process.env.NEXT_PUBLIC_ALGTOOLS_API_BASE_URL ??
-		DEFAULT_API_BASE_URL
-	);
+export function getWatchlistBaseUrl(): string {
+	const envValue = process.env.NEXT_PUBLIC_WATCHLIST_API_BASE_URL;
+	if (envValue && typeof envValue === "string" && envValue.trim().length > 0) {
+		return envValue.trim().replace(/\/$/, "");
+	}
+	return DEFAULT_WATCHLIST_API_BASE_URL;
 }

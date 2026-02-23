@@ -28,8 +28,10 @@ import {
 } from "lucide-react";
 import { useJwt } from "@/hooks/useJwt";
 import { useLanguage } from "@/components/LanguageProvider";
+import type { TranslationKeys } from "@/lib/translations";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/lib/mutations";
+import { showFetchError } from "@/lib/toast-utils";
 import {
 	getAlertById,
 	cancelAlert,
@@ -38,7 +40,10 @@ import {
 	type AlertSeverity,
 } from "@/lib/api/alerts";
 import { getClientById } from "@/lib/api/clients";
+import { getOperationById } from "@/lib/api/operations";
 import type { Client } from "@/types/client";
+import type { OperationEntity } from "@/types/operation";
+import { ActivityBadge } from "@/components/operations/ActivityBadge";
 import { getClientDisplayName } from "@/types/client";
 import { PageHero } from "@/components/page-hero";
 import { PageHeroSkeleton } from "@/components/skeletons";
@@ -51,27 +56,27 @@ const statusConfig: Record<
 	{ label: string; icon: React.ReactNode; bgColor: string }
 > = {
 	DETECTED: {
-		label: "Detectada",
+		label: "alertStatusDetectedLabel",
 		icon: <Bell className="h-4 w-4" />,
 		bgColor: "bg-amber-500/20 text-amber-400",
 	},
 	FILE_GENERATED: {
-		label: "Archivo Generado",
+		label: "alertStatusFileGenerated",
 		icon: <FileCheck className="h-4 w-4" />,
 		bgColor: "bg-sky-500/20 text-sky-400",
 	},
 	SUBMITTED: {
-		label: "Enviada",
+		label: "alertStatusSentLabel",
 		icon: <Send className="h-4 w-4" />,
 		bgColor: "bg-emerald-500/20 text-emerald-400",
 	},
 	OVERDUE: {
-		label: "Vencida",
+		label: "alertStatusOverdueLabel",
 		icon: <AlertCircle className="h-4 w-4" />,
 		bgColor: "bg-red-500/20 text-red-400",
 	},
 	CANCELLED: {
-		label: "Cancelada",
+		label: "alertStatusCancelled",
 		icon: <XCircle className="h-4 w-4" />,
 		bgColor: "bg-zinc-500/20 text-zinc-400",
 	},
@@ -84,10 +89,10 @@ const severityConfig: Record<
 		badgeVariant: "default" | "secondary" | "destructive" | "outline";
 	}
 > = {
-	LOW: { label: "Baja", badgeVariant: "outline" },
-	MEDIUM: { label: "Media", badgeVariant: "secondary" },
-	HIGH: { label: "Alta", badgeVariant: "default" },
-	CRITICAL: { label: "Crítica", badgeVariant: "destructive" },
+	LOW: { label: "alertSeverityLow", badgeVariant: "outline" },
+	MEDIUM: { label: "alertSeverityMedium", badgeVariant: "secondary" },
+	HIGH: { label: "alertSeverityHigh", badgeVariant: "default" },
+	CRITICAL: { label: "alertSeverityCritical", badgeVariant: "destructive" },
 };
 
 interface AlertDetailsViewProps {
@@ -135,6 +140,8 @@ export function AlertDetailsView({
 	const [alert, setAlert] = useState<Alert | null>(null);
 	const [client, setClient] = useState<Client | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
+	const [operations, setOperations] = useState<OperationEntity[]>([]);
+	const [operationsLoading, setOperationsLoading] = useState(false);
 	const { navigateTo, orgPath } = useOrgNavigation();
 	const { jwt } = useJwt();
 	const { t } = useLanguage();
@@ -160,9 +167,38 @@ export function AlertDetailsView({
 						console.error("Error fetching client:", error);
 					}
 				}
+
+				// Extract operation IDs from metadata (supports both key names) and legacy field
+				const idsFromMetadata: string[] = [
+					...(Array.isArray(alertData.metadata?.operationIds)
+						? (alertData.metadata.operationIds as string[])
+						: []),
+					...(Array.isArray(alertData.metadata?.transactionIds)
+						? (alertData.metadata.transactionIds as string[])
+						: []),
+				];
+				const legacyId = alertData.transactionId
+					? [alertData.transactionId]
+					: [];
+				const operationIds = [...new Set([...idsFromMetadata, ...legacyId])];
+
+				if (operationIds.length > 0) {
+					setOperationsLoading(true);
+					const results = await Promise.allSettled(
+						operationIds.map((id) => getOperationById({ id, jwt })),
+					);
+					const fetched = results
+						.filter(
+							(r): r is PromiseFulfilledResult<OperationEntity> =>
+								r.status === "fulfilled",
+						)
+						.map((r) => r.value);
+					setOperations(fetched);
+					setOperationsLoading(false);
+				}
 			} catch (error) {
 				console.error("Error fetching alert:", error);
-				toast.error(extractErrorMessage(error));
+				showFetchError("alert-details", error);
 				navigateTo("/alerts");
 			} finally {
 				setIsLoading(false);
@@ -180,11 +216,11 @@ export function AlertDetailsView({
 		return (
 			<div className="space-y-6">
 				<PageHero
-					title="Alerta no encontrada"
-					subtitle={`La alerta ${alertId} no existe`}
+					title={t("alertNotFound")}
+					subtitle={t("alertNotFoundDesc")}
 					icon={AlertTriangle}
 					backButton={{
-						label: "Volver a Alertas",
+						label: t("alertBackToAlerts"),
 						onClick: () => navigateTo("/alerts"),
 					}}
 				/>
@@ -194,11 +230,11 @@ export function AlertDetailsView({
 
 	const formatDateTime = (dateString: string | null | undefined): string => {
 		if (!dateString) {
-			return "No disponible";
+			return t("commonNotAvailable");
 		}
 		const date = new Date(dateString);
 		if (isNaN(date.getTime())) {
-			return "Fecha inválida";
+			return t("commonInvalidDate");
 		}
 		return date.toLocaleString("es-MX", {
 			day: "2-digit",
@@ -211,11 +247,11 @@ export function AlertDetailsView({
 
 	const formatDate = (dateString: string | null | undefined): string => {
 		if (!dateString) {
-			return "No disponible";
+			return t("commonNotAvailable");
 		}
 		const date = new Date(dateString);
 		if (isNaN(date.getTime())) {
-			return "Fecha inválida";
+			return t("commonInvalidDate");
 		}
 		return date.toLocaleDateString("es-MX", {
 			day: "2-digit",
@@ -230,8 +266,8 @@ export function AlertDetailsView({
 		try {
 			await executeMutation({
 				mutation: () => cancelAlert({ id: alert.id, reason, jwt }),
-				loading: "Cancelando alerta...",
-				success: "Alerta cancelada exitosamente",
+				loading: t("alertCancelling"),
+				success: t("alertCancelledSuccess"),
 				onSuccess: () => {
 					// Refetch alert to get updated status
 					getAlertById({ id: alert.id, jwt })
@@ -255,14 +291,14 @@ export function AlertDetailsView({
 				subtitle={`Código: ${alert.alertRuleId}`}
 				icon={AlertTriangle}
 				backButton={{
-					label: "Volver a Alertas",
+					label: t("alertBackToAlerts"),
 					onClick: () => navigateTo("/alerts"),
 				}}
 				actions={[
 					...(alert.status !== "CANCELLED"
 						? [
 								{
-									label: "Cancelar Alerta",
+									label: t("alertCancelAlert"),
 									icon: XCircle,
 									onClick: () => setCancelDialogOpen(true),
 									variant: "destructive" as const,
@@ -276,12 +312,12 @@ export function AlertDetailsView({
 				<div className="grid gap-6 @md/main:grid-cols-2">
 					<Card>
 						<CardHeader>
-							<CardTitle>Información de la Alerta</CardTitle>
+							<CardTitle>{t("alertInfoTitle")}</CardTitle>
 						</CardHeader>
 						<CardContent className="space-y-4">
 							<div>
 								<p className="text-sm font-medium text-muted-foreground">
-									Estado
+									{t("alertStatusLabel")}
 								</p>
 								<div className="flex items-center gap-2 mt-1">
 									<Badge
@@ -290,7 +326,7 @@ export function AlertDetailsView({
 									>
 										<div className="flex items-center gap-2">
 											{statusCfg.icon}
-											{statusCfg.label}
+											{t(statusCfg.label as TranslationKeys)}
 										</div>
 									</Badge>
 								</div>
@@ -298,16 +334,16 @@ export function AlertDetailsView({
 							<Separator />
 							<div>
 								<p className="text-sm font-medium text-muted-foreground">
-									Severidad
+									{t("alertSeverityLabel")}
 								</p>
 								<Badge variant={severityCfg.badgeVariant} className="mt-1">
-									{severityCfg.label}
+									{t(severityCfg.label as TranslationKeys)}
 								</Badge>
 							</div>
 							<Separator />
 							<div>
 								<p className="text-sm font-medium text-muted-foreground">
-									Regla de Alerta
+									{t("alertRuleLabel")}
 								</p>
 								<p className="text-base font-medium mt-1">
 									{alert.alertRule?.name || alert.alertRuleId}
@@ -321,16 +357,18 @@ export function AlertDetailsView({
 							<Separator />
 							<div>
 								<p className="text-sm font-medium text-muted-foreground">
-									Tipo
+									{t("alertTypeLabel")}
 								</p>
 								<Badge variant="outline" className="mt-1">
-									{alert.isManual ? "Manual" : "Automática"}
+									{alert.isManual
+										? t("alertTypeManual")
+										: t("alertTypeAutomatic")}
 								</Badge>
 							</div>
 							<Separator />
 							<div>
 								<p className="text-sm font-medium text-muted-foreground">
-									Creada
+									{t("alertCreatedAt")}
 								</p>
 								<p className="text-base font-medium mt-1">
 									{formatDateTime(alert.createdAt)}
@@ -341,7 +379,7 @@ export function AlertDetailsView({
 									<Separator />
 									<div>
 										<p className="text-sm font-medium text-muted-foreground">
-											Actualizada
+											{t("alertUpdatedAt")}
 										</p>
 										<p className="text-base font-medium mt-1">
 											{formatDateTime(alert.updatedAt)}
@@ -354,14 +392,14 @@ export function AlertDetailsView({
 
 					<Card>
 						<CardHeader>
-							<CardTitle>Información del Cliente</CardTitle>
+							<CardTitle>{t("alertClientInfo")}</CardTitle>
 						</CardHeader>
 						<CardContent className="space-y-4">
 							{client ? (
 								<>
 									<div>
 										<p className="text-sm font-medium text-muted-foreground">
-											Cliente
+											{t("alertClientLabel")}
 										</p>
 										<Link
 											href={orgPath(`/clients/${client.id}`)}
@@ -373,7 +411,7 @@ export function AlertDetailsView({
 									<Separator />
 									<div>
 										<p className="text-sm font-medium text-muted-foreground">
-											RFC
+											{t("alertRfcLabel")}
 										</p>
 										<p className="text-base font-mono mt-1">{client.rfc}</p>
 									</div>
@@ -382,7 +420,7 @@ export function AlertDetailsView({
 											<Separator />
 											<div>
 												<p className="text-sm font-medium text-muted-foreground">
-													Email
+													{t("alertEmailLabel")}
 												</p>
 												<p className="text-base mt-1">{client.email}</p>
 											</div>
@@ -401,14 +439,14 @@ export function AlertDetailsView({
 
 					<Card>
 						<CardHeader>
-							<CardTitle>Plazos y Fechas</CardTitle>
+							<CardTitle>{t("alertDeadlinesTitle")}</CardTitle>
 						</CardHeader>
 						<CardContent className="space-y-4">
 							{alert.submissionDeadline && (
 								<>
 									<div>
 										<p className="text-sm font-medium text-muted-foreground">
-											Fecha Límite de Envío
+											{t("alertSubmissionDeadline")}
 										</p>
 										<p
 											className={`text-base font-medium mt-1 ${
@@ -417,7 +455,9 @@ export function AlertDetailsView({
 										>
 											{formatDate(alert.submissionDeadline)}
 											{alert.isOverdue && (
-												<span className="ml-2 text-xs">(Vencida)</span>
+												<span className="ml-2 text-xs">
+													{t("alertOverdue")}
+												</span>
 											)}
 										</p>
 									</div>
@@ -428,7 +468,7 @@ export function AlertDetailsView({
 								<>
 									<div>
 										<p className="text-sm font-medium text-muted-foreground">
-											Archivo Generado
+											{t("alertFileGenerated")}
 										</p>
 										<p className="text-base font-medium mt-1">
 											{formatDateTime(alert.fileGeneratedAt)}
@@ -441,7 +481,7 @@ export function AlertDetailsView({
 								<>
 									<div>
 										<p className="text-sm font-medium text-muted-foreground">
-											Enviada a SAT
+											{t("alertSubmittedToSat")}
 										</p>
 										<p className="text-base font-medium mt-1">
 											{formatDateTime(alert.submittedAt)}
@@ -452,7 +492,7 @@ export function AlertDetailsView({
 											<Separator />
 											<div>
 												<p className="text-sm font-medium text-muted-foreground">
-													Folio SAT
+													{t("alertSatFolio")}
 												</p>
 												<p className="text-base font-mono mt-1">
 													{alert.satFolioNumber}
@@ -465,7 +505,7 @@ export function AlertDetailsView({
 											<Separator />
 											<div>
 												<p className="text-sm font-medium text-muted-foreground">
-													Acuse de Recibo SAT
+													{t("alertSatAck")}
 												</p>
 												<p className="text-base font-mono mt-1 break-all">
 													{alert.satAcknowledgmentReceipt}
@@ -480,14 +520,15 @@ export function AlertDetailsView({
 									<Separator />
 									<div>
 										<p className="text-sm font-medium text-muted-foreground">
-											Cancelada
+											{t("alertCancelledLabel")}
 										</p>
 										<p className="text-base font-medium mt-1">
 											{formatDateTime(alert.cancelledAt)}
 										</p>
 										{alert.cancellationReason && (
 											<p className="text-sm text-muted-foreground mt-1">
-												Razón: {alert.cancellationReason}
+												{t("alertCancelReason")}
+												{alert.cancellationReason}
 											</p>
 										)}
 									</div>
@@ -498,7 +539,7 @@ export function AlertDetailsView({
 								!alert.submittedAt &&
 								!alert.cancelledAt && (
 									<p className="text-sm text-muted-foreground">
-										No hay fechas registradas
+										{t("alertNoDatesRecorded")}
 									</p>
 								)}
 						</CardContent>
@@ -507,7 +548,7 @@ export function AlertDetailsView({
 					{alert.notes && (
 						<Card>
 							<CardHeader>
-								<CardTitle>Notas</CardTitle>
+								<CardTitle>{t("alertNotesTitle")}</CardTitle>
 							</CardHeader>
 							<CardContent>
 								<p className="text-sm whitespace-pre-wrap">{alert.notes}</p>
@@ -515,87 +556,103 @@ export function AlertDetailsView({
 						</Card>
 					)}
 
-					{(() => {
-						// Extract all transaction IDs from metadata and transactionId field
-						const transactionIdsFromMetadata = Array.isArray(
-							alert.metadata?.transactionIds,
-						)
-							? (alert.metadata.transactionIds as string[])
-							: [];
-						const singleTransactionId = alert.transactionId
-							? [alert.transactionId]
-							: [];
-
-						// Combine and deduplicate transaction IDs
-						const allTransactionIds = [
-							...new Set([
-								...transactionIdsFromMetadata,
-								...singleTransactionId,
-							]),
-						];
-
-						if (allTransactionIds.length === 0) {
-							return null;
-						}
-
-						const isMultiple = allTransactionIds.length > 1;
-
-						return (
-							<Card>
-								<CardHeader>
-									<div className="flex items-center justify-between">
-										<div className="flex items-center gap-2">
-											<Receipt className="h-5 w-5 text-muted-foreground" />
-											<CardTitle>
-												{isMultiple
-													? "Transacciones Relacionadas"
-													: "Transacción Relacionada"}
-											</CardTitle>
-										</div>
-										{isMultiple && (
-											<Badge variant="secondary" className="font-mono">
-												{allTransactionIds.length}
-											</Badge>
-										)}
+					{(operations.length > 0 || operationsLoading) && (
+						<Card>
+							<CardHeader>
+								<div className="flex items-center justify-between">
+									<div className="flex items-center gap-2">
+										<Receipt className="h-5 w-5 text-muted-foreground" />
+										<CardTitle>
+											{operations.length === 1
+												? t("alertRelatedOperation")
+												: t("alertRelatedOperations")}
+										</CardTitle>
 									</div>
-								</CardHeader>
-								<CardContent>
+									{operations.length > 1 && (
+										<Badge variant="secondary" className="font-mono">
+											{operations.length}
+										</Badge>
+									)}
+								</div>
+							</CardHeader>
+							<CardContent>
+								{operationsLoading ? (
 									<div className="space-y-2">
-										{allTransactionIds.map((txId, index) => (
-											<Link
-												key={txId}
-												href={orgPath(`/transactions/${txId}`)}
-												className="group flex items-center gap-3 rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/50 hover:bg-accent/50"
+										{[1, 2].map((i) => (
+											<div
+												key={i}
+												className="flex items-center gap-3 rounded-lg border border-border p-3"
 											>
-												<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary group-hover:bg-primary/20">
-													<Receipt className="h-4 w-4" />
+												<Skeleton className="h-8 w-8 rounded-md shrink-0" />
+												<div className="flex-1 space-y-1.5">
+													<Skeleton className="h-4 w-32" />
+													<Skeleton className="h-3 w-48" />
 												</div>
-												<div className="flex-1 min-w-0">
-													<div className="flex items-center gap-2">
-														<span className="text-sm font-medium text-foreground">
-															{txId}
-														</span>
-														<ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-													</div>
-													{isMultiple && (
-														<p className="text-xs text-muted-foreground mt-0.5">
-															Transacción {index + 1} de{" "}
-															{allTransactionIds.length}
-														</p>
-													)}
-												</div>
-											</Link>
+												<Skeleton className="h-4 w-16 shrink-0" />
+											</div>
 										))}
 									</div>
-								</CardContent>
-							</Card>
-						);
-					})()}
+								) : (
+									<div className="space-y-2">
+										{operations.map((op) => {
+											const formattedAmount = new Intl.NumberFormat("es-MX", {
+												minimumFractionDigits: 2,
+												maximumFractionDigits: 2,
+											}).format(Number(op.amount));
+
+											const formattedDate = new Date(
+												op.operationDate,
+											).toLocaleDateString("es-MX", {
+												day: "2-digit",
+												month: "short",
+												year: "numeric",
+											});
+
+											return (
+												<Link
+													key={op.id}
+													href={orgPath(`/operations/${op.id}`)}
+													className="group flex items-center gap-3 rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/50 hover:bg-accent/50"
+												>
+													<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary group-hover:bg-primary/20">
+														<Receipt className="h-4 w-4" />
+													</div>
+													<div className="flex-1 min-w-0">
+														<div className="flex items-center gap-2 flex-wrap">
+															<ActivityBadge
+																code={op.activityCode}
+																variant="short"
+															/>
+															<span className="text-sm text-muted-foreground">
+																{formattedDate}
+															</span>
+														</div>
+														<p className="text-xs text-muted-foreground mt-0.5 font-mono truncate">
+															{op.id}
+														</p>
+													</div>
+													<div className="flex items-center gap-2 shrink-0">
+														<span className="text-sm font-semibold tabular-nums">
+															{formattedAmount}{" "}
+															<span className="font-normal text-muted-foreground">
+																{op.currencyCode}
+															</span>
+														</span>
+														<ExternalLink className="h-3.5 w-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+													</div>
+												</Link>
+											);
+										})}
+									</div>
+								)}
+							</CardContent>
+						</Card>
+					)}
 
 					{Object.keys(alert.metadata || {}).length > 0 && (
 						<Card className="md:col-span-2">
 							<CardHeader>
-								<CardTitle>Metadatos</CardTitle>
+								<CardTitle>{t("alertMetadata")}</CardTitle>
 							</CardHeader>
 							<CardContent>
 								<pre className="text-xs bg-muted p-4 rounded-lg overflow-auto">
@@ -610,11 +667,11 @@ export function AlertDetailsView({
 			<AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>¿Cancelar alerta?</AlertDialogTitle>
+						<AlertDialogTitle>{t("alertCancelQuestion")}</AlertDialogTitle>
 						<AlertDialogDescription>
-							Esta acción cancelará la alerta{" "}
-							<strong>{alert.alertRule?.name || alert.alertRuleId}</strong>. Por
-							favor, proporciona una razón para la cancelación.
+							{t("alertCancelDesc")}
+							<strong>{alert.alertRule?.name || alert.alertRuleId}</strong>
+							{t("alertCancelDescSuffix")}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<form
@@ -633,20 +690,20 @@ export function AlertDetailsView({
 								htmlFor="reason"
 								className="text-sm font-medium text-foreground"
 							>
-								Razón de cancelación
+								{t("alertCancelReason2")}
 							</label>
 							<textarea
 								id="reason"
 								name="reason"
 								required
 								className="mt-2 w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-								placeholder="Describe la razón de la cancelación..."
+								placeholder={t("alertCancelPlaceholder")}
 							/>
 						</div>
 						<AlertDialogFooter>
-							<AlertDialogCancel type="button">Cancelar</AlertDialogCancel>
+							<AlertDialogCancel type="button">{t("cancel")}</AlertDialogCancel>
 							<AlertDialogAction type="submit">
-								Confirmar Cancelación
+								{t("alertConfirmCancel")}
 							</AlertDialogAction>
 						</AlertDialogFooter>
 					</form>

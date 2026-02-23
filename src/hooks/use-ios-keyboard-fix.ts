@@ -32,7 +32,9 @@ export function useIOSKeyboardFix(): void {
 
 		// Get the scrollable main content container
 		const getScrollContainer = (): HTMLElement | null => {
-			return document.querySelector("main");
+			return document.querySelector(
+				"main.overflow-y-auto",
+			) as HTMLElement | null;
 		};
 
 		const handleFocus = (event: FocusEvent): void => {

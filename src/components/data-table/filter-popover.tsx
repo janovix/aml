@@ -98,6 +98,11 @@ export function FilterPopover({
 								<span className="flex-1 text-left text-foreground">
 									{option.label}
 								</span>
+								{option.count !== undefined && (
+									<span className="text-[10px] text-muted-foreground tabular-nums ml-auto">
+										{option.count.toLocaleString("es-MX")}
+									</span>
+								)}
 							</button>
 						);
 					})}

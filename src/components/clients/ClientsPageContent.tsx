@@ -1,34 +1,38 @@
 "use client";
 
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ClientsTable } from "@/components/clients/ClientsTable";
 import {
 	PageHero,
 	type StatCard,
 	type PageHeroAction,
 } from "@/components/page-hero";
-import { Users, User, Building2, Plus, Upload } from "lucide-react";
+import { Users, User, Building2, Landmark, Plus, Upload } from "lucide-react";
 import { getClientStats } from "@/lib/api/stats";
-import { toast } from "sonner";
-import { extractErrorMessage } from "@/lib/mutations";
 import { ApiError, isOrganizationRequiredError } from "@/lib/api/http";
+import { showFetchError } from "@/lib/toast-utils";
 import { useLanguage } from "@/components/LanguageProvider";
 import { getLocaleForLanguage } from "@/lib/translations";
 import { useJwt } from "@/hooks/useJwt";
 import { CreateImportDialog } from "@/components/import/CreateImportDialog";
+import { useStatesCatalog } from "@/hooks/useStatesCatalog";
 
 export function ClientsPageContent(): React.ReactElement {
 	const { navigateTo } = useOrgNavigation();
 	const { t, language } = useLanguage();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
+	const { isLoading: isStatesLoading } = useStatesCatalog(); // Preload states catalog
 	const [stats, setStats] = useState<{
 		totalClients: number;
 		physicalClients: number;
 		moralClients: number;
+		trustClients: number;
 	} | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+
+	const hasAttemptedRef = useRef(false);
 
 	const fetchStats = useCallback(async () => {
 		// Wait for JWT to be available (which means org is synced)
@@ -37,16 +41,22 @@ export function ClientsPageContent(): React.ReactElement {
 			return;
 		}
 
+		if (hasAttemptedRef.current) return;
+
 		try {
 			setIsLoading(true);
 			const data = await getClientStats({ jwt });
 			setStats(data);
+			hasAttemptedRef.current = true;
 		} catch (error) {
+			hasAttemptedRef.current = true;
+
 			// Silently handle org-required errors - this can happen during org switching
 			if (isOrganizationRequiredError(error)) {
 				console.debug(
 					"[ClientsPageContent] Organization required error - org may be syncing",
 				);
+				hasAttemptedRef.current = false;
 				return;
 			}
 
@@ -64,7 +74,7 @@ export function ClientsPageContent(): React.ReactElement {
 					error instanceof Error ? error.message : error,
 				);
 			}
-			toast.error(extractErrorMessage(error));
+			showFetchError("clients-stats", error);
 		} finally {
 			setIsLoading(false);
 		}
@@ -112,6 +122,15 @@ export function ClientsPageContent(): React.ReactElement {
 					? formatNumber(stats.moralClients)
 					: "0",
 			icon: Building2,
+		},
+		{
+			label: t("statsTrustClients"),
+			value: isLoading
+				? "..."
+				: stats?.trustClients
+					? formatNumber(stats.trustClients)
+					: "0",
+			icon: Landmark,
 		},
 	];
 

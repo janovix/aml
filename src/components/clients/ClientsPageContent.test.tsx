@@ -33,7 +33,16 @@ vi.mock("@/lib/api/stats", () => ({
 		totalClients: 100,
 		physicalClients: 70,
 		moralClients: 30,
+		trustClients: 0,
 	}),
+}));
+
+vi.mock("@/lib/api/clients", () => ({
+	listClients: vi.fn().mockResolvedValue({
+		data: [],
+		pagination: { page: 1, totalPages: 1, total: 0, limit: 20 },
+	}),
+	deleteClient: vi.fn().mockResolvedValue(undefined),
 }));
 
 const mockPush = vi.fn();

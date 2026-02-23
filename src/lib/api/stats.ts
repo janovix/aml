@@ -5,11 +5,12 @@ export interface ClientStats {
 	totalClients: number;
 	physicalClients: number;
 	moralClients: number;
+	trustClients: number;
 }
 
-export interface TransactionStats {
-	transactionsToday: number;
-	suspiciousTransactions: number;
+export interface OperationStats {
+	operationsToday: number;
+	suspiciousOperations: number;
 	totalVolume: string;
 }
 
@@ -35,13 +36,13 @@ export async function getClientStats(
 	return json;
 }
 
-export async function getTransactionStats(
+export async function getOperationStats(
 	opts?: StatsOptions,
-): Promise<TransactionStats> {
+): Promise<OperationStats> {
 	const baseUrl = opts?.baseUrl ?? getAmlCoreBaseUrl();
-	const url = new URL("/api/v1/transactions/stats", baseUrl);
+	const url = new URL("/api/v1/operations/stats", baseUrl);
 
-	const { json } = await fetchJson<TransactionStats>(url.toString(), {
+	const { json } = await fetchJson<OperationStats>(url.toString(), {
 		method: "GET",
 		cache: "no-store",
 		signal: opts?.signal,

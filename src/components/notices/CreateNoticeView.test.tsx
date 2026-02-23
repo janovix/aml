@@ -64,15 +64,17 @@ const mockAvailableMonths: noticesApi.AvailableMonth[] = [
 		hasPendingNotice: false,
 		hasSubmittedNotice: false,
 		noticeCount: 0,
+		availableAlertCount: 5,
 	},
 	{
 		year: 2024,
 		month: 11,
 		displayName: "Noviembre 2024",
-		hasNotice: true, // Has a pending notice - blocks creation
+		hasNotice: true, // Has a pending notice and no remaining alerts - blocks creation
 		hasPendingNotice: true,
 		hasSubmittedNotice: false,
 		noticeCount: 1,
+		availableAlertCount: 0,
 	},
 	{
 		year: 2024,
@@ -82,6 +84,7 @@ const mockAvailableMonths: noticesApi.AvailableMonth[] = [
 		hasPendingNotice: false,
 		hasSubmittedNotice: true,
 		noticeCount: 1,
+		availableAlertCount: 3,
 	},
 	{
 		year: 2024,
@@ -91,8 +94,23 @@ const mockAvailableMonths: noticesApi.AvailableMonth[] = [
 		hasPendingNotice: false,
 		hasSubmittedNotice: false,
 		noticeCount: 0,
+		availableAlertCount: 0,
 	},
 ];
+
+const mockAlerts: noticesApi.PreviewAlert[] = Array.from(
+	{ length: 10 },
+	(_, i) => ({
+		id: `alert-${i + 1}`,
+		clientId: `client-${i + 1}`,
+		clientName: `Cliente ${i + 1}`,
+		alertRuleName: `Regla ${i + 1}`,
+		severity: i < 2 ? "CRITICAL" : i < 7 ? "HIGH" : "MEDIUM",
+		status: i < 4 ? "OPEN" : i < 8 ? "UNDER_REVIEW" : "RESOLVED",
+		createdAt: "2024-12-01T00:00:00Z",
+		activityCode: null,
+	}),
+);
 
 const mockPreviewResponse: noticesApi.NoticePreviewResponse = {
 	reportedMonth: "202412",
@@ -103,6 +121,7 @@ const mockPreviewResponse: noticesApi.NoticePreviewResponse = {
 	bySeverity: { CRITICAL: 2, HIGH: 5, MEDIUM: 3 },
 	byStatus: { OPEN: 4, UNDER_REVIEW: 4, RESOLVED: 2 },
 	submissionDeadline: "2025-01-17T00:00:00Z",
+	alerts: mockAlerts,
 };
 
 const mockEmptyPreviewResponse: noticesApi.NoticePreviewResponse = {
@@ -114,6 +133,7 @@ const mockEmptyPreviewResponse: noticesApi.NoticePreviewResponse = {
 	bySeverity: {},
 	byStatus: {},
 	submissionDeadline: "2024-11-17T00:00:00Z",
+	alerts: [],
 };
 
 const mockCreatedNotice: noticesApi.Notice = {
@@ -129,7 +149,7 @@ const mockCreatedNotice: noticesApi.Notice = {
 	fileSize: null,
 	generatedAt: null,
 	submittedAt: null,
-	satFolioNumber: null,
+	amendmentCycle: 0,
 	createdBy: "user-1",
 	notes: null,
 	createdAt: "2024-12-01T00:00:00Z",
@@ -286,7 +306,7 @@ describe("CreateNoticeView", () => {
 
 			await waitFor(() => {
 				expect(
-					screen.getByText("No hay alertas disponibles para este período"),
+					screen.getByText("Sin actividad vulnerable"),
 				).toBeInTheDocument();
 			});
 		});
@@ -429,6 +449,7 @@ describe("CreateNoticeView", () => {
 					year: 2024,
 					month: 12,
 					notes: null,
+					alertIds: mockAlerts.map((a) => a.id),
 					jwt: "test-jwt-token",
 				});
 			});

@@ -213,7 +213,6 @@ export function LegalRepresentativeForm({
 					data={formData.idDocumentData}
 					onDataChange={handleIDDocumentChange}
 					onUpload={handleIDDocumentUpload}
-					clientId={clientId}
 					label="Identificación Oficial del Representante Legal"
 					personalData={personalData}
 				/>

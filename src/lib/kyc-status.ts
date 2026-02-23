@@ -1,4 +1,7 @@
 import type { Client } from "@/types/client";
+import type { ClientDocument } from "@/types/client-document";
+import type { BeneficialController } from "@/types/beneficial-controller";
+import { ALL_REQUIRED_DOCUMENTS, requiresUBOs } from "@/lib/constants";
 
 export interface KYCSection {
 	id: string;
@@ -24,9 +27,6 @@ export interface KYCOverallStatus {
 	totalRequired: number;
 }
 
-/**
- * Define KYC sections with their required fields and weights
- */
 export const KYC_SECTIONS: Record<string, KYCSection> = {
 	personalInfo: {
 		id: "personalInfo",
@@ -34,18 +34,26 @@ export const KYC_SECTIONS: Record<string, KYCSection> = {
 		fields: [
 			"firstName",
 			"lastName",
+			"secondLastName",
 			"birthDate",
 			"curp",
 			"rfc",
 			"nationality",
+			"countryCode",
 		],
-		weight: 1,
+		weight: 1.5,
 	},
 	companyInfo: {
 		id: "companyInfo",
 		label: "Información de la Empresa",
-		fields: ["businessName", "incorporationDate", "rfc"],
-		weight: 1,
+		fields: [
+			"businessName",
+			"incorporationDate",
+			"rfc",
+			"countryCode",
+			"economicActivityCode",
+		],
+		weight: 1.5,
 	},
 	contactInfo: {
 		id: "contactInfo",
@@ -71,19 +79,28 @@ export const KYC_SECTIONS: Record<string, KYCSection> = {
 	kycInfo: {
 		id: "kycInfo",
 		label: "Información KYC",
-		fields: ["gender", "occupation", "maritalStatus", "sourceOfFunds"],
-		weight: 1.5, // Higher weight for KYC-specific fields
+		fields: [
+			"economicActivityCode",
+			"gender",
+			"occupation",
+			"maritalStatus",
+			"sourceOfFunds",
+		],
+		weight: 1,
 	},
 	pepInfo: {
 		id: "pepInfo",
 		label: "Verificación PEP",
-		fields: ["pepStatus", "pepCheckedAt"],
-		weight: 1.5, // Higher weight for compliance
+		// screeningResult and screenedAt are the actual Client fields
+		// (previously this incorrectly referenced pepStatus/pepCheckedAt which don't exist)
+		fields: ["screeningResult", "screenedAt"],
+		weight: 0.5,
 	},
 };
 
 /**
- * Get applicable KYC sections based on person type
+ * Get applicable KYC sections based on person type.
+ * Documents and beneficial controllers are handled separately in calculateKYCStatus.
  */
 export function getApplicableSections(
 	personType: Client["personType"],
@@ -102,33 +119,26 @@ export function getApplicableSections(
 			KYC_SECTIONS.companyInfo,
 			KYC_SECTIONS.contactInfo,
 			KYC_SECTIONS.addressInfo,
-			KYC_SECTIONS.pepInfo, // Companies can also be subject to PEP checks
+			KYC_SECTIONS.pepInfo,
 		];
 	}
 }
 
-/**
- * Check if a field is completed (has a value)
- */
 function isFieldComplete(client: Client, fieldName: string): boolean {
 	const value = client[fieldName as keyof Client];
 
-	// Special handling for specific fields
-	if (fieldName === "pepStatus") {
-		return value === "NOT_PEP" || value === "CONFIRMED";
+	if (fieldName === "screeningResult") {
+		// Screening is complete once a result exists and is not the default "pending" state
+		return value === "clear" || value === "flagged";
 	}
 
-	if (fieldName === "pepCheckedAt") {
+	if (fieldName === "screenedAt") {
 		return !!value;
 	}
 
-	// General check: field has a truthy value
 	return value !== null && value !== undefined && value !== "";
 }
 
-/**
- * Calculate KYC status for a specific section
- */
 export function calculateSectionStatus(
 	client: Client,
 	section: KYCSection,
@@ -160,13 +170,63 @@ export function calculateSectionStatus(
 }
 
 /**
- * Calculate overall KYC status for a client
+ * Calculate overall KYC status for a client, including documents and beneficial controllers.
  */
-export function calculateKYCStatus(client: Client): KYCOverallStatus {
+export function calculateKYCStatus(
+	client: Client,
+	options?: {
+		documents?: ClientDocument[];
+		beneficialControllers?: BeneficialController[];
+	},
+): KYCOverallStatus {
 	const applicableSections = getApplicableSections(client.personType);
 	const sectionStatuses = applicableSections.map((section) =>
 		calculateSectionStatus(client, section),
 	);
+
+	// Document section: each required document counts as one field
+	const documents = options?.documents ?? [];
+	const requiredDocs = ALL_REQUIRED_DOCUMENTS[client.personType] ?? [];
+	const uploadedDocTypes = new Set(documents.map((d) => d.documentType));
+	const missingDocs = requiredDocs.filter((d) => !uploadedDocTypes.has(d));
+	const docsCompleted = requiredDocs.length - missingDocs.length;
+	const docsSection: KYCSectionStatus = {
+		section: {
+			id: "documents",
+			label: "Documentos",
+			fields: requiredDocs as string[],
+			weight: 2,
+		},
+		completedFields: docsCompleted,
+		totalFields: requiredDocs.length,
+		percentage:
+			requiredDocs.length > 0
+				? Math.round((docsCompleted / requiredDocs.length) * 100)
+				: 100,
+		isComplete: missingDocs.length === 0,
+		missingFields: missingDocs as string[],
+	};
+	sectionStatuses.push(docsSection);
+
+	// Beneficial controllers section (MORAL/TRUST only)
+	if (requiresUBOs(client.personType)) {
+		const beneficialControllers = options?.beneficialControllers ?? [];
+		const hasBCs = beneficialControllers.length > 0;
+		const bcSection: KYCSectionStatus = {
+			section: {
+				id: "beneficialControllers",
+				label: "Beneficiarios Controladores",
+				fields: ["beneficialControllers"],
+				weight: 1,
+			},
+			completedFields: hasBCs ? 1 : 0,
+			totalFields: 1,
+			percentage: hasBCs ? 100 : 0,
+			isComplete: hasBCs,
+			missingFields: hasBCs ? [] : ["beneficialControllers"],
+		};
+		sectionStatuses.push(bcSection);
+	}
 
 	// Calculate weighted overall percentage
 	let totalWeight = 0;
@@ -194,9 +254,6 @@ export function calculateKYCStatus(client: Client): KYCOverallStatus {
 	};
 }
 
-/**
- * Get field label in Spanish
- */
 export function getFieldLabel(fieldName: string): string {
 	const labels: Record<string, string> = {
 		firstName: "Nombre",
@@ -206,6 +263,7 @@ export function getFieldLabel(fieldName: string): string {
 		curp: "CURP",
 		rfc: "RFC",
 		nationality: "Nacionalidad",
+		countryCode: "País/Nacionalidad",
 		businessName: "Razón Social",
 		incorporationDate: "Fecha de Constitución",
 		email: "Correo Electrónico",
@@ -220,13 +278,15 @@ export function getFieldLabel(fieldName: string): string {
 		internalNumber: "Número Interior",
 		postalCode: "Código Postal",
 		reference: "Referencia",
+		economicActivityCode: "Actividad Económica",
 		gender: "Género",
 		occupation: "Ocupación",
 		maritalStatus: "Estado Civil",
 		sourceOfFunds: "Fuente de Fondos",
 		sourceOfWealth: "Fuente de Riqueza",
-		pepStatus: "Estado PEP",
-		pepCheckedAt: "Fecha de Verificación PEP",
+		screeningResult: "Resultado de Verificación",
+		screenedAt: "Fecha de Verificación",
+		beneficialControllers: "Beneficiarios Controladores",
 	};
 
 	return labels[fieldName] || fieldName;
