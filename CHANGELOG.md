@@ -1,3 +1,10 @@
+# [1.4.0-rc.54](https://github.com/janovix/aml/compare/v1.4.0-rc.53...v1.4.0-rc.54) (2026-02-23)
+
+
+### Features
+
+* enhance CreateNoticeView with availableAlertCount for better alert management; update tests for clarity and accuracy ([ff4e39b](https://github.com/janovix/aml/commit/ff4e39bd4729800c2deef3d14d5aff931b61bdc5))
+
 # [1.4.0-rc.53](https://github.com/janovix/aml/compare/v1.4.0-rc.52...v1.4.0-rc.53) (2026-02-23)
 
 
