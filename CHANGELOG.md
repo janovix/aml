@@ -1,3 +1,10 @@
+# [1.4.0-rc.55](https://github.com/janovix/aml/compare/v1.4.0-rc.54...v1.4.0-rc.55) (2026-02-23)
+
+
+### Features
+
+* implement watchlist configuration hooks and enhance external link handling in client views ([39c16b6](https://github.com/janovix/aml/commit/39c16b679025ed62c69e89de61cd6d38f36a0e1d))
+
 # [1.4.0-rc.54](https://github.com/janovix/aml/compare/v1.4.0-rc.53...v1.4.0-rc.54) (2026-02-23)
 
 
