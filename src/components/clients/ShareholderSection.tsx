@@ -154,7 +154,7 @@ export function ShareholderSection({
 	return (
 		<Card>
 			<CardHeader>
-				<div className="flex items-center justify-between">
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 					<div>
 						<CardTitle>Accionistas</CardTitle>
 						<CardDescription>
@@ -162,7 +162,11 @@ export function ShareholderSection({
 							entidad. Soporta hasta 2 niveles de jerarquía.
 						</CardDescription>
 					</div>
-					<Button size="sm" onClick={handleOpenCreate}>
+					<Button
+						size="sm"
+						className="w-full sm:w-auto shrink-0"
+						onClick={handleOpenCreate}
+					>
 						<Plus className="h-4 w-4 mr-2" />
 						Agregar Accionista
 					</Button>
@@ -203,7 +207,7 @@ export function ShareholderSection({
 									<div key={shareholder.id}>
 										<div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
 											<div className="min-w-0 flex-1">
-												<div className="flex items-center gap-2">
+												<div className="flex flex-wrap items-center gap-2">
 													{isCompany && (
 														<button
 															type="button"
@@ -225,7 +229,7 @@ export function ShareholderSection({
 														{getEntityTypeLabel(shareholder.entityType)}
 													</Badge>
 												</div>
-												<div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+												<div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1 text-sm text-muted-foreground">
 													<span>
 														Participación: {shareholder.ownershipPercentage}%
 													</span>
@@ -237,7 +241,7 @@ export function ShareholderSection({
 													)}
 												</div>
 											</div>
-											<div className="flex gap-2 ml-4">
+											<div className="flex gap-2 ml-2 sm:ml-4 shrink-0">
 												<Button
 													variant="ghost"
 													size="sm"
@@ -270,7 +274,7 @@ export function ShareholderSection({
 																className="flex items-center justify-between p-2 border rounded bg-muted/20"
 															>
 																<div className="min-w-0 flex-1">
-																	<div className="flex items-center gap-2">
+																	<div className="flex flex-wrap items-center gap-2">
 																		<SubIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
 																		<span className="text-sm font-medium truncate">
 																			{getShareholderDisplayName(
@@ -291,7 +295,7 @@ export function ShareholderSection({
 																		{subShareholder.ownershipPercentage}%
 																	</div>
 																</div>
-																<div className="flex gap-1 ml-2">
+																<div className="flex gap-1 ml-2 shrink-0">
 																	<Button
 																		variant="ghost"
 																		size="sm"

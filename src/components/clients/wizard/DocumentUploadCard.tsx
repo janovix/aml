@@ -589,7 +589,10 @@ export function DocumentUploadCard({
 					setEnlargePreview((prev) => ({ ...prev, open }))
 				}
 			>
-				<DialogContent className="max-w-[95vw] sm:max-w-3xl p-0 gap-0 overflow-hidden">
+				<DialogContent
+					className="sm:max-w-3xl p-0 gap-0 overflow-hidden"
+					fullscreenMobile
+				>
 					<DialogHeader className="p-4 pb-2 sm:p-6 sm:pb-3">
 						<DialogTitle className="text-base sm:text-lg flex items-center justify-between">
 							<span>{galleryImages[enlargePreview.currentIndex]?.title}</span>

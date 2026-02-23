@@ -4,9 +4,11 @@ import type {
 	InvoiceEntity,
 	InvoiceCreateRequest,
 	InvoiceParseXmlRequest,
-	InvoiceListResponse,
 	ParseXmlResponse,
 } from "@/types/invoice";
+
+import type { ListResult } from "@/types/list-result";
+export type InvoicesListResponse = ListResult<InvoiceEntity>;
 
 export interface ListInvoicesOptions {
 	page?: number;
@@ -20,6 +22,8 @@ export interface ListInvoicesOptions {
 	endDate?: string;
 	minAmount?: string;
 	maxAmount?: string;
+	/** Generic additional filters (passed as query params) */
+	filters?: Record<string, string | string[]>;
 	baseUrl?: string;
 	signal?: AbortSignal;
 	/** JWT token for authentication */
@@ -28,7 +32,7 @@ export interface ListInvoicesOptions {
 
 export async function listInvoices(
 	opts?: ListInvoicesOptions,
-): Promise<InvoiceListResponse> {
+): Promise<InvoicesListResponse> {
 	const baseUrl = opts?.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL("/api/v1/invoices", baseUrl);
 
@@ -46,7 +50,17 @@ export async function listInvoices(
 	if (opts?.minAmount) url.searchParams.set("minAmount", opts.minAmount);
 	if (opts?.maxAmount) url.searchParams.set("maxAmount", opts.maxAmount);
 
-	const { json } = await fetchJson<InvoiceListResponse>(url.toString(), {
+	if (opts?.filters) {
+		for (const [key, value] of Object.entries(opts.filters)) {
+			if (Array.isArray(value)) {
+				value.forEach((v) => url.searchParams.append(key, v));
+			} else {
+				url.searchParams.set(key, value);
+			}
+		}
+	}
+
+	const { json } = await fetchJson<InvoicesListResponse>(url.toString(), {
 		method: "GET",
 		cache: "no-store",
 		signal: opts?.signal,

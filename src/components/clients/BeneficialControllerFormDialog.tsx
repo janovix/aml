@@ -10,8 +10,15 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
 	Select,
@@ -21,7 +28,15 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2 } from "lucide-react";
+import {
+	Loader2,
+	Tags,
+	User,
+	CreditCard,
+	Mail,
+	MapPin,
+	StickyNote,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
 	createBeneficialController,
@@ -42,9 +57,10 @@ import { PhoneInput } from "@/components/ui/phone-input";
 import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
 import type { CatalogItem } from "@/types/catalog";
 import {
-	SimpleDocumentUploadCard,
-	type SimpleDocumentUploadData,
-} from "./wizard/SimpleDocumentUploadCard";
+	IDDocumentSelector,
+	type IDDocumentData,
+	type IDType,
+} from "./wizard/IDDocumentSelector";
 import { uploadDocumentForKYC } from "@/lib/api/file-upload";
 import { useOrgStore } from "@/lib/org-store";
 
@@ -110,19 +126,26 @@ export function BeneficialControllerFormDialog({
 	const [curp, setCurp] = useState(beneficialController?.curp || "");
 	const [rfc, setRfc] = useState(beneficialController?.rfc || "");
 
-	// ID Document (Anexo 3)
-	const [idDocumentType, setIdDocumentType] = useState<IdDocumentType>(
-		beneficialController?.idDocumentType || "INE",
-	);
-	const [idDocumentNumber, setIdDocumentNumber] = useState(
-		beneficialController?.idDocumentNumber || "",
+	// ID Document (Anexo 3) — uses the reusable IDDocumentSelector
+	const [idDocumentData, setIdDocumentData] = useState<IDDocumentData | null>(
+		() => {
+			if (!beneficialController?.idDocumentType) return null;
+			const idType: IDType =
+				beneficialController.idDocumentType === "PASSPORT"
+					? "PASSPORT"
+					: "NATIONAL_ID";
+			return {
+				idType,
+				documentType: idType,
+				documentNumber: beneficialController.idDocumentNumber || "",
+				isUploaded: !!beneficialController.idCopyDocId,
+				isUploading: false,
+			};
+		},
 	);
 	const [idDocumentAuthority, setIdDocumentAuthority] = useState(
 		beneficialController?.idDocumentAuthority || "",
 	);
-	// ID document upload state (for uploading the actual ID scan to doc-svc)
-	const [idDocUploadData, setIdDocUploadData] =
-		useState<SimpleDocumentUploadData | null>(null);
 	const [idCopyDocId, setIdCopyDocId] = useState(
 		beneficialController?.idCopyDocId || "",
 	);
@@ -185,10 +208,22 @@ export function BeneficialControllerFormDialog({
 		setOccupation(beneficialController?.occupation || "");
 		setCurp(beneficialController?.curp || "");
 		setRfc(beneficialController?.rfc || "");
-		setIdDocumentType(beneficialController?.idDocumentType || "INE");
-		setIdDocumentNumber(beneficialController?.idDocumentNumber || "");
+		if (beneficialController?.idDocumentType) {
+			const idType: IDType =
+				beneficialController.idDocumentType === "PASSPORT"
+					? "PASSPORT"
+					: "NATIONAL_ID";
+			setIdDocumentData({
+				idType,
+				documentType: idType,
+				documentNumber: beneficialController.idDocumentNumber || "",
+				isUploaded: !!beneficialController.idCopyDocId,
+				isUploading: false,
+			});
+		} else {
+			setIdDocumentData(null);
+		}
 		setIdDocumentAuthority(beneficialController?.idDocumentAuthority || "");
-		setIdDocUploadData(null);
 		setIdCopyDocId(beneficialController?.idCopyDocId || "");
 		setEmail(beneficialController?.email || "");
 		setPhone(beneficialController?.phone || "");
@@ -201,50 +236,61 @@ export function BeneficialControllerFormDialog({
 		setNotes(beneficialController?.notes || "");
 	}, [open, beneficialController]);
 
-	// Upload the ID document scan to doc-svc and return the docId
-	const handleIdDocUpload = useCallback(
-		async (data: SimpleDocumentUploadData) => {
-			const { currentOrg, currentUserId } = useOrgStore.getState();
-			if (!currentOrg?.id) {
-				toast.error("No se pudo obtener la organización actual");
-				throw new Error("Organization ID not available");
-			}
+	const handleIdDocUpload = useCallback(async (data: IDDocumentData) => {
+		const { currentOrg, currentUserId } = useOrgStore.getState();
+		if (!currentOrg?.id) {
+			toast.error("No se pudo obtener la organización actual");
+			throw new Error("Organization ID not available");
+		}
 
-			const relatedFiles: Array<{ file: Blob; name: string; type: string }> =
-				[];
-			if (data.rasterizedImages && data.rasterizedImages.length > 0) {
-				data.rasterizedImages.forEach((blob, idx) => {
-					relatedFiles.push({
-						file: blob,
-						name: `page_${idx + 1}.jpg`,
-						type: `rasterized_page_${idx + 1}`,
-					});
+		const relatedFiles: Array<{ file: Blob; name: string; type: string }> = [];
+
+		if (data.rasterizedImages && data.rasterizedImages.length > 0) {
+			data.rasterizedImages.forEach((blob, idx) => {
+				relatedFiles.push({
+					file: blob,
+					name: `rasterized_page_${idx + 1}.jpg`,
+					type: `rasterized_page_${idx + 1}`,
 				});
-			}
-
-			const uploadResult = await uploadDocumentForKYC({
-				organizationId: currentOrg.id,
-				userId: currentUserId || "unknown",
-				primaryFile:
-					data.rasterizedImages?.[0] ??
-					(data.file as Blob) ??
-					(data.originalFile as Blob),
-				fileName:
-					data.originalFile?.name || data.file?.name || "id_document.jpg",
-				originalPdf:
-					data.originalFile?.type === "application/pdf"
-						? data.originalFile
-						: null,
-				relatedFiles:
-					relatedFiles.length > 1 ? relatedFiles.slice(1) : undefined,
-				waitForProcessing: false,
 			});
+		}
+		if (data.ineFrontBlob) {
+			relatedFiles.push({
+				file: data.ineFrontBlob,
+				name: "ine_front.jpg",
+				type: "ine_front",
+			});
+		}
+		if (data.ineBackBlob) {
+			relatedFiles.push({
+				file: data.ineBackBlob,
+				name: "ine_back.jpg",
+				type: "ine_back",
+			});
+		}
 
-			setIdCopyDocId(uploadResult.documentId);
-			toast.success("Identificación cargada");
-		},
-		[],
-	);
+		const primaryFile = data.processedBlob ?? data.file;
+		if (!primaryFile) {
+			toast.error("No se encontró el archivo de identificación");
+			throw new Error("No primary file available");
+		}
+
+		const uploadResult = await uploadDocumentForKYC({
+			organizationId: currentOrg.id,
+			userId: currentUserId || "unknown",
+			primaryFile,
+			fileName: data.originalFile?.name || data.file?.name || "id_document.jpg",
+			originalPdf:
+				data.originalFile?.type === "application/pdf"
+					? data.originalFile
+					: null,
+			relatedFiles: relatedFiles.length > 0 ? relatedFiles : undefined,
+			waitForProcessing: false,
+		});
+
+		setIdCopyDocId(uploadResult.documentId);
+		toast.success("Identificación cargada");
+	}, []);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -257,6 +303,13 @@ export function BeneficialControllerFormDialog({
 		try {
 			setIsSubmitting(true);
 
+			const mappedIdDocType: IdDocumentType | null =
+				idDocumentData?.idType === "NATIONAL_ID"
+					? "INE"
+					: idDocumentData?.idType === "PASSPORT"
+						? "PASSPORT"
+						: null;
+
 			const baseData = {
 				bcType,
 				identificationCriteria,
@@ -267,13 +320,12 @@ export function BeneficialControllerFormDialog({
 				lastName,
 				secondLastName: secondLastName || null,
 				birthDate: birthDate || null,
-				// birthCountry removed - nationality covers country of origin
 				nationality: nationality || null,
 				occupation: occupation || null,
 				curp: curp || null,
 				rfc: rfc || null,
-				idDocumentType: idDocumentType || null,
-				idDocumentNumber: idDocumentNumber || null,
+				idDocumentType: mappedIdDocType,
+				idDocumentNumber: idDocumentData?.documentNumber || null,
 				idDocumentAuthority: idDocumentAuthority || null,
 				idCopyDocId: idCopyDocId || null,
 				email: email || null,
@@ -316,7 +368,7 @@ export function BeneficialControllerFormDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+			<DialogContent className="sm:max-w-3xl" fullscreenMobile>
 				<DialogHeader>
 					<DialogTitle>
 						{isEditMode
@@ -329,12 +381,16 @@ export function BeneficialControllerFormDialog({
 					</DialogDescription>
 				</DialogHeader>
 
-				<form onSubmit={handleSubmit}>
+				<form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
 					<DialogBody className="space-y-6">
 						{/* ── Clasificación ── */}
-						<section className="space-y-4 border-b pb-4">
-							<h4 className="text-sm font-semibold">Clasificación</h4>
-							<div className="grid grid-cols-2 gap-4">
+						<section className="space-y-4">
+							<div className="flex items-center gap-2">
+								<Tags className="h-4 w-4 text-primary" />
+								<h4 className="text-sm font-semibold">Clasificación</h4>
+							</div>
+
+							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 								<div className="space-y-2">
 									<Label htmlFor="bcType">Tipo de BC *</Label>
 									<Select
@@ -388,7 +444,7 @@ export function BeneficialControllerFormDialog({
 								</div>
 							</div>
 
-							<div className="grid grid-cols-2 gap-4">
+							<div className="flex flex-col sm:flex-row sm:items-center gap-4">
 								<div className="flex items-center space-x-2">
 									<Checkbox
 										id="isLegalRepresentative"
@@ -405,19 +461,27 @@ export function BeneficialControllerFormDialog({
 									</Label>
 								</div>
 								{shareholders.length > 0 && (
-									<div className="space-y-2">
-										<Label htmlFor="shareholderId">
-											Vinculado a Accionista (opcional)
+									<div className="flex items-center gap-2 flex-1 min-w-0">
+										<Label
+											htmlFor="shareholderId"
+											className="shrink-0 text-muted-foreground text-sm"
+										>
+											Vinculado a:
 										</Label>
 										<Select
-											value={shareholderId}
-											onValueChange={setShareholderId}
+											value={shareholderId || "__none__"}
+											onValueChange={(v) =>
+												setShareholderId(v === "__none__" ? "" : v)
+											}
 										>
-											<SelectTrigger id="shareholderId">
+											<SelectTrigger
+												id="shareholderId"
+												className="max-w-[200px]"
+											>
 												<SelectValue placeholder="Ninguno" />
 											</SelectTrigger>
 											<SelectContent>
-												<SelectItem value="">Ninguno</SelectItem>
+												<SelectItem value="__none__">Ninguno</SelectItem>
 												{shareholders.map((s) => (
 													<SelectItem key={s.id} value={s.id}>
 														{s.firstName || s.businessName}
@@ -442,14 +506,16 @@ export function BeneficialControllerFormDialog({
 							)}
 						</section>
 
-						{/* ── Datos Personales (Anexo 3) ── */}
-						<section className="space-y-4 border-b pb-4">
-							<h4 className="text-sm font-semibold">
-								Datos Personales (Anexo 3)
-							</h4>
+						<hr className="border-border" />
 
-							{/* Name row */}
-							<div className="grid grid-cols-2 gap-4">
+						{/* ── Datos Personales ── */}
+						<section className="space-y-4">
+							<div className="flex items-center gap-2">
+								<User className="h-4 w-4 text-primary" />
+								<h4 className="text-sm font-semibold">Datos Personales</h4>
+							</div>
+
+							<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 								<div className="space-y-2">
 									<Label htmlFor="firstName">Nombre *</Label>
 									<Input
@@ -470,10 +536,6 @@ export function BeneficialControllerFormDialog({
 										required
 									/>
 								</div>
-							</div>
-
-							{/* Second last name + birth date */}
-							<div className="grid grid-cols-2 gap-4">
 								<div className="space-y-2">
 									<Label htmlFor="secondLastName">Apellido Materno</Label>
 									<Input
@@ -485,6 +547,9 @@ export function BeneficialControllerFormDialog({
 										placeholder="APELLIDO MATERNO"
 									/>
 								</div>
+							</div>
+
+							<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 								<div className="space-y-2">
 									<Label htmlFor="birthDate">Fecha de Nacimiento</Label>
 									<Input
@@ -494,10 +559,6 @@ export function BeneficialControllerFormDialog({
 										onChange={(e) => setBirthDate(e.target.value)}
 									/>
 								</div>
-							</div>
-
-							{/* Nationality + Occupation */}
-							<div className="grid grid-cols-2 gap-4">
 								<CatalogSelector
 									catalogKey="countries"
 									label="Nacionalidad"
@@ -526,7 +587,6 @@ export function BeneficialControllerFormDialog({
 								</div>
 							</div>
 
-							{/* CURP + RFC */}
 							<div className="grid grid-cols-2 gap-4">
 								<div className="space-y-2">
 									<Label htmlFor="curp">CURP</Label>
@@ -551,148 +611,148 @@ export function BeneficialControllerFormDialog({
 							</div>
 						</section>
 
-						{/* ── Documento de Identificación (Anexo 3) ── */}
-						<section className="space-y-4 border-b pb-4">
-							<h4 className="text-sm font-semibold">
-								Documento de Identificación (Anexo 3)
-							</h4>
+						<hr className="border-border" />
 
-							{/* Doc type / number / authority */}
-							<div className="grid grid-cols-3 gap-4">
-								<div className="space-y-2">
-									<Label htmlFor="idDocumentType">Tipo de Documento</Label>
-									<Select
-										value={idDocumentType}
-										onValueChange={(v) =>
-											setIdDocumentType(v as IdDocumentType)
-										}
-									>
-										<SelectTrigger id="idDocumentType">
-											<SelectValue />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="INE">INE/IFE</SelectItem>
-											<SelectItem value="PASSPORT">Pasaporte</SelectItem>
-											<SelectItem value="OTHER">Otro Documento</SelectItem>
-										</SelectContent>
-									</Select>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="idDocumentNumber">Número de Documento</Label>
-									<Input
-										id="idDocumentNumber"
-										value={idDocumentNumber}
-										onChange={(e) => setIdDocumentNumber(e.target.value)}
-										placeholder="Número"
-									/>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="idDocumentAuthority">Autoridad Emisora</Label>
-									<Input
-										id="idDocumentAuthority"
-										value={idDocumentAuthority}
-										onChange={(e) => setIdDocumentAuthority(e.target.value)}
-										placeholder="INE, SRE, etc."
-									/>
-								</div>
-							</div>
-
-							{/* Document scan upload */}
-							{!idCopyDocId ? (
-								<SimpleDocumentUploadCard
-									documentType="NATIONAL_ID"
-									title="Copia del Documento de Identificación"
-									description="Sube una fotografía o PDF del documento de identificación oficial"
-									data={idDocUploadData}
-									onDataChange={setIdDocUploadData}
-									onUpload={handleIdDocUpload}
-								/>
-							) : (
-								<div className="flex items-center justify-between p-3 rounded-lg border border-green-500 bg-green-50/50 dark:bg-green-950/20">
-									<p className="text-sm text-green-700 dark:text-green-300 font-medium">
-										Identificación cargada correctamente
-									</p>
-									<Button
-										type="button"
-										variant="ghost"
-										size="sm"
-										className="text-destructive hover:text-destructive"
-										onClick={() => {
-											setIdCopyDocId("");
-											setIdDocUploadData(null);
+						{/* ── Optional Sections (Accordion) ── */}
+						<Accordion type="multiple" className="space-y-0">
+							{/* ── Documento de Identificación ── */}
+							<AccordionItem value="id-document" className="border-b-0">
+								<AccordionTrigger className="py-3 hover:no-underline">
+									<span className="flex items-center gap-2 text-sm font-semibold">
+										<CreditCard className="h-4 w-4 text-primary" />
+										Documento de Identificación
+										{(idCopyDocId || idDocumentData?.isUploaded) && (
+											<span className="ml-1 inline-flex h-2 w-2 rounded-full bg-green-500" />
+										)}
+									</span>
+								</AccordionTrigger>
+								<AccordionContent className="space-y-4">
+									<IDDocumentSelector
+										required={false}
+										disabled={isSubmitting}
+										data={idDocumentData}
+										onDataChange={setIdDocumentData}
+										onUpload={handleIdDocUpload}
+										label="Identificación Oficial"
+										personalData={{
+											firstName,
+											lastName,
+											secondLastName,
+											curp,
+											birthDate,
 										}}
-									>
-										Cambiar
-									</Button>
-								</div>
-							)}
-						</section>
-
-						{/* ── Contacto ── */}
-						<section className="space-y-4 border-b pb-4">
-							<h4 className="text-sm font-semibold">Contacto</h4>
-							<div className="grid grid-cols-2 gap-4">
-								<div className="space-y-2">
-									<Label htmlFor="email">Email</Label>
-									<Input
-										id="email"
-										type="email"
-										value={email}
-										onChange={(e) => setEmail(e.target.value)}
-										placeholder="email@example.com"
 									/>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="phone">Teléfono</Label>
-									<PhoneInput
-										id="phone"
-										value={phone}
-										onChange={(value) => setPhone(value ?? "")}
-										defaultCountry="MX"
+
+									<div className="space-y-2">
+										<Label htmlFor="idDocumentAuthority">
+											Autoridad Emisora
+										</Label>
+										<Input
+											id="idDocumentAuthority"
+											value={idDocumentAuthority}
+											onChange={(e) => setIdDocumentAuthority(e.target.value)}
+											placeholder="INE, SRE, etc."
+										/>
+									</div>
+								</AccordionContent>
+							</AccordionItem>
+
+							{/* ── Contacto ── */}
+							<AccordionItem value="contact" className="border-b-0">
+								<AccordionTrigger className="py-3 hover:no-underline">
+									<span className="flex items-center gap-2 text-sm font-semibold">
+										<Mail className="h-4 w-4 text-primary" />
+										Contacto
+										{(email || phone) && (
+											<span className="ml-1 inline-flex h-2 w-2 rounded-full bg-green-500" />
+										)}
+									</span>
+								</AccordionTrigger>
+								<AccordionContent>
+									<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+										<div className="space-y-2">
+											<Label htmlFor="email">Email</Label>
+											<Input
+												id="email"
+												type="email"
+												value={email}
+												onChange={(e) => setEmail(e.target.value)}
+												placeholder="email@example.com"
+											/>
+										</div>
+										<div className="space-y-2">
+											<Label htmlFor="phone">Teléfono</Label>
+											<PhoneInput
+												id="phone"
+												value={phone}
+												onChange={(value) => setPhone(value ?? "")}
+												defaultCountry="MX"
+											/>
+										</div>
+									</div>
+								</AccordionContent>
+							</AccordionItem>
+
+							{/* ── Domicilio ── */}
+							<AccordionItem value="address" className="border-b-0">
+								<AccordionTrigger className="py-3 hover:no-underline">
+									<span className="flex items-center gap-2 text-sm font-semibold">
+										<MapPin className="h-4 w-4 text-primary" />
+										Domicilio
+										{(postalCode || street) && (
+											<span className="ml-1 inline-flex h-2 w-2 rounded-full bg-green-500" />
+										)}
+									</span>
+								</AccordionTrigger>
+								<AccordionContent className="space-y-4">
+									<ZipCodeAddressFields
+										postalCode={postalCode}
+										onPostalCodeChange={setPostalCode}
+										city={city}
+										onCityChange={setCity}
+										municipality={municipality}
+										onMunicipalityChange={setMunicipality}
+										stateCode={stateCode}
+										onStateCodeChange={setStateCode}
+										neighborhood={neighborhood}
+										onNeighborhoodChange={setNeighborhood}
+										showNeighborhood
 									/>
-								</div>
-							</div>
-						</section>
 
-						{/* ── Domicilio ── */}
-						<section className="space-y-4 border-b pb-4">
-							<h4 className="text-sm font-semibold">Domicilio</h4>
+									<div className="space-y-2">
+										<Label htmlFor="street">Calle y Número</Label>
+										<Input
+											id="street"
+											value={street}
+											onChange={(e) => setStreet(e.target.value)}
+											placeholder="Av. Constitución 100, Col. Centro"
+										/>
+									</div>
+								</AccordionContent>
+							</AccordionItem>
 
-							<ZipCodeAddressFields
-								postalCode={postalCode}
-								onPostalCodeChange={setPostalCode}
-								city={city}
-								onCityChange={setCity}
-								municipality={municipality}
-								onMunicipalityChange={setMunicipality}
-								stateCode={stateCode}
-								onStateCodeChange={setStateCode}
-								neighborhood={neighborhood}
-								onNeighborhoodChange={setNeighborhood}
-								showNeighborhood
-							/>
-
-							<div className="space-y-2">
-								<Label htmlFor="street">Calle y Número</Label>
-								<Input
-									id="street"
-									value={street}
-									onChange={(e) => setStreet(e.target.value)}
-									placeholder="Av. Constitución 100, Col. Centro"
-								/>
-							</div>
-						</section>
-
-						{/* ── Notas ── */}
-						<section className="space-y-2">
-							<Label htmlFor="notes">Notas</Label>
-							<Input
-								id="notes"
-								value={notes}
-								onChange={(e) => setNotes(e.target.value)}
-								placeholder="Notas adicionales"
-							/>
-						</section>
+							{/* ── Notas ── */}
+							<AccordionItem value="notes" className="border-b-0">
+								<AccordionTrigger className="py-3 hover:no-underline">
+									<span className="flex items-center gap-2 text-sm font-semibold">
+										<StickyNote className="h-4 w-4 text-primary" />
+										Notas
+										{notes && (
+											<span className="ml-1 inline-flex h-2 w-2 rounded-full bg-green-500" />
+										)}
+									</span>
+								</AccordionTrigger>
+								<AccordionContent>
+									<Textarea
+										id="notes"
+										value={notes}
+										onChange={(e) => setNotes(e.target.value)}
+										placeholder="Notas adicionales sobre este beneficiario controlador..."
+										rows={3}
+									/>
+								</AccordionContent>
+							</AccordionItem>
+						</Accordion>
 					</DialogBody>
 
 					<DialogFooter>

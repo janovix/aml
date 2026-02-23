@@ -505,7 +505,7 @@ function SessionCard({
 
 			{/* Reject dialog */}
 			<Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
-				<DialogContent>
+				<DialogContent fullscreenMobile>
 					<DialogHeader>
 						<DialogTitle className="flex items-center gap-2">
 							<XCircle className="h-5 w-5 text-destructive" />

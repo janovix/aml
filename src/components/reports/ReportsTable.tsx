@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import {
 	FileText,
 	Calendar,
 	FileCheck2,
 	Send,
-	CheckCircle2,
 	Clock,
 	MoreHorizontal,
 	Download,
@@ -17,8 +16,9 @@ import {
 	AlertCircle,
 } from "lucide-react";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
-import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { useServerTable } from "@/hooks/useServerTable";
 import { useJwt } from "@/hooks/useJwt";
+import { showFetchError } from "@/lib/toast-utils";
 import { useOrgStore } from "@/lib/org-store";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,7 +36,6 @@ import {
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/lib/mutations";
-import { showFetchError } from "@/lib/toast-utils";
 import {
 	DataTable,
 	type ColumnDef,
@@ -56,7 +55,7 @@ import {
 	type ReportStatus,
 } from "@/lib/api/reports";
 
-const ITEMS_PER_PAGE = 20;
+const REPORT_FILTER_IDS = ["type", "status"];
 
 const typeConfig: Record<
 	ReportType,
@@ -104,150 +103,88 @@ interface ReportsTableProps {
 }
 
 export function ReportsTable({
-	filters,
+	filters: fixedFilters,
 }: ReportsTableProps): React.ReactElement {
 	const { navigateTo, orgPath } = useOrgNavigation();
-	const { jwt, isLoading: isJwtLoading } = useJwt();
+	const { jwt } = useJwt();
 	const { currentOrg } = useOrgStore();
 	const { t } = useLanguage();
 
-	const [reports, setReports] = useState<Report[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const [isLoadingMore, setIsLoadingMore] = useState(false);
-	const [hasMore, setHasMore] = useState(false);
-	const [currentPage, setCurrentPage] = useState(1);
-	const [totalReports, setTotalReports] = useState(0);
+	const fixedFilterParams = useMemo<Record<string, string>>(() => {
+		const out: Record<string, string> = {};
+		if (fixedFilters?.periodType) out.periodType = fixedFilters.periodType;
+		if (fixedFilters?.status) out.status = fixedFilters.status;
+		return out;
+	}, [fixedFilters]);
 
-	// Track if initial load has happened for current org
-	const hasLoadedForOrgRef = useRef<string | null>(null);
-	// Track previous filters to detect changes
-	const prevFiltersRef = useRef<typeof filters | null>(null);
-
-	// Fetch reports from API (internal function, not a callback)
-	const doFetchReports = async (jwtToken: string) => {
-		try {
-			setIsLoading(true);
-			setReports([]);
-
-			const response = await listReports({
-				page: 1,
-				limit: ITEMS_PER_PAGE,
-				jwt: jwtToken,
-				...filters,
+	const {
+		data: reports,
+		isLoading,
+		isLoadingMore,
+		hasMore,
+		pagination,
+		filterMeta,
+		handleLoadMore,
+		refresh,
+		urlFilterProps,
+	} = useServerTable<Report>({
+		fetcher: async ({
+			page,
+			limit,
+			filters,
+			fixedFilters: fixed,
+			jwt: jwtParam,
+		}) => {
+			return listReports({
+				page,
+				limit,
+				jwt: jwtParam ?? undefined,
+				periodType: fixed?.periodType as ReportType | undefined,
+				status: fixed?.status as ReportStatus | undefined,
+				filters,
 			});
+		},
+		allowedFilterIds: REPORT_FILTER_IDS,
+		paginationMode: "infinite-scroll",
+		itemsPerPage: 20,
+		fixedFilters: fixedFilterParams,
+		onError: (error) => showFetchError("reports-table", error),
+	});
 
-			setReports(response.data);
-			setTotalReports(response.pagination.total);
-			setCurrentPage(1);
-			setHasMore(response.pagination.page < response.pagination.totalPages);
+	const handleGenerate = async (report: Report) => {
+		if (!jwt) return;
+		try {
+			await generateReportFile({ id: report.id, jwt });
+			toast.success(t("reportGeneratedToast"));
+			refresh();
 		} catch (error) {
-			console.error("Error fetching reports:", error);
-			showFetchError("reports-table", error);
-			if (currentOrg?.id) {
-				hasLoadedForOrgRef.current = currentOrg.id;
-			}
-		} finally {
-			setIsLoading(false);
+			console.error("Error generating report:", error);
+			toast.error(extractErrorMessage(error), { id: "reports-generate" });
 		}
 	};
 
-	// Load more reports for infinite scroll
-	const loadMore = useCallback(async () => {
-		if (!jwt || isLoadingMore || !hasMore) return;
-
+	const handleDownload = async (report: Report) => {
+		if (!jwt) return;
 		try {
-			setIsLoadingMore(true);
-			const nextPage = currentPage + 1;
-			const response = await listReports({
-				page: nextPage,
-				limit: ITEMS_PER_PAGE,
-				jwt,
-				...filters,
-			});
-
-			setReports((prev) => [...prev, ...response.data]);
-			setCurrentPage(nextPage);
-			setHasMore(response.pagination.page < response.pagination.totalPages);
+			await downloadReportFile({ id: report.id, jwt });
 		} catch (error) {
-			console.error("Error loading more reports:", error);
-			showFetchError("reports-table-more", error);
-		} finally {
-			setIsLoadingMore(false);
+			console.error("Error downloading report:", error);
+			toast.error(extractErrorMessage(error), { id: "reports-download" });
 		}
-	}, [jwt, isLoadingMore, hasMore, currentPage, filters, toast]);
+	};
 
-	// Silent refresh for auto-refresh (doesn't show loading state)
-	const silentRefresh = useCallback(async () => {
-		if (!jwt || isJwtLoading || !currentOrg) return;
-
+	const handleDelete = async (report: Report) => {
+		if (!jwt) return;
 		try {
-			const response = await listReports({
-				page: 1,
-				limit: ITEMS_PER_PAGE,
-				jwt,
-				...filters,
-			});
-			setReports(response.data);
-			setTotalReports(response.pagination.total);
-			setCurrentPage(1);
-			setHasMore(response.pagination.page < response.pagination.totalPages);
-		} catch {
-			// Silently ignore errors for background refresh
+			await deleteReport({ id: report.id, jwt });
+			toast.success(`${report.name} ${t("reportDeletedToast")}`);
+			refresh();
+		} catch (error) {
+			console.error("Error deleting report:", error);
+			toast.error(extractErrorMessage(error), { id: "reports-delete" });
 		}
-	}, [jwt, isJwtLoading, filters, currentOrg]);
+	};
 
-	// Auto-refresh every 30 seconds (only when on first page to avoid disrupting infinite scroll)
-	useAutoRefresh(silentRefresh, {
-		enabled: !isLoading && !!jwt && !!currentOrg && currentPage === 1,
-		interval: 30000,
-	});
-
-	// Initial load - refetch when organization changes (not on JWT refresh)
-	useEffect(() => {
-		if (isJwtLoading || !jwt || !currentOrg?.id) {
-			if (!currentOrg?.id && !isJwtLoading) {
-				setReports([]);
-				setIsLoading(false);
-				hasLoadedForOrgRef.current = null;
-			}
-			return;
-		}
-
-		// Skip if we've already loaded for this org (JWT refresh shouldn't trigger reload)
-		if (hasLoadedForOrgRef.current === currentOrg.id) {
-			return;
-		}
-
-		hasLoadedForOrgRef.current = currentOrg.id;
-		doFetchReports(jwt);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [jwt, isJwtLoading, currentOrg?.id]);
-
-	// Refetch when filters change (after initial load, skip first run)
-	useEffect(() => {
-		// Skip if not loaded yet
-		if (!hasLoadedForOrgRef.current || !jwt || !currentOrg?.id) {
-			prevFiltersRef.current = filters;
-			return;
-		}
-
-		// Skip on first run (initial load already fetched)
-		if (prevFiltersRef.current === null) {
-			prevFiltersRef.current = filters;
-			return;
-		}
-
-		// Only refetch if filters actually changed
-		if (JSON.stringify(prevFiltersRef.current) === JSON.stringify(filters)) {
-			return;
-		}
-
-		prevFiltersRef.current = filters;
-		doFetchReports(jwt);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [filters]);
-
-	// Column definitions
 	const columns: ColumnDef<Report>[] = useMemo(
 		() => [
 			{
@@ -349,7 +286,6 @@ export function ReportsTable({
 		[orgPath, t],
 	);
 
-	// Filter definitions
 	const filterDefs: FilterDef[] = useMemo(
 		() => [
 			{
@@ -416,44 +352,6 @@ export function ReportsTable({
 		[t],
 	);
 
-	const handleGenerate = async (report: Report) => {
-		if (!jwt) return;
-		try {
-			const result = await generateReportFile({ id: report.id, jwt });
-			toast.success(t("reportGeneratedToast"));
-			doFetchReports(jwt);
-		} catch (error) {
-			console.error("Error generating report:", error);
-			toast.error(extractErrorMessage(error), { id: "reports-generate" });
-		}
-	};
-
-	const handleDownload = async (report: Report) => {
-		if (!jwt) return;
-		try {
-			await downloadReportFile({
-				id: report.id,
-				jwt,
-			});
-		} catch (error) {
-			console.error("Error downloading report:", error);
-			toast.error(extractErrorMessage(error), { id: "reports-download" });
-		}
-	};
-
-	const handleDelete = async (report: Report) => {
-		if (!jwt) return;
-		try {
-			await deleteReport({ id: report.id, jwt });
-			toast.success(`${report.name} ${t("reportDeletedToast")}`);
-			doFetchReports(jwt);
-		} catch (error) {
-			console.error("Error deleting report:", error);
-			toast.error(extractErrorMessage(error), { id: "reports-delete" });
-		}
-	};
-
-	// Row actions
 	const renderActions = (item: Report) => (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
@@ -511,8 +409,8 @@ export function ReportsTable({
 		</DropdownMenu>
 	);
 
-	// Compute stats from reports data
 	const stats: StatCard[] = useMemo(() => {
+		const totalReports = pagination?.total ?? reports.length;
 		const draftReports = reports.filter((r) => r.status === "DRAFT").length;
 		const generatedReports = reports.filter(
 			(r) => r.status === "GENERATED",
@@ -520,31 +418,18 @@ export function ReportsTable({
 		const totalRecords = reports.reduce((sum, r) => sum + r.recordCount, 0);
 
 		return [
-			{
-				label: t("tableTotalReports"),
-				value: totalReports,
-				icon: FileText,
-			},
+			{ label: t("tableTotalReports"), value: totalReports, icon: FileText },
 			{
 				label: t("tableDrafts"),
 				value: draftReports,
 				icon: Clock,
 				variant: "primary",
 			},
-			{
-				label: t("tableGenerated"),
-				value: generatedReports,
-				icon: FileCheck2,
-			},
-			{
-				label: t("tableTotalRecords"),
-				value: totalRecords,
-				icon: FileCheck2,
-			},
+			{ label: t("tableGenerated"), value: generatedReports, icon: FileCheck2 },
+			{ label: t("tableTotalRecords"), value: totalRecords, icon: FileCheck2 },
 		];
-	}, [reports, totalReports, t]);
+	}, [reports, pagination?.total, t]);
 
-	// Show error if no organization selected
 	if (!currentOrg && !isLoading) {
 		return (
 			<div className="flex flex-col items-center justify-center py-12 text-center">
@@ -570,19 +455,22 @@ export function ReportsTable({
 				data={reports}
 				columns={columns}
 				filters={filterDefs}
+				serverFilterMeta={filterMeta}
+				serverTotal={pagination?.total}
 				searchKeys={["id", "name", "reportedMonth"]}
 				searchPlaceholder={t("reportSearchPlaceholder")}
 				emptyMessage={t("reportNoResults")}
 				emptyIcon={FileText}
 				loadingMessage={t("reportLoading")}
-				isLoading={isLoading || isJwtLoading}
+				isLoading={isLoading}
 				selectable
 				getId={(item) => item.id}
 				actions={renderActions}
 				paginationMode="infinite-scroll"
 				hasMore={hasMore}
-				onLoadMore={loadMore}
+				onLoadMore={handleLoadMore}
 				isLoadingMore={isLoadingMore}
+				{...urlFilterProps}
 			/>
 		</div>
 	);

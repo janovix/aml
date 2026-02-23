@@ -500,7 +500,9 @@ export function ClientEditView({
 					}),
 				loading: t("clientUpdating"),
 				success: t("clientUpdateSuccess"),
-				onSuccess: () => {
+				onSuccess: (updatedClient) => {
+					setClient(updatedClient);
+					router.refresh();
 					navigateTo(`/clients/${clientId}`);
 				},
 			});

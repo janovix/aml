@@ -122,7 +122,7 @@ function CreateOrganizationDialog({
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
 			<DialogTrigger asChild>{trigger}</DialogTrigger>
-			<DialogContent>
+			<DialogContent fullscreenMobile>
 				<DialogHeader>
 					<DialogTitle>New organization</DialogTitle>
 					<DialogDescription>

@@ -232,7 +232,7 @@ export function UploadLinkManager({
 								Crear Enlace de Subida
 							</Button>
 						</DialogTrigger>
-						<DialogContent>
+						<DialogContent fullscreenMobile>
 							<DialogHeader>
 								<DialogTitle>Crear Enlace de Subida</DialogTitle>
 								<DialogDescription>

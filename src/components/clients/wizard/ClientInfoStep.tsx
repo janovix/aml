@@ -1,14 +1,15 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSessionStorageForm } from "@/hooks/useSessionStorageForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, AlertTriangle } from "lucide-react";
+import Link from "next/link";
 import type {
 	PersonType,
 	ClientCreateRequest,
@@ -17,7 +18,8 @@ import type {
 	MaritalStatus,
 } from "@/types/client";
 import { PersonTypePicker } from "../PersonTypePicker";
-import { createClient } from "@/lib/api/clients";
+import { createClient, checkRfcExists } from "@/lib/api/clients";
+import type { CheckRfcResult } from "@/lib/api/clients";
 import { executeMutation } from "@/lib/mutations";
 import { LabelWithInfo } from "@/components/ui/LabelWithInfo";
 import { getFieldDescription } from "@/lib/field-descriptions";
@@ -43,6 +45,8 @@ import { toast } from "sonner";
 import { useLanguage } from "@/components/LanguageProvider";
 import { validatePhone } from "@/lib/validators/validate-phone";
 import { ZipCodeAddressFields } from "../ZipCodeAddressFields";
+import { useJwt } from "@/hooks/useJwt";
+import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 
 interface ClientInfoStepProps {
 	onClientCreated: (client: Client) => void;
@@ -125,6 +129,8 @@ export function ClientInfoStep({
 	initialPersonType,
 }: ClientInfoStepProps): React.JSX.Element {
 	const { t } = useLanguage();
+	const { jwt } = useJwt();
+	const { routes } = useOrgNavigation();
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const [formData, setFormData, clearFormStorage] =
@@ -141,6 +147,37 @@ export function ClientInfoStep({
 		lastName?: string;
 		secondLastName?: string;
 	}>({});
+
+	const [rfcDuplicate, setRfcDuplicate] = useState<CheckRfcResult | null>(null);
+	const rfcCheckAbortRef = useRef<AbortController | null>(null);
+
+	useEffect(() => {
+		setRfcDuplicate(null);
+
+		const rfcValue = formData.rfc.trim();
+		const expectedLen = formData.personType === "physical" ? 13 : 12;
+		if (rfcValue.length !== expectedLen || !jwt) return;
+
+		const rfcValidation = validateRFC(rfcValue, formData.personType);
+		if (!rfcValidation.isValid) return;
+
+		rfcCheckAbortRef.current?.abort();
+		const controller = new AbortController();
+		rfcCheckAbortRef.current = controller;
+
+		const timeout = setTimeout(() => {
+			checkRfcExists({ rfc: rfcValue, jwt, signal: controller.signal })
+				.then((result) => {
+					if (!controller.signal.aborted) setRfcDuplicate(result);
+				})
+				.catch(() => {});
+		}, 400);
+
+		return () => {
+			clearTimeout(timeout);
+			controller.abort();
+		};
+	}, [formData.rfc, formData.personType, jwt]);
 
 	const fieldTiers = getClientFieldTierMap(formData.personType);
 
@@ -742,6 +779,24 @@ export function ClientInfoStep({
 									? "13 caracteres para persona física"
 									: "12 caracteres para persona moral/fideicomiso"}
 							</p>
+						)}
+						{rfcDuplicate?.exists && rfcDuplicate.clientId && (
+							<div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-2.5 dark:border-amber-700 dark:bg-amber-950/40">
+								<AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+								<p className="text-xs text-amber-800 dark:text-amber-300">
+									Ya existe un cliente con este RFC
+									{rfcDuplicate.clientName
+										? ` (${rfcDuplicate.clientName})`
+										: ""}
+									.{" "}
+									<Link
+										href={routes.clients.detail(rfcDuplicate.clientId)}
+										className="font-medium underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-200"
+									>
+										Ver cliente existente
+									</Link>
+								</p>
+							</div>
 						)}
 					</div>
 					<CatalogSelector

@@ -1,10 +1,9 @@
 import { getAmlCoreBaseUrl } from "./config";
 import { fetchJson } from "./http";
-import type {
-	Client,
-	ClientCreateRequest,
-	ClientsListResponse,
-} from "@/types/client";
+import type { Client, ClientCreateRequest } from "@/types/client";
+
+import type { ListResult } from "@/types/list-result";
+export type ClientsListResponse = ListResult<Client>;
 
 export interface ListClientsOptions {
 	page?: number;
@@ -12,6 +11,9 @@ export interface ListClientsOptions {
 	search?: string;
 	rfc?: string;
 	personType?: "physical" | "moral" | "trust";
+	stateCode?: string;
+	/** Generic additional filters (passed as query params) */
+	filters?: Record<string, string | string[]>;
 	baseUrl?: string;
 	signal?: AbortSignal;
 	/** JWT token for authentication */
@@ -29,6 +31,18 @@ export async function listClients(
 	if (opts?.search) url.searchParams.set("search", opts.search);
 	if (opts?.rfc) url.searchParams.set("rfc", opts.rfc);
 	if (opts?.personType) url.searchParams.set("personType", opts.personType);
+	if (opts?.stateCode) url.searchParams.set("stateCode", opts.stateCode);
+
+	// Apply generic filter params (from useServerTable)
+	if (opts?.filters) {
+		for (const [key, value] of Object.entries(opts.filters)) {
+			if (Array.isArray(value)) {
+				value.forEach((v) => url.searchParams.append(key, v));
+			} else {
+				url.searchParams.set(key, value);
+			}
+		}
+	}
 
 	const { json } = await fetchJson<ClientsListResponse>(url.toString(), {
 		method: "GET",
@@ -86,6 +100,33 @@ export async function getClientByRfc(opts: {
 	}
 
 	return json.data[0];
+}
+
+export interface CheckRfcResult {
+	exists: boolean;
+	clientId?: string;
+	clientName?: string;
+}
+
+export async function checkRfcExists(opts: {
+	rfc: string;
+	baseUrl?: string;
+	signal?: AbortSignal;
+	jwt?: string;
+}): Promise<CheckRfcResult> {
+	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
+	const url = new URL(
+		`/api/v1/clients/check-rfc/${encodeURIComponent(opts.rfc)}`,
+		baseUrl,
+	);
+
+	const { json } = await fetchJson<CheckRfcResult>(url.toString(), {
+		method: "GET",
+		cache: "no-store",
+		signal: opts.signal,
+		jwt: opts.jwt,
+	});
+	return json;
 }
 
 export async function createClient(opts: {

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import {
-	FileText,
+	FileWarning,
 	Calendar,
 	FileCheck2,
 	Send,
@@ -15,11 +15,13 @@ import {
 	Trash2,
 	Plus,
 	AlertCircle,
-	FileWarning,
+	XCircle,
+	Undo2,
 } from "lucide-react";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
-import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { useServerTable } from "@/hooks/useServerTable";
 import { useJwt } from "@/hooks/useJwt";
+import { showFetchError } from "@/lib/toast-utils";
 import { useOrgStore } from "@/lib/org-store";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,7 +39,6 @@ import {
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/lib/mutations";
-import { showFetchError } from "@/lib/toast-utils";
 import {
 	DataTable,
 	type ColumnDef,
@@ -46,6 +47,7 @@ import {
 import { PageHero, type StatCard } from "@/components/page-hero";
 import { formatProperNoun } from "@/lib/utils";
 import { useLanguage } from "@/components/LanguageProvider";
+import type { TranslationKeys } from "@/lib/translations";
 import {
 	listNotices,
 	deleteNotice,
@@ -55,9 +57,7 @@ import {
 	type NoticeStatus,
 } from "@/lib/api/notices";
 
-const ITEMS_PER_PAGE = 20;
-
-import type { TranslationKeys } from "@/lib/translations";
+const NOTICE_FILTER_IDS = ["status", "year"];
 
 const statusConfig: Record<
 	NoticeStatus,
@@ -92,6 +92,12 @@ const statusConfig: Record<
 		color: "text-emerald-400",
 		bgColor: "bg-emerald-500/20",
 	},
+	REBUKED: {
+		label: "statusRebuked",
+		icon: <XCircle className="h-4 w-4" />,
+		color: "text-red-400",
+		bgColor: "bg-red-500/20",
+	},
 };
 
 interface NoticesTableProps {
@@ -102,136 +108,89 @@ interface NoticesTableProps {
 }
 
 export function NoticesTable({
-	filters,
+	filters: fixedFilters,
 }: NoticesTableProps): React.ReactElement {
 	const { navigateTo, orgPath } = useOrgNavigation();
-	const { jwt, isLoading: isJwtLoading } = useJwt();
+	const { jwt } = useJwt();
 	const { currentOrg } = useOrgStore();
 	const { t } = useLanguage();
 
-	const [notices, setNotices] = useState<Notice[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const [isLoadingMore, setIsLoadingMore] = useState(false);
-	const [hasMore, setHasMore] = useState(false);
-	const [currentPage, setCurrentPage] = useState(1);
-	const [totalNotices, setTotalNotices] = useState(0);
+	const fixedFilterParams = useMemo<Record<string, string>>(() => {
+		const out: Record<string, string> = {};
+		if (fixedFilters?.status) out.status = fixedFilters.status;
+		if (fixedFilters?.year) out.year = String(fixedFilters.year);
+		return out;
+	}, [fixedFilters]);
 
-	const hasLoadedForOrgRef = useRef<string | null>(null);
-	const prevFiltersRef = useRef<typeof filters | null>(null);
-
-	const doFetchNotices = async (jwtToken: string) => {
-		try {
-			setIsLoading(true);
-			setNotices([]);
-
-			const response = await listNotices({
-				page: 1,
-				limit: ITEMS_PER_PAGE,
-				jwt: jwtToken,
-				...filters,
+	const {
+		data: notices,
+		isLoading,
+		isLoadingMore,
+		hasMore,
+		pagination,
+		filterMeta,
+		handleLoadMore,
+		refresh,
+		urlFilterProps,
+	} = useServerTable<Notice>({
+		fetcher: async ({
+			page,
+			limit,
+			filters,
+			fixedFilters: fixed,
+			jwt: jwtParam,
+		}) => {
+			return listNotices({
+				page,
+				limit,
+				jwt: jwtParam ?? undefined,
+				status: fixed?.status as NoticeStatus | undefined,
+				year: fixed?.year ? parseInt(fixed.year, 10) : undefined,
+				filters,
 			});
+		},
+		allowedFilterIds: NOTICE_FILTER_IDS,
+		paginationMode: "infinite-scroll",
+		itemsPerPage: 20,
+		fixedFilters: fixedFilterParams,
+		onError: (error) => showFetchError("notices-table", error),
+	});
 
-			setNotices(response.data);
-			setTotalNotices(response.pagination.total);
-			setCurrentPage(1);
-			setHasMore(response.pagination.page < response.pagination.totalPages);
+	const handleGenerate = async (notice: Notice) => {
+		if (!jwt) return;
+		try {
+			const result = await generateNoticeFile({ id: notice.id, jwt });
+			toast.success(
+				`${t("noticeXmlGeneratedToast")} ${result.alertCount} ${t("noticeAlertsSuffix")}`,
+			);
+			refresh();
 		} catch (error) {
-			console.error("Error fetching notices:", error);
-			showFetchError("notices-table", error);
-			if (currentOrg?.id) {
-				hasLoadedForOrgRef.current = currentOrg.id;
-			}
-		} finally {
-			setIsLoading(false);
+			console.error("Error generating notice:", error);
+			toast.error(extractErrorMessage(error), { id: "notices-generate" });
 		}
 	};
 
-	const loadMore = useCallback(async () => {
-		if (!jwt || isLoadingMore || !hasMore) return;
-
+	const handleDownload = async (notice: Notice) => {
+		if (!jwt) return;
 		try {
-			setIsLoadingMore(true);
-			const nextPage = currentPage + 1;
-			const response = await listNotices({
-				page: nextPage,
-				limit: ITEMS_PER_PAGE,
-				jwt,
-				...filters,
-			});
-
-			setNotices((prev) => [...prev, ...response.data]);
-			setCurrentPage(nextPage);
-			setHasMore(response.pagination.page < response.pagination.totalPages);
+			await downloadNoticeXml({ id: notice.id, jwt });
 		} catch (error) {
-			console.error("Error loading more notices:", error);
-			showFetchError("notices-table-more", error);
-		} finally {
-			setIsLoadingMore(false);
+			console.error("Error downloading notice:", error);
+			toast.error(extractErrorMessage(error), { id: "notices-download" });
 		}
-	}, [jwt, isLoadingMore, hasMore, currentPage, filters, toast]);
+	};
 
-	const silentRefresh = useCallback(async () => {
-		if (!jwt || isJwtLoading || !currentOrg) return;
-
+	const handleDelete = async (notice: Notice) => {
+		if (!jwt) return;
 		try {
-			const response = await listNotices({
-				page: 1,
-				limit: ITEMS_PER_PAGE,
-				jwt,
-				...filters,
-			});
-			setNotices(response.data);
-			setTotalNotices(response.pagination.total);
-			setCurrentPage(1);
-			setHasMore(response.pagination.page < response.pagination.totalPages);
-		} catch {
-			// Silently ignore errors for background refresh
+			await deleteNotice({ id: notice.id, jwt });
+			toast.success(`${notice.name} ${t("noticeDeletedToast")}`);
+			refresh();
+		} catch (error) {
+			console.error("Error deleting notice:", error);
+			toast.error(extractErrorMessage(error), { id: "notices-delete" });
 		}
-	}, [jwt, isJwtLoading, filters, currentOrg]);
-
-	useAutoRefresh(silentRefresh, {
-		enabled: !isLoading && !!jwt && !!currentOrg && currentPage === 1,
-		interval: 30000,
-	});
-
-	useEffect(() => {
-		if (isJwtLoading || !jwt || !currentOrg?.id) {
-			if (!currentOrg?.id && !isJwtLoading) {
-				setNotices([]);
-				setIsLoading(false);
-				hasLoadedForOrgRef.current = null;
-			}
-			return;
-		}
-
-		if (hasLoadedForOrgRef.current === currentOrg.id) {
-			return;
-		}
-
-		hasLoadedForOrgRef.current = currentOrg.id;
-		doFetchNotices(jwt);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [jwt, isJwtLoading, currentOrg?.id]);
-
-	useEffect(() => {
-		if (!hasLoadedForOrgRef.current || !jwt || !currentOrg?.id) {
-			prevFiltersRef.current = filters;
-			return;
-		}
-
-		if (prevFiltersRef.current === null) {
-			prevFiltersRef.current = filters;
-			return;
-		}
-
-		if (JSON.stringify(prevFiltersRef.current) === JSON.stringify(filters)) {
-			return;
-		}
-
-		prevFiltersRef.current = filters;
-		doFetchNotices(jwt);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [filters]);
+	};
 
 	const columns: ColumnDef<Notice>[] = useMemo(
 		() => [
@@ -267,6 +226,16 @@ export function NoticesTable({
 									>
 										{formatProperNoun(item.name)}
 									</Link>
+									{item.amendmentCycle > 0 && (
+										<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/20 text-amber-400">
+											Enmienda #{item.amendmentCycle}
+										</span>
+									)}
+									{item.recordCount === 0 && (
+										<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-zinc-500/20 text-zinc-400">
+											Sin actividad
+										</span>
+									)}
 									<TooltipProvider>
 										<Tooltip>
 											<TooltipTrigger asChild>
@@ -402,47 +371,16 @@ export function NoticesTable({
 						label: t("noticeFilterAcknowledged"),
 						icon: <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />,
 					},
+					{
+						value: "REBUKED",
+						label: t("statusRebuked"),
+						icon: <XCircle className="h-3.5 w-3.5 text-red-400" />,
+					},
 				],
 			},
 		],
 		[t],
 	);
-
-	const handleGenerate = async (notice: Notice) => {
-		if (!jwt) return;
-		try {
-			const result = await generateNoticeFile({ id: notice.id, jwt });
-			toast.success(
-				`${t("noticeXmlGeneratedToast")} ${result.alertCount} ${t("noticeAlertsSuffix")}`,
-			);
-			doFetchNotices(jwt);
-		} catch (error) {
-			console.error("Error generating notice:", error);
-			toast.error(extractErrorMessage(error), { id: "notices-generate" });
-		}
-	};
-
-	const handleDownload = async (notice: Notice) => {
-		if (!jwt) return;
-		try {
-			await downloadNoticeXml({ id: notice.id, jwt });
-		} catch (error) {
-			console.error("Error downloading notice:", error);
-			toast.error(extractErrorMessage(error), { id: "notices-download" });
-		}
-	};
-
-	const handleDelete = async (notice: Notice) => {
-		if (!jwt) return;
-		try {
-			await deleteNotice({ id: notice.id, jwt });
-			toast.success(`${notice.name} ${t("noticeDeletedToast")}`);
-			doFetchNotices(jwt);
-		} catch (error) {
-			console.error("Error deleting notice:", error);
-			toast.error(extractErrorMessage(error), { id: "notices-delete" });
-		}
-	};
 
 	const renderActions = (item: Notice) => (
 		<DropdownMenu>
@@ -477,6 +415,24 @@ export function NoticesTable({
 						{t("noticeSendToSat")}
 					</DropdownMenuItem>
 				)}
+				{item.status === "SUBMITTED" && (
+					<DropdownMenuItem
+						className="gap-2"
+						onClick={() => navigateTo(`/notices/${item.id}`)}
+					>
+						<XCircle className="h-4 w-4" />
+						Reportar Rechazo
+					</DropdownMenuItem>
+				)}
+				{item.status === "REBUKED" && (
+					<DropdownMenuItem
+						className="gap-2"
+						onClick={() => navigateTo(`/notices/${item.id}`)}
+					>
+						<Undo2 className="h-4 w-4" />
+						Revertir a Borrador
+					</DropdownMenuItem>
+				)}
 				<DropdownMenuSeparator />
 				{item.status !== "DRAFT" && (
 					<DropdownMenuItem
@@ -509,6 +465,7 @@ export function NoticesTable({
 			(n) => n.status === "SUBMITTED" || n.status === "ACKNOWLEDGED",
 		).length;
 		const totalAlerts = notices.reduce((sum, n) => sum + n.recordCount, 0);
+		const totalNotices = pagination?.total ?? notices.length;
 
 		return [
 			{
@@ -522,18 +479,10 @@ export function NoticesTable({
 				icon: Clock,
 				variant: "primary",
 			},
-			{
-				label: t("noticeSentCount"),
-				value: submittedNotices,
-				icon: Send,
-			},
-			{
-				label: t("noticeTotalAlerts"),
-				value: totalAlerts,
-				icon: FileCheck2,
-			},
+			{ label: t("noticeSentCount"), value: submittedNotices, icon: Send },
+			{ label: t("noticeTotalAlerts"), value: totalAlerts, icon: FileCheck2 },
 		];
-	}, [notices, totalNotices, t]);
+	}, [notices, pagination?.total, t]);
 
 	if (!currentOrg && !isLoading) {
 		return (
@@ -560,19 +509,22 @@ export function NoticesTable({
 				data={notices}
 				columns={columns}
 				filters={filterDefs}
+				serverFilterMeta={filterMeta}
+				serverTotal={pagination?.total}
 				searchKeys={["id", "name", "reportedMonth"]}
 				searchPlaceholder={t("noticeSearchPlaceholder")}
 				emptyMessage={t("noticeNoResults")}
 				emptyIcon={FileWarning}
 				loadingMessage={t("noticeLoading")}
-				isLoading={isLoading || isJwtLoading}
+				isLoading={isLoading}
 				selectable
 				getId={(item) => item.id}
 				actions={renderActions}
 				paginationMode="infinite-scroll"
 				hasMore={hasMore}
-				onLoadMore={loadMore}
+				onLoadMore={handleLoadMore}
 				isLoadingMore={isLoadingMore}
+				{...urlFilterProps}
 			/>
 		</div>
 	);

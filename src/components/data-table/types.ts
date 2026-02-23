@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
+import type { FilterMetaDef } from "@/types/list-result";
 
 /**
  * Column definition for the data table
@@ -33,6 +34,8 @@ export interface FilterOption {
 	icon?: ReactNode;
 	/** Optional color class */
 	color?: string;
+	/** Optional record count from server-driven filter metadata */
+	count?: number;
 }
 
 /**
@@ -71,8 +74,24 @@ export interface DataTableProps<T> {
 	data: T[];
 	/** Column definitions */
 	columns: ColumnDef<T>[];
-	/** Filter definitions */
+	/**
+	 * Static filter definitions.  Pass either `filters` (static) or
+	 * `serverFilterMeta` (dynamic, from the server).  When both are provided,
+	 * `serverFilterMeta` takes precedence.
+	 */
 	filters: FilterDef[];
+	/**
+	 * Dynamic filter metadata returned from the server.
+	 * When provided, the DataTable renders server-driven filter options with
+	 * live counts and disables client-side filtering (all filtering is done
+	 * server-side via the parent component).
+	 */
+	serverFilterMeta?: FilterMetaDef[];
+	/**
+	 * Total record count from the server (used in server-driven mode to show
+	 * the correct result count in the footer instead of `data.length`).
+	 */
+	serverTotal?: number;
 	/** Keys to search in (supports nested paths) */
 	searchKeys: (keyof T | string)[];
 	/** Placeholder text for search input */

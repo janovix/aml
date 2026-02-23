@@ -8,30 +8,16 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* iOS Safari viewport height fix */
-/* Use CSS variable set by ViewportHeightProvider for stable viewport height */
-/* Falls back to dvh (dynamic viewport height) for modern browsers, then 100vh */
-:root {
-	--viewport-height: 100vh;
-	--viewport-height-fallback: 100vh;
-	--viewport-offset-top: 0px;
-	--keyboard-open: 0;
-}
-
-@supports (height: 100dvh) {
-	:root {
-		--viewport-height: 100dvh;
-	}
-}
-
-/* Override Tailwind's h-screen to use our viewport height variable */
+/* Override Tailwind's h-screen/min-h-screen to use dvh (dynamic viewport height).
+   dvh adapts smoothly to iOS Safari toolbar collapse/expand without JavaScript. */
 .h-screen {
-	height: var(--viewport-height, 100vh);
+	height: 100vh;
+	height: 100dvh;
 }
 
-/* Also override min-h-screen for consistency */
 .min-h-screen {
-	min-height: var(--viewport-height, 100vh);
+	min-height: 100vh;
+	min-height: 100dvh;
 }
 
 :root {
@@ -247,18 +233,13 @@
 	}
 }
 
-/* Prevent horizontal overflow on mobile */
+/* Lock document scroll -- all scrolling happens inside the app's scroll container */
 html,
 body {
-	overflow-x: hidden;
+	overflow: hidden;
+	height: 100%;
 	max-width: 100vw;
-}
-
-/* Ensure proper mobile viewport */
-#__next,
-main {
-	max-width: 100vw;
-	overflow-x: hidden;
+	overscroll-behavior: none;
 }
 
 /* Global scrollbar styles - subtle by default, visible on hover */

@@ -1,3 +1,24 @@
+# [1.4.0-rc.52](https://github.com/janovix/aml/compare/v1.4.0-rc.51...v1.4.0-rc.52) (2026-02-22)
+
+
+### Bug Fixes
+
+* update CreateNoticeView to improve empty confirmation logic and refine notice period calculations; enhance related tests for clarity ([5506167](https://github.com/janovix/aml/commit/5506167d9baf23931790824bd150259eaf30fd72))
+
+# [1.4.0-rc.51](https://github.com/janovix/aml/compare/v1.4.0-rc.50...v1.4.0-rc.51) (2026-02-21)
+
+
+### Features
+
+* enhance CreateNoticeView and NoticeDetailsView with alert management features; update tests and translations for rebuke functionality ([db5376a](https://github.com/janovix/aml/commit/db5376a54544f0332568a42c439aca09b98e26c7))
+
+# [1.4.0-rc.50](https://github.com/janovix/aml/compare/v1.4.0-rc.49...v1.4.0-rc.50) (2026-02-21)
+
+
+### Features
+
+* add fullscreenMobile prop to DialogContent component for improved mobile responsiveness; update various dialog components to utilize this feature ([eb1324f](https://github.com/janovix/aml/commit/eb1324fc5b9fbed0f19ec482d3e46dbd8bb04567))
+
 # [1.4.0-rc.49](https://github.com/janovix/aml/compare/v1.4.0-rc.48...v1.4.0-rc.49) (2026-02-20)
 
 

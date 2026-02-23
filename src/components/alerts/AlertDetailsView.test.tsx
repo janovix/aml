@@ -59,6 +59,37 @@ vi.mock("@/lib/api/clients", () => ({
 	getClientById: vi.fn(),
 }));
 
+vi.mock("@/lib/api/operations", () => ({
+	getOperationById: vi.fn(({ id }: { id: string }) =>
+		Promise.resolve({
+			id,
+			organizationId: "org-1",
+			clientId: "client-1",
+			invoiceId: null,
+			activityCode: "VEH",
+			operationTypeCode: null,
+			operationDate: new Date("2024-01-01").toISOString(),
+			branchPostalCode: "01000",
+			amount: "100000",
+			currencyCode: "MXN",
+			exchangeRate: null,
+			amountMxn: null,
+			umaValue: null,
+			umaDailyValue: null,
+			alertTypeCode: "A",
+			alertDescription: null,
+			watchlistStatus: null,
+			watchlistCheckedAt: null,
+			watchlistResult: null,
+			watchlistFlags: null,
+			priorityCode: null,
+			dataSource: "MANUAL",
+			createdAt: new Date("2024-01-01").toISOString(),
+			updatedAt: new Date("2024-01-01").toISOString(),
+		}),
+	),
+}));
+
 vi.mock("@/lib/mutations", () => ({
 	executeMutation: (opts: unknown) => mockExecuteMutation(opts),
 	extractErrorMessage: (error: unknown) =>

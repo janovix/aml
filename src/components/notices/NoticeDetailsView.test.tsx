@@ -88,11 +88,13 @@ const mockDraftNotice: noticesApi.NoticeWithAlertSummary = {
 	fileSize: null,
 	generatedAt: null,
 	submittedAt: null,
-	satFolioNumber: null,
+	amendmentCycle: 0,
 	createdBy: "user-1",
 	notes: null,
 	createdAt: "2024-12-01T00:00:00Z",
 	updatedAt: "2024-12-01T00:00:00Z",
+	events: [],
+	alerts: [],
 	alertSummary: {
 		total: 10,
 		bySeverity: { CRITICAL: 2, HIGH: 5, MEDIUM: 3 },
@@ -125,7 +127,6 @@ const mockAcknowledgedNotice: noticesApi.NoticeWithAlertSummary = {
 	...mockSubmittedNotice,
 	id: "NTC004",
 	status: "ACKNOWLEDGED",
-	satFolioNumber: "SAT-2024-12345",
 };
 
 describe("NoticeDetailsView", () => {
@@ -376,11 +377,7 @@ describe("NoticeDetailsView", () => {
 			await user.click(screen.getByText("Marcar como Enviado"));
 
 			await waitFor(() => {
-				expect(
-					screen.getByText(
-						"Sube el PDF generado del portal del SAT al confirmar el envío del XML. Opcionalmente puedes ingresar el número de folio.",
-					),
-				).toBeInTheDocument();
+				expect(screen.getByText("Confirmar Envío")).toBeInTheDocument();
 			});
 
 			// Simulate PDF file selection
@@ -392,12 +389,6 @@ describe("NoticeDetailsView", () => {
 				type: "application/pdf",
 			});
 			await user.upload(fileInput, pdfFile);
-
-			// Fill in optional folio
-			const folioInput = screen.getByPlaceholderText(
-				"Ingresa el folio del SAT",
-			);
-			await user.type(folioInput, "SAT-2024-12345");
 
 			await user.click(screen.getByText("Confirmar Envío"));
 
@@ -417,7 +408,6 @@ describe("NoticeDetailsView", () => {
 				expect(noticesApi.submitNoticeToSat).toHaveBeenCalledWith({
 					id: "NTC002",
 					docSvcDocumentId: "DOC-test-123",
-					satFolioNumber: "SAT-2024-12345",
 					jwt: "test-jwt-token",
 				});
 			});
@@ -462,7 +452,6 @@ describe("NoticeDetailsView", () => {
 			vi.mocked(noticesApi.acknowledgeNotice).mockResolvedValue({
 				...mockSubmittedNotice,
 				status: "ACKNOWLEDGED",
-				satFolioNumber: "SAT-ACK-2024-99999",
 			});
 
 			const user = userEvent.setup();
@@ -478,7 +467,7 @@ describe("NoticeDetailsView", () => {
 				expect(screen.getByText("Registrar Acuse del SAT")).toBeInTheDocument();
 			});
 
-			// Simulate PDF file selection (there are 2 file inputs - submit and ack; get the one in the open dialog)
+			// Simulate PDF file selection (there are multiple file inputs; get the last one in the open dialog)
 			const fileInputs = document.querySelectorAll(
 				'input[type="file"][accept="application/pdf"]',
 			);
@@ -489,12 +478,6 @@ describe("NoticeDetailsView", () => {
 				type: "application/pdf",
 			});
 			await user.upload(ackFileInput, pdfFile);
-
-			// Fill in required folio
-			const folioInput = screen.getByPlaceholderText(
-				"Ingresa el folio del acuse",
-			);
-			await user.type(folioInput, "SAT-ACK-2024-99999");
 
 			// Find the "Registrar Acuse" button in the dialog
 			const dialogButtons = screen.getAllByRole("button");
@@ -520,7 +503,6 @@ describe("NoticeDetailsView", () => {
 			await waitFor(() => {
 				expect(noticesApi.acknowledgeNotice).toHaveBeenCalledWith({
 					id: "NTC003",
-					satFolioNumber: "SAT-ACK-2024-99999",
 					docSvcDocumentId: "DOC-ack-456",
 					jwt: "test-jwt-token",
 				});
@@ -531,7 +513,7 @@ describe("NoticeDetailsView", () => {
 			});
 		});
 
-		it("disables acknowledge button when folio or PDF is empty", async () => {
+		it("disables acknowledge button when PDF is not selected", async () => {
 			const user = userEvent.setup();
 			renderWithProviders(<NoticeDetailsView noticeId="NTC003" />);
 
@@ -545,7 +527,7 @@ describe("NoticeDetailsView", () => {
 				expect(screen.getByText("Registrar Acuse del SAT")).toBeInTheDocument();
 			});
 
-			// Find the "Registrar Acuse" button in the dialog - it should be disabled (no folio, no PDF)
+			// Find the "Registrar Acuse" button in the dialog - it should be disabled (no PDF selected)
 			const dialogButtons = screen.getAllByRole("button");
 			const registerButton = dialogButtons.find(
 				(btn) =>
@@ -577,12 +559,42 @@ describe("NoticeDetailsView", () => {
 			expect(screen.queryByText("Generar XML")).not.toBeInTheDocument();
 		});
 
-		it("shows SAT folio number", async () => {
+		it("shows event timeline for acknowledged notice with events", async () => {
+			const acknowledgedWithEvents: noticesApi.NoticeWithAlertSummary = {
+				...mockAcknowledgedNotice,
+				events: [
+					{
+						id: "evt-1",
+						noticeId: "NTC004",
+						organizationId: "org-1",
+						eventType: "CREATED",
+						toStatus: "DRAFT",
+						cycle: 0,
+						createdAt: "2024-12-01T00:00:00Z",
+					},
+					{
+						id: "evt-2",
+						noticeId: "NTC004",
+						organizationId: "org-1",
+						eventType: "ACKNOWLEDGED",
+						fromStatus: "SUBMITTED",
+						toStatus: "ACKNOWLEDGED",
+						cycle: 0,
+						pdfDocumentId: "DOC-ack-789",
+						createdAt: "2024-12-22T12:00:00Z",
+					},
+				],
+			};
+			vi.mocked(noticesApi.getNoticeById).mockResolvedValue(
+				acknowledgedWithEvents,
+			);
+
 			renderWithProviders(<NoticeDetailsView noticeId="NTC004" />);
 
 			await waitFor(() => {
-				expect(screen.getByText("Folio SAT")).toBeInTheDocument();
-				expect(screen.getByText("SAT-2024-12345")).toBeInTheDocument();
+				expect(screen.getByText("Historial")).toBeInTheDocument();
+				expect(screen.getByText("Acuse registrado")).toBeInTheDocument();
+				expect(screen.getByText("Aviso creado")).toBeInTheDocument();
 			});
 		});
 
