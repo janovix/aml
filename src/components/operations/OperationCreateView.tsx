@@ -30,7 +30,6 @@ import type {
 import { ACTIVITY_EXTENSION_KEY } from "@/types/operation";
 import { getExtensionForm } from "@/components/operations/extensions";
 import { OperationPaymentForm } from "./OperationPaymentForm";
-import { ActivityBadge } from "./ActivityBadge";
 import { ThresholdIndicator } from "./ThresholdIndicator";
 import { getActivityVisual } from "@/lib/activity-registry";
 import { FieldLabel } from "@/components/completeness/FieldLabel";
@@ -377,15 +376,6 @@ export function OperationCreateView(): React.JSX.Element {
 						{t("opCreatingFromCfdi")}
 					</p>
 				</div>
-			)}
-
-			{/* Activity badge */}
-			{activityVisual && (
-				<ActivityBadge
-					code={activityCode}
-					variant="full"
-					className="text-base px-3 py-1.5"
-				/>
 			)}
 
 			<form onSubmit={handleSubmit} className="space-y-6">

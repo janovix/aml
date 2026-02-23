@@ -121,27 +121,17 @@ export function ObligatedSubjectSetup({
 										onClick={() => setSelectedActivity(activity.code)}
 										className={cn(
 											"relative flex items-start gap-2.5 sm:gap-3 rounded-lg border p-2.5 sm:p-3 text-left transition-all",
-											"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+											"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
 											isEnabled
-												? "cursor-pointer hover:bg-accent/50"
+												? "cursor-pointer hover:bg-primary/5"
 												: "cursor-not-allowed opacity-50",
 											isSelected
-												? cn(
-														activity.color.borderSelected,
-														activity.color.backgroundSelected,
-														"ring-2",
-														activity.color.ring,
-													)
-												: cn(activity.color.border, activity.color.background),
+												? "border-primary bg-primary/10 ring-2 ring-primary/30"
+												: "border-border bg-card",
 										)}
 									>
 										{isSelected && (
-											<div
-												className={cn(
-													"absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full text-white",
-													activity.color.checkBg,
-												)}
-											>
+											<div className="absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
 												<Check className="h-3 w-3" />
 											</div>
 										)}
@@ -149,9 +139,7 @@ export function ObligatedSubjectSetup({
 											<Icon
 												className={cn(
 													"h-5 w-5",
-													isSelected
-														? activity.color.iconSelected
-														: activity.color.icon,
+													isSelected ? "text-primary" : "text-muted-foreground",
 												)}
 											/>
 										</div>
@@ -161,7 +149,7 @@ export function ObligatedSubjectSetup({
 													className={cn(
 														"text-xs font-bold",
 														isSelected
-															? activity.color.iconSelected
+															? "text-primary"
 															: "text-muted-foreground",
 													)}
 												>

@@ -44,6 +44,7 @@ import {
 } from "./OrganizationSwitcher";
 import { NavUser } from "./NavUser";
 import { AppSwitcher } from "./AppSwitcher";
+import { ActivityChip } from "./ActivityChip";
 import { LanguageSwitcher, ThemeSwitcher } from "@algenium/blocks";
 import {
 	getAuthAppUrl,
@@ -319,6 +320,9 @@ export function AppSidebar({
 						organizationsLimit={organizationsLimit}
 					/>
 				</div>
+
+				{/* Vulnerable Activity Chip */}
+				{!hideNavigation && <ActivityChip />}
 
 				{/* Pending Invitations Indicator */}
 				{!hideNavigation && pendingInvitationsCount > 0 && (

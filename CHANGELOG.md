@@ -1,3 +1,17 @@
+# [1.4.0-rc.53](https://github.com/janovix/aml/compare/v1.4.0-rc.52...v1.4.0-rc.53) (2026-02-23)
+
+
+### Features
+
+* add ActivityChip component to display organization's vulnerable activity in the sidebar ([7c52c8c](https://github.com/janovix/aml/commit/7c52c8c61bc3ecd1c1d570fe7fbc32b9d110b28b))
+
+# [1.4.0-rc.52](https://github.com/janovix/aml/compare/v1.4.0-rc.51...v1.4.0-rc.52) (2026-02-22)
+
+
+### Bug Fixes
+
+* update CreateNoticeView to improve empty confirmation logic and refine notice period calculations; enhance related tests for clarity ([5506167](https://github.com/janovix/aml/commit/5506167d9baf23931790824bd150259eaf30fd72))
+
 # [1.4.0-rc.51](https://github.com/janovix/aml/compare/v1.4.0-rc.50...v1.4.0-rc.51) (2026-02-21)
 
 

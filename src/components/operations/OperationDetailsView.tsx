@@ -38,7 +38,6 @@ import type { CompletenessResult } from "@/types/completeness";
 import { PageHero } from "@/components/page-hero";
 import { PageHeroSkeleton } from "@/components/skeletons";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ActivityBadge } from "./ActivityBadge";
 import { ThresholdIndicator } from "./ThresholdIndicator";
 import { getActivityVisual } from "@/lib/activity-registry";
 import { CompletenessBanner } from "@/components/completeness/CompletenessBanner";
@@ -311,13 +310,8 @@ export function OperationDetailsView({
 				]}
 			/>
 
-			{/* Activity header */}
+			{/* Operation badges */}
 			<div className="flex items-center gap-2 @lg/main:gap-3 flex-wrap">
-				<ActivityBadge
-					code={operation.activityCode}
-					variant="full"
-					className="text-xs @lg/main:text-sm"
-				/>
 				<Badge
 					variant={dataSourceConfig.variant}
 					className="text-xs @lg/main:text-sm"

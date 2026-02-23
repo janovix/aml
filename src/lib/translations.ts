@@ -71,6 +71,7 @@ export const translations = {
 		sidebarPendingInvitations: "Invitaciones Pendientes",
 		sidebarInvitation: "invitación",
 		sidebarInvitations: "invitaciones",
+		sidebarVulnerableActivity: "Actividad vulnerable",
 
 		// App Switcher
 		appSwitcherTitle: "Apps de Janovix",
@@ -1611,6 +1612,7 @@ export const translations = {
 		sidebarPendingInvitations: "Pending Invitations",
 		sidebarInvitation: "invitation",
 		sidebarInvitations: "invitations",
+		sidebarVulnerableActivity: "Vulnerable activity",
 
 		// App Switcher
 		appSwitcherTitle: "Janovix Apps",
