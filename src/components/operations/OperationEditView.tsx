@@ -30,7 +30,6 @@ import type {
 import { ACTIVITY_EXTENSION_KEY, getExtensionData } from "@/types/operation";
 import { getExtensionForm } from "@/components/operations/extensions";
 import { OperationPaymentForm } from "./OperationPaymentForm";
-import { ActivityBadge } from "./ActivityBadge";
 import { ThresholdIndicator } from "./ThresholdIndicator";
 import { getActivityVisual } from "@/lib/activity-registry";
 import { FieldLabel } from "@/components/completeness/FieldLabel";
@@ -355,7 +354,6 @@ export function OperationEditView({
 				<Badge variant="outline">
 					{DATA_SOURCE_LABELS[operation.dataSource] || operation.dataSource}
 				</Badge>
-				<ActivityBadge code={activityCode} variant="full" />
 			</div>
 
 			{/* Completeness banner */}

@@ -457,7 +457,13 @@ export function DataTable<T extends object>({
 											<button
 												onClick={() => toggleSort(column.accessorKey as string)}
 												aria-label={`Ordenar por ${column.header}`}
-												className="flex items-center gap-1 hover:text-foreground transition-colors"
+												className={cn(
+													"flex items-center gap-1 w-full hover:text-foreground transition-colors",
+													column.className?.includes("text-right") &&
+														"justify-end",
+													column.className?.includes("text-center") &&
+														"justify-center",
+												)}
 											>
 												{column.header}
 												<ArrowUpDown

@@ -196,6 +196,10 @@ vi.mock("./NavUser", () => ({
 	),
 }));
 
+vi.mock("./ActivityChip", () => ({
+	ActivityChip: () => null,
+}));
+
 describe("AppSidebar", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();

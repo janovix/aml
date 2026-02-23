@@ -31,12 +31,11 @@ import {
 	type ColumnDef,
 	type FilterDef,
 } from "@/components/data-table";
-import { ActivityBadge } from "./ActivityBadge";
 import { CompletenessIndicator } from "@/components/completeness/CompletenessIndicator";
 import type { CompletenessResult } from "@/types/completeness";
 import { useLanguage } from "@/components/LanguageProvider";
 
-const OPERATION_FILTER_IDS = ["activityCode", "watchlistStatus", "dataSource"];
+const OPERATION_FILTER_IDS = ["watchlistStatus", "dataSource"];
 
 /**
  * Flattened row for the data table
@@ -49,7 +48,6 @@ interface OperationRow {
 	operationDate: string;
 	amount: number;
 	currencyCode: string;
-	activityCode: string;
 	dataSource: string;
 	completenessStatus: string;
 	missingFieldsCount: number;
@@ -252,7 +250,6 @@ export function OperationsTable({
 				operationDate: op.operationDate,
 				amount: parseFloat(op.amount),
 				currencyCode: op.currencyCode,
-				activityCode: op.activityCode,
 				dataSource: op.dataSource,
 				completenessStatus: op.completenessStatus,
 				missingFieldsCount: op.missingFields?.length || 0,
@@ -330,18 +327,6 @@ export function OperationsTable({
 				),
 			},
 			{
-				id: "activity",
-				header: t("opTableActivity"),
-				accessorKey: "activityCode",
-				hideOnMobile: true,
-				cell: (item) => (
-					<ActivityBadge
-						code={item.activityCode as import("@/types/operation").ActivityCode}
-						variant="short"
-					/>
-				),
-			},
-			{
 				id: "completeness",
 				header: t("opTableCompleteness"),
 				accessorKey: "completenessStatus",
@@ -394,12 +379,6 @@ export function OperationsTable({
 	// Filters
 	const filterDefs: FilterDef[] = useMemo(
 		() => [
-			{
-				id: "activityCode",
-				label: t("opFilterActivity"),
-				icon: FileText,
-				options: [], // Dynamic from activities
-			},
 			{
 				id: "dataSource",
 				label: t("opFilterSource"),
