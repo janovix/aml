@@ -1,3 +1,10 @@
+# [1.4.0-rc.53](https://github.com/janovix/aml/compare/v1.4.0-rc.52...v1.4.0-rc.53) (2026-02-23)
+
+
+### Features
+
+* add ActivityChip component to display organization's vulnerable activity in the sidebar ([7c52c8c](https://github.com/janovix/aml/commit/7c52c8c61bc3ecd1c1d570fe7fbc32b9d110b28b))
+
 # [1.4.0-rc.52](https://github.com/janovix/aml/compare/v1.4.0-rc.51...v1.4.0-rc.52) (2026-02-22)
 
 
