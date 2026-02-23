@@ -308,21 +308,23 @@ export function AppSidebar({
 			</SidebarHeader>
 
 			<SidebarContent>
-				{/* Organization Switcher */}
-				<div className="p-2 border-b border-sidebar-border">
-					<OrganizationSwitcher
-						organizations={legacyOrganizations}
-						activeOrganization={legacyActiveOrg}
-						onOrganizationChange={handleOrganizationChange}
-						onCreateOrganization={handleCreateOrganization}
-						isLoading={isPending || orgLoading}
-						organizationsOwned={organizationsOwned}
-						organizationsLimit={organizationsLimit}
-					/>
-				</div>
+				{/* Organization Switcher + Activity Chip (grouped to avoid gap-2 between them) */}
+				<div className="shrink-0">
+					<div className="p-2 border-b border-sidebar-border">
+						<OrganizationSwitcher
+							organizations={legacyOrganizations}
+							activeOrganization={legacyActiveOrg}
+							onOrganizationChange={handleOrganizationChange}
+							onCreateOrganization={handleCreateOrganization}
+							isLoading={isPending || orgLoading}
+							organizationsOwned={organizationsOwned}
+							organizationsLimit={organizationsLimit}
+						/>
+					</div>
 
-				{/* Vulnerable Activity Chip */}
-				{!hideNavigation && <ActivityChip />}
+					{/* Vulnerable Activity Chip */}
+					{!hideNavigation && <ActivityChip />}
+				</div>
 
 				{/* Pending Invitations Indicator */}
 				{!hideNavigation && pendingInvitationsCount > 0 && (

@@ -27,7 +27,7 @@ export function ActivityChip(): React.ReactElement | null {
 	const Icon = visual.icon;
 
 	return (
-		<div className="border-b border-sidebar-border">
+		<div className="border-b border-sidebar-border" data-slot="activity-chip">
 			{/* Expanded state */}
 			<div className="flex items-center gap-2 px-4 py-2 group-data-[collapsible=icon]:hidden">
 				<div
@@ -37,16 +37,16 @@ export function ActivityChip(): React.ReactElement | null {
 						visual.color.border,
 					)}
 				>
-					<Icon
-						className={cn("h-5 w-5 translate-y-px", visual.color.icon)}
-						strokeWidth={2}
-					/>
+					<Icon className={cn("h-5 w-5", visual.color.icon)} strokeWidth={2} />
 				</div>
 				<div className="flex-1 min-w-0">
 					<p className="text-[10px] font-medium uppercase tracking-wide leading-none mb-0.5 text-muted-foreground/60">
 						{t("sidebarVulnerableActivity")}
 					</p>
-					<p className="text-xs font-medium truncate text-foreground/75">
+					<p
+						className="text-xs font-medium truncate text-foreground/75"
+						data-slot="activity-name"
+					>
 						{visual.shortLabel}
 					</p>
 				</div>
@@ -65,7 +65,7 @@ export function ActivityChip(): React.ReactElement | null {
 								)}
 							>
 								<Icon
-									className={cn("h-5 w-5 translate-y-px", visual.color.icon)}
+									className={cn("h-5 w-5", visual.color.icon)}
 									strokeWidth={2}
 								/>
 							</div>

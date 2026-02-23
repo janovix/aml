@@ -222,6 +222,10 @@ export function MobileSidebarFullscreen({
 										"[&_[data-sidebar=menu-button]_svg]:size-5",
 										// Remove extra padding from the org switcher wrapper
 										"[&>div]:p-0 [&>div]:border-0",
+										// Activity chip: remove border, align with org picker, larger text
+										"[&_[data-slot=activity-chip]]:border-0 [&_[data-slot=activity-chip]]:px-2 [&_[data-slot=activity-chip]]:pt-1",
+										"[&_[data-slot=activity-chip]>div]:px-3",
+										"[&_[data-slot=activity-name]]:text-sm",
 										// Ensure dropdowns appear above sidebar
 										"[&_[data-radix-popper-content-wrapper]]:z-[200]",
 									)}
@@ -235,13 +239,13 @@ export function MobileSidebarFullscreen({
 							<div
 								className={cn(
 									"flex-1 overflow-y-auto overscroll-contain px-4 py-2 mobile-sidebar-fullscreen",
-									// Mobile-optimized styles for larger touch targets
-									"[&_[data-sidebar=menu-button]]:min-h-14 [&_[data-sidebar=menu-button]]:text-base [&_[data-sidebar=menu-button]]:py-3",
-									"[&_[data-sidebar=menu-button]]:rounded-xl [&_[data-sidebar=menu-button]]:px-3 [&_[data-sidebar=menu-button]]:my-0.5",
+									// Mobile-optimized styles for touch targets
+									"[&_[data-sidebar=menu-button]]:min-h-12 [&_[data-sidebar=menu-button]]:text-base [&_[data-sidebar=menu-button]]:py-2",
+									"[&_[data-sidebar=menu-button]]:rounded-xl [&_[data-sidebar=menu-button]]:px-3",
 									"[&_[data-sidebar=menu-button][data-active=true]]:bg-white/15 [&_[data-sidebar=menu-button][data-active=true]]:border [&_[data-sidebar=menu-button][data-active=true]]:border-white/20",
 									"[&_[data-sidebar=menu-button]_svg]:size-5",
 									// Group styling with dividers
-									"[&_[data-sidebar=group]]:py-3 [&_[data-sidebar=group]]:px-0",
+									"[&_[data-sidebar=group]]:py-2 [&_[data-sidebar=group]]:px-0",
 									"[&_[data-sidebar=group]]:border-b [&_[data-sidebar=group]]:border-white/10",
 									"[&_[data-sidebar=group]:last-child]:border-b-0",
 									// Label alignment - match menu button padding (px-3 + icon width + gap)
