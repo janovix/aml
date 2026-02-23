@@ -443,7 +443,7 @@ export function NoticesTable({
 						{t("noticeDownloadXml")}
 					</DropdownMenuItem>
 				)}
-				{item.status === "DRAFT" && (
+				{(item.status === "DRAFT" || item.status === "GENERATED") && (
 					<DropdownMenuItem
 						className="gap-2 text-destructive"
 						onClick={() => handleDelete(item)}

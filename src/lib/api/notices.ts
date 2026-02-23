@@ -115,6 +115,7 @@ export interface AvailableMonth {
 	hasPendingNotice: boolean;
 	hasSubmittedNotice: boolean;
 	noticeCount: number;
+	availableAlertCount: number;
 }
 
 export interface ListNoticesOptions {

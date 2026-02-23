@@ -74,6 +74,10 @@ import {
 } from "./DocumentViewerDialog";
 import { UploadedIDDocumentCard } from "./UploadedIDDocumentCard";
 import { useWatchlistScreening } from "@/hooks/useWatchlistScreening";
+import {
+	ExternalLinkDialog,
+	useExternalLinkRedirect,
+} from "@/components/ExternalLinkDialog";
 import { KycSessionSection } from "@/components/kyc/KycSessionSection";
 import { getKycBaseUrl } from "@/lib/api/doc-svc";
 import {
@@ -517,6 +521,8 @@ export function ClientDetailsView({
 		initialIndex: 0,
 		originalFileUrl: null,
 	});
+
+	const extLink = useExternalLinkRedirect();
 
 	// Fetch all data
 	useEffect(() => {
@@ -2208,14 +2214,36 @@ export function ClientDetailsView({
 												{pepAiResult?.sources &&
 													pepAiResult.sources.length > 0 && (
 														<div className="mt-1.5 flex flex-wrap gap-1">
-															{pepAiResult.sources.map((source, i) => (
-																<span
-																	key={i}
-																	className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground border"
-																>
-																	{source}
-																</span>
-															))}
+															{pepAiResult.sources.map((source, i) => {
+																const isUrl = /^https?:\/\//i.test(source);
+																return isUrl ? (
+																	<a
+																		key={i}
+																		href={source}
+																		onClick={(e) =>
+																			extLink.handleExternalLink(source, e)
+																		}
+																		className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground border hover:text-foreground hover:border-foreground/30 transition-colors cursor-pointer"
+																	>
+																		<Link2 className="h-3 w-3 shrink-0" />
+																		{(() => {
+																			try {
+																				return new URL(source).hostname;
+																			} catch {
+																				return source;
+																			}
+																		})()}
+																		<ExternalLink className="h-2.5 w-2.5 shrink-0" />
+																	</a>
+																) : (
+																	<span
+																		key={i}
+																		className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground border"
+																	>
+																		{source}
+																	</span>
+																);
+															})}
 														</div>
 													)}
 											</div>
@@ -2253,10 +2281,11 @@ export function ClientDetailsView({
 											<Button
 												variant="outline"
 												size="sm"
-												onClick={() => {
-													const watchlistUrl = `https://watchlist.janovix.workers.dev/queries/${client.watchlistQueryId}`;
-													window.open(watchlistUrl, "_blank");
-												}}
+												onClick={() =>
+													extLink.handleExternalLink(
+														`https://watchlist.janovix.workers.dev/queries/${client.watchlistQueryId}`,
+													)
+												}
 											>
 												<ExternalLink className="h-4 w-4 mr-2" />
 												{t("clientViewWatchlistQuery")}
@@ -2790,6 +2819,14 @@ export function ClientDetailsView({
 				images={documentViewer.images}
 				initialIndex={documentViewer.initialIndex}
 				originalFileUrl={documentViewer.originalFileUrl}
+			/>
+
+			{/* External Link Redirect Dialog */}
+			<ExternalLinkDialog
+				open={extLink.isOpen}
+				url={extLink.pendingUrl}
+				onConfirm={extLink.confirm}
+				onCancel={extLink.cancel}
 			/>
 		</div>
 	);

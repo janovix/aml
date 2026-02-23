@@ -1,15 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
 	FileWarning,
 	Calendar,
 	ArrowLeft,
 	Loader2,
-	CheckCircle2,
 	Clock,
-	CircleDashed,
 	AlertTriangle,
 	Info,
 } from "lucide-react";
@@ -53,7 +51,7 @@ import {
 
 export function CreateNoticeView(): React.ReactElement {
 	const router = useRouter();
-	const { navigateTo, orgPath } = useOrgNavigation();
+	const { navigateTo } = useOrgNavigation();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const { t } = useLanguage();
 
@@ -128,13 +126,18 @@ export function CreateNoticeView(): React.ReactElement {
 		loadPreview();
 	}, [jwt, selectedMonth]);
 
-	const handleMonthChange = (value: string) => {
-		setSelectedMonth(value);
-		const month = availableMonths.find((m) => `${m.year}-${m.month}` === value);
-		if (month) {
-			setName(`Aviso ${month.displayName}`);
-		}
-	};
+	const handleMonthChange = useCallback(
+		(value: string) => {
+			setSelectedMonth(value);
+			const month = availableMonths.find(
+				(m) => `${m.year}-${m.month}` === value,
+			);
+			if (month) {
+				setName(`Aviso ${month.displayName}`);
+			}
+		},
+		[availableMonths],
+	);
 
 	const toggleAlert = useCallback((alertId: string) => {
 		setSelectedAlertIds((prev) => {
@@ -187,18 +190,25 @@ export function CreateNoticeView(): React.ReactElement {
 			} else {
 				toast.error(extractErrorMessage(error), { id: "create-notice" });
 			}
-		} finally {
 			setIsSubmitting(false);
 		}
 	};
 
-	const selectedMonthData = selectedMonth
-		? availableMonths.find((m) => `${m.year}-${m.month}` === selectedMonth)
-		: null;
+	const selectedMonthData = useMemo(
+		() =>
+			selectedMonth
+				? availableMonths.find((m) => `${m.year}-${m.month}` === selectedMonth)
+				: null,
+		[selectedMonth, availableMonths],
+	);
 
-	const periodInfo = selectedMonthData
-		? calculateNoticePeriod(selectedMonthData.year, selectedMonthData.month)
-		: null;
+	const periodInfo = useMemo(
+		() =>
+			selectedMonthData
+				? calculateNoticePeriod(selectedMonthData.year, selectedMonthData.month)
+				: null,
+		[selectedMonthData],
+	);
 
 	if (isLoading || isJwtLoading) {
 		return (
@@ -236,9 +246,19 @@ export function CreateNoticeView(): React.ReactElement {
 									<SelectValue placeholder="Select period" />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="2024-01">January 2024</SelectItem>
-									<SelectItem value="2024-02">February 2024</SelectItem>
-									<SelectItem value="2024-03">March 2024</SelectItem>
+									{availableMonths.map((m) => {
+										const key = `${m.year}-${m.month}`;
+										return (
+											<SelectItem
+												key={key}
+												value={key}
+												disabled={m.hasPendingNotice}
+											>
+												{m.displayName}
+												{m.hasPendingNotice && " (aviso pendiente)"}
+											</SelectItem>
+										);
+									})}
 								</SelectContent>
 							</Select>
 							{periodInfo && (
@@ -340,13 +360,21 @@ export function CreateNoticeView(): React.ReactElement {
 											<Table>
 												<TableHeader>
 													<TableRow>
-														<TableHead className="w-10">
+														<TableHead
+															className="w-10 cursor-pointer"
+															onClick={toggleAll}
+														>
 															<Checkbox
 																checked={
 																	selectedAlertIds.size ===
 																	preview.alerts.length
+																		? true
+																		: selectedAlertIds.size > 0
+																			? "indeterminate"
+																			: false
 																}
-																onCheckedChange={toggleAll}
+																className="pointer-events-none"
+																tabIndex={-1}
 																aria-label="Seleccionar todas"
 															/>
 														</TableHead>
@@ -360,6 +388,8 @@ export function CreateNoticeView(): React.ReactElement {
 													{preview.alerts.map((alert) => (
 														<TableRow
 															key={alert.id}
+															className="cursor-pointer"
+															onClick={() => toggleAlert(alert.id)}
 															data-state={
 																selectedAlertIds.has(alert.id)
 																	? "selected"
@@ -369,8 +399,9 @@ export function CreateNoticeView(): React.ReactElement {
 															<TableCell>
 																<Checkbox
 																	checked={selectedAlertIds.has(alert.id)}
-																	onCheckedChange={() => toggleAlert(alert.id)}
-																	aria-label={`Seleccionar alerta ${alert.clientName}`}
+																	className="pointer-events-none"
+																	tabIndex={-1}
+																	aria-hidden
 																/>
 															</TableCell>
 															<TableCell className="font-medium">
@@ -437,17 +468,28 @@ export function CreateNoticeView(): React.ReactElement {
 														</p>
 													</div>
 												</div>
-												<label className="flex items-center gap-2 cursor-pointer">
+												<div
+													className="flex items-center gap-2 cursor-pointer"
+													onClick={() => setEmptyConfirmed((v) => !v)}
+													onKeyDown={(e) => {
+														if (e.key === " " || e.key === "Enter") {
+															e.preventDefault();
+															setEmptyConfirmed((v) => !v);
+														}
+													}}
+													role="checkbox"
+													aria-checked={emptyConfirmed}
+													tabIndex={0}
+												>
 													<Checkbox
 														checked={emptyConfirmed}
-														onCheckedChange={(v) =>
-															setEmptyConfirmed(v === true)
-														}
+														className="pointer-events-none"
+														tabIndex={-1}
 													/>
 													<span className="text-xs text-amber-700">
 														Confirmo que deseo crear el aviso sin alertas
 													</span>
-												</label>
+												</div>
 											</div>
 										)}
 

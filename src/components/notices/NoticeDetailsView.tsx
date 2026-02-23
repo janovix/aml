@@ -526,6 +526,14 @@ export function NoticeDetailsView({
 					)}
 					{notice.status === "GENERATED" && (
 						<>
+							<Button
+								variant="outline"
+								className="text-destructive"
+								onClick={() => setShowDeleteDialog(true)}
+							>
+								<Trash2 className="h-4 w-4 mr-2" />
+								{t("noticeDelete")}
+							</Button>
 							<Button variant="outline" onClick={handleDownload}>
 								<Download className="h-4 w-4 mr-2" />
 								{t("noticeDownloadXml")}

@@ -64,15 +64,17 @@ const mockAvailableMonths: noticesApi.AvailableMonth[] = [
 		hasPendingNotice: false,
 		hasSubmittedNotice: false,
 		noticeCount: 0,
+		availableAlertCount: 5,
 	},
 	{
 		year: 2024,
 		month: 11,
 		displayName: "Noviembre 2024",
-		hasNotice: true, // Has a pending notice - blocks creation
+		hasNotice: true, // Has a pending notice and no remaining alerts - blocks creation
 		hasPendingNotice: true,
 		hasSubmittedNotice: false,
 		noticeCount: 1,
+		availableAlertCount: 0,
 	},
 	{
 		year: 2024,
@@ -82,6 +84,7 @@ const mockAvailableMonths: noticesApi.AvailableMonth[] = [
 		hasPendingNotice: false,
 		hasSubmittedNotice: true,
 		noticeCount: 1,
+		availableAlertCount: 3,
 	},
 	{
 		year: 2024,
@@ -91,6 +94,7 @@ const mockAvailableMonths: noticesApi.AvailableMonth[] = [
 		hasPendingNotice: false,
 		hasSubmittedNotice: false,
 		noticeCount: 0,
+		availableAlertCount: 0,
 	},
 ];
 

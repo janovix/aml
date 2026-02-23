@@ -44,14 +44,6 @@ function setCookieValue(name: string, value: string, maxAge: number): void {
 
 function Navbar() {
 	const router = useRouter();
-	const currentOrg = useOrgStore((state) => state.currentOrg);
-	const orgTimezone =
-		currentOrg?.settings?.timezone || DEFAULT_ORG_SETTINGS.timezone;
-	const [effectiveTimezone, setEffectiveTimezone] =
-		React.useState<string>(orgTimezone);
-	const [effectiveClockFormat, setEffectiveClockFormat] = React.useState<
-		"12h" | "24h"
-	>("12h");
 
 	const handleNotificationClick = React.useCallback(
 		(notification: { href?: string }) => {
@@ -61,6 +53,39 @@ function Navbar() {
 		},
 		[router],
 	);
+
+	return (
+		<header className="z-50 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 shadow-xs">
+			<SidebarTrigger className="-ml-1" />
+			<Separator orientation="vertical" className="mx-2 h-6" />
+			<div className="flex-1 min-w-0">
+				<NavBreadcrumb />
+			</div>
+			<div className="flex shrink-0 items-center gap-2">
+				<NotificationsWidget
+					onNotificationClick={handleNotificationClick}
+					size="md"
+					maxVisible={50}
+					playSound={true}
+					showPulse={true}
+					soundType="chime"
+					pulseStyle="ring"
+				/>
+				<NavbarChatButton />
+			</div>
+		</header>
+	);
+}
+
+function DashboardFooter() {
+	const currentOrg = useOrgStore((state) => state.currentOrg);
+	const orgTimezone =
+		currentOrg?.settings?.timezone || DEFAULT_ORG_SETTINGS.timezone;
+	const [effectiveTimezone, setEffectiveTimezone] =
+		React.useState<string>(orgTimezone);
+	const [effectiveClockFormat, setEffectiveClockFormat] = React.useState<
+		"12h" | "24h"
+	>("12h");
 
 	// Load effective settings (user > org > browser > default)
 	React.useEffect(() => {
@@ -111,32 +136,18 @@ function Navbar() {
 	}, []);
 
 	return (
-		<header className="z-50 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 shadow-xs">
-			<SidebarTrigger className="-ml-1" />
-			<Separator orientation="vertical" className="mx-2 h-6" />
-			<div className="flex-1 min-w-0">
-				<NavBreadcrumb />
-			</div>
-			<div className="flex shrink-0 items-center gap-2">
+		<footer className="flex shrink-0 items-center justify-between border-t px-4 py-3">
+			<div className="flex items-center gap-2">
 				<NavbarClock
 					timezone={effectiveTimezone}
 					defaultFormat={effectiveClockFormat}
 					size="sm"
 					showTimezoneMismatch={true}
 				/>
-				<NotificationsWidget
-					onNotificationClick={handleNotificationClick}
-					size="md"
-					maxVisible={50}
-					playSound={true}
-					showPulse={true}
-					soundType="chime"
-					pulseStyle="ring"
-				/>
 				<UmaBadge />
-				<NavbarChatButton />
 			</div>
-		</header>
+			<Logo variant="logo" className="opacity-40" />
+		</footer>
 	);
 }
 
@@ -243,12 +254,10 @@ export function DashboardLayout({
 						<SidebarInset className="flex min-h-0 flex-col overflow-hidden">
 							{!hideNavigation && <Navbar />}
 							<main className="@container/main flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
-								<div className="flex flex-col p-4 pb-8 @md/main:p-6 @md/main:pb-12 @lg/main:p-8 @lg/main:pb-16">
+								<div className="flex flex-1 flex-col p-4 pb-8 @md/main:p-6 @md/main:pb-12 @lg/main:p-8 @lg/main:pb-16">
 									{children}
 								</div>
-								<footer className="flex shrink-0 items-center justify-center py-6 opacity-40">
-									<Logo variant="logo" />
-								</footer>
+								<DashboardFooter />
 							</main>
 						</SidebarInset>
 						<ChatSidebar />

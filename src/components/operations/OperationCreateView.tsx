@@ -529,7 +529,6 @@ export function OperationCreateView(): React.JSX.Element {
 									}
 									placeholder={t("selectPlaceholder")}
 									vaCode={activityCode ?? undefined}
-									excludeAutomatable={true}
 									getOptionValue={getCatalogCode}
 								/>
 							</div>

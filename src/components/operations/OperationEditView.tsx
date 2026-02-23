@@ -490,7 +490,6 @@ export function OperationEditView({
 									onValueChange={(val) => setAlertTypeCode(val ?? "")}
 									placeholder={t("selectPlaceholder")}
 									vaCode={operation.activityCode}
-									excludeAutomatable={true}
 									getOptionValue={getCatalogCode}
 								/>
 							</div>
