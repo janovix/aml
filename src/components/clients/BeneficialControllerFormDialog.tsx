@@ -115,7 +115,7 @@ export function BeneficialControllerFormDialog({
 			: "",
 	);
 	const [nationality, setNationality] = useState(
-		beneficialController?.nationality || "",
+		beneficialController?.nationality || "MX",
 	);
 	const [occupation, setOccupation] = useState(
 		beneficialController?.occupation || "",
@@ -202,7 +202,7 @@ export function BeneficialControllerFormDialog({
 				? new Date(beneficialController.birthDate).toISOString().split("T")[0]
 				: "",
 		);
-		setNationality(beneficialController?.nationality || "");
+		setNationality(beneficialController?.nationality || "MX");
 		setOccupation(beneficialController?.occupation || "");
 		setCurp(beneficialController?.curp || "");
 		setRfc(beneficialController?.rfc || "");
@@ -552,8 +552,9 @@ export function BeneficialControllerFormDialog({
 
 						{/* ── Step 2: Datos Personales ── */}
 						{currentStep === 2 && (
-							<section className="space-y-5">
-								<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+							<section className="space-y-6">
+								{/* Row 1: Nombre completo */}
+								<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 									<div className="space-y-2">
 										<Label htmlFor="firstName">Nombre *</Label>
 										<Input
@@ -578,6 +579,10 @@ export function BeneficialControllerFormDialog({
 											required
 										/>
 									</div>
+								</div>
+
+								{/* Row 2: Apellido materno + Nacionalidad */}
+								<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 									<div className="space-y-2">
 										<Label htmlFor="secondLastName">Apellido Materno</Label>
 										<Input
@@ -587,18 +592,6 @@ export function BeneficialControllerFormDialog({
 												setSecondLastName(e.target.value.toUpperCase())
 											}
 											placeholder="APELLIDO MATERNO"
-										/>
-									</div>
-								</div>
-
-								<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-									<div className="space-y-2">
-										<Label htmlFor="birthDate">Fecha de Nacimiento</Label>
-										<Input
-											id="birthDate"
-											type="date"
-											value={birthDate}
-											onChange={(e) => setBirthDate(e.target.value)}
 										/>
 									</div>
 									<CatalogSelector
@@ -618,6 +611,19 @@ export function BeneficialControllerFormDialog({
 											return meta?.code || option.id;
 										}}
 									/>
+								</div>
+
+								{/* Row 3: Fecha de Nacimiento + Ocupación */}
+								<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+									<div className="space-y-2">
+										<Label htmlFor="birthDate">Fecha de Nacimiento</Label>
+										<Input
+											id="birthDate"
+											type="date"
+											value={birthDate}
+											onChange={(e) => setBirthDate(e.target.value)}
+										/>
+									</div>
 									<div className="space-y-2">
 										<Label htmlFor="occupation">Ocupación</Label>
 										<Input
@@ -629,7 +635,8 @@ export function BeneficialControllerFormDialog({
 									</div>
 								</div>
 
-								<div className="grid grid-cols-2 gap-4">
+								{/* Row 4: CURP + RFC */}
+								<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 									<div className="space-y-2">
 										<Label htmlFor="curp">CURP</Label>
 										<Input
