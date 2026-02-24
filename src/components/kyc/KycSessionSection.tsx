@@ -302,10 +302,9 @@ function SessionCard({
 		<>
 			<div
 				className={cn(
-					"rounded-lg border p-4 space-y-3",
-					isReviewable &&
-						"border-amber-300 bg-amber-50/50 dark:bg-amber-950/20",
-					isActive && "border-blue-200 bg-blue-50/30 dark:bg-blue-950/10",
+					"bg-background px-4 py-4 space-y-3",
+					isReviewable && "bg-amber-50/50 dark:bg-amber-950/20",
+					isActive && "bg-blue-50/30 dark:bg-blue-950/10",
 					isTerminal && "opacity-70",
 				)}
 			>
@@ -695,7 +694,7 @@ export function KycSessionSection({
 			</div>
 
 			{hasActiveOrPending && (
-				<div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 px-3 py-2">
+				<div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 p-3">
 					<Info className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
 					<p className="text-xs text-blue-700 dark:text-blue-300">
 						Ya existe una sesión activa o en progreso. Sólo puede haber una
@@ -707,7 +706,7 @@ export function KycSessionSection({
 
 			{/* Session list */}
 			{sessions && sessions.length > 0 && (
-				<div className="space-y-3">
+				<div className="rounded-lg border overflow-hidden divide-y">
 					{sessions.map((session) => (
 						<SessionCard
 							key={session.id}

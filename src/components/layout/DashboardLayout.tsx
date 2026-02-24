@@ -70,6 +70,7 @@ function Navbar() {
 					showPulse={true}
 					soundType="chime"
 					pulseStyle="ring"
+					soundCooldown={60_000}
 				/>
 				<NavbarChatButton />
 			</div>

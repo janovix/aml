@@ -858,7 +858,7 @@ export function subscribeToUploadLinkEvents(
  */
 const KYC_SELF_SERVICE_URL =
 	process.env.NEXT_PUBLIC_KYC_SELF_SERVICE_URL ||
-	process.env.NEXT_PUBLIC_SCAN_APP_URL || // backward compat
+	process.env.NEXT_PUBLIC_KYC_APP_URL || // backward compat
 	"https://kyc.janovix.com";
 
 /**

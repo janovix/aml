@@ -35,7 +35,7 @@ import {
 } from "@/lib/api/doc-svc";
 
 const SCAN_APP_URL =
-	process.env.NEXT_PUBLIC_SCAN_APP_URL || "https://scan.janovix.com";
+	process.env.NEXT_PUBLIC_KYC_APP_URL || "https://scan.janovix.com";
 
 interface MobileUploadQRProps {
 	/** Whether the QR modal is open */

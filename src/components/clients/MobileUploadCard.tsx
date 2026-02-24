@@ -40,7 +40,7 @@ import type { PersonType } from "@/types/client";
 import type { ClientDocumentType } from "@/types/client-document";
 
 const SCAN_APP_URL =
-	process.env.NEXT_PUBLIC_SCAN_APP_URL || "https://scan.janovix.com";
+	process.env.NEXT_PUBLIC_KYC_APP_URL || "https://scan.janovix.com";
 
 interface MobileUploadCardProps {
 	clientId: string;
