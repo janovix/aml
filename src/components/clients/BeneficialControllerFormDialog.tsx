@@ -10,12 +10,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import {
-	Accordion,
-	AccordionContent,
-	AccordionItem,
-	AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,15 +22,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-	Loader2,
-	Tags,
-	User,
-	CreditCard,
-	Mail,
-	MapPin,
-	StickyNote,
-} from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import {
 	createBeneficialController,
@@ -61,8 +47,18 @@ import {
 	type IDDocumentData,
 	type IDType,
 } from "./wizard/IDDocumentSelector";
+import { DialogWizardStepper } from "./wizard/DialogWizardStepper";
 import { uploadDocumentForKYC } from "@/lib/api/file-upload";
 import { useOrgStore } from "@/lib/org-store";
+
+const BC_WIZARD_STEPS = [
+	{ id: 1, title: "Clasificación" },
+	{ id: 2, title: "Datos" },
+	{ id: 3, title: "Identificación" },
+	{ id: 4, title: "Domicilio" },
+] as const;
+
+const TOTAL_STEPS = BC_WIZARD_STEPS.length;
 
 interface BeneficialControllerFormDialogProps {
 	open: boolean;
@@ -81,6 +77,7 @@ export function BeneficialControllerFormDialog({
 }: BeneficialControllerFormDialogProps) {
 	const isEditMode = !!beneficialController;
 
+	const [currentStep, setCurrentStep] = useState(1);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [shareholders, setShareholders] = useState<Shareholder[]>([]);
 
@@ -187,6 +184,7 @@ export function BeneficialControllerFormDialog({
 	useEffect(() => {
 		if (!open) return;
 
+		setCurrentStep(1);
 		setBcType(beneficialController?.bcType || "SHAREHOLDER");
 		setIdentificationCriteria(
 			beneficialController?.identificationCriteria || "BENEFIT",
@@ -292,6 +290,38 @@ export function BeneficialControllerFormDialog({
 		toast.success("Identificación cargada");
 	}, []);
 
+	/* ── Per-step validation ── */
+	const validateStep = (step: number): boolean => {
+		switch (step) {
+			case 1:
+				// Classification has defaults, always valid
+				return true;
+			case 2:
+				if (!firstName.trim() || !lastName.trim()) {
+					toast.error("Nombre y apellido paterno son requeridos");
+					return false;
+				}
+				return true;
+			case 3:
+				// ID & Contact are optional
+				return true;
+			case 4:
+				// Address & Notes are optional
+				return true;
+			default:
+				return true;
+		}
+	};
+
+	const goNext = () => {
+		if (!validateStep(currentStep)) return;
+		setCurrentStep((s) => Math.min(s + 1, TOTAL_STEPS));
+	};
+
+	const goBack = () => {
+		setCurrentStep((s) => Math.max(s - 1, 1));
+	};
+
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 
@@ -330,7 +360,7 @@ export function BeneficialControllerFormDialog({
 				idCopyDocId: idCopyDocId || null,
 				email: email || null,
 				phone: phone || null,
-				country: null, // country is derived from nationality via catalog
+				country: null,
 				stateCode: stateCode || null,
 				city: city || null,
 				street: street || null,
@@ -366,6 +396,14 @@ export function BeneficialControllerFormDialog({
 		}
 	};
 
+	/* ── Step subtitle for the header ── */
+	const stepSubtitles: Record<number, string> = {
+		1: "Define el tipo y criterio de identificación del beneficiario controlador.",
+		2: "Ingresa los datos personales del beneficiario controlador.",
+		3: "Agrega su documento de identificación e información de contacto.",
+		4: "Completa la dirección y notas adicionales.",
+	};
+
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="sm:max-w-3xl" fullscreenMobile>
@@ -376,257 +414,254 @@ export function BeneficialControllerFormDialog({
 							: "Agregar Beneficiario Controlador"}
 					</DialogTitle>
 					<DialogDescription>
-						Persona física que obtiene el beneficio o ejerce control sobre la
-						entidad (LFPIORPI / CFF Art. 32-B)
+						{stepSubtitles[currentStep]}
 					</DialogDescription>
 				</DialogHeader>
 
-				<form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-					<DialogBody className="space-y-6">
-						{/* ── Clasificación ── */}
-						<section className="space-y-4">
-							<div className="flex items-center gap-2">
-								<Tags className="h-4 w-4 text-primary" />
-								<h4 className="text-sm font-semibold">Clasificación</h4>
-							</div>
+				<DialogWizardStepper
+					steps={[...BC_WIZARD_STEPS]}
+					currentStep={currentStep}
+				/>
 
-							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-								<div className="space-y-2">
-									<Label htmlFor="bcType">Tipo de BC *</Label>
-									<Select
-										value={bcType}
-										onValueChange={(v) => setBcType(v as BCType)}
-									>
-										<SelectTrigger id="bcType">
-											<SelectValue />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="SHAREHOLDER">
-												Accionista Beneficiario
-											</SelectItem>
-											<SelectItem value="LEGAL_REP">
-												Representante Legal
-											</SelectItem>
-											<SelectItem value="TRUSTEE">Fiduciario</SelectItem>
-											<SelectItem value="SETTLOR">Fideicomitente</SelectItem>
-											<SelectItem value="TRUST_BENEFICIARY">
-												Beneficiario del Fideicomiso
-											</SelectItem>
-											<SelectItem value="DIRECTOR">Director</SelectItem>
-										</SelectContent>
-									</Select>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="identificationCriteria">
-										Criterio de Identificación *
-									</Label>
-									<Select
-										value={identificationCriteria}
-										onValueChange={(v) =>
-											setIdentificationCriteria(v as IdentificationCriteria)
-										}
-									>
-										<SelectTrigger id="identificationCriteria">
-											<SelectValue />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="BENEFIT">
-												Obtiene el Beneficio (1er Criterio)
-											</SelectItem>
-											<SelectItem value="CONTROL">
-												Ejerce el Control (2do Criterio)
-											</SelectItem>
-											<SelectItem value="FALLBACK">
-												Administrador/Consejo (3er Criterio)
-											</SelectItem>
-										</SelectContent>
-									</Select>
-								</div>
-							</div>
-
-							<div className="flex flex-col sm:flex-row sm:items-center gap-4">
-								<div className="flex items-center space-x-2">
-									<Checkbox
-										id="isLegalRepresentative"
-										checked={isLegalRepresentative}
-										onCheckedChange={(checked) =>
-											setIsLegalRepresentative(checked as boolean)
-										}
-									/>
-									<Label
-										htmlFor="isLegalRepresentative"
-										className="font-normal cursor-pointer"
-									>
-										Es representante legal
-									</Label>
-								</div>
-								{shareholders.length > 0 && (
-									<div className="flex items-center gap-2 flex-1 min-w-0">
-										<Label
-											htmlFor="shareholderId"
-											className="shrink-0 text-muted-foreground text-sm"
-										>
-											Vinculado a:
-										</Label>
+				<form
+					onSubmit={handleSubmit}
+					className="flex min-h-0 flex-1 flex-col"
+				>
+					<DialogBody className="space-y-5">
+						{/* ── Step 1: Clasificación ── */}
+						{currentStep === 1 && (
+							<section className="space-y-5">
+								<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+									<div className="space-y-2">
+										<Label htmlFor="bcType">Tipo de BC *</Label>
 										<Select
-											value={shareholderId || "__none__"}
-											onValueChange={(v) =>
-												setShareholderId(v === "__none__" ? "" : v)
-											}
+											value={bcType}
+											onValueChange={(v) => setBcType(v as BCType)}
 										>
-											<SelectTrigger
-												id="shareholderId"
-												className="max-w-[200px]"
-											>
-												<SelectValue placeholder="Ninguno" />
+											<SelectTrigger id="bcType">
+												<SelectValue />
 											</SelectTrigger>
 											<SelectContent>
-												<SelectItem value="__none__">Ninguno</SelectItem>
-												{shareholders.map((s) => (
-													<SelectItem key={s.id} value={s.id}>
-														{s.firstName || s.businessName}
-													</SelectItem>
-												))}
+												<SelectItem value="SHAREHOLDER">
+													Accionista Beneficiario
+												</SelectItem>
+												<SelectItem value="LEGAL_REP">
+													Representante Legal
+												</SelectItem>
+												<SelectItem value="TRUSTEE">Fiduciario</SelectItem>
+												<SelectItem value="SETTLOR">Fideicomitente</SelectItem>
+												<SelectItem value="TRUST_BENEFICIARY">
+													Beneficiario del Fideicomiso
+												</SelectItem>
+												<SelectItem value="DIRECTOR">Director</SelectItem>
 											</SelectContent>
 										</Select>
 									</div>
+									<div className="space-y-2">
+										<Label htmlFor="identificationCriteria">
+											Criterio de Identificación *
+										</Label>
+										<Select
+											value={identificationCriteria}
+											onValueChange={(v) =>
+												setIdentificationCriteria(v as IdentificationCriteria)
+											}
+										>
+											<SelectTrigger id="identificationCriteria">
+												<SelectValue />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="BENEFIT">
+													Obtiene el Beneficio (1er Criterio)
+												</SelectItem>
+												<SelectItem value="CONTROL">
+													Ejerce el Control (2do Criterio)
+												</SelectItem>
+												<SelectItem value="FALLBACK">
+													Administrador/Consejo (3er Criterio)
+												</SelectItem>
+											</SelectContent>
+										</Select>
+									</div>
+								</div>
+
+								<div className="flex flex-col sm:flex-row sm:items-center gap-4">
+									<div className="flex items-center space-x-2">
+										<Checkbox
+											id="isLegalRepresentative"
+											checked={isLegalRepresentative}
+											onCheckedChange={(checked) =>
+												setIsLegalRepresentative(checked as boolean)
+											}
+										/>
+										<Label
+											htmlFor="isLegalRepresentative"
+											className="font-normal cursor-pointer"
+										>
+											Es representante legal
+										</Label>
+									</div>
+									{shareholders.length > 0 && (
+										<div className="flex items-center gap-2 flex-1 min-w-0">
+											<Label
+												htmlFor="shareholderId"
+												className="shrink-0 text-muted-foreground text-sm"
+											>
+												Vinculado a:
+											</Label>
+											<Select
+												value={shareholderId || "__none__"}
+												onValueChange={(v) =>
+													setShareholderId(v === "__none__" ? "" : v)
+												}
+											>
+												<SelectTrigger
+													id="shareholderId"
+													className="max-w-[200px]"
+												>
+													<SelectValue placeholder="Ninguno" />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value="__none__">Ninguno</SelectItem>
+													{shareholders.map((s) => (
+														<SelectItem key={s.id} value={s.id}>
+															{s.firstName || s.businessName}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+										</div>
+									)}
+								</div>
+
+								{identificationCriteria === "CONTROL" && (
+									<div className="space-y-2">
+										<Label htmlFor="controlMechanism">
+											Mecanismo de Control
+										</Label>
+										<Input
+											id="controlMechanism"
+											value={controlMechanism}
+											onChange={(e) => setControlMechanism(e.target.value)}
+											placeholder="Describe cómo ejerce el control"
+										/>
+									</div>
 								)}
-							</div>
+							</section>
+						)}
 
-							{identificationCriteria === "CONTROL" && (
-								<div className="space-y-2">
-									<Label htmlFor="controlMechanism">Mecanismo de Control</Label>
-									<Input
-										id="controlMechanism"
-										value={controlMechanism}
-										onChange={(e) => setControlMechanism(e.target.value)}
-										placeholder="Describe cómo ejerce el control"
-									/>
+						{/* ── Step 2: Datos Personales ── */}
+						{currentStep === 2 && (
+							<section className="space-y-5">
+								<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+									<div className="space-y-2">
+										<Label htmlFor="firstName">Nombre *</Label>
+										<Input
+											id="firstName"
+											value={firstName}
+											onChange={(e) =>
+												setFirstName(e.target.value.toUpperCase())
+											}
+											placeholder="NOMBRE"
+											required
+										/>
+									</div>
+									<div className="space-y-2">
+										<Label htmlFor="lastName">Apellido Paterno *</Label>
+										<Input
+											id="lastName"
+											value={lastName}
+											onChange={(e) =>
+												setLastName(e.target.value.toUpperCase())
+											}
+											placeholder="APELLIDO PATERNO"
+											required
+										/>
+									</div>
+									<div className="space-y-2">
+										<Label htmlFor="secondLastName">Apellido Materno</Label>
+										<Input
+											id="secondLastName"
+											value={secondLastName}
+											onChange={(e) =>
+												setSecondLastName(e.target.value.toUpperCase())
+											}
+											placeholder="APELLIDO MATERNO"
+										/>
+									</div>
 								</div>
-							)}
-						</section>
 
-						<hr className="border-border" />
+								<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+									<div className="space-y-2">
+										<Label htmlFor="birthDate">Fecha de Nacimiento</Label>
+										<Input
+											id="birthDate"
+											type="date"
+											value={birthDate}
+											onChange={(e) => setBirthDate(e.target.value)}
+										/>
+									</div>
+									<CatalogSelector
+										catalogKey="countries"
+										label="Nacionalidad"
+										value={nationality}
+										onChange={(option: CatalogItem | null) => {
+											const meta = option?.metadata as
+												| { code?: string }
+												| undefined;
+											setNationality(meta?.code || option?.id || "");
+										}}
+										getOptionValue={(option: CatalogItem) => {
+											const meta = option.metadata as
+												| { code?: string }
+												| undefined;
+											return meta?.code || option.id;
+										}}
+									/>
+									<div className="space-y-2">
+										<Label htmlFor="occupation">Ocupación</Label>
+										<Input
+											id="occupation"
+											value={occupation}
+											onChange={(e) => setOccupation(e.target.value)}
+											placeholder="Empresario"
+										/>
+									</div>
+								</div>
 
-						{/* ── Datos Personales ── */}
-						<section className="space-y-4">
-							<div className="flex items-center gap-2">
-								<User className="h-4 w-4 text-primary" />
-								<h4 className="text-sm font-semibold">Datos Personales</h4>
-							</div>
+								<div className="grid grid-cols-2 gap-4">
+									<div className="space-y-2">
+										<Label htmlFor="curp">CURP</Label>
+										<Input
+											id="curp"
+											value={curp}
+											onChange={(e) =>
+												setCurp(e.target.value.toUpperCase())
+											}
+											placeholder="CURP"
+											maxLength={18}
+										/>
+									</div>
+									<div className="space-y-2">
+										<Label htmlFor="rfc">RFC</Label>
+										<Input
+											id="rfc"
+											value={rfc}
+											onChange={(e) =>
+												setRfc(e.target.value.toUpperCase())
+											}
+											placeholder="RFC"
+											maxLength={13}
+										/>
+									</div>
+								</div>
+							</section>
+						)}
 
-							<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-								<div className="space-y-2">
-									<Label htmlFor="firstName">Nombre *</Label>
-									<Input
-										id="firstName"
-										value={firstName}
-										onChange={(e) => setFirstName(e.target.value.toUpperCase())}
-										placeholder="NOMBRE"
-										required
-									/>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="lastName">Apellido Paterno *</Label>
-									<Input
-										id="lastName"
-										value={lastName}
-										onChange={(e) => setLastName(e.target.value.toUpperCase())}
-										placeholder="APELLIDO PATERNO"
-										required
-									/>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="secondLastName">Apellido Materno</Label>
-									<Input
-										id="secondLastName"
-										value={secondLastName}
-										onChange={(e) =>
-											setSecondLastName(e.target.value.toUpperCase())
-										}
-										placeholder="APELLIDO MATERNO"
-									/>
-								</div>
-							</div>
-
-							<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-								<div className="space-y-2">
-									<Label htmlFor="birthDate">Fecha de Nacimiento</Label>
-									<Input
-										id="birthDate"
-										type="date"
-										value={birthDate}
-										onChange={(e) => setBirthDate(e.target.value)}
-									/>
-								</div>
-								<CatalogSelector
-									catalogKey="countries"
-									label="Nacionalidad"
-									value={nationality}
-									onChange={(option: CatalogItem | null) => {
-										const meta = option?.metadata as
-											| { code?: string }
-											| undefined;
-										setNationality(meta?.code || option?.id || "");
-									}}
-									getOptionValue={(option: CatalogItem) => {
-										const meta = option.metadata as
-											| { code?: string }
-											| undefined;
-										return meta?.code || option.id;
-									}}
-								/>
-								<div className="space-y-2">
-									<Label htmlFor="occupation">Ocupación</Label>
-									<Input
-										id="occupation"
-										value={occupation}
-										onChange={(e) => setOccupation(e.target.value)}
-										placeholder="Empresario"
-									/>
-								</div>
-							</div>
-
-							<div className="grid grid-cols-2 gap-4">
-								<div className="space-y-2">
-									<Label htmlFor="curp">CURP</Label>
-									<Input
-										id="curp"
-										value={curp}
-										onChange={(e) => setCurp(e.target.value.toUpperCase())}
-										placeholder="CURP"
-										maxLength={18}
-									/>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="rfc">RFC</Label>
-									<Input
-										id="rfc"
-										value={rfc}
-										onChange={(e) => setRfc(e.target.value.toUpperCase())}
-										placeholder="RFC"
-										maxLength={13}
-									/>
-								</div>
-							</div>
-						</section>
-
-						<hr className="border-border" />
-
-						{/* ── Optional Sections (Accordion) ── */}
-						<Accordion type="multiple" className="space-y-0">
-							{/* ── Documento de Identificación ── */}
-							<AccordionItem value="id-document" className="border-b-0">
-								<AccordionTrigger className="py-3 hover:no-underline">
-									<span className="flex items-center gap-2 text-sm font-semibold">
-										<CreditCard className="h-4 w-4 text-primary" />
-										Documento de Identificación
-										{(idCopyDocId || idDocumentData?.isUploaded) && (
-											<span className="ml-1 inline-flex h-2 w-2 rounded-full bg-green-500" />
-										)}
-									</span>
-								</AccordionTrigger>
-								<AccordionContent className="space-y-4">
+						{/* ── Step 3: Identificación y Contacto ── */}
+						{currentStep === 3 && (
+							<section className="space-y-6">
+								<div className="space-y-4">
 									<IDDocumentSelector
 										required={false}
 										disabled={isSubmitting}
@@ -654,57 +689,38 @@ export function BeneficialControllerFormDialog({
 											placeholder="INE, SRE, etc."
 										/>
 									</div>
-								</AccordionContent>
-							</AccordionItem>
+								</div>
 
-							{/* ── Contacto ── */}
-							<AccordionItem value="contact" className="border-b-0">
-								<AccordionTrigger className="py-3 hover:no-underline">
-									<span className="flex items-center gap-2 text-sm font-semibold">
-										<Mail className="h-4 w-4 text-primary" />
-										Contacto
-										{(email || phone) && (
-											<span className="ml-1 inline-flex h-2 w-2 rounded-full bg-green-500" />
-										)}
-									</span>
-								</AccordionTrigger>
-								<AccordionContent>
-									<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-										<div className="space-y-2">
-											<Label htmlFor="email">Email</Label>
-											<Input
-												id="email"
-												type="email"
-												value={email}
-												onChange={(e) => setEmail(e.target.value)}
-												placeholder="email@example.com"
-											/>
-										</div>
-										<div className="space-y-2">
-											<Label htmlFor="phone">Teléfono</Label>
-											<PhoneInput
-												id="phone"
-												value={phone}
-												onChange={(value) => setPhone(value ?? "")}
-												defaultCountry="MX"
-											/>
-										</div>
+								<hr className="border-border" />
+
+								<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+									<div className="space-y-2">
+										<Label htmlFor="email">Email</Label>
+										<Input
+											id="email"
+											type="email"
+											value={email}
+											onChange={(e) => setEmail(e.target.value)}
+											placeholder="email@example.com"
+										/>
 									</div>
-								</AccordionContent>
-							</AccordionItem>
+									<div className="space-y-2">
+										<Label htmlFor="phone">Teléfono</Label>
+										<PhoneInput
+											id="phone"
+											value={phone}
+											onChange={(value) => setPhone(value ?? "")}
+											defaultCountry="MX"
+										/>
+									</div>
+								</div>
+							</section>
+						)}
 
-							{/* ── Domicilio ── */}
-							<AccordionItem value="address" className="border-b-0">
-								<AccordionTrigger className="py-3 hover:no-underline">
-									<span className="flex items-center gap-2 text-sm font-semibold">
-										<MapPin className="h-4 w-4 text-primary" />
-										Domicilio
-										{(postalCode || street) && (
-											<span className="ml-1 inline-flex h-2 w-2 rounded-full bg-green-500" />
-										)}
-									</span>
-								</AccordionTrigger>
-								<AccordionContent className="space-y-4">
+						{/* ── Step 4: Domicilio y Notas ── */}
+						{currentStep === 4 && (
+							<section className="space-y-6">
+								<div className="space-y-4">
 									<ZipCodeAddressFields
 										postalCode={postalCode}
 										onPostalCodeChange={setPostalCode}
@@ -728,21 +744,12 @@ export function BeneficialControllerFormDialog({
 											placeholder="Av. Constitución 100, Col. Centro"
 										/>
 									</div>
-								</AccordionContent>
-							</AccordionItem>
+								</div>
 
-							{/* ── Notas ── */}
-							<AccordionItem value="notes" className="border-b-0">
-								<AccordionTrigger className="py-3 hover:no-underline">
-									<span className="flex items-center gap-2 text-sm font-semibold">
-										<StickyNote className="h-4 w-4 text-primary" />
-										Notas
-										{notes && (
-											<span className="ml-1 inline-flex h-2 w-2 rounded-full bg-green-500" />
-										)}
-									</span>
-								</AccordionTrigger>
-								<AccordionContent>
+								<hr className="border-border" />
+
+								<div className="space-y-2">
+									<Label htmlFor="notes">Notas</Label>
 									<Textarea
 										id="notes"
 										value={notes}
@@ -750,26 +757,63 @@ export function BeneficialControllerFormDialog({
 										placeholder="Notas adicionales sobre este beneficiario controlador..."
 										rows={3}
 									/>
-								</AccordionContent>
-							</AccordionItem>
-						</Accordion>
+								</div>
+							</section>
+						)}
 					</DialogBody>
 
 					<DialogFooter>
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => onOpenChange(false)}
-							disabled={isSubmitting}
-						>
-							Cancelar
-						</Button>
-						<Button type="submit" disabled={isSubmitting}>
-							{isSubmitting && (
-								<Loader2 className="h-4 w-4 mr-2 animate-spin" />
-							)}
-							{isEditMode ? "Actualizar" : "Crear"}
-						</Button>
+						<div className="flex w-full items-center justify-between gap-2">
+							{/* Left side */}
+							<div>
+								{currentStep > 1 ? (
+									<Button
+										type="button"
+										variant="ghost"
+										onClick={goBack}
+										disabled={isSubmitting}
+									>
+										<ChevronLeft className="h-4 w-4 mr-1" />
+										Atrás
+									</Button>
+								) : (
+									<Button
+										type="button"
+										variant="outline"
+										onClick={() => onOpenChange(false)}
+										disabled={isSubmitting}
+									>
+										Cancelar
+									</Button>
+								)}
+							</div>
+
+							{/* Right side */}
+							<div className="flex items-center gap-2">
+								{currentStep < TOTAL_STEPS ? (
+									<>
+										<span className="text-xs text-muted-foreground hidden sm:inline">
+											Paso {currentStep} de {TOTAL_STEPS}
+										</span>
+										<Button
+											type="button"
+											onClick={goNext}
+											disabled={isSubmitting}
+										>
+											Siguiente
+											<ChevronRight className="h-4 w-4 ml-1" />
+										</Button>
+									</>
+								) : (
+									<Button type="submit" disabled={isSubmitting}>
+										{isSubmitting && (
+											<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+										)}
+										{isEditMode ? "Actualizar" : "Crear"}
+									</Button>
+								)}
+							</div>
+						</div>
 					</DialogFooter>
 				</form>
 			</DialogContent>

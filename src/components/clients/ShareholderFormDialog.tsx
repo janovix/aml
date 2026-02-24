@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
 	Dialog,
 	DialogBody,
@@ -20,7 +20,13 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Building2, User } from "lucide-react";
+import {
+	Loader2,
+	Building2,
+	User,
+	ChevronLeft,
+	ChevronRight,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
 	createShareholder,
@@ -32,11 +38,21 @@ import type {
 	ShareholderCreateRequest,
 	ShareholderPatchRequest,
 } from "@/types/shareholder";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
 import type { CatalogItem } from "@/types/catalog";
 import { validateRFC } from "@/lib/utils";
+import {
+	DialogWizardStepper,
+	type DialogWizardStep,
+} from "./wizard/DialogWizardStepper";
+
+const SH_STEP_BASE: DialogWizardStep[] = [
+	{ id: 1, title: "Identidad" },
+	{ id: 2, title: "Representante" },
+	{ id: 3, title: "Participación" },
+];
 
 interface ShareholderFormDialogProps {
 	open: boolean;
@@ -55,6 +71,7 @@ export function ShareholderFormDialog({
 }: ShareholderFormDialogProps) {
 	const isEditMode = !!shareholder;
 
+	const [currentStep, setCurrentStep] = useState(1);
 	const [entityType, setEntityType] = useState<"PERSON" | "COMPANY">(
 		shareholder?.entityType || "PERSON",
 	);
@@ -83,7 +100,6 @@ export function ShareholderFormDialog({
 	);
 	const [rfc, setRfc] = useState(shareholder?.rfc || "");
 	const [rfcError, setRfcError] = useState<string | undefined>();
-	// Nationality for physical person
 	const [personNationality, setPersonNationality] = useState(
 		shareholder?.entityType === "PERSON"
 			? shareholder?.nationality || "MX"
@@ -117,6 +133,17 @@ export function ShareholderFormDialog({
 		shareholder?.representativeRfc || "",
 	);
 
+	/* ── Wizard step config (Step 2 skipped for PERSON) ── */
+	const isRepresentativeSkipped = entityType === "PERSON";
+
+	const wizardSteps = useMemo<DialogWizardStep[]>(() => {
+		return SH_STEP_BASE.map((s) =>
+			s.id === 2 ? { ...s, skipped: isRepresentativeSkipped } : s,
+		);
+	}, [isRepresentativeSkipped]);
+
+	const TOTAL_STEPS = SH_STEP_BASE.length;
+
 	// Load available parent shareholders (only COMPANY type)
 	useEffect(() => {
 		if (!open) return;
@@ -143,6 +170,7 @@ export function ShareholderFormDialog({
 	useEffect(() => {
 		if (!open) return;
 
+		setCurrentStep(1);
 		setEntityType(shareholder?.entityType || "PERSON");
 		setParentShareholderId(shareholder?.parentShareholderId || "");
 		setOwnershipPercentage(shareholder?.ownershipPercentage?.toString() || "");
@@ -174,6 +202,64 @@ export function ShareholderFormDialog({
 		setRepresentativeCurp(shareholder?.representativeCurp || "");
 		setRepresentativeRfc(shareholder?.representativeRfc || "");
 	}, [open, shareholder]);
+
+	/* ── Per-step validation ── */
+	const validateStep = (step: number): boolean => {
+		switch (step) {
+			case 1:
+				if (entityType === "PERSON") {
+					if (!firstName.trim() || !lastName.trim()) {
+						toast.error("Nombre y apellido son requeridos");
+						return false;
+					}
+					if (rfc.trim()) {
+						const rfcValidation = validateRFC(rfc, "physical");
+						if (!rfcValidation.isValid) {
+							setRfcError(rfcValidation.error);
+							return false;
+						}
+					}
+				} else {
+					if (!businessName.trim()) {
+						toast.error("Razón social es requerida");
+						return false;
+					}
+				}
+				return true;
+			case 2:
+				// Representative fields are optional
+				return true;
+			case 3: {
+				const ownership = parseFloat(ownershipPercentage);
+				if (isNaN(ownership) || ownership <= 0 || ownership > 100) {
+					toast.error("La participación debe ser entre 0 y 100%");
+					return false;
+				}
+				return true;
+			}
+			default:
+				return true;
+		}
+	};
+
+	const goNext = () => {
+		if (!validateStep(currentStep)) return;
+		let next = currentStep + 1;
+		// Skip the representative step for PERSON entities
+		if (next === 2 && isRepresentativeSkipped) {
+			next = 3;
+		}
+		setCurrentStep(Math.min(next, TOTAL_STEPS));
+	};
+
+	const goBack = () => {
+		let prev = currentStep - 1;
+		// Skip the representative step for PERSON entities
+		if (prev === 2 && isRepresentativeSkipped) {
+			prev = 1;
+		}
+		setCurrentStep(Math.max(prev, 1));
+	};
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -309,6 +395,15 @@ export function ShareholderFormDialog({
 		}
 	};
 
+	/* ── Step subtitles ── */
+	const stepSubtitles: Record<number, string> = {
+		1: entityType === "PERSON"
+			? "Ingresa los datos de identificación de la persona física."
+			: "Ingresa los datos de identificación de la persona moral.",
+		2: "Datos del representante legal de la empresa (Anexo 4).",
+		3: "Define el porcentaje de participación e información de contacto.",
+	};
+
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="sm:max-w-3xl" fullscreenMobile>
@@ -317,265 +412,287 @@ export function ShareholderFormDialog({
 						{isEditMode ? "Editar Accionista" : "Agregar Accionista"}
 					</DialogTitle>
 					<DialogDescription>
-						{isEditMode
-							? "Actualiza la información del accionista"
-							: "Registra una persona física o moral con participación accionaria"}
+						{stepSubtitles[currentStep]}
 					</DialogDescription>
 				</DialogHeader>
 
-				<form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-					<DialogBody className="space-y-6">
-						{/* Entity Type Selection (only for create mode) */}
-						{!isEditMode && (
-							<div className="space-y-2">
-								<Label>Tipo de Entidad *</Label>
-								<Tabs
-									value={entityType}
-									onValueChange={(v) =>
-										setEntityType(v as "PERSON" | "COMPANY")
-									}
-								>
-									<TabsList className="grid w-full grid-cols-2">
-										<TabsTrigger value="PERSON">
-											<User className="h-4 w-4 mr-2" />
-											Persona Física
-										</TabsTrigger>
-										<TabsTrigger value="COMPANY">
-											<Building2 className="h-4 w-4 mr-2" />
-											Persona Moral
-										</TabsTrigger>
-									</TabsList>
-								</Tabs>
-							</div>
+				<DialogWizardStepper steps={wizardSteps} currentStep={currentStep} />
+
+				<form
+					onSubmit={handleSubmit}
+					className="flex min-h-0 flex-1 flex-col"
+				>
+					<DialogBody className="space-y-5">
+						{/* ── Step 1: Entity Type & Identity ── */}
+						{currentStep === 1 && (
+							<section className="space-y-5">
+								{/* Entity Type Selection (only for create mode) */}
+								{!isEditMode && (
+									<div className="space-y-2">
+										<Label>Tipo de Entidad *</Label>
+										<Tabs
+											value={entityType}
+											onValueChange={(v) =>
+												setEntityType(v as "PERSON" | "COMPANY")
+											}
+										>
+											<TabsList className="grid w-full grid-cols-2">
+												<TabsTrigger value="PERSON">
+													<User className="h-4 w-4 mr-2" />
+													Persona Física
+												</TabsTrigger>
+												<TabsTrigger value="COMPANY">
+													<Building2 className="h-4 w-4 mr-2" />
+													Persona Moral
+												</TabsTrigger>
+											</TabsList>
+										</Tabs>
+									</div>
+								)}
+
+								{/* PERSON Fields */}
+								{entityType === "PERSON" && (
+									<div className="space-y-4">
+										<div className="grid grid-cols-2 gap-4">
+											<div className="space-y-2">
+												<Label htmlFor="firstName">Nombre *</Label>
+												<Input
+													id="firstName"
+													value={firstName}
+													onChange={(e) =>
+														setFirstName(e.target.value.toUpperCase())
+													}
+													placeholder="NOMBRE"
+													required
+												/>
+											</div>
+											<div className="space-y-2">
+												<Label htmlFor="lastName">Apellido Paterno *</Label>
+												<Input
+													id="lastName"
+													value={lastName}
+													onChange={(e) =>
+														setLastName(e.target.value.toUpperCase())
+													}
+													placeholder="APELLIDO PATERNO"
+													required
+												/>
+											</div>
+										</div>
+										<div className="grid grid-cols-2 gap-4">
+											<div className="space-y-2">
+												<Label htmlFor="secondLastName">
+													Apellido Materno
+												</Label>
+												<Input
+													id="secondLastName"
+													value={secondLastName}
+													onChange={(e) =>
+														setSecondLastName(e.target.value.toUpperCase())
+													}
+													placeholder="APELLIDO MATERNO"
+												/>
+											</div>
+											<div className="space-y-2">
+												<Label htmlFor="rfc">RFC</Label>
+												<Input
+													id="rfc"
+													value={rfc}
+													onChange={(e) => {
+														const val = e.target.value.toUpperCase();
+														setRfc(val);
+														if (val.trim()) {
+															const result = validateRFC(val, "physical");
+															setRfcError(
+																result.isValid ? undefined : result.error,
+															);
+														} else {
+															setRfcError(undefined);
+														}
+													}}
+													placeholder="RFC"
+													maxLength={13}
+													className={rfcError ? "border-destructive" : ""}
+												/>
+												{rfcError && (
+													<p className="text-xs text-destructive">
+														{rfcError}
+													</p>
+												)}
+											</div>
+										</div>
+										<div className="space-y-2">
+											<CatalogSelector
+												catalogKey="countries"
+												label="Nacionalidad"
+												value={personNationality}
+												onChange={(option: CatalogItem | null) => {
+													const meta = option?.metadata as
+														| { code?: string }
+														| undefined;
+													setPersonNationality(
+														meta?.code || option?.id || "",
+													);
+												}}
+												getOptionValue={(option: CatalogItem) => {
+													const meta = option.metadata as
+														| { code?: string }
+														| undefined;
+													return meta?.code || option.id;
+												}}
+											/>
+										</div>
+									</div>
+								)}
+
+								{/* COMPANY Fields */}
+								{entityType === "COMPANY" && (
+									<div className="space-y-4">
+										<div className="space-y-2">
+											<Label htmlFor="businessName">Razón Social *</Label>
+											<Input
+												id="businessName"
+												value={businessName}
+												onChange={(e) =>
+													setBusinessName(e.target.value.toUpperCase())
+												}
+												placeholder="RAZÓN SOCIAL"
+												required
+											/>
+										</div>
+										<div className="grid grid-cols-2 gap-4">
+											<div className="space-y-2">
+												<Label htmlFor="taxId">RFC / Tax ID</Label>
+												<Input
+													id="taxId"
+													value={taxId}
+													onChange={(e) =>
+														setTaxId(e.target.value.toUpperCase())
+													}
+													placeholder="RFC O TAX ID"
+												/>
+											</div>
+											<div className="space-y-2">
+												<Label htmlFor="incorporationDate">
+													Fecha de Constitución
+												</Label>
+												<Input
+													id="incorporationDate"
+													type="date"
+													value={incorporationDate}
+													onChange={(e) =>
+														setIncorporationDate(e.target.value)
+													}
+												/>
+											</div>
+										</div>
+										<div className="space-y-2">
+											<CatalogSelector
+												catalogKey="countries"
+												label="Basada en"
+												value={companyNationality}
+												onChange={(option: CatalogItem | null) => {
+													const meta = option?.metadata as
+														| { code?: string }
+														| undefined;
+													setCompanyNationality(
+														meta?.code || option?.id || "",
+													);
+												}}
+												getOptionValue={(option: CatalogItem) => {
+													const meta = option.metadata as
+														| { code?: string }
+														| undefined;
+													return meta?.code || option.id;
+												}}
+											/>
+										</div>
+									</div>
+								)}
+							</section>
 						)}
 
-						{/* Parent Shareholder (for sub-shareholders) */}
-						{parentShareholders.length > 0 && (
-							<div className="space-y-2">
-								<Label>Accionista Padre (opcional)</Label>
-								<Select
-									value={parentShareholderId}
-									onValueChange={setParentShareholderId}
-								>
-									<SelectTrigger>
-										<SelectValue placeholder="Sin padre (accionista directo)" />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="">
-											Sin padre (accionista directo)
-										</SelectItem>
-										{parentShareholders.map((parent) => (
-											<SelectItem key={parent.id} value={parent.id}>
-												{parent.businessName}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-								<p className="text-xs text-muted-foreground">
-									Solo entidades morales pueden tener sub-accionistas (máximo 2
-									niveles)
+						{/* ── Step 2: Representative (COMPANY only) ── */}
+						{currentStep === 2 && entityType === "COMPANY" && (
+							<section className="space-y-5">
+								<p className="text-sm text-muted-foreground">
+									Información del representante legal de la persona moral
+									(Anexo 4). Estos campos son opcionales.
 								</p>
-							</div>
-						)}
-
-						{/* PERSON Fields */}
-						{entityType === "PERSON" && (
-							<div className="space-y-4">
-								<div className="grid grid-cols-2 gap-4">
-									<div className="space-y-2">
-										<Label htmlFor="firstName">Nombre *</Label>
-										<Input
-											id="firstName"
-											value={firstName}
-											onChange={(e) =>
-												setFirstName(e.target.value.toUpperCase())
-											}
-											placeholder="NOMBRE"
-											required
-										/>
-									</div>
-									<div className="space-y-2">
-										<Label htmlFor="lastName">Apellido Paterno *</Label>
-										<Input
-											id="lastName"
-											value={lastName}
-											onChange={(e) =>
-												setLastName(e.target.value.toUpperCase())
-											}
-											placeholder="APELLIDO PATERNO"
-											required
-										/>
-									</div>
+								<div className="space-y-2">
+									<Label htmlFor="representativeName">
+										Nombre del Representante
+									</Label>
+									<Input
+										id="representativeName"
+										value={representativeName}
+										onChange={(e) =>
+											setRepresentativeName(e.target.value.toUpperCase())
+										}
+										placeholder="NOMBRE COMPLETO"
+									/>
 								</div>
 								<div className="grid grid-cols-2 gap-4">
 									<div className="space-y-2">
-										<Label htmlFor="secondLastName">Apellido Materno</Label>
+										<Label htmlFor="representativeCurp">CURP</Label>
 										<Input
-											id="secondLastName"
-											value={secondLastName}
+											id="representativeCurp"
+											value={representativeCurp}
 											onChange={(e) =>
-												setSecondLastName(e.target.value.toUpperCase())
+												setRepresentativeCurp(e.target.value.toUpperCase())
 											}
-											placeholder="APELLIDO MATERNO"
+											placeholder="CURP"
+											maxLength={18}
 										/>
 									</div>
 									<div className="space-y-2">
-										<Label htmlFor="rfc">RFC</Label>
+										<Label htmlFor="representativeRfc">RFC</Label>
 										<Input
-											id="rfc"
-											value={rfc}
-											onChange={(e) => {
-												const val = e.target.value.toUpperCase();
-												setRfc(val);
-												if (val.trim()) {
-													const result = validateRFC(val, "physical");
-													setRfcError(
-														result.isValid ? undefined : result.error,
-													);
-												} else {
-													setRfcError(undefined);
-												}
-											}}
+											id="representativeRfc"
+											value={representativeRfc}
+											onChange={(e) =>
+												setRepresentativeRfc(e.target.value.toUpperCase())
+											}
 											placeholder="RFC"
 											maxLength={13}
-											className={rfcError ? "border-destructive" : ""}
 										/>
-										{rfcError && (
-											<p className="text-xs text-destructive">{rfcError}</p>
-										)}
 									</div>
 								</div>
-								<div className="space-y-2">
-									<CatalogSelector
-										catalogKey="countries"
-										label="Nacionalidad"
-										value={personNationality}
-										onChange={(option: CatalogItem | null) => {
-											const meta = option?.metadata as
-												| { code?: string }
-												| undefined;
-											setPersonNationality(meta?.code || option?.id || "");
-										}}
-										getOptionValue={(option: CatalogItem) => {
-											const meta = option.metadata as
-												| { code?: string }
-												| undefined;
-											return meta?.code || option.id;
-										}}
-									/>
-								</div>
-							</div>
+							</section>
 						)}
 
-						{/* COMPANY Fields */}
-						{entityType === "COMPANY" && (
-							<div className="space-y-4">
-								<div className="space-y-2">
-									<Label htmlFor="businessName">Razón Social *</Label>
-									<Input
-										id="businessName"
-										value={businessName}
-										onChange={(e) =>
-											setBusinessName(e.target.value.toUpperCase())
-										}
-										placeholder="RAZÓN SOCIAL"
-										required
-									/>
-								</div>
-								<div className="grid grid-cols-2 gap-4">
+						{/* ── Step 3: Participation & Contact ── */}
+						{currentStep === 3 && (
+							<section className="space-y-5">
+								{/* Parent Shareholder (for sub-shareholders) */}
+								{parentShareholders.length > 0 && (
 									<div className="space-y-2">
-										<Label htmlFor="taxId">RFC / Tax ID *</Label>
-										<Input
-											id="taxId"
-											value={taxId}
-											onChange={(e) => setTaxId(e.target.value.toUpperCase())}
-											placeholder="RFC O TAX ID"
-										/>
+										<Label>Accionista Padre (opcional)</Label>
+										<Select
+											value={parentShareholderId}
+											onValueChange={setParentShareholderId}
+										>
+											<SelectTrigger>
+												<SelectValue placeholder="Sin padre (accionista directo)" />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="">
+													Sin padre (accionista directo)
+												</SelectItem>
+												{parentShareholders.map((parent) => (
+													<SelectItem key={parent.id} value={parent.id}>
+														{parent.businessName}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+										<p className="text-xs text-muted-foreground">
+											Solo entidades morales pueden tener sub-accionistas
+											(máximo 2 niveles)
+										</p>
 									</div>
-									<div className="space-y-2">
-										<Label htmlFor="incorporationDate">
-											Fecha de Constitución
-										</Label>
-										<Input
-											id="incorporationDate"
-											type="date"
-											value={incorporationDate}
-											onChange={(e) => setIncorporationDate(e.target.value)}
-										/>
-									</div>
-								</div>
-								<div className="space-y-2">
-									<CatalogSelector
-										catalogKey="countries"
-										label="Basada en"
-										value={companyNationality}
-										onChange={(option: CatalogItem | null) => {
-											const meta = option?.metadata as
-												| { code?: string }
-												| undefined;
-											setCompanyNationality(meta?.code || option?.id || "");
-										}}
-										getOptionValue={(option: CatalogItem) => {
-											const meta = option.metadata as
-												| { code?: string }
-												| undefined;
-											return meta?.code || option.id;
-										}}
-									/>
-								</div>
+								)}
 
-								{/* Anexo 4: Representative Information */}
-								<div className="border-t pt-4 space-y-4">
-									<h4 className="text-sm font-medium">
-										Representante Legal (Anexo 4)
-									</h4>
-									<div className="space-y-2">
-										<Label htmlFor="representativeName">
-											Nombre del Representante
-										</Label>
-										<Input
-											id="representativeName"
-											value={representativeName}
-											onChange={(e) =>
-												setRepresentativeName(e.target.value.toUpperCase())
-											}
-											placeholder="NOMBRE COMPLETO"
-										/>
-									</div>
-									<div className="grid grid-cols-2 gap-4">
-										<div className="space-y-2">
-											<Label htmlFor="representativeCurp">CURP</Label>
-											<Input
-												id="representativeCurp"
-												value={representativeCurp}
-												onChange={(e) =>
-													setRepresentativeCurp(e.target.value.toUpperCase())
-												}
-												placeholder="CURP"
-												maxLength={18}
-											/>
-										</div>
-										<div className="space-y-2">
-											<Label htmlFor="representativeRfc">RFC</Label>
-											<Input
-												id="representativeRfc"
-												value={representativeRfc}
-												onChange={(e) =>
-													setRepresentativeRfc(e.target.value.toUpperCase())
-												}
-												placeholder="RFC"
-												maxLength={13}
-											/>
-										</div>
-									</div>
-								</div>
-							</div>
-						)}
-
-						{/* Common Fields */}
-						<div className="border-t pt-4 space-y-4">
-							<h4 className="text-sm font-medium">Participación y Contacto</h4>
-							<div className="space-y-4">
 								<div className="space-y-2">
 									<Label htmlFor="ownershipPercentage">
 										Participación (%) *
@@ -592,44 +709,86 @@ export function ShareholderFormDialog({
 										required
 									/>
 								</div>
-								<div className="space-y-2">
-									<Label htmlFor="email">Email</Label>
-									<Input
-										id="email"
-										type="email"
-										value={email}
-										onChange={(e) => setEmail(e.target.value)}
-										placeholder="email@example.com"
-									/>
+
+								<hr className="border-border" />
+
+								<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+									<div className="space-y-2">
+										<Label htmlFor="email">Email</Label>
+										<Input
+											id="email"
+											type="email"
+											value={email}
+											onChange={(e) => setEmail(e.target.value)}
+											placeholder="email@example.com"
+										/>
+									</div>
+									<div className="space-y-2">
+										<Label htmlFor="phone">Teléfono</Label>
+										<PhoneInput
+											id="phone"
+											value={phone}
+											onChange={(value) => setPhone(value ?? "")}
+											defaultCountry="MX"
+										/>
+									</div>
 								</div>
-								<div className="space-y-2">
-									<Label htmlFor="phone">Teléfono</Label>
-									<PhoneInput
-										id="phone"
-										value={phone}
-										onChange={(value) => setPhone(value ?? "")}
-										defaultCountry="MX"
-									/>
-								</div>
-							</div>
-						</div>
+							</section>
+						)}
 					</DialogBody>
 
 					<DialogFooter>
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => onOpenChange(false)}
-							disabled={isSubmitting}
-						>
-							Cancelar
-						</Button>
-						<Button type="submit" disabled={isSubmitting}>
-							{isSubmitting && (
-								<Loader2 className="h-4 w-4 mr-2 animate-spin" />
-							)}
-							{isEditMode ? "Actualizar" : "Crear"}
-						</Button>
+						<div className="flex w-full items-center justify-between gap-2">
+							{/* Left side */}
+							<div>
+								{currentStep > 1 ? (
+									<Button
+										type="button"
+										variant="ghost"
+										onClick={goBack}
+										disabled={isSubmitting}
+									>
+										<ChevronLeft className="h-4 w-4 mr-1" />
+										Atrás
+									</Button>
+								) : (
+									<Button
+										type="button"
+										variant="outline"
+										onClick={() => onOpenChange(false)}
+										disabled={isSubmitting}
+									>
+										Cancelar
+									</Button>
+								)}
+							</div>
+
+							{/* Right side */}
+							<div className="flex items-center gap-2">
+								{currentStep < TOTAL_STEPS ? (
+									<>
+										<span className="text-xs text-muted-foreground hidden sm:inline">
+											Paso {currentStep} de {TOTAL_STEPS}
+										</span>
+										<Button
+											type="button"
+											onClick={goNext}
+											disabled={isSubmitting}
+										>
+											Siguiente
+											<ChevronRight className="h-4 w-4 ml-1" />
+										</Button>
+									</>
+								) : (
+									<Button type="submit" disabled={isSubmitting}>
+										{isSubmitting && (
+											<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+										)}
+										{isEditMode ? "Actualizar" : "Crear"}
+									</Button>
+								)}
+							</div>
+						</div>
 					</DialogFooter>
 				</form>
 			</DialogContent>
