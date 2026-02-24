@@ -5,6 +5,7 @@ import {
 	AlertTriangle,
 	XCircle,
 	Clock,
+	SkipForward,
 	FileSpreadsheet,
 	RotateCcw,
 	X,
@@ -101,7 +102,7 @@ export function ImportProgress({ state, onReset }: ImportProgressProps) {
 	const isComplete = state.status === "completed";
 	const isFailed = state.status === "failed";
 
-	const statItems = [
+	const allStatItems = [
 		{
 			value: state.successCount,
 			icon: CheckCircle2,
@@ -109,6 +110,7 @@ export function ImportProgress({ state, onReset }: ImportProgressProps) {
 			bgColor: "bg-green-500/10",
 			borderColor: "border-green-500/20",
 			label: "Exitosos",
+			alwaysShow: true,
 		},
 		{
 			value: state.warningCount,
@@ -117,6 +119,7 @@ export function ImportProgress({ state, onReset }: ImportProgressProps) {
 			bgColor: "bg-amber-500/10",
 			borderColor: "border-amber-500/20",
 			label: "Advertencias",
+			alwaysShow: true,
 		},
 		{
 			value: state.errorCount,
@@ -125,6 +128,16 @@ export function ImportProgress({ state, onReset }: ImportProgressProps) {
 			bgColor: "bg-red-500/10",
 			borderColor: "border-red-500/20",
 			label: "Errores",
+			alwaysShow: true,
+		},
+		{
+			value: state.skippedCount,
+			icon: SkipForward,
+			color: "text-amber-500",
+			bgColor: "bg-amber-500/10",
+			borderColor: "border-amber-500/20",
+			label: "Omitidos",
+			alwaysShow: false,
 		},
 		{
 			value: state.totalRows - state.processedRows,
@@ -133,8 +146,13 @@ export function ImportProgress({ state, onReset }: ImportProgressProps) {
 			bgColor: "bg-muted/50",
 			borderColor: "border-muted",
 			label: "Pendientes",
+			alwaysShow: true,
 		},
 	];
+
+	const statItems = allStatItems.filter(
+		(item) => item.alwaysShow || item.value > 0,
+	);
 
 	const getStatusText = () => {
 		if (isFailed) return "Importación fallida";
@@ -241,7 +259,12 @@ export function ImportProgress({ state, onReset }: ImportProgressProps) {
 						</div>
 
 						{/* Stats grid */}
-						<div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+						<div
+							className={cn(
+								"grid gap-1.5 sm:gap-2",
+								statItems.length <= 4 ? "grid-cols-4" : "grid-cols-5",
+							)}
+						>
 							{statItems.map((item, idx) => (
 								<div
 									key={idx}

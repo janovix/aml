@@ -31,6 +31,7 @@ export interface Import {
 	successCount: number;
 	warningCount: number;
 	errorCount: number;
+	skippedCount: number;
 	errorMessage: string | null;
 	createdBy: string;
 	startedAt: string | null;
@@ -87,6 +88,7 @@ export interface ImportState {
 	successCount: number;
 	warningCount: number;
 	errorCount: number;
+	skippedCount: number;
 	rows: RowDisplayData[];
 	error: CatastrophicError | null;
 }
