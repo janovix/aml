@@ -2344,8 +2344,10 @@ export function ClientDetailsView({
 												variant="outline"
 												size="sm"
 												onClick={() =>
-													extLink.handleExternalLink(
-														`https://watchlist.janovix.workers.dev/queries/${client.watchlistQueryId}`,
+													window.open(
+														`${process.env.NEXT_PUBLIC_WATCHLIST_APP_URL}/queries/${client.watchlistQueryId}`,
+														"_blank",
+														"noopener,noreferrer",
 													)
 												}
 											>

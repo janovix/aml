@@ -31,6 +31,7 @@ import {
 	formatTimeRemaining,
 } from "@/hooks/usePersistedUploadLink";
 import {
+	getKycBaseUrl,
 	getUploadLinkUrl,
 	subscribeToUploadLinkEvents,
 	type SSEEvent,
@@ -38,9 +39,6 @@ import {
 import { GenerateUploadLinkDialog } from "./GenerateUploadLinkDialog";
 import type { PersonType } from "@/types/client";
 import type { ClientDocumentType } from "@/types/client-document";
-
-const SCAN_APP_URL =
-	process.env.NEXT_PUBLIC_KYC_APP_URL || "https://scan.janovix.com";
 
 interface MobileUploadCardProps {
 	clientId: string;
@@ -119,7 +117,7 @@ export function MobileUploadCard({
 
 	// Generate scan URL
 	const scanUrl = persistedLink
-		? getUploadLinkUrl(persistedLink.link.id, SCAN_APP_URL)
+		? getUploadLinkUrl(persistedLink.link.id, getKycBaseUrl())
 		: "";
 
 	// Copy URL to clipboard

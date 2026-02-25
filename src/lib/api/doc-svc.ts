@@ -5,9 +5,14 @@
  */
 
 import { tokenCache } from "@/lib/auth/tokenCache";
+import { requireEnv } from "@/lib/env";
 
-const DOC_SVC_URL =
-	process.env.NEXT_PUBLIC_DOC_SVC_URL || "https://doc-svc.janovix.workers.dev";
+function getDocSvcUrl(): string {
+	return requireEnv(
+		"NEXT_PUBLIC_DOC_SVC_URL",
+		process.env.NEXT_PUBLIC_DOC_SVC_URL,
+	);
+}
 
 /**
  * Response from initiate-upload endpoint
@@ -135,7 +140,7 @@ export async function initiateUpload(
 ): Promise<InitiateUploadResponse> {
 	const headers = await getAuthHeaders();
 
-	const response = await fetch(`${DOC_SVC_URL}/documents/initiate-upload`, {
+	const response = await fetch(`${getDocSvcUrl()}/documents/initiate-upload`, {
 		method: "POST",
 		headers,
 		body: JSON.stringify({ pageCount, hasPdf }),
@@ -212,7 +217,7 @@ export async function confirmUpload(
 
 	// Send flat keys matching doc-svc schema (preferred format)
 	const response = await fetch(
-		`${DOC_SVC_URL}/documents/${documentId}/confirm`,
+		`${getDocSvcUrl()}/documents/${documentId}/confirm`,
 		{
 			method: "POST",
 			headers,
@@ -262,7 +267,7 @@ export async function getDocumentUrls(
 	const headers = await getAuthHeaders();
 
 	const response = await fetch(
-		`${DOC_SVC_URL}/documents/${documentId}/urls?type=${type}`,
+		`${getDocSvcUrl()}/documents/${documentId}/urls?type=${type}`,
 		{ headers },
 	);
 
@@ -291,7 +296,7 @@ export async function getJobStatus(
 ): Promise<JobStatusResponse> {
 	const headers = await getAuthHeaders();
 
-	const response = await fetch(`${DOC_SVC_URL}/jobs/${jobId}`, { headers });
+	const response = await fetch(`${getDocSvcUrl()}/jobs/${jobId}`, { headers });
 
 	const data = (await response.json()) as {
 		success: boolean;
@@ -682,7 +687,7 @@ export async function createUploadLink(
 		metadata: input.metadata,
 	};
 
-	const response = await fetch(`${DOC_SVC_URL}/upload-links`, {
+	const response = await fetch(`${getDocSvcUrl()}/upload-links`, {
 		method: "POST",
 		headers,
 		body: JSON.stringify(requestBody),
@@ -716,7 +721,7 @@ export async function getUploadLink(
 ): Promise<UploadLinkResponse> {
 	const headers = await getAuthHeaders();
 
-	const response = await fetch(`${DOC_SVC_URL}/upload-links/${linkId}`, {
+	const response = await fetch(`${getDocSvcUrl()}/upload-links/${linkId}`, {
 		headers,
 	});
 
@@ -760,7 +765,7 @@ export async function listUploadLinks(
 		params.set("status", status);
 	}
 
-	const response = await fetch(`${DOC_SVC_URL}/upload-links?${params}`, {
+	const response = await fetch(`${getDocSvcUrl()}/upload-links?${params}`, {
 		headers,
 	});
 
@@ -792,7 +797,7 @@ export async function listUploadLinkDocuments(
 	const headers = await getAuthHeaders();
 
 	const response = await fetch(
-		`${DOC_SVC_URL}/upload-links/${linkId}/documents`,
+		`${getDocSvcUrl()}/upload-links/${linkId}/documents`,
 		{ headers },
 	);
 
@@ -829,7 +834,7 @@ export function subscribeToUploadLinkEvents(
 ): () => void {
 	// Note: SSE/EventSource doesn't support custom headers, so we pass JWT as query param
 	const eventSource = new EventSource(
-		`${DOC_SVC_URL}/upload-links/${linkId}/events?token=${encodeURIComponent(token)}`,
+		`${getDocSvcUrl()}/upload-links/${linkId}/events?token=${encodeURIComponent(token)}`,
 	);
 
 	eventSource.onmessage = (event) => {
@@ -853,25 +858,20 @@ export function subscribeToUploadLinkEvents(
 }
 
 /**
- * Get the KYC self-service app base URL from environment or default
- * @deprecated Use NEXT_PUBLIC_KYC_SELF_SERVICE_URL instead
+ * Get the KYC app base URL from environment
  */
-const KYC_SELF_SERVICE_URL =
-	process.env.NEXT_PUBLIC_KYC_SELF_SERVICE_URL ||
-	process.env.NEXT_PUBLIC_KYC_APP_URL || // backward compat
-	"https://kyc.janovix.com";
+function getKycUrl(): string {
+	return requireEnv("NEXT_PUBLIC_KYC_URL", process.env.NEXT_PUBLIC_KYC_URL);
+}
 
 /**
- * Generate shareable upload link URL (legacy - for backward compatibility with scan app routes)
+ * Generate shareable upload link URL
  *
  * @param linkId - Upload link ID
- * @param baseUrl - Base URL for KYC self-service app (defaults to NEXT_PUBLIC_KYC_SELF_SERVICE_URL)
+ * @param baseUrl - Base URL for KYC app (defaults to NEXT_PUBLIC_KYC_URL)
  */
-export function getUploadLinkUrl(
-	linkId: string,
-	baseUrl: string = KYC_SELF_SERVICE_URL,
-): string {
-	return `${baseUrl}/${linkId}`;
+export function getUploadLinkUrl(linkId: string, baseUrl?: string): string {
+	return `${baseUrl ?? getKycUrl()}/${linkId}`;
 }
 
 /**
@@ -880,16 +880,13 @@ export function getUploadLinkUrl(
  * @param token - KYC session token
  * @param baseUrl - Base URL for KYC self-service app
  */
-export function getKycSessionUrl(
-	token: string,
-	baseUrl: string = KYC_SELF_SERVICE_URL,
-): string {
-	return `${baseUrl}/kyc/${token}`;
+export function getKycSessionUrl(token: string, baseUrl?: string): string {
+	return `${baseUrl ?? getKycUrl()}/kyc/${token}`;
 }
 
 /**
- * Get the KYC self-service app base URL
+ * Get the KYC app base URL
  */
 export function getKycBaseUrl(): string {
-	return KYC_SELF_SERVICE_URL;
+	return getKycUrl();
 }

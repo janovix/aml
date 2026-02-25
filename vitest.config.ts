@@ -7,6 +7,36 @@ export default defineConfig({
 	test: {
 		environment: "jsdom",
 		setupFiles: ["./src/test/setup.ts"],
+		env: {
+			NEXT_PUBLIC_AML_CORE_URL:
+				"https://aml-svc.janovix.workers.dev",
+			NEXT_PUBLIC_WATCHLIST_API_BASE_URL:
+				"https://watchlist-svc.janovix.workers.dev",
+			NEXT_PUBLIC_AUTH_SERVICE_URL:
+				"https://auth-svc.janovix.workers.dev",
+			NEXT_PUBLIC_AUTH_SERVICE_URL_INTERNAL:
+				"https://auth-svc.janovix.workers.dev",
+			NEXT_PUBLIC_DOC_SVC_URL:
+				"https://doc-svc.janovix.workers.dev",
+			NEXT_PUBLIC_NOTIFICATIONS_SERVICE_URL:
+				"https://notifications-svc.janovix.workers.dev",
+			NEXT_PUBLIC_AUTH_APP_URL:
+				"https://auth.janovix.workers.dev",
+			NEXT_PUBLIC_WATCHLIST_APP_URL:
+				"https://watchlist-local.janovix.workers.dev",
+			NEXT_PUBLIC_AML_APP_URL:
+				"https://aml-local.janovix.workers.dev",
+			NEXT_PUBLIC_KYC_URL:
+				"https://kyc-local.janovix.workers.dev",
+			NEXT_PUBLIC_HOMEPAGE_URL: "https://www.janovix.com",
+			NEXT_PUBLIC_VANITY_DOMAIN: "janovix.com",
+			NEXT_PUBLIC_TERMS_URL:
+				"https://www.janovix.com/terms",
+			NEXT_PUBLIC_PRIVACY_URL:
+				"https://www.janovix.com/privacy",
+			NEXT_PUBLIC_SENTRY_DSN: "",
+			NEXT_PUBLIC_ENVIRONMENT: "test",
+		},
 		exclude: [
 			"**/node_modules/**",
 			"**/dist/**",

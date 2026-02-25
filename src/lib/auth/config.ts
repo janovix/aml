@@ -1,36 +1,43 @@
+import { requireEnv } from "@/lib/env";
+
 export const getAuthServiceUrl = (): string => {
-	return (
-		process.env.NEXT_PUBLIC_AUTH_SERVICE_URL ||
-		"https://auth-svc.janovix.workers.dev"
+	return requireEnv(
+		"NEXT_PUBLIC_AUTH_SERVICE_URL",
+		process.env.NEXT_PUBLIC_AUTH_SERVICE_URL,
 	);
 };
 
 export const getAuthAppUrl = (): string => {
-	return (
-		process.env.NEXT_PUBLIC_AUTH_APP_URL || "https://auth.janovix.workers.dev"
+	return requireEnv(
+		"NEXT_PUBLIC_AUTH_APP_URL",
+		process.env.NEXT_PUBLIC_AUTH_APP_URL,
 	);
 };
 
 export const getWatchlistAppUrl = (): string => {
-	return (
-		process.env.NEXT_PUBLIC_WATCHLIST_APP_URL ||
-		"https://watchlist.janovix.workers.dev"
+	return requireEnv(
+		"NEXT_PUBLIC_WATCHLIST_APP_URL",
+		process.env.NEXT_PUBLIC_WATCHLIST_APP_URL,
 	);
 };
 
 export const getHomepageUrl = (): string => {
-	return process.env.NEXT_PUBLIC_HOMEPAGE_URL || "https://www.janovix.com";
+	return requireEnv(
+		"NEXT_PUBLIC_HOMEPAGE_URL",
+		process.env.NEXT_PUBLIC_HOMEPAGE_URL,
+	);
 };
 
 export const getAmlAppUrl = (): string => {
-	return (
-		process.env.NEXT_PUBLIC_AML_APP_URL || "https://aml.janovix.workers.dev"
+	return requireEnv(
+		"NEXT_PUBLIC_AML_APP_URL",
+		process.env.NEXT_PUBLIC_AML_APP_URL,
 	);
 };
 
 export const getNotificationsServiceUrl = (): string => {
-	return (
-		process.env.NEXT_PUBLIC_NOTIFICATIONS_SERVICE_URL ||
-		"https://notifications-svc.janovix.workers.dev"
+	return requireEnv(
+		"NEXT_PUBLIC_NOTIFICATIONS_SERVICE_URL",
+		process.env.NEXT_PUBLIC_NOTIFICATIONS_SERVICE_URL,
 	);
 };
