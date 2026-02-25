@@ -1,3 +1,10 @@
+# [1.5.0-rc.3](https://github.com/janovix/aml/compare/v1.5.0-rc.2...v1.5.0-rc.3) (2026-02-25)
+
+
+### Features
+
+* add environment variable management and update API URLs ([e4ce216](https://github.com/janovix/aml/commit/e4ce216ab6be264dc8febd8cb95221445bde4596))
+
 # [1.5.0-rc.2](https://github.com/janovix/aml/compare/v1.5.0-rc.1...v1.5.0-rc.2) (2026-02-24)
 
 
