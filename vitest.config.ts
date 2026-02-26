@@ -14,8 +14,6 @@ export default defineConfig({
 				"https://watchlist-svc.janovix.workers.dev",
 			NEXT_PUBLIC_AUTH_SERVICE_URL:
 				"https://auth-svc.janovix.workers.dev",
-			NEXT_PUBLIC_AUTH_SERVICE_URL_INTERNAL:
-				"https://auth-svc.janovix.workers.dev",
 			NEXT_PUBLIC_DOC_SVC_URL:
 				"https://doc-svc.janovix.workers.dev",
 			NEXT_PUBLIC_NOTIFICATIONS_SERVICE_URL:
