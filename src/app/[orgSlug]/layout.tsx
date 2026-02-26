@@ -3,11 +3,9 @@
 import { useParams, usePathname, notFound } from "next/navigation";
 import { type ReactNode } from "react";
 import { OrgSlugContext } from "@/hooks/useOrgSlug";
-import { useOrgSettings } from "@/hooks/useOrgSettings";
-import { ObligatedSubjectSetup } from "@/components/onboarding/ObligatedSubjectSetup";
-import { getViewSkeleton } from "@/lib/view-skeletons";
 import { hasAMLAccess, useSubscriptionSafe } from "@/lib/subscription";
 import { NoAMLAccess } from "@/components/subscription";
+import { getViewSkeleton } from "@/lib/view-skeletons";
 
 /**
  * Derive the view path (without orgSlug prefix) from the full pathname.
@@ -34,27 +32,6 @@ function validateOrgSlug(rawOrgSlug: string | string[] | undefined): string {
 	}
 
 	return slug;
-}
-
-/**
- * Guard that blocks access until the organization has configured
- * its obligated subject (RFC) and vulnerable activity.
- * Shows the route-aware view skeleton while loading to avoid CLS.
- */
-function OrgSettingsGuard({ children }: { children: ReactNode }) {
-	const { isConfigured, isLoading, refresh } = useOrgSettings();
-	const pathname = usePathname();
-
-	if (isLoading) {
-		const ViewSkeleton = getViewSkeleton(getViewPath(pathname ?? "/"));
-		return <ViewSkeleton />;
-	}
-
-	if (!isConfigured) {
-		return <ObligatedSubjectSetup onComplete={refresh} />;
-	}
-
-	return <>{children}</>;
 }
 
 export default function OrgSlugLayout({ children }: { children: ReactNode }) {

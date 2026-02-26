@@ -28,6 +28,7 @@ import {
 import { NoAMLAccess } from "@/components/subscription";
 import { ObligatedSubjectSetup } from "@/components/onboarding/ObligatedSubjectSetup";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { OrgSettingsContext } from "@/contexts/org-settings-context";
 
 interface BootstrapData {
 	subscription: SubscriptionStatus | null;
@@ -488,19 +489,35 @@ export function OrgBootstrapper({
 	// Org settings gate: require obligated subject setup before accessing the app
 	if (urlOrgSlug && !bootstrapData.orgSettings) {
 		return (
-			<SubscriptionProvider initialData={bootstrapData.subscription}>
-				<DashboardLayout hideNavigation initialSidebarCollapsed={false}>
-					<ObligatedSubjectSetup onComplete={handleOrgSettingsComplete} />
-				</DashboardLayout>
-			</SubscriptionProvider>
+			<OrgSettingsContext.Provider
+				value={{
+					settings: null,
+					isLoading: false,
+					refresh: handleOrgSettingsComplete,
+				}}
+			>
+				<SubscriptionProvider initialData={bootstrapData.subscription}>
+					<DashboardLayout hideNavigation initialSidebarCollapsed={false}>
+						<ObligatedSubjectSetup onComplete={handleOrgSettingsComplete} />
+					</DashboardLayout>
+				</SubscriptionProvider>
+			</OrgSettingsContext.Provider>
 		);
 	}
 
-	// All checks passed — mount SubscriptionProvider with pre-fetched data so it
-	// starts fully initialized (isLoading: false) without triggering a second fetch.
+	// All checks passed — provide org settings via context so every useOrgSettings()
+	// caller reads from here instead of making independent HTTP requests.
 	return (
-		<SubscriptionProvider initialData={bootstrapData.subscription}>
-			{children}
-		</SubscriptionProvider>
+		<OrgSettingsContext.Provider
+			value={{
+				settings: bootstrapData.orgSettings,
+				isLoading: false,
+				refresh: handleOrgSettingsComplete,
+			}}
+		>
+			<SubscriptionProvider initialData={bootstrapData.subscription}>
+				{children}
+			</SubscriptionProvider>
+		</OrgSettingsContext.Provider>
 	);
 }
