@@ -29,7 +29,7 @@ export async function listOrganizationsServer(): Promise<OrganizationsData | nul
 
 		const authServiceUrl = getAuthServiceUrl();
 		const response = await fetch(
-			`${authServiceUrl}/api/auth/organization/list`,
+			`${authServiceUrl}/api/organization/list-with-role`,
 			{
 				headers: {
 					Cookie: cookieHeader,
@@ -47,24 +47,17 @@ export async function listOrganizationsServer(): Promise<OrganizationsData | nul
 			return null;
 		}
 
-		const payload = (await response.json()) as
-			| Record<string, unknown>
-			| unknown[]
-			| null;
+		const payload = (await response.json()) as {
+			success: boolean;
+			data: unknown[];
+		} | null;
 
-		const organizationsRaw = Array.isArray(payload)
-			? payload
-			: ((payload as Record<string, unknown>)?.organizations ?? []);
-		const activeOrganizationId =
-			((payload as Record<string, unknown>)?.activeOrganizationId as
-				| string
-				| null) ??
-			((payload as Record<string, unknown>)?.activeOrgId as string | null) ??
-			null;
+		const organizationsRaw = Array.isArray(payload?.data) ? payload.data : [];
 
 		return {
 			organizations: (organizationsRaw as unknown[]).map(normalizeOrganization),
-			activeOrganizationId,
+			// list-with-role doesn't track active org; resolved from URL / stored state
+			activeOrganizationId: null,
 		};
 	} catch (error) {
 		console.error("Failed to load organizations server-side:", error);

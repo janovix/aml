@@ -173,6 +173,11 @@ export function normalizeOrganization(raw: unknown): Organization {
 			(rawObj.updatedAt as string) ??
 			(rawObj.updated_at as string) ??
 			undefined,
+		// role comes from list-with-role endpoint; userRole may already be set
+		userRole:
+			(rawObj.userRole as Organization["userRole"]) ??
+			(rawObj.role as Organization["userRole"]) ??
+			undefined,
 	};
 }
 
@@ -228,26 +233,19 @@ export async function listOrganizations(): Promise<
 		activeOrganizationId: string | null;
 	}>
 > {
-	const result = await http<unknown>("/api/auth/organization/list");
+	const result = await http<unknown>("/api/organization/list-with-role");
 	if (result.error) {
 		return { data: null, error: result.error };
 	}
 
-	const payload = result.data as Record<string, unknown> | unknown[] | null;
-	const organizationsRaw = Array.isArray(payload)
-		? payload
-		: ((payload as Record<string, unknown>)?.organizations ?? []);
-	const activeOrganizationId =
-		((payload as Record<string, unknown>)?.activeOrganizationId as
-			| string
-			| null) ??
-		((payload as Record<string, unknown>)?.activeOrgId as string | null) ??
-		null;
+	// New endpoint returns { success: true, data: [...] } — unwrapped by http()
+	const organizationsRaw = Array.isArray(result.data) ? result.data : [];
 
 	return {
 		data: {
 			organizations: (organizationsRaw as unknown[]).map(normalizeOrganization),
-			activeOrganizationId,
+			// list-with-role doesn't track active org; resolved from URL / stored state
+			activeOrganizationId: null,
 		},
 		error: null,
 	};
