@@ -1,3 +1,10 @@
+# [1.6.0-rc.2](https://github.com/janovix/aml/compare/v1.6.0-rc.1...v1.6.0-rc.2) (2026-02-26)
+
+
+### Features
+
+* enhance organization fetching with user roles and optimize member loading ([28159ff](https://github.com/janovix/aml/commit/28159ff3df8d72a29e61f7fc8a9331c66a7ebad5))
+
 # [1.6.0-rc.1](https://github.com/janovix/aml/compare/v1.5.0...v1.6.0-rc.1) (2026-02-26)
 
 
