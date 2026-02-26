@@ -1,3 +1,11 @@
+# [1.6.0](https://github.com/janovix/aml/compare/v1.5.0...v1.6.0) (2026-02-26)
+
+
+### Features
+
+* add environment variable management and update API URLs ([e4ce216](https://github.com/janovix/aml/commit/e4ce216ab6be264dc8febd8cb95221445bde4596))
+* add skippedCount tracking and display in import progress components ([4031f6e](https://github.com/janovix/aml/commit/4031f6e07464f989e11aa007f67575cafd2981c5))
+
 # [1.6.0-rc.1](https://github.com/janovix/aml/compare/v1.5.0...v1.6.0-rc.1) (2026-02-26)
 
 
