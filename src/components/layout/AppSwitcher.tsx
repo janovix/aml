@@ -91,7 +91,7 @@ export function AppSwitcher({
 				id: "settings",
 				name: t("appSwitcherSettings"),
 				description: t("appSwitcherSettingsDescription"),
-				href: getAuthAppUrl(),
+				href: `${getAuthAppUrl()}/settings`,
 				icon: Settings,
 				external: true,
 				current: false,

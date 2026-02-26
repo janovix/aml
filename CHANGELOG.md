@@ -1,9 +1,23 @@
+## [1.7.1-rc.1](https://github.com/janovix/aml/compare/v1.7.0...v1.7.1-rc.1) (2026-02-26)
+
+
+### Bug Fixes
+
+* update AppSwitcher settings URL to include '/settings' ([a57f5f1](https://github.com/janovix/aml/commit/a57f5f1b3b05ebc80cdecd8a9b42dbd5642d0141))
+
 # [1.7.0](https://github.com/janovix/aml/compare/v1.6.0...v1.7.0) (2026-02-26)
 
 
 ### Features
 
 * enhance organization fetching with user roles and optimize member loading ([28159ff](https://github.com/janovix/aml/commit/28159ff3df8d72a29e61f7fc8a9331c66a7ebad5))
+
+# [1.7.0-rc.2](https://github.com/janovix/aml/compare/v1.7.0-rc.1...v1.7.0-rc.2) (2026-02-26)
+
+
+### Bug Fixes
+
+* update AppSwitcher settings URL to include '/settings' ([a57f5f1](https://github.com/janovix/aml/commit/a57f5f1b3b05ebc80cdecd8a9b42dbd5642d0141))
 
 # [1.7.0-rc.1](https://github.com/janovix/aml/compare/v1.6.0...v1.7.0-rc.1) (2026-02-26)
 
