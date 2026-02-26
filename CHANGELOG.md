@@ -1,3 +1,10 @@
+## [1.7.1-rc.1](https://github.com/janovix/aml/compare/v1.7.0...v1.7.1-rc.1) (2026-02-26)
+
+
+### Bug Fixes
+
+* update AppSwitcher settings URL to include '/settings' ([a57f5f1](https://github.com/janovix/aml/commit/a57f5f1b3b05ebc80cdecd8a9b42dbd5642d0141))
+
 # [1.7.0](https://github.com/janovix/aml/compare/v1.6.0...v1.7.0) (2026-02-26)
 
 
