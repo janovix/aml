@@ -258,6 +258,7 @@ interface Organization {
 	id: string;
 	slug: string;
 	name: string;
+	role?: string;
 }
 
 interface OrgsResponse {
@@ -266,14 +267,15 @@ interface OrgsResponse {
 }
 
 /**
- * Fetch user's organizations from auth service
+ * Fetch user's organizations from auth service, each enriched with the
+ * current user's membership role in a single query (no N+1 list-members).
  */
 async function fetchUserOrganizations(
 	cookieHeader: string,
 ): Promise<OrgsResponse | null> {
 	try {
 		const response = await fetchWithTimeout(
-			`${getAuthServiceUrl()}/api/auth/organization/list`,
+			`${getAuthServiceUrl()}/api/organization/list-with-role`,
 			{
 				headers: {
 					Cookie: cookieHeader,
@@ -287,14 +289,15 @@ async function fetchUserOrganizations(
 			return null;
 		}
 
-		const data = await response.json();
+		const data = (await response.json()) as {
+			success: boolean;
+			data: Organization[];
+		} | null;
 
-		// Handle both array and object response formats
-		if (Array.isArray(data)) {
-			return { organizations: data, activeOrganizationId: null };
-		}
-
-		return data as OrgsResponse;
+		return {
+			organizations: data?.data ?? [],
+			activeOrganizationId: null,
+		};
 	} catch {
 		return null;
 	}

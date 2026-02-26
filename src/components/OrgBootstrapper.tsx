@@ -373,20 +373,18 @@ export function OrgBootstrapper({
 				setCurrentOrg(targetOrg);
 			}
 
-			const userId = session?.user?.id;
-
-			// Fetch members + JWT + subscription in parallel to eliminate sequential loading.
-			// JWT is fetched here so org settings can use it in the next step.
-			// Subscription is always re-fetched because resolveFromOrg=true resolves plan/limits
-			// from the active org's owner, which changes when switching between orgs with different owners.
-			const [allMemberResults, jwt, subscriptionResult] = await Promise.all([
-				// Members: enrich orgs with user role + provide full member list for current org
-				Promise.all(orgs.map((org) => listMembers(org.id))),
-				// JWT: needed immediately for org settings fetch below
-				tokenCache.getToken(targetOrg.id),
-				// Subscription: always fetch to reflect the active org's owner entitlements
-				getSubscriptionStatus().catch(() => null),
-			]);
+			// Fetch members for the active org + JWT + subscription in parallel.
+			// Roles are already pre-populated on each org by listOrganizations() —
+			// no N+1 list-members calls needed across all orgs.
+			const [currentOrgMembersResult, jwt, subscriptionResult] =
+				await Promise.all([
+					// Members: only fetch for the active org (full list for the members panel)
+					listMembers(targetOrg.id),
+					// JWT: needed immediately for org settings fetch below
+					tokenCache.getToken(targetOrg.id),
+					// Subscription: always fetch to reflect the active org's owner entitlements
+					getSubscriptionStatus().catch(() => null),
+				]);
 
 			// Fetch org settings (requires JWT) — done after the parallel step since it depends on JWT
 			let orgSettings: OrganizationSettingsEntity | null = null;
@@ -398,27 +396,15 @@ export function OrgBootstrapper({
 				}
 			}
 
-			// Enrich orgs with the current user's role and update the store
-			const enrichedOrgs = orgs.map((org, i) => {
-				const myMember = allMemberResults[i].data?.find(
-					(m) => m.userId === userId,
-				);
-				return myMember ? { ...org, userRole: myMember.role } : org;
-			});
-			setOrganizations(enrichedOrgs);
+			// Roles already come from listOrganizations(); persist orgs as-is
+			setOrganizations(orgs);
 
 			// Set the full member list for the current org
-			const targetOrgIndex = enrichedOrgs.findIndex(
-				(o) => o.id === targetOrg.id,
-			);
-			const currentOrgMembers =
-				targetOrgIndex >= 0 ? allMemberResults[targetOrgIndex].data : null;
-
-			if (currentOrgMembers) {
-				setMembers(currentOrgMembers);
-			} else if (allMemberResults[targetOrgIndex]?.error) {
+			if (currentOrgMembersResult.data) {
+				setMembers(currentOrgMembersResult.data);
+			} else if (currentOrgMembersResult.error) {
 				toast.error("Failed to load team members", {
-					description: allMemberResults[targetOrgIndex].error ?? undefined,
+					description: currentOrgMembersResult.error ?? undefined,
 				});
 			}
 

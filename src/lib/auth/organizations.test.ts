@@ -34,11 +34,11 @@ describe("organizations API", () => {
 				ok: true,
 				json: () =>
 					Promise.resolve({
-						organizations: [
-							{ id: "org-1", name: "Org One", slug: "org-one" },
-							{ id: "org-2", name: "Org Two", slug: "org-two" },
+						success: true,
+						data: [
+							{ id: "org-1", name: "Org One", slug: "org-one", role: "owner" },
+							{ id: "org-2", name: "Org Two", slug: "org-two", role: "member" },
 						],
-						activeOrganizationId: "org-1",
 					}),
 			});
 
@@ -46,7 +46,8 @@ describe("organizations API", () => {
 
 			expect(result.error).toBeNull();
 			expect(result.data?.organizations).toHaveLength(2);
-			expect(result.data?.activeOrganizationId).toBe("org-1");
+			// list-with-role does not return activeOrganizationId
+			expect(result.data?.activeOrganizationId).toBeNull();
 		});
 
 		it("normalizes organization data", async () => {
@@ -54,15 +55,16 @@ describe("organizations API", () => {
 				ok: true,
 				json: () =>
 					Promise.resolve({
-						organizations: [
+						success: true,
+						data: [
 							{
 								id: "org-1",
 								name: "Test Org",
 								slug: "test-org",
+								role: "owner",
 								metadata: { status: "active", plan: "professional" },
 							},
 						],
-						activeOrganizationId: "org-1",
 					}),
 			});
 
@@ -74,6 +76,7 @@ describe("organizations API", () => {
 				slug: "test-org",
 				status: "active",
 				plan: "professional",
+				userRole: "owner",
 			});
 		});
 
