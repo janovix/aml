@@ -32,6 +32,7 @@ import { useOrgStore } from "@/lib/org-store";
 import { useJwt } from "@/hooks/useJwt";
 import {
 	createUploadLink,
+	getKycBaseUrl,
 	getUploadLinkUrl,
 	subscribeToUploadLinkEvents,
 	type CreateUploadLinkResponse,
@@ -46,9 +47,6 @@ import {
 } from "@/lib/constants/upload-link-documents";
 import type { PersonType } from "@/types/client";
 import type { ClientDocumentType } from "@/types/client-document";
-
-const SCAN_APP_URL =
-	process.env.NEXT_PUBLIC_SCAN_APP_URL || "https://scan.janovix.com";
 
 interface GenerateUploadLinkDialogProps {
 	/** Whether the dialog is open */
@@ -252,7 +250,7 @@ export function GenerateUploadLinkDialog({
 
 	// Generate the scan URL
 	const scanUrl = uploadLink
-		? getUploadLinkUrl(uploadLink.id, SCAN_APP_URL)
+		? getUploadLinkUrl(uploadLink.id, getKycBaseUrl())
 		: "";
 
 	// Copy URL to clipboard

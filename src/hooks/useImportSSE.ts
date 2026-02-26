@@ -21,6 +21,7 @@ export interface ImportProgress {
 	successCount: number;
 	warningCount: number;
 	errorCount: number;
+	skippedCount: number;
 	errorMessage?: string | null;
 	completedAt?: string | null;
 }
@@ -95,6 +96,7 @@ export function useImportSSE(opts: UseImportSSEOptions): UseImportSSEResult {
 				successCount: data.successCount ?? 0,
 				warningCount: data.warningCount ?? 0,
 				errorCount: data.errorCount ?? 0,
+				skippedCount: data.skippedCount ?? 0,
 			});
 		});
 
@@ -124,6 +126,7 @@ export function useImportSSE(opts: UseImportSSEOptions): UseImportSSEResult {
 					successCount: 0,
 					warningCount: 0,
 					errorCount: 0,
+					skippedCount: 0,
 				}),
 				status: data.status,
 				processedRows: data.processedRows ?? prev?.processedRows ?? 0,
@@ -131,6 +134,7 @@ export function useImportSSE(opts: UseImportSSEOptions): UseImportSSEResult {
 				successCount: data.successCount ?? prev?.successCount ?? 0,
 				warningCount: data.warningCount ?? prev?.warningCount ?? 0,
 				errorCount: data.errorCount ?? prev?.errorCount ?? 0,
+				skippedCount: data.skippedCount ?? prev?.skippedCount ?? 0,
 			}));
 		});
 
@@ -143,6 +147,7 @@ export function useImportSSE(opts: UseImportSSEOptions): UseImportSSEResult {
 				successCount: data.successCount,
 				warningCount: data.warningCount,
 				errorCount: data.errorCount,
+				skippedCount: data.skippedCount ?? 0,
 				errorMessage: data.errorMessage,
 				completedAt: data.completedAt,
 			});

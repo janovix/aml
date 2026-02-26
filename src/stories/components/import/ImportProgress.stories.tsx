@@ -37,6 +37,7 @@ const baseState: ImportState = {
 	successCount: 0,
 	warningCount: 0,
 	errorCount: 0,
+	skippedCount: 0,
 	rows: [],
 	error: null,
 };

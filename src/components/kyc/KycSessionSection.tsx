@@ -161,11 +161,11 @@ function EventHistory({ sessionId, jwt }: EventHistoryProps) {
 	}
 
 	return (
-		<div className="space-y-1 pt-2 max-h-60 overflow-y-auto pr-1">
+		<div className="divide-y pt-2 max-h-60 overflow-y-auto pr-1">
 			{events.map((ev) => (
 				<div
 					key={ev.id}
-					className="flex items-start gap-3 rounded-md px-2 py-1.5 hover:bg-muted/50 transition-colors"
+					className="flex items-start gap-3 px-2 py-2.5 hover:bg-muted/50 transition-colors"
 				>
 					<Activity className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
 					<div className="flex-1 min-w-0">
@@ -302,15 +302,14 @@ function SessionCard({
 		<>
 			<div
 				className={cn(
-					"rounded-lg border p-4 space-y-3",
-					isReviewable &&
-						"border-amber-300 bg-amber-50/50 dark:bg-amber-950/20",
-					isActive && "border-blue-200 bg-blue-50/30 dark:bg-blue-950/10",
+					"bg-background divide-y",
+					isReviewable && "bg-amber-50/50 dark:bg-amber-950/20",
+					isActive && "bg-blue-50/30 dark:bg-blue-950/10",
 					isTerminal && "opacity-70",
 				)}
 			>
 				{/* Header row */}
-				<div className="flex items-start justify-between gap-3 flex-wrap">
+				<div className="flex items-start justify-between gap-3 flex-wrap px-4 py-4">
 					<div className="space-y-1 min-w-0">
 						<div className="flex items-center gap-2 flex-wrap">
 							<KycStatusBadge status={session.status} />
@@ -416,7 +415,7 @@ function SessionCard({
 
 				{/* Compliance review notice */}
 				{isReviewable && (
-					<div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-900/30 px-3 py-2">
+					<div className="flex items-start gap-2 border-amber-200 bg-amber-50 dark:bg-amber-900/30 px-4 py-3">
 						<ShieldCheck className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
 						<div className="text-xs text-amber-700 dark:text-amber-300">
 							<p className="font-medium">
@@ -431,7 +430,7 @@ function SessionCard({
 				)}
 
 				{/* Meta info */}
-				<div className="grid grid-cols-2 @xl/main:grid-cols-4 gap-3 text-xs">
+				<div className="grid grid-cols-2 @xl/main:grid-cols-4 gap-3 text-xs px-4 py-4">
 					<div>
 						<p className="text-muted-foreground">Creado</p>
 						<p className="font-medium">{formatDate(session.createdAt)}</p>
@@ -482,7 +481,11 @@ function SessionCard({
 				</div>
 
 				{/* Audit trail toggle */}
-				<Collapsible open={expanded} onOpenChange={setExpanded}>
+				<Collapsible
+					open={expanded}
+					onOpenChange={setExpanded}
+					className="px-4 py-3"
+				>
 					<CollapsibleTrigger asChild>
 						<button
 							type="button"
@@ -695,7 +698,7 @@ export function KycSessionSection({
 			</div>
 
 			{hasActiveOrPending && (
-				<div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 px-3 py-2">
+				<div className="flex items-start gap-2 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 p-3">
 					<Info className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
 					<p className="text-xs text-blue-700 dark:text-blue-300">
 						Ya existe una sesión activa o en progreso. Sólo puede haber una
@@ -707,7 +710,7 @@ export function KycSessionSection({
 
 			{/* Session list */}
 			{sessions && sessions.length > 0 && (
-				<div className="space-y-3">
+				<div className="rounded-lg border overflow-hidden divide-y">
 					{sessions.map((session) => (
 						<SessionCard
 							key={session.id}

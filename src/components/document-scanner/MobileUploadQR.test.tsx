@@ -26,12 +26,14 @@ vi.mock("@/hooks/useJwt", () => ({
 const mockCreateUploadLink = vi.fn();
 const mockSubscribeToUploadLinkEvents = vi.fn();
 const mockGetUploadLinkUrl = vi.fn();
+const mockGetKycBaseUrl = vi.fn(() => "https://kyc.example.com");
 
 vi.mock("@/lib/api/doc-svc", () => ({
 	createUploadLink: (...args: unknown[]) => mockCreateUploadLink(...args),
 	subscribeToUploadLinkEvents: (...args: unknown[]) =>
 		mockSubscribeToUploadLinkEvents(...args),
 	getUploadLinkUrl: (...args: unknown[]) => mockGetUploadLinkUrl(...args),
+	getKycBaseUrl: () => mockGetKycBaseUrl(),
 }));
 
 // Mock sonner toast

@@ -76,6 +76,7 @@ const initialState: ImportState = {
 	successCount: 0,
 	warningCount: 0,
 	errorCount: 0,
+	skippedCount: 0,
 	rows: [],
 	error: null,
 };
@@ -156,6 +157,7 @@ export function ImportViewContent({ importId }: ImportViewContentProps) {
 					successCount: importData.successCount,
 					warningCount: importData.warningCount,
 					errorCount: importData.errorCount,
+					skippedCount: importData.skippedCount,
 					rows,
 					error: importData.errorMessage
 						? {
@@ -203,6 +205,7 @@ export function ImportViewContent({ importId }: ImportViewContentProps) {
 				successCount: progress.successCount,
 				warningCount: progress.warningCount,
 				errorCount: progress.errorCount,
+				skippedCount: progress.skippedCount,
 				error: progress.errorMessage
 					? {
 							type: "IMPORT_FAILED",

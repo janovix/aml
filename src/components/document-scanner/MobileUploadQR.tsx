@@ -28,14 +28,12 @@ import { useOrgStore } from "@/lib/org-store";
 import { useJwt } from "@/hooks/useJwt";
 import {
 	createUploadLink,
+	getKycBaseUrl,
 	getUploadLinkUrl,
 	subscribeToUploadLinkEvents,
 	type CreateUploadLinkResponse,
 	type SSEEvent,
 } from "@/lib/api/doc-svc";
-
-const SCAN_APP_URL =
-	process.env.NEXT_PUBLIC_SCAN_APP_URL || "https://scan.janovix.com";
 
 interface MobileUploadQRProps {
 	/** Whether the QR modal is open */
@@ -199,7 +197,7 @@ export function MobileUploadQR({
 
 	// Generate the scan URL using the upload link ID
 	const scanUrl = uploadLink
-		? getUploadLinkUrl(uploadLink.id, SCAN_APP_URL)
+		? getUploadLinkUrl(uploadLink.id, getKycBaseUrl())
 		: "";
 
 	// Copy URL to clipboard

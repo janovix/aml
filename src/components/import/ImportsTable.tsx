@@ -190,6 +190,9 @@ export function ImportsTable({
 								<span className="text-green-600">{item.successCount} ✓</span>
 								<span className="text-yellow-600">{item.warningCount} ⚠</span>
 								<span className="text-red-600">{item.errorCount} ✗</span>
+								{item.skippedCount > 0 && (
+									<span className="text-amber-600">{item.skippedCount} ⏭</span>
+								)}
 							</div>
 						</div>
 					);

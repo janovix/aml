@@ -21,9 +21,12 @@ const RESERVED_SUBDOMAINS = [
 ];
 
 /**
- * Production domain for vanity URLs
+ * Get the production domain for vanity URLs from environment.
+ * Defaults to "janovix.com" if not set.
  */
-const VANITY_DOMAIN = "janovix.com";
+function getVanityDomain(): string {
+	return process.env.NEXT_PUBLIC_VANITY_DOMAIN ?? "janovix.com";
+}
 
 /**
  * Check if the current environment supports vanity subdomain URLs.
@@ -61,7 +64,7 @@ export function isVanityModeAvailable(): boolean {
 	}
 
 	// Must be on the vanity domain
-	return hostname.endsWith(VANITY_DOMAIN);
+	return hostname.endsWith(getVanityDomain());
 }
 
 /**
@@ -134,7 +137,7 @@ export function getOrgUrl(
 	if (useVanity) {
 		// Vanity URL: https://acme.janovix.com/clients
 		const protocol = typeof window !== "undefined" ? "https:" : "https:";
-		return `${protocol}//${orgSlug}.${VANITY_DOMAIN}${normalizedPath}`;
+		return `${protocol}//${orgSlug}.${getVanityDomain()}${normalizedPath}`;
 	}
 
 	// Path-based URL
@@ -170,7 +173,7 @@ export function parseOrgUrl(url: string): {
 
 		// Check if vanity URL
 		if (
-			hostname.endsWith(VANITY_DOMAIN) &&
+			hostname.endsWith(getVanityDomain()) &&
 			!RESERVED_SUBDOMAINS.includes(subdomain)
 		) {
 			return {

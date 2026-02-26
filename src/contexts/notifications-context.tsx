@@ -154,12 +154,11 @@ export function NotificationsProvider({
 					const message = JSON.parse(event.data);
 
 					if (message.type === "notify") {
-						// New notification received
 						const notification = message.notification;
-						// Mark as unread by default (new notifications are always unread)
-						setNotifications((prev) =>
-							[{ ...notification, read: false }, ...prev].slice(0, 50),
-						); // Keep last 50
+						setNotifications((prev) => {
+							if (prev.some((n) => n.id === notification.id)) return prev;
+							return [{ ...notification, read: false }, ...prev].slice(0, 50);
+						});
 						setUnreadCount((prev) => prev + 1);
 					} else if (message.type === "read_ack") {
 						// Update unread count after mark as read
@@ -283,8 +282,14 @@ export function NotificationsProvider({
 					success: boolean;
 					data?: Notification[];
 				};
-				// Use the read status from the server (already computed)
-				setNotifications(data.data || []);
+				const fetched = data.data || [];
+				setNotifications((prev) => {
+					// Merge: keep any WS-delivered notifications not in the fetch,
+					// then append fetched ones, deduplicating by id.
+					const fetchedIds = new Set(fetched.map((n) => n.id));
+					const wsOnly = prev.filter((n) => !fetchedIds.has(n.id));
+					return [...wsOnly, ...fetched].slice(0, 50);
+				});
 			} else {
 				Sentry.captureMessage(
 					`Failed to fetch notifications: ${response.status}`,

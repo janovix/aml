@@ -189,9 +189,9 @@ function RowItem({
 export function RowStatusTable({ rows, currentRow }: RowStatusTableProps) {
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const bottomRef = useRef<HTMLDivElement>(null);
-	const [filter, setFilter] = useState<"all" | "SUCCESS" | "WARNING" | "ERROR">(
-		"all",
-	);
+	const [filter, setFilter] = useState<
+		"all" | "SUCCESS" | "WARNING" | "ERROR" | "SKIPPED"
+	>("all");
 	const [showGoToTop, setShowGoToTop] = useState(false);
 	const [showGoToBottom, setShowGoToBottom] = useState(false);
 
@@ -234,11 +234,14 @@ export function RowStatusTable({ rows, currentRow }: RowStatusTableProps) {
 		return rows.filter((row) => row.status === filter);
 	}, [rows, filter]);
 
+	const hasSkipped = rows.some((row) => row.status === "SKIPPED");
+
 	const filterButtons = [
 		{ value: "all" as const, label: "Todos" },
 		{ value: "SUCCESS" as const, label: "Exitosos" },
 		{ value: "WARNING" as const, label: "Advertencias" },
 		{ value: "ERROR" as const, label: "Errores" },
+		...(hasSkipped ? [{ value: "SKIPPED" as const, label: "Omitidos" }] : []),
 	];
 
 	return (
