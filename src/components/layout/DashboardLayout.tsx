@@ -17,7 +17,9 @@ import { useOrgStore, DEFAULT_ORG_SETTINGS } from "@/lib/org-store";
 import {
 	setSidebarCollapsed as saveSidebarCollapsed,
 	getResolvedSettings,
+	getUIPreferences,
 } from "@/lib/settings/settingsClient";
+import type { NotificationSoundType } from "@/lib/settings/types";
 import { ChatProvider, ChatSidebar, NavbarChatButton } from "@/components/chat";
 import { PageStatusProvider } from "@/components/PageStatusProvider";
 import { NotificationsWidget } from "@algenium/blocks";
@@ -45,6 +47,24 @@ function setCookieValue(name: string, value: string, maxAge: number): void {
 function Navbar() {
 	const router = useRouter();
 
+	const [notificationSound, setNotificationSound] =
+		React.useState<boolean>(true);
+	const [notificationSoundType, setNotificationSoundType] =
+		React.useState<NotificationSoundType>("chime");
+
+	React.useEffect(() => {
+		async function loadNotificationPrefs() {
+			try {
+				const prefs = await getUIPreferences();
+				setNotificationSound(prefs.notificationSound ?? true);
+				setNotificationSoundType(prefs.notificationSoundType ?? "chime");
+			} catch {
+				// Silently fail — defaults remain
+			}
+		}
+		loadNotificationPrefs();
+	}, []);
+
 	const handleNotificationClick = React.useCallback(
 		(notification: { href?: string }) => {
 			if (notification.href) {
@@ -66,9 +86,9 @@ function Navbar() {
 					onNotificationClick={handleNotificationClick}
 					size="md"
 					maxVisible={50}
-					playSound={true}
+					playSound={notificationSound}
 					showPulse={true}
-					soundType="chime"
+					soundType={notificationSoundType}
 					pulseStyle="ring"
 					soundCooldown={60_000}
 				/>

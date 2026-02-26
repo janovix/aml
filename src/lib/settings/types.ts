@@ -30,12 +30,19 @@ export type LlmModel =
 	| "gemini-1.5-flash";
 
 /**
+ * Notification sound type options — mirrors SoundType in NotificationsWidget
+ */
+export type NotificationSoundType = "chime" | "bell" | "pop" | "ding" | "none";
+
+/**
  * UI preferences stored in metadata
  */
 export interface UIPreferences {
 	sidebarCollapsed?: boolean;
 	preferredLlmProvider?: LlmProvider;
 	preferredLlmModel?: LlmModel;
+	notificationSound?: boolean;
+	notificationSoundType?: NotificationSoundType;
 }
 
 /**
