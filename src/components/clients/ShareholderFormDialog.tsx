@@ -255,7 +255,9 @@ export function ShareholderFormDialog({
 			setIsSubmitting(true);
 
 			if (isEditMode) {
-				const patchData: ShareholderPatchRequest = {};
+				const patchData: ShareholderPatchRequest = {
+					entityType: shareholder.entityType,
+				};
 
 				const resolvedParentId =
 					parentShareholderId === NO_PARENT ? null : parentShareholderId;

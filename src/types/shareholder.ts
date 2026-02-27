@@ -80,6 +80,7 @@ export interface ShareholderCreateRequest {
 }
 
 export interface ShareholderPatchRequest {
+	entityType?: ShareholderEntityType;
 	parentShareholderId?: string | null;
 	firstName?: string | null;
 	lastName?: string | null;
