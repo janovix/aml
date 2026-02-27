@@ -1,5 +1,9 @@
 export { ClientCreateWizard } from "./ClientCreateWizard";
 export { WizardStepper } from "./WizardStepper";
+export {
+	DialogWizardStepper,
+	type DialogWizardStep,
+} from "./DialogWizardStepper";
 export { ClientInfoStep } from "./ClientInfoStep";
 export { DocumentsStep } from "./DocumentsStep";
 export {
