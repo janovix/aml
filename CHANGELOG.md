@@ -1,3 +1,10 @@
+# [1.8.0-rc.2](https://github.com/janovix/aml/compare/v1.8.0-rc.1...v1.8.0-rc.2) (2026-02-27)
+
+
+### Features
+
+* enhance subscription access checks in subscriptionClient ([1d43775](https://github.com/janovix/aml/commit/1d43775c2a5a20d5a52092a11cb9b942992d12c3))
+
 # [1.8.0-rc.1](https://github.com/janovix/aml/compare/v1.7.1-rc.1...v1.8.0-rc.1) (2026-02-26)
 
 
