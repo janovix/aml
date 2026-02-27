@@ -1,3 +1,10 @@
+# [1.8.0-rc.4](https://github.com/janovix/aml/compare/v1.8.0-rc.3...v1.8.0-rc.4) (2026-02-27)
+
+
+### Features
+
+* add error handling component for organizational errors ([7606abe](https://github.com/janovix/aml/commit/7606abea5b852c9a9912eb0380373533d5ffdebb))
+
 # [1.8.0-rc.3](https://github.com/janovix/aml/compare/v1.8.0-rc.2...v1.8.0-rc.3) (2026-02-27)
 
 
