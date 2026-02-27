@@ -391,19 +391,21 @@ export function ZipCodeAddressFields({
 								<SelectValue placeholder="Selecciona una colonia" />
 							</SelectTrigger>
 							<SelectContent className="max-h-[300px]">
-								{availableSettlements.map((settlement, index) => (
-									<SelectItem
-										key={`${settlement.name}-${index}`}
-										value={settlement.name.toUpperCase()}
-									>
-										<div className="flex items-center gap-2">
-											<span className="font-medium">{settlement.name}</span>
-											<span className="text-xs text-muted-foreground">
-												({settlement.type})
-											</span>
-										</div>
-									</SelectItem>
-								))}
+								{availableSettlements
+									.filter((s) => s.name && s.name.trim())
+									.map((settlement, index) => (
+										<SelectItem
+											key={`${settlement.name}-${index}`}
+											value={settlement.name.toUpperCase()}
+										>
+											<div className="flex items-center gap-2">
+												<span className="font-medium">{settlement.name}</span>
+												<span className="text-xs text-muted-foreground">
+													({settlement.type})
+												</span>
+											</div>
+										</SelectItem>
+									))}
 								<SelectItem value={CUSTOM_NEIGHBORHOOD_VALUE}>
 									<div className="flex items-center gap-2 text-primary">
 										<PencilLine className="h-4 w-4" />

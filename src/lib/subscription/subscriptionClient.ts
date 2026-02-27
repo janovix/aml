@@ -134,21 +134,27 @@ export function getUsagePercentage(used: number, included: number): number {
 
 /**
  * Check if user has AML product access.
- * All active subscriptions (Stripe or license) include AML access.
+ * Watchlist-only plans (plan === "watchlist") do not include AML access.
+ * All other active Stripe subscriptions and enterprise licenses include AML access.
  */
 export function hasAMLAccess(subscription: SubscriptionStatus | null): boolean {
 	if (!subscription) return false;
 	if (!subscription.hasSubscription) return false;
+	// Watchlist-only Stripe plan does not include AML product access
+	if (subscription.plan === "watchlist") return false;
 
 	return subscription.status === "active" || subscription.status === "trialing";
 }
 
 /**
- * Check if user has Watchlist access
- * All active subscriptions include Watchlist access.
+ * Check if user has Watchlist access.
+ * All active subscriptions (including watchlist-only plan) include Watchlist access.
  */
 export function hasWatchlistAccess(
 	subscription: SubscriptionStatus | null,
 ): boolean {
-	return hasAMLAccess(subscription);
+	if (!subscription) return false;
+	if (!subscription.hasSubscription) return false;
+
+	return subscription.status === "active" || subscription.status === "trialing";
 }

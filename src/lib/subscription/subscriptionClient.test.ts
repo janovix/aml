@@ -321,6 +321,25 @@ describe("subscriptionClient", () => {
 			expect(hasAMLAccess(subscription)).toBe(true);
 		});
 
+		it("returns false for watchlist-only Stripe plan", () => {
+			const subscription = createMockSubscription({
+				status: "active",
+				plan: "watchlist",
+			});
+
+			expect(hasAMLAccess(subscription)).toBe(false);
+		});
+
+		it("returns false for trialing watchlist-only plan", () => {
+			const subscription = createMockSubscription({
+				status: "trialing",
+				plan: "watchlist",
+				isTrialing: true,
+			});
+
+			expect(hasAMLAccess(subscription)).toBe(false);
+		});
+
 		it("returns false when no subscription", () => {
 			const subscription = createMockSubscription({
 				hasSubscription: false,
@@ -342,10 +361,35 @@ describe("subscriptionClient", () => {
 	});
 
 	describe("hasWatchlistAccess", () => {
-		it("returns true for active subscription", () => {
+		it("returns true for active business subscription", () => {
 			const subscription = createMockSubscription({ status: "active" });
 
 			expect(hasWatchlistAccess(subscription)).toBe(true);
+		});
+
+		it("returns true for active watchlist-only plan", () => {
+			const subscription = createMockSubscription({
+				status: "active",
+				plan: "watchlist",
+			});
+
+			expect(hasWatchlistAccess(subscription)).toBe(true);
+		});
+
+		it("returns true for trialing watchlist-only plan", () => {
+			const subscription = createMockSubscription({
+				status: "trialing",
+				plan: "watchlist",
+				isTrialing: true,
+			});
+
+			expect(hasWatchlistAccess(subscription)).toBe(true);
+		});
+
+		it("returns false for canceled subscription", () => {
+			const subscription = createMockSubscription({ status: "canceled" });
+
+			expect(hasWatchlistAccess(subscription)).toBe(false);
 		});
 
 		it("returns false for null subscription", () => {

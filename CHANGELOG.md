@@ -1,3 +1,30 @@
+# [1.8.0-rc.4](https://github.com/janovix/aml/compare/v1.8.0-rc.3...v1.8.0-rc.4) (2026-02-27)
+
+
+### Features
+
+* add error handling component for organizational errors ([7606abe](https://github.com/janovix/aml/commit/7606abea5b852c9a9912eb0380373533d5ffdebb))
+
+# [1.8.0-rc.3](https://github.com/janovix/aml/compare/v1.8.0-rc.2...v1.8.0-rc.3) (2026-02-27)
+
+
+### Features
+
+* enhance ShareholderFormDialog with additional validation and error handling ([a5849e8](https://github.com/janovix/aml/commit/a5849e8c00a53b19e8a21306e9c39a4e363663e7))
+
+# [1.8.0-rc.2](https://github.com/janovix/aml/compare/v1.8.0-rc.1...v1.8.0-rc.2) (2026-02-27)
+
+
+### Features
+
+* enhance subscription access checks in subscriptionClient ([1d43775](https://github.com/janovix/aml/commit/1d43775c2a5a20d5a52092a11cb9b942992d12c3))
+
+# [1.8.0-rc.1](https://github.com/janovix/aml/compare/v1.7.1-rc.1...v1.8.0-rc.1) (2026-02-26)
+
+
+### Features
+
+* add notification sound preferences to Navbar component ([1fa6cc3](https://github.com/janovix/aml/commit/1fa6cc394ff20a977d44aea94a83e13a215af69f))
 ## [1.7.1](https://github.com/janovix/aml/compare/v1.7.0...v1.7.1) (2026-02-26)
 
 

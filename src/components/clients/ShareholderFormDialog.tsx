@@ -36,7 +36,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { CatalogSelector } from "@/components/catalogs/CatalogSelector";
 import type { CatalogItem } from "@/types/catalog";
-import { validateRFC } from "@/lib/utils";
+import { validateRFC, validateCURP, validateRFCMatch } from "@/lib/utils";
 
 interface ShareholderFormDialogProps {
 	open: boolean;
@@ -66,8 +66,9 @@ export function ShareholderFormDialog({
 	const [loadingParents, setLoadingParents] = useState(false);
 
 	// Common fields
+	const NO_PARENT = "__none__";
 	const [parentShareholderId, setParentShareholderId] = useState<string>(
-		shareholder?.parentShareholderId || "",
+		shareholder?.parentShareholderId || NO_PARENT,
 	);
 	const [ownershipPercentage, setOwnershipPercentage] = useState(
 		shareholder?.ownershipPercentage?.toString() || "",
@@ -83,6 +84,13 @@ export function ShareholderFormDialog({
 	);
 	const [rfc, setRfc] = useState(shareholder?.rfc || "");
 	const [rfcError, setRfcError] = useState<string | undefined>();
+	const [taxIdError, setTaxIdError] = useState<string | undefined>();
+	const [representativeCurpError, setRepresentativeCurpError] = useState<
+		string | undefined
+	>();
+	const [representativeRfcError, setRepresentativeRfcError] = useState<
+		string | undefined
+	>();
 	// Nationality for physical person
 	const [personNationality, setPersonNationality] = useState(
 		shareholder?.entityType === "PERSON"
@@ -144,7 +152,7 @@ export function ShareholderFormDialog({
 		if (!open) return;
 
 		setEntityType(shareholder?.entityType || "PERSON");
-		setParentShareholderId(shareholder?.parentShareholderId || "");
+		setParentShareholderId(shareholder?.parentShareholderId || NO_PARENT);
 		setOwnershipPercentage(shareholder?.ownershipPercentage?.toString() || "");
 		setEmail(shareholder?.email || "");
 		setPhone(shareholder?.phone || "");
@@ -153,6 +161,9 @@ export function ShareholderFormDialog({
 		setSecondLastName(shareholder?.secondLastName || "");
 		setRfc(shareholder?.rfc || "");
 		setRfcError(undefined);
+		setTaxIdError(undefined);
+		setRepresentativeCurpError(undefined);
+		setRepresentativeRfcError(undefined);
 		setPersonNationality(
 			shareholder?.entityType === "PERSON"
 				? shareholder?.nationality || "MX"
@@ -195,11 +206,48 @@ export function ShareholderFormDialog({
 					setRfcError(rfcValidation.error);
 					return;
 				}
+				const rfcMatch = validateRFCMatch(rfc, "physical", {
+					firstName,
+					lastName,
+					secondLastName,
+				});
+				if (!rfcMatch.isValid) {
+					setRfcError(rfcMatch.error);
+					return;
+				}
 			}
 		} else {
 			if (!businessName.trim()) {
 				toast.error("Razón social es requerida");
 				return;
+			}
+			if (taxId.trim()) {
+				const taxIdValidation = validateRFC(taxId, "moral");
+				if (!taxIdValidation.isValid) {
+					setTaxIdError(taxIdValidation.error);
+					return;
+				}
+				const taxIdMatch = validateRFCMatch(taxId, "moral", {
+					incorporationDate: incorporationDate || undefined,
+				});
+				if (!taxIdMatch.isValid) {
+					setTaxIdError(taxIdMatch.error);
+					return;
+				}
+			}
+			if (representativeCurp.trim()) {
+				const curpValidation = validateCURP(representativeCurp);
+				if (!curpValidation.isValid) {
+					setRepresentativeCurpError(curpValidation.error);
+					return;
+				}
+			}
+			if (representativeRfc.trim()) {
+				const repRfcValidation = validateRFC(representativeRfc, "physical");
+				if (!repRfcValidation.isValid) {
+					setRepresentativeRfcError(repRfcValidation.error);
+					return;
+				}
 			}
 		}
 
@@ -209,8 +257,10 @@ export function ShareholderFormDialog({
 			if (isEditMode) {
 				const patchData: ShareholderPatchRequest = {};
 
-				if (parentShareholderId !== (shareholder.parentShareholderId || "")) {
-					patchData.parentShareholderId = parentShareholderId || null;
+				const resolvedParentId =
+					parentShareholderId === NO_PARENT ? null : parentShareholderId;
+				if (resolvedParentId !== (shareholder.parentShareholderId || null)) {
+					patchData.parentShareholderId = resolvedParentId;
 				}
 				if (ownership !== shareholder.ownershipPercentage) {
 					patchData.ownershipPercentage = ownership;
@@ -271,7 +321,8 @@ export function ShareholderFormDialog({
 				toast.success("Accionista actualizado");
 			} else {
 				const createData: ShareholderCreateRequest = {
-					parentShareholderId: parentShareholderId || null,
+					parentShareholderId:
+						parentShareholderId === NO_PARENT ? null : parentShareholderId,
 					ownershipPercentage: ownership,
 					email: email || null,
 					phone: phone || null,
@@ -361,7 +412,7 @@ export function ShareholderFormDialog({
 										<SelectValue placeholder="Sin padre (accionista directo)" />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="">
+										<SelectItem value={NO_PARENT}>
 											Sin padre (accionista directo)
 										</SelectItem>
 										{parentShareholders.map((parent) => (
@@ -429,9 +480,20 @@ export function ShareholderFormDialog({
 												setRfc(val);
 												if (val.trim()) {
 													const result = validateRFC(val, "physical");
-													setRfcError(
-														result.isValid ? undefined : result.error,
-													);
+													if (!result.isValid) {
+														setRfcError(result.error);
+													} else {
+														const matchResult = validateRFCMatch(
+															val,
+															"physical",
+															{ firstName, lastName, secondLastName },
+														);
+														setRfcError(
+															matchResult.isValid
+																? undefined
+																: matchResult.error,
+														);
+													}
 												} else {
 													setRfcError(undefined);
 												}
@@ -488,9 +550,34 @@ export function ShareholderFormDialog({
 										<Input
 											id="taxId"
 											value={taxId}
-											onChange={(e) => setTaxId(e.target.value.toUpperCase())}
+											onChange={(e) => {
+												const val = e.target.value.toUpperCase();
+												setTaxId(val);
+												if (val.trim()) {
+													const result = validateRFC(val, "moral");
+													if (!result.isValid) {
+														setTaxIdError(result.error);
+													} else {
+														const matchResult = validateRFCMatch(val, "moral", {
+															incorporationDate: incorporationDate || undefined,
+														});
+														setTaxIdError(
+															matchResult.isValid
+																? undefined
+																: matchResult.error,
+														);
+													}
+												} else {
+													setTaxIdError(undefined);
+												}
+											}}
 											placeholder="RFC O TAX ID"
+											maxLength={12}
+											className={taxIdError ? "border-destructive" : ""}
 										/>
+										{taxIdError && (
+											<p className="text-xs text-destructive">{taxIdError}</p>
+										)}
 									</div>
 									<div className="space-y-2">
 										<Label htmlFor="incorporationDate">
@@ -548,24 +635,58 @@ export function ShareholderFormDialog({
 											<Input
 												id="representativeCurp"
 												value={representativeCurp}
-												onChange={(e) =>
-													setRepresentativeCurp(e.target.value.toUpperCase())
-												}
+												onChange={(e) => {
+													const val = e.target.value.toUpperCase();
+													setRepresentativeCurp(val);
+													if (val.trim()) {
+														const result = validateCURP(val);
+														setRepresentativeCurpError(
+															result.isValid ? undefined : result.error,
+														);
+													} else {
+														setRepresentativeCurpError(undefined);
+													}
+												}}
 												placeholder="CURP"
 												maxLength={18}
+												className={
+													representativeCurpError ? "border-destructive" : ""
+												}
 											/>
+											{representativeCurpError && (
+												<p className="text-xs text-destructive">
+													{representativeCurpError}
+												</p>
+											)}
 										</div>
 										<div className="space-y-2">
 											<Label htmlFor="representativeRfc">RFC</Label>
 											<Input
 												id="representativeRfc"
 												value={representativeRfc}
-												onChange={(e) =>
-													setRepresentativeRfc(e.target.value.toUpperCase())
-												}
+												onChange={(e) => {
+													const val = e.target.value.toUpperCase();
+													setRepresentativeRfc(val);
+													if (val.trim()) {
+														const result = validateRFC(val, "physical");
+														setRepresentativeRfcError(
+															result.isValid ? undefined : result.error,
+														);
+													} else {
+														setRepresentativeRfcError(undefined);
+													}
+												}}
 												placeholder="RFC"
 												maxLength={13}
+												className={
+													representativeRfcError ? "border-destructive" : ""
+												}
 											/>
+											{representativeRfcError && (
+												<p className="text-xs text-destructive">
+													{representativeRfcError}
+												</p>
+											)}
 										</div>
 									</div>
 								</div>
