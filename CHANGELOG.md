@@ -1,9 +1,27 @@
+# [1.8.0](https://github.com/janovix/aml/compare/v1.7.1...v1.8.0) (2026-02-27)
+
+
+### Features
+
+
+* enhance ShareholderFormDialog to include entityType in patch requests ([18712ec](https://github.com/janovix/aml/commit/18712eca989ae378b5d18e76397cab5bfe59b669))
+* add error handling component for organizational errors ([7606abe](https://github.com/janovix/aml/commit/7606abea5b852c9a9912eb0380373533d5ffdebb))
+* add notification sound preferences to Navbar component ([1fa6cc3](https://github.com/janovix/aml/commit/1fa6cc394ff20a977d44aea94a83e13a215af69f))
+* enhance ShareholderFormDialog with additional validation and error handling ([a5849e8](https://github.com/janovix/aml/commit/a5849e8c00a53b19e8a21306e9c39a4e363663e7))
+* enhance subscription access checks in subscriptionClient ([1d43775](https://github.com/janovix/aml/commit/1d43775c2a5a20d5a52092a11cb9b942992d12c3))
+
+
 # [1.8.0-rc.5](https://github.com/janovix/aml/compare/v1.8.0-rc.4...v1.8.0-rc.5) (2026-02-27)
 
 
 ### Features
 
 * enhance ShareholderFormDialog to include entityType in patch requests ([18712ec](https://github.com/janovix/aml/commit/18712eca989ae378b5d18e76397cab5bfe59b669))
+* add error handling component for organizational errors ([7606abe](https://github.com/janovix/aml/commit/7606abea5b852c9a9912eb0380373533d5ffdebb))
+* add notification sound preferences to Navbar component ([1fa6cc3](https://github.com/janovix/aml/commit/1fa6cc394ff20a977d44aea94a83e13a215af69f))
+* enhance ShareholderFormDialog with additional validation and error handling ([a5849e8](https://github.com/janovix/aml/commit/a5849e8c00a53b19e8a21306e9c39a4e363663e7))
+* enhance subscription access checks in subscriptionClient ([1d43775](https://github.com/janovix/aml/commit/1d43775c2a5a20d5a52092a11cb9b942992d12c3))
+
 
 # [1.8.0-rc.4](https://github.com/janovix/aml/compare/v1.8.0-rc.3...v1.8.0-rc.4) (2026-02-27)
 
