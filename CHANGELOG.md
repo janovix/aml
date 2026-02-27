@@ -1,3 +1,10 @@
+# [1.8.0-rc.3](https://github.com/janovix/aml/compare/v1.8.0-rc.2...v1.8.0-rc.3) (2026-02-27)
+
+
+### Features
+
+* enhance ShareholderFormDialog with additional validation and error handling ([a5849e8](https://github.com/janovix/aml/commit/a5849e8c00a53b19e8a21306e9c39a4e363663e7))
+
 # [1.8.0-rc.2](https://github.com/janovix/aml/compare/v1.8.0-rc.1...v1.8.0-rc.2) (2026-02-27)
 
 
