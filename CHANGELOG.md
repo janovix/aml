@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/janovix/aml/compare/v1.8.0...v1.9.0) (2026-02-28)
+
+
+### Features
+
+* enhance ShareholderFormDialog to include entityType in patch requests ([18712ec](https://github.com/janovix/aml/commit/18712eca989ae378b5d18e76397cab5bfe59b669))
+
 # [1.9.0-rc.1](https://github.com/janovix/aml/compare/v1.8.0...v1.9.0-rc.1) (2026-02-27)
 
 
