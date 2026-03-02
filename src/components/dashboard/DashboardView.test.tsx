@@ -209,12 +209,12 @@ describe("DashboardView", () => {
 		});
 	});
 
-	it("renders vehicles count in operation stats", async () => {
+	it("renders total operations for non-vehicle activity", async () => {
 		renderWithProviders(<DashboardView />);
 
 		await waitFor(() => {
-			const vehicles = screen.getAllByText(/vehículos registrados/i);
-			expect(vehicles.length).toBeGreaterThan(0);
+			const totalOps = screen.getAllByText(/total operaciones/i);
+			expect(totalOps.length).toBeGreaterThan(0);
 		});
 	});
 });
@@ -465,5 +465,102 @@ describe("DashboardView branch coverage", () => {
 			const newClients = screen.getAllByText(/nuevos clientes/i);
 			expect(newClients.length).toBeGreaterThan(0);
 		});
+	});
+
+	it("shows vehicles count for VEH activity orgs", async () => {
+		const { OrgSettingsContext } =
+			await import("@/contexts/org-settings-context");
+		const { render } = await import("@testing-library/react");
+		const React = await import("react");
+		const { LanguageProvider } = await import("@/components/LanguageProvider");
+		const { PageStatusProvider } =
+			await import("@/components/PageStatusProvider");
+		const { SidebarProvider } = await import("@/components/ui/sidebar");
+		const { ChatProvider } = await import("@/components/chat/ChatProvider");
+
+		render(
+			<LanguageProvider defaultLanguage="es">
+				<PageStatusProvider>
+					<SidebarProvider>
+						<ChatProvider>
+							<OrgSettingsContext.Provider
+								value={{
+									settings: {
+										id: "s1",
+										organizationId: "org-123",
+										obligatedSubjectKey: "ABC123456XYZ",
+										activityKey: "VEH",
+										selfServiceMode: "disabled" as const,
+										selfServiceExpiryHours: 72,
+										selfServiceRequiredSections: null,
+										createdAt: "",
+										updatedAt: "",
+									},
+									isLoading: false,
+									refresh: async () => {},
+								}}
+							>
+								<DashboardView />
+							</OrgSettingsContext.Provider>
+						</ChatProvider>
+					</SidebarProvider>
+				</PageStatusProvider>
+			</LanguageProvider>,
+		);
+
+		await waitFor(() => {
+			const vehicles = screen.getAllByText(/vehículos registrados/i);
+			expect(vehicles.length).toBeGreaterThan(0);
+		});
+	});
+
+	it("shows total operations instead of vehicles for non-VEH activity", async () => {
+		const { OrgSettingsContext } =
+			await import("@/contexts/org-settings-context");
+		const { render } = await import("@testing-library/react");
+		const React = await import("react");
+		const { LanguageProvider } = await import("@/components/LanguageProvider");
+		const { PageStatusProvider } =
+			await import("@/components/PageStatusProvider");
+		const { SidebarProvider } = await import("@/components/ui/sidebar");
+		const { ChatProvider } = await import("@/components/chat/ChatProvider");
+
+		render(
+			<LanguageProvider defaultLanguage="es">
+				<PageStatusProvider>
+					<SidebarProvider>
+						<ChatProvider>
+							<OrgSettingsContext.Provider
+								value={{
+									settings: {
+										id: "s1",
+										organizationId: "org-123",
+										obligatedSubjectKey: "ABC123456XYZ",
+										activityKey: "INM",
+										selfServiceMode: "disabled" as const,
+										selfServiceExpiryHours: 72,
+										selfServiceRequiredSections: null,
+										createdAt: "",
+										updatedAt: "",
+									},
+									isLoading: false,
+									refresh: async () => {},
+								}}
+							>
+								<DashboardView />
+							</OrgSettingsContext.Provider>
+						</ChatProvider>
+					</SidebarProvider>
+				</PageStatusProvider>
+			</LanguageProvider>,
+		);
+
+		await waitFor(() => {
+			const totalOps = screen.getAllByText(/total operaciones/i);
+			expect(totalOps.length).toBeGreaterThan(0);
+		});
+
+		const vehicles = screen.queryByText(/vehículos registrados/i);
+		expect(vehicles).toBeNull();
 	});
 });

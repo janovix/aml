@@ -47,6 +47,7 @@ import {
 import { getLocaleForLanguage } from "@/lib/translations";
 import { cn } from "@/lib/utils";
 import { useOrgSettings } from "@/hooks/useOrgSettings";
+import { getActivityVisual } from "@/lib/activity-registry";
 
 interface DashboardData {
 	clientStats: ClientStats | null;
@@ -178,9 +179,13 @@ export function DashboardView(): React.ReactElement {
 
 	const {
 		settings: orgSettings,
+		activityCode,
 		isConfigured: isOrgConfigured,
 		refresh: refreshOrgSettings,
 	} = useOrgSettings();
+
+	const activityVisual = activityCode ? getActivityVisual(activityCode) : null;
+	const isVehicleActivity = activityCode === "VEH";
 
 	const fetchAllData = React.useCallback(
 		async (jwtToken: string) => {
@@ -574,11 +579,17 @@ export function DashboardView(): React.ReactElement {
 							<Card className="h-full cursor-pointer transition-colors hover:border-primary/50">
 								<CardHeader>
 									<CardTitle className="flex items-center gap-2">
-										<Briefcase className="h-5 w-5 text-primary" />
+										{activityVisual ? (
+											<activityVisual.icon className="h-5 w-5 text-primary" />
+										) : (
+											<Briefcase className="h-5 w-5 text-primary" />
+										)}
 										{t("dashboardOperationStats")}
 									</CardTitle>
 									<CardDescription>
-										{t("dashboardOperationStatsDesc")}
+										{activityVisual
+											? activityVisual.shortLabel
+											: t("dashboardOperationStatsDesc")}
 									</CardDescription>
 								</CardHeader>
 								<CardContent>
@@ -621,19 +632,39 @@ export function DashboardView(): React.ReactElement {
 														</div>
 													</div>
 												</div>
-												<div className="flex items-center gap-4 rounded-lg border p-4">
-													<div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-500/10">
-														<Car className="h-6 w-6 text-emerald-500" />
-													</div>
-													<div>
-														<div className="text-sm font-medium text-muted-foreground">
-															{t("statsTotalVehicles")}
+												{isVehicleActivity ? (
+													<div className="flex items-center gap-4 rounded-lg border p-4">
+														<div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-500/10">
+															<Car className="h-6 w-6 text-emerald-500" />
 														</div>
-														<div className="text-2xl font-bold tabular-nums">
-															{formatNumber(data.operationStats.totalVehicles)}
+														<div>
+															<div className="text-sm font-medium text-muted-foreground">
+																{t("statsTotalVehicles")}
+															</div>
+															<div className="text-2xl font-bold tabular-nums">
+																{formatNumber(
+																	data.operationStats.totalVehicles,
+																)}
+															</div>
 														</div>
 													</div>
-												</div>
+												) : (
+													<div className="flex items-center gap-4 rounded-lg border p-4">
+														<div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-500/10">
+															<Briefcase className="h-6 w-6 text-emerald-500" />
+														</div>
+														<div>
+															<div className="text-sm font-medium text-muted-foreground">
+																{t("statsTotalOperations")}
+															</div>
+															<div className="text-2xl font-bold tabular-nums">
+																{formatNumber(
+																	data.reportSummary?.operations?.total,
+																)}
+															</div>
+														</div>
+													</div>
+												)}
 											</div>
 
 											{/* Comparison metric */}
