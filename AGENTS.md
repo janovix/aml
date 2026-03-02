@@ -32,6 +32,3 @@ Pre-commit hooks run `lint-staged` + `typecheck` + `test`. Commit messages must 
 
 The `aml-svc` OpenAPI docs are at `https://aml-svc.janovix.workers.dev/docsz` (note: `/docsz` not `/docs`). The raw spec is at `/openapi.json`.
 
-### Key gotcha: OperationStats field names
-
-The `aml-svc` API returns `transactionsToday`, `suspiciousTransactions`, and `totalVehicles` for `GET /api/v1/operations/stats`. The frontend types in `src/lib/api/stats.ts` must match these exact names.
