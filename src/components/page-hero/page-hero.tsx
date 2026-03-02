@@ -206,7 +206,7 @@ export function PageHero({
 
 			{/* Stats cards - only render if stats are provided */}
 			{hasStats && (
-				<div className="grid grid-cols-1 gap-3 @lg/main:grid-cols-2 @2xl/main:grid-cols-3">
+				<div className="grid grid-cols-1 gap-3 @md/main:grid-cols-2 @3xl/main:grid-cols-3">
 					{stats.slice(0, 3).map((stat) => {
 						const StatIcon = stat.icon;
 						const isPrimary = stat.variant === "primary";
