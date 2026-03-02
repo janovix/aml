@@ -106,7 +106,7 @@ You have access to the \`processImport\` tool to process this file. When the use
 			system: systemPrompt,
 			messages,
 			tools: hasTools ? tools : undefined,
-			stopWhen: hasTools ? stepCountIs(5) : undefined,
+			stopWhen: hasTools ? stepCountIs(8) : undefined,
 		});
 
 		// Return the streaming response
