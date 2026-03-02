@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { getClientStats, getOperationStats } from "./stats";
+import { getClientStats, getOperationStats, getReportSummary } from "./stats";
 import * as http from "./http";
 import * as config from "./config";
 
@@ -93,8 +93,8 @@ describe("api/stats", () => {
 
 	describe("getOperationStats", () => {
 		const mockOperationStats = {
-			operationsToday: 25,
-			suspiciousOperations: 3,
+			transactionsToday: 25,
+			suspiciousTransactions: 3,
 			totalVolume: "15000000.50",
 			totalVehicles: 120,
 		};
@@ -155,6 +155,95 @@ describe("api/stats", () => {
 			});
 
 			await getOperationStats({ jwt: "test-token" });
+
+			expect(http.fetchJson).toHaveBeenCalledWith(
+				expect.any(String),
+				expect.objectContaining({
+					jwt: "test-token",
+				}),
+			);
+		});
+	});
+
+	describe("getReportSummary", () => {
+		const mockReportSummary = {
+			alerts: {
+				total: 15,
+				bySeverity: { LOW: 5, MEDIUM: 4, HIGH: 3, CRITICAL: 3 },
+				byStatus: {},
+				byRule: [],
+				byMonth: [],
+				avgResolutionDays: 7.5,
+				overdueCount: 2,
+			},
+			clients: {
+				total: 100,
+				byPersonType: {},
+				byCountry: {},
+				withAlerts: 8,
+				newInPeriod: 12,
+			},
+			riskIndicators: {
+				highRiskClients: 5,
+				criticalAlerts: 3,
+				overdueSubmissions: 1,
+				complianceScore: 85,
+			},
+		};
+
+		it("fetches report summary from the API with period params", async () => {
+			vi.mocked(http.fetchJson).mockResolvedValue({
+				status: 200,
+				json: mockReportSummary,
+			});
+
+			const result = await getReportSummary({
+				periodStart: "2026-03-01T00:00:00.000Z",
+				periodEnd: "2026-03-31T23:59:59.999Z",
+			});
+
+			expect(http.fetchJson).toHaveBeenCalledWith(
+				expect.stringContaining(
+					"/api/v1/reports/aggregate/summary?periodStart=",
+				),
+				expect.objectContaining({
+					method: "GET",
+					cache: "no-store",
+				}),
+			);
+			expect(result).toEqual(mockReportSummary);
+		});
+
+		it("includes comparison period params when provided", async () => {
+			vi.mocked(http.fetchJson).mockResolvedValue({
+				status: 200,
+				json: mockReportSummary,
+			});
+
+			await getReportSummary({
+				periodStart: "2026-03-01T00:00:00.000Z",
+				periodEnd: "2026-03-31T23:59:59.999Z",
+				comparisonPeriodStart: "2026-02-01T00:00:00.000Z",
+				comparisonPeriodEnd: "2026-02-28T23:59:59.999Z",
+			});
+
+			const lastCallIndex = vi.mocked(http.fetchJson).mock.calls.length - 1;
+			const calledUrl = vi.mocked(http.fetchJson).mock.calls[lastCallIndex][0];
+			expect(calledUrl).toContain("comparisonPeriodStart=");
+			expect(calledUrl).toContain("comparisonPeriodEnd=");
+		});
+
+		it("passes jwt option when provided", async () => {
+			vi.mocked(http.fetchJson).mockResolvedValue({
+				status: 200,
+				json: mockReportSummary,
+			});
+
+			await getReportSummary({
+				periodStart: "2026-03-01T00:00:00.000Z",
+				periodEnd: "2026-03-31T23:59:59.999Z",
+				jwt: "test-token",
+			});
 
 			expect(http.fetchJson).toHaveBeenCalledWith(
 				expect.any(String),

@@ -184,11 +184,12 @@ export function createDataTools(jwt: string) {
 			execute: async () => {
 				try {
 					const stats = await fetchWithAuth<{
-						totalOperations: number;
-						operationsToday: number;
-						totalAmountMxn: string;
+						transactionsToday: number;
+						suspiciousTransactions: number;
+						totalVolume: string;
+						totalVehicles: number;
 					}>("/api/v1/operations/stats", jwt);
-					return `Total operations: ${stats.totalOperations}, Operations today: ${stats.operationsToday}, Total volume (MXN): $${stats.totalAmountMxn}`;
+					return `Transactions today: ${stats.transactionsToday}, Suspicious transactions: ${stats.suspiciousTransactions}, Total volume (MXN): $${stats.totalVolume}, Total vehicles: ${stats.totalVehicles}`;
 				} catch (error) {
 					console.error("[AI Tool] getOperationStats error:", error);
 					const msg =
