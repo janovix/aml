@@ -77,11 +77,11 @@ export function DashboardSkeleton(): React.ReactElement {
 	return (
 		<div className="space-y-6">
 			<StatsSkeleton />
-			<div className="grid gap-6 @xl/main:grid-cols-2">
+			<div className="grid gap-6 @2xl/main:grid-cols-2">
 				<CardSkeleton />
 				<CardSkeleton />
 			</div>
-			<div className="grid gap-6 @xl/main:grid-cols-2">
+			<div className="grid gap-6 @2xl/main:grid-cols-2">
 				<CardSkeleton />
 				<CardSkeleton />
 			</div>
@@ -298,11 +298,11 @@ export function DashboardView(): React.ReactElement {
 			{showInitialSkeleton && (
 				<div className="space-y-6">
 					<StatsSkeleton />
-					<div className="grid gap-6 @xl/main:grid-cols-2">
+					<div className="grid gap-6 @2xl/main:grid-cols-2">
 						<CardSkeleton />
 						<CardSkeleton />
 					</div>
-					<div className="grid gap-6 @xl/main:grid-cols-2">
+					<div className="grid gap-6 @2xl/main:grid-cols-2">
 						<CardSkeleton />
 						<CardSkeleton />
 					</div>
@@ -329,7 +329,7 @@ export function DashboardView(): React.ReactElement {
 				>
 					{/* Risk Indicators + Alert Summary row */}
 					{data.reportSummary && (
-						<div className="grid gap-6 @xl/main:grid-cols-2">
+						<div className="grid gap-6 @2xl/main:grid-cols-2">
 							{/* Risk Indicators Card */}
 							<Card className="h-full">
 								<CardHeader>
@@ -570,7 +570,7 @@ export function DashboardView(): React.ReactElement {
 					)}
 
 					{/* Operation Stats + Client Stats row */}
-					<div className="grid gap-6 @xl/main:grid-cols-2">
+					<div className="grid gap-6 @2xl/main:grid-cols-2">
 						{/* Operation Stats Card */}
 						<Link
 							href={routes.operations.list()}
@@ -716,48 +716,48 @@ export function DashboardView(): React.ReactElement {
 								<CardContent>
 									{data.clientStats ? (
 										<div className="space-y-4">
-											<div className="grid grid-cols-2 @lg/main:grid-cols-4 gap-4">
-												<div className="flex flex-col items-center text-center rounded-lg border bg-muted/50 p-4">
-													<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10 mb-3">
-														<Users className="h-5 w-5 text-blue-500" />
+											<div className="grid grid-cols-2 @3xl/main:grid-cols-4 gap-3">
+												<div className="flex flex-col items-center text-center rounded-lg border bg-muted/50 p-3">
+													<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/10 mb-2">
+														<Users className="h-4 w-4 text-blue-500" />
 													</div>
-													<div className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-8 flex items-center justify-center">
+													<div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider leading-tight min-h-[2rem] flex items-center justify-center">
 														{t("statsTotalClients")}
 													</div>
-													<div className="text-2xl font-bold tabular-nums mt-1 text-blue-500">
+													<div className="text-xl font-bold tabular-nums mt-1 text-blue-500">
 														{formatNumber(data.clientStats.totalClients)}
 													</div>
 												</div>
-												<div className="flex flex-col items-center text-center rounded-lg border bg-muted/50 p-4">
-													<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 mb-3">
-														<User className="h-5 w-5 text-emerald-500" />
+												<div className="flex flex-col items-center text-center rounded-lg border bg-muted/50 p-3">
+													<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10 mb-2">
+														<User className="h-4 w-4 text-emerald-500" />
 													</div>
-													<div className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-8 flex items-center justify-center">
+													<div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider leading-tight min-h-[2rem] flex items-center justify-center">
 														{t("statsPhysicalClients")}
 													</div>
-													<div className="text-2xl font-bold tabular-nums mt-1 text-emerald-500">
+													<div className="text-xl font-bold tabular-nums mt-1 text-emerald-500">
 														{formatNumber(data.clientStats.physicalClients)}
 													</div>
 												</div>
-												<div className="flex flex-col items-center text-center rounded-lg border bg-muted/50 p-4">
-													<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/10 mb-3">
-														<Building2 className="h-5 w-5 text-purple-500" />
+												<div className="flex flex-col items-center text-center rounded-lg border bg-muted/50 p-3">
+													<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-500/10 mb-2">
+														<Building2 className="h-4 w-4 text-purple-500" />
 													</div>
-													<div className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-8 flex items-center justify-center">
+													<div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider leading-tight min-h-[2rem] flex items-center justify-center">
 														{t("statsMoralClients")}
 													</div>
-													<div className="text-2xl font-bold tabular-nums mt-1 text-purple-500">
+													<div className="text-xl font-bold tabular-nums mt-1 text-purple-500">
 														{formatNumber(data.clientStats.moralClients)}
 													</div>
 												</div>
-												<div className="flex flex-col items-center text-center rounded-lg border bg-muted/50 p-4">
-													<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/10 mb-3">
-														<Landmark className="h-5 w-5 text-amber-500" />
+												<div className="flex flex-col items-center text-center rounded-lg border bg-muted/50 p-3">
+													<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/10 mb-2">
+														<Landmark className="h-4 w-4 text-amber-500" />
 													</div>
-													<div className="text-xs font-medium text-muted-foreground uppercase tracking-wider h-8 flex items-center justify-center">
+													<div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider leading-tight min-h-[2rem] flex items-center justify-center">
 														{t("statsTrustClients")}
 													</div>
-													<div className="text-2xl font-bold tabular-nums mt-1 text-amber-500">
+													<div className="text-xl font-bold tabular-nums mt-1 text-amber-500">
 														{formatNumber(data.clientStats.trustClients)}
 													</div>
 												</div>
