@@ -31,4 +31,3 @@ Pre-commit hooks run `lint-staged` + `typecheck` + `test`. Commit messages must 
 ### API documentation
 
 The `aml-svc` OpenAPI docs are at `https://aml-svc.janovix.workers.dev/docsz` (note: `/docsz` not `/docs`). The raw spec is at `/openapi.json`.
-
