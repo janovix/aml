@@ -7,7 +7,7 @@
  * Uses react-markdown for proper markdown rendering in assistant responses.
  */
 
-import { useEffect, useRef, memo } from "react";
+import { useEffect, useRef, useCallback, memo } from "react";
 import ReactMarkdown from "react-markdown";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -35,13 +35,41 @@ export function ChatMessages({ className }: ChatMessagesProps) {
 	const { messages, isLoading } = useChats();
 	const { t } = useLanguage();
 	const scrollRef = useRef<HTMLDivElement>(null);
+	const prevMessageCountRef = useRef(0);
+	const rafRef = useRef<number>(0);
 
-	// Auto-scroll to bottom when new messages arrive
+	const scrollToBottom = useCallback((smooth: boolean) => {
+		cancelAnimationFrame(rafRef.current);
+		rafRef.current = requestAnimationFrame(() => {
+			const el = scrollRef.current;
+			if (!el) return;
+			const viewport = el.closest("[data-radix-scroll-area-viewport]");
+			if (viewport) {
+				if (smooth) {
+					viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
+				} else {
+					viewport.scrollTop = viewport.scrollHeight;
+				}
+			} else {
+				el.scrollIntoView({ behavior: smooth ? "smooth" : "instant" });
+			}
+		});
+	}, []);
+
 	useEffect(() => {
-		if (scrollRef.current) {
-			scrollRef.current.scrollIntoView({ behavior: "smooth" });
+		const isNewMessage = messages.length !== prevMessageCountRef.current;
+		prevMessageCountRef.current = messages.length;
+
+		if (isNewMessage) {
+			scrollToBottom(true);
+		} else if (isLoading) {
+			scrollToBottom(false);
 		}
-	}, [messages]);
+	}, [messages, isLoading, scrollToBottom]);
+
+	useEffect(() => {
+		return () => cancelAnimationFrame(rafRef.current);
+	}, []);
 
 	if (messages.length === 0) {
 		return (

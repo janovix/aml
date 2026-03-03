@@ -1,9 +1,44 @@
+# [1.10.0-rc.1](https://github.com/janovix/aml/compare/v1.9.0...v1.10.0-rc.1) (2026-03-03)
+
+
+### Bug Fixes
+
+* align dashboard with aml-svc API and add report summary stats ([635a400](https://github.com/janovix/aml/commit/635a400ef54d7c0029aba6a06d420f012ac57e2e)), closes [hi#risk](https://github.com/hi/issues/risk)
+* eliminate chat scroll flickering during streaming responses ([f0cced3](https://github.com/janovix/aml/commit/f0cced36f05352c7ff83e8da98bfb02c305c4883))
+* improve dashboard responsive layout when chat sidebar is open ([5e5a965](https://github.com/janovix/aml/commit/5e5a965b706e3ffa5603d2590dcaca3bc3a3cc5c))
+* update label in ShareholderFormDialog for clarity ([9406157](https://github.com/janovix/aml/commit/940615735090a715080d1d78c92aaa94d62746bc))
+
+
+### Features
+
+* expand AI chatbot with 14 new tools covering full aml-svc API ([00ea141](https://github.com/janovix/aml/commit/00ea141c7ae3be08a3cfb4f60fb8fa7af3dcacb8))
+* make dashboard activity-aware across all vulnerable activities ([049cc33](https://github.com/janovix/aml/commit/049cc33328244ee9d6272c7f70289299a425197f))
+
 # [1.9.0](https://github.com/janovix/aml/compare/v1.8.0...v1.9.0) (2026-02-28)
 
 
 ### Features
 
+* expand AI chatbot with 14 new tools covering full aml-svc API ([00ea141](https://github.com/janovix/aml/commit/00ea141c7ae3be08a3cfb4f60fb8fa7af3dcacb8))
+* make dashboard activity-aware across all vulnerable activities ([049cc33](https://github.com/janovix/aml/commit/049cc33328244ee9d6272c7f70289299a425197f))
 * enhance ShareholderFormDialog to include entityType in patch requests ([18712ec](https://github.com/janovix/aml/commit/18712eca989ae378b5d18e76397cab5bfe59b669))
+
+# [1.9.0-rc.3](https://github.com/janovix/aml/compare/v1.9.0-rc.2...v1.9.0-rc.3) (2026-03-03)
+
+
+### Bug Fixes
+
+* update label in ShareholderFormDialog for clarity ([9406157](https://github.com/janovix/aml/commit/940615735090a715080d1d78c92aaa94d62746bc))
+
+# [1.9.0-rc.2](https://github.com/janovix/aml/compare/v1.9.0-rc.1...v1.9.0-rc.2) (2026-03-02)
+
+
+### Bug Fixes
+
+* align dashboard with aml-svc API and add report summary stats ([635a400](https://github.com/janovix/aml/commit/635a400ef54d7c0029aba6a06d420f012ac57e2e)), closes [hi#risk](https://github.com/hi/issues/risk)
+* eliminate chat scroll flickering during streaming responses ([f0cced3](https://github.com/janovix/aml/commit/f0cced36f05352c7ff83e8da98bfb02c305c4883))
+* improve dashboard responsive layout when chat sidebar is open ([5e5a965](https://github.com/janovix/aml/commit/5e5a965b706e3ffa5603d2590dcaca3bc3a3cc5c))
+
 
 # [1.9.0-rc.1](https://github.com/janovix/aml/compare/v1.8.0...v1.9.0-rc.1) (2026-02-27)
 

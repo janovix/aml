@@ -596,7 +596,7 @@ export function ShareholderFormDialog({
 								<div className="space-y-2">
 									<CatalogSelector
 										catalogKey="countries"
-										label="Basada en"
+										label="Constituida en"
 										value={companyNationality}
 										onChange={(option: CatalogItem | null) => {
 											const meta = option?.metadata as
