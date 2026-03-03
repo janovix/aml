@@ -1,3 +1,10 @@
+# [1.9.0-rc.3](https://github.com/janovix/aml/compare/v1.9.0-rc.2...v1.9.0-rc.3) (2026-03-03)
+
+
+### Bug Fixes
+
+* update label in ShareholderFormDialog for clarity ([9406157](https://github.com/janovix/aml/commit/940615735090a715080d1d78c92aaa94d62746bc))
+
 # [1.9.0-rc.2](https://github.com/janovix/aml/compare/v1.9.0-rc.1...v1.9.0-rc.2) (2026-03-02)
 
 
