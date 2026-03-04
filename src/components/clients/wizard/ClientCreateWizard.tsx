@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
 import { useLanguage } from "@/components/LanguageProvider";
@@ -98,6 +98,22 @@ export function ClientCreateWizard(): React.JSX.Element {
 		// Allow skipping documents step - go directly to client details
 		handleComplete();
 	}, [handleComplete]);
+
+	// Scroll to top when transitioning to step 2 (pathname doesn't change, so
+	// ScrollRestoration doesn't run; browser preserves scroll from step 1)
+	useEffect(() => {
+		if (wizardState.currentStep === 2) {
+			const main = document.querySelector("main.overflow-y-auto");
+			const container = main || window;
+			requestAnimationFrame(() => {
+				if (container instanceof Window) {
+					container.scrollTo(0, 0);
+				} else {
+					container.scrollTop = 0;
+				}
+			});
+		}
+	}, [wizardState.currentStep]);
 
 	return (
 		<div className="space-y-6 pb-24 md:pb-20">
