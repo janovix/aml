@@ -1,3 +1,10 @@
+# [1.10.0-rc.2](https://github.com/janovix/aml/compare/v1.10.0-rc.1...v1.10.0-rc.2) (2026-03-04)
+
+
+### Features
+
+* **storybook:** add environment variable injection for CI compatibility ([c88fb9d](https://github.com/janovix/aml/commit/c88fb9d527380d090ff08c8cd99c0565daa0af72))
+
 # [1.10.0-rc.1](https://github.com/janovix/aml/compare/v1.9.0...v1.10.0-rc.1) (2026-03-03)
 
 
