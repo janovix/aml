@@ -1,3 +1,10 @@
+# [1.10.0-rc.3](https://github.com/janovix/aml/compare/v1.10.0-rc.2...v1.10.0-rc.3) (2026-03-04)
+
+
+### Features
+
+* **ClientCreateWizard:** add scroll to top functionality on step transition ([7287d0f](https://github.com/janovix/aml/commit/7287d0f2b759b14a2cd39fff69d69e9a84236ec5))
+
 # [1.10.0-rc.2](https://github.com/janovix/aml/compare/v1.10.0-rc.1...v1.10.0-rc.2) (2026-03-04)
 
 
