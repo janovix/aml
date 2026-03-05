@@ -1,21 +1,7 @@
-export type Session = {
-	user: {
-		id: string;
-		name: string;
-		email: string;
-		image: string | null;
-		emailVerified: boolean;
-		createdAt: Date;
-		updatedAt: Date;
-	};
-	session: {
-		id: string;
-		userId: string;
-		token: string;
-		expiresAt: Date;
-		createdAt: Date;
-		updatedAt: Date;
-		ipAddress?: string;
-		userAgent?: string;
-	};
-} | null;
+import type { serverAuthClient } from "./serverAuthClient";
+
+type InferredSession = typeof serverAuthClient.$Infer.Session;
+
+export type SessionUser = InferredSession["user"];
+export type SessionData = InferredSession["session"];
+export type Session = { user: SessionUser; session: SessionData } | null;

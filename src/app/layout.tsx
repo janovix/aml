@@ -2,7 +2,7 @@ import ClientLayout from "@/components/ClientLayout";
 import { getServerSession } from "@/lib/auth/getServerSession";
 import { SessionHydrator } from "@/lib/auth/useAuthSession";
 import { listOrganizationsServer } from "@/lib/auth/organizations-server";
-import { normalizeOrganization } from "@/lib/auth/organizations";
+import { normalizeOrganization } from "@/lib/auth/organizationNormalizers";
 import { getSidebarCollapsedServer } from "@/lib/settings/settingsServer";
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";

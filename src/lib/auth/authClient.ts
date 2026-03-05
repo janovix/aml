@@ -1,5 +1,5 @@
 import { createAuthClient } from "better-auth/client";
-import { jwtClient } from "better-auth/client/plugins";
+import { jwtClient, organizationClient } from "better-auth/client/plugins";
 import { getAuthServiceUrl } from "./config";
 
 /**
@@ -51,7 +51,7 @@ export const authClient = createAuthClient({
 			}
 		},
 	},
-	plugins: [jwtClient()],
+	plugins: [jwtClient(), organizationClient()],
 });
 
 /**

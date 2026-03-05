@@ -1,37 +1,24 @@
-import { cookies } from "next/headers";
-import { getAuthServiceUrl, getAuthAppUrl } from "./config";
+import { serverAuthClient } from "./serverAuthClient";
 import type { Session } from "./types";
 
 export async function getServerSession(): Promise<Session> {
-	const cookieStore = await cookies();
-	const cookieHeader = cookieStore.toString();
-
-	// Check for session cookie existence
-	if (!cookieHeader.includes("better-auth.session_token")) {
-		return null;
-	}
-
 	try {
-		const response = await fetch(
-			`${getAuthServiceUrl()}/api/auth/get-session`,
-			{
-				headers: {
-					Cookie: cookieHeader,
-					Origin: getAuthAppUrl(),
-				},
-				cache: "no-store",
+		const result = await serverAuthClient.getSession();
+		if (!result.data) return null;
+		const { user, session } = result.data;
+		return {
+			user: {
+				...user,
+				createdAt: new Date(user.createdAt),
+				updatedAt: new Date(user.updatedAt),
 			},
-		);
-
-		if (!response.ok) return null;
-
-		const data = (await response.json()) as {
-			session?: NonNullable<Session>["session"];
-			user?: NonNullable<Session>["user"];
+			session: {
+				...session,
+				expiresAt: new Date(session.expiresAt),
+				createdAt: new Date(session.createdAt),
+				updatedAt: new Date(session.updatedAt),
+			},
 		};
-		return data.session && data.user
-			? ({ user: data.user, session: data.session } as Session)
-			: null;
 	} catch {
 		return null;
 	}

@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import type { Organization } from "@/lib/org-store";
-import { normalizeOrganization } from "./organizations";
+import { normalizeOrganization } from "./organizationNormalizers";
 import { getAuthAppUrl, getAuthServiceUrl } from "./config";
 
 export interface OrganizationsData {
