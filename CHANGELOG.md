@@ -1,3 +1,12 @@
+# [1.11.0](https://github.com/janovix/aml/compare/v1.10.0...v1.11.0) (2026-03-04)
+
+
+### Features
+
+* **ClientCreateWizard:** add scroll to top functionality on step transition ([7287d0f](https://github.com/janovix/aml/commit/7287d0f2b759b14a2cd39fff69d69e9a84236ec5))
+* **storybook:** add environment variable injection for CI compatibility ([c88fb9d](https://github.com/janovix/aml/commit/c88fb9d527380d090ff08c8cd99c0565daa0af72))
+
+
 # [1.11.0-rc.1](https://github.com/janovix/aml/compare/v1.10.0...v1.11.0-rc.1) (2026-03-04)
 
 
@@ -5,6 +14,7 @@
 
 * **ClientCreateWizard:** add scroll to top functionality on step transition ([7287d0f](https://github.com/janovix/aml/commit/7287d0f2b759b14a2cd39fff69d69e9a84236ec5))
 * **storybook:** add environment variable injection for CI compatibility ([c88fb9d](https://github.com/janovix/aml/commit/c88fb9d527380d090ff08c8cd99c0565daa0af72))
+
 
 # [1.10.0](https://github.com/janovix/aml/compare/v1.9.0...v1.10.0) (2026-03-03)
 
