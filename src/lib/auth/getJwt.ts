@@ -1,12 +1,11 @@
-import { cookies } from "next/headers";
-import { getAuthServiceUrl, getAuthAppUrl } from "./config";
+import { serverAuthClient } from "./serverAuthClient";
 
 /**
  * Retrieves a JWT token from the auth service using session cookies.
  *
- * This function calls the `/api/auth/token` endpoint provided by better-auth's
- * JWT plugin to exchange session cookies for a JWT token that can be used
- * to authenticate with external services (like aml-svc).
+ * Uses the server-side Better Auth client with the JWT plugin to exchange
+ * session cookies for a JWT token that can be used to authenticate with
+ * external services (like aml-svc).
  *
  * @returns The JWT token string if successful, null otherwise
  *
@@ -20,38 +19,13 @@ import { getAuthServiceUrl, getAuthAppUrl } from "./config";
  * }
  */
 export async function getJwt(): Promise<string | null> {
-	const cookieStore = await cookies();
-	const cookieHeader = cookieStore.toString();
-
-	// Check for session cookie existence
-	if (
-		!cookieHeader.includes("better-auth.session_token") &&
-		!cookieHeader.includes("__Secure-better-auth.session_token")
-	) {
-		return null;
-	}
-
 	try {
-		const response = await fetch(`${getAuthServiceUrl()}/api/auth/token`, {
-			headers: {
-				Cookie: cookieHeader,
-				Origin: getAuthAppUrl(),
-				Accept: "application/json",
-			},
-			cache: "no-store",
-		});
-
-		if (!response.ok) {
-			console.error(
-				`Failed to get JWT: ${response.status} ${response.statusText}`,
-			);
+		const result = await serverAuthClient.token();
+		if (result.error || !result.data?.token) {
 			return null;
 		}
-
-		const data = (await response.json()) as { token?: string };
-		return data.token ?? null;
-	} catch (error) {
-		console.error("Error fetching JWT:", error);
+		return result.data.token;
+	} catch {
 		return null;
 	}
 }
