@@ -183,6 +183,50 @@ export async function fetchJson<T>(
 	const body = isJson ? await res.json().catch(() => null) : await res.text();
 
 	if (!res.ok) {
+		// On 401, silently force-refresh the token and retry once.
+		// This covers expired tokens that slipped through the cache (e.g. the tab
+		// was in the background longer than the JWT TTL, or the TTL is shorter
+		// than the cache stale timeout).
+		if (res.status === 401 && isClientSide() && !isTestEnvironment()) {
+			try {
+				const { tokenCache } = await import("@/lib/auth/tokenCache");
+				const freshToken = await tokenCache.forceRefresh();
+				if (freshToken) {
+					const retryHeaders: Record<string, string> = {
+						...headers,
+						Authorization: `Bearer ${freshToken}`,
+					};
+					const retryRes = await fetch(url, {
+						...fetchInit,
+						headers: retryHeaders,
+					});
+					const retryContentType = retryRes.headers.get("content-type") ?? "";
+					const retryIsJson = retryContentType.includes("application/json");
+					const retryBody = retryIsJson
+						? await retryRes.json().catch(() => null)
+						: await retryRes.text();
+					if (retryRes.ok) {
+						return { status: retryRes.status, json: retryBody as T };
+					}
+					// Retry also failed — throw with the retry response details
+					const retryCode =
+						typeof retryBody === "object" &&
+						retryBody !== null &&
+						"code" in retryBody &&
+						typeof (retryBody as Record<string, unknown>).code === "string"
+							? ((retryBody as Record<string, unknown>).code as string)
+							: undefined;
+					throw new ApiError(
+						`Request failed: ${retryRes.status} ${retryRes.statusText}`,
+						{ status: retryRes.status, body: retryBody, code: retryCode },
+					);
+				}
+			} catch (retryErr) {
+				if (retryErr instanceof ApiError) throw retryErr;
+				// Token refresh itself failed — fall through to original error below
+			}
+		}
+
 		// Extract error code from response body if available
 		const errorCode =
 			typeof body === "object" &&

@@ -88,6 +88,34 @@ export function useJwt(): UseJwtResult {
 		}
 	}, [fetchJwt, currentOrg?.id]);
 
+	// Refresh token when the tab becomes visible again after being hidden.
+	// Browsers throttle timers in background tabs, so the proactive interval
+	// below may fire late — the visibility handler ensures the token is fresh
+	// the moment the user returns to the tab.
+	useEffect(() => {
+		const handleVisibilityChange = () => {
+			if (document.visibilityState === "visible") {
+				void fetchJwt();
+			}
+		};
+		document.addEventListener("visibilitychange", handleVisibilityChange);
+		return () => {
+			document.removeEventListener("visibilitychange", handleVisibilityChange);
+		};
+	}, [fetchJwt]);
+
+	// Proactively refresh the token every 10 minutes so it never expires while
+	// the user is actively using the app (JWT TTL is 15 min; cache stale is 5 min).
+	useEffect(() => {
+		const interval = setInterval(
+			() => {
+				void fetchJwt();
+			},
+			10 * 60 * 1000,
+		);
+		return () => clearInterval(interval);
+	}, [fetchJwt]);
+
 	return {
 		jwt,
 		isLoading,
