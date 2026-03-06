@@ -1,3 +1,10 @@
+# [1.12.0-rc.1](https://github.com/janovix/aml/compare/v1.11.0...v1.12.0-rc.1) (2026-03-06)
+
+
+### Features
+
+* **auth:** enhance JWT handling with proactive refresh and 401 recovery ([912ebda](https://github.com/janovix/aml/commit/912ebdaf0acc53bd974c7fc7f866d652960bb1e1))
+
 # [1.11.0](https://github.com/janovix/aml/compare/v1.10.0...v1.11.0) (2026-03-04)
 
 
