@@ -1,3 +1,10 @@
+# [1.12.0-rc.3](https://github.com/janovix/aml/compare/v1.12.0-rc.2...v1.12.0-rc.3) (2026-03-11)
+
+
+### Features
+
+* **operations:** update operation statistics handling and add KYC session tests ([7c32117](https://github.com/janovix/aml/commit/7c32117cda89309e1be7e4ba20832c2b06294385))
+
 # [1.12.0-rc.2](https://github.com/janovix/aml/compare/v1.12.0-rc.1...v1.12.0-rc.2) (2026-03-11)
 
 
