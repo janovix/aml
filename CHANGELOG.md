@@ -1,3 +1,10 @@
+# [1.12.0-rc.2](https://github.com/janovix/aml/compare/v1.12.0-rc.1...v1.12.0-rc.2) (2026-03-11)
+
+
+### Features
+
+* **clients:** add suggested beneficial controller feature from shareholders ([b5f4e44](https://github.com/janovix/aml/commit/b5f4e44881f4a6ed1e259d72f336c00083e63368))
+
 # [1.12.0-rc.1](https://github.com/janovix/aml/compare/v1.11.0...v1.12.0-rc.1) (2026-03-06)
 
 
