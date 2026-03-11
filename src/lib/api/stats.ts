@@ -9,10 +9,14 @@ export interface ClientStats {
 }
 
 export interface OperationStats {
-	transactionsToday: number;
-	suspiciousTransactions: number;
+	operationsToday: number;
+	suspiciousOperations: number;
 	totalVolume: string;
-	totalVehicles: number;
+	totalOperations: number;
+	/** Number of operations with completenessStatus COMPLETE (optional, from API) */
+	completeCount?: number;
+	/** Number of operations with completenessStatus INCOMPLETE or MINIMUM (optional, from API) */
+	incompleteCount?: number;
 }
 
 export interface AlertAggregation {

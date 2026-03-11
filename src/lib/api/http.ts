@@ -93,6 +93,20 @@ export function isOrganizationRequiredError(error: unknown): boolean {
 	return false;
 }
 
+/**
+ * Check if an error indicates KYC self-service is disabled for the organization.
+ * Backend returns 400 with message "SELF_SERVICE_DISABLED" (or code in body).
+ */
+export function isSelfServiceDisabledError(error: unknown): boolean {
+	if (!(error instanceof ApiError) || error.status !== 400) return false;
+	if (error.code === "SELF_SERVICE_DISABLED") return true;
+	if (typeof error.body === "object" && error.body !== null) {
+		const msg = (error.body as Record<string, unknown>).message;
+		return msg === "SELF_SERVICE_DISABLED";
+	}
+	return false;
+}
+
 export interface FetchJsonOptions extends RequestInit {
 	/**
 	 * JWT token to include in Authorization header.

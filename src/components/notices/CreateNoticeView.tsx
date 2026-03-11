@@ -24,6 +24,7 @@ import {
 	Table,
 	TableBody,
 	TableCell,
+	TableCaption,
 	TableHead,
 	TableHeader,
 	TableRow,
@@ -219,7 +220,7 @@ export function CreateNoticeView(): React.ReactElement {
 	}
 
 	return (
-		<div className="space-y-6">
+		<div className="min-w-0 space-y-6">
 			<div className="flex items-center gap-4">
 				<Button variant="ghost" size="icon" onClick={() => router.back()}>
 					<ArrowLeft className="h-5 w-5" />
@@ -233,53 +234,58 @@ export function CreateNoticeView(): React.ReactElement {
 				</div>
 			</div>
 
-			<form onSubmit={handleSubmit} className="grid gap-6 @xl/main:grid-cols-2">
-				<Card>
+			<form
+				onSubmit={handleSubmit}
+				className="grid min-w-0 gap-6 @xl/main:grid-cols-[minmax(280px,380px)_1fr]"
+			>
+				<Card className="@xl/main:self-start">
 					<CardHeader>
 						<CardTitle className="text-lg">{t("noticeConfigTitle")}</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-4">
-						<div className="space-y-2">
-							<Label htmlFor="month">{t("noticeSatPeriod")}</Label>
-							<Select value={selectedMonth} onValueChange={handleMonthChange}>
-								<SelectTrigger id="month">
-									<SelectValue placeholder="Select period" />
-								</SelectTrigger>
-								<SelectContent>
-									{availableMonths.map((m) => {
-										const key = `${m.year}-${m.month}`;
-										return (
-											<SelectItem
-												key={key}
-												value={key}
-												disabled={m.hasPendingNotice}
-											>
-												{m.displayName}
-												{m.hasPendingNotice && " (aviso pendiente)"}
-											</SelectItem>
-										);
-									})}
-								</SelectContent>
-							</Select>
-							{periodInfo && (
-								<p className="text-xs text-muted-foreground">
-									{t("noticePeriodLabel")}
-									{periodInfo.periodStart.toLocaleDateString("es-MX")}{" "}
-									{t("noticePeriodTo")}
-									{periodInfo.periodEnd.toLocaleDateString("es-MX")}
-								</p>
-							)}
-						</div>
+						<div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap">
+							<div className="w-full space-y-2 sm:min-w-[180px] sm:flex-1">
+								<Label htmlFor="month">{t("noticeSatPeriod")}</Label>
+								<Select value={selectedMonth} onValueChange={handleMonthChange}>
+									<SelectTrigger id="month">
+										<SelectValue placeholder="Select period" />
+									</SelectTrigger>
+									<SelectContent>
+										{availableMonths.map((m) => {
+											const key = `${m.year}-${m.month}`;
+											return (
+												<SelectItem
+													key={key}
+													value={key}
+													disabled={m.hasPendingNotice}
+												>
+													{m.displayName}
+													{m.hasPendingNotice && " (aviso pendiente)"}
+												</SelectItem>
+											);
+										})}
+									</SelectContent>
+								</Select>
+								{periodInfo && (
+									<p className="text-xs text-muted-foreground">
+										{t("noticePeriodLabel")}
+										{periodInfo.periodStart.toLocaleDateString("es-MX")}{" "}
+										{t("noticePeriodTo")}
+										{periodInfo.periodEnd.toLocaleDateString("es-MX")}
+									</p>
+								)}
+							</div>
 
-						<div className="space-y-2">
-							<Label htmlFor="name">{t("noticeNameLabel")}</Label>
-							<Input
-								id="name"
-								value={name}
-								onChange={(e) => setName(e.target.value)}
-								placeholder={t("noticeNamePlaceholder")}
-								required
-							/>
+							<div className="w-full space-y-2 sm:min-w-[180px] sm:flex-1">
+								<Label htmlFor="name">{t("noticeNameLabel")}</Label>
+								<Input
+									id="name"
+									value={name}
+									onChange={(e) => setName(e.target.value)}
+									placeholder={t("noticeNamePlaceholder")}
+									required
+								/>
+							</div>
 						</div>
 
 						<div className="space-y-2">
@@ -295,25 +301,25 @@ export function CreateNoticeView(): React.ReactElement {
 					</CardContent>
 				</Card>
 
-				<Card>
+				<Card className="min-w-0">
 					<CardHeader>
 						<CardTitle className="text-lg">{t("noticePreview")}</CardTitle>
 					</CardHeader>
-					<CardContent>
+					<CardContent className="min-w-0">
 						{isPreviewLoading ? (
 							<div className="flex items-center justify-center py-8">
 								<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
 							</div>
 						) : preview ? (
-							<div className="space-y-4">
-								<div className="grid grid-cols-2 gap-4">
-									<div className="p-4 bg-muted/50 rounded-lg">
+							<div className="min-w-0 space-y-4">
+								<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+									<div className="min-w-0 p-4 bg-muted/50 rounded-lg">
 										<p className="text-2xl font-bold">{preview.total}</p>
 										<p className="text-sm text-muted-foreground">
 											{t("noticeAvailableAlerts")}
 										</p>
 									</div>
-									<div className="p-4 bg-muted/50 rounded-lg">
+									<div className="min-w-0 p-4 bg-muted/50 rounded-lg">
 										<p className="text-sm font-medium">{preview.displayName}</p>
 										<p className="text-xs text-muted-foreground">
 											{preview.reportedMonth}
@@ -356,8 +362,15 @@ export function CreateNoticeView(): React.ReactElement {
 											</span>
 										</div>
 
-										<div className="max-h-72 overflow-y-auto rounded-md border">
+										<div
+											className="min-w-0 max-h-72 overflow-y-auto overflow-x-auto rounded-md border"
+											role="region"
+											aria-label={t("noticePreview")}
+										>
 											<Table>
+												<TableCaption className="sr-only">
+													Alertas del aviso
+												</TableCaption>
 												<TableHeader>
 													<TableRow>
 														<TableHead
@@ -407,7 +420,7 @@ export function CreateNoticeView(): React.ReactElement {
 															<TableCell className="font-medium">
 																{alert.clientName}
 															</TableCell>
-															<TableCell className="text-xs">
+															<TableCell className="min-w-32 whitespace-normal text-xs">
 																{alert.alertRuleName}
 															</TableCell>
 															<TableCell>
@@ -423,7 +436,7 @@ export function CreateNoticeView(): React.ReactElement {
 																	{alert.severity}
 																</Badge>
 															</TableCell>
-															<TableCell className="text-xs text-muted-foreground">
+															<TableCell className="min-w-32 whitespace-normal text-xs text-muted-foreground">
 																{alert.activityCode ?? "—"}
 															</TableCell>
 														</TableRow>
@@ -535,7 +548,7 @@ export function CreateNoticeView(): React.ReactElement {
 					</CardContent>
 				</Card>
 
-				<div className="lg:col-span-2 flex justify-end gap-3">
+				<div className="@xl/main:col-span-2 flex justify-end gap-3">
 					<Button
 						type="button"
 						variant="outline"

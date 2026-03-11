@@ -493,7 +493,7 @@ export function ClientDetailsView({
 	const { t, language } = useLanguage();
 	const { getStateName } = useStatesCatalog();
 	const { currentOrg } = useOrgStore();
-	const { activityCode } = useOrgSettings();
+	const { activityCode, settings: orgSettings } = useOrgSettings();
 	const [client, setClient] = useState<Client | null>(null);
 	const [documents, setDocuments] = useState<ClientDocument[]>([]);
 	const [shareholders, setShareholders] = useState<Shareholder[]>([]);
@@ -2891,6 +2891,7 @@ export function ClientDetailsView({
 							clientId={client.id}
 							clientEmail={client.email ?? null}
 							kycSelfServiceUrl={getKycBaseUrl()}
+							selfServiceMode={orgSettings?.selfServiceMode ?? "disabled"}
 						/>
 					</AccordionContent>
 				</AccordionItem>

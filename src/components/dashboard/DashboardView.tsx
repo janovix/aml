@@ -15,7 +15,6 @@ import {
 	RefreshCw,
 	ShieldAlert,
 	ShieldCheck,
-	Car,
 	TrendingUp,
 	TrendingDown,
 	UserX,
@@ -185,7 +184,6 @@ export function DashboardView(): React.ReactElement {
 	} = useOrgSettings();
 
 	const activityVisual = activityCode ? getActivityVisual(activityCode) : null;
-	const isVehicleActivity = activityCode === "VEH";
 
 	const fetchAllData = React.useCallback(
 		async (jwtToken: string) => {
@@ -249,7 +247,7 @@ export function DashboardView(): React.ReactElement {
 		if (data.operationStats) {
 			result.push({
 				label: t("statsTransactionsToday"),
-				value: formatNumber(data.operationStats.transactionsToday),
+				value: formatNumber(data.operationStats.operationsToday),
 				icon: Briefcase,
 				href: routes.operations.list(),
 			});
@@ -265,7 +263,7 @@ export function DashboardView(): React.ReactElement {
 		} else if (data.operationStats) {
 			result.push({
 				label: t("statsActiveAlerts"),
-				value: formatNumber(data.operationStats.suspiciousTransactions),
+				value: formatNumber(data.operationStats.suspiciousOperations),
 				icon: ShieldAlert,
 				href: routes.alerts.list(),
 			});
@@ -610,7 +608,7 @@ export function DashboardView(): React.ReactElement {
 													</div>
 													<div className="mt-1 text-xl font-bold tabular-nums">
 														{formatNumber(
-															data.operationStats.suspiciousTransactions,
+															data.operationStats.suspiciousOperations,
 														)}
 													</div>
 												</div>
@@ -627,44 +625,26 @@ export function DashboardView(): React.ReactElement {
 														</div>
 														<div className="text-2xl font-bold tabular-nums">
 															{formatNumber(
-																data.operationStats.transactionsToday,
+																data.operationStats.operationsToday,
 															)}
 														</div>
 													</div>
 												</div>
-												{isVehicleActivity ? (
-													<div className="flex items-center gap-4 rounded-lg border p-4">
-														<div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-500/10">
-															<Car className="h-6 w-6 text-emerald-500" />
+												<div className="flex items-center gap-4 rounded-lg border p-4">
+													<div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-500/10">
+														<Briefcase className="h-6 w-6 text-emerald-500" />
+													</div>
+													<div>
+														<div className="text-sm font-medium text-muted-foreground">
+															{t("statsTotalOperations")}
 														</div>
-														<div>
-															<div className="text-sm font-medium text-muted-foreground">
-																{t("statsTotalVehicles")}
-															</div>
-															<div className="text-2xl font-bold tabular-nums">
-																{formatNumber(
-																	data.operationStats.totalVehicles,
-																)}
-															</div>
+														<div className="text-2xl font-bold tabular-nums">
+															{formatNumber(
+																data.operationStats?.totalOperations,
+															)}
 														</div>
 													</div>
-												) : (
-													<div className="flex items-center gap-4 rounded-lg border p-4">
-														<div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-500/10">
-															<Briefcase className="h-6 w-6 text-emerald-500" />
-														</div>
-														<div>
-															<div className="text-sm font-medium text-muted-foreground">
-																{t("statsTotalOperations")}
-															</div>
-															<div className="text-2xl font-bold tabular-nums">
-																{formatNumber(
-																	data.reportSummary?.operations?.total,
-																)}
-															</div>
-														</div>
-													</div>
-												)}
+												</div>
 											</div>
 
 											{/* Comparison metric */}
