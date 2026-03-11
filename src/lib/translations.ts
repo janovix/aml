@@ -797,6 +797,12 @@ export const translations = {
 		commonNotSpecified: "No especificado",
 		commonInvalidDate: "Fecha inválida",
 		commonDocuments: "Documentos",
+		documentsLegalBasisArt18:
+			"Requeridos conforme al Art. 18-I LFPIORPI (identificación con documentos con reconocimiento oficial).",
+		documentsOptionalBanner:
+			"Documentos opcionales — Las operaciones del cliente están por debajo del umbral de identificación (Art. 17 LFPIORPI).",
+		documentsRequiredBanner:
+			"Documentos obligatorios conforme Art. 18-I LFPIORPI.",
 		commonLoadMissing: "Cargar faltantes",
 		commonNewRecord: "Nuevo Registro",
 
@@ -2360,6 +2366,11 @@ export const translations = {
 		commonNotSpecified: "Not specified",
 		commonInvalidDate: "Invalid date",
 		commonDocuments: "Documents",
+		documentsLegalBasisArt18:
+			"Required under Art. 18-I LFPIORPI (identification with officially recognized documents).",
+		documentsOptionalBanner:
+			"Optional documents — Client operations are below the identification threshold (Art. 17 LFPIORPI).",
+		documentsRequiredBanner: "Documents required under Art. 18-I LFPIORPI.",
 		commonLoadMissing: "Load missing",
 		commonNewRecord: "New Record",
 

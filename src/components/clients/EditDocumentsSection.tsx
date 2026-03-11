@@ -14,8 +14,16 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { FileText, CheckCircle2, AlertCircle, Trash2 } from "lucide-react";
+import {
+	FileText,
+	CheckCircle2,
+	AlertCircle,
+	Trash2,
+	Info,
+	AlertTriangle,
+} from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
 	listClientDocuments,
 	createClientDocument,
@@ -23,6 +31,7 @@ import {
 } from "@/lib/api/client-documents";
 import { uploadDocumentForKYC } from "@/lib/api/file-upload";
 import { useOrgStore } from "@/lib/org-store";
+import { useLanguage } from "@/components/LanguageProvider";
 import type { PersonType } from "@/types/client";
 import type {
 	ClientDocumentType,
@@ -50,9 +59,13 @@ import {
 } from "./DocumentViewerDialog";
 import { DocumentThumbnailRow } from "./DocumentThumbnailRow";
 
+type IdentificationTier = "ALWAYS" | "ABOVE_THRESHOLD" | "BELOW_THRESHOLD";
+
 interface EditDocumentsSectionProps {
 	clientId: string;
 	personType: PersonType;
+	/** When present, shows optional/required documents banner (Art. 17 LFPIORPI). */
+	identificationTier?: IdentificationTier | null;
 	clientName?: string;
 	className?: string;
 	onDocumentChange?: () => void;
@@ -61,11 +74,14 @@ interface EditDocumentsSectionProps {
 export function EditDocumentsSection({
 	clientId,
 	personType,
+	identificationTier,
 	clientName,
 	className,
 	onDocumentChange,
 }: EditDocumentsSectionProps) {
 	const { currentOrg } = useOrgStore();
+	const { t } = useLanguage();
+	const isBelowThreshold = identificationTier === "BELOW_THRESHOLD";
 	const [existingDocuments, setExistingDocuments] = useState<ClientDocument[]>(
 		[],
 	);
@@ -359,6 +375,37 @@ export function EditDocumentsSection({
 						<FileText className="h-4 w-4" />
 						Documentos KYC
 					</CardTitle>
+					<p className="text-xs text-muted-foreground mt-1">
+						{t("documentsLegalBasisArt18")}
+					</p>
+					{identificationTier != null && (
+						<div
+							className={cn(
+								"flex gap-3 rounded-lg border p-3 mt-3",
+								isBelowThreshold
+									? "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/50"
+									: "border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/50",
+							)}
+						>
+							{isBelowThreshold ? (
+								<Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+							) : (
+								<AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+							)}
+							<p
+								className={cn(
+									"text-xs",
+									isBelowThreshold
+										? "text-blue-700 dark:text-blue-300"
+										: "text-amber-700 dark:text-amber-300",
+								)}
+							>
+								{isBelowThreshold
+									? t("documentsOptionalBanner")
+									: t("documentsRequiredBanner")}
+							</p>
+						</div>
+					)}
 				</CardHeader>
 				<CardContent className="space-y-4">
 					<div className="flex items-center justify-between mb-2">

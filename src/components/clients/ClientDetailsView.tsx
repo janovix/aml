@@ -23,6 +23,7 @@ import {
 	User,
 	Hash,
 	AlertTriangle,
+	Info,
 	CheckCircle2,
 	Users,
 	Briefcase,
@@ -617,14 +618,20 @@ export function ClientDetailsView({
 		});
 	};
 
-	// calculateKYCStatus is used only for per-section accordion checkmarks.
-	// The overview ring and percentage use the server-persisted kycCompletionPct.
+	// Single source of truth for KYC progress: calculateKYCStatus (fields + docs + BCs).
+	// Using server kycCompletionPct caused mismatch (e.g. "22 de 22" vs 64%) because backend
+	// does not weight all sections the same as the frontend.
 	const kycStatus = calculateKYCStatus(client, {
 		documents,
 		beneficialControllers,
 	});
-	const kycPct = client.kycCompletionPct ?? 0;
-	const kycComplete = kycPct === 100;
+	const kycPct =
+		kycStatus.totalRequired > 0
+			? Math.round((kycStatus.totalCompleted / kycStatus.totalRequired) * 100)
+			: (client.kycCompletionPct ?? 0);
+	const kycComplete =
+		kycStatus.totalRequired > 0 &&
+		kycStatus.totalCompleted >= kycStatus.totalRequired;
 	const needsUBOs = requiresUBOs(client.personType);
 	const needsIdDocument = client.personType === "physical";
 
@@ -727,7 +734,7 @@ export function ClientDetailsView({
 						</div>
 
 						<div className="flex items-center gap-8">
-							{/* Circular Progress — uses server-persisted kycCompletionPct */}
+							{/* Circular Progress — derived from kycStatus (totalCompleted/totalRequired) for consistency with "X de Y campos" */}
 							<div className="flex flex-col items-center gap-2">
 								<CircularProgress
 									percentage={kycPct}
@@ -1340,16 +1347,6 @@ export function ClientDetailsView({
 								<span className="font-semibold">{t("clientPepStatus")}</span>
 							</div>
 							<div className="flex items-center gap-2">
-								{/* Live badge when SSE is active */}
-								{screeningConnectionStatus === "connected" && (
-									<Badge
-										variant="outline"
-										className="gap-1 bg-blue-50 dark:bg-blue-950 text-xs"
-									>
-										<Activity className="h-3 w-3 text-blue-500 animate-pulse" />
-										<span className="text-blue-500">En vivo</span>
-									</Badge>
-								)}
 								{!screeningComplete &&
 									screeningConnectionStatus !== "connected" &&
 									client.watchlistQueryId && (
@@ -2384,6 +2381,37 @@ export function ClientDetailsView({
 						</div>
 					</AccordionTrigger>
 					<AccordionContent className="px-6 pb-4">
+						<p className="text-xs text-muted-foreground mb-3">
+							{t("documentsLegalBasisArt18")}
+						</p>
+						{client?.identificationTier != null && (
+							<div
+								className={cn(
+									"flex gap-3 rounded-lg border p-3 mb-3",
+									client.identificationTier === "BELOW_THRESHOLD"
+										? "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/50"
+										: "border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/50",
+								)}
+							>
+								{client.identificationTier === "BELOW_THRESHOLD" ? (
+									<Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+								) : (
+									<AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+								)}
+								<p
+									className={cn(
+										"text-xs",
+										client.identificationTier === "BELOW_THRESHOLD"
+											? "text-blue-700 dark:text-blue-300"
+											: "text-amber-700 dark:text-amber-300",
+									)}
+								>
+									{client.identificationTier === "BELOW_THRESHOLD"
+										? t("documentsOptionalBanner")
+										: t("documentsRequiredBanner")}
+								</p>
+							</div>
+						)}
 						{/* Documents Grid */}
 						<div className="grid grid-cols-1 @xl/main:grid-cols-2 gap-3">
 							{/* Build unified document list */}
@@ -2549,6 +2577,7 @@ export function ClientDetailsView({
 								<div className="flex items-center gap-3">
 									<Building2 className="h-5 w-5" />
 									<span className="font-semibold">Accionistas</span>
+									<Badge variant="secondary">{shareholders.length}</Badge>
 								</div>
 								<div className="flex items-center gap-2">
 									{hasShareholders ? (
@@ -2556,7 +2585,6 @@ export function ClientDetailsView({
 									) : (
 										<AlertTriangle className="h-5 w-5 text-amber-500" />
 									)}
-									<Badge variant="secondary">{shareholders.length}</Badge>
 								</div>
 							</div>
 						</AccordionTrigger>
@@ -2634,6 +2662,9 @@ export function ClientDetailsView({
 									<span className="font-semibold">
 										Beneficiarios Controladores
 									</span>
+									<Badge variant="secondary">
+										{beneficialControllers.length}
+									</Badge>
 								</div>
 								<div className="flex items-center gap-2">
 									{hasBCs ? (
@@ -2641,9 +2672,6 @@ export function ClientDetailsView({
 									) : (
 										<AlertTriangle className="h-5 w-5 text-amber-500" />
 									)}
-									<Badge variant="secondary">
-										{beneficialControllers.length}
-									</Badge>
 								</div>
 							</div>
 						</AccordionTrigger>

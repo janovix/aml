@@ -69,6 +69,7 @@ interface BeneficialControllerFormDialogProps {
 	onOpenChange: (open: boolean) => void;
 	clientId: string;
 	beneficialController?: BeneficialController | null;
+	suggestedShareholder?: Shareholder | null;
 	onSave: () => void;
 }
 
@@ -77,6 +78,7 @@ export function BeneficialControllerFormDialog({
 	onOpenChange,
 	clientId,
 	beneficialController,
+	suggestedShareholder,
 	onSave,
 }: BeneficialControllerFormDialogProps) {
 	const isEditMode = !!beneficialController;
@@ -182,6 +184,19 @@ export function BeneficialControllerFormDialog({
 		};
 		loadShareholders();
 	}, [open, clientId]);
+
+	// Pre-fill from suggested shareholder (Art. 3-III-b-ii: ≥25% → BC)
+	useEffect(() => {
+		if (!open || !suggestedShareholder || beneficialController) return;
+		if (suggestedShareholder.entityType !== "PERSON") return;
+		setBcType("SHAREHOLDER");
+		setIdentificationCriteria("CONTROL");
+		setShareholderId(suggestedShareholder.id);
+		setFirstName(suggestedShareholder.firstName ?? "");
+		setLastName(suggestedShareholder.lastName ?? "");
+		setSecondLastName(suggestedShareholder.secondLastName ?? "");
+		setRfc(suggestedShareholder.rfc ?? "");
+	}, [open, suggestedShareholder, beneficialController]);
 
 	// Reset form when dialog opens or BC changes
 	useEffect(() => {

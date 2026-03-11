@@ -1383,6 +1383,7 @@ export function ClientEditView({
 							<EditDocumentsSection
 								clientId={clientId}
 								personType={client.personType}
+								identificationTier={client.identificationTier ?? undefined}
 							/>
 
 							{/* Cancel button only - document actions are immediate */}

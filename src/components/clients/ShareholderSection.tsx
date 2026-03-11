@@ -228,6 +228,15 @@ export function ShareholderSection({
 													<Badge variant="outline" className="shrink-0">
 														{getEntityTypeLabel(shareholder.entityType)}
 													</Badge>
+													{shareholder.entityType === "PERSON" &&
+														shareholder.ownershipPercentage >= 25 && (
+															<Badge
+																variant="secondary"
+																className="shrink-0 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+															>
+																Posible BC (Art. 3-III-b-ii)
+															</Badge>
+														)}
 												</div>
 												<div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1 text-sm text-muted-foreground">
 													<span>
