@@ -618,20 +618,14 @@ export function ClientDetailsView({
 		});
 	};
 
-	// Single source of truth for KYC progress: calculateKYCStatus (fields + docs + BCs).
-	// Using server kycCompletionPct caused mismatch (e.g. "22 de 22" vs 64%) because backend
-	// does not weight all sections the same as the frontend.
+	// KYC progress: backend kycCompletionPct is single source of truth (aligned with frontend
+	// sections in aml-svc kyc-progress.ts). kycStatus is still used for "X de Y campos" and section status.
 	const kycStatus = calculateKYCStatus(client, {
 		documents,
 		beneficialControllers,
 	});
-	const kycPct =
-		kycStatus.totalRequired > 0
-			? Math.round((kycStatus.totalCompleted / kycStatus.totalRequired) * 100)
-			: (client.kycCompletionPct ?? 0);
-	const kycComplete =
-		kycStatus.totalRequired > 0 &&
-		kycStatus.totalCompleted >= kycStatus.totalRequired;
+	const kycPct = client.kycCompletionPct ?? 0;
+	const kycComplete = kycPct === 100;
 	const needsUBOs = requiresUBOs(client.personType);
 	const needsIdDocument = client.personType === "physical";
 
@@ -734,7 +728,7 @@ export function ClientDetailsView({
 						</div>
 
 						<div className="flex items-center gap-8">
-							{/* Circular Progress — derived from kycStatus (totalCompleted/totalRequired) for consistency with "X de Y campos" */}
+							{/* Circular Progress — uses server kycCompletionPct (aligned with frontend sections in aml-svc) */}
 							<div className="flex flex-col items-center gap-2">
 								<CircularProgress
 									percentage={kycPct}
