@@ -1,3 +1,10 @@
+# [1.12.0-rc.5](https://github.com/janovix/aml/compare/v1.12.0-rc.4...v1.12.0-rc.5) (2026-03-12)
+
+
+### Features
+
+* **ai:** update AI model names and configurations to reflect new versions ([fc8afeb](https://github.com/janovix/aml/commit/fc8afebb7184872712d6d1265aebf7973c616541))
+
 # [1.12.0-rc.4](https://github.com/janovix/aml/compare/v1.12.0-rc.3...v1.12.0-rc.4) (2026-03-12)
 
 
