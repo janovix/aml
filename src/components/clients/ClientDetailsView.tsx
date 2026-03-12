@@ -2183,12 +2183,12 @@ export function ClientDetailsView({
 												</div>
 											)}
 
-											{/* Detección PEP por IA */}
+											{/* PEP */}
 											{showPepGrok && (
 												<div className="py-3 px-4 bg-background">
 													<div className="flex items-center gap-2 flex-wrap">
 														<span className="text-sm font-medium flex-1">
-															Detección PEP por IA
+															PEP
 														</span>
 														<span
 															className={cn(
@@ -2260,7 +2260,7 @@ export function ClientDetailsView({
 											)}
 											{showAdverseMedia && (
 												<ScreeningSourceRow
-													label="Media Adversa"
+													label="Medios Adversos"
 													status={
 														src?.adverseMediaStatus ??
 														(client.adverseMediaFlagged
@@ -2280,7 +2280,7 @@ export function ClientDetailsView({
 														) : client.adverseMediaFlagged ? (
 															<span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-red-200 bg-red-50 text-red-700 font-medium">
 																<AlertTriangle className="h-3 w-3" />
-																Media adversa
+																Medios Adversos
 															</span>
 														) : undefined
 													}
@@ -2738,7 +2738,7 @@ export function ClientDetailsView({
 																		variant="destructive"
 																		className="text-xs"
 																	>
-																		Media Adversa
+																		Medios Adversos
 																	</Badge>
 																)}
 																{!bc.isPEP &&
