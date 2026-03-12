@@ -1,3 +1,10 @@
+# [1.12.0-rc.4](https://github.com/janovix/aml/compare/v1.12.0-rc.3...v1.12.0-rc.4) (2026-03-12)
+
+
+### Features
+
+* **clients:** update self-service mode defaults and enhance validation in client forms ([2548ff1](https://github.com/janovix/aml/commit/2548ff15d0963ba6cfde9c6372edf3332013bc94))
+
 # [1.12.0-rc.3](https://github.com/janovix/aml/compare/v1.12.0-rc.2...v1.12.0-rc.3) (2026-03-11)
 
 
