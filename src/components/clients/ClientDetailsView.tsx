@@ -2891,7 +2891,7 @@ export function ClientDetailsView({
 							clientId={client.id}
 							clientEmail={client.email ?? null}
 							kycSelfServiceUrl={getKycBaseUrl()}
-							selfServiceMode={orgSettings?.selfServiceMode ?? "disabled"}
+							selfServiceMode={orgSettings?.selfServiceMode ?? "automatic"}
 						/>
 					</AccordionContent>
 				</AccordionItem>

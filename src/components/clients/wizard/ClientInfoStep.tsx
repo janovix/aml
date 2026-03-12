@@ -141,11 +141,13 @@ export function ClientInfoStep({
 
 	const [validationErrors, setValidationErrors] = useState<{
 		rfc?: string;
+		email?: string;
 		curp?: string;
 		phone?: string;
 		firstName?: string;
 		lastName?: string;
 		secondLastName?: string;
+		businessName?: string;
 	}>({});
 
 	const [rfcDuplicate, setRfcDuplicate] = useState<CheckRfcResult | null>(null);
@@ -365,37 +367,43 @@ export function ClientInfoStep({
 	const handleSubmit = async (e: React.FormEvent): Promise<void> => {
 		e.preventDefault();
 
-		// Client-side validation
+		// Client-side validation (only RFC, names, email required)
 		const errors: {
 			rfc?: string;
+			email?: string;
 			curp?: string;
-			phone?: string;
 			firstName?: string;
 			lastName?: string;
-			secondLastName?: string;
+			businessName?: string;
 		} = {};
 
-		// Validate name fields for physical persons
+		// Validate name fields: only RFC, names, and email required (rest via KYC onboarding)
 		if (formData.personType === "physical") {
 			const firstNameTrimmed = (formData.firstName ?? "").trim();
-			if (firstNameTrimmed.length < 2) {
+			if (firstNameTrimmed.length < 1) {
+				errors.firstName = "El nombre es requerido";
+			} else if (firstNameTrimmed.length < 2) {
 				errors.firstName = "El nombre debe tener al menos 2 caracteres";
 			}
 
 			const lastNameTrimmed = (formData.lastName ?? "").trim();
-			if (lastNameTrimmed.length < 2) {
+			if (lastNameTrimmed.length < 1) {
+				errors.lastName = "El apellido paterno es requerido";
+			} else if (lastNameTrimmed.length < 2) {
 				errors.lastName =
 					"El apellido paterno debe tener al menos 2 caracteres";
 			}
-
-			const secondLastNameTrimmed = (formData.secondLastName ?? "").trim();
-			if (secondLastNameTrimmed.length < 1) {
-				errors.secondLastName =
-					"El apellido materno es requerido (usa X si no existe)";
+			// secondLastName optional
+		} else {
+			// moral or trust: businessName required
+			const businessTrimmed = (formData.businessName ?? "").trim();
+			if (businessTrimmed.length < 3) {
+				errors.businessName =
+					"La razón social o denominación debe tener al menos 3 caracteres";
 			}
 		}
 
-		// Validate RFC
+		// Validate RFC (format required; match with optional fields is best-effort)
 		const rfcValidation = validateRFC(formData.rfc, formData.personType);
 		if (!rfcValidation.isValid) {
 			errors.rfc = rfcValidation.error;
@@ -413,13 +421,20 @@ export function ClientInfoStep({
 			}
 		}
 
-		// Validate CURP and cross-validate with names and birthdate (only for physical persons)
+		// Validate email (required)
+		const emailTrimmed = (formData.email ?? "").trim();
+		if (!emailTrimmed) {
+			errors.email = "El correo electrónico es requerido";
+		} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+			errors.email = "El correo electrónico no es válido";
+		}
+
+		// Validate CURP only when provided (optional; cross-validate if present)
 		if (formData.personType === "physical" && formData.curp) {
 			const curpValidation = validateCURP(formData.curp);
 			if (!curpValidation.isValid) {
 				errors.curp = curpValidation.error;
 			} else {
-				// Cross-validate birthdate - show error under CURP field
 				if (formData.birthDate) {
 					const birthdateMatch = validateCURPBirthdateMatch(
 						formData.curp,
@@ -429,8 +444,6 @@ export function ClientInfoStep({
 						errors.curp = "La fecha de nacimiento no coincide con el CURP";
 					}
 				}
-
-				// Cross-validate names - show error under CURP field
 				if (!errors.curp && formData.firstName && formData.lastName) {
 					const nameMatch = validateCURPNameMatch(
 						formData.curp,
@@ -443,12 +456,6 @@ export function ClientInfoStep({
 					}
 				}
 			}
-		}
-
-		// Validate phone
-		const phoneValidation = validatePhone(formData.phone);
-		if (!phoneValidation.isValid) {
-			errors.phone = phoneValidation.error;
 		}
 
 		// If there are validation errors, show them and prevent submission
@@ -554,6 +561,9 @@ export function ClientInfoStep({
 							? "Datos Personales"
 							: "Datos de la Empresa"}
 					</CardTitle>
+					<p className="text-sm text-muted-foreground">
+						El resto puede completarse en el proceso de onboarding KYC.
+					</p>
 				</CardHeader>
 				<CardContent className="space-y-4">
 					{formData.personType === "physical" ? (
@@ -624,7 +634,6 @@ export function ClientInfoStep({
 										htmlFor="secondLastName"
 										description={`${getFieldDescription("secondLastName")} Coloca una X en caso de no existir para el cliente.`}
 										tier={fieldTiers.secondLastName}
-										required
 									>
 										Apellido Materno
 									</LabelWithInfo>
@@ -643,7 +652,6 @@ export function ClientInfoStep({
 												? "border-destructive"
 												: ""
 										}
-										required
 									/>
 									{validationErrors.secondLastName && (
 										<p className="text-xs text-destructive">
@@ -658,7 +666,6 @@ export function ClientInfoStep({
 										htmlFor="birthDate"
 										description={getFieldDescription("birthDate")}
 										tier={fieldTiers.birthDate}
-										required
 									>
 										Fecha de Nacimiento
 									</LabelWithInfo>
@@ -669,7 +676,6 @@ export function ClientInfoStep({
 										onChange={(e) =>
 											handleInputChange("birthDate", e.target.value)
 										}
-										required
 									/>
 								</div>
 								<div className="space-y-2">
@@ -677,7 +683,6 @@ export function ClientInfoStep({
 										htmlFor="curp"
 										description={getFieldDescription("curp")}
 										tier={fieldTiers.curp}
-										required
 									>
 										CURP
 									</LabelWithInfo>
@@ -691,7 +696,6 @@ export function ClientInfoStep({
 										className={
 											validationErrors.curp ? "border-destructive" : ""
 										}
-										required
 									/>
 									{validationErrors.curp && (
 										<p className="text-xs text-destructive">
@@ -722,14 +726,21 @@ export function ClientInfoStep({
 										)
 									}
 									placeholder="Ej. EMPRESA S.A. DE C.V."
+									className={
+										validationErrors.businessName ? "border-destructive" : ""
+									}
 									required
 								/>
+								{validationErrors.businessName && (
+									<p className="text-xs text-destructive">
+										{validationErrors.businessName}
+									</p>
+								)}
 							</div>
 							<div className="space-y-2">
 								<LabelWithInfo
 									htmlFor="incorporationDate"
 									description={getFieldDescription("incorporationDate")}
-									required
 								>
 									Fecha de Constitución
 								</LabelWithInfo>
@@ -740,7 +751,6 @@ export function ClientInfoStep({
 									onChange={(e) =>
 										handleInputChange("incorporationDate", e.target.value)
 									}
-									required
 								/>
 							</div>
 						</>
@@ -848,15 +858,20 @@ export function ClientInfoStep({
 								value={formData.email}
 								onChange={(e) => handleInputChange("email", e.target.value)}
 								placeholder="contacto@empresa.com"
+								className={validationErrors.email ? "border-destructive" : ""}
 								required
 							/>
+							{validationErrors.email && (
+								<p className="text-xs text-destructive">
+									{validationErrors.email}
+								</p>
+							)}
 						</div>
 						<div className="space-y-2">
 							<LabelWithInfo
 								htmlFor="phone"
 								description={getFieldDescription("phone")}
 								tier={fieldTiers.phone}
-								required
 							>
 								Teléfono
 							</LabelWithInfo>
@@ -873,7 +888,6 @@ export function ClientInfoStep({
 									}
 								}}
 								placeholder="+52 55 1234 5678"
-								required
 							/>
 							{validationErrors.phone && (
 								<p className="text-xs text-destructive">
@@ -896,7 +910,6 @@ export function ClientInfoStep({
 								htmlFor="street"
 								description={getFieldDescription("street")}
 								tier={fieldTiers.street}
-								required
 							>
 								Calle
 							</LabelWithInfo>
@@ -907,14 +920,12 @@ export function ClientInfoStep({
 									handleInputChange("street", e.target.value.toUpperCase())
 								}
 								placeholder="AV. CONSTITUCIÓN"
-								required
 							/>
 						</div>
 						<div className="space-y-2">
 							<LabelWithInfo
 								htmlFor="externalNumber"
 								description={getFieldDescription("externalNumber")}
-								required
 							>
 								Número Ext.
 							</LabelWithInfo>
@@ -928,7 +939,6 @@ export function ClientInfoStep({
 									)
 								}
 								placeholder="123"
-								required
 							/>
 						</div>
 						<div className="space-y-2">
@@ -972,6 +982,7 @@ export function ClientInfoStep({
 						onReferenceChange={(value) => handleInputChange("reference", value)}
 						showNeighborhood={true}
 						showReference={true}
+						fieldsRequired={false}
 					/>
 				</CardContent>
 			</Card>

@@ -32,13 +32,12 @@ import {
 	type SimpleDocumentUploadData,
 } from "./SimpleDocumentUploadCard";
 import { IDDocumentSelector, type IDDocumentData } from "./IDDocumentSelector";
-import {
-	OwnershipInlineForm,
-	type ShareholderWithDocuments,
-	type BCWithDocuments,
-} from "./OwnershipInlineForm";
+import { ShareholderSection } from "../ShareholderSection";
+import { BeneficialControllerSection } from "../BeneficialControllerSection";
 import { listClientShareholders } from "@/lib/api/shareholders";
 import { listClientBeneficialControllers } from "@/lib/api/beneficial-controllers";
+import type { Shareholder } from "@/types/shareholder";
+import type { BeneficialController } from "@/types/beneficial-controller";
 
 interface DocumentsStepProps {
 	clientId: string;
@@ -67,12 +66,10 @@ export function DocumentsStep({
 	);
 	const [idUploaded, setIdUploaded] = useState(false);
 
-	// Ownership state (for moral/trust entities)
-	const [shareholders, setShareholders] = useState<ShareholderWithDocuments[]>(
-		[],
-	);
+	// Ownership state (for moral/trust entities) – used for summary counts and completion check
+	const [shareholders, setShareholders] = useState<Shareholder[]>([]);
 	const [beneficialControllers, setBeneficialControllers] = useState<
-		BCWithDocuments[]
+		BeneficialController[]
 	>([]);
 
 	const requiredDocs = REQUIRED_DOCUMENTS[personType];
@@ -262,25 +259,24 @@ export function DocumentsStep({
 		[clientId],
 	);
 
-	const handleShareholdersChange = useCallback(async () => {
-		// Reload shareholders from API
+	const loadOwnershipData = useCallback(async () => {
+		if (!needsUBOs) return;
 		try {
-			const response = await listClientShareholders({ clientId });
-			setShareholders(response.data);
+			const [shRes, bcRes] = await Promise.all([
+				listClientShareholders({ clientId }),
+				listClientBeneficialControllers({ clientId }),
+			]);
+			setShareholders(shRes.data);
+			setBeneficialControllers(bcRes.data);
 		} catch (error) {
-			console.error("Error reloading shareholders:", error);
+			console.error("Error loading ownership data:", error);
 		}
-	}, [clientId]);
+	}, [clientId, needsUBOs]);
 
-	const handleBCsChange = useCallback(async () => {
-		// Reload beneficial controllers from API
-		try {
-			const response = await listClientBeneficialControllers({ clientId });
-			setBeneficialControllers(response.data);
-		} catch (error) {
-			console.error("Error reloading beneficial controllers:", error);
-		}
-	}, [clientId]);
+	// Load ownership data on mount and when sections notify change
+	React.useEffect(() => {
+		loadOwnershipData();
+	}, [loadOwnershipData]);
 
 	const handleComplete = () => {
 		Sentry.startSpan(
@@ -425,12 +421,15 @@ export function DocumentsStep({
 							</div>
 						</CardContent>
 					</Card>
-					<OwnershipInlineForm
+					<ShareholderSection
 						clientId={clientId}
-						shareholders={shareholders}
-						beneficialControllers={beneficialControllers}
-						onShareholdersChange={handleShareholdersChange}
-						onBCsChange={handleBCsChange}
+						personType={personType}
+						onShareholderChange={loadOwnershipData}
+					/>
+					<BeneficialControllerSection
+						clientId={clientId}
+						personType={personType}
+						onBCChange={loadOwnershipData}
 					/>
 				</div>
 			)}

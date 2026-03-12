@@ -598,7 +598,7 @@ export function KycSessionSection({
 	clientId,
 	clientEmail,
 	kycSelfServiceUrl,
-	selfServiceMode = "disabled",
+	selfServiceMode = "automatic",
 }: KycSessionSectionProps) {
 	const { jwt } = useJwt();
 	const [sessions, setSessions] = useState<KycSessionEntity[] | null>(null);

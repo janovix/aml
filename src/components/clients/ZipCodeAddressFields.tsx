@@ -55,6 +55,9 @@ interface ZipCodeAddressFieldsProps {
 
 	// Optional: Pre-resolved state code name from server
 	resolvedStateCodeName?: string;
+
+	// When false, no field is marked required (for minimal client create/edit flows)
+	fieldsRequired?: boolean;
 }
 
 /**
@@ -87,6 +90,7 @@ export function ZipCodeAddressFields({
 	showReference = true,
 	disableAutoLookup = false,
 	resolvedStateCodeName,
+	fieldsRequired = true,
 }: ZipCodeAddressFieldsProps): React.JSX.Element {
 	const { lookup, loading } = useZipCodeLookup();
 
@@ -342,7 +346,7 @@ export function ZipCodeAddressFields({
 					<LabelWithInfo
 						htmlFor="postalCode"
 						description={getFieldDescription("postalCode")}
-						required
+						required={fieldsRequired}
 					>
 						Código Postal
 					</LabelWithInfo>
@@ -353,7 +357,7 @@ export function ZipCodeAddressFields({
 							onChange={(e) => handlePostalCodeChange(e.target.value)}
 							placeholder="64000"
 							maxLength={5}
-							required
+							required={fieldsRequired}
 						/>
 						{loading && (
 							<div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -372,7 +376,7 @@ export function ZipCodeAddressFields({
 						<LabelWithInfo
 							htmlFor="neighborhood"
 							description={getFieldDescription("neighborhood")}
-							required
+							required={fieldsRequired}
 						>
 							Colonia
 						</LabelWithInfo>
@@ -432,7 +436,7 @@ export function ZipCodeAddressFields({
 						<LabelWithInfo
 							htmlFor="neighborhood-input"
 							description={getFieldDescription("neighborhood")}
-							required
+							required={fieldsRequired}
 						>
 							Colonia
 						</LabelWithInfo>
@@ -443,7 +447,7 @@ export function ZipCodeAddressFields({
 								onNeighborhoodChange?.(e.target.value.toUpperCase())
 							}
 							placeholder="CENTRO"
-							required
+							required={fieldsRequired}
 						/>
 					</div>
 				)}
@@ -455,7 +459,7 @@ export function ZipCodeAddressFields({
 					<LabelWithInfo
 						htmlFor="custom-neighborhood"
 						description="Ingresa el nombre de la colonia manualmente"
-						required
+						required={fieldsRequired}
 					>
 						Colonia Personalizada
 					</LabelWithInfo>
@@ -464,7 +468,7 @@ export function ZipCodeAddressFields({
 						value={customNeighborhoodValue}
 						onChange={(e) => handleCustomNeighborhoodChange(e.target.value)}
 						placeholder="ESCRIBE EL NOMBRE DE LA COLONIA"
-						required
+						required={fieldsRequired}
 						autoFocus
 					/>
 					<p className="text-xs text-muted-foreground">
@@ -482,7 +486,7 @@ export function ZipCodeAddressFields({
 							<LabelWithInfo
 								htmlFor="city"
 								description={getFieldDescription("city")}
-								required
+								required={fieldsRequired}
 							>
 								Ciudad
 							</LabelWithInfo>
@@ -491,14 +495,14 @@ export function ZipCodeAddressFields({
 								value={city}
 								onChange={(e) => handleCityChange(e.target.value.toUpperCase())}
 								placeholder="MONTERREY"
-								required
+								required={fieldsRequired}
 							/>
 						</div>
 						<div className="space-y-2">
 							<LabelWithInfo
 								htmlFor="municipality"
 								description={getFieldDescription("municipality")}
-								required
+								required={fieldsRequired}
 							>
 								Municipio
 							</LabelWithInfo>
@@ -509,7 +513,7 @@ export function ZipCodeAddressFields({
 									handleMunicipalityChange(e.target.value.toUpperCase())
 								}
 								placeholder="MONTERREY"
-								required
+								required={fieldsRequired}
 							/>
 						</div>
 						<div className="space-y-2">
@@ -539,7 +543,7 @@ export function ZipCodeAddressFields({
 										</div>
 									);
 								}}
-								required
+								required={fieldsRequired}
 							/>
 						</div>
 					</div>

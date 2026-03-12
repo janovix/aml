@@ -58,14 +58,14 @@ export function KycSelfServiceSettingsCard({
 }: KycSelfServiceSettingsCardProps) {
 	const { jwt } = useJwt();
 	const [mode, setMode] = useState<SelfServiceMode>(
-		settings.selfServiceMode ?? "disabled",
+		settings.selfServiceMode ?? "automatic",
 	);
 	const [expiryHours, setExpiryHours] = useState(
 		settings.selfServiceExpiryHours ?? 72,
 	);
 	const [isSaving, setIsSaving] = useState(false);
 	const isDirty =
-		mode !== (settings.selfServiceMode ?? "disabled") ||
+		mode !== (settings.selfServiceMode ?? "automatic") ||
 		expiryHours !== (settings.selfServiceExpiryHours ?? 72);
 
 	async function handleSave() {

@@ -185,7 +185,7 @@ describe("KycSessionSection", () => {
 		).toBeInTheDocument();
 	});
 
-	it("when selfServiceMode is not passed, defaults to disabled (button disabled, alert shown)", async () => {
+	it("when selfServiceMode is not passed, defaults to automatic (button enabled, no disabled alert)", async () => {
 		renderWithProviders(
 			<KycSessionSection clientId="client-1" clientEmail={null} />,
 		);
@@ -197,9 +197,9 @@ describe("KycSessionSection", () => {
 		const createButton = screen.getByRole("button", {
 			name: /crear enlace kyc/i,
 		});
-		expect(createButton).toBeDisabled();
+		expect(createButton).not.toBeDisabled();
 		expect(
-			screen.getByText(/no se pueden crear enlaces de kyc autoservicio/i),
-		).toBeInTheDocument();
+			screen.queryByText(/no se pueden crear enlaces de kyc autoservicio/i),
+		).not.toBeInTheDocument();
 	});
 });
