@@ -1,3 +1,10 @@
+# [1.12.0-rc.6](https://github.com/janovix/aml/compare/v1.12.0-rc.5...v1.12.0-rc.6) (2026-03-12)
+
+
+### Bug Fixes
+
+* **clients:** update labels in ClientDetailsView for clarity and consistency ([fa70389](https://github.com/janovix/aml/commit/fa70389432938b73a152850836c759e9edb4a86f))
+
 # [1.12.0-rc.5](https://github.com/janovix/aml/compare/v1.12.0-rc.4...v1.12.0-rc.5) (2026-03-12)
 
 
