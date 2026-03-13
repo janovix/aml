@@ -79,10 +79,17 @@ export interface CatastrophicError {
  * Import state for UI tracking
  */
 export interface ImportState {
-	status: "idle" | "uploading" | "processing" | "completed" | "failed";
+	status:
+		| "idle"
+		| "uploading"
+		| "mapping"
+		| "processing"
+		| "completed"
+		| "failed";
 	importId: string | null;
 	fileName: string | null;
 	entityType: ImportEntityType | null;
+	activityCode: string | null;
 	totalRows: number;
 	processedRows: number;
 	successCount: number;

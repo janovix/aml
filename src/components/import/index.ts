@@ -10,3 +10,8 @@ export { ImportPageContent } from "./ImportPageContent";
 export { ImportViewContent } from "./ImportViewContent";
 export { CreateImportDialog } from "./CreateImportDialog";
 export { ImportsTable } from "./ImportsTable";
+export { StepIndicator } from "./StepIndicator";
+export {
+	ColumnMappingStep,
+	type ColumnMappingStepProps,
+} from "./ColumnMappingStep";
