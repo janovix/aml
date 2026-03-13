@@ -1,3 +1,10 @@
+# [1.12.0-rc.7](https://github.com/janovix/aml/compare/v1.12.0-rc.6...v1.12.0-rc.7) (2026-03-13)
+
+
+### Features
+
+* **import:** enhance import view with column mapping step and real-time preview functionality ([c691c39](https://github.com/janovix/aml/commit/c691c39bf2b045fdee7c522f9de52fdb4df9e31e))
+
 # [1.12.0-rc.6](https://github.com/janovix/aml/compare/v1.12.0-rc.5...v1.12.0-rc.6) (2026-03-12)
 
 
