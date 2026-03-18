@@ -360,6 +360,42 @@ export function ClientInfoStep({
 				}
 			}
 
+			// Clear or re-validate email when email field changes
+			if (field === "email") {
+				const emailTrimmed = (updated.email ?? "").trim();
+				if (!emailTrimmed) {
+					setValidationErrors((prev) => ({ ...prev, email: undefined }));
+				} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+					setValidationErrors((prev) => ({
+						...prev,
+						email: "El correo electrónico no es válido",
+					}));
+				} else {
+					setValidationErrors((prev) => ({ ...prev, email: undefined }));
+				}
+			}
+
+			// Clear or re-validate businessName when businessName field changes
+			if (field === "businessName") {
+				const businessTrimmed = (updated.businessName ?? "").trim();
+				if (!businessTrimmed) {
+					setValidationErrors((prev) => ({
+						...prev,
+						businessName: undefined,
+					}));
+				} else if (businessTrimmed.length < 3) {
+					setValidationErrors((prev) => ({
+						...prev,
+						businessName: "La razón social debe tener al menos 3 caracteres",
+					}));
+				} else {
+					setValidationErrors((prev) => ({
+						...prev,
+						businessName: undefined,
+					}));
+				}
+			}
+
 			return updated;
 		});
 	};

@@ -513,6 +513,9 @@ describe("DashboardView branch coverage", () => {
 			expect(totalOps.length).toBeGreaterThan(0);
 		});
 
+		// Assert mocked totalOperations value (47) is rendered in the operations stats card
+		expect(screen.getByText("47")).toBeInTheDocument();
+
 		const vehicles = screen.queryByText(/vehículos registrados/i);
 		expect(vehicles).toBeNull();
 	});

@@ -8,7 +8,7 @@ export type LlmProvider = "openai" | "anthropic" | "google";
 // Available models per provider (1 per vendor for simplicity)
 export type OpenAIModel = "gpt-5.2";
 export type AnthropicModel = "claude-sonnet-4-6";
-export type GoogleModel = "gemini-3-flash";
+export type GoogleModel = "gemini-3-flash-preview";
 
 export type LlmModel = OpenAIModel | AnthropicModel | GoogleModel;
 
@@ -79,13 +79,13 @@ export const MODEL_CONFIGS: Record<LlmModel, ModelConfig> = {
 		model: "claude-sonnet-4-6",
 		displayName: "Claude Sonnet 4.6",
 		description: "Latest Claude Sonnet",
-		maxTokens: 128000,
+		maxTokens: 64000,
 	},
 	// Google
-	"gemini-3-flash": {
+	"gemini-3-flash-preview": {
 		provider: "google",
-		model: "gemini-3-flash",
-		displayName: "Gemini 3 Flash",
+		model: "gemini-3-flash-preview",
+		displayName: "Gemini 3 Flash (Preview)",
 		description: "Gemini 3 Flash",
 		maxTokens: 1000000,
 	},

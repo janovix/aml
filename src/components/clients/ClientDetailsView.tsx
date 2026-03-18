@@ -640,9 +640,13 @@ export function ClientDetailsView({
 	const uploadedDocTypes = new Set<ClientDocumentType>(
 		documents.map((d) => d.documentType),
 	);
-	const missingDocs = requiredDocTypes.filter((d) => !uploadedDocTypes.has(d));
+	const isBelowThreshold = client.identificationTier === "BELOW_THRESHOLD";
+	const missingDocs = isBelowThreshold
+		? []
+		: requiredDocTypes.filter((d) => !uploadedDocTypes.has(d));
 	const hasAllDocs =
-		(needsIdDocument ? hasIdDocument : true) && missingDocs.length === 0;
+		isBelowThreshold ||
+		((needsIdDocument ? hasIdDocument : true) && missingDocs.length === 0);
 
 	// Check ownership status (for moral/trust)
 	const hasShareholders = shareholders.length > 0;

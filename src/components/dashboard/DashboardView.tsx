@@ -35,6 +35,7 @@ import { useLanguage } from "@/components/LanguageProvider";
 import { useJwt } from "@/hooks/useJwt";
 import { useOrgStore } from "@/lib/org-store";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
+import * as Sentry from "@sentry/nextjs";
 import {
 	getClientStats,
 	getOperationStats,
@@ -193,15 +194,19 @@ export function DashboardView(): React.ReactElement {
 			const period = getMonthPeriod();
 
 			try {
-				const [clientStats, operationStats, reportSummary] = await Promise.all([
+				const [clientStats, reportSummary] = await Promise.all([
 					getClientStats({ jwt: jwtToken }).catch(() => null),
-					getOperationStats({ jwt: jwtToken }).catch(() => null),
 					getReportSummary({
 						jwt: jwtToken,
 						...period,
 					}).catch(() => null),
 				]);
-
+				let operationStats: OperationStats | null = null;
+				try {
+					operationStats = await getOperationStats({ jwt: jwtToken });
+				} catch (statsErr) {
+					Sentry.captureException(statsErr);
+				}
 				setData({ clientStats, operationStats, reportSummary });
 			} catch (err) {
 				console.error("Error fetching dashboard data:", err);

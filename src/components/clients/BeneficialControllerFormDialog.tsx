@@ -198,9 +198,10 @@ export function BeneficialControllerFormDialog({
 		setRfc(suggestedShareholder.rfc ?? "");
 	}, [open, suggestedShareholder, beneficialController]);
 
-	// Reset form when dialog opens or BC changes
+	// Reset form when dialog opens or BC changes (skip when prefill from suggestedShareholder applies)
 	useEffect(() => {
 		if (!open) return;
+		if (suggestedShareholder && !beneficialController) return;
 
 		setBcType(beneficialController?.bcType || "SHAREHOLDER");
 		setIdentificationCriteria(
@@ -249,7 +250,7 @@ export function BeneficialControllerFormDialog({
 		setNeighborhood("");
 		setStreet(beneficialController?.street || "");
 		setNotes(beneficialController?.notes || "");
-	}, [open, beneficialController]);
+	}, [open, beneficialController, suggestedShareholder]);
 
 	const handleIdDocUpload = useCallback(async (data: IDDocumentData) => {
 		const { currentOrg, currentUserId } = useOrgStore.getState();

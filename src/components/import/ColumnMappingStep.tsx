@@ -1,9 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircle, ChevronDown, Info, Wand2 } from "lucide-react";
+import { AlertCircle, Info, Loader2, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ImportTargetField } from "@/lib/api/imports";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 
 export interface ColumnMappingStepProps {
 	fileName: string;
@@ -181,8 +189,8 @@ export function ColumnMappingStep({
 					</table>
 				</div>
 				<p className="mt-1.5 text-xs text-muted-foreground">
-					Se muestran las primeras {sampleRows.length} filas de tu archivo como
-					referencia.
+					Se muestran las primeras {Math.min(sampleRows.length, 5)} filas de tu
+					archivo como referencia.
 				</p>
 			</section>
 
@@ -235,29 +243,36 @@ export function ColumnMappingStep({
 									))}
 								</div>
 								<div className="relative">
-									<select
-										aria-label={`Mapear "${header}" a campo`}
-										value={currentVal}
-										onChange={(e) =>
+									<Select
+										value={currentVal || "__none__"}
+										onValueChange={(value) =>
 											setMapping((prev) => ({
 												...prev,
-												[header]: e.target.value,
+												[header]: value === "__none__" ? "" : value,
 											}))
 										}
-										className={cn(
-											"w-full appearance-none rounded border border-input bg-card px-3 py-2 pr-8 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-ring",
-											currentVal ? "text-foreground" : "text-muted-foreground",
-										)}
 									>
-										<option value="">No mapear</option>
-										{availableOptions.map((f) => (
-											<option key={f.value} value={f.value}>
-												{f.label}
-												{f.required ? " *" : ""}
-											</option>
-										))}
-									</select>
-									<ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+										<SelectTrigger
+											aria-label={`Mapear "${header}" a campo`}
+											className={cn(
+												"w-full",
+												currentVal
+													? "text-foreground"
+													: "text-muted-foreground",
+											)}
+										>
+											<SelectValue placeholder="No mapear" />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="__none__">No mapear</SelectItem>
+											{availableOptions.map((f) => (
+												<SelectItem key={f.value} value={f.value}>
+													{f.label}
+													{f.required ? " *" : ""}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
 									{currentVal &&
 										requiredFields.some((f) => f.value === currentVal) && (
 											<span className="absolute -right-2 -top-2 rounded-full bg-primary px-1.5 py-px text-[10px] font-semibold leading-tight text-primary-foreground">
@@ -280,21 +295,21 @@ export function ColumnMappingStep({
 
 			{/* Submit */}
 			<div className="mt-8 flex items-center gap-4">
-				<button
+				<Button
 					type="button"
 					disabled={submitting}
 					onClick={handleSubmit}
-					className="inline-flex items-center gap-2 rounded bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+					className="gap-2"
 				>
 					{submitting ? (
 						<>
-							<span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/40 border-t-primary-foreground" />
+							<Loader2 className="h-4 w-4 animate-spin" />
 							Iniciando importación…
 						</>
 					) : (
 						"Guardar mapeo e iniciar importación"
 					)}
-				</button>
+				</Button>
 				<p className="text-xs text-muted-foreground">
 					Se validarán y procesarán todas las filas del archivo.
 				</p>

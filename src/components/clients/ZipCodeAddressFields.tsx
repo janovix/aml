@@ -13,6 +13,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { getFieldDescription } from "@/lib/field-descriptions";
 import { useZipCodeLookup } from "@/hooks/useZipCodeLookup";
 import { toast } from "sonner";
@@ -320,11 +321,18 @@ export function ZipCodeAddressFields({
 	};
 
 	// Determine if we should show the address fields
-	// Show them if: zip code not found, or zip code found and neighborhood selected
+	// Show them if: zip code not found, or zip code found and neighborhood selected,
+	// or when required and colonia is missing (so user can fill city/municipality/state)
+	const hasColoniaValue =
+		(neighborhood ?? "").trim() ||
+		(isCustomNeighborhood && (customNeighborhoodValue ?? "").trim());
 	const showAddressFields =
 		(lastLookedUpZipCode && availableSettlements.length === 0) || // Zip not found
 		availableSettlements.length === 1 || // Single settlement (auto-proceed)
-		(availableSettlements.length > 1 && neighborhood); // Multiple settlements and one selected
+		(availableSettlements.length > 1 && neighborhood) || // Multiple settlements and one selected
+		(fieldsRequired &&
+			!hasColoniaValue &&
+			(availableSettlements.length > 1 || lastLookedUpZipCode)); // Required but colonia missing: show manual fields
 
 	// Determine if we should show neighborhood dropdown (multiple settlements found)
 	const showNeighborhoodDropdown =
@@ -336,6 +344,12 @@ export function ZipCodeAddressFields({
 		(availableSettlements.length === 0 || // No zip code found
 			availableSettlements.length === 1 || // Single settlement (already auto-filled)
 			isCustomNeighborhood); // User selected custom option
+
+	const coloniaRequiredError =
+		fieldsRequired &&
+		(showNeighborhoodDropdown ||
+			(showNeighborhoodInput && !showNeighborhoodDropdown)) &&
+		!hasColoniaValue;
 
 	return (
 		<>
@@ -390,7 +404,13 @@ export function ZipCodeAddressFields({
 						>
 							<SelectTrigger
 								id="neighborhood"
-								className="bg-transparent w-full"
+								className={cn(
+									"bg-transparent w-full",
+									coloniaRequiredError &&
+										"border-destructive focus-visible:ring-destructive",
+								)}
+								aria-invalid={coloniaRequiredError}
+								aria-required={fieldsRequired}
 							>
 								<SelectValue placeholder="Selecciona una colonia" />
 							</SelectTrigger>
@@ -427,6 +447,9 @@ export function ZipCodeAddressFields({
 								: "colonias disponibles"}{" "}
 							para este código postal
 						</p>
+						{coloniaRequiredError && (
+							<p className="text-xs text-destructive">Colonia es requerida</p>
+						)}
 					</div>
 				)}
 
@@ -448,7 +471,14 @@ export function ZipCodeAddressFields({
 							}
 							placeholder="CENTRO"
 							required={fieldsRequired}
+							className={
+								coloniaRequiredError ? "border-destructive" : undefined
+							}
+							aria-invalid={coloniaRequiredError}
 						/>
+						{coloniaRequiredError && (
+							<p className="text-xs text-destructive">Colonia es requerida</p>
+						)}
 					</div>
 				)}
 			</div>

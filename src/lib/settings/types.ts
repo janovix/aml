@@ -2,6 +2,8 @@
  * Settings types for the aml frontend
  */
 
+import type { LlmModel, LlmProvider } from "@/lib/ai/types";
+
 export type Theme = "light" | "dark" | "system";
 export type DateFormat =
 	| "MM/DD/YYYY"
@@ -11,28 +13,8 @@ export type DateFormat =
 export type LanguageCode = "en" | "es";
 export type ClockFormat = "12h" | "24h";
 
-/**
- * LLM Provider types for AI chat
- */
-export type LlmProvider = "openai" | "anthropic" | "google";
-export type LlmModel =
-	// OpenAI models
-	| "gpt-5.2"
-	| "gpt-4o"
-	| "gpt-4o-mini"
-	| "gpt-4-turbo"
-	// Anthropic models
-	| "claude-sonnet-4-6"
-	| "claude-3-7-sonnet-20250219"
-	| "claude-3-5-sonnet-20241022"
-	| "claude-3-opus-20240229"
-	| "claude-3-haiku-20240307"
-	// Google models
-	| "gemini-3-flash"
-	| "gemini-2.5-flash"
-	| "gemini-2.0-flash-exp"
-	| "gemini-1.5-pro"
-	| "gemini-1.5-flash";
+/** Re-export from single source of truth (lib/ai/types) */
+export type { LlmModel, LlmProvider };
 
 /**
  * Notification sound type options — mirrors SoundType in NotificationsWidget

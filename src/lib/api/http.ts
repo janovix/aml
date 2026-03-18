@@ -1,3 +1,5 @@
+import * as Sentry from "@sentry/nextjs";
+
 export class ApiError extends Error {
 	name = "ApiError" as const;
 	status: number;
@@ -101,8 +103,13 @@ export function isSelfServiceDisabledError(error: unknown): boolean {
 	if (!(error instanceof ApiError) || error.status !== 400) return false;
 	if (error.code === "SELF_SERVICE_DISABLED") return true;
 	if (typeof error.body === "object" && error.body !== null) {
-		const msg = (error.body as Record<string, unknown>).message;
-		return msg === "SELF_SERVICE_DISABLED";
+		const body = error.body as Record<string, unknown>;
+		const msg = body.message;
+		const code = body.code;
+		return (
+			msg === "SELF_SERVICE_DISABLED" ||
+			(typeof code === "string" && code === "SELF_SERVICE_DISABLED")
+		);
 	}
 	return false;
 }
@@ -202,10 +209,15 @@ export async function fetchJson<T>(
 		// was in the background longer than the JWT TTL, or the TTL is shorter
 		// than the cache stale timeout).
 		if (res.status === 401 && isClientSide() && !isTestEnvironment()) {
+			let freshToken: string | null = null;
 			try {
 				const { tokenCache } = await import("@/lib/auth/tokenCache");
-				const freshToken = await tokenCache.forceRefresh();
-				if (freshToken) {
+				freshToken = await tokenCache.forceRefresh();
+			} catch {
+				// Token refresh failed — fall through to original 401
+			}
+			if (freshToken) {
+				try {
 					const retryHeaders: Record<string, string> = {
 						...headers,
 						Authorization: `Bearer ${freshToken}`,
@@ -222,7 +234,6 @@ export async function fetchJson<T>(
 					if (retryRes.ok) {
 						return { status: retryRes.status, json: retryBody as T };
 					}
-					// Retry also failed — throw with the retry response details
 					const retryCode =
 						typeof retryBody === "object" &&
 						retryBody !== null &&
@@ -234,10 +245,11 @@ export async function fetchJson<T>(
 						`Request failed: ${retryRes.status} ${retryRes.statusText}`,
 						{ status: retryRes.status, body: retryBody, code: retryCode },
 					);
+				} catch (retryErr) {
+					if (retryErr instanceof ApiError) throw retryErr;
+					Sentry.captureException(retryErr);
+					// Retry fetch failed (network/timeout) — fall through to original 401
 				}
-			} catch (retryErr) {
-				if (retryErr instanceof ApiError) throw retryErr;
-				// Token refresh itself failed — fall through to original error below
 			}
 		}
 

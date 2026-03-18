@@ -270,6 +270,8 @@ export function DocumentsStep({
 			setBeneficialControllers(bcRes.data);
 		} catch (error) {
 			console.error("Error loading ownership data:", error);
+			setShareholders([]);
+			setBeneficialControllers([]);
 		}
 	}, [clientId, needsUBOs]);
 

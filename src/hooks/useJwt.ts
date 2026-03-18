@@ -36,29 +36,39 @@ export function useJwt(): UseJwtResult {
 	const organizationIdRef = useRef<string | null>(currentOrg?.id ?? null);
 
 	const fetchJwt = useCallback(
-		async (forceRefresh: boolean = false) => {
+		async (forceRefresh: boolean = false, silent: boolean = false) => {
 			// Don't fetch JWT if no organization is selected
 			// The JWT includes organizationId claim, so it would be invalid without one
 			const organizationId = currentOrg?.id ?? null;
 			if (!organizationId) {
-				setJwt(null);
-				setIsLoading(false);
-				setError(null);
+				if (!silent) {
+					setJwt(null);
+					setIsLoading(false);
+					setError(null);
+				}
 				organizationIdRef.current = null;
 				return;
 			}
 
 			try {
-				setIsLoading(true);
-				setError(null);
+				if (!silent) {
+					setIsLoading(true);
+					setError(null);
+				}
 				const token = await tokenCache.getToken(organizationId, forceRefresh);
 				setJwt(token);
 				organizationIdRef.current = organizationId;
 			} catch (err) {
-				setError(err instanceof Error ? err : new Error("Failed to fetch JWT"));
-				setJwt(null);
+				if (!silent) {
+					setError(
+						err instanceof Error ? err : new Error("Failed to fetch JWT"),
+					);
+					setJwt(null);
+				}
 			} finally {
-				setIsLoading(false);
+				if (!silent) {
+					setIsLoading(false);
+				}
 			}
 		},
 		[currentOrg?.id],
@@ -91,11 +101,12 @@ export function useJwt(): UseJwtResult {
 	// Refresh token when the tab becomes visible again after being hidden.
 	// Browsers throttle timers in background tabs, so the proactive interval
 	// below may fire late — the visibility handler ensures the token is fresh
-	// the moment the user returns to the tab.
+	// the moment the user returns to the tab. Use silent refresh to avoid
+	// toggling isLoading or clearing jwt on failure.
 	useEffect(() => {
 		const handleVisibilityChange = () => {
 			if (document.visibilityState === "visible") {
-				void fetchJwt();
+				void fetchJwt(false, true);
 			}
 		};
 		document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -106,10 +117,11 @@ export function useJwt(): UseJwtResult {
 
 	// Proactively refresh the token every 10 minutes so it never expires while
 	// the user is actively using the app (JWT TTL is 15 min; cache stale is 5 min).
+	// Use silent refresh to avoid toggling isLoading or clearing jwt on failure.
 	useEffect(() => {
 		const interval = setInterval(
 			() => {
-				void fetchJwt();
+				void fetchJwt(false, true);
 			},
 			10 * 60 * 1000,
 		);

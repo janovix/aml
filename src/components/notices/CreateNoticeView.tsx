@@ -248,7 +248,7 @@ export function CreateNoticeView(): React.ReactElement {
 								<Label htmlFor="month">{t("noticeSatPeriod")}</Label>
 								<Select value={selectedMonth} onValueChange={handleMonthChange}>
 									<SelectTrigger id="month">
-										<SelectValue placeholder="Select period" />
+										<SelectValue placeholder={t("noticePeriodPlaceholder")} />
 									</SelectTrigger>
 									<SelectContent>
 										{availableMonths.map((m) => {

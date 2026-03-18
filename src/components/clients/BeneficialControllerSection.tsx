@@ -19,6 +19,7 @@ import {
 	AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
 	listClientBeneficialControllers,
 	deleteBeneficialController,
@@ -156,18 +157,9 @@ export function BeneficialControllerSection({
 					<div className="text-center py-8 text-muted-foreground">
 						Cargando beneficiarios controladores...
 					</div>
-				) : bcs.length === 0 ? (
-					<div className="text-center py-8 text-muted-foreground">
-						<User className="h-12 w-12 mx-auto mb-3 opacity-50" />
-						<p>No hay beneficiarios controladores registrados</p>
-						<p className="text-sm mt-1">
-							Los beneficiarios controladores son requeridos para entidades
-							morales y fideicomisos
-						</p>
-					</div>
 				) : (
 					<div className="space-y-3">
-						{/* Suggested BCs from shareholders >=25% (Art. 3-III-b-ii) */}
+						{/* Suggested BCs from shareholders >=25% (Art. 3-III-b-ii) — show even when no BCs yet */}
 						{suggestedBCs.length > 0 && (
 							<div className="space-y-2">
 								<p className="text-sm font-medium text-muted-foreground">
@@ -211,8 +203,20 @@ export function BeneficialControllerSection({
 								))}
 							</div>
 						)}
-						{suggestedBCs.length > 0 && bcs.length > 0 && (
-							<div className="border-t pt-3 mt-3">
+						{bcs.length === 0 && (
+							<div className="text-center py-8 text-muted-foreground">
+								<User className="h-12 w-12 mx-auto mb-3 opacity-50" />
+								<p>No hay beneficiarios controladores registrados</p>
+								<p className="text-sm mt-1">
+									Los beneficiarios controladores son requeridos para entidades
+									morales y fideicomisos
+								</p>
+							</div>
+						)}
+						{bcs.length > 0 && (
+							<div
+								className={cn(suggestedBCs.length > 0 && "border-t pt-3 mt-3")}
+							>
 								<p className="text-sm font-medium text-muted-foreground mb-2">
 									Registrados
 								</p>

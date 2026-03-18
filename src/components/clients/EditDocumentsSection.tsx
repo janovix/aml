@@ -142,15 +142,20 @@ export function EditDocumentsSection({
 		ID_DOCUMENT_TYPES.includes(d.documentType),
 	);
 
-	// Calculate progress
-	const totalRequired = requiredDocs.length + (needsUBOs ? 0 : 1); // +1 for ID (physical persons only)
+	// Calculate progress (when below threshold, documents are optional so treat as complete)
+	const rawTotalRequired = requiredDocs.length + (needsUBOs ? 0 : 1); // +1 for ID (physical persons only)
 	const completedDocs =
 		requiredDocs.filter((d) => uploadedDocTypes.has(d)).length +
 		(needsUBOs ? 0 : hasIdDocument ? 1 : 0); // Only count ID for physical persons
-	const progress = Math.round((completedDocs / totalRequired) * 100);
+	const totalRequired = isBelowThreshold ? completedDocs : rawTotalRequired;
+	const progress = Math.round(
+		totalRequired > 0 ? (completedDocs / totalRequired) * 100 : 100,
+	);
 
-	// Calculate missing documents
-	const missingDocs = requiredDocs.filter((d) => !uploadedDocTypes.has(d));
+	// Calculate missing documents (empty when below threshold)
+	const missingDocs = isBelowThreshold
+		? []
+		: requiredDocs.filter((d) => !uploadedDocTypes.has(d));
 
 	const handleIdDataChange = useCallback((data: IDDocumentData) => {
 		setIdDocumentData(data);
@@ -421,29 +426,30 @@ export function EditDocumentsSection({
 						/>
 					</div>
 
-					{/* Missing documents warning */}
-					{(missingDocs.length > 0 || (!needsUBOs && !hasIdDocument)) && (
-						<div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg">
-							<p className="text-sm font-medium text-amber-800 dark:text-amber-200 flex items-center gap-2 mb-2">
-								<AlertCircle className="h-4 w-4" />
-								Documentos requeridos faltantes
-							</p>
-							<ul className="text-xs text-amber-700 dark:text-amber-300 space-y-1">
-								{!needsUBOs && !hasIdDocument && (
-									<li className="flex items-center gap-1">
-										<span className="w-1 h-1 rounded-full bg-amber-500" />
-										Identificación Oficial (INE o Pasaporte)
-									</li>
-								)}
-								{missingDocs.map((docType) => (
-									<li key={docType} className="flex items-center gap-1">
-										<span className="w-1 h-1 rounded-full bg-amber-500" />
-										{DOCUMENT_TYPE_CONFIG[docType]?.label || docType}
-									</li>
-								))}
-							</ul>
-						</div>
-					)}
+					{/* Missing documents warning (hidden when below threshold) */}
+					{!isBelowThreshold &&
+						(missingDocs.length > 0 || (!needsUBOs && !hasIdDocument)) && (
+							<div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg">
+								<p className="text-sm font-medium text-amber-800 dark:text-amber-200 flex items-center gap-2 mb-2">
+									<AlertCircle className="h-4 w-4" />
+									Documentos requeridos faltantes
+								</p>
+								<ul className="text-xs text-amber-700 dark:text-amber-300 space-y-1">
+									{!needsUBOs && !hasIdDocument && (
+										<li className="flex items-center gap-1">
+											<span className="w-1 h-1 rounded-full bg-amber-500" />
+											Identificación Oficial (INE o Pasaporte)
+										</li>
+									)}
+									{missingDocs.map((docType) => (
+										<li key={docType} className="flex items-center gap-1">
+											<span className="w-1 h-1 rounded-full bg-amber-500" />
+											{DOCUMENT_TYPE_CONFIG[docType]?.label || docType}
+										</li>
+									))}
+								</ul>
+							</div>
+						)}
 				</CardContent>
 			</Card>
 

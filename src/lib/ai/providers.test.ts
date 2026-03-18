@@ -45,7 +45,9 @@ describe("AI Providers", () => {
 		});
 
 		it("should return display name for Google models", () => {
-			expect(getModelDisplayName("gemini-3-flash")).toBe("Gemini 3 Flash");
+			expect(getModelDisplayName("gemini-3-flash-preview")).toBe(
+				"Gemini 3 Flash (Preview)",
+			);
 		});
 
 		it("should return model ID for unknown models", () => {
@@ -70,7 +72,7 @@ describe("AI Providers", () => {
 
 		it("should return Google models", () => {
 			const models = getModelsForProvider("google");
-			expect(models).toContain("gemini-3-flash");
+			expect(models).toContain("gemini-3-flash-preview");
 			expect(models).toHaveLength(1);
 		});
 
@@ -84,7 +86,7 @@ describe("AI Providers", () => {
 		it("should return true for available models", () => {
 			expect(isModelAvailable("gpt-5.2")).toBe(true);
 			expect(isModelAvailable("claude-sonnet-4-6")).toBe(true);
-			expect(isModelAvailable("gemini-3-flash")).toBe(true);
+			expect(isModelAvailable("gemini-3-flash-preview")).toBe(true);
 		});
 
 		it("should return false for unavailable models", () => {

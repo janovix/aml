@@ -58,7 +58,14 @@ import {
 } from "@/components/ui/select";
 import { CatalogSelector } from "../catalogs/CatalogSelector";
 import { PhoneInput } from "../ui/phone-input";
-import { validateRFC, validateCURP, cn } from "../../lib/utils";
+import {
+	validateRFC,
+	validateRFCMatch,
+	validateCURP,
+	validateCURPBirthdateMatch,
+	validateCURPNameMatch,
+	cn,
+} from "../../lib/utils";
 import { validatePhone } from "@/lib/validators/validate-phone";
 import { useLanguage } from "@/components/LanguageProvider";
 import { requiresUBOs, REQUIRED_DOCUMENTS } from "@/lib/constants";
@@ -418,6 +425,18 @@ export function ClientEditView({
 		const rfcValidation = validateRFC(formData.rfc, currentPersonType);
 		if (!rfcValidation.isValid) {
 			errors.rfc = rfcValidation.error;
+		} else {
+			const rfcMatch = validateRFCMatch(formData.rfc, currentPersonType, {
+				firstName: formData.firstName,
+				lastName: formData.lastName,
+				secondLastName: formData.secondLastName,
+				birthDate: formData.birthDate,
+				businessName: formData.businessName,
+				incorporationDate: formData.incorporationDate,
+			});
+			if (!rfcMatch.isValid && rfcMatch.error) {
+				errors.rfc = rfcMatch.error;
+			}
 		}
 
 		// Validate email (required)
@@ -430,11 +449,18 @@ export function ClientEditView({
 
 		// Validate names by person type
 		if (currentPersonType === "physical") {
-			if (!(formData.firstName ?? "").trim()) {
+			const firstNameTrimmed = (formData.firstName ?? "").trim();
+			if (!firstNameTrimmed) {
 				errors.firstName = "El nombre es requerido";
+			} else if (firstNameTrimmed.length < 2) {
+				errors.firstName = "El nombre debe tener al menos 2 caracteres";
 			}
-			if (!(formData.lastName ?? "").trim()) {
+			const lastNameTrimmed = (formData.lastName ?? "").trim();
+			if (!lastNameTrimmed) {
 				errors.lastName = "El apellido paterno es requerido";
+			} else if (lastNameTrimmed.length < 2) {
+				errors.lastName =
+					"El apellido paterno debe tener al menos 2 caracteres";
 			}
 		} else {
 			if (!(formData.businessName ?? "").trim()) {
@@ -450,6 +476,33 @@ export function ClientEditView({
 			const curpValidation = validateCURP(formData.curp);
 			if (!curpValidation.isValid) {
 				errors.curp = curpValidation.error;
+			} else {
+				if (formData.birthDate) {
+					const birthdateMatch = validateCURPBirthdateMatch(
+						formData.curp,
+						formData.birthDate,
+					);
+					if (!birthdateMatch.isValid && birthdateMatch.error) {
+						errors.curp = birthdateMatch.error;
+					}
+				}
+				const nameMatch = validateCURPNameMatch(
+					formData.curp,
+					formData.firstName ?? "",
+					formData.lastName ?? "",
+					formData.secondLastName,
+				);
+				if (!nameMatch.isValid) {
+					if (nameMatch.errors.firstName) {
+						errors.firstName = nameMatch.errors.firstName;
+					}
+					if (nameMatch.errors.lastName) {
+						errors.lastName = nameMatch.errors.lastName;
+					}
+					if (nameMatch.errors.secondLastName) {
+						errors.curp = errors.curp ?? nameMatch.errors.secondLastName;
+					}
+				}
 			}
 		}
 

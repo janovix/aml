@@ -16,6 +16,7 @@ import {
 	startImport,
 } from "@/lib/api/imports";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 import type {
 	ImportState,
 	ImportEntityType,
@@ -386,9 +387,18 @@ export function ImportViewContent({ importId }: ImportViewContentProps) {
 
 	async function handleStartImport(mapping: Record<string, string>) {
 		if (!state.importId || !jwt) return;
-		await startImport({ id: state.importId, columnMapping: mapping, jwt });
-		setMappingStepData(null);
-		setState((prev) => ({ ...prev, status: "processing" }));
+		try {
+			await startImport({ id: state.importId, columnMapping: mapping, jwt });
+			setMappingStepData(null);
+			setState((prev) => ({ ...prev, status: "processing" }));
+		} catch (error) {
+			toast.error(
+				error instanceof Error
+					? error.message
+					: "Error al iniciar la importación",
+			);
+			setState((prev) => ({ ...prev, status: "mapping" }));
+		}
 	}
 
 	// Show loading state
@@ -419,6 +429,14 @@ export function ImportViewContent({ importId }: ImportViewContentProps) {
 							showAutoMappingNotice={mappingStepData.showAutoMappingNotice}
 							onStartImport={handleStartImport}
 						/>
+					</>
+				) : state.status === "mapping" && !mappingStepData ? (
+					<>
+						<StepIndicator current={2} />
+						<div className="flex flex-1 flex-col items-center justify-center gap-4 text-muted-foreground">
+							<div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-primary-foreground/30" />
+							<p className="text-sm">Cargando vista de mapeo…</p>
+						</div>
 					</>
 				) : (
 					<div className="flex h-full flex-col gap-4">

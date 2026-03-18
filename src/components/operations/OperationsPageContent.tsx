@@ -15,6 +15,7 @@ import {
 	AlertCircle,
 	CheckCircle2,
 } from "lucide-react";
+import * as Sentry from "@sentry/nextjs";
 import { ApiError, isOrganizationRequiredError } from "@/lib/api/http";
 import { showFetchError } from "@/lib/toast-utils";
 import { getOperationStats } from "@/lib/api/stats";
@@ -49,7 +50,7 @@ export function OperationsPageContent(): React.ReactElement {
 
 			const [listResponse, stats] = await Promise.all([
 				listOperations({ page: 1, limit: 1, jwt }),
-				getOperationStats({ jwt }).catch(() => null),
+				getOperationStats({ jwt }),
 			]);
 
 			setTotalCount(listResponse.pagination.total);
@@ -57,17 +58,19 @@ export function OperationsPageContent(): React.ReactElement {
 			setIncompleteCount(stats?.incompleteCount ?? null);
 			hasAttemptedForOrgRef.current = currentOrg.id;
 		} catch (error) {
-			hasAttemptedForOrgRef.current = currentOrg.id;
+			Sentry.captureException(error);
+			setTotalCount(null);
+			setCompleteCount(null);
+			setIncompleteCount(null);
 
 			if (isOrganizationRequiredError(error)) {
 				console.debug(
 					"[OperationsPageContent] Organization required error - org may be syncing",
 				);
-				// Reset so it retries after org sync
 				hasAttemptedForOrgRef.current = null;
 				return;
 			}
-
+			// Do not set hasAttemptedForOrgRef so retries can occur
 			if (error instanceof ApiError) {
 				console.error(
 					"[OperationsPageContent] API error:",

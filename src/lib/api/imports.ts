@@ -3,6 +3,7 @@
  * Functions for interacting with the imports API
  */
 
+import * as Sentry from "@sentry/nextjs";
 import { getAmlCoreBaseUrl } from "./config";
 import { fetchJson } from "./http";
 
@@ -235,15 +236,26 @@ export async function getImportPreview(opts: {
 	signal?: AbortSignal;
 	jwt?: string;
 }): Promise<ImportPreviewResponse> {
-	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
-	const url = new URL(`/api/v1/imports/${opts.id}/preview`, baseUrl);
-	const { json } = await fetchJson<ImportPreviewResponse>(url.toString(), {
-		method: "GET",
-		cache: "no-store",
-		signal: opts.signal,
-		jwt: opts.jwt,
-	});
-	return json;
+	return Sentry.startSpan(
+		{
+			name: "api.imports.getPreview",
+			op: "http.client",
+			attributes: {
+				"import.id": opts.id,
+			},
+		},
+		async () => {
+			const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
+			const url = new URL(`/api/v1/imports/${opts.id}/preview`, baseUrl);
+			const { json } = await fetchJson<ImportPreviewResponse>(url.toString(), {
+				method: "GET",
+				cache: "no-store",
+				signal: opts.signal,
+				jwt: opts.jwt,
+			});
+			return json;
+		},
+	);
 }
 
 export interface ImportTargetField {
@@ -266,19 +278,36 @@ export async function getImportTargetFields(opts: {
 	signal?: AbortSignal;
 	jwt?: string;
 }): Promise<ImportTargetFieldsResponse> {
-	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
-	const url = new URL("/api/v1/imports/target-fields", baseUrl);
-	url.searchParams.set("entityType", opts.entityType);
-	if (opts.activityCode) {
-		url.searchParams.set("activityCode", opts.activityCode);
-	}
-	const { json } = await fetchJson<ImportTargetFieldsResponse>(url.toString(), {
-		method: "GET",
-		cache: "no-store",
-		signal: opts.signal,
-		jwt: opts.jwt,
-	});
-	return json;
+	return Sentry.startSpan(
+		{
+			name: "api.imports.getTargetFields",
+			op: "http.client",
+			attributes: {
+				"import.entityType": opts.entityType,
+				...(opts.activityCode && {
+					"import.activityCode": opts.activityCode,
+				}),
+			},
+		},
+		async () => {
+			const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
+			const url = new URL("/api/v1/imports/target-fields", baseUrl);
+			url.searchParams.set("entityType", opts.entityType);
+			if (opts.activityCode) {
+				url.searchParams.set("activityCode", opts.activityCode);
+			}
+			const { json } = await fetchJson<ImportTargetFieldsResponse>(
+				url.toString(),
+				{
+					method: "GET",
+					cache: "no-store",
+					signal: opts.signal,
+					jwt: opts.jwt,
+				},
+			);
+			return json;
+		},
+	);
 }
 
 /**
@@ -290,18 +319,29 @@ export async function startImport(opts: {
 	baseUrl?: string;
 	jwt?: string;
 }): Promise<{ success: boolean; data: Import }> {
-	const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
-	const url = new URL(`/api/v1/imports/${opts.id}/start`, baseUrl);
-	const { json } = await fetchJson<{ success: boolean; data: Import }>(
-		url.toString(),
+	return Sentry.startSpan(
 		{
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ columnMapping: opts.columnMapping }),
-			jwt: opts.jwt,
+			name: "api.imports.start",
+			op: "http.client",
+			attributes: {
+				"import.id": opts.id,
+			},
+		},
+		async () => {
+			const baseUrl = opts.baseUrl ?? getAmlCoreBaseUrl();
+			const url = new URL(`/api/v1/imports/${opts.id}/start`, baseUrl);
+			const { json } = await fetchJson<{ success: boolean; data: Import }>(
+				url.toString(),
+				{
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ columnMapping: opts.columnMapping }),
+					jwt: opts.jwt,
+				},
+			);
+			return json;
 		},
 	);
-	return json;
 }
 
 /**
