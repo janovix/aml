@@ -1,3 +1,10 @@
+# [1.12.0-rc.8](https://github.com/janovix/aml/compare/v1.12.0-rc.7...v1.12.0-rc.8) (2026-03-18)
+
+
+### Features
+
+* **clients:** enhance validation and user feedback in client forms and import process ([5fac7d8](https://github.com/janovix/aml/commit/5fac7d8446a0b5dd0405b3297f313c8dc9948241))
+
 # [1.12.0-rc.7](https://github.com/janovix/aml/compare/v1.12.0-rc.6...v1.12.0-rc.7) (2026-03-13)
 
 
