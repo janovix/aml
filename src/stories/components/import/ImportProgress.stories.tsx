@@ -32,6 +32,7 @@ const baseState: ImportState = {
 	importId: "IMP123456789",
 	fileName: "clientes_enero_2026.xlsx",
 	entityType: "CLIENT",
+	activityCode: null,
 	totalRows: 150,
 	processedRows: 0,
 	successCount: 0,

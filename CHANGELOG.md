@@ -1,3 +1,59 @@
+# [1.12.0-rc.8](https://github.com/janovix/aml/compare/v1.12.0-rc.7...v1.12.0-rc.8) (2026-03-18)
+
+
+### Features
+
+* **clients:** enhance validation and user feedback in client forms and import process ([5fac7d8](https://github.com/janovix/aml/commit/5fac7d8446a0b5dd0405b3297f313c8dc9948241))
+
+# [1.12.0-rc.7](https://github.com/janovix/aml/compare/v1.12.0-rc.6...v1.12.0-rc.7) (2026-03-13)
+
+
+### Features
+
+* **import:** enhance import view with column mapping step and real-time preview functionality ([c691c39](https://github.com/janovix/aml/commit/c691c39bf2b045fdee7c522f9de52fdb4df9e31e))
+
+# [1.12.0-rc.6](https://github.com/janovix/aml/compare/v1.12.0-rc.5...v1.12.0-rc.6) (2026-03-12)
+
+
+### Bug Fixes
+
+* **clients:** update labels in ClientDetailsView for clarity and consistency ([fa70389](https://github.com/janovix/aml/commit/fa70389432938b73a152850836c759e9edb4a86f))
+
+# [1.12.0-rc.5](https://github.com/janovix/aml/compare/v1.12.0-rc.4...v1.12.0-rc.5) (2026-03-12)
+
+
+### Features
+
+* **ai:** update AI model names and configurations to reflect new versions ([fc8afeb](https://github.com/janovix/aml/commit/fc8afebb7184872712d6d1265aebf7973c616541))
+
+# [1.12.0-rc.4](https://github.com/janovix/aml/compare/v1.12.0-rc.3...v1.12.0-rc.4) (2026-03-12)
+
+
+### Features
+
+* **clients:** update self-service mode defaults and enhance validation in client forms ([2548ff1](https://github.com/janovix/aml/commit/2548ff15d0963ba6cfde9c6372edf3332013bc94))
+
+# [1.12.0-rc.3](https://github.com/janovix/aml/compare/v1.12.0-rc.2...v1.12.0-rc.3) (2026-03-11)
+
+
+### Features
+
+* **operations:** update operation statistics handling and add KYC session tests ([7c32117](https://github.com/janovix/aml/commit/7c32117cda89309e1be7e4ba20832c2b06294385))
+
+# [1.12.0-rc.2](https://github.com/janovix/aml/compare/v1.12.0-rc.1...v1.12.0-rc.2) (2026-03-11)
+
+
+### Features
+
+* **clients:** add suggested beneficial controller feature from shareholders ([b5f4e44](https://github.com/janovix/aml/commit/b5f4e44881f4a6ed1e259d72f336c00083e63368))
+
+# [1.12.0-rc.1](https://github.com/janovix/aml/compare/v1.11.0...v1.12.0-rc.1) (2026-03-06)
+
+
+### Features
+
+* **auth:** enhance JWT handling with proactive refresh and 401 recovery ([912ebda](https://github.com/janovix/aml/commit/912ebdaf0acc53bd974c7fc7f866d652960bb1e1))
+
 # [1.11.0](https://github.com/janovix/aml/compare/v1.10.0...v1.11.0) (2026-03-04)
 
 

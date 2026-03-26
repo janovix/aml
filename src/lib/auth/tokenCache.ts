@@ -96,6 +96,16 @@ class TokenCache {
 	}
 
 	/**
+	 * Force-refresh the token using the last known organizationId.
+	 * Used by the HTTP client to silently recover from 401 responses without
+	 * needing to know the current org at the call site.
+	 */
+	async forceRefresh(): Promise<string | null> {
+		const orgId = this.cache?.organizationId ?? null;
+		return this.getToken(orgId, true);
+	}
+
+	/**
 	 * Clear the token cache
 	 */
 	clear(): void {

@@ -58,7 +58,14 @@ import {
 } from "@/components/ui/select";
 import { CatalogSelector } from "../catalogs/CatalogSelector";
 import { PhoneInput } from "../ui/phone-input";
-import { validateRFC, validateCURP, cn } from "../../lib/utils";
+import {
+	validateRFC,
+	validateRFCMatch,
+	validateCURP,
+	validateCURPBirthdateMatch,
+	validateCURPNameMatch,
+	cn,
+} from "../../lib/utils";
 import { validatePhone } from "@/lib/validators/validate-phone";
 import { useLanguage } from "@/components/LanguageProvider";
 import { requiresUBOs, REQUIRED_DOCUMENTS } from "@/lib/constants";
@@ -188,8 +195,12 @@ export function ClientEditView({
 
 	const [validationErrors, setValidationErrors] = useState<{
 		rfc?: string;
+		email?: string;
 		curp?: string;
 		phone?: string;
+		firstName?: string;
+		lastName?: string;
+		businessName?: string;
 	}>({});
 	// Track missing information per tab for warning indicators
 	const [tabWarnings, setTabWarnings] = useState<{
@@ -400,27 +411,99 @@ export function ClientEditView({
 
 		const currentPersonType = client?.personType ?? formData.personType;
 
-		// Client-side validation
-		const errors: { rfc?: string; curp?: string; phone?: string } = {};
+		// Client-side validation (only RFC, names, email required)
+		const errors: {
+			rfc?: string;
+			email?: string;
+			curp?: string;
+			firstName?: string;
+			lastName?: string;
+			businessName?: string;
+		} = {};
 
 		// Validate RFC
 		const rfcValidation = validateRFC(formData.rfc, currentPersonType);
 		if (!rfcValidation.isValid) {
 			errors.rfc = rfcValidation.error;
+		} else {
+			const rfcMatch = validateRFCMatch(formData.rfc, currentPersonType, {
+				firstName: formData.firstName,
+				lastName: formData.lastName,
+				secondLastName: formData.secondLastName,
+				birthDate: formData.birthDate,
+				businessName: formData.businessName,
+				incorporationDate: formData.incorporationDate,
+			});
+			if (!rfcMatch.isValid && rfcMatch.error) {
+				errors.rfc = rfcMatch.error;
+			}
 		}
 
-		// Validate CURP (only for physical persons)
+		// Validate email (required)
+		const emailTrimmed = (formData.email ?? "").trim();
+		if (!emailTrimmed) {
+			errors.email = "El correo electrónico es requerido";
+		} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+			errors.email = "El correo electrónico no es válido";
+		}
+
+		// Validate names by person type
+		if (currentPersonType === "physical") {
+			const firstNameTrimmed = (formData.firstName ?? "").trim();
+			if (!firstNameTrimmed) {
+				errors.firstName = "El nombre es requerido";
+			} else if (firstNameTrimmed.length < 2) {
+				errors.firstName = "El nombre debe tener al menos 2 caracteres";
+			}
+			const lastNameTrimmed = (formData.lastName ?? "").trim();
+			if (!lastNameTrimmed) {
+				errors.lastName = "El apellido paterno es requerido";
+			} else if (lastNameTrimmed.length < 2) {
+				errors.lastName =
+					"El apellido paterno debe tener al menos 2 caracteres";
+			}
+		} else {
+			if (!(formData.businessName ?? "").trim()) {
+				errors.businessName = "La razón social es requerida";
+			} else if ((formData.businessName ?? "").trim().length < 3) {
+				errors.businessName =
+					"La razón social debe tener al menos 3 caracteres";
+			}
+		}
+
+		// Validate CURP only when provided (optional)
 		if (currentPersonType === "physical" && formData.curp) {
 			const curpValidation = validateCURP(formData.curp);
 			if (!curpValidation.isValid) {
 				errors.curp = curpValidation.error;
+			} else {
+				if (formData.birthDate) {
+					const birthdateMatch = validateCURPBirthdateMatch(
+						formData.curp,
+						formData.birthDate,
+					);
+					if (!birthdateMatch.isValid && birthdateMatch.error) {
+						errors.curp = birthdateMatch.error;
+					}
+				}
+				const nameMatch = validateCURPNameMatch(
+					formData.curp,
+					formData.firstName ?? "",
+					formData.lastName ?? "",
+					formData.secondLastName,
+				);
+				if (!nameMatch.isValid) {
+					if (nameMatch.errors.firstName) {
+						errors.firstName = nameMatch.errors.firstName;
+					}
+					if (nameMatch.errors.lastName) {
+						errors.lastName = nameMatch.errors.lastName;
+					}
+					if (nameMatch.errors.secondLastName) {
+						errors.curp = errors.curp ?? nameMatch.errors.secondLastName;
+					}
+				}
 			}
-		}
-
-		// Validate phone
-		const phoneValidation = validatePhone(formData.phone);
-		if (!phoneValidation.isValid) {
-			errors.phone = phoneValidation.error;
 		}
 
 		// If there are validation errors, show them and prevent submission
@@ -713,8 +796,18 @@ export function ClientEditView({
 															)
 														}
 														placeholder="JUAN"
+														className={
+															validationErrors.firstName
+																? "border-destructive"
+																: ""
+														}
 														required
 													/>
+													{validationErrors.firstName && (
+														<p className="text-xs text-destructive">
+															{validationErrors.firstName}
+														</p>
+													)}
 												</div>
 												<div className="space-y-2">
 													<LabelWithInfo
@@ -735,8 +828,18 @@ export function ClientEditView({
 															)
 														}
 														placeholder="PÉREZ"
+														className={
+															validationErrors.lastName
+																? "border-destructive"
+																: ""
+														}
 														required
 													/>
+													{validationErrors.lastName && (
+														<p className="text-xs text-destructive">
+															{validationErrors.lastName}
+														</p>
+													)}
 												</div>
 												<div className="space-y-2">
 													<LabelWithInfo
@@ -765,7 +868,6 @@ export function ClientEditView({
 														htmlFor="birthDate"
 														description={getFieldDescription("birthDate")}
 														tier={fieldTiers.birthDate}
-														required
 													>
 														{t("clientBirthDate")}
 													</LabelWithInfo>
@@ -776,7 +878,6 @@ export function ClientEditView({
 														onChange={(e) =>
 															handleInputChange("birthDate", e.target.value)
 														}
-														required
 													/>
 												</div>
 												<div className="space-y-2">
@@ -784,7 +885,6 @@ export function ClientEditView({
 														htmlFor="curp"
 														description={getFieldDescription("curp")}
 														tier={fieldTiers.curp}
-														required
 													>
 														{t("clientCurp")}
 													</LabelWithInfo>
@@ -805,7 +905,6 @@ export function ClientEditView({
 															validationErrors.curp ? "border-destructive" : "",
 															"font-mono uppercase",
 														)}
-														required
 													/>
 													{validationErrors.curp && (
 														<p className="text-xs text-destructive">
@@ -836,14 +935,23 @@ export function ClientEditView({
 														)
 													}
 													placeholder="Ej. EMPRESA S.A. DE C.V."
+													className={
+														validationErrors.businessName
+															? "border-destructive"
+															: ""
+													}
 													required
 												/>
+												{validationErrors.businessName && (
+													<p className="text-xs text-destructive">
+														{validationErrors.businessName}
+													</p>
+												)}
 											</div>
 											<div className="space-y-2">
 												<LabelWithInfo
 													htmlFor="incorporationDate"
 													description={getFieldDescription("incorporationDate")}
-													required
 												>
 													{t("clientConstitutionDate")}
 												</LabelWithInfo>
@@ -857,7 +965,6 @@ export function ClientEditView({
 															e.target.value,
 														)
 													}
-													required
 												/>
 											</div>
 										</>
@@ -1177,15 +1284,22 @@ export function ClientEditView({
 													handleInputChange("email", e.target.value)
 												}
 												placeholder="contacto@empresa.com"
+												className={
+													validationErrors.email ? "border-destructive" : ""
+												}
 												required
 											/>
+											{validationErrors.email && (
+												<p className="text-xs text-destructive">
+													{validationErrors.email}
+												</p>
+											)}
 										</div>
 										<div className="space-y-2">
 											<LabelWithInfo
 												htmlFor="phone"
 												description={getFieldDescription("phone")}
 												tier={fieldTiers.phone}
-												required
 											>
 												{t("clientPhone")}
 											</LabelWithInfo>
@@ -1202,7 +1316,6 @@ export function ClientEditView({
 													}
 												}}
 												placeholder="+52 55 1234 5678"
-												required
 											/>
 											{validationErrors.phone && (
 												<p className="text-xs text-destructive">
@@ -1259,7 +1372,6 @@ export function ClientEditView({
 												htmlFor="street"
 												description={getFieldDescription("street")}
 												tier={fieldTiers.street}
-												required
 											>
 												{t("clientStreet")}
 											</LabelWithInfo>
@@ -1273,14 +1385,12 @@ export function ClientEditView({
 													)
 												}
 												placeholder="AV. CONSTITUCIÓN"
-												required
 											/>
 										</div>
 										<div className="space-y-2">
 											<LabelWithInfo
 												htmlFor="externalNumber"
 												description={getFieldDescription("externalNumber")}
-												required
 											>
 												{t("clientExteriorNumber")}
 											</LabelWithInfo>
@@ -1294,7 +1404,6 @@ export function ClientEditView({
 													)
 												}
 												placeholder="123"
-												required
 											/>
 										</div>
 										<div className="space-y-2">
@@ -1345,6 +1454,7 @@ export function ClientEditView({
 										resolvedStateCodeName={client?.resolvedNames?.stateCode}
 										showNeighborhood={true}
 										showReference={true}
+										fieldsRequired={false}
 									/>
 								</CardContent>
 							</Card>
@@ -1383,6 +1493,7 @@ export function ClientEditView({
 							<EditDocumentsSection
 								clientId={clientId}
 								personType={client.personType}
+								identificationTier={client.identificationTier ?? undefined}
 							/>
 
 							{/* Cancel button only - document actions are immediate */}

@@ -29,6 +29,7 @@ import {
 	getShareholderDisplayName,
 	getEntityTypeLabel,
 } from "@/types/shareholder";
+import { isPossibleBC, SUGGESTED_BC_RULE_LABEL } from "@/lib/bc-determination";
 import { Badge } from "@/components/ui/badge";
 import { ShareholderFormDialog } from "./ShareholderFormDialog";
 import {
@@ -228,6 +229,14 @@ export function ShareholderSection({
 													<Badge variant="outline" className="shrink-0">
 														{getEntityTypeLabel(shareholder.entityType)}
 													</Badge>
+													{isPossibleBC(shareholder) && (
+														<Badge
+															variant="secondary"
+															className="shrink-0 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+														>
+															{SUGGESTED_BC_RULE_LABEL}
+														</Badge>
+													)}
 												</div>
 												<div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1 text-sm text-muted-foreground">
 													<span>

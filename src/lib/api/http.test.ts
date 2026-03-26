@@ -1,5 +1,10 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
-import { ApiError, fetchJson, isOrganizationRequiredError } from "./http";
+import {
+	ApiError,
+	fetchJson,
+	isOrganizationRequiredError,
+	isSelfServiceDisabledError,
+} from "./http";
 
 describe("api/http fetchJson", () => {
 	afterEach(() => {
@@ -528,5 +533,61 @@ describe("isOrganizationRequiredError", () => {
 			body: { code: "DIFFERENT_ERROR" },
 		});
 		expect(isOrganizationRequiredError(error)).toBe(false);
+	});
+});
+
+describe("isSelfServiceDisabledError", () => {
+	it("returns true for ApiError with status 400 and code SELF_SERVICE_DISABLED", () => {
+		const error = new ApiError("Request failed", {
+			status: 400,
+			body: {},
+			code: "SELF_SERVICE_DISABLED",
+		});
+		expect(isSelfServiceDisabledError(error)).toBe(true);
+	});
+
+	it("returns true for ApiError with status 400 and body.message SELF_SERVICE_DISABLED", () => {
+		const error = new ApiError("Request failed", {
+			status: 400,
+			body: { message: "SELF_SERVICE_DISABLED" },
+		});
+		expect(isSelfServiceDisabledError(error)).toBe(true);
+	});
+
+	it("returns false for status 400 with different message/code", () => {
+		const error = new ApiError("Request failed", {
+			status: 400,
+			body: { message: "Validation failed" },
+		});
+		expect(isSelfServiceDisabledError(error)).toBe(false);
+	});
+
+	it("returns false for other statuses even with same body shape", () => {
+		const error = new ApiError("Request failed", {
+			status: 403,
+			body: { message: "SELF_SERVICE_DISABLED" },
+		});
+		expect(isSelfServiceDisabledError(error)).toBe(false);
+	});
+
+	it("returns false for non-ApiError errors", () => {
+		expect(isSelfServiceDisabledError(new Error("Generic error"))).toBe(false);
+		expect(isSelfServiceDisabledError("string error")).toBe(false);
+		expect(isSelfServiceDisabledError(null)).toBe(false);
+		expect(isSelfServiceDisabledError(undefined)).toBe(false);
+	});
+
+	it("returns false when body is non-object or null", () => {
+		const error = new ApiError("Request failed", {
+			status: 400,
+			body: "SELF_SERVICE_DISABLED",
+		});
+		expect(isSelfServiceDisabledError(error)).toBe(false);
+
+		const errorNull = new ApiError("Request failed", {
+			status: 400,
+			body: null,
+		});
+		expect(isSelfServiceDisabledError(errorNull)).toBe(false);
 	});
 });

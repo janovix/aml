@@ -50,10 +50,10 @@ vi.mock("@/lib/api/stats", () => ({
 		trustClients: 0,
 	}),
 	getOperationStats: vi.fn().mockResolvedValue({
-		transactionsToday: 10,
-		suspiciousTransactions: 3,
+		operationsToday: 10,
+		suspiciousOperations: 3,
 		totalVolume: "1500000.00",
-		totalVehicles: 120,
+		totalOperations: 47,
 	}),
 	getReportSummary: vi.fn().mockResolvedValue({
 		alerts: {
@@ -234,10 +234,10 @@ describe("DashboardView branch coverage", () => {
 			trustClients: 0,
 		});
 		vi.mocked(statsApi.getOperationStats).mockResolvedValue({
-			transactionsToday: 10,
-			suspiciousTransactions: 3,
+			operationsToday: 10,
+			suspiciousOperations: 3,
 			totalVolume: "1500000.00",
-			totalVehicles: 120,
+			totalOperations: 47,
 		});
 		vi.mocked(statsApi.getReportSummary).mockResolvedValue(
 			mockReportSummary as never,
@@ -379,10 +379,10 @@ describe("DashboardView branch coverage", () => {
 
 	it("formats currency with string value", async () => {
 		vi.spyOn(statsApi, "getOperationStats").mockResolvedValue({
-			transactionsToday: 10,
-			suspiciousTransactions: 3,
+			operationsToday: 10,
+			suspiciousOperations: 3,
 			totalVolume: "1500000.00",
-			totalVehicles: 120,
+			totalOperations: 47,
 		});
 
 		renderWithProviders(<DashboardView />);
@@ -395,10 +395,10 @@ describe("DashboardView branch coverage", () => {
 
 	it("formats currency with numeric value", async () => {
 		vi.spyOn(statsApi, "getOperationStats").mockResolvedValue({
-			transactionsToday: 10,
-			suspiciousTransactions: 3,
+			operationsToday: 10,
+			suspiciousOperations: 3,
 			totalVolume: "1500000",
-			totalVehicles: 50,
+			totalOperations: 47,
 		});
 
 		renderWithProviders(<DashboardView />);
@@ -467,54 +467,7 @@ describe("DashboardView branch coverage", () => {
 		});
 	});
 
-	it("shows vehicles count for VEH activity orgs", async () => {
-		const { OrgSettingsContext } =
-			await import("@/contexts/org-settings-context");
-		const { render } = await import("@testing-library/react");
-		const React = await import("react");
-		const { LanguageProvider } = await import("@/components/LanguageProvider");
-		const { PageStatusProvider } =
-			await import("@/components/PageStatusProvider");
-		const { SidebarProvider } = await import("@/components/ui/sidebar");
-		const { ChatProvider } = await import("@/components/chat/ChatProvider");
-
-		render(
-			<LanguageProvider defaultLanguage="es">
-				<PageStatusProvider>
-					<SidebarProvider>
-						<ChatProvider>
-							<OrgSettingsContext.Provider
-								value={{
-									settings: {
-										id: "s1",
-										organizationId: "org-123",
-										obligatedSubjectKey: "ABC123456XYZ",
-										activityKey: "VEH",
-										selfServiceMode: "disabled" as const,
-										selfServiceExpiryHours: 72,
-										selfServiceRequiredSections: null,
-										createdAt: "",
-										updatedAt: "",
-									},
-									isLoading: false,
-									refresh: async () => {},
-								}}
-							>
-								<DashboardView />
-							</OrgSettingsContext.Provider>
-						</ChatProvider>
-					</SidebarProvider>
-				</PageStatusProvider>
-			</LanguageProvider>,
-		);
-
-		await waitFor(() => {
-			const vehicles = screen.getAllByText(/vehículos registrados/i);
-			expect(vehicles.length).toBeGreaterThan(0);
-		});
-	});
-
-	it("shows total operations instead of vehicles for non-VEH activity", async () => {
+	it("shows total operations in operations stats card", async () => {
 		const { OrgSettingsContext } =
 			await import("@/contexts/org-settings-context");
 		const { render } = await import("@testing-library/react");
@@ -559,6 +512,9 @@ describe("DashboardView branch coverage", () => {
 			const totalOps = screen.getAllByText(/total operaciones/i);
 			expect(totalOps.length).toBeGreaterThan(0);
 		});
+
+		// Assert mocked totalOperations value (47) is rendered in the operations stats card
+		expect(screen.getByText("47")).toBeInTheDocument();
 
 		const vehicles = screen.queryByText(/vehículos registrados/i);
 		expect(vehicles).toBeNull();

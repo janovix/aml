@@ -36,6 +36,7 @@ import {
 	AlertTriangle,
 	ShieldCheck,
 	Info,
+	Settings,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useJwt } from "@/hooks/useJwt";
@@ -51,6 +52,10 @@ import {
 	type KycSessionEntity,
 	type KycSessionEventEntity,
 } from "@/lib/api/kyc-sessions";
+import { isSelfServiceDisabledError } from "@/lib/api/http";
+import type { SelfServiceMode } from "@/lib/api/organization-settings";
+import { getAuthAppUrl } from "@/lib/auth/config";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { format, formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
@@ -579,21 +584,34 @@ function SessionCard({
 
 // ─── Main Section ─────────────────────────────────────────────────────────────
 
+const COMPLIANCE_SETTINGS_URL = () => `${getAuthAppUrl()}/settings/compliance`;
+
 interface KycSessionSectionProps {
 	clientId: string;
 	clientEmail?: string | null;
 	kycSelfServiceUrl?: string;
+	/** When "disabled", creation is not allowed; show alert and CTA to compliance settings. */
+	selfServiceMode?: SelfServiceMode;
 }
 
 export function KycSessionSection({
 	clientId,
 	clientEmail,
 	kycSelfServiceUrl,
+	selfServiceMode = "automatic",
 }: KycSessionSectionProps) {
 	const { jwt } = useJwt();
 	const [sessions, setSessions] = useState<KycSessionEntity[] | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [creating, setCreating] = useState(false);
+	const [createDisabledDueToSettings, setCreateDisabledDueToSettings] =
+		useState(false);
+
+	const canCreateKycLink =
+		(selfServiceMode === "manual" || selfServiceMode === "automatic") &&
+		!createDisabledDueToSettings;
+	const showDisabledAlert =
+		selfServiceMode === "disabled" || createDisabledDueToSettings;
 
 	const loadSessions = useCallback(async () => {
 		if (!jwt) return;
@@ -614,6 +632,7 @@ export function KycSessionSection({
 	async function handleCreate() {
 		if (!jwt) return;
 		setCreating(true);
+		setCreateDisabledDueToSettings(false);
 		try {
 			await createKycSession({
 				input: {
@@ -628,8 +647,15 @@ export function KycSessionSection({
 					: "Sesión KYC creada.",
 			);
 			await loadSessions();
-		} catch {
-			toast.error("Error al crear la sesión KYC");
+		} catch (err) {
+			if (isSelfServiceDisabledError(err)) {
+				setCreateDisabledDueToSettings(true);
+				toast.error(
+					"No se puede crear el enlace. Activa KYC Autoservicio en configuración de cumplimiento.",
+				);
+			} else {
+				toast.error("Error al crear la sesión KYC");
+			}
 		} finally {
 			setCreating(false);
 		}
@@ -684,7 +710,7 @@ export function KycSessionSection({
 				<Button
 					size="sm"
 					variant="outline"
-					disabled={creating || hasActiveOrPending}
+					disabled={!canCreateKycLink || creating || hasActiveOrPending}
 					onClick={handleCreate}
 					className="shrink-0"
 				>
@@ -696,6 +722,34 @@ export function KycSessionSection({
 					{clientEmail ? "Crear y enviar enlace" : "Crear enlace KYC"}
 				</Button>
 			</div>
+
+			{showDisabledAlert && (
+				<Alert
+					variant="default"
+					className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30"
+				>
+					<AlertTriangle className="text-amber-600 dark:text-amber-400" />
+					<AlertTitle className="text-amber-800 dark:text-amber-200">
+						No se pueden crear enlaces de KYC Autoservicio
+					</AlertTitle>
+					<AlertDescription className="text-amber-700 dark:text-amber-300">
+						<p>
+							La función está deshabilitada para esta organización. Puedes
+							activarla en la configuración de cumplimiento PLD.
+						</p>
+						<Button variant="outline" size="sm" className="mt-3 gap-2" asChild>
+							<a
+								href={COMPLIANCE_SETTINGS_URL()}
+								target="_self"
+								rel="noopener noreferrer"
+							>
+								<Settings className="h-4 w-4" />
+								Ir a configuración de cumplimiento PLD
+							</a>
+						</Button>
+					</AlertDescription>
+				</Alert>
+			)}
 
 			{hasActiveOrPending && (
 				<div className="flex items-start gap-2 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 p-3">

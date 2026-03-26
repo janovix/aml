@@ -35,18 +35,18 @@ describe("AI Providers", () => {
 
 	describe("getModelDisplayName", () => {
 		it("should return display name for OpenAI models", () => {
-			expect(getModelDisplayName("gpt-4o")).toBe("GPT-4o");
+			expect(getModelDisplayName("gpt-5.2")).toBe("GPT-5.2");
 		});
 
 		it("should return display name for Anthropic models", () => {
-			expect(getModelDisplayName("claude-3-5-sonnet-20241022")).toBe(
-				"Claude 3.5 Sonnet",
+			expect(getModelDisplayName("claude-sonnet-4-6")).toBe(
+				"Claude Sonnet 4.6",
 			);
 		});
 
 		it("should return display name for Google models", () => {
-			expect(getModelDisplayName("gemini-2.0-flash-exp")).toBe(
-				"Gemini 2.0 Flash",
+			expect(getModelDisplayName("gemini-3-flash-preview")).toBe(
+				"Gemini 3 Flash (Preview)",
 			);
 		});
 
@@ -60,19 +60,19 @@ describe("AI Providers", () => {
 	describe("getModelsForProvider", () => {
 		it("should return OpenAI models", () => {
 			const models = getModelsForProvider("openai");
-			expect(models).toContain("gpt-4o");
+			expect(models).toContain("gpt-5.2");
 			expect(models).toHaveLength(1);
 		});
 
 		it("should return Anthropic models", () => {
 			const models = getModelsForProvider("anthropic");
-			expect(models).toContain("claude-3-5-sonnet-20241022");
+			expect(models).toContain("claude-sonnet-4-6");
 			expect(models).toHaveLength(1);
 		});
 
 		it("should return Google models", () => {
 			const models = getModelsForProvider("google");
-			expect(models).toContain("gemini-2.0-flash-exp");
+			expect(models).toContain("gemini-3-flash-preview");
 			expect(models).toHaveLength(1);
 		});
 
@@ -84,9 +84,9 @@ describe("AI Providers", () => {
 
 	describe("isModelAvailable", () => {
 		it("should return true for available models", () => {
-			expect(isModelAvailable("gpt-4o")).toBe(true);
-			expect(isModelAvailable("claude-3-5-sonnet-20241022")).toBe(true);
-			expect(isModelAvailable("gemini-2.0-flash-exp")).toBe(true);
+			expect(isModelAvailable("gpt-5.2")).toBe(true);
+			expect(isModelAvailable("claude-sonnet-4-6")).toBe(true);
+			expect(isModelAvailable("gemini-3-flash-preview")).toBe(true);
 		});
 
 		it("should return false for unavailable models", () => {

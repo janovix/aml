@@ -93,10 +93,10 @@ describe("api/stats", () => {
 
 	describe("getOperationStats", () => {
 		const mockOperationStats = {
-			transactionsToday: 25,
-			suspiciousTransactions: 3,
+			operationsToday: 25,
+			suspiciousOperations: 3,
 			totalVolume: "15000000.50",
-			totalVehicles: 120,
+			totalOperations: 47,
 		};
 
 		it("fetches operation stats from the API", async () => {
@@ -162,6 +162,23 @@ describe("api/stats", () => {
 					jwt: "test-token",
 				}),
 			);
+		});
+
+		it("returns optional completeCount and incompleteCount when present", async () => {
+			const statsWithCompleteness = {
+				...mockOperationStats,
+				completeCount: 50,
+				incompleteCount: 16,
+			};
+			vi.mocked(http.fetchJson).mockResolvedValue({
+				status: 200,
+				json: statsWithCompleteness,
+			});
+
+			const result = await getOperationStats();
+
+			expect(result.completeCount).toBe(50);
+			expect(result.incompleteCount).toBe(16);
 		});
 	});
 

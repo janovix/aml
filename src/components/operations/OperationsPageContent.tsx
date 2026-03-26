@@ -15,8 +15,10 @@ import {
 	AlertCircle,
 	CheckCircle2,
 } from "lucide-react";
+import * as Sentry from "@sentry/nextjs";
 import { ApiError, isOrganizationRequiredError } from "@/lib/api/http";
 import { showFetchError } from "@/lib/toast-utils";
+import { getOperationStats } from "@/lib/api/stats";
 import { listOperations } from "@/lib/api/operations";
 import { useJwt } from "@/hooks/useJwt";
 import { useOrgStore } from "@/lib/org-store";
@@ -27,6 +29,7 @@ export function OperationsPageContent(): React.ReactElement {
 	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const { currentOrg } = useOrgStore();
 	const [totalCount, setTotalCount] = useState<number | null>(null);
+	const [completeCount, setCompleteCount] = useState<number | null>(null);
 	const [incompleteCount, setIncompleteCount] = useState<number | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
@@ -45,31 +48,29 @@ export function OperationsPageContent(): React.ReactElement {
 		try {
 			setIsLoading(true);
 
-			// Fetch total count
-			const totalResponse = await listOperations({
-				page: 1,
-				limit: 1,
-				jwt,
-			});
-			setTotalCount(totalResponse.pagination.total);
+			const [listResponse, stats] = await Promise.all([
+				listOperations({ page: 1, limit: 1, jwt }),
+				getOperationStats({ jwt }),
+			]);
 
-			// Fetch incomplete count — we can't filter by completeness on the API,
-			// so just use the total from main request.
-			// For now, show total only. If a completeness filter is added, use it.
-			setIncompleteCount(null);
+			setTotalCount(listResponse.pagination.total);
+			setCompleteCount(stats?.completeCount ?? null);
+			setIncompleteCount(stats?.incompleteCount ?? null);
 			hasAttemptedForOrgRef.current = currentOrg.id;
 		} catch (error) {
-			hasAttemptedForOrgRef.current = currentOrg.id;
+			Sentry.captureException(error);
+			setTotalCount(null);
+			setCompleteCount(null);
+			setIncompleteCount(null);
 
 			if (isOrganizationRequiredError(error)) {
 				console.debug(
 					"[OperationsPageContent] Organization required error - org may be syncing",
 				);
-				// Reset so it retries after org sync
 				hasAttemptedForOrgRef.current = null;
 				return;
 			}
-
+			// Do not set hasAttemptedForOrgRef so retries can occur
 			if (error instanceof ApiError) {
 				console.error(
 					"[OperationsPageContent] API error:",
@@ -88,6 +89,11 @@ export function OperationsPageContent(): React.ReactElement {
 		}
 	}, [jwt, currentOrg?.id]);
 
+	const refreshStats = useCallback(() => {
+		hasAttemptedForOrgRef.current = null;
+		if (jwt && currentOrg?.id) fetchStats();
+	}, [jwt, currentOrg?.id, fetchStats]);
+
 	useEffect(() => {
 		if (!isJwtLoading && jwt) {
 			fetchStats();
@@ -104,7 +110,7 @@ export function OperationsPageContent(): React.ReactElement {
 		},
 		{
 			label: "Operaciones completas",
-			value: isLoading ? "..." : "—",
+			value: isLoading ? "..." : (completeCount ?? "—"),
 			icon: CheckCircle2,
 		},
 		{
@@ -146,6 +152,7 @@ export function OperationsPageContent(): React.ReactElement {
 				open={isImportDialogOpen}
 				onOpenChange={setIsImportDialogOpen}
 				defaultEntityType="OPERATION"
+				onSuccess={refreshStats}
 			/>
 		</div>
 	);

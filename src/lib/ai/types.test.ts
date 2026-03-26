@@ -33,9 +33,9 @@ describe("AI Types", () => {
 	describe("MODEL_CONFIGS", () => {
 		it("should have configurations for all expected models", () => {
 			const expectedModels: LlmModel[] = [
-				"gpt-4o",
-				"claude-3-5-sonnet-20241022",
-				"gemini-2.0-flash-exp",
+				"gpt-5.2",
+				"claude-sonnet-4-6",
+				"gemini-3-flash-preview",
 			];
 
 			for (const model of expectedModels) {
@@ -46,27 +46,23 @@ describe("AI Types", () => {
 		});
 
 		it("should have correct providers for each model", () => {
-			expect(MODEL_CONFIGS["gpt-4o"].provider).toBe("openai");
-			expect(MODEL_CONFIGS["claude-3-5-sonnet-20241022"].provider).toBe(
-				"anthropic",
-			);
-			expect(MODEL_CONFIGS["gemini-2.0-flash-exp"].provider).toBe("google");
+			expect(MODEL_CONFIGS["gpt-5.2"].provider).toBe("openai");
+			expect(MODEL_CONFIGS["claude-sonnet-4-6"].provider).toBe("anthropic");
+			expect(MODEL_CONFIGS["gemini-3-flash-preview"].provider).toBe("google");
 		});
 	});
 
 	describe("getProviderForModel", () => {
 		it("should return correct provider for OpenAI models", () => {
-			expect(getProviderForModel("gpt-4o")).toBe("openai");
+			expect(getProviderForModel("gpt-5.2")).toBe("openai");
 		});
 
 		it("should return correct provider for Anthropic models", () => {
-			expect(getProviderForModel("claude-3-5-sonnet-20241022")).toBe(
-				"anthropic",
-			);
+			expect(getProviderForModel("claude-sonnet-4-6")).toBe("anthropic");
 		});
 
 		it("should return correct provider for Google models", () => {
-			expect(getProviderForModel("gemini-2.0-flash-exp")).toBe("google");
+			expect(getProviderForModel("gemini-3-flash-preview")).toBe("google");
 		});
 
 		it("should return undefined for unknown models", () => {
@@ -76,9 +72,9 @@ describe("AI Types", () => {
 
 	describe("isValidModel", () => {
 		it("should return true for valid models", () => {
-			expect(isValidModel("gpt-4o")).toBe(true);
-			expect(isValidModel("claude-3-5-sonnet-20241022")).toBe(true);
-			expect(isValidModel("gemini-2.0-flash-exp")).toBe(true);
+			expect(isValidModel("gpt-5.2")).toBe(true);
+			expect(isValidModel("claude-sonnet-4-6")).toBe(true);
+			expect(isValidModel("gemini-3-flash-preview")).toBe(true);
 		});
 
 		it("should return false for invalid models", () => {
@@ -90,10 +86,10 @@ describe("AI Types", () => {
 
 	describe("getModelConfig", () => {
 		it("should return config for valid models", () => {
-			const config = getModelConfig("gpt-4o");
+			const config = getModelConfig("gpt-5.2");
 			expect(config).toBeDefined();
 			expect(config?.provider).toBe("openai");
-			expect(config?.displayName).toBe("GPT-4o");
+			expect(config?.displayName).toBe("GPT-5.2");
 		});
 
 		it("should return undefined for invalid models", () => {

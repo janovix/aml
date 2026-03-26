@@ -4,16 +4,25 @@ import { useState, useEffect } from "react";
 import { ImportProgress } from "./ImportProgress";
 import { RowStatusTable } from "./RowStatusTable";
 import { CatastrophicError } from "./CatastrophicError";
+import { StepIndicator } from "./StepIndicator";
+import { ColumnMappingStep } from "./ColumnMappingStep";
 import { useImportSSE } from "@/hooks/useImportSSE";
 import { useJwt } from "@/hooks/useJwt";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
-import { getImport } from "@/lib/api/imports";
+import {
+	getImport,
+	getImportPreview,
+	getImportTargetFields,
+	startImport,
+} from "@/lib/api/imports";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 import type {
 	ImportState,
 	ImportEntityType,
 	RowDisplayData,
 } from "@/types/import";
+import type { ImportTargetField } from "@/lib/api/imports";
 
 /**
  * Skeleton for ImportViewContent — mirrors the progress card + rows table layout.
@@ -71,6 +80,7 @@ const initialState: ImportState = {
 	importId: null,
 	fileName: null,
 	entityType: null,
+	activityCode: null,
 	totalRows: 0,
 	processedRows: 0,
 	successCount: 0,
@@ -90,6 +100,13 @@ export function ImportViewContent({ importId }: ImportViewContentProps) {
 		status: "processing",
 	});
 	const [isLoading, setIsLoading] = useState(true);
+	const [mappingStepData, setMappingStepData] = useState<{
+		headers: string[];
+		sampleRows: Record<string, string>[];
+		targetFields: ImportTargetField[];
+		initialMapping: Record<string, string>;
+		showAutoMappingNotice: boolean;
+	} | null>(null);
 
 	// Use SSE for real-time updates
 	const {
@@ -142,16 +159,25 @@ export function ImportViewContent({ importId }: ImportViewContentProps) {
 
 				const isFinished =
 					importData.status === "COMPLETED" || importData.status === "FAILED";
+				const needsMapping =
+					importData.status === "PENDING" &&
+					importData.totalRows === 0 &&
+					(!importData.rowResults || importData.rowResults.length === 0);
 
 				setState({
 					status: isFinished
 						? importData.status === "COMPLETED"
 							? "completed"
 							: "failed"
-						: "processing",
+						: needsMapping
+							? "mapping"
+							: "processing",
 					importId: importData.id,
 					fileName: importData.fileName,
 					entityType: importData.entityType as ImportEntityType,
+					activityCode:
+						(importData as { activityCode?: string | null }).activityCode ??
+						null,
 					totalRows: importData.totalRows,
 					processedRows: importData.processedRows,
 					successCount: importData.successCount,
@@ -188,6 +214,79 @@ export function ImportViewContent({ importId }: ImportViewContentProps) {
 			loadImport();
 		}
 	}, [importId, jwt, isJwtLoading]);
+
+	// When showing mapping step, fetch preview and target-fields and compute auto-suggest
+	useEffect(() => {
+		if (
+			state.status !== "mapping" ||
+			!state.importId ||
+			!state.entityType ||
+			!jwt
+		) {
+			return;
+		}
+		let cancelled = false;
+		(async () => {
+			try {
+				const [preview, targetRes] = await Promise.all([
+					getImportPreview({ id: state.importId!, jwt }),
+					getImportTargetFields({
+						entityType: state.entityType!,
+						activityCode:
+							state.entityType === "OPERATION"
+								? (state.activityCode ?? undefined)
+								: undefined,
+						jwt,
+					}),
+				]);
+				if (cancelled) return;
+				// Auto-suggest: match headers to target field value (normalize: lower, no _-\s)
+				const norm = (s: string) =>
+					s
+						.toLowerCase()
+						.replace(/[\s_\-]/g, "")
+						.trim();
+				const initialMapping: Record<string, string> = {};
+				let suggestedCount = 0;
+				for (const header of preview.headers) {
+					const n = norm(header);
+					const found = targetRes.fields.find(
+						(f) => norm(f.value) === n || norm(f.label) === n,
+					);
+					if (found) {
+						initialMapping[header] = found.value;
+						suggestedCount++;
+					}
+				}
+				setMappingStepData({
+					headers: preview.headers,
+					sampleRows: preview.sampleRows,
+					targetFields: targetRes.fields,
+					initialMapping,
+					showAutoMappingNotice: suggestedCount > 0,
+				});
+			} catch (err) {
+				if (!cancelled) {
+					console.error("Failed to load mapping data:", err);
+					setState((prev) => ({
+						...prev,
+						status: "failed",
+						error: {
+							type: "LOAD_ERROR",
+							message:
+								err instanceof Error
+									? err.message
+									: "Error al cargar vista previa",
+							timestamp: new Date().toISOString(),
+						},
+					}));
+				}
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, [state.status, state.importId, state.entityType, state.activityCode, jwt]);
 
 	// Update state from SSE progress
 	useEffect(() => {
@@ -283,9 +382,24 @@ export function ImportViewContent({ importId }: ImportViewContentProps) {
 	};
 
 	const handleRetry = () => {
-		// Go back to upload page to try again
 		navigateTo("/import");
 	};
+
+	async function handleStartImport(mapping: Record<string, string>) {
+		if (!state.importId || !jwt) return;
+		try {
+			await startImport({ id: state.importId, columnMapping: mapping, jwt });
+			setMappingStepData(null);
+			setState((prev) => ({ ...prev, status: "processing" }));
+		} catch (error) {
+			toast.error(
+				error instanceof Error
+					? error.message
+					: "Error al iniciar la importación",
+			);
+			setState((prev) => ({ ...prev, status: "mapping" }));
+		}
+	}
 
 	// Show loading state
 	if (isLoading || isJwtLoading) {
@@ -293,7 +407,7 @@ export function ImportViewContent({ importId }: ImportViewContentProps) {
 	}
 
 	return (
-		<div className="h-full flex flex-col overflow-hidden bg-background">
+		<div className="flex h-full flex-col overflow-hidden bg-background">
 			<div className="flex-1 overflow-hidden p-4">
 				{state.status === "failed" && state.error ? (
 					<CatastrophicError
@@ -301,14 +415,36 @@ export function ImportViewContent({ importId }: ImportViewContentProps) {
 						onRetry={handleRetry}
 						onReset={handleReset}
 					/>
+				) : state.status === "mapping" && mappingStepData ? (
+					<>
+						<StepIndicator current={2} />
+						<ColumnMappingStep
+							fileName={state.fileName ?? ""}
+							entityType={state.entityType ?? "CLIENT"}
+							activityCode={state.activityCode}
+							headers={mappingStepData.headers}
+							sampleRows={mappingStepData.sampleRows}
+							targetFields={mappingStepData.targetFields}
+							initialMapping={mappingStepData.initialMapping}
+							showAutoMappingNotice={mappingStepData.showAutoMappingNotice}
+							onStartImport={handleStartImport}
+						/>
+					</>
+				) : state.status === "mapping" && !mappingStepData ? (
+					<>
+						<StepIndicator current={2} />
+						<div className="flex flex-1 flex-col items-center justify-center gap-4 text-muted-foreground">
+							<div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-primary-foreground/30" />
+							<p className="text-sm">Cargando vista de mapeo…</p>
+						</div>
+					</>
 				) : (
-					<div className="h-full flex flex-col gap-4">
-						{/* Progress section */}
+					<div className="flex h-full flex-col gap-4">
+						<StepIndicator current={3} />
 						<div className="flex-shrink-0">
 							<ImportProgress state={state} onReset={handleReset} />
 						</div>
-						{/* Row status table */}
-						<div className="flex-1 overflow-hidden min-h-0">
+						<div className="min-h-0 flex-1 overflow-hidden">
 							<RowStatusTable
 								rows={state.rows}
 								currentRow={state.processedRows}

@@ -1,3 +1,5 @@
+import * as Sentry from "@sentry/nextjs";
+
 export class ApiError extends Error {
 	name = "ApiError" as const;
 	status: number;
@@ -93,6 +95,25 @@ export function isOrganizationRequiredError(error: unknown): boolean {
 	return false;
 }
 
+/**
+ * Check if an error indicates KYC self-service is disabled for the organization.
+ * Backend returns 400 with message "SELF_SERVICE_DISABLED" (or code in body).
+ */
+export function isSelfServiceDisabledError(error: unknown): boolean {
+	if (!(error instanceof ApiError) || error.status !== 400) return false;
+	if (error.code === "SELF_SERVICE_DISABLED") return true;
+	if (typeof error.body === "object" && error.body !== null) {
+		const body = error.body as Record<string, unknown>;
+		const msg = body.message;
+		const code = body.code;
+		return (
+			msg === "SELF_SERVICE_DISABLED" ||
+			(typeof code === "string" && code === "SELF_SERVICE_DISABLED")
+		);
+	}
+	return false;
+}
+
 export interface FetchJsonOptions extends RequestInit {
 	/**
 	 * JWT token to include in Authorization header.
@@ -183,6 +204,55 @@ export async function fetchJson<T>(
 	const body = isJson ? await res.json().catch(() => null) : await res.text();
 
 	if (!res.ok) {
+		// On 401, silently force-refresh the token and retry once.
+		// This covers expired tokens that slipped through the cache (e.g. the tab
+		// was in the background longer than the JWT TTL, or the TTL is shorter
+		// than the cache stale timeout).
+		if (res.status === 401 && isClientSide() && !isTestEnvironment()) {
+			let freshToken: string | null = null;
+			try {
+				const { tokenCache } = await import("@/lib/auth/tokenCache");
+				freshToken = await tokenCache.forceRefresh();
+			} catch {
+				// Token refresh failed — fall through to original 401
+			}
+			if (freshToken) {
+				try {
+					const retryHeaders: Record<string, string> = {
+						...headers,
+						Authorization: `Bearer ${freshToken}`,
+					};
+					const retryRes = await fetch(url, {
+						...fetchInit,
+						headers: retryHeaders,
+					});
+					const retryContentType = retryRes.headers.get("content-type") ?? "";
+					const retryIsJson = retryContentType.includes("application/json");
+					const retryBody = retryIsJson
+						? await retryRes.json().catch(() => null)
+						: await retryRes.text();
+					if (retryRes.ok) {
+						return { status: retryRes.status, json: retryBody as T };
+					}
+					const retryCode =
+						typeof retryBody === "object" &&
+						retryBody !== null &&
+						"code" in retryBody &&
+						typeof (retryBody as Record<string, unknown>).code === "string"
+							? ((retryBody as Record<string, unknown>).code as string)
+							: undefined;
+					throw new ApiError(
+						`Request failed: ${retryRes.status} ${retryRes.statusText}`,
+						{ status: retryRes.status, body: retryBody, code: retryCode },
+					);
+				} catch (retryErr) {
+					if (retryErr instanceof ApiError) throw retryErr;
+					Sentry.captureException(retryErr);
+					// Retry fetch failed (network/timeout) — fall through to original 401
+				}
+			}
+		}
+
 		// Extract error code from response body if available
 		const errorCode =
 			typeof body === "object" &&

@@ -264,16 +264,16 @@ export function createDataTools(jwt: string) {
 
 		getOperationStats: {
 			description:
-				"Get aggregate operation statistics: transactions today, active alerts, total volume, total vehicles",
+				"Get aggregate operation statistics: operations today, active alerts, total volume, total operations",
 			inputSchema: emptySchema,
 			execute: wrap("getOperationStats", async () => {
 				const s = await fetchWithAuth<{
-					transactionsToday: number;
-					suspiciousTransactions: number;
+					operationsToday: number;
+					suspiciousOperations: number;
 					totalVolume: string;
-					totalVehicles: number;
+					totalOperations: number;
 				}>("/api/v1/operations/stats", jwt);
-				return `Transactions today: ${s.transactionsToday}, Active alerts: ${s.suspiciousTransactions}, Total volume: ${fmtMoney(s.totalVolume)} MXN, Total vehicles: ${s.totalVehicles}`;
+				return `Operations today: ${s.operationsToday}, Active alerts: ${s.suspiciousOperations}, Total volume: ${fmtMoney(s.totalVolume)} MXN, Total operations: ${s.totalOperations}`;
 			}),
 		},
 

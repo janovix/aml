@@ -8,6 +8,11 @@ import { renderWithProviders } from "@/lib/testHelpers";
 const mockNavigateTo = vi.fn();
 const mockGetClientById = vi.fn();
 
+const mockUseOrgSettings = vi.fn();
+vi.mock("@/hooks/useOrgSettings", () => ({
+	useOrgSettings: (...args: unknown[]) => mockUseOrgSettings(...args),
+}));
+
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
 		push: vi.fn(),
@@ -60,6 +65,16 @@ describe("ClientDetailsView", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockGetClientById.mockReset();
+		// useOrgSettings is used to pass selfServiceMode to KycSessionSection.
+		// When settings is null, ClientDetailsView passes "disabled", so KYC create is disabled.
+		mockUseOrgSettings.mockReturnValue({
+			settings: null,
+			activityCode: null,
+			isLoading: false,
+			isConfigured: false,
+			error: null,
+			refresh: vi.fn(),
+		});
 	});
 
 	it("renders loading skeleton initially", () => {

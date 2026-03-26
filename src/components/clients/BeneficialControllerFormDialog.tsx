@@ -69,6 +69,7 @@ interface BeneficialControllerFormDialogProps {
 	onOpenChange: (open: boolean) => void;
 	clientId: string;
 	beneficialController?: BeneficialController | null;
+	suggestedShareholder?: Shareholder | null;
 	onSave: () => void;
 }
 
@@ -77,6 +78,7 @@ export function BeneficialControllerFormDialog({
 	onOpenChange,
 	clientId,
 	beneficialController,
+	suggestedShareholder,
 	onSave,
 }: BeneficialControllerFormDialogProps) {
 	const isEditMode = !!beneficialController;
@@ -183,9 +185,23 @@ export function BeneficialControllerFormDialog({
 		loadShareholders();
 	}, [open, clientId]);
 
-	// Reset form when dialog opens or BC changes
+	// Pre-fill from suggested shareholder (Art. 3-III-b-ii: ≥25% → BC)
+	useEffect(() => {
+		if (!open || !suggestedShareholder || beneficialController) return;
+		if (suggestedShareholder.entityType !== "PERSON") return;
+		setBcType("SHAREHOLDER");
+		setIdentificationCriteria("CONTROL");
+		setShareholderId(suggestedShareholder.id);
+		setFirstName(suggestedShareholder.firstName ?? "");
+		setLastName(suggestedShareholder.lastName ?? "");
+		setSecondLastName(suggestedShareholder.secondLastName ?? "");
+		setRfc(suggestedShareholder.rfc ?? "");
+	}, [open, suggestedShareholder, beneficialController]);
+
+	// Reset form when dialog opens or BC changes (skip when prefill from suggestedShareholder applies)
 	useEffect(() => {
 		if (!open) return;
+		if (suggestedShareholder && !beneficialController) return;
 
 		setBcType(beneficialController?.bcType || "SHAREHOLDER");
 		setIdentificationCriteria(
@@ -234,7 +250,7 @@ export function BeneficialControllerFormDialog({
 		setNeighborhood("");
 		setStreet(beneficialController?.street || "");
 		setNotes(beneficialController?.notes || "");
-	}, [open, beneficialController]);
+	}, [open, beneficialController, suggestedShareholder]);
 
 	const handleIdDocUpload = useCallback(async (data: IDDocumentData) => {
 		const { currentOrg, currentUserId } = useOrgStore.getState();

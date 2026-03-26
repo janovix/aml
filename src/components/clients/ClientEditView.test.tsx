@@ -198,7 +198,7 @@ describe("ClientEditView", () => {
 			lastName: "Lopez",
 			secondLastName: "Garcia",
 			birthDate: "1990-05-01T00:00:00.000Z",
-			curp: "LOGA900501MDFRRN09",
+			curp: undefined,
 			businessName: null,
 		});
 		mockGetClientById.mockResolvedValue(client);
@@ -207,9 +207,10 @@ describe("ClientEditView", () => {
 		const user = userEvent.setup();
 		renderWithProviders(<ClientEditView clientId={client.id} />);
 
-		// Wait for form to load
+		// Wait for form to load with all physical person fields
 		await screen.findByDisplayValue("Ana");
 		await screen.findByDisplayValue("Lopez");
+		await screen.findByDisplayValue("1990-05-01");
 
 		// Wait a bit more for form to be fully ready
 		await waitFor(() => {
@@ -229,7 +230,6 @@ describe("ClientEditView", () => {
 			firstName: "Ana",
 			lastName: "Lopez",
 			secondLastName: "Garcia",
-			curp: "LOGA900501MDFRRN09",
 		});
 	});
 

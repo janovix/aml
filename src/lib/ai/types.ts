@@ -6,9 +6,9 @@
 export type LlmProvider = "openai" | "anthropic" | "google";
 
 // Available models per provider (1 per vendor for simplicity)
-export type OpenAIModel = "gpt-4o";
-export type AnthropicModel = "claude-3-5-sonnet-20241022";
-export type GoogleModel = "gemini-2.0-flash-exp";
+export type OpenAIModel = "gpt-5.2";
+export type AnthropicModel = "claude-sonnet-4-6";
+export type GoogleModel = "gemini-3-flash-preview";
 
 export type LlmModel = OpenAIModel | AnthropicModel | GoogleModel;
 
@@ -66,27 +66,27 @@ export interface ChatUsageResponse {
 // Model configurations (1 per vendor)
 export const MODEL_CONFIGS: Record<LlmModel, ModelConfig> = {
 	// OpenAI
-	"gpt-4o": {
+	"gpt-5.2": {
 		provider: "openai",
-		model: "gpt-4o",
-		displayName: "GPT-4o",
-		description: "Most capable OpenAI model",
+		model: "gpt-5.2",
+		displayName: "GPT-5.2",
+		description: "OpenAI flagship model",
 		maxTokens: 128000,
 	},
 	// Anthropic
-	"claude-3-5-sonnet-20241022": {
+	"claude-sonnet-4-6": {
 		provider: "anthropic",
-		model: "claude-3-5-sonnet-20241022",
-		displayName: "Claude 3.5 Sonnet",
-		description: "Best balance of intelligence and speed",
-		maxTokens: 200000,
+		model: "claude-sonnet-4-6",
+		displayName: "Claude Sonnet 4.6",
+		description: "Latest Claude Sonnet",
+		maxTokens: 64000,
 	},
 	// Google
-	"gemini-2.0-flash-exp": {
+	"gemini-3-flash-preview": {
 		provider: "google",
-		model: "gemini-2.0-flash-exp",
-		displayName: "Gemini 2.0 Flash",
-		description: "Latest Gemini with fast inference",
+		model: "gemini-3-flash-preview",
+		displayName: "Gemini 3 Flash (Preview)",
+		description: "Gemini 3 Flash",
 		maxTokens: 1000000,
 	},
 };
@@ -119,5 +119,5 @@ export function getModelConfig(model: LlmModel): ModelConfig | undefined {
 }
 
 // Default model
-export const DEFAULT_MODEL: LlmModel = "gpt-4o";
+export const DEFAULT_MODEL: LlmModel = "gpt-5.2";
 export const DEFAULT_PROVIDER: LlmProvider = "openai";

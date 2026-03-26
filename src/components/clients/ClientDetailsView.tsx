@@ -23,6 +23,7 @@ import {
 	User,
 	Hash,
 	AlertTriangle,
+	Info,
 	CheckCircle2,
 	Users,
 	Briefcase,
@@ -492,7 +493,7 @@ export function ClientDetailsView({
 	const { t, language } = useLanguage();
 	const { getStateName } = useStatesCatalog();
 	const { currentOrg } = useOrgStore();
-	const { activityCode } = useOrgSettings();
+	const { activityCode, settings: orgSettings } = useOrgSettings();
 	const [client, setClient] = useState<Client | null>(null);
 	const [documents, setDocuments] = useState<ClientDocument[]>([]);
 	const [shareholders, setShareholders] = useState<Shareholder[]>([]);
@@ -617,8 +618,8 @@ export function ClientDetailsView({
 		});
 	};
 
-	// calculateKYCStatus is used only for per-section accordion checkmarks.
-	// The overview ring and percentage use the server-persisted kycCompletionPct.
+	// KYC progress: backend kycCompletionPct is single source of truth (aligned with frontend
+	// sections in aml-svc kyc-progress.ts). kycStatus is still used for "X de Y campos" and section status.
 	const kycStatus = calculateKYCStatus(client, {
 		documents,
 		beneficialControllers,
@@ -639,9 +640,13 @@ export function ClientDetailsView({
 	const uploadedDocTypes = new Set<ClientDocumentType>(
 		documents.map((d) => d.documentType),
 	);
-	const missingDocs = requiredDocTypes.filter((d) => !uploadedDocTypes.has(d));
+	const isBelowThreshold = client.identificationTier === "BELOW_THRESHOLD";
+	const missingDocs = isBelowThreshold
+		? []
+		: requiredDocTypes.filter((d) => !uploadedDocTypes.has(d));
 	const hasAllDocs =
-		(needsIdDocument ? hasIdDocument : true) && missingDocs.length === 0;
+		isBelowThreshold ||
+		((needsIdDocument ? hasIdDocument : true) && missingDocs.length === 0);
 
 	// Check ownership status (for moral/trust)
 	const hasShareholders = shareholders.length > 0;
@@ -727,7 +732,7 @@ export function ClientDetailsView({
 						</div>
 
 						<div className="flex items-center gap-8">
-							{/* Circular Progress — uses server-persisted kycCompletionPct */}
+							{/* Circular Progress — uses server kycCompletionPct (aligned with frontend sections in aml-svc) */}
 							<div className="flex flex-col items-center gap-2">
 								<CircularProgress
 									percentage={kycPct}
@@ -1340,16 +1345,6 @@ export function ClientDetailsView({
 								<span className="font-semibold">{t("clientPepStatus")}</span>
 							</div>
 							<div className="flex items-center gap-2">
-								{/* Live badge when SSE is active */}
-								{screeningConnectionStatus === "connected" && (
-									<Badge
-										variant="outline"
-										className="gap-1 bg-blue-50 dark:bg-blue-950 text-xs"
-									>
-										<Activity className="h-3 w-3 text-blue-500 animate-pulse" />
-										<span className="text-blue-500">En vivo</span>
-									</Badge>
-								)}
 								{!screeningComplete &&
 									screeningConnectionStatus !== "connected" &&
 									client.watchlistQueryId && (
@@ -2192,12 +2187,12 @@ export function ClientDetailsView({
 												</div>
 											)}
 
-											{/* Detección PEP por IA */}
+											{/* PEP */}
 											{showPepGrok && (
 												<div className="py-3 px-4 bg-background">
 													<div className="flex items-center gap-2 flex-wrap">
 														<span className="text-sm font-medium flex-1">
-															Detección PEP por IA
+															PEP
 														</span>
 														<span
 															className={cn(
@@ -2269,7 +2264,7 @@ export function ClientDetailsView({
 											)}
 											{showAdverseMedia && (
 												<ScreeningSourceRow
-													label="Media Adversa"
+													label="Medios Adversos"
 													status={
 														src?.adverseMediaStatus ??
 														(client.adverseMediaFlagged
@@ -2289,7 +2284,7 @@ export function ClientDetailsView({
 														) : client.adverseMediaFlagged ? (
 															<span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-red-200 bg-red-50 text-red-700 font-medium">
 																<AlertTriangle className="h-3 w-3" />
-																Media adversa
+																Medios Adversos
 															</span>
 														) : undefined
 													}
@@ -2384,6 +2379,37 @@ export function ClientDetailsView({
 						</div>
 					</AccordionTrigger>
 					<AccordionContent className="px-6 pb-4">
+						<p className="text-xs text-muted-foreground mb-3">
+							{t("documentsLegalBasisArt18")}
+						</p>
+						{client?.identificationTier != null && (
+							<div
+								className={cn(
+									"flex gap-3 rounded-lg border p-3 mb-3",
+									client.identificationTier === "BELOW_THRESHOLD"
+										? "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/50"
+										: "border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/50",
+								)}
+							>
+								{client.identificationTier === "BELOW_THRESHOLD" ? (
+									<Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+								) : (
+									<AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+								)}
+								<p
+									className={cn(
+										"text-xs",
+										client.identificationTier === "BELOW_THRESHOLD"
+											? "text-blue-700 dark:text-blue-300"
+											: "text-amber-700 dark:text-amber-300",
+									)}
+								>
+									{client.identificationTier === "BELOW_THRESHOLD"
+										? t("documentsOptionalBanner")
+										: t("documentsRequiredBanner")}
+								</p>
+							</div>
+						)}
 						{/* Documents Grid */}
 						<div className="grid grid-cols-1 @xl/main:grid-cols-2 gap-3">
 							{/* Build unified document list */}
@@ -2549,6 +2575,7 @@ export function ClientDetailsView({
 								<div className="flex items-center gap-3">
 									<Building2 className="h-5 w-5" />
 									<span className="font-semibold">Accionistas</span>
+									<Badge variant="secondary">{shareholders.length}</Badge>
 								</div>
 								<div className="flex items-center gap-2">
 									{hasShareholders ? (
@@ -2556,7 +2583,6 @@ export function ClientDetailsView({
 									) : (
 										<AlertTriangle className="h-5 w-5 text-amber-500" />
 									)}
-									<Badge variant="secondary">{shareholders.length}</Badge>
 								</div>
 							</div>
 						</AccordionTrigger>
@@ -2634,6 +2660,9 @@ export function ClientDetailsView({
 									<span className="font-semibold">
 										Beneficiarios Controladores
 									</span>
+									<Badge variant="secondary">
+										{beneficialControllers.length}
+									</Badge>
 								</div>
 								<div className="flex items-center gap-2">
 									{hasBCs ? (
@@ -2641,9 +2670,6 @@ export function ClientDetailsView({
 									) : (
 										<AlertTriangle className="h-5 w-5 text-amber-500" />
 									)}
-									<Badge variant="secondary">
-										{beneficialControllers.length}
-									</Badge>
 								</div>
 							</div>
 						</AccordionTrigger>
@@ -2716,7 +2742,7 @@ export function ClientDetailsView({
 																		variant="destructive"
 																		className="text-xs"
 																	>
-																		Media Adversa
+																		Medios Adversos
 																	</Badge>
 																)}
 																{!bc.isPEP &&
@@ -2869,6 +2895,7 @@ export function ClientDetailsView({
 							clientId={client.id}
 							clientEmail={client.email ?? null}
 							kycSelfServiceUrl={getKycBaseUrl()}
+							selfServiceMode={orgSettings?.selfServiceMode ?? "automatic"}
 						/>
 					</AccordionContent>
 				</AccordionItem>

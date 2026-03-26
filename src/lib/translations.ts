@@ -797,6 +797,12 @@ export const translations = {
 		commonNotSpecified: "No especificado",
 		commonInvalidDate: "Fecha inválida",
 		commonDocuments: "Documentos",
+		documentsLegalBasisArt18:
+			"Requeridos conforme al Art. 18-I LFPIORPI (identificación con documentos con reconocimiento oficial).",
+		documentsOptionalBanner:
+			"Documentos opcionales — Las operaciones del cliente están por debajo del umbral de identificación (Art. 17 LFPIORPI).",
+		documentsRequiredBanner:
+			"Documentos obligatorios conforme Art. 18-I LFPIORPI.",
 		commonLoadMissing: "Cargar faltantes",
 		commonNewRecord: "Nuevo Registro",
 
@@ -1349,6 +1355,7 @@ export const translations = {
 		noticeSentSuffix: "enviado",
 		noticeSentSuffixPlural: "enviados",
 		noticePeriodLabel: "Período: ",
+		noticePeriodPlaceholder: "Selecciona un período",
 		noticePeriodTo: " al ",
 		noticeNameLabel: "Nombre del Aviso",
 		noticeNamePlaceholder: "Aviso Diciembre 2024",
@@ -2360,6 +2367,11 @@ export const translations = {
 		commonNotSpecified: "Not specified",
 		commonInvalidDate: "Invalid date",
 		commonDocuments: "Documents",
+		documentsLegalBasisArt18:
+			"Required under Art. 18-I LFPIORPI (identification with officially recognized documents).",
+		documentsOptionalBanner:
+			"Optional documents — Client operations are below the identification threshold (Art. 17 LFPIORPI).",
+		documentsRequiredBanner: "Documents required under Art. 18-I LFPIORPI.",
 		commonLoadMissing: "Load missing",
 		commonNewRecord: "New Record",
 
@@ -2911,6 +2923,7 @@ export const translations = {
 		noticeSentSuffix: "sent",
 		noticeSentSuffixPlural: "sent",
 		noticePeriodLabel: "Period: ",
+		noticePeriodPlaceholder: "Select period",
 		noticePeriodTo: " to ",
 		noticeNameLabel: "Notice Name",
 		noticeNamePlaceholder: "Notice December 2024",
