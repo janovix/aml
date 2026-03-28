@@ -32,16 +32,6 @@ vi.mock("@/components/LanguageProvider", () => ({
 	}),
 }));
 
-// Mock window.location
-const mockLocation = {
-	origin: "https://aml.example.com",
-};
-
-Object.defineProperty(window, "location", {
-	value: mockLocation,
-	writable: true,
-});
-
 const createMockSubscription = (
 	overrides?: Partial<SubscriptionStatus>,
 ): SubscriptionStatus => ({
@@ -200,7 +190,7 @@ describe("SubscriptionBanner", () => {
 		);
 	});
 
-	it("generates billing URL from window.location when not provided", async () => {
+	it("defaults billing URL to NEXT_PUBLIC_AUTH_APP_URL /settings/billing when not provided", async () => {
 		const mockStatus = createMockSubscription();
 		vi.spyOn(subscriptionClient, "getSubscriptionStatus").mockResolvedValue(
 			mockStatus,
@@ -216,7 +206,7 @@ describe("SubscriptionBanner", () => {
 		const upgradeLink = screen.getByRole("link", { name: "Upgrade" });
 		expect(upgradeLink).toHaveAttribute(
 			"href",
-			"https://auth.example.com/settings/billing",
+			"https://auth.janovix.workers.dev/settings/billing",
 		);
 	});
 

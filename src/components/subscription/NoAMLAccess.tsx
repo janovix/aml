@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { ShieldX, ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { getAuthAppUrl } from "@/lib/auth/config";
 
 interface NoAMLAccessProps {
 	/** Whether the subscription is still loading */
@@ -26,11 +27,9 @@ interface NoAMLAccessProps {
 export function NoAMLAccess({ isLoading = false }: NoAMLAccessProps) {
 	const { t } = useLanguage();
 
-	// Build auth billing URL based on current location
-	const authBillingUrl =
-		typeof window !== "undefined"
-			? `${window.location.origin.replace("aml.", "auth.")}/settings/billing`
-			: "/settings/billing";
+	const authAppBase = getAuthAppUrl().replace(/\/$/, "");
+	const authBillingUrl = `${authAppBase}/settings/billing`;
+	const authSettingsUrl = `${authAppBase}/settings`;
 
 	if (isLoading) {
 		return (
@@ -79,7 +78,7 @@ export function NoAMLAccess({ isLoading = false }: NoAMLAccessProps) {
 							className="text-muted-foreground"
 						>
 							<Link
-								href={authBillingUrl.replace("/billing", "")}
+								href={authSettingsUrl}
 								target="_blank"
 								rel="noopener noreferrer"
 							>

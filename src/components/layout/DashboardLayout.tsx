@@ -22,9 +22,20 @@ import {
 import type { NotificationSoundType } from "@/lib/settings/types";
 import { ChatProvider, ChatSidebar, NavbarChatButton } from "@/components/chat";
 import { PageStatusProvider } from "@/components/PageStatusProvider";
-import { NotificationsWidget } from "@algenium/blocks";
+import {
+	LanguageSwitcher,
+	NotificationsWidget,
+	ThemeSwitcher,
+} from "@algenium/blocks";
 import { NotificationsProvider } from "@/contexts/notifications-context";
+import { useLanguage } from "@/components/LanguageProvider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { useRouter } from "next/navigation";
+
+const NAVBAR_LANGUAGES = [
+	{ key: "en", label: "EN", nativeName: "English" },
+	{ key: "es", label: "ES", nativeName: "Español" },
+];
 
 interface DashboardLayoutProps {
 	children: React.ReactNode;
@@ -46,6 +57,7 @@ function setCookieValue(name: string, value: string, maxAge: number): void {
 
 function Navbar() {
 	const router = useRouter();
+	const { language, setLanguage, t } = useLanguage();
 
 	const [notificationSound, setNotificationSound] =
 		React.useState<boolean>(true);
@@ -75,26 +87,52 @@ function Navbar() {
 	);
 
 	return (
-		<header className="z-50 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 shadow-xs">
-			<SidebarTrigger className="-ml-1" />
-			<Separator orientation="vertical" className="mx-2 h-6" />
-			<div className="flex-1 min-w-0">
-				<NavBreadcrumb />
-			</div>
-			<div className="flex shrink-0 items-center gap-2">
-				<NotificationsWidget
-					onNotificationClick={handleNotificationClick}
-					size="md"
-					maxVisible={50}
-					playSound={notificationSound}
-					showPulse={true}
-					soundType={notificationSoundType}
-					pulseStyle="ring"
-					soundCooldown={60_000}
-				/>
-				<NavbarChatButton />
-			</div>
-		</header>
+		<TooltipProvider delayDuration={0}>
+			<header className="z-50 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 shadow-xs">
+				<SidebarTrigger className="-ml-1" />
+				<Separator orientation="vertical" className="mx-2 h-6" />
+				<div className="flex-1 min-w-0">
+					<NavBreadcrumb />
+				</div>
+				<div className="flex shrink-0 items-center gap-2">
+					<LanguageSwitcher
+						languages={NAVBAR_LANGUAGES}
+						currentLanguage={language}
+						onLanguageChange={(key) => setLanguage(key as "en" | "es")}
+						labels={{ language: t("languageLabel") }}
+						variant="mini"
+						size="sm"
+						shape="rounded"
+						side="bottom"
+						align="end"
+					/>
+					<ThemeSwitcher
+						variant="mini"
+						size="sm"
+						shape="rounded"
+						side="bottom"
+						align="end"
+						labels={{
+							theme: t("themeLabel"),
+							system: t("themeSystem"),
+							light: t("themeLight"),
+							dark: t("themeDark"),
+						}}
+					/>
+					<NotificationsWidget
+						onNotificationClick={handleNotificationClick}
+						size="md"
+						maxVisible={50}
+						playSound={notificationSound}
+						showPulse={true}
+						soundType={notificationSoundType}
+						pulseStyle="ring"
+						soundCooldown={60_000}
+					/>
+					<NavbarChatButton />
+				</div>
+			</header>
+		</TooltipProvider>
 	);
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
+import { getAuthAppUrl } from "@/lib/auth/config";
 import { ApiError, isUsageLimitError, getUsageLimitDetails } from "./api/http";
 
 /**
@@ -103,12 +104,11 @@ export function extractErrorMessage(error: unknown): string {
 }
 
 /**
- * Builds the auth billing URL for upgrade redirects.
- * Replaces `aml.` in the origin with `auth.` and appends `/settings/billing`.
+ * Builds the auth app billing URL for upgrade redirects (NEXT_PUBLIC_AUTH_APP_URL).
  */
 function getBillingUrl(): string {
-	if (typeof window === "undefined") return "/settings/billing";
-	return `${window.location.origin.replace("aml.", "auth.")}/settings/billing`;
+	const base = getAuthAppUrl().replace(/\/$/, "");
+	return `${base}/settings/billing`;
 }
 
 /**
