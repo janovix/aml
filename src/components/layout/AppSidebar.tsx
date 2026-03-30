@@ -45,7 +45,6 @@ import {
 import { NavUser } from "./NavUser";
 import { AppSwitcher } from "./AppSwitcher";
 import { ActivityChip } from "./ActivityChip";
-import { LanguageSwitcher, ThemeSwitcher } from "@algenium/blocks";
 import {
 	getAuthAppUrl,
 	getAuthServiceUrl,
@@ -527,42 +526,6 @@ export function AppSidebar({
 			</SidebarContent>
 
 			<SidebarFooter className="border-t border-sidebar-border">
-				{/* Language and Theme Switchers */}
-				<div className="flex items-center justify-between px-2 py-2 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-1">
-					<LanguageSwitcher
-						variant="default"
-						size="sm"
-						shape="rounded"
-						showIcon
-						side="right"
-						align="start"
-						className="group-data-[collapsible=icon]:hidden"
-					/>
-					<LanguageSwitcher
-						variant="mini"
-						size="sm"
-						shape="rounded"
-						side="right"
-						align="center"
-						className="hidden group-data-[collapsible=icon]:flex"
-					/>
-					<ThemeSwitcher
-						variant="default"
-						size="sm"
-						shape="rounded"
-						side="right"
-						align="start"
-						className="group-data-[collapsible=icon]:hidden"
-					/>
-					<ThemeSwitcher
-						variant="mini"
-						size="sm"
-						shape="rounded"
-						side="right"
-						align="center"
-						className="hidden group-data-[collapsible=icon]:flex"
-					/>
-				</div>
 				<NavUser user={user} isLoading={isPending} onLogout={handleLogout} />
 			</SidebarFooter>
 

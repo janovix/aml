@@ -22,9 +22,39 @@ import {
 import type { NotificationSoundType } from "@/lib/settings/types";
 import { ChatProvider, ChatSidebar, NavbarChatButton } from "@/components/chat";
 import { PageStatusProvider } from "@/components/PageStatusProvider";
-import { NotificationsWidget } from "@algenium/blocks";
+import {
+	LanguageSwitcher,
+	NotificationsWidget,
+	ThemeSwitcher,
+} from "@algenium/blocks";
 import { NotificationsProvider } from "@/contexts/notifications-context";
+import { useLanguage } from "@/components/LanguageProvider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { useRouter } from "next/navigation";
+import type { Language } from "@/lib/translations";
+
+const NAVBAR_LANGUAGE_META = {
+	en: { label: "EN", nativeName: "English" },
+	es: { label: "ES", nativeName: "Español" },
+} satisfies Record<Language, { label: string; nativeName: string }>;
+
+const NAVBAR_LANGUAGES = (Object.keys(NAVBAR_LANGUAGE_META) as Language[]).map(
+	(key) => ({ key, ...NAVBAR_LANGUAGE_META[key] }),
+);
+
+function isLanguage(key: string): key is Language {
+	return Object.prototype.hasOwnProperty.call(NAVBAR_LANGUAGE_META, key);
+}
+
+/** Optional overrides for the dashboard header (e.g. Storybook controls). */
+export interface DashboardHeaderToolbarProps {
+	currentLanguage?: Language;
+	onLanguageChange?: (lang: Language) => void;
+	notificationSound?: boolean;
+	notificationSoundType?: NotificationSoundType;
+	showPulse?: boolean;
+	maxVisible?: number;
+}
 
 interface DashboardLayoutProps {
 	children: React.ReactNode;
@@ -32,6 +62,8 @@ interface DashboardLayoutProps {
 	initialSidebarCollapsed?: boolean;
 	/** When true, hides sidebar navigation groups and the top navbar */
 	hideNavigation?: boolean;
+	/** Toolbar overrides for testing / Storybook */
+	headerToolbar?: DashboardHeaderToolbarProps;
 }
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
@@ -44,26 +76,58 @@ function setCookieValue(name: string, value: string, maxAge: number): void {
 	document.cookie = `${name}=${value}; path=/; max-age=${maxAge}`;
 }
 
-function Navbar() {
+function DashboardHeader({
+	toolbar,
+}: {
+	toolbar?: DashboardHeaderToolbarProps;
+}) {
 	const router = useRouter();
+	const {
+		language: ctxLanguage,
+		setLanguage: ctxSetLanguage,
+		t,
+	} = useLanguage();
 
-	const [notificationSound, setNotificationSound] =
+	const language = toolbar?.currentLanguage ?? ctxLanguage;
+	const setLanguage = toolbar?.onLanguageChange ?? ctxSetLanguage;
+
+	const [internalNotificationSound, setInternalNotificationSound] =
 		React.useState<boolean>(true);
-	const [notificationSoundType, setNotificationSoundType] =
+	const [internalNotificationSoundType, setInternalNotificationSoundType] =
 		React.useState<NotificationSoundType>("chime");
 
+	const notificationSoundControlled = toolbar?.notificationSound !== undefined;
+	const notificationSoundTypeControlled =
+		toolbar?.notificationSoundType !== undefined;
+
 	React.useEffect(() => {
+		if (notificationSoundControlled && notificationSoundTypeControlled) {
+			return;
+		}
 		async function loadNotificationPrefs() {
 			try {
 				const prefs = await getUIPreferences();
-				setNotificationSound(prefs.notificationSound ?? true);
-				setNotificationSoundType(prefs.notificationSoundType ?? "chime");
+				if (!notificationSoundControlled) {
+					setInternalNotificationSound(prefs.notificationSound ?? true);
+				}
+				if (!notificationSoundTypeControlled) {
+					setInternalNotificationSoundType(
+						prefs.notificationSoundType ?? "chime",
+					);
+				}
 			} catch {
 				// Silently fail — defaults remain
 			}
 		}
 		loadNotificationPrefs();
-	}, []);
+	}, [notificationSoundControlled, notificationSoundTypeControlled]);
+
+	const notificationSound =
+		toolbar?.notificationSound ?? internalNotificationSound;
+	const notificationSoundType =
+		toolbar?.notificationSoundType ?? internalNotificationSoundType;
+	const showPulse = toolbar?.showPulse ?? true;
+	const maxVisible = toolbar?.maxVisible ?? 50;
 
 	const handleNotificationClick = React.useCallback(
 		(notification: { href?: string }) => {
@@ -74,28 +138,67 @@ function Navbar() {
 		[router],
 	);
 
-	return (
-		<header className="z-50 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 shadow-xs">
-			<SidebarTrigger className="-ml-1" />
-			<Separator orientation="vertical" className="mx-2 h-6" />
-			<div className="flex-1 min-w-0">
-				<NavBreadcrumb />
-			</div>
-			<div className="flex shrink-0 items-center gap-2">
-				<NotificationsWidget
-					onNotificationClick={handleNotificationClick}
-					size="md"
-					maxVisible={50}
-					playSound={notificationSound}
-					showPulse={true}
-					soundType={notificationSoundType}
-					pulseStyle="ring"
-					soundCooldown={60_000}
-				/>
-				<NavbarChatButton />
-			</div>
-		</header>
+	const handleLanguageChange = React.useCallback(
+		(key: string) => {
+			if (isLanguage(key)) {
+				setLanguage(key);
+			}
+		},
+		[setLanguage],
 	);
+
+	return (
+		<TooltipProvider delayDuration={0}>
+			<header className="z-50 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 shadow-xs">
+				<SidebarTrigger className="-ml-1" />
+				<Separator orientation="vertical" className="mx-2 h-6" />
+				<div className="flex-1 min-w-0">
+					<NavBreadcrumb />
+				</div>
+				<div className="flex shrink-0 items-center gap-2">
+					<LanguageSwitcher
+						languages={NAVBAR_LANGUAGES}
+						currentLanguage={language}
+						onLanguageChange={handleLanguageChange}
+						labels={{ language: t("languageLabel") }}
+						variant="mini"
+						size="sm"
+						shape="rounded"
+						side="bottom"
+						align="end"
+					/>
+					<ThemeSwitcher
+						variant="mini"
+						size="sm"
+						shape="rounded"
+						side="bottom"
+						align="end"
+						labels={{
+							theme: t("themeLabel"),
+							system: t("themeSystem"),
+							light: t("themeLight"),
+							dark: t("themeDark"),
+						}}
+					/>
+					<NotificationsWidget
+						onNotificationClick={handleNotificationClick}
+						size="md"
+						maxVisible={maxVisible}
+						playSound={notificationSound}
+						showPulse={showPulse}
+						soundType={notificationSoundType}
+						pulseStyle="ring"
+						soundCooldown={60_000}
+					/>
+					<NavbarChatButton />
+				</div>
+			</header>
+		</TooltipProvider>
+	);
+}
+
+function Navbar({ toolbar }: { toolbar?: DashboardHeaderToolbarProps }) {
+	return <DashboardHeader toolbar={toolbar} />;
 }
 
 function DashboardFooter() {
@@ -176,6 +279,7 @@ export function DashboardLayout({
 	children,
 	initialSidebarCollapsed = false,
 	hideNavigation = false,
+	headerToolbar,
 }: DashboardLayoutProps) {
 	// Sidebar state - initialized with server-side value
 	const [isCollapsed, setIsCollapsed] = useState(initialSidebarCollapsed);
@@ -278,7 +382,7 @@ export function DashboardLayout({
 									<SidebarTrigger className="-ml-1" />
 								</header>
 							) : (
-								<Navbar />
+								<Navbar toolbar={headerToolbar} />
 							)}
 							<main className="@container/main flex min-h-0 flex-1 flex-col overflow-y-auto">
 								<div className="flex flex-1 flex-col p-4 pb-8 @md/main:p-6 @md/main:pb-12 @lg/main:p-8 @lg/main:pb-16">

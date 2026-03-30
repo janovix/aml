@@ -134,7 +134,7 @@ function redirectToLogin(request: NextRequest): NextResponse {
 }
 
 /**
- * Redirect to onboarding if user hasn't completed profile setup or has no organization.
+ * Redirect to onboarding if user hasn't completed profile setup (no display name).
  */
 function redirectToOnboarding(request: NextRequest): NextResponse {
 	const authAppUrl = getAuthAppUrl();
@@ -150,16 +150,6 @@ function redirectToOnboarding(request: NextRequest): NextResponse {
 function needsProfileOnboarding(user: { name?: string | null }): boolean {
 	const userName = user?.name?.trim();
 	return !userName;
-}
-
-/**
- * Check if user has any organization membership.
- * This is checked via the organizations list from auth service.
- */
-function hasOrganizationMembership(
-	organizations: Array<{ id: string }> | null,
-): boolean {
-	return organizations !== null && organizations.length > 0;
 }
 
 /**
@@ -410,15 +400,12 @@ export async function middleware(request: NextRequest) {
 			return addAuthCookies(onboardingResponse, authServiceSetCookies);
 		}
 
-		// Fetch user organizations to check if they have any membership
+		// Fetch user organizations for routing (vanity/path rewrite, access checks).
+		// Zero orgs does not redirect to onboarding here — that caused a loop with auth
+		// when the session still had activeOrganizationId but list-with-role returned [].
+		// Downstream routing sends users to "/" or shows NoAMLAccess in org layouts.
 		const orgsData = await fetchUserOrganizations(cookieHeader);
 		userOrganizations = orgsData?.organizations ?? null;
-
-		// Check if user has any organization membership
-		if (!hasOrganizationMembership(userOrganizations)) {
-			const onboardingResponse = redirectToOnboarding(request);
-			return addAuthCookies(onboardingResponse, authServiceSetCookies);
-		}
 	} catch (error) {
 		console.error("[AML Middleware] Error during validation:", error);
 		return redirectToLogin(request);
@@ -442,12 +429,19 @@ export async function middleware(request: NextRequest) {
 		const organizations = userOrganizations ?? [];
 
 		if (organizations.length === 0) {
-			// User has no orgs - redirect to index to create one
-			// In vanity mode, we need to redirect to a path-based URL
-			const redirectResponse = NextResponse.redirect(
-				createExternalUrl("/", request),
-			);
-			return addAuthCookies(redirectResponse, authServiceSetCookies);
+			// Zero orgs on vanity host: do not redirect to "/" — that can loop (same host,
+			// session still has activeOrganizationId). Let the app handle empty org state.
+			const nextResponse = NextResponse.next({
+				request: {
+					headers: buildDataHeaders(
+						request.headers,
+						sessionData,
+						[],
+						activeOrganizationId,
+					),
+				},
+			});
+			return addAuthCookies(nextResponse, authServiceSetCookies);
 		}
 
 		if (!hasAccessToOrg(organizations, orgSlug)) {
