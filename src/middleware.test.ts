@@ -55,6 +55,34 @@ describe("middleware", () => {
 		expect(location).toBeNull();
 	});
 
+	it("should not redirect on vanity host when user has zero organizations (avoid redirect loop)", async () => {
+		mockGetSessionCookie.mockReturnValue("session-token-123");
+		mockFetch
+			.mockResolvedValueOnce({
+				ok: true,
+				headers: { getSetCookie: () => [] },
+				json: () =>
+					Promise.resolve({
+						session: {
+							id: "s1",
+							activeOrganizationId: "orphan-org-id",
+						},
+						user: { id: "u1", name: "Test User", banned: false },
+					}),
+			})
+			.mockResolvedValueOnce({
+				ok: true,
+				headers: { getSetCookie: () => [] },
+				json: () => Promise.resolve({ success: true, data: [] }),
+			});
+
+		const request = new NextRequest("https://acme.example.com/");
+		const response = await middleware(request);
+
+		expect(response.status).toBe(200);
+		expect(response.headers.get("location")).toBeNull();
+	});
+
 	it("should still redirect to onboarding when user has no display name", async () => {
 		mockGetSessionCookie.mockReturnValue("session-token-123");
 		mockFetch.mockResolvedValue({

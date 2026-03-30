@@ -12,6 +12,7 @@ import {
 import { ShieldX, ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { getAuthAppUrl } from "@/lib/auth/config";
+import { getBillingUrl } from "@/lib/mutations";
 
 interface NoAMLAccessProps {
 	/** Whether the subscription is still loading */
@@ -28,7 +29,7 @@ export function NoAMLAccess({ isLoading = false }: NoAMLAccessProps) {
 	const { t } = useLanguage();
 
 	const authAppBase = getAuthAppUrl().replace(/\/$/, "");
-	const authBillingUrl = `${authAppBase}/settings/billing`;
+	const authBillingUrl = getBillingUrl();
 	const authSettingsUrl = `${authAppBase}/settings`;
 
 	if (isLoading) {

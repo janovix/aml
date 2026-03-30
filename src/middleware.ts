@@ -429,12 +429,19 @@ export async function middleware(request: NextRequest) {
 		const organizations = userOrganizations ?? [];
 
 		if (organizations.length === 0) {
-			// User has no orgs - redirect to index to create one
-			// In vanity mode, we need to redirect to a path-based URL
-			const redirectResponse = NextResponse.redirect(
-				createExternalUrl("/", request),
-			);
-			return addAuthCookies(redirectResponse, authServiceSetCookies);
+			// Zero orgs on vanity host: do not redirect to "/" — that can loop (same host,
+			// session still has activeOrganizationId). Let the app handle empty org state.
+			const nextResponse = NextResponse.next({
+				request: {
+					headers: buildDataHeaders(
+						request.headers,
+						sessionData,
+						[],
+						activeOrganizationId,
+					),
+				},
+			});
+			return addAuthCookies(nextResponse, authServiceSetCookies);
 		}
 
 		if (!hasAccessToOrg(organizations, orgSlug)) {

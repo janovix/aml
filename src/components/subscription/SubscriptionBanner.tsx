@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Zap, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { getAuthAppUrl } from "@/lib/auth/config";
+import { getBillingUrl } from "@/lib/mutations";
 
 interface SubscriptionBannerProps {
 	/** The billing page URL */
@@ -34,8 +34,7 @@ export function SubscriptionBanner({
 	const { t } = useLanguage();
 	const [dismissed, setDismissed] = useState(false);
 
-	const authBillingUrl =
-		billingUrl || `${getAuthAppUrl().replace(/\/$/, "")}/settings/billing`;
+	const authBillingUrl = billingUrl || getBillingUrl();
 
 	// Don't render if dismissed or no subscription context
 	if (dismissed || !subscription) {

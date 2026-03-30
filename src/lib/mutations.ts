@@ -106,7 +106,7 @@ export function extractErrorMessage(error: unknown): string {
 /**
  * Builds the auth app billing URL for upgrade redirects (NEXT_PUBLIC_AUTH_APP_URL).
  */
-function getBillingUrl(): string {
+export function getBillingUrl(): string {
 	const base = getAuthAppUrl().replace(/\/$/, "");
 	return `${base}/settings/billing`;
 }
