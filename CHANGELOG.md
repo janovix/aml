@@ -1,3 +1,10 @@
+# [1.12.0-rc.9](https://github.com/janovix/aml/compare/v1.12.0-rc.8...v1.12.0-rc.9) (2026-03-30)
+
+
+### Bug Fixes
+
+* update theme color in web manifest and refactor middleware to prevent redirect loop for users with zero organizations ([78f5f50](https://github.com/janovix/aml/commit/78f5f500684dada0965eee03c2acadcd50916d0d))
+
 # [1.12.0-rc.8](https://github.com/janovix/aml/compare/v1.12.0-rc.7...v1.12.0-rc.8) (2026-03-18)
 
 
