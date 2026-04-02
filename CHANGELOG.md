@@ -1,3 +1,10 @@
+## [1.12.1-rc.2](https://github.com/janovix/aml/compare/v1.12.1-rc.1...v1.12.1-rc.2) (2026-04-02)
+
+
+### Bug Fixes
+
+* enhance NoAMLAccess component and improve DashboardLayout responsiveness ([5e66754](https://github.com/janovix/aml/commit/5e66754bb3b809934ed2726562d55d00a3f40956))
+
 ## [1.12.1-rc.1](https://github.com/janovix/aml/compare/v1.12.0...v1.12.1-rc.1) (2026-03-30)
 
 
