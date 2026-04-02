@@ -20,10 +20,11 @@ interface NoAMLAccessProps {
 }
 
 /**
- * Full-page blocker shown when user doesn't have AML product access
+ * Blocker shown when user doesn't have AML product access.
  *
- * This is displayed when a user doesn't have an active subscription
- * (Stripe or enterprise license) and tries to access the AML application.
+ * Renders inside `DashboardLayout` with `hideNavigation` so the user can
+ * switch org, sign out, and change language/theme. Also used as a standalone
+ * full-viewport view when `isLoading` (skeleton state).
  */
 export function NoAMLAccess({ isLoading = false }: NoAMLAccessProps) {
 	const { t } = useLanguage();
@@ -34,7 +35,7 @@ export function NoAMLAccess({ isLoading = false }: NoAMLAccessProps) {
 
 	if (isLoading) {
 		return (
-			<div className="flex min-h-screen items-center justify-center bg-background">
+			<div className="flex min-h-0 flex-1 items-center justify-center bg-background">
 				<div className="text-center">
 					<Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
 					<p className="mt-4 text-sm text-muted-foreground">{t("loading")}</p>
@@ -44,7 +45,7 @@ export function NoAMLAccess({ isLoading = false }: NoAMLAccessProps) {
 	}
 
 	return (
-		<div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-4">
+		<div className="flex min-h-0 flex-1 flex-col items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-4">
 			<Card className="max-w-md w-full text-center shadow-lg">
 				<CardHeader className="space-y-4">
 					<div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
