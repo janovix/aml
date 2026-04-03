@@ -1,3 +1,10 @@
+# [1.13.0-rc.1](https://github.com/janovix/aml/compare/v1.12.1-rc.2...v1.13.0-rc.1) (2026-04-03)
+
+
+### Features
+
+* add ApproachingUsageLimitBanner component and integrate it into OrgSlugLayout ([104adb7](https://github.com/janovix/aml/commit/104adb78f9a682c8a0e6c918729d6244d7a95019))
+
 ## [1.12.1-rc.2](https://github.com/janovix/aml/compare/v1.12.1-rc.1...v1.12.1-rc.2) (2026-04-02)
 
 
