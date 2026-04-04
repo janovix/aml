@@ -1,3 +1,10 @@
+# [1.13.0-rc.2](https://github.com/janovix/aml/compare/v1.13.0-rc.1...v1.13.0-rc.2) (2026-04-04)
+
+
+### Features
+
+* add EntitlementAttributionBar component to DashboardLayout and update translations for subscription information ([074f9bd](https://github.com/janovix/aml/commit/074f9bd9f7bca0c113d4ecd61ec4203573112a4d))
+
 # [1.13.0-rc.1](https://github.com/janovix/aml/compare/v1.12.1-rc.2...v1.13.0-rc.1) (2026-04-03)
 
 
