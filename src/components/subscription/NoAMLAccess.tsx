@@ -64,11 +64,7 @@ export function NoAMLAccess({ isLoading = false }: NoAMLAccessProps) {
 					</p>
 					<div className="flex flex-col gap-3">
 						<Button asChild size="lg" className="w-full">
-							<Link
-								href={authBillingUrl}
-								target="_blank"
-								rel="noopener noreferrer"
-							>
+							<Link href={authBillingUrl}>
 								{t("subscription.noAmlAccess.upgradeCta")}
 								<ArrowRight className="ml-2 h-4 w-4" />
 							</Link>
@@ -79,11 +75,7 @@ export function NoAMLAccess({ isLoading = false }: NoAMLAccessProps) {
 							size="sm"
 							className="text-muted-foreground"
 						>
-							<Link
-								href={authSettingsUrl}
-								target="_blank"
-								rel="noopener noreferrer"
-							>
+							<Link href={authSettingsUrl}>
 								{t("subscription.noAmlAccess.backToSettings")}
 							</Link>
 						</Button>

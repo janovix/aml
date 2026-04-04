@@ -89,11 +89,7 @@ export function SubscriptionBanner({
 				</div>
 				<div className="flex items-center gap-2">
 					<Button size="sm" variant="outline" asChild>
-						<Link
-							href={authBillingUrl}
-							target="_blank"
-							rel="noopener noreferrer"
-						>
+						<Link href={authBillingUrl}>
 							{t("subscription.banner.upgrade")}
 						</Link>
 					</Button>

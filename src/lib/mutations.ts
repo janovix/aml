@@ -125,7 +125,7 @@ export function showUsageLimitToast(error: unknown): void {
 		action: {
 			label: "Mejorar plan",
 			onClick: () => {
-				window.open(getBillingUrl(), "_blank", "noopener,noreferrer");
+				window.location.assign(getBillingUrl());
 			},
 		},
 	});
