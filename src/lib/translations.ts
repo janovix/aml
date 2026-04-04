@@ -1584,6 +1584,10 @@ export const translations = {
 		clientKycComplementary: "Información complementaria KYC",
 		clientKycComplementaryDesc:
 			"Datos adicionales para debida diligencia y perfil de riesgo",
+
+		// Footer — org subscription scope
+		entitlementFooter:
+			"El acceso sigue el plan de la organización {organization} ({plan}). La suscripción la gestiona el propietario de la organización.",
 	},
 	en: {
 		// Common
@@ -3153,6 +3157,10 @@ export const translations = {
 		clientKycComplementary: "Additional KYC Information",
 		clientKycComplementaryDesc:
 			"Additional data for due diligence and risk profiling",
+
+		// Footer — org subscription scope
+		entitlementFooter:
+			"Access follows this organization's plan: {organization} ({plan}). Billing is on the organization owner.",
 	},
 } as const;
 

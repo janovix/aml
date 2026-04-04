@@ -34,6 +34,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useRouter } from "next/navigation";
 import type { Language } from "@/lib/translations";
 import { cn } from "@/lib/utils";
+import { EntitlementAttributionBar } from "@/components/layout/EntitlementAttributionBar";
 
 const NAVBAR_LANGUAGE_META = {
 	en: { label: "EN", nativeName: "English" },
@@ -265,32 +266,42 @@ function DashboardFooter() {
 		};
 	}, []);
 
-	// Match SidebarFooter + NavUser: p-2 + row + p-2 + border-t (sidebar.tsx menu button lg)
+	// Match SidebarFooter + NavUser: p-2 + row + border-t (sidebar.tsx menu button lg).
+	// Narrow: stacked fineprint + actions row; sm+: single row (fineprint | clock + UMA + logo).
 	return (
 		<footer
 			className={cn(
-				"box-border flex shrink-0 items-center justify-between border-t border-sidebar-border px-4 py-2",
-				iconRail ? "h-[calc(1rem+2rem+1px)]" : "h-[calc(1rem+3rem+1px)]",
+				"box-border flex shrink-0 flex-col gap-2 border-t border-sidebar-border px-4 py-2",
+				"sm:flex-row sm:items-center sm:justify-between sm:gap-4",
 			)}
 		>
+			<div className="min-w-0 sm:flex-1">
+				<EntitlementAttributionBar className="text-center sm:text-start" />
+			</div>
 			<div
 				className={cn(
-					"flex items-center gap-2 overflow-hidden",
-					iconRail ? "min-h-8 max-h-8" : "min-h-12 max-h-12",
+					"flex w-full shrink-0 items-center justify-between gap-2 sm:w-auto sm:justify-end sm:gap-4",
 				)}
 			>
-				<NavbarClock
-					timezone={effectiveTimezone}
-					defaultFormat={effectiveClockFormat}
-					size="sm"
-					showTimezoneMismatch={true}
+				<div
+					className={cn(
+						"flex items-center gap-2 overflow-hidden",
+						iconRail ? "min-h-8 max-h-8" : "min-h-12 max-h-12",
+					)}
+				>
+					<NavbarClock
+						timezone={effectiveTimezone}
+						defaultFormat={effectiveClockFormat}
+						size="sm"
+						showTimezoneMismatch={true}
+					/>
+					<UmaBadge />
+				</div>
+				<Logo
+					variant="logo"
+					className={cn("opacity-40", iconRail ? "max-h-6" : "max-h-8")}
 				/>
-				<UmaBadge />
 			</div>
-			<Logo
-				variant="logo"
-				className={cn("opacity-40", iconRail ? "max-h-6" : "max-h-8")}
-			/>
 		</footer>
 	);
 }
