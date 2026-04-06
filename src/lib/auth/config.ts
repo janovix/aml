@@ -41,3 +41,11 @@ export const getNotificationsServiceUrl = (): string => {
 		process.env.NEXT_PUBLIC_NOTIFICATIONS_SERVICE_URL,
 	);
 };
+
+/** flags-svc base URL for server-side evaluation (use with JWT). */
+export const getFlagsServiceUrl = (): string => {
+	return requireEnv(
+		"NEXT_PUBLIC_FLAGS_SERVICE_URL",
+		process.env.NEXT_PUBLIC_FLAGS_SERVICE_URL,
+	);
+};

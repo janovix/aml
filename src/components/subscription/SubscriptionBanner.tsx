@@ -8,6 +8,7 @@ import { Zap, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { getBillingUrl } from "@/lib/mutations";
+import { useFlags } from "@/hooks/useFlags";
 
 interface SubscriptionBannerProps {
 	/** The billing page URL */
@@ -33,6 +34,13 @@ export function SubscriptionBanner({
 	const subscription = useSubscriptionSafe();
 	const { t } = useLanguage();
 	const [dismissed, setDismissed] = useState(false);
+	const { flags: stripeFlags, error: stripeFlagsError } = useFlags([
+		"stripe-billing-enabled",
+	]);
+	const stripeBillingEnabled =
+		stripeFlagsError !== null
+			? true
+			: stripeFlags["stripe-billing-enabled"] !== false;
 
 	const authBillingUrl = billingUrl || getBillingUrl();
 
@@ -51,6 +59,10 @@ export function SubscriptionBanner({
 
 	// Enterprise license users get a positive confirmation, not a warning
 	if (isEnterprise) {
+		return null;
+	}
+
+	if (!stripeBillingEnabled) {
 		return null;
 	}
 

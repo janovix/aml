@@ -13,6 +13,7 @@ import { ShieldX, ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { getAuthAppUrl } from "@/lib/auth/config";
 import { getBillingUrl } from "@/lib/mutations";
+import { useFlags } from "@/hooks/useFlags";
 
 interface NoAMLAccessProps {
 	/** Whether the subscription is still loading */
@@ -28,6 +29,13 @@ interface NoAMLAccessProps {
  */
 export function NoAMLAccess({ isLoading = false }: NoAMLAccessProps) {
 	const { t } = useLanguage();
+	const { flags: stripeFlags, error: stripeFlagsError } = useFlags([
+		"stripe-billing-enabled",
+	]);
+	const stripeBillingEnabled =
+		stripeFlagsError !== null
+			? true
+			: stripeFlags["stripe-billing-enabled"] !== false;
 
 	const authAppBase = getAuthAppUrl().replace(/\/$/, "");
 	const authBillingUrl = getBillingUrl();
@@ -63,12 +71,18 @@ export function NoAMLAccess({ isLoading = false }: NoAMLAccessProps) {
 						{t("subscription.noAmlAccess.upgradePrompt")}
 					</p>
 					<div className="flex flex-col gap-3">
-						<Button asChild size="lg" className="w-full">
-							<Link href={authBillingUrl}>
-								{t("subscription.noAmlAccess.upgradeCta")}
-								<ArrowRight className="ml-2 h-4 w-4" />
-							</Link>
-						</Button>
+						{stripeBillingEnabled ? (
+							<Button asChild size="lg" className="w-full">
+								<Link href={authBillingUrl}>
+									{t("subscription.noAmlAccess.upgradeCta")}
+									<ArrowRight className="ml-2 h-4 w-4" />
+								</Link>
+							</Button>
+						) : (
+							<p className="text-sm text-muted-foreground">
+								{t("subscription.noAmlAccess.contactAdmin")}
+							</p>
+						)}
 						<Button
 							variant="ghost"
 							asChild

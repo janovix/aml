@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { getUsageDetails } from "@/lib/subscription/subscriptionClient";
-import { getAuthServiceUrl } from "@/lib/auth/config";
+import { getAuthAppUrl } from "@/lib/auth/config";
+import { useFlags } from "@/hooks/useFlags";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
@@ -14,6 +15,14 @@ const THRESHOLD_PCT = 80;
  * Dismissible banner when any AML metered metric is at/above 80% of included quota.
  */
 export function ApproachingUsageLimitBanner() {
+	const { flags: stripeFlags, error: stripeFlagsError } = useFlags([
+		"stripe-billing-enabled",
+	]);
+	const stripeBillingEnabled =
+		stripeFlagsError !== null
+			? true
+			: stripeFlags["stripe-billing-enabled"] !== false;
+
 	const [visible, setVisible] = useState(false);
 	const [text, setText] = useState("");
 	const [storageKey, setStorageKey] = useState<string | null>(null);
@@ -67,7 +76,7 @@ export function ApproachingUsageLimitBanner() {
 
 	if (!visible || !storageKey) return null;
 
-	const billingUrl = `${getAuthServiceUrl()}/settings/billing`;
+	const billingUrl = `${getAuthAppUrl().replace(/\/$/, "")}/settings/billing`;
 
 	return (
 		<Alert className="mb-4 border-amber-500/50 bg-amber-500/10">
@@ -77,9 +86,11 @@ export function ApproachingUsageLimitBanner() {
 			<AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 				<span className="text-sm">{text}</span>
 				<div className="flex shrink-0 items-center gap-2">
-					<Button asChild variant="outline" size="sm">
-						<Link href={billingUrl}>Usage & billing</Link>
-					</Button>
+					{stripeBillingEnabled && (
+						<Button asChild variant="outline" size="sm">
+							<Link href={billingUrl}>Usage & billing</Link>
+						</Button>
+					)}
 					<Button
 						variant="ghost"
 						size="icon"

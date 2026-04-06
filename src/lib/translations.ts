@@ -744,6 +744,8 @@ export const translations = {
 		"subscription.noAmlAccess.upgradePrompt":
 			"Para acceder a funciones de cumplimiento AML, informes y más, mejora a un plan que incluya AML.",
 		"subscription.noAmlAccess.upgradeCta": "Ver planes disponibles",
+		"subscription.noAmlAccess.contactAdmin":
+			"El acceso se gestiona por licencia. Contacta a tu administrador.",
 		"subscription.noAmlAccess.backToSettings": "Ir a configuración",
 
 		// Common additions
@@ -2318,6 +2320,8 @@ export const translations = {
 		"subscription.noAmlAccess.upgradePrompt":
 			"To access AML compliance features, reports, and more, upgrade to a plan that includes AML.",
 		"subscription.noAmlAccess.upgradeCta": "View available plans",
+		"subscription.noAmlAccess.contactAdmin":
+			"Access is managed by your organization’s license. Contact your administrator.",
 		"subscription.noAmlAccess.backToSettings": "Go to settings",
 
 		// Common additions
