@@ -1,3 +1,10 @@
+# [1.13.0-rc.3](https://github.com/janovix/aml/compare/v1.13.0-rc.2...v1.13.0-rc.3) (2026-04-06)
+
+
+### Features
+
+* add flags service integration and update subscription components to utilize feature flags ([f40b0cc](https://github.com/janovix/aml/commit/f40b0cc9e55aaea4d78691af09ef714f9524f361))
+
 # [1.13.0-rc.2](https://github.com/janovix/aml/compare/v1.13.0-rc.1...v1.13.0-rc.2) (2026-04-04)
 
 
