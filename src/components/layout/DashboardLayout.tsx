@@ -6,6 +6,7 @@ import {
 	SidebarInset,
 	SidebarProvider,
 	SidebarTrigger,
+	useSidebar,
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { AppSidebar } from "./AppSidebar";
@@ -32,6 +33,8 @@ import { useLanguage } from "@/components/LanguageProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useRouter } from "next/navigation";
 import type { Language } from "@/lib/translations";
+import { cn } from "@/lib/utils";
+import { EntitlementAttributionBar } from "@/components/layout/EntitlementAttributionBar";
 
 const NAVBAR_LANGUAGE_META = {
 	en: { label: "EN", nativeName: "English" },
@@ -202,6 +205,10 @@ function Navbar({ toolbar }: { toolbar?: DashboardHeaderToolbarProps }) {
 }
 
 function DashboardFooter() {
+	const { state, isMobile } = useSidebar();
+	/** Icon rail: NavUser is size-8 (2rem), expanded is h-12 (3rem); SidebarFooter keeps p-2. */
+	const iconRail = state === "collapsed" && !isMobile;
+
 	const currentOrg = useOrgStore((state) => state.currentOrg);
 	const orgTimezone =
 		currentOrg?.settings?.timezone || DEFAULT_ORG_SETTINGS.timezone;
@@ -259,18 +266,42 @@ function DashboardFooter() {
 		};
 	}, []);
 
+	// Match SidebarFooter + NavUser: p-2 + row + border-t (sidebar.tsx menu button lg).
+	// Narrow: stacked fineprint + actions row; sm+: single row (fineprint | clock + UMA + logo).
 	return (
-		<footer className="flex shrink-0 items-center justify-between border-t px-4 py-3">
-			<div className="flex items-center gap-2">
-				<NavbarClock
-					timezone={effectiveTimezone}
-					defaultFormat={effectiveClockFormat}
-					size="sm"
-					showTimezoneMismatch={true}
-				/>
-				<UmaBadge />
+		<footer
+			className={cn(
+				"box-border flex shrink-0 flex-col gap-2 border-t border-sidebar-border px-4 py-2",
+				"sm:flex-row sm:items-center sm:justify-between sm:gap-4",
+			)}
+		>
+			<div className="min-w-0 sm:flex-1">
+				<EntitlementAttributionBar className="text-center sm:text-start" />
 			</div>
-			<Logo variant="logo" className="opacity-40" />
+			<div
+				className={cn(
+					"flex w-full shrink-0 items-center justify-between gap-2 sm:w-auto sm:justify-end sm:gap-4",
+				)}
+			>
+				<div
+					className={cn(
+						"flex items-center gap-2 overflow-hidden",
+						iconRail ? "min-h-8 max-h-8" : "min-h-12 max-h-12",
+					)}
+				>
+					<NavbarClock
+						timezone={effectiveTimezone}
+						defaultFormat={effectiveClockFormat}
+						size="sm"
+						showTimezoneMismatch={true}
+					/>
+					<UmaBadge />
+				</div>
+				<Logo
+					variant="logo"
+					className={cn("opacity-40", iconRail ? "max-h-6" : "max-h-8")}
+				/>
+			</div>
 		</footer>
 	);
 }
@@ -376,14 +407,8 @@ export function DashboardLayout({
 						onOpenChange={handleSidebarOpenChange}
 					>
 						<AppSidebar hideNavigation={hideNavigation} />
-						<SidebarInset className="flex h-screen flex-col overflow-hidden">
-							{hideNavigation ? (
-								<header className="z-50 flex h-16 shrink-0 items-center border-b bg-background px-4 shadow-xs md:hidden">
-									<SidebarTrigger className="-ml-1" />
-								</header>
-							) : (
-								<Navbar toolbar={headerToolbar} />
-							)}
+						<SidebarInset className="flex h-svh flex-col overflow-hidden">
+							<Navbar toolbar={headerToolbar} />
 							<main className="@container/main flex min-h-0 flex-1 flex-col overflow-y-auto">
 								<div className="flex flex-1 flex-col p-4 pb-8 @md/main:p-6 @md/main:pb-12 @lg/main:p-8 @lg/main:pb-16">
 									{children}

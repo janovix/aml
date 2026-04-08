@@ -30,7 +30,7 @@ export function DonationForm({
 				</FieldLabel>
 				<CatalogSelector
 					id="donationType"
-					catalogKey="pld-donation-types"
+					catalogKey="don-operation-types"
 					value={(value.donationType as string) ?? ""}
 					onValueChange={(val) => handleChange("donationType", val ?? "")}
 					placeholder={t("selectPlaceholder")}

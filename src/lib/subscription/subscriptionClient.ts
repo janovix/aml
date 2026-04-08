@@ -68,6 +68,36 @@ interface ApiResponse<T> {
 	error?: string;
 }
 
+/** Matches auth-svc GET /api/subscription/usage-details */
+export interface UsageDetailsPayload {
+	usage: {
+		reports: number;
+		notices: number;
+		alerts: number;
+		operations: number;
+		clients: number;
+		users: number;
+		watchlistQueries: number;
+	};
+	limits: {
+		reports: number;
+		notices: number;
+		alerts: number;
+		operations: number;
+		clients: number;
+		users: number;
+		watchlistQueriesPerMonth: number;
+		maxOrganizations: number;
+	} | null;
+	period: { start: string; end: string };
+	overage: {
+		enabled: boolean;
+		spendLimitCents: number | null;
+		periodChargeCents: number;
+		currency: string;
+	};
+}
+
 /**
  * Get subscription status for current user
  */
@@ -89,6 +119,25 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus | null
 		return result.success ? (result.data ?? null) : null;
 	} catch (error) {
 		console.warn("Error fetching subscription status:", error);
+		return null;
+	}
+}
+
+/**
+ * Usage vs limits for the active org (owner entitlements). Used for nearing-limit UI.
+ */
+export async function getUsageDetails(): Promise<UsageDetailsPayload | null> {
+	try {
+		const response = await fetch(
+			`${getBaseUrl()}/api/subscription/usage-details`,
+			{
+				credentials: "include",
+			},
+		);
+		if (!response.ok) return null;
+		const result = (await response.json()) as ApiResponse<UsageDetailsPayload>;
+		return result.success ? (result.data ?? null) : null;
+	} catch {
 		return null;
 	}
 }

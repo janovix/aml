@@ -95,6 +95,17 @@ export function isOrganizationRequiredError(error: unknown): boolean {
 	return false;
 }
 
+/** Archived or suspended organization — product APIs return 403 with this code */
+export function isOrganizationArchivedError(error: unknown): boolean {
+	if (!(error instanceof ApiError) || error.status !== 403) return false;
+	if (error.code === "ORGANIZATION_ARCHIVED") return true;
+	if (typeof error.body === "object" && error.body !== null) {
+		const c = (error.body as Record<string, unknown>).code;
+		return c === "ORGANIZATION_ARCHIVED";
+	}
+	return false;
+}
+
 /**
  * Check if an error indicates KYC self-service is disabled for the organization.
  * Backend returns 400 with message "SELF_SERVICE_DISABLED" (or code in body).

@@ -6,6 +6,16 @@ import { SubscriptionProvider } from "@/lib/subscription";
 import * as subscriptionClient from "@/lib/subscription/subscriptionClient";
 import type { SubscriptionStatus } from "@/lib/subscription/subscriptionClient";
 
+vi.mock("@/hooks/useFlags", () => ({
+	useFlags: vi.fn(() => ({
+		flags: { "stripe-billing-enabled": true },
+		error: null,
+		isLoading: false,
+	})),
+}));
+
+import { useFlags } from "@/hooks/useFlags";
+
 // Mock next/link
 vi.mock("next/link", () => ({
 	default: ({
@@ -54,9 +64,19 @@ const createMockSubscription = (
 describe("SubscriptionBanner", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		vi.mocked(useFlags).mockReturnValue({
+			flags: { "stripe-billing-enabled": true },
+			error: null,
+			isLoading: false,
+		});
 	});
 
 	it("renders free tier banner", async () => {
+		vi.mocked(useFlags).mockReturnValue({
+			flags: { "stripe-billing-enabled": true },
+			error: null,
+			isLoading: false,
+		});
 		const mockStatus = createMockSubscription();
 		vi.spyOn(subscriptionClient, "getSubscriptionStatus").mockResolvedValue(
 			mockStatus,
@@ -72,6 +92,48 @@ describe("SubscriptionBanner", () => {
 		expect(
 			screen.getByText("Upgrade to unlock more features"),
 		).toBeInTheDocument();
+	});
+
+	it("does not render free tier banner when stripe billing is disabled", async () => {
+		vi.mocked(useFlags).mockReturnValue({
+			flags: { "stripe-billing-enabled": false },
+			error: null,
+			isLoading: false,
+		});
+		const mockStatus = createMockSubscription();
+		vi.spyOn(subscriptionClient, "getSubscriptionStatus").mockResolvedValue(
+			mockStatus,
+		);
+
+		const { container } = render(
+			<SubscriptionProvider>
+				<SubscriptionBanner />
+			</SubscriptionProvider>,
+		);
+
+		await new Promise((resolve) => setTimeout(resolve, 100));
+		expect(container.firstChild).toBeNull();
+	});
+
+	it("renders free tier banner when stripe billing is enabled", async () => {
+		vi.mocked(useFlags).mockReturnValue({
+			flags: { "stripe-billing-enabled": true },
+			error: null,
+			isLoading: false,
+		});
+		const mockStatus = createMockSubscription();
+		vi.spyOn(subscriptionClient, "getSubscriptionStatus").mockResolvedValue(
+			mockStatus,
+		);
+
+		render(
+			<SubscriptionProvider>
+				<SubscriptionBanner />
+			</SubscriptionProvider>,
+		);
+
+		await screen.findByText("Free Tier");
+		expect(screen.getByRole("link", { name: "Upgrade" })).toBeInTheDocument();
 	});
 
 	it("does not render for active Stripe subscription", async () => {

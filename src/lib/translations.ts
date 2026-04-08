@@ -744,6 +744,8 @@ export const translations = {
 		"subscription.noAmlAccess.upgradePrompt":
 			"Para acceder a funciones de cumplimiento AML, informes y más, mejora a un plan que incluya AML.",
 		"subscription.noAmlAccess.upgradeCta": "Ver planes disponibles",
+		"subscription.noAmlAccess.contactAdmin":
+			"El acceso se gestiona por licencia. Contacta a tu administrador.",
 		"subscription.noAmlAccess.backToSettings": "Ir a configuración",
 
 		// Common additions
@@ -1584,6 +1586,10 @@ export const translations = {
 		clientKycComplementary: "Información complementaria KYC",
 		clientKycComplementaryDesc:
 			"Datos adicionales para debida diligencia y perfil de riesgo",
+
+		// Footer — org subscription scope
+		entitlementFooter:
+			"El acceso sigue el plan de la organización {organization} ({plan}). La suscripción la gestiona el propietario de la organización.",
 	},
 	en: {
 		// Common
@@ -2314,6 +2320,8 @@ export const translations = {
 		"subscription.noAmlAccess.upgradePrompt":
 			"To access AML compliance features, reports, and more, upgrade to a plan that includes AML.",
 		"subscription.noAmlAccess.upgradeCta": "View available plans",
+		"subscription.noAmlAccess.contactAdmin":
+			"Access is managed by your organization’s license. Contact your administrator.",
 		"subscription.noAmlAccess.backToSettings": "Go to settings",
 
 		// Common additions
@@ -3153,6 +3161,10 @@ export const translations = {
 		clientKycComplementary: "Additional KYC Information",
 		clientKycComplementaryDesc:
 			"Additional data for due diligence and risk profiling",
+
+		// Footer — org subscription scope
+		entitlementFooter:
+			"Access follows this organization's plan: {organization} ({plan}). Billing is on the organization owner.",
 	},
 } as const;
 

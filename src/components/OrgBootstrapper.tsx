@@ -483,7 +483,13 @@ export function OrgBootstrapper({
 
 	// Subscription gate: block access if user has no active AML subscription
 	if (urlOrgSlug && !hasAMLAccess(bootstrapData.subscription)) {
-		return <NoAMLAccess />;
+		return (
+			<SubscriptionProvider initialData={bootstrapData.subscription}>
+				<DashboardLayout hideNavigation initialSidebarCollapsed={false}>
+					<NoAMLAccess />
+				</DashboardLayout>
+			</SubscriptionProvider>
+		);
 	}
 
 	// Org settings gate: require obligated subject setup before accessing the app

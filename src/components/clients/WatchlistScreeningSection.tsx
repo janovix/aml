@@ -16,10 +16,6 @@ import {
 import { useWatchlistScreening } from "@/hooks/useWatchlistScreening";
 import { getWatchlistBaseUrl } from "@/lib/api/config";
 import { cn } from "@/lib/utils";
-import {
-	ExternalLinkDialog,
-	useExternalLinkRedirect,
-} from "@/components/ExternalLinkDialog";
 import { useWatchlistConfig } from "@/hooks/useWatchlistConfig";
 
 interface WatchlistScreeningSectionProps {
@@ -116,7 +112,6 @@ export function WatchlistScreeningSection({
 			watchlistQueryId,
 			enabled: !!watchlistQueryId,
 		});
-	const extLink = useExternalLinkRedirect();
 	const { features } = useWatchlistConfig();
 
 	if (!watchlistQueryId) {
@@ -284,12 +279,6 @@ export function WatchlistScreeningSection({
 					<p>
 						<a
 							href={`${getWatchlistBaseUrl()}/queries/${data.id}`}
-							onClick={(e) =>
-								extLink.handleExternalLink(
-									`${getWatchlistBaseUrl()}/queries/${data.id}`,
-									e,
-								)
-							}
 							className="inline-flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer"
 						>
 							Query ID: {data.id}
@@ -298,12 +287,6 @@ export function WatchlistScreeningSection({
 					</p>
 					<p>Last Updated: {new Date(data.updatedAt).toLocaleString()}</p>
 				</div>
-				<ExternalLinkDialog
-					open={extLink.isOpen}
-					url={extLink.pendingUrl}
-					onConfirm={extLink.confirm}
-					onCancel={extLink.cancel}
-				/>
 			</CardContent>
 		</Card>
 	);

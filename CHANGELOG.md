@@ -1,9 +1,45 @@
+<<<<<<< dev
+# [1.13.0-rc.4](https://github.com/janovix/aml/compare/v1.13.0-rc.3...v1.13.0-rc.4) (2026-04-08)
+=======
 ## [1.12.1](https://github.com/janovix/aml/compare/v1.12.0...v1.12.1) (2026-03-30)
+>>>>>>> main
 
 
 ### Bug Fixes
 
+<<<<<<< dev
+* update catalogKey in DonationForm component for donation types ([c10a701](https://github.com/janovix/aml/commit/c10a701fa50d67b801fce0bea7f104279cc3fe80))
+
+# [1.13.0-rc.3](https://github.com/janovix/aml/compare/v1.13.0-rc.2...v1.13.0-rc.3) (2026-04-06)
+
+
+### Features
+
+* add flags service integration and update subscription components to utilize feature flags ([f40b0cc](https://github.com/janovix/aml/commit/f40b0cc9e55aaea4d78691af09ef714f9524f361))
+
+# [1.13.0-rc.2](https://github.com/janovix/aml/compare/v1.13.0-rc.1...v1.13.0-rc.2) (2026-04-04)
+
+
+### Features
+
+* add EntitlementAttributionBar component to DashboardLayout and update translations for subscription information ([074f9bd](https://github.com/janovix/aml/commit/074f9bd9f7bca0c113d4ecd61ec4203573112a4d))
+
+# [1.13.0-rc.1](https://github.com/janovix/aml/compare/v1.12.1-rc.2...v1.13.0-rc.1) (2026-04-03)
+
+
+### Features
+
+* add ApproachingUsageLimitBanner component and integrate it into OrgSlugLayout ([104adb7](https://github.com/janovix/aml/commit/104adb78f9a682c8a0e6c918729d6244d7a95019))
+
+## [1.12.1-rc.2](https://github.com/janovix/aml/compare/v1.12.1-rc.1...v1.12.1-rc.2) (2026-04-02)
+
+
+### Bug Fixes
+
+* enhance NoAMLAccess component and improve DashboardLayout responsiveness ([5e66754](https://github.com/janovix/aml/commit/5e66754bb3b809934ed2726562d55d00a3f40956))
+=======
 * update theme color in web manifest and refactor middleware to prevent redirect loop for users with zero organizations ([78f5f50](https://github.com/janovix/aml/commit/78f5f500684dada0965eee03c2acadcd50916d0d))
+>>>>>>> main
 
 ## [1.12.1-rc.1](https://github.com/janovix/aml/compare/v1.12.0...v1.12.1-rc.1) (2026-03-30)
 

@@ -505,12 +505,7 @@ export function AppSidebar({
 										return (
 											<SidebarMenuItem key={item.titleKey}>
 												<SidebarMenuButton asChild tooltip={title}>
-													<a
-														href={item.externalUrl}
-														onClick={handleLinkClick}
-														target="_blank"
-														rel="noopener noreferrer"
-													>
+													<a href={item.externalUrl} onClick={handleLinkClick}>
 														<Icon />
 														<span>{title}</span>
 													</a>

@@ -4,7 +4,10 @@ import { useParams, usePathname, notFound } from "next/navigation";
 import { type ReactNode } from "react";
 import { OrgSlugContext } from "@/hooks/useOrgSlug";
 import { hasAMLAccess, useSubscriptionSafe } from "@/lib/subscription";
-import { NoAMLAccess } from "@/components/subscription";
+import {
+	NoAMLAccess,
+	ApproachingUsageLimitBanner,
+} from "@/components/subscription";
 import { getViewSkeleton } from "@/lib/view-skeletons";
 
 /**
@@ -69,6 +72,9 @@ export default function OrgSlugLayout({ children }: { children: ReactNode }) {
 
 	return (
 		<OrgSlugContext.Provider value={{ orgSlug }}>
+			<div className="flex flex-col gap-0 p-4 pb-0">
+				<ApproachingUsageLimitBanner />
+			</div>
 			{children}
 		</OrgSlugContext.Provider>
 	);

@@ -2339,10 +2339,8 @@ export function ClientDetailsView({
 												variant="outline"
 												size="sm"
 												onClick={() =>
-													window.open(
+													window.location.assign(
 														`${process.env.NEXT_PUBLIC_WATCHLIST_APP_URL}/queries/${client.watchlistQueryId}`,
-														"_blank",
-														"noopener,noreferrer",
 													)
 												}
 											>
