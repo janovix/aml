@@ -1,3 +1,10 @@
+# [1.13.0-rc.4](https://github.com/janovix/aml/compare/v1.13.0-rc.3...v1.13.0-rc.4) (2026-04-08)
+
+
+### Bug Fixes
+
+* update catalogKey in DonationForm component for donation types ([c10a701](https://github.com/janovix/aml/commit/c10a701fa50d67b801fce0bea7f104279cc3fe80))
+
 # [1.13.0-rc.3](https://github.com/janovix/aml/compare/v1.13.0-rc.2...v1.13.0-rc.3) (2026-04-06)
 
 
