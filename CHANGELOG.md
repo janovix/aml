@@ -1,3 +1,10 @@
+# [1.13.0-rc.6](https://github.com/janovix/aml/compare/v1.13.0-rc.5...v1.13.0-rc.6) (2026-04-11)
+
+
+### Bug Fixes
+
+* update risk API endpoints to remove 'clients' from URL paths ([a2e493e](https://github.com/janovix/aml/commit/a2e493edc7963b1d503adc570402c344c5be8904))
+
 # [1.13.0-rc.5](https://github.com/janovix/aml/compare/v1.13.0-rc.4...v1.13.0-rc.5) (2026-04-11)
 
 
