@@ -173,7 +173,7 @@ export async function getClientRiskAssessment(
 	opts?: RiskApiOptions,
 ): Promise<ClientRiskAssessment | null> {
 	const baseUrl = opts?.baseUrl ?? getAmlCoreBaseUrl();
-	const url = new URL(`/api/v1/risk/clients/${clientId}/assessment`, baseUrl);
+	const url = new URL(`/api/v1/risk/${clientId}/assessment`, baseUrl);
 
 	try {
 		const { json } = await fetchJson<{ assessment: ClientRiskAssessment }>(
@@ -196,7 +196,7 @@ export async function getClientRiskHistory(
 	opts?: RiskApiOptions,
 ): Promise<ClientRiskAssessment[]> {
 	const baseUrl = opts?.baseUrl ?? getAmlCoreBaseUrl();
-	const url = new URL(`/api/v1/risk/clients/${clientId}/history`, baseUrl);
+	const url = new URL(`/api/v1/risk/${clientId}/history`, baseUrl);
 
 	const { json } = await fetchJson<{ assessments: ClientRiskAssessment[] }>(
 		url.toString(),
@@ -215,7 +215,7 @@ export async function triggerClientRiskAssessment(
 	opts?: RiskApiOptions,
 ): Promise<void> {
 	const baseUrl = opts?.baseUrl ?? getAmlCoreBaseUrl();
-	const url = new URL(`/api/v1/risk/clients/${clientId}/assessment`, baseUrl);
+	const url = new URL(`/api/v1/risk/${clientId}/assessment`, baseUrl);
 
 	await fetchJson(url.toString(), {
 		method: "POST",
