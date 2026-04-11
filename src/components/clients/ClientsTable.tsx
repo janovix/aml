@@ -491,7 +491,7 @@ export function ClientsTable(): React.ReactElement {
 				loadingMessage={t("clientsLoading")}
 				isLoading={isLoading}
 				selectable
-				getId={(item) => item.rfc}
+				getId={(item) => item.id}
 				actions={renderActions}
 				paginationMode="infinite-scroll"
 				onLoadMore={handleLoadMore}

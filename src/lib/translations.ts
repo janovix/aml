@@ -50,6 +50,7 @@ export const translations = {
 		navOperations: "Operaciones",
 		navInvoices: "Facturas",
 		navImport: "Importar Datos",
+		navActivity: "Actividad",
 		navDataManagement: "Gestión de Datos",
 
 		// Breadcrumbs
@@ -139,6 +140,14 @@ export const translations = {
 		statsActiveAlerts: "Alertas Activas",
 		statsResolvedAlerts: "Alertas Resueltas",
 		statsReportsGenerated: "Reportes Generados",
+
+		// Activity
+		activityTitle: "Actividad",
+		activityEmpty: "No hay actividad aún",
+		activityViewAll: "Ver toda la actividad",
+		activityToday: "Hoy",
+		activityYesterday: "Ayer",
+		activityLoadingMore: "Cargando más...",
 
 		// Dashboard
 		dashboardSubtitle: "Vista general del sistema AML y métricas clave",
@@ -1587,6 +1596,64 @@ export const translations = {
 		clientKycComplementaryDesc:
 			"Datos adicionales para debida diligencia y perfil de riesgo",
 
+		// Risk Evaluations
+		riskEvalPageTitle: "Evaluaciones de Riesgo",
+		riskEvalPageDescription:
+			"Historial de evaluaciones de riesgo realizadas a clientes",
+		riskEvalStatsTotal: "Total de evaluaciones",
+		riskEvalColClient: "Cliente",
+		riskEvalColRiskLevel: "Nivel de Riesgo",
+		riskEvalColDDLevel: "Debida Diligencia",
+		riskEvalColResidualScore: "Riesgo Residual",
+		riskEvalColInherentScore: "Riesgo Inherente",
+		riskEvalColTrigger: "Motivo",
+		riskEvalColDate: "Fecha",
+		riskEvalFilterRiskLevel: "Nivel de riesgo",
+		riskEvalFilterTrigger: "Motivo",
+		riskEvalSearchPlaceholder: "Buscar por nombre o RFC...",
+		riskEvalEmptyTitle: "Sin evaluaciones",
+		riskEvalEmptyDescription: "No se encontraron evaluaciones de riesgo",
+		riskEvalDetailNotFound: "Evaluación no encontrada",
+		riskEvalDetailBackToList: "Evaluaciones",
+		riskEvalDetailTitle: "Detalle de Evaluación",
+		riskEvalDetailInherent: "Riesgo Inherente",
+		riskEvalDetailResidual: "Riesgo Residual",
+		riskEvalDetailAssessedAt: "Evaluado el",
+		riskEvalDetailNextReview: "Próxima revisión",
+		riskEvalDetailTrigger: "Motivo",
+		riskEvalDetailAssessedBy: "Evaluado por",
+		riskEvalDetailElementScore: "Puntaje del elemento",
+		riskEvalDetailMitigants: "Factores Mitigantes",
+		riskEvalDetailTotalMitigation: "Mitigación total",
+		riskEvalViewAll: "Ver todas las evaluaciones",
+
+		// Risk Methodology
+		riskMethodologyBackToDashboard: "Panel de Riesgo",
+		riskMethodologyTitle: "Metodología de Riesgo",
+		riskMethodologyReset: "Restablecer a predeterminado",
+		riskMethodologyResetConfirmTitle: "¿Restablecer metodología?",
+		riskMethodologyResetConfirmDescription:
+			"Esto eliminará la metodología personalizada de la organización y se aplicará la metodología predeterminada de la actividad o del sistema.",
+		riskMethodologyResetCancel: "Cancelar",
+		riskMethodologyResetConfirm: "Restablecer",
+		riskMethodologyCategoriesTitle: "Categorías de Riesgo",
+		riskMethodologyCategoriesDescription:
+			"Categorías y factores que componen la evaluación de riesgo",
+		riskMethodologyThresholdsTitle: "Umbrales de Riesgo",
+		riskMethodologyThresholdsDescription:
+			"Rangos de puntaje y niveles de debida diligencia asociados",
+		riskMethodologyThLevel: "Nivel",
+		riskMethodologyThRange: "Rango",
+		riskMethodologyThDD: "Debida Diligencia",
+		riskMethodologyThReview: "Revisión",
+		riskMethodologyMitigantsTitle: "Mitigantes",
+		riskDashboardViewEvaluations: "Ver evaluaciones",
+		riskDashboardViewEvaluationsDesc:
+			"Consulta el historial completo de evaluaciones de riesgo",
+		riskDashboardMethodology: "Metodología de riesgo",
+		riskDashboardMethodologyDesc:
+			"Configura y personaliza la metodología de evaluación de riesgo",
+
 		// Footer — org subscription scope
 		entitlementFooter:
 			"El acceso sigue el plan de la organización {organization} ({plan}). La suscripción la gestiona el propietario de la organización.",
@@ -1633,6 +1700,7 @@ export const translations = {
 		navOperations: "Operations",
 		navInvoices: "Invoices",
 		navImport: "Import Data",
+		navActivity: "Activity",
 		navDataManagement: "Data Management",
 
 		// Breadcrumbs
@@ -1721,6 +1789,14 @@ export const translations = {
 		statsActiveAlerts: "Active Alerts",
 		statsResolvedAlerts: "Resolved Alerts",
 		statsReportsGenerated: "Reports Generated",
+
+		// Activity
+		activityTitle: "Activity",
+		activityEmpty: "No activity yet",
+		activityViewAll: "View all activity",
+		activityToday: "Today",
+		activityYesterday: "Yesterday",
+		activityLoadingMore: "Loading more...",
 
 		// Dashboard
 		dashboardSubtitle: "AML system overview and key metrics",
@@ -3161,6 +3237,63 @@ export const translations = {
 		clientKycComplementary: "Additional KYC Information",
 		clientKycComplementaryDesc:
 			"Additional data for due diligence and risk profiling",
+
+		// Risk Evaluations
+		riskEvalPageTitle: "Risk Evaluations",
+		riskEvalPageDescription: "Historical risk assessments performed on clients",
+		riskEvalStatsTotal: "Total evaluations",
+		riskEvalColClient: "Client",
+		riskEvalColRiskLevel: "Risk Level",
+		riskEvalColDDLevel: "Due Diligence",
+		riskEvalColResidualScore: "Residual Risk",
+		riskEvalColInherentScore: "Inherent Risk",
+		riskEvalColTrigger: "Trigger",
+		riskEvalColDate: "Date",
+		riskEvalFilterRiskLevel: "Risk level",
+		riskEvalFilterTrigger: "Trigger",
+		riskEvalSearchPlaceholder: "Search by name or RFC...",
+		riskEvalEmptyTitle: "No evaluations",
+		riskEvalEmptyDescription: "No risk evaluations found",
+		riskEvalDetailNotFound: "Evaluation not found",
+		riskEvalDetailBackToList: "Evaluations",
+		riskEvalDetailTitle: "Evaluation Detail",
+		riskEvalDetailInherent: "Inherent Risk",
+		riskEvalDetailResidual: "Residual Risk",
+		riskEvalDetailAssessedAt: "Assessed on",
+		riskEvalDetailNextReview: "Next review",
+		riskEvalDetailTrigger: "Trigger",
+		riskEvalDetailAssessedBy: "Assessed by",
+		riskEvalDetailElementScore: "Element score",
+		riskEvalDetailMitigants: "Mitigant Factors",
+		riskEvalDetailTotalMitigation: "Total mitigation",
+		riskEvalViewAll: "View all evaluations",
+
+		// Risk Methodology
+		riskMethodologyBackToDashboard: "Risk Dashboard",
+		riskMethodologyTitle: "Risk Methodology",
+		riskMethodologyReset: "Reset to default",
+		riskMethodologyResetConfirmTitle: "Reset methodology?",
+		riskMethodologyResetConfirmDescription:
+			"This will remove the organization's custom methodology and apply the activity or system default methodology.",
+		riskMethodologyResetCancel: "Cancel",
+		riskMethodologyResetConfirm: "Reset",
+		riskMethodologyCategoriesTitle: "Risk Categories",
+		riskMethodologyCategoriesDescription:
+			"Categories and factors that compose the risk assessment",
+		riskMethodologyThresholdsTitle: "Risk Thresholds",
+		riskMethodologyThresholdsDescription:
+			"Score ranges and associated due diligence levels",
+		riskMethodologyThLevel: "Level",
+		riskMethodologyThRange: "Range",
+		riskMethodologyThDD: "Due Diligence",
+		riskMethodologyThReview: "Review",
+		riskMethodologyMitigantsTitle: "Mitigants",
+		riskDashboardViewEvaluations: "View evaluations",
+		riskDashboardViewEvaluationsDesc:
+			"Browse the full history of risk evaluations",
+		riskDashboardMethodology: "Risk methodology",
+		riskDashboardMethodologyDesc:
+			"Configure and customize the risk assessment methodology",
 
 		// Footer — org subscription scope
 		entitlementFooter:

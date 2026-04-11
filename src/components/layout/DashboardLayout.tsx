@@ -31,7 +31,7 @@ import {
 import { NotificationsProvider } from "@/contexts/notifications-context";
 import { useLanguage } from "@/components/LanguageProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import type { Language } from "@/lib/translations";
 import { cn } from "@/lib/utils";
 import { EntitlementAttributionBar } from "@/components/layout/EntitlementAttributionBar";
@@ -85,6 +85,8 @@ function DashboardHeader({
 	toolbar?: DashboardHeaderToolbarProps;
 }) {
 	const router = useRouter();
+	const params = useParams();
+	const orgSlug = params?.orgSlug as string | undefined;
 	const {
 		language: ctxLanguage,
 		setLanguage: ctxSetLanguage,
@@ -192,6 +194,8 @@ function DashboardHeader({
 						soundType={notificationSoundType}
 						pulseStyle="ring"
 						soundCooldown={60_000}
+						viewAllHref={orgSlug ? `/${orgSlug}/activity` : "/activity"}
+						viewAllLabel={t("activityViewAll")}
 					/>
 					<NavbarChatButton />
 				</div>

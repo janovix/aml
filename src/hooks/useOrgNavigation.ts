@@ -77,6 +77,13 @@ export function useOrgNavigation() {
 			reports: {
 				list: () => orgPath("/reports"),
 			},
+			risk: {
+				dashboard: () => orgPath("/risk"),
+				assessment: () => orgPath("/risk/assessment"),
+				evaluations: () => orgPath("/risk/evaluations"),
+				evaluationDetail: (id: string) => orgPath(`/risk/evaluations/${id}`),
+				methodology: () => orgPath("/risk/methodology"),
+			},
 			team: () => orgPath("/team"),
 			settings: () => orgPath("/settings"),
 		}),

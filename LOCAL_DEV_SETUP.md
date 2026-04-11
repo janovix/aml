@@ -82,7 +82,7 @@ Create a `.env.local` file in the `aml` directory:
 
 ```env
 # Auth Configuration (DEPLOYED dev environment)
-NEXT_PUBLIC_AUTH_APP_URL=https://auth.janovix.workers.dev
+NEXT_PUBLIC_AUTH_APP_URL=https://auth-local.janovix.workers.dev
 NEXT_PUBLIC_AUTH_SERVICE_URL=https://auth-svc.janovix.workers.dev
 
 # AML Backend API (choose one)

@@ -84,6 +84,7 @@ import {
 	extractHostname,
 } from "@/components/ExternalLinkDialog";
 import { KycSessionSection } from "@/components/kyc/KycSessionSection";
+import { ClientRiskSection } from "@/components/risk/ClientRiskSection";
 import { getKycBaseUrl } from "@/lib/api/doc-svc";
 import {
 	getDocumentLabel,
@@ -2873,6 +2874,23 @@ export function ClientDetailsView({
 								{t("edit")}
 							</Button>
 						</div>
+					</AccordionContent>
+				</AccordionItem>
+
+				{/* Risk Assessment (EBR) */}
+				<AccordionItem
+					value="risk-assessment"
+					id="risk-assessment"
+					className="border rounded-lg overflow-hidden bg-card shadow-sm"
+				>
+					<AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50">
+						<div className="flex items-center gap-3">
+							<Shield className="h-5 w-5" />
+							<span className="font-semibold">{t("navRiskModels")}</span>
+						</div>
+					</AccordionTrigger>
+					<AccordionContent className="px-6 pb-6">
+						<ClientRiskSection clientId={client.id} />
 					</AccordionContent>
 				</AccordionItem>
 
