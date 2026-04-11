@@ -1,3 +1,10 @@
+# [1.13.0-rc.5](https://github.com/janovix/aml/compare/v1.13.0-rc.4...v1.13.0-rc.5) (2026-04-11)
+
+
+### Features
+
+* update environment URLs for local development and add new risk assessment components ([9f7a243](https://github.com/janovix/aml/commit/9f7a2431dda7b4fabe9262d9d213659ec1fa0bb4))
+
 <<<<<<< dev
 # [1.13.0-rc.4](https://github.com/janovix/aml/compare/v1.13.0-rc.3...v1.13.0-rc.4) (2026-04-08)
 =======
