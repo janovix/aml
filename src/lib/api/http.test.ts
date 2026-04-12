@@ -2,8 +2,12 @@ import { describe, expect, it, vi, afterEach } from "vitest";
 import {
 	ApiError,
 	fetchJson,
+	getUsageLimitDetails,
+	isOrganizationArchivedError,
 	isOrganizationRequiredError,
+	isRateLimitError,
 	isSelfServiceDisabledError,
+	isUsageLimitError,
 } from "./http";
 
 describe("api/http fetchJson", () => {
@@ -462,6 +466,139 @@ describe("api/http fetchJson", () => {
 			expect(apiError.status).toBe(409);
 			expect(apiError.code).toBe("ORGANIZATION_REQUIRED");
 		}
+	});
+});
+
+describe("isUsageLimitError", () => {
+	it("returns true for 403 with USAGE_LIMIT_EXCEEDED code", () => {
+		const error = new ApiError("limit", {
+			status: 403,
+			body: {},
+			code: "USAGE_LIMIT_EXCEEDED",
+		});
+		expect(isUsageLimitError(error)).toBe(true);
+	});
+
+	it("returns true for 403 with upgradeRequired in body", () => {
+		const error = new ApiError("limit", {
+			status: 403,
+			body: { upgradeRequired: true },
+		});
+		expect(isUsageLimitError(error)).toBe(true);
+	});
+
+	it("returns false for 403 without usage signals", () => {
+		const error = new ApiError("forbidden", {
+			status: 403,
+			body: { message: "no" },
+		});
+		expect(isUsageLimitError(error)).toBe(false);
+	});
+
+	it("returns false for non-ApiError", () => {
+		expect(isUsageLimitError(new Error("x"))).toBe(false);
+	});
+});
+
+describe("getUsageLimitDetails", () => {
+	it("returns null when not a usage limit error", () => {
+		expect(
+			getUsageLimitDetails(new ApiError("x", { status: 400, body: {} })),
+		).toBeNull();
+	});
+
+	it("extracts fields from body", () => {
+		const error = new ApiError("limit", {
+			status: 403,
+			body: {
+				upgradeRequired: true,
+				metric: "clients",
+				used: 10,
+				limit: 20,
+				entitlementType: "SEAT",
+				message: "Full",
+			},
+			code: "USAGE_LIMIT_EXCEEDED",
+		});
+		expect(getUsageLimitDetails(error)).toEqual({
+			metric: "clients",
+			used: 10,
+			limit: 20,
+			entitlementType: "SEAT",
+			message: "Full",
+		});
+	});
+
+	it("returns empty object when body is not an object", () => {
+		const error = new ApiError("limit", {
+			status: 403,
+			body: "x",
+			code: "USAGE_LIMIT_EXCEEDED",
+		});
+		expect(getUsageLimitDetails(error)).toEqual({});
+	});
+});
+
+describe("isRateLimitError", () => {
+	it("returns true for ApiError 429", () => {
+		expect(
+			isRateLimitError(new ApiError("slow", { status: 429, body: {} })),
+		).toBe(true);
+	});
+	it("returns false otherwise", () => {
+		expect(isRateLimitError(new ApiError("x", { status: 500, body: {} }))).toBe(
+			false,
+		);
+		expect(isRateLimitError(new Error("x"))).toBe(false);
+	});
+});
+
+describe("isOrganizationArchivedError", () => {
+	it("returns true for 403 with ORGANIZATION_ARCHIVED code on error", () => {
+		expect(
+			isOrganizationArchivedError(
+				new ApiError("archived", {
+					status: 403,
+					body: {},
+					code: "ORGANIZATION_ARCHIVED",
+				}),
+			),
+		).toBe(true);
+	});
+	it("returns true for 403 with code in body", () => {
+		expect(
+			isOrganizationArchivedError(
+				new ApiError("archived", {
+					status: 403,
+					body: { code: "ORGANIZATION_ARCHIVED" },
+				}),
+			),
+		).toBe(true);
+	});
+	it("returns false for wrong status or code", () => {
+		expect(
+			isOrganizationArchivedError(
+				new ApiError("x", { status: 403, body: { code: "OTHER" } }),
+			),
+		).toBe(false);
+		expect(
+			isOrganizationArchivedError(
+				new ApiError("x", {
+					status: 404,
+					body: { code: "ORGANIZATION_ARCHIVED" },
+				}),
+			),
+		).toBe(false);
+	});
+});
+
+describe("isSelfServiceDisabledError body.code branch", () => {
+	it("returns true when body has code SELF_SERVICE_DISABLED", () => {
+		const error = new ApiError("bad", {
+			status: 400,
+			body: { code: "SELF_SERVICE_DISABLED" },
+		});
+		expect(isSelfServiceDisabledError(error)).toBe(true);
 	});
 });
 

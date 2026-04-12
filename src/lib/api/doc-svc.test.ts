@@ -4,6 +4,8 @@ import {
 	getDocumentUrls,
 	getJobStatus,
 	uploadToPresignedUrl,
+	getKycBaseUrl,
+	getKycSessionUrl,
 	getUploadLinkUrl,
 } from "./doc-svc";
 
@@ -161,6 +163,20 @@ describe("api/doc-svc", () => {
 		it("generates correct URL with custom base", () => {
 			const url = getUploadLinkUrl("link-123", "https://scan.test.com");
 			expect(url).toBe("https://scan.test.com/link-123");
+		});
+	});
+
+	describe("getKycSessionUrl", () => {
+		it("appends token path with custom base", () => {
+			expect(getKycSessionUrl("tok-1", "https://kyc.example")).toBe(
+				"https://kyc.example/kyc/tok-1",
+			);
+		});
+	});
+
+	describe("getKycBaseUrl", () => {
+		it("returns configured KYC URL", () => {
+			expect(getKycBaseUrl()).toMatch(/^https?:\/\//);
 		});
 	});
 });

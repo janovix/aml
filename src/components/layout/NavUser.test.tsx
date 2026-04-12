@@ -1,9 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NavUser } from "./NavUser";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { LanguageProvider } from "@/components/LanguageProvider";
+import { renderWithProviders } from "@/lib/testHelpers";
 
 // Mock cookies module to return Spanish language for tests
 vi.mock("@/lib/cookies", () => ({
@@ -19,19 +18,10 @@ vi.mock("@/lib/cookies", () => ({
 	},
 }));
 
-// Wrapper component with providers
-const TestWrapper = ({ children }: { children: React.ReactNode }) => (
-	<LanguageProvider>
-		<SidebarProvider>{children}</SidebarProvider>
-	</LanguageProvider>
-);
-
 describe("NavUser", () => {
 	it("renders loading state when isLoading is true", () => {
-		render(
-			<TestWrapper>
-				<NavUser user={null} isLoading={true} onLogout={vi.fn()} />
-			</TestWrapper>,
+		renderWithProviders(
+			<NavUser user={null} isLoading={true} onLogout={vi.fn()} />,
 		);
 
 		const loadingElements = document.querySelectorAll(".animate-pulse");
@@ -39,10 +29,8 @@ describe("NavUser", () => {
 	});
 
 	it("returns null when user is null and not loading", () => {
-		const { container } = render(
-			<TestWrapper>
-				<NavUser user={null} isLoading={false} onLogout={vi.fn()} />
-			</TestWrapper>,
+		const { container } = renderWithProviders(
+			<NavUser user={null} isLoading={false} onLogout={vi.fn()} />,
 		);
 
 		// NavUser returns null, but SidebarProvider renders a wrapper
@@ -57,10 +45,8 @@ describe("NavUser", () => {
 			avatar: undefined,
 		};
 
-		render(
-			<TestWrapper>
-				<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />
-			</TestWrapper>,
+		renderWithProviders(
+			<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />,
 		);
 
 		expect(screen.getByText("Test User")).toBeInTheDocument();
@@ -74,10 +60,8 @@ describe("NavUser", () => {
 			avatar: "https://example.com/avatar.jpg",
 		};
 
-		render(
-			<TestWrapper>
-				<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />
-			</TestWrapper>,
+		renderWithProviders(
+			<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />,
 		);
 
 		// Avatar might be in AvatarImage or AvatarFallback
@@ -94,10 +78,8 @@ describe("NavUser", () => {
 		};
 
 		const user = userEvent.setup();
-		render(
-			<TestWrapper>
-				<NavUser user={mockUser} isLoading={false} onLogout={mockLogout} />
-			</TestWrapper>,
+		renderWithProviders(
+			<NavUser user={mockUser} isLoading={false} onLogout={mockLogout} />,
 		);
 
 		// First click to open dropdown
@@ -118,10 +100,8 @@ describe("NavUser", () => {
 		};
 
 		const user = userEvent.setup();
-		render(
-			<TestWrapper>
-				<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />
-			</TestWrapper>,
+		renderWithProviders(
+			<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />,
 		);
 
 		// Open dropdown first
@@ -153,10 +133,8 @@ describe("NavUser", () => {
 			email: "john@example.com",
 		};
 
-		render(
-			<TestWrapper>
-				<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />
-			</TestWrapper>,
+		renderWithProviders(
+			<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />,
 		);
 
 		expect(screen.getByText("John")).toBeInTheDocument();
@@ -169,10 +147,8 @@ describe("NavUser", () => {
 			email: "john@example.com",
 		};
 
-		render(
-			<TestWrapper>
-				<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />
-			</TestWrapper>,
+		renderWithProviders(
+			<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />,
 		);
 
 		expect(screen.getByText("John Doe Smith")).toBeInTheDocument();
@@ -186,10 +162,8 @@ describe("NavUser", () => {
 		};
 
 		const user = userEvent.setup();
-		render(
-			<TestWrapper>
-				<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />
-			</TestWrapper>,
+		renderWithProviders(
+			<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />,
 		);
 
 		// Open dropdown
@@ -209,10 +183,8 @@ describe("NavUser", () => {
 			email: "test@example.com",
 		};
 
-		render(
-			<TestWrapper>
-				<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />
-			</TestWrapper>,
+		renderWithProviders(
+			<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />,
 		);
 
 		// Should render with fallback initial
@@ -225,10 +197,8 @@ describe("NavUser", () => {
 			email: "test@example.com",
 		};
 
-		render(
-			<TestWrapper>
-				<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />
-			</TestWrapper>,
+		renderWithProviders(
+			<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />,
 		);
 
 		// Should render with fallback initial
@@ -241,10 +211,8 @@ describe("NavUser", () => {
 			email: "john@example.com",
 		};
 
-		render(
-			<TestWrapper>
-				<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />
-			</TestWrapper>,
+		renderWithProviders(
+			<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />,
 		);
 
 		expect(screen.getByText("John Doe")).toBeInTheDocument();
@@ -257,10 +225,8 @@ describe("NavUser", () => {
 			email: "john@example.com",
 		};
 
-		render(
-			<TestWrapper>
-				<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />
-			</TestWrapper>,
+		renderWithProviders(
+			<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />,
 		);
 
 		expect(screen.getByText("John Michael Doe Smith")).toBeInTheDocument();
@@ -275,10 +241,8 @@ describe("NavUser", () => {
 		};
 
 		const user = userEvent.setup();
-		render(
-			<TestWrapper>
-				<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />
-			</TestWrapper>,
+		renderWithProviders(
+			<NavUser user={mockUser} isLoading={false} onLogout={vi.fn()} />,
 		);
 
 		// Open dropdown
