@@ -78,6 +78,9 @@ export interface Client {
 	adverseMediaFlagged?: boolean;
 	screeningResult?: ScreeningResult;
 	screenedAt?: string | null;
+	/** Latest client risk level from EBR (null if never assessed). */
+	riskLevel?: string | null;
+	lastRiskAssessment?: string | null;
 	// Resolved catalog names for *Code fields
 	resolvedNames?: Record<string, string> | null;
 	// Timestamps

@@ -55,6 +55,23 @@ import { useLanguage } from "@/components/LanguageProvider";
 import { getLocaleForLanguage } from "@/lib/translations";
 import { useStatesCatalog } from "@/hooks/useStatesCatalog";
 import { CircularProgress } from "@/components/ui/circular-progress";
+import { RiskBadge } from "@/components/risk/RiskBadge";
+import type { RiskLevel } from "@/lib/api/risk";
+
+const VALID_CLIENT_RISK_LEVELS = new Set<string>([
+	"LOW",
+	"MEDIUM_LOW",
+	"MEDIUM",
+	"MEDIUM_HIGH",
+	"HIGH",
+]);
+
+function parseClientRiskLevel(
+	value: string | null | undefined,
+): RiskLevel | null {
+	if (!value) return null;
+	return VALID_CLIENT_RISK_LEVELS.has(value) ? (value as RiskLevel) : null;
+}
 
 /**
  * Client row with computed display name
@@ -324,6 +341,23 @@ export function ClientsTable(): React.ReactElement {
 						</span>
 					</div>
 				),
+			},
+			{
+				id: "riskLevel",
+				header: t("tableRisk"),
+				accessorKey: "riskLevel",
+				hideOnMobile: true,
+				cell: (item) => {
+					const level = parseClientRiskLevel(item.riskLevel);
+					if (!level) {
+						return (
+							<span className="text-xs text-muted-foreground tabular-nums">
+								—
+							</span>
+						);
+					}
+					return <RiskBadge level={level} language={language} />;
+				},
 			},
 			{
 				id: "createdAt",

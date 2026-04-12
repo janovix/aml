@@ -198,16 +198,18 @@ export async function getClientRiskHistory(
 	const baseUrl = opts?.baseUrl ?? getAmlCoreBaseUrl();
 	const url = new URL(`/api/v1/risk/${clientId}/history`, baseUrl);
 
-	const { json } = await fetchJson<{ assessments: ClientRiskAssessment[] }>(
-		url.toString(),
-		{
-			method: "GET",
-			cache: "no-store",
-			signal: opts?.signal,
-			jwt: opts?.jwt,
-		},
-	);
-	return json.assessments;
+	const { json } = await fetchJson<
+		{ assessments: ClientRiskAssessment[] } | ClientRiskAssessment[]
+	>(url.toString(), {
+		method: "GET",
+		cache: "no-store",
+		signal: opts?.signal,
+		jwt: opts?.jwt,
+	});
+	if (Array.isArray(json)) {
+		return json;
+	}
+	return json.assessments ?? [];
 }
 
 export async function triggerClientRiskAssessment(

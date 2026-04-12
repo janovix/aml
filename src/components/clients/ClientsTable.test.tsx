@@ -1775,6 +1775,7 @@ describe("ClientsTable", () => {
 			return (
 				text.includes("Cliente") ||
 				text.includes("Ubicación") ||
+				text.includes("Riesgo") ||
 				text.includes("Registro")
 			);
 		});
@@ -2991,9 +2992,10 @@ describe("ClientsTable", () => {
 			expect(screen.getByText(displayName)).toBeInTheDocument();
 		});
 
-		// Verify sortable columns are rendered (Cliente, Ubicación, Registro)
+		// Verify columns are rendered (Cliente, Ubicación, Riesgo, Registro)
 		expect(screen.getByText("Cliente")).toBeInTheDocument();
 		expect(screen.getByText("Ubicación")).toBeInTheDocument();
+		expect(screen.getByText("Riesgo")).toBeInTheDocument();
 		expect(screen.getByText("Registro")).toBeInTheDocument();
 	});
 

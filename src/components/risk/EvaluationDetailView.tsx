@@ -25,12 +25,14 @@ import {
 	type RiskLevel,
 } from "@/lib/api/risk";
 import { cn } from "@/lib/utils";
+import type { TranslationKeys } from "@/lib/translations";
+import { riskEvalFactorLabel } from "@/lib/risk-eval-factor-labels";
 
-const ELEMENT_LABELS: Record<string, string> = {
-	CLIENTS: "Clientes / Usuarios",
-	GEOGRAPHY: "Geografía",
-	PRODUCTS: "Productos / Servicios",
-	TRANSACTIONS: "Transacciones",
+const ELEMENT_TITLE_KEYS: Record<string, TranslationKeys> = {
+	CLIENTS: "riskEvalDetailElementClients",
+	GEOGRAPHY: "riskEvalDetailElementGeography",
+	PRODUCTS: "riskEvalDetailElementProducts",
+	TRANSACTIONS: "riskEvalDetailElementTransactions",
 };
 
 export function EvaluationDetailView(): React.ReactElement {
@@ -72,10 +74,10 @@ export function EvaluationDetailView(): React.ReactElement {
 	}
 
 	const elements = [
-		{ key: "CLIENTS", data: detail.clientFactors },
-		{ key: "GEOGRAPHY", data: detail.geographicFactors },
-		{ key: "PRODUCTS", data: detail.activityFactors },
-		{ key: "TRANSACTIONS", data: detail.transactionFactors },
+		{ key: "CLIENTS" as const, data: detail.clientFactors },
+		{ key: "GEOGRAPHY" as const, data: detail.geographicFactors },
+		{ key: "PRODUCTS" as const, data: detail.activityFactors },
+		{ key: "TRANSACTIONS" as const, data: detail.transactionFactors },
 	];
 
 	return (
@@ -179,7 +181,9 @@ export function EvaluationDetailView(): React.ReactElement {
 					<Card key={key}>
 						<CardHeader className="pb-3">
 							<CardTitle className="text-base flex items-center justify-between">
-								<span>{ELEMENT_LABELS[key] ?? key}</span>
+								<span>
+									{ELEMENT_TITLE_KEYS[key] ? t(ELEMENT_TITLE_KEYS[key]) : key}
+								</span>
 								{data.riskLevel && (
 									<RiskBadge level={data.riskLevel as RiskLevel} size="sm" />
 								)}
@@ -194,11 +198,14 @@ export function EvaluationDetailView(): React.ReactElement {
 											className="flex items-center justify-between text-sm"
 										>
 											<span className="text-muted-foreground truncate">
-												{f.name.replace(/_/g, " ")}
+												{riskEvalFactorLabel(f.name, t)}
 											</span>
 											<div className="flex items-center gap-2 shrink-0">
 												<span className="tabular-nums text-xs text-muted-foreground">
-													w:{f.weight.toFixed(2)}
+													{t("riskEvalDetailFactorWeight").replace(
+														"{weight}",
+														f.weight.toFixed(2),
+													)}
 												</span>
 												<span className="tabular-nums font-medium w-10 text-right">
 													{f.score.toFixed(1)}
@@ -208,7 +215,7 @@ export function EvaluationDetailView(): React.ReactElement {
 									),
 								) ?? (
 									<p className="text-xs text-muted-foreground">
-										No factor data
+										{t("riskEvalDetailNoFactorData")}
 									</p>
 								)}
 							</div>
@@ -240,11 +247,14 @@ export function EvaluationDetailView(): React.ReactElement {
 								className="flex items-center justify-between text-sm"
 							>
 								<span className="text-muted-foreground">
-									{f.name.replace(/_/g, " ")}
+									{riskEvalFactorLabel(f.name, t)}
 								</span>
 								<div className="flex items-center gap-2">
 									<span className="tabular-nums text-xs text-muted-foreground">
-										w:{f.weight.toFixed(2)}
+										{t("riskEvalDetailFactorWeight").replace(
+											"{weight}",
+											f.weight.toFixed(2),
+										)}
 									</span>
 									<span
 										className={cn(
