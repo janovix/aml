@@ -1,3 +1,10 @@
+# [1.13.0-rc.7](https://github.com/janovix/aml/compare/v1.13.0-rc.6...v1.13.0-rc.7) (2026-04-12)
+
+
+### Features
+
+* add risk level column to ClientsTable and enhance risk evaluation details ([de56252](https://github.com/janovix/aml/commit/de5625286838966d09d934a6e954be90bc32fba8))
+
 # [1.13.0-rc.6](https://github.com/janovix/aml/compare/v1.13.0-rc.5...v1.13.0-rc.6) (2026-04-11)
 
 
