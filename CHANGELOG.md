@@ -1,3 +1,31 @@
+# [1.13.0-rc.8](https://github.com/janovix/aml/compare/v1.13.0-rc.7...v1.13.0-rc.8) (2026-04-12)
+
+
+### Features
+
+* enhance ImportPage with new layout and localization support ([2dc3ed9](https://github.com/janovix/aml/commit/2dc3ed9255d02136d30847bc3ac9aa82a9957a46))
+
+# [1.13.0-rc.7](https://github.com/janovix/aml/compare/v1.13.0-rc.6...v1.13.0-rc.7) (2026-04-12)
+
+
+### Features
+
+* add risk level column to ClientsTable and enhance risk evaluation details ([de56252](https://github.com/janovix/aml/commit/de5625286838966d09d934a6e954be90bc32fba8))
+
+# [1.13.0-rc.6](https://github.com/janovix/aml/compare/v1.13.0-rc.5...v1.13.0-rc.6) (2026-04-11)
+
+
+### Bug Fixes
+
+* update risk API endpoints to remove 'clients' from URL paths ([a2e493e](https://github.com/janovix/aml/commit/a2e493edc7963b1d503adc570402c344c5be8904))
+
+# [1.13.0-rc.5](https://github.com/janovix/aml/compare/v1.13.0-rc.4...v1.13.0-rc.5) (2026-04-11)
+
+
+### Features
+
+* update environment URLs for local development and add new risk assessment components ([9f7a243](https://github.com/janovix/aml/commit/9f7a2431dda7b4fabe9262d9d213659ec1fa0bb4))
+
 <<<<<<< dev
 # [1.13.0-rc.4](https://github.com/janovix/aml/compare/v1.13.0-rc.3...v1.13.0-rc.4) (2026-04-08)
 =======

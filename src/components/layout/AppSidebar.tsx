@@ -15,6 +15,8 @@ import {
 	Search,
 	Upload,
 	Mail,
+	Shield,
+	Activity,
 } from "lucide-react";
 
 import {
@@ -86,6 +88,12 @@ const mainNavItems: NavItem[] = [
 		icon: ReceiptText,
 		available: true,
 	},
+	{
+		titleKey: "navActivity",
+		href: "/activity",
+		icon: Activity,
+		available: true,
+	},
 ];
 
 const complianceNavItems: NavItem[] = [
@@ -105,6 +113,12 @@ const complianceNavItems: NavItem[] = [
 		titleKey: "navReports",
 		href: "/reports",
 		icon: FileText,
+		available: true,
+	},
+	{
+		titleKey: "navRiskModels",
+		href: "/risk",
+		icon: Shield,
 		available: true,
 	},
 ];
