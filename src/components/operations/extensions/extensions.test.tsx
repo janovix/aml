@@ -11,7 +11,7 @@
  * getExtensionForm registry function.
  */
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/lib/testHelpers";
 import {
@@ -108,7 +108,7 @@ function testExtensionForm(
 			// Try text inputs first
 			const textInputs = screen.queryAllByRole("textbox");
 			if (textInputs.length > 0) {
-				await user.type(textInputs[0], "x");
+				await user.type(textInputs[0]!, "x");
 				expect(onChange).toHaveBeenCalled();
 				return;
 			}
@@ -116,9 +116,31 @@ function testExtensionForm(
 			// Try switches if no text inputs
 			const switches = screen.queryAllByRole("switch");
 			if (switches.length > 0) {
-				await user.click(switches[0]);
+				await user.click(switches[0]!);
 				expect(onChange).toHaveBeenCalled();
 			}
+		});
+
+		it("fires onChange across textboxes, spinbuttons, switches, and catalogs", async () => {
+			const user = userEvent.setup();
+			const onChange = vi.fn();
+			renderWithProviders(<FormComponent value={{}} onChange={onChange} />);
+			onChange.mockClear();
+
+			for (const el of screen.queryAllByRole("textbox")) {
+				fireEvent.change(el, { target: { value: "multi" } });
+			}
+			for (const el of screen.queryAllByRole("spinbutton")) {
+				fireEvent.change(el, { target: { value: "42" } });
+			}
+			for (const el of screen.queryAllByRole("switch")) {
+				await user.click(el);
+			}
+			for (const el of screen.queryAllByTestId("catalog-selector")) {
+				fireEvent.change(el, { target: { value: "test-value" } });
+			}
+
+			expect(onChange.mock.calls.length).toBeGreaterThan(0);
 		});
 
 		it("disables all inputs when disabled prop is true", () => {

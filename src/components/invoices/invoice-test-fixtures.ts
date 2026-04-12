@@ -1,0 +1,45 @@
+import type { InvoiceEntity } from "@/types/invoice";
+
+/** Minimal `InvoiceEntity` for invoice UI tests */
+export function makeTestInvoice(
+	over: Partial<InvoiceEntity> = {},
+): InvoiceEntity {
+	return {
+		id: "inv-test",
+		organizationId: "org-1",
+		uuid: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+		version: "4.0",
+		series: "A",
+		folio: "1",
+		issuerRfc: "AAA010101AAA",
+		issuerName: "Emisor Test SA",
+		issuerTaxRegimeCode: "601",
+		receiverRfc: "BBB010101BBB",
+		receiverName: "Receptor Test SA",
+		receiverUsageCode: null,
+		receiverTaxRegimeCode: null,
+		receiverPostalCode: null,
+		subtotal: "1000",
+		discount: null,
+		total: "1160",
+		currencyCode: "MXN",
+		exchangeRate: null,
+		paymentFormCode: "03",
+		paymentMethodCode: "PUE",
+		voucherTypeCode: "I",
+		issueDate: "2024-06-15T12:00:00.000Z",
+		certificationDate: null,
+		exportCode: null,
+		tfdUuid: null,
+		tfdSatCertificate: null,
+		tfdSignature: null,
+		tfdStampDate: null,
+		xmlContent: null,
+		notes: null,
+		createdAt: "2024-06-15T12:00:00.000Z",
+		updatedAt: "2024-06-15T12:00:00.000Z",
+		deletedAt: null,
+		items: [],
+		...over,
+	};
+}
