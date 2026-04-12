@@ -7,5 +7,9 @@ export const metadata: Metadata = {
 };
 
 export default function ImportPage(): React.ReactElement {
-	return <ImportPageContent />;
+	return (
+		<div className="space-y-8">
+			<ImportPageContent />
+		</div>
+	);
 }

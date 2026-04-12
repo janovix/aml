@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ImportProgress } from "./ImportProgress";
 import { RowStatusTable } from "./RowStatusTable";
 import { CatastrophicError } from "./CatastrophicError";
@@ -107,6 +107,7 @@ export function ImportViewContent({ importId }: ImportViewContentProps) {
 		initialMapping: Record<string, string>;
 		showAutoMappingNotice: boolean;
 	} | null>(null);
+	const startImportInFlightRef = useRef(false);
 
 	// Use SSE for real-time updates
 	const {
@@ -386,7 +387,13 @@ export function ImportViewContent({ importId }: ImportViewContentProps) {
 	};
 
 	async function handleStartImport(mapping: Record<string, string>) {
-		if (!state.importId || !jwt) return;
+		if (!state.importId || !jwt) {
+			throw new Error("No hay sesión o importación para iniciar.");
+		}
+		if (startImportInFlightRef.current) {
+			return;
+		}
+		startImportInFlightRef.current = true;
 		try {
 			await startImport({ id: state.importId, columnMapping: mapping, jwt });
 			setMappingStepData(null);
@@ -398,6 +405,9 @@ export function ImportViewContent({ importId }: ImportViewContentProps) {
 					: "Error al iniciar la importación",
 			);
 			setState((prev) => ({ ...prev, status: "mapping" }));
+			throw error;
+		} finally {
+			startImportInFlightRef.current = false;
 		}
 	}
 
