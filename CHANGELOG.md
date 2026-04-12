@@ -1,3 +1,10 @@
+# [1.13.0-rc.8](https://github.com/janovix/aml/compare/v1.13.0-rc.7...v1.13.0-rc.8) (2026-04-12)
+
+
+### Features
+
+* enhance ImportPage with new layout and localization support ([2dc3ed9](https://github.com/janovix/aml/commit/2dc3ed9255d02136d30847bc3ac9aa82a9957a46))
+
 # [1.13.0-rc.7](https://github.com/janovix/aml/compare/v1.13.0-rc.6...v1.13.0-rc.7) (2026-04-12)
 
 
