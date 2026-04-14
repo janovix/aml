@@ -1,6 +1,14 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import {
 	DocSvcError,
+	confirmUpload,
+	createUploadLink,
+	getUploadLink,
+	initiateUpload,
+	listUploadLinkDocuments,
+	listUploadLinks,
+	pollJobUntilComplete,
+	subscribeToUploadLinkEvents,
 	getDocumentUrls,
 	getJobStatus,
 	uploadToPresignedUrl,
@@ -19,6 +27,7 @@ vi.mock("@/lib/auth/tokenCache", () => ({
 describe("api/doc-svc", () => {
 	afterEach(() => {
 		vi.restoreAllMocks();
+		vi.unstubAllGlobals();
 	});
 
 	describe("DocSvcError", () => {
@@ -177,6 +186,443 @@ describe("api/doc-svc", () => {
 	describe("getKycBaseUrl", () => {
 		it("returns configured KYC URL", () => {
 			expect(getKycBaseUrl()).toMatch(/^https?:\/\//);
+		});
+	});
+
+	describe("initiateUpload", () => {
+		it("POSTs pageCount and hasPdf and returns result", async () => {
+			const result = {
+				documentId: "d1",
+				uploadUrls: {
+					originalPdfs: [],
+					originalImages: [],
+					rasterizedImages: ["https://u1"],
+					finalPdf: "https://fp",
+				},
+				keys: {
+					originalPdfs: [],
+					originalImages: [],
+					rasterizedImages: ["k1"],
+					finalPdf: "kf",
+				},
+				expiresAt: "2099-01-01",
+			};
+			const fetchSpy = vi.fn(
+				async (_url: RequestInfo | URL, init?: RequestInit) => {
+					expect(init?.method).toBe("POST");
+					const body = JSON.parse((init?.body as string) ?? "{}");
+					expect(body.pageCount).toBe(2);
+					expect(body.hasPdf).toBe(true);
+					return new Response(JSON.stringify({ success: true, result }), {
+						status: 200,
+						headers: { "content-type": "application/json" },
+					});
+				},
+			);
+			vi.stubGlobal("fetch", fetchSpy);
+
+			const out = await initiateUpload("org-1", "user-1", 2, true);
+			expect(out.documentId).toBe("d1");
+			expect(fetchSpy.mock.calls[0][0].toString()).toContain(
+				"/documents/initiate-upload",
+			);
+		});
+
+		it("throws DocSvcError when success is false", async () => {
+			vi.stubGlobal(
+				"fetch",
+				vi.fn(async () => {
+					return new Response(
+						JSON.stringify({ success: false, error: "bad" }),
+						{ status: 400, headers: { "content-type": "application/json" } },
+					);
+				}),
+			);
+			await expect(initiateUpload("o", "u", 1, false)).rejects.toThrow(
+				DocSvcError,
+			);
+		});
+	});
+
+	describe("confirmUpload", () => {
+		it("POSTs confirm body and omits empty original arrays", async () => {
+			const result = {
+				documentId: "d1",
+				jobId: "j1",
+				status: "PENDING",
+			};
+			const fetchSpy = vi.fn(
+				async (_url: RequestInfo | URL, init?: RequestInit) => {
+					const body = JSON.parse((init?.body as string) ?? "{}");
+					expect(body.fileName).toBe("f.pdf");
+					expect(body.fileSize).toBe(99);
+					expect(body.pageCount).toBe(1);
+					expect(body.rasterizedImages).toEqual(["r1"]);
+					expect(body.finalPdfKey).toBe("fk");
+					expect(body.originalPdfs).toBeUndefined();
+					expect(body.originalImages).toBeUndefined();
+					return new Response(JSON.stringify({ success: true, result }), {
+						status: 200,
+						headers: { "content-type": "application/json" },
+					});
+				},
+			);
+			vi.stubGlobal("fetch", fetchSpy);
+
+			await confirmUpload(
+				"org-1",
+				"user-1",
+				"d1",
+				{
+					originalPdfs: [],
+					originalImages: [],
+					rasterizedImages: ["r1"],
+					finalPdf: "fk",
+				},
+				"f.pdf",
+				99,
+			);
+			expect(fetchSpy.mock.calls[0][0].toString()).toContain(
+				"/documents/d1/confirm",
+			);
+		});
+
+		it("includes originalPdfs and originalImages when non-empty", async () => {
+			const fetchSpy = vi.fn(
+				async (_url: RequestInfo | URL, init?: RequestInit) => {
+					const body = JSON.parse((init?.body as string) ?? "{}");
+					expect(body.originalPdfs).toEqual(["p1"]);
+					expect(body.originalImages).toEqual(["i1"]);
+					return new Response(
+						JSON.stringify({
+							success: true,
+							result: { documentId: "d1", jobId: "j1", status: "x" },
+						}),
+						{ status: 200, headers: { "content-type": "application/json" } },
+					);
+				},
+			);
+			vi.stubGlobal("fetch", fetchSpy);
+
+			await confirmUpload(
+				"org-1",
+				"user-1",
+				"d1",
+				{
+					originalPdfs: ["p1"],
+					originalImages: ["i1"],
+					rasterizedImages: ["r1"],
+					finalPdf: "fk",
+				},
+				"f.pdf",
+				10,
+			);
+		});
+	});
+
+	describe("pollJobUntilComplete", () => {
+		it("returns when job reaches COMPLETED", async () => {
+			let n = 0;
+			vi.stubGlobal(
+				"fetch",
+				vi.fn(async () => {
+					n++;
+					const status = n < 2 ? "PROCESSING" : "COMPLETED";
+					return new Response(
+						JSON.stringify({
+							success: true,
+							result: {
+								id: "job-1",
+								documentId: "d1",
+								status,
+							},
+						}),
+						{ status: 200, headers: { "content-type": "application/json" } },
+					);
+				}),
+			);
+
+			const progress = vi.fn();
+			const out = await pollJobUntilComplete("org-1", "job-1", progress, 1, 10);
+			expect(out.status).toBe("COMPLETED");
+			expect(progress).toHaveBeenCalled();
+		});
+
+		it("returns FAILED status without further polling", async () => {
+			vi.stubGlobal(
+				"fetch",
+				vi.fn(async () => {
+					return new Response(
+						JSON.stringify({
+							success: true,
+							result: {
+								id: "job-1",
+								documentId: "d1",
+								status: "FAILED",
+							},
+						}),
+						{ status: 200, headers: { "content-type": "application/json" } },
+					);
+				}),
+			);
+
+			const out = await pollJobUntilComplete("org-1", "job-1", undefined, 1, 5);
+			expect(out.status).toBe("FAILED");
+		});
+
+		it("throws DocSvcError on timeout", async () => {
+			vi.stubGlobal(
+				"fetch",
+				vi.fn(async () => {
+					return new Response(
+						JSON.stringify({
+							success: true,
+							result: {
+								id: "job-1",
+								documentId: "d1",
+								status: "PROCESSING",
+							},
+						}),
+						{ status: 200, headers: { "content-type": "application/json" } },
+					);
+				}),
+			);
+
+			await expect(
+				pollJobUntilComplete("org-1", "job-1", undefined, 1, 2),
+			).rejects.toMatchObject({
+				name: "DocSvcError",
+				message: "Job polling timeout",
+			});
+		});
+	});
+
+	describe("createUploadLink", () => {
+		it("maps requiredDocuments objects to API body", async () => {
+			const fetchSpy = vi.fn(
+				async (_url: RequestInfo | URL, init?: RequestInit) => {
+					expect(init?.method).toBe("POST");
+					const body = JSON.parse((init?.body as string) ?? "{}");
+					expect(body.requiredDocuments).toEqual([
+						{ type: "passport", label: "P", description: "D" },
+					]);
+					return new Response(
+						JSON.stringify({
+							success: true,
+							result: {
+								id: "L1",
+								organizationId: "org",
+								requiredDocuments: ["passport"],
+								maxUploads: null,
+								allowMultipleFiles: true,
+								expiresAt: body.expiresAt,
+								status: "ACTIVE",
+								createdAt: "t",
+							},
+						}),
+						{ status: 200, headers: { "content-type": "application/json" } },
+					);
+				},
+			);
+			vi.stubGlobal("fetch", fetchSpy);
+
+			const res = await createUploadLink({
+				requiredDocuments: [{ type: "passport", label: "P", description: "D" }],
+				expiresInHours: 2,
+			});
+			expect(res.id).toBe("L1");
+			expect(fetchSpy.mock.calls[0][0].toString()).toContain("/upload-links");
+		});
+
+		it("maps legacy requiredDocumentTypes", async () => {
+			const fetchSpy = vi.fn(
+				async (_url: RequestInfo | URL, init?: RequestInit) => {
+					const body = JSON.parse((init?.body as string) ?? "{}");
+					expect(body.requiredDocuments).toEqual([{ type: "mx_ine_front" }]);
+					return new Response(
+						JSON.stringify({
+							success: true,
+							result: {
+								id: "L2",
+								organizationId: "org",
+								requiredDocuments: ["mx_ine_front"],
+								maxUploads: null,
+								allowMultipleFiles: true,
+								expiresAt: body.expiresAt,
+								status: "ACTIVE",
+								createdAt: "t",
+							},
+						}),
+						{ status: 200, headers: { "content-type": "application/json" } },
+					);
+				},
+			);
+			vi.stubGlobal("fetch", fetchSpy);
+
+			await createUploadLink({
+				requiredDocumentTypes: ["INE"],
+			});
+		});
+
+		it("defaults requiredDocuments to other when empty", async () => {
+			const fetchSpy = vi.fn(
+				async (_url: RequestInfo | URL, init?: RequestInit) => {
+					const body = JSON.parse((init?.body as string) ?? "{}");
+					expect(body.requiredDocuments).toEqual([{ type: "other" }]);
+					return new Response(
+						JSON.stringify({
+							success: true,
+							result: {
+								id: "L3",
+								organizationId: "org",
+								requiredDocuments: ["other"],
+								maxUploads: null,
+								allowMultipleFiles: true,
+								expiresAt: body.expiresAt,
+								status: "ACTIVE",
+								createdAt: "t",
+							},
+						}),
+						{ status: 200, headers: { "content-type": "application/json" } },
+					);
+				},
+			);
+			vi.stubGlobal("fetch", fetchSpy);
+
+			await createUploadLink({});
+		});
+	});
+
+	describe("getUploadLink", () => {
+		it("returns upload link result", async () => {
+			const link = {
+				id: "lid",
+				organizationId: "org",
+				requiredDocuments: [],
+				uploadedCount: 0,
+				maxUploads: 1,
+				allowMultipleFiles: false,
+				expiresAt: "t",
+				status: "ACTIVE" as const,
+				createdAt: "t",
+			};
+			vi.stubGlobal(
+				"fetch",
+				vi.fn(async (url: RequestInfo | URL) => {
+					expect(url.toString()).toContain("/upload-links/lid");
+					return new Response(JSON.stringify({ success: true, result: link }), {
+						status: 200,
+						headers: { "content-type": "application/json" },
+					});
+				}),
+			);
+
+			expect(await getUploadLink("org", "lid")).toEqual(link);
+		});
+	});
+
+	describe("listUploadLinks", () => {
+		it("appends status query when provided", async () => {
+			const body = { items: [], total: 0 };
+			vi.stubGlobal(
+				"fetch",
+				vi.fn(async (url: RequestInfo | URL) => {
+					const u = new URL(url.toString());
+					expect(u.pathname.endsWith("/upload-links")).toBe(true);
+					expect(u.searchParams.get("status")).toBe("ACTIVE");
+					expect(u.searchParams.get("limit")).toBe("5");
+					expect(u.searchParams.get("offset")).toBe("10");
+					return new Response(JSON.stringify({ success: true, result: body }), {
+						status: 200,
+						headers: { "content-type": "application/json" },
+					});
+				}),
+			);
+
+			expect(await listUploadLinks("org", "ACTIVE", 5, 10)).toEqual(body);
+		});
+	});
+
+	describe("listUploadLinkDocuments", () => {
+		it("returns documents array", async () => {
+			const docs = [
+				{
+					id: "doc",
+					fileName: "a.pdf",
+					fileSize: 1,
+					pageCount: 1,
+					documentType: null,
+					createdAt: "t",
+				},
+			];
+			vi.stubGlobal(
+				"fetch",
+				vi.fn(async (url: RequestInfo | URL) => {
+					expect(url.toString()).toContain("/upload-links/l1/documents");
+					return new Response(
+						JSON.stringify({ success: true, result: { documents: docs } }),
+						{ status: 200, headers: { "content-type": "application/json" } },
+					);
+				}),
+			);
+
+			expect(await listUploadLinkDocuments("l1")).toEqual(docs);
+		});
+	});
+
+	describe("subscribeToUploadLinkEvents", () => {
+		let OriginalEventSource: typeof EventSource;
+
+		beforeEach(() => {
+			OriginalEventSource = globalThis.EventSource;
+		});
+
+		afterEach(() => {
+			globalThis.EventSource = OriginalEventSource;
+		});
+
+		it("creates EventSource with token query and returns close cleanup", () => {
+			const instances: Array<{ url: string; close: ReturnType<typeof vi.fn> }> =
+				[];
+			class MockEventSource {
+				url: string;
+				onmessage: ((ev: MessageEvent) => void) | null = null;
+				onerror: ((ev: Event) => void) | null = null;
+				close = vi.fn();
+				constructor(url: string) {
+					this.url = url;
+					instances.push(this);
+				}
+			}
+			globalThis.EventSource = MockEventSource as unknown as typeof EventSource;
+
+			const onEvent = vi.fn();
+			const cleanup = subscribeToUploadLinkEvents(
+				"link-9",
+				"tok%20en",
+				onEvent,
+			);
+
+			expect(instances).toHaveLength(1);
+			expect(instances[0].url).toContain("/upload-links/link-9/events?");
+			expect(instances[0].url).toContain(encodeURIComponent("tok%20en"));
+
+			const inst = instances[0] as unknown as {
+				onmessage: (e: MessageEvent) => void;
+			};
+			inst.onmessage(
+				new MessageEvent("message", {
+					data: JSON.stringify({
+						type: "keep-alive",
+						uploadLinkId: "link-9",
+						timestamp: "now",
+					}),
+				}),
+			);
+			expect(onEvent).toHaveBeenCalled();
+
+			cleanup();
+			expect(instances[0].close).toHaveBeenCalled();
 		});
 	});
 });

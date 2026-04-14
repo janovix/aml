@@ -27,7 +27,6 @@ import {
 	Copy,
 	Check,
 	ExternalLink,
-	Loader2,
 	FileText,
 	RefreshCw,
 	QrCode,
@@ -272,18 +271,9 @@ export function UploadLinkManager({
 								>
 									Cancelar
 								</Button>
-								<Button onClick={handleCreateLink} disabled={isCreating}>
-									{isCreating ? (
-										<>
-											<Loader2 className="h-4 w-4 mr-2 animate-spin" />
-											Creando...
-										</>
-									) : (
-										<>
-											<Link2 className="h-4 w-4 mr-2" />
-											Crear Enlace
-										</>
-									)}
+								<Button onClick={handleCreateLink} loading={isCreating}>
+									{!isCreating && <Link2 className="h-4 w-4 mr-2" />}
+									{isCreating ? "Creando..." : "Crear Enlace"}
 								</Button>
 							</DialogFooter>
 						</DialogContent>

@@ -22,7 +22,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-	Loader2,
 	Plus,
 	Mail,
 	CheckCircle2,
@@ -358,14 +357,10 @@ function SessionCard({
 								variant="outline"
 								size="sm"
 								className="h-7 text-xs gap-1"
-								disabled={resending}
+								loading={resending}
 								onClick={handleResendEmail}
 							>
-								{resending ? (
-									<Loader2 className="h-3 w-3 animate-spin" />
-								) : (
-									<Mail className="h-3 w-3" />
-								)}
+								{!resending && <Mail className="h-3 w-3" />}
 								Reenviar correo
 							</Button>
 						)}
@@ -376,14 +371,10 @@ function SessionCard({
 								<Button
 									size="sm"
 									className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"
-									disabled={approving}
+									loading={approving}
 									onClick={handleApprove}
 								>
-									{approving ? (
-										<Loader2 className="h-3 w-3 animate-spin" />
-									) : (
-										<CheckCircle2 className="h-3 w-3" />
-									)}
+									{!approving && <CheckCircle2 className="h-3 w-3" />}
 									Aprobar
 								</Button>
 								<Button
@@ -404,14 +395,10 @@ function SessionCard({
 								variant="ghost"
 								size="sm"
 								className="h-7 text-xs gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
-								disabled={revoking}
+								loading={revoking}
 								onClick={handleRevoke}
 							>
-								{revoking ? (
-									<Loader2 className="h-3 w-3 animate-spin" />
-								) : (
-									<RotateCcw className="h-3 w-3" />
-								)}
+								{!revoking && <RotateCcw className="h-3 w-3" />}
 								Revocar
 							</Button>
 						)}
@@ -570,9 +557,9 @@ function SessionCard({
 						<Button
 							variant="destructive"
 							onClick={handleReject}
-							disabled={!rejectionReason.trim() || rejecting}
+							loading={rejecting}
+							disabled={!rejectionReason.trim()}
 						>
-							{rejecting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
 							Rechazar sesión
 						</Button>
 					</DialogFooter>
@@ -637,7 +624,6 @@ export function KycSessionSection({
 			await createKycSession({
 				input: {
 					clientId,
-					sendEmail: Boolean(clientEmail),
 				},
 				jwt,
 			});
@@ -710,15 +696,12 @@ export function KycSessionSection({
 				<Button
 					size="sm"
 					variant="outline"
-					disabled={!canCreateKycLink || creating || hasActiveOrPending}
+					loading={creating}
+					disabled={!canCreateKycLink || hasActiveOrPending}
 					onClick={handleCreate}
 					className="shrink-0"
 				>
-					{creating ? (
-						<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-					) : (
-						<Plus className="mr-2 h-4 w-4" />
-					)}
+					{!creating && <Plus className="mr-2 h-4 w-4" />}
 					{clientEmail ? "Crear y enviar enlace" : "Crear enlace KYC"}
 				</Button>
 			</div>

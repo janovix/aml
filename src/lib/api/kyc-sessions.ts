@@ -73,7 +73,6 @@ export interface KycSessionEventEntity {
 export interface KycSessionCreateInput {
 	clientId: string;
 	editableSections?: string[];
-	sendEmail?: boolean;
 }
 
 export interface KycSessionRejectInput {

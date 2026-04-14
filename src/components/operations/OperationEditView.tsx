@@ -526,18 +526,9 @@ export function OperationEditView({
 						<Button type="button" variant="outline" onClick={handleCancel}>
 							{t("cancel")}
 						</Button>
-						<Button type="submit" disabled={isSaving}>
-							{isSaving ? (
-								<>
-									<span className="animate-spin mr-2">⏳</span>
-									{t("opSaving")}
-								</>
-							) : (
-								<>
-									<Save className="h-4 w-4 mr-2" />
-									{t("opSaveButton")}
-								</>
-							)}
+						<Button type="submit" loading={isSaving}>
+							{!isSaving && <Save className="h-4 w-4 mr-2" />}
+							{isSaving ? t("opSaving") : t("opSaveButton")}
 						</Button>
 					</div>
 					{/* Threshold indicator below submit button */}

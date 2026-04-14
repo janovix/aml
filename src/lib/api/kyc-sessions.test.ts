@@ -1,8 +1,13 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import {
+	approveKycSession,
 	createKycSession,
 	getKycSession,
+	getKycSessionEvents,
 	listKycSessions,
+	rejectKycSession,
+	resendKycEmail,
+	revokeKycSession,
 } from "./kyc-sessions";
 
 const sessionEntity = {
@@ -102,5 +107,103 @@ describe("api/kyc-sessions", () => {
 			baseUrl: "https://aml.example",
 		});
 		expect(s.clientId).toBe("c1");
+	});
+
+	it("getKycSessionEvents GETs /events", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (url: RequestInfo | URL) => {
+				const u = new URL(typeof url === "string" ? url : url.toString());
+				expect(u.pathname).toBe("/api/v1/kyc-sessions/ks1/events");
+				return new Response(JSON.stringify({ events: [] }), {
+					status: 200,
+					headers: { "content-type": "application/json" },
+				});
+			}),
+		);
+
+		const ev = await getKycSessionEvents({
+			id: "ks1",
+			baseUrl: "https://aml.example",
+		});
+		expect(ev).toEqual([]);
+	});
+
+	it("resendKycEmail POSTs resend-email", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+				const u = new URL(typeof url === "string" ? url : url.toString());
+				expect(u.pathname).toBe("/api/v1/kyc-sessions/ks1/resend-email");
+				expect(init?.method?.toUpperCase()).toBe("POST");
+				return new Response(JSON.stringify({ ok: true }), {
+					status: 200,
+					headers: { "content-type": "application/json" },
+				});
+			}),
+		);
+
+		await resendKycEmail({ id: "ks1", baseUrl: "https://aml.example" });
+	});
+
+	it("approveKycSession POSTs approve", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+				const u = new URL(typeof url === "string" ? url : url.toString());
+				expect(u.pathname).toBe("/api/v1/kyc-sessions/ks1/approve");
+				expect(init?.method?.toUpperCase()).toBe("POST");
+				return new Response(JSON.stringify({ session: sessionEntity }), {
+					status: 200,
+					headers: { "content-type": "application/json" },
+				});
+			}),
+		);
+
+		const s = await approveKycSession({
+			id: "ks1",
+			baseUrl: "https://aml.example",
+		});
+		expect(s.id).toBe("ks1");
+	});
+
+	it("rejectKycSession POSTs body", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
+				expect(JSON.parse(String(init?.body))).toEqual({
+					reason: "bad",
+					reopenForCorrections: true,
+				});
+				return new Response(JSON.stringify({ session: sessionEntity }), {
+					status: 200,
+					headers: { "content-type": "application/json" },
+				});
+			}),
+		);
+
+		const s = await rejectKycSession({
+			id: "ks1",
+			baseUrl: "https://aml.example",
+			input: { reason: "bad", reopenForCorrections: true },
+		});
+		expect(s.id).toBe("ks1");
+	});
+
+	it("revokeKycSession POSTs revoke", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+				const u = new URL(typeof url === "string" ? url : url.toString());
+				expect(u.pathname).toBe("/api/v1/kyc-sessions/ks1/revoke");
+				expect(init?.method?.toUpperCase()).toBe("POST");
+				return new Response(JSON.stringify({ ok: true }), {
+					status: 200,
+					headers: { "content-type": "application/json" },
+				});
+			}),
+		);
+
+		await revokeKycSession({ id: "ks1", baseUrl: "https://aml.example" });
 	});
 });

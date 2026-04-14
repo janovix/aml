@@ -183,20 +183,12 @@ export function FormActionBar({
 									action.variant || (index === 0 ? "default" : "outline")
 								}
 								disabled={action.disabled}
+								loading={action.loading}
 								type={action.type || "button"}
 								className="w-full rounded-xl"
 							>
-								{action.loading ? (
-									<>
-										<span className="animate-spin mr-2">⏳</span>
-										{action.label}
-									</>
-								) : (
-									<>
-										{Icon && <Icon className="h-4 w-4 mr-2" />}
-										{action.label}
-									</>
-								)}
+								{!action.loading && Icon && <Icon className="h-4 w-4 mr-2" />}
+								{action.label}
 							</Button>
 						);
 					})}
@@ -217,19 +209,11 @@ export function FormActionBar({
 									(originalIndex === 0 ? "default" : "outline")
 								}
 								disabled={action.disabled}
+								loading={action.loading}
 								type={action.type || "button"}
 							>
-								{action.loading ? (
-									<>
-										<span className="animate-spin mr-2">⏳</span>
-										{action.label}
-									</>
-								) : (
-									<>
-										{Icon && <Icon className="h-4 w-4 mr-2" />}
-										{action.label}
-									</>
-								)}
+								{!action.loading && Icon && <Icon className="h-4 w-4 mr-2" />}
+								{action.label}
 							</Button>
 						);
 					})}

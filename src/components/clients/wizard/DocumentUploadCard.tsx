@@ -19,7 +19,6 @@ import {
 	FileText,
 	CheckCircle2,
 	X,
-	Loader2,
 	ExternalLink,
 	ZoomIn,
 	ChevronLeft,
@@ -552,21 +551,13 @@ export function DocumentUploadCard({
 						<Button
 							type="button"
 							onClick={handleUploadClick}
-							disabled={disabled || isUploading || !hasDocNumber}
+							loading={isUploading}
+							disabled={disabled || !hasDocNumber}
 							className="w-full"
 							size="sm"
 						>
-							{isUploading ? (
-								<>
-									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
-									Guardando...
-								</>
-							) : (
-								<>
-									<CheckCircle2 className="h-4 w-4 mr-2" />
-									Guardar Documento
-								</>
-							)}
+							{!isUploading && <CheckCircle2 className="h-4 w-4 mr-2" />}
+							{isUploading ? "Guardando..." : "Guardar Documento"}
 						</Button>
 					)}
 				</CardContent>

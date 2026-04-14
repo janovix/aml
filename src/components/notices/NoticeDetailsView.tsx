@@ -6,7 +6,6 @@ import {
 	FileWarning,
 	Calendar,
 	ArrowLeft,
-	Loader2,
 	AlertCircle,
 	FileCheck2,
 	Send,
@@ -514,12 +513,8 @@ export function NoticeDetailsView({
 								<Trash2 className="h-4 w-4 mr-2" />
 								{t("noticeDelete")}
 							</Button>
-							<Button onClick={handleGenerate} disabled={isGenerating}>
-								{isGenerating ? (
-									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
-								) : (
-									<FileCheck2 className="h-4 w-4 mr-2" />
-								)}
+							<Button onClick={handleGenerate} loading={isGenerating}>
+								{!isGenerating && <FileCheck2 className="h-4 w-4 mr-2" />}
 								{t("noticeGenerateXml")}
 							</Button>
 						</>
@@ -831,11 +826,9 @@ export function NoticeDetailsView({
 										size="sm"
 										className="text-destructive shrink-0"
 										onClick={() => handleRemoveAlert(alert.id)}
-										disabled={removingAlertId === alert.id}
+										loading={removingAlertId === alert.id}
 									>
-										{removingAlertId === alert.id ? (
-											<Loader2 className="h-3 w-3 animate-spin" />
-										) : (
+										{removingAlertId !== alert.id && (
 											<Trash2 className="h-3 w-3 mr-1" />
 										)}
 										Remover
@@ -1007,11 +1000,9 @@ export function NoticeDetailsView({
 						</Button>
 						<Button
 							onClick={handleSubmit}
-							disabled={isSubmitting || !submitPdfFile}
+							loading={isSubmitting}
+							disabled={!submitPdfFile}
 						>
-							{isSubmitting && (
-								<Loader2 className="h-4 w-4 mr-2 animate-spin" />
-							)}
 							{t("noticeConfirmSubmission")}
 						</Button>
 					</DialogFooter>
@@ -1091,11 +1082,9 @@ export function NoticeDetailsView({
 						</Button>
 						<Button
 							onClick={handleAcknowledge}
-							disabled={isAcknowledging || !ackPdfFile}
+							loading={isAcknowledging}
+							disabled={!ackPdfFile}
 						>
-							{isAcknowledging && (
-								<Loader2 className="h-4 w-4 mr-2 animate-spin" />
-							)}
 							{t("noticeRegisterAcknowledgement")}
 						</Button>
 					</DialogFooter>
@@ -1190,9 +1179,9 @@ export function NoticeDetailsView({
 						<Button
 							variant="destructive"
 							onClick={handleRebuke}
-							disabled={isRebuking || !rebukePdfFile}
+							loading={isRebuking}
+							disabled={!rebukePdfFile}
 						>
-							{isRebuking && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
 							Confirmar Rechazo
 						</Button>
 					</DialogFooter>
@@ -1216,8 +1205,7 @@ export function NoticeDetailsView({
 						>
 							{t("cancel")}
 						</Button>
-						<Button onClick={handleRevert} disabled={isReverting}>
-							{isReverting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+						<Button onClick={handleRevert} loading={isReverting}>
 							Revertir a Borrador
 						</Button>
 					</DialogFooter>
@@ -1241,9 +1229,8 @@ export function NoticeDetailsView({
 						<Button
 							variant="destructive"
 							onClick={handleDelete}
-							disabled={isDeleting}
+							loading={isDeleting}
 						>
-							{isDeleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
 							{t("delete")}
 						</Button>
 					</DialogFooter>

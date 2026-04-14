@@ -411,16 +411,19 @@ export function DashboardLayout({
 						onOpenChange={handleSidebarOpenChange}
 					>
 						<AppSidebar hideNavigation={hideNavigation} />
-						<SidebarInset className="flex h-svh flex-col overflow-hidden">
+						{/* Chat + scroll region share one flex row so main uses width minus Janbot. */}
+						<SidebarInset className="flex h-svh min-w-0 flex-1 flex-col overflow-hidden">
 							<Navbar toolbar={headerToolbar} />
-							<main className="@container/main flex min-h-0 flex-1 flex-col overflow-y-auto">
-								<div className="flex flex-1 flex-col p-4 pb-8 @md/main:p-6 @md/main:pb-12 @lg/main:p-8 @lg/main:pb-16">
-									{children}
-								</div>
-								<DashboardFooter />
-							</main>
+							<div className="flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden">
+								<main className="@container/main flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
+									<div className="flex flex-1 flex-col p-4 pb-8 @md/main:p-6 @md/main:pb-12 @lg/main:p-8 @lg/main:pb-16">
+										{children}
+									</div>
+									<DashboardFooter />
+								</main>
+								<ChatSidebar />
+							</div>
 						</SidebarInset>
-						<ChatSidebar />
 					</SidebarProvider>
 				</NotificationsProvider>
 			</ChatProvider>

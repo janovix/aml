@@ -28,15 +28,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-	Loader2,
-	Tags,
-	User,
-	CreditCard,
-	Mail,
-	MapPin,
-	StickyNote,
-} from "lucide-react";
+import { Tags, User, CreditCard, Mail, MapPin, StickyNote } from "lucide-react";
 import { toast } from "sonner";
 import {
 	createBeneficialController,
@@ -780,10 +772,7 @@ export function BeneficialControllerFormDialog({
 						>
 							Cancelar
 						</Button>
-						<Button type="submit" disabled={isSubmitting}>
-							{isSubmitting && (
-								<Loader2 className="h-4 w-4 mr-2 animate-spin" />
-							)}
+						<Button type="submit" loading={isSubmitting}>
 							{isEditMode ? "Actualizar" : "Crear"}
 						</Button>
 					</DialogFooter>

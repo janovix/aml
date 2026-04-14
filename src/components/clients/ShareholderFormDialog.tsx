@@ -20,7 +20,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Building2, User } from "lucide-react";
+import { Building2, User } from "lucide-react";
 import { toast } from "sonner";
 import {
 	createShareholder,
@@ -747,10 +747,7 @@ export function ShareholderFormDialog({
 						>
 							Cancelar
 						</Button>
-						<Button type="submit" disabled={isSubmitting}>
-							{isSubmitting && (
-								<Loader2 className="h-4 w-4 mr-2 animate-spin" />
-							)}
+						<Button type="submit" loading={isSubmitting}>
 							{isEditMode ? "Actualizar" : "Crear"}
 						</Button>
 					</DialogFooter>

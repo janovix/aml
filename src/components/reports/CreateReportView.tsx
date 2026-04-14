@@ -1011,20 +1011,12 @@ export function CreateReportView(): React.ReactElement {
 				{currentStep === "review" ? (
 					<Button
 						onClick={handleSubmit}
-						disabled={isSubmitting || !canProceed() || isJwtLoading}
+						loading={isSubmitting}
+						disabled={!canProceed() || isJwtLoading}
 						className="gap-2"
 					>
-						{isSubmitting ? (
-							<>
-								<Loader2 className="h-4 w-4 animate-spin" />
-								{t("reportCreating")}
-							</>
-						) : (
-							<>
-								<Save className="h-4 w-4" />
-								{t("reportCreateButton")}
-							</>
-						)}
+						{!isSubmitting && <Save className="h-4 w-4" />}
+						{isSubmitting ? t("reportCreating") : t("reportCreateButton")}
 					</Button>
 				) : (
 					<Button onClick={goToNextStep} disabled={!canProceed()}>

@@ -561,18 +561,9 @@ export function OperationCreateView(): React.JSX.Element {
 						<Button type="button" variant="outline" onClick={handleCancel}>
 							{t("cancel")}
 						</Button>
-						<Button type="submit" disabled={isSaving}>
-							{isSaving ? (
-								<>
-									<span className="animate-spin mr-2">⏳</span>
-									{t("opCreating")}
-								</>
-							) : (
-								<>
-									<Save className="h-4 w-4 mr-2" />
-									{t("opCreateButton")}
-								</>
-							)}
+						<Button type="submit" loading={isSaving}>
+							{!isSaving && <Save className="h-4 w-4 mr-2" />}
+							{isSaving ? t("opCreating") : t("opCreateButton")}
 						</Button>
 					</div>
 					{/* Threshold indicator below submit button */}

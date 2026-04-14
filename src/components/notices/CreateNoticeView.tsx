@@ -558,8 +558,8 @@ export function CreateNoticeView(): React.ReactElement {
 					</Button>
 					<Button
 						type="submit"
+						loading={isSubmitting}
 						disabled={
-							isSubmitting ||
 							!selectedMonth ||
 							!name ||
 							!preview ||
@@ -568,7 +568,6 @@ export function CreateNoticeView(): React.ReactElement {
 								!emptyConfirmed)
 						}
 					>
-						{isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
 						{t("noticeCreateButton")}
 					</Button>
 				</div>

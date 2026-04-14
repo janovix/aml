@@ -162,7 +162,7 @@ describe("KycSessionSection", () => {
 
 		await waitFor(() => {
 			expect(mockCreateKycSession).toHaveBeenCalledWith({
-				input: { clientId: "client-1", sendEmail: false },
+				input: { clientId: "client-1" },
 				jwt: "test-jwt",
 			});
 		});

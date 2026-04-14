@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
 import {
 	IDDocumentSelector,
 	type IDDocumentData,
@@ -232,11 +231,9 @@ export function LegalRepresentativeForm({
 				)}
 				<Button
 					type="submit"
-					disabled={!isFormValid || isSubmitting || isUploadingDocument}
+					loading={isSubmitting || isUploadingDocument}
+					disabled={!isFormValid}
 				>
-					{(isSubmitting || isUploadingDocument) && (
-						<Loader2 className="h-4 w-4 mr-2 animate-spin" />
-					)}
 					{isEditMode ? "Guardar Cambios" : "Agregar Representante Legal"}
 				</Button>
 			</div>

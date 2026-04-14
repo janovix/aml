@@ -20,7 +20,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Link2, Save, Info } from "lucide-react";
+import { Link2, Save, Info } from "lucide-react";
 import { toast } from "sonner";
 import { useJwt } from "@/hooks/useJwt";
 import {
@@ -181,14 +181,11 @@ export function KycSelfServiceSettingsCard({
 				<div className="flex justify-end">
 					<Button
 						onClick={handleSave}
-						disabled={!isDirty || isSaving || !jwt}
+						loading={isSaving}
+						disabled={!isDirty || !jwt}
 						size="sm"
 					>
-						{isSaving ? (
-							<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-						) : (
-							<Save className="mr-2 h-4 w-4" />
-						)}
+						{!isSaving && <Save className="mr-2 h-4 w-4" />}
 						Guardar cambios
 					</Button>
 				</div>

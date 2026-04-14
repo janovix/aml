@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import {
 	getOrganizationSettings,
 	updateOrganizationSettings,
+	updateSelfServiceSettings,
 } from "./organization-settings";
 
 describe("api/organization-settings", () => {
@@ -15,6 +16,9 @@ describe("api/organization-settings", () => {
 			organizationId: "org-1",
 			obligatedSubjectKey: "SO-VEH",
 			activityKey: "VEH",
+			selfServiceMode: "disabled" as const,
+			selfServiceExpiryHours: 24,
+			selfServiceRequiredSections: null as string[] | null,
 			createdAt: "2024-01-01",
 			updatedAt: "2024-01-01",
 		};
@@ -36,6 +40,58 @@ describe("api/organization-settings", () => {
 			baseUrl: "https://example.com",
 		});
 		expect(res).toEqual(mockSettings);
+	});
+
+	it("getOrganizationSettings returns null when configured is false", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+				const u = new URL(typeof url === "string" ? url : url.toString());
+				expect(u.pathname).toBe("/api/v1/organization-settings");
+				expect(init?.method).toBe("GET");
+				return new Response(
+					JSON.stringify({ configured: false, settings: null }),
+					{
+						status: 200,
+						headers: { "content-type": "application/json" },
+					},
+				);
+			}),
+		);
+
+		const res = await getOrganizationSettings({
+			baseUrl: "https://example.com",
+		});
+		expect(res).toBeNull();
+	});
+
+	it("getOrganizationSettings unwraps wrapped settings entity", async () => {
+		const settings = {
+			id: "s-1",
+			organizationId: "org-1",
+			obligatedSubjectKey: "SO-VEH",
+			activityKey: "VEH",
+			selfServiceMode: "manual" as const,
+			selfServiceExpiryHours: 48,
+			selfServiceRequiredSections: ["id"] as string[],
+			createdAt: "2024-01-01",
+			updatedAt: "2024-01-01",
+		};
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(
+				async () =>
+					new Response(JSON.stringify({ configured: true, settings }), {
+						status: 200,
+						headers: { "content-type": "application/json" },
+					}),
+			),
+		);
+
+		const res = await getOrganizationSettings({
+			baseUrl: "https://example.com",
+		});
+		expect(res?.selfServiceMode).toBe("manual");
 	});
 
 	it("getOrganizationSettings returns null on 404", async () => {
@@ -79,6 +135,9 @@ describe("api/organization-settings", () => {
 			organizationId: "org-1",
 			obligatedSubjectKey: "SO-INM",
 			activityKey: "INM",
+			selfServiceMode: "disabled" as const,
+			selfServiceExpiryHours: 24,
+			selfServiceRequiredSections: null as string[] | null,
 			createdAt: "2024-01-01",
 			updatedAt: "2024-06-01",
 		};
@@ -122,5 +181,51 @@ describe("api/organization-settings", () => {
 			baseUrl: "https://example.com",
 			jwt: "jwt-token",
 		});
+	});
+
+	it("updateSelfServiceSettings PATCHes self-service endpoint", async () => {
+		const updatedSettings = {
+			id: "s-1",
+			organizationId: "org-1",
+			obligatedSubjectKey: "SO-VEH",
+			activityKey: "VEH",
+			selfServiceMode: "automatic" as const,
+			selfServiceExpiryHours: 72,
+			selfServiceRequiredSections: null as string[] | null,
+			createdAt: "2024-01-01",
+			updatedAt: "2024-06-01",
+		};
+
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+				const u = new URL(typeof url === "string" ? url : url.toString());
+				expect(u.pathname).toBe("/api/v1/organization-settings/self-service");
+				expect(init?.method).toBe("PATCH");
+				expect(JSON.parse(String(init?.body))).toEqual({
+					selfServiceMode: "automatic",
+					selfServiceExpiryHours: 72,
+				});
+				return new Response(
+					JSON.stringify({
+						configured: true,
+						settings: updatedSettings,
+					}),
+					{
+						status: 200,
+						headers: { "content-type": "application/json" },
+					},
+				);
+			}),
+		);
+
+		const res = await updateSelfServiceSettings({
+			baseUrl: "https://example.com",
+			input: {
+				selfServiceMode: "automatic",
+				selfServiceExpiryHours: 72,
+			},
+		});
+		expect(res.selfServiceMode).toBe("automatic");
 	});
 });
