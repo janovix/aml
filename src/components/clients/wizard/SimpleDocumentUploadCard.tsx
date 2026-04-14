@@ -10,7 +10,6 @@ import {
 	FileText,
 	CheckCircle2,
 	X,
-	Loader2,
 	Upload,
 	ZoomIn,
 	Check,
@@ -342,13 +341,11 @@ export function SimpleDocumentUploadCard({
 									size="lg"
 									className="w-full h-auto py-6 flex flex-col items-center gap-2"
 									onClick={() => fileInputRef.current?.click()}
-									disabled={disabled || isProcessing}
+									loading={isProcessing}
+									disabled={disabled}
 								>
 									{isProcessing ? (
-										<>
-											<Loader2 className="h-8 w-8 animate-spin" />
-											<span className="text-sm">Procesando...</span>
-										</>
+										<span className="text-sm">Procesando...</span>
 									) : (
 										<>
 											<Upload className="h-8 w-8" />
@@ -443,19 +440,11 @@ export function SimpleDocumentUploadCard({
 									<Button
 										type="button"
 										onClick={handleUploadClick}
-										disabled={disabled || isUploading}
+										loading={isUploading}
+										disabled={disabled}
 									>
-										{isUploading ? (
-											<>
-												<Loader2 className="h-4 w-4 mr-2 animate-spin" />
-												Guardando...
-											</>
-										) : (
-											<>
-												<CheckCircle2 className="h-4 w-4 mr-2" />
-												Aceptar
-											</>
-										)}
+										{!isUploading && <CheckCircle2 className="h-4 w-4 mr-2" />}
+										{isUploading ? "Guardando..." : "Aceptar"}
 									</Button>
 								</div>
 							</div>

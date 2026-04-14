@@ -22,7 +22,6 @@ import { cn } from "@/lib/utils";
 import {
 	ArrowUp,
 	Square,
-	Loader2,
 	ChevronDown,
 	Paperclip,
 	X,
@@ -382,11 +381,7 @@ export function ChatInput({ className }: ChatInputProps) {
 								"disabled:bg-muted disabled:text-muted-foreground",
 							)}
 						>
-							{isLoading ? (
-								<Loader2 className="h-3.5 w-3.5 animate-spin" />
-							) : (
-								<ArrowUp className="h-3.5 w-3.5" />
-							)}
+							<ArrowUp className="h-3.5 w-3.5" />
 							<span className="sr-only">{t("chatSend")}</span>
 						</Button>
 					)}

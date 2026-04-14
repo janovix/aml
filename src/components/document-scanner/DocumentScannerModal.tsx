@@ -1605,12 +1605,7 @@ export function DocumentScannerModal({
 	// Render action buttons based on stage
 	const renderActions = () => {
 		if (isProcessing) {
-			return (
-				<Button disabled>
-					<Loader2 className="h-4 w-4 mr-2 animate-spin" />
-					Procesando...
-				</Button>
-			);
+			return <Button loading>Procesando...</Button>;
 		}
 
 		// For waiting_for_back, show only cancel button (main actions are in content)

@@ -12,6 +12,7 @@ export interface OrganizationSettingsEntity {
 	selfServiceMode: SelfServiceMode;
 	selfServiceExpiryHours: number;
 	selfServiceRequiredSections: string[] | null;
+	selfServiceSendEmail?: boolean;
 	createdAt: string;
 	updatedAt: string;
 }
@@ -28,6 +29,7 @@ export interface SelfServiceSettingsUpdateInput {
 	selfServiceMode?: SelfServiceMode;
 	selfServiceExpiryHours?: number;
 	selfServiceRequiredSections?: string[] | null;
+	selfServiceSendEmail?: boolean;
 }
 
 /**

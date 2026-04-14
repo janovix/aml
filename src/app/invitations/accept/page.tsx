@@ -227,16 +227,11 @@ export default function AcceptInvitationPage() {
 					<Button
 						onClick={handleAccept}
 						className="flex-1"
-						disabled={state === "accepting"}
+						loading={state === "accepting"}
 					>
-						{state === "accepting" ? (
-							<>
-								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-								{t("invitationAccepting")}
-							</>
-						) : (
-							t("invitationAccept")
-						)}
+						{state === "accepting"
+							? t("invitationAccepting")
+							: t("invitationAccept")}
 					</Button>
 				</CardFooter>
 			</Card>

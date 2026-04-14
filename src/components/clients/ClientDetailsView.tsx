@@ -439,6 +439,59 @@ const MARITAL_STATUS_LABELS: Record<MaritalStatus, TranslationKeys> = {
 	OTHER: "clientGenderOther",
 };
 
+function trimAddressPart(value: string | null | undefined): string | undefined {
+	const s = value?.trim();
+	return s ? s : undefined;
+}
+
+/**
+ * Builds full-address lines from only non-empty parts so we do not show
+ * stray commas, blank lines, or a bare "C.P." when postal code is missing.
+ */
+function formatClientFullAddressLines(
+	client: Client,
+	getStateName: (stateCode: string | undefined | null) => string,
+): string[] | null {
+	const street = trimAddressPart(client.street);
+	const externalNumber = trimAddressPart(client.externalNumber);
+	const internalNumber = trimAddressPart(client.internalNumber);
+	const neighborhood = trimAddressPart(client.neighborhood);
+	const postalCode = trimAddressPart(client.postalCode);
+	const city = trimAddressPart(client.city);
+	const municipality = trimAddressPart(client.municipality);
+	const stateName = trimAddressPart(
+		client.resolvedNames?.stateCode || getStateName(client.stateCode),
+	);
+	const country =
+		trimAddressPart(client.resolvedNames?.country) ||
+		trimAddressPart(client.country);
+
+	const line1Segments: string[] = [];
+	if (street) line1Segments.push(street);
+	if (externalNumber) line1Segments.push(externalNumber);
+	let line1 = line1Segments.join(" ");
+	if (internalNumber) {
+		line1 = line1
+			? `${line1} Int. ${internalNumber}`
+			: `Int. ${internalNumber}`;
+	}
+
+	const line2Segments: string[] = [];
+	if (neighborhood) line2Segments.push(neighborhood);
+	if (postalCode) line2Segments.push(`C.P. ${postalCode}`);
+	const line2 = line2Segments.join(", ");
+
+	const line3Segments: string[] = [];
+	if (city) line3Segments.push(city);
+	if (municipality) line3Segments.push(municipality);
+	if (stateName) line3Segments.push(stateName);
+	if (country) line3Segments.push(country);
+	const line3 = line3Segments.join(", ");
+
+	const lines = [line1, line2, line3].filter((line) => line.length > 0);
+	return lines.length > 0 ? lines : null;
+}
+
 /**
  * Field display component with missing indicator and optional tier dot
  */
@@ -677,6 +730,7 @@ export function ClientDetailsView({
 
 	// Compute field-level tier map and completeness result
 	const tierMap = getClientFieldTierMap(client.personType);
+	const fullAddressLines = formatClientFullAddressLines(client, getStateName);
 	const completenessResult = activityCode
 		? computeCompleteness(
 				activityCode,
@@ -905,7 +959,9 @@ export function ClientDetailsView({
 									/>
 									<FieldDisplay
 										label={t("clientNationality")}
-										value={client.nationality}
+										value={
+											client.resolvedNames?.nationality || client.nationality
+										}
 										isMissing={!client.nationality}
 									/>
 									<FieldDisplay
@@ -1119,17 +1175,25 @@ export function ClientDetailsView({
 								<dt className="text-sm font-medium text-muted-foreground mb-1">
 									{t("clientFullAddress")}
 								</dt>
-								<dd className="text-base">
-									{client.street} {client.externalNumber}
-									{client.internalNumber && ` Int. ${client.internalNumber}`}
-									<br />
-									{client.neighborhood && `${client.neighborhood}, `}
-									C.P. {client.postalCode}
-									<br />
-									{client.city}, {client.municipality},{" "}
-									{client.resolvedNames?.stateCode ||
-										getStateName(client.stateCode)}
-									, {client.country}
+								<dd
+									className={cn(
+										"text-base",
+										!fullAddressLines && "text-muted-foreground italic",
+									)}
+								>
+									{fullAddressLines ? (
+										fullAddressLines.map((line, i) => (
+											<span key={i}>
+												{i > 0 ? <br /> : null}
+												{line}
+											</span>
+										))
+									) : (
+										<>
+											{t("commonNotSpecified")}
+											<AlertTriangle className="h-4 w-4 inline ml-2 text-amber-500" />
+										</>
+									)}
 								</dd>
 							</div>
 							<FieldDisplay
@@ -1178,7 +1242,7 @@ export function ClientDetailsView({
 							/>
 							<FieldDisplay
 								label={t("clientCountry")}
-								value={client.country}
+								value={client.resolvedNames?.country || client.country}
 								isMissing={!client.country}
 							/>
 							<FieldDisplay

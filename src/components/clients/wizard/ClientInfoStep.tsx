@@ -115,7 +115,8 @@ const INITIAL_CLIENT_FORM_DATA: ClientFormData = {
 	postalCode: "",
 	reference: "",
 	notes: "",
-	countryCode: "",
+	/** Must stay in sync with nationality until the user picks another country */
+	countryCode: "MX",
 	economicActivityCode: "",
 	occupation: "",
 	sourceOfFunds: "",
@@ -541,7 +542,10 @@ export function ClientInfoStep({
 
 		// Add optional fields
 		if (formData.nationality) request.nationality = formData.nationality;
-		if (formData.countryCode) request.countryCode = formData.countryCode;
+		const countryCodeToSend =
+			(formData.countryCode || "").trim() ||
+			(formData.nationality || "").trim();
+		if (countryCodeToSend) request.countryCode = countryCodeToSend;
 		if (formData.economicActivityCode)
 			request.economicActivityCode = formData.economicActivityCode;
 		if (formData.internalNumber)
@@ -853,9 +857,9 @@ export function ClientInfoStep({
 						value={formData.nationality}
 						searchPlaceholder="Buscar país..."
 						onChange={(option) => {
-							handleInputChange("nationality", option?.id ?? "");
 							const code =
 								(option?.metadata as { code?: string } | null)?.code ?? "";
+							handleInputChange("nationality", code);
 							handleInputChange("countryCode", code);
 						}}
 					/>
@@ -867,7 +871,13 @@ export function ClientInfoStep({
 						value={formData.economicActivityCode}
 						searchPlaceholder="Buscar actividad económica..."
 						onChange={(option) =>
-							handleInputChange("economicActivityCode", option?.id ?? "")
+							handleInputChange(
+								"economicActivityCode",
+								option
+									? ((option.metadata as { code?: string } | null)?.code ??
+											option.id)
+									: "",
+							)
 						}
 					/>
 				</CardContent>
@@ -1165,12 +1175,9 @@ export function ClientInfoStep({
 				>
 					Cancelar
 				</Button>
-				<Button type="submit" disabled={isSubmitting}>
+				<Button type="submit" loading={isSubmitting}>
 					{isSubmitting ? (
-						<>
-							<span className="animate-spin mr-2">⏳</span>
-							Creando...
-						</>
+						"Creando..."
 					) : (
 						<>
 							Guardar y Continuar

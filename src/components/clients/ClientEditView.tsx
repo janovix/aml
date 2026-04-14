@@ -563,7 +563,10 @@ export function ClientEditView({
 			request.internalNumber = formData.internalNumber;
 		if (formData.reference) request.reference = formData.reference;
 		if (formData.notes) request.notes = formData.notes;
-		if (formData.countryCode) request.countryCode = formData.countryCode;
+		const countryCodeToSend =
+			(formData.countryCode || "").trim() ||
+			(formData.nationality || "").trim();
+		if (countryCodeToSend) request.countryCode = countryCodeToSend;
 		if (formData.economicActivityCode)
 			request.economicActivityCode = formData.economicActivityCode;
 		if (formData.gender) request.gender = formData.gender as Gender;
@@ -1023,13 +1026,11 @@ export function ClientEditView({
 											searchPlaceholder={t("clientSearchCountry")}
 											resolvedName={client?.resolvedNames?.nationality}
 											onChange={(option) => {
-												handleInputChange("nationality", option?.id ?? "");
-												handleInputChange(
-													"countryCode",
-													option
-														? ((option.metadata?.code as string) ?? option.id)
-														: "",
-												);
+												const code = option
+													? ((option.metadata?.code as string) ?? option.id)
+													: "";
+												handleInputChange("nationality", code);
+												handleInputChange("countryCode", code);
 											}}
 										/>
 									)}
@@ -1060,8 +1061,13 @@ export function ClientEditView({
 										value={formData.economicActivityCode}
 										searchPlaceholder="Buscar actividad económica..."
 										resolvedName={client?.resolvedNames?.economicActivityCode}
-										onValueChange={(value) =>
-											handleInputChange("economicActivityCode", value ?? "")
+										onChange={(option) =>
+											handleInputChange(
+												"economicActivityCode",
+												option
+													? ((option.metadata?.code as string) ?? option.id)
+													: "",
+											)
 										}
 									/>
 								</CardContent>
@@ -1241,18 +1247,9 @@ export function ClientEditView({
 								>
 									{t("cancel")}
 								</Button>
-								<Button type="submit" disabled={isSubmitting}>
-									{isSubmitting ? (
-										<>
-											<span className="animate-spin mr-2">⏳</span>
-											{t("clientSaving")}
-										</>
-									) : (
-										<>
-											<Save className="h-4 w-4 mr-2" />
-											{t("clientSaveButton")}
-										</>
-									)}
+								<Button type="submit" loading={isSubmitting}>
+									{!isSubmitting && <Save className="h-4 w-4 mr-2" />}
+									{isSubmitting ? t("clientSaving") : t("clientSaveButton")}
 								</Button>
 							</div>
 						</TabsContent>
@@ -1337,18 +1334,9 @@ export function ClientEditView({
 								>
 									{t("cancel")}
 								</Button>
-								<Button type="submit" disabled={isSubmitting}>
-									{isSubmitting ? (
-										<>
-											<span className="animate-spin mr-2">⏳</span>
-											{t("clientSaving")}
-										</>
-									) : (
-										<>
-											<Save className="h-4 w-4 mr-2" />
-											{t("clientSaveButton")}
-										</>
-									)}
+								<Button type="submit" loading={isSubmitting}>
+									{!isSubmitting && <Save className="h-4 w-4 mr-2" />}
+									{isSubmitting ? t("clientSaving") : t("clientSaveButton")}
 								</Button>
 							</div>
 						</TabsContent>
@@ -1469,18 +1457,9 @@ export function ClientEditView({
 								>
 									{t("cancel")}
 								</Button>
-								<Button type="submit" disabled={isSubmitting}>
-									{isSubmitting ? (
-										<>
-											<span className="animate-spin mr-2">⏳</span>
-											{t("clientSaving")}
-										</>
-									) : (
-										<>
-											<Save className="h-4 w-4 mr-2" />
-											{t("clientSaveButton")}
-										</>
-									)}
+								<Button type="submit" loading={isSubmitting}>
+									{!isSubmitting && <Save className="h-4 w-4 mr-2" />}
+									{isSubmitting ? t("clientSaving") : t("clientSaveButton")}
 								</Button>
 							</div>
 						</TabsContent>

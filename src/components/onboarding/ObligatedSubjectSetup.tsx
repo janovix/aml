@@ -16,7 +16,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { AlertTriangle, Building2, Loader2, Check } from "lucide-react";
+import { AlertTriangle, Building2, Check } from "lucide-react";
 import { getAllActivityVisuals } from "@/lib/activity-registry";
 import type { ActivityCode } from "@/types/operation";
 import { ENABLED_ACTIVITY_CODES } from "@/types/operation";
@@ -225,11 +225,9 @@ export function ObligatedSubjectSetup({
 							size="lg"
 							className="w-full"
 							disabled={!canSubmit}
+							loading={isSubmitting}
 							onClick={handleSubmit}
 						>
-							{isSubmitting && (
-								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-							)}
 							Guardar configuración
 						</Button>
 					</div>

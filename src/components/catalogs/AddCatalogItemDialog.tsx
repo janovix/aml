@@ -154,7 +154,11 @@ export function AddCatalogItemDialog({
 						>
 							Cancelar
 						</Button>
-						<Button type="submit" disabled={isSubmitting || !name.trim()}>
+						<Button
+							type="submit"
+							loading={isSubmitting}
+							disabled={!name.trim()}
+						>
 							{isSubmitting ? "Guardando..." : "Agregar"}
 						</Button>
 					</DialogFooter>

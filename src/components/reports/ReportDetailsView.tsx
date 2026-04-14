@@ -12,7 +12,6 @@ import {
 	Download,
 	Clock,
 	FileCheck2,
-	Loader2,
 	AlertTriangle,
 	FileType,
 	AlertCircle,
@@ -629,19 +628,13 @@ export function ReportDetailsView({
 								<Button
 									className="w-full gap-2"
 									onClick={handleGenerate}
-									disabled={isGenerating || report.recordCount === 0}
+									loading={isGenerating}
+									disabled={report.recordCount === 0}
 								>
-									{isGenerating ? (
-										<>
-											<Loader2 className="h-4 w-4 animate-spin" />
-											{t("reportGenerating")}
-										</>
-									) : (
-										<>
-											<FileCheck2 className="h-4 w-4" />
-											{t("reportGeneratePdf")}
-										</>
-									)}
+									{!isGenerating && <FileCheck2 className="h-4 w-4" />}
+									{isGenerating
+										? t("reportGenerating")
+										: t("reportGeneratePdf")}
 								</Button>
 							)}
 

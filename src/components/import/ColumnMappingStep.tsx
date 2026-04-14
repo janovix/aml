@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircle, Info, Loader2, Wand2 } from "lucide-react";
+import { AlertCircle, Info, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ImportTargetField } from "@/lib/api/imports";
 import {
@@ -297,18 +297,13 @@ export function ColumnMappingStep({
 			<div className="mt-8 flex items-center gap-4">
 				<Button
 					type="button"
-					disabled={submitting}
+					loading={submitting}
 					onClick={handleSubmit}
 					className="gap-2"
 				>
-					{submitting ? (
-						<>
-							<Loader2 className="h-4 w-4 animate-spin" />
-							Iniciando importación…
-						</>
-					) : (
-						"Guardar mapeo e iniciar importación"
-					)}
+					{submitting
+						? "Iniciando importación…"
+						: "Guardar mapeo e iniciar importación"}
 				</Button>
 				<p className="text-xs text-muted-foreground">
 					Se validarán y procesarán todas las filas del archivo.
