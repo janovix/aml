@@ -15,6 +15,7 @@ vi.mock("@/lib/cookies", () => ({
 	COOKIE_NAMES: {
 		THEME: "janovix-theme",
 		LANGUAGE: "janovix-lang",
+		ENVIRONMENT: "janovix-env",
 	},
 }));
 

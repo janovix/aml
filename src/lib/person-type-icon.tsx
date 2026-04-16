@@ -1,6 +1,7 @@
 import { User, Building2, Landmark } from "lucide-react";
 import type { PersonType } from "@/types/client";
 import type { LucideIcon } from "lucide-react";
+import type { TranslationKeys } from "@/lib/translations";
 
 /**
  * Person type styling configuration
@@ -15,11 +16,13 @@ export interface PersonTypeStyle {
 	badgeBg: string;
 }
 
-const PERSON_TYPE_STYLES: Record<PersonType, PersonTypeStyle> = {
+// Color and icon configuration (non-translatable)
+const PERSON_TYPE_CONFIG: Record<
+	PersonType,
+	Omit<PersonTypeStyle, "label" | "description">
+> = {
 	physical: {
 		icon: User,
-		label: "Persona Física",
-		description: "Individuo o persona natural",
 		bgColor: "bg-sky-500/10",
 		iconColor: "text-sky-500",
 		borderColor: "border-sky-500/30",
@@ -27,8 +30,6 @@ const PERSON_TYPE_STYLES: Record<PersonType, PersonTypeStyle> = {
 	},
 	moral: {
 		icon: Building2,
-		label: "Persona Moral",
-		description: "Empresa o sociedad mercantil",
 		bgColor: "bg-violet-500/10",
 		iconColor: "text-violet-500",
 		borderColor: "border-violet-500/30",
@@ -36,8 +37,6 @@ const PERSON_TYPE_STYLES: Record<PersonType, PersonTypeStyle> = {
 	},
 	trust: {
 		icon: Landmark,
-		label: "Fideicomiso",
-		description: "Contrato de administración fiduciaria",
 		bgColor: "bg-amber-500/10",
 		iconColor: "text-amber-500",
 		borderColor: "border-amber-500/30",
@@ -45,26 +44,57 @@ const PERSON_TYPE_STYLES: Record<PersonType, PersonTypeStyle> = {
 	},
 };
 
+// Translation keys mapping for person type labels and descriptions
+const PERSON_TYPE_TRANSLATION_KEYS: Record<
+	PersonType,
+	{ label: TranslationKeys; description: TranslationKeys }
+> = {
+	physical: {
+		label: "clientPersonPhysical",
+		description: "clientPersonPhysicalDesc",
+	},
+	moral: {
+		label: "clientPersonMoral",
+		description: "clientPersonMoralDesc",
+	},
+	trust: {
+		label: "clientTrust",
+		description: "clientTrustDesc",
+	},
+};
+
 /**
  * Returns the appropriate icon component for a person type
  */
 export function getPersonTypeIcon(personType: PersonType): LucideIcon {
-	return PERSON_TYPE_STYLES[personType]?.icon ?? User;
+	return PERSON_TYPE_CONFIG[personType]?.icon ?? User;
 }
 
 /**
- * Returns the complete styling configuration for a person type
+ * Returns the complete styling configuration for a person type with translated labels
  */
-export function getPersonTypeStyle(personType: PersonType): PersonTypeStyle {
-	return (
-		PERSON_TYPE_STYLES[personType] ?? {
+export function getPersonTypeStyle(
+	personType: PersonType,
+	t: (key: TranslationKeys) => string = (key) => key,
+): PersonTypeStyle {
+	const config = PERSON_TYPE_CONFIG[personType];
+	const keys = PERSON_TYPE_TRANSLATION_KEYS[personType];
+
+	if (!config || !keys) {
+		return {
 			icon: User,
-			label: "Desconocido",
-			description: "Tipo de persona no identificado",
+			label: "Unknown",
+			description: "Unknown person type",
 			bgColor: "bg-muted",
 			iconColor: "text-muted-foreground",
 			borderColor: "border-muted",
 			badgeBg: "bg-muted text-muted-foreground",
-		}
-	);
+		};
+	}
+
+	return {
+		...config,
+		label: t(keys.label),
+		description: t(keys.description),
+	};
 }

@@ -62,6 +62,10 @@ export const translations = {
 		breadcrumbError: "Error",
 		breadcrumbForbidden: "Prohibido",
 		breadcrumbUnauthorized: "No autorizado",
+		breadcrumbMethodology: "Metodología",
+		breadcrumbAssessment: "Evaluación",
+		breadcrumbEvaluations: "Evaluaciones",
+		breadcrumbCreateOperation: "Crear operación",
 
 		// Sidebar
 		sidebarOrganizations: "Organizaciones",
@@ -123,6 +127,19 @@ export const translations = {
 		themeSystem: "Sistema",
 		// Language
 		languageLabel: "Idioma",
+
+		// Data environment (AML / API data plane)
+		envDataPlane: "Entorno de datos",
+		envLive: "Producción",
+		envStaging: "Staging",
+		envDevelopment: "Desarrollo",
+		envBannerStaging:
+			"Estás viendo datos de staging — no afectan a clientes en vivo.",
+		envBannerDevelopment:
+			"Estás viendo datos de desarrollo — solo para pruebas.",
+		envSwitchConfirm: "Entorno de datos actualizado",
+		envSwitchLive: "Modo producción (datos en vivo)",
+		envDismiss: "Cerrar aviso",
 
 		// Language
 		languageSpanish: "Español",
@@ -243,6 +260,13 @@ export const translations = {
 		// Client Form
 		clientNewTitle: "Nuevo Cliente",
 		clientNewSubtitle: "Registrar un nuevo cliente en el sistema",
+		clientWizardStep1Title: "Información del Cliente",
+		clientWizardStep1Description: "Datos básicos",
+		clientWizardStep2TitlePhysical: "Documentos KYC",
+		clientWizardStep2TitleMoral: "Documentos y Beneficiarios",
+		clientWizardStep2Description: "Expediente",
+		clientWizardStep2Subtitle:
+			"Agrega los documentos requeridos para completar el expediente KYC",
 		clientEditTitle: "Editar Cliente",
 		clientEditSubtitle: "Modificar los datos del cliente",
 		clientDetailsTitle: "Detalle de Cliente",
@@ -295,6 +319,8 @@ export const translations = {
 		clientBackToClients: "Volver a Clientes",
 		clientPersonalData: "Datos Personales",
 		clientCompanyData: "Datos de la Empresa",
+		clientKycOnboardingNote:
+			"El resto puede completarse en el proceso de onboarding KYC.",
 		clientPersonTypeNotModifiable:
 			"El tipo de persona no se puede modificar después de crear el cliente.",
 		clientRfcHintPhysical: "13 caracteres para persona física",
@@ -316,12 +342,36 @@ export const translations = {
 		tableRisk: "Riesgo",
 		tableContact: "Contacto",
 		tableLocation: "Ubicación",
+		unspecified: "No especificado",
 		tableRegistration: "Registro",
 		tableKYC: "KYC",
 		tableScreening: "Screening",
 		screeningClear: "Sin alertas",
 		screeningPending: "Pendiente",
 		screeningMedia: "Media",
+		// Watchlist Status Labels
+		watchlistStatusPending: "Pendiente",
+		watchlistStatusProcessing: "En proceso",
+		watchlistStatusCompleted: "Completado",
+		watchlistStatusFailed: "Error",
+		watchlistStatusSkipped: "Omitido",
+		// Adverse Risk Levels
+		adverseRiskNone: "Ninguno",
+		adverseRiskLow: "Bajo",
+		adverseRiskMedium: "Medio",
+		adverseRiskHigh: "Alto",
+		// Watchlist Match Labels
+		watchlistMatchSingular: "coincidencia",
+		watchlistMatchPlural: "coincidencias",
+		// Screening Details
+		screeningRfcExact: "RFC exacto",
+		screeningPepOfficialLabel: "PEP Oficial (Transparencia)",
+		screeningPepRecordSingular: "registro PEP",
+		screeningPepRecordPlural: "registros PEPs",
+		screeningHideDetails: "Ocultar",
+		screeningShowDetails: "Ver detalle",
+		screeningAdverseMediaLabel: "Medios Adversos",
+		screeningRiskLabel: "Riesgo:",
 		tableDate: "Fecha",
 		tableAmount: "Monto",
 		tableStatus: "Estado",
@@ -1252,6 +1302,11 @@ export const translations = {
 		opPaymentReference: "Referencia de pago",
 		opAddPaymentMethod: "Agregar forma de pago",
 
+		// Operations page
+		opPageSubtitle: "Gestiona las operaciones de tu actividad vulnerable",
+		opStatComplete: "Operaciones completas",
+		opStatNeedAttention: "Requieren atención",
+
 		// Operations table
 		opTableClient: "Cliente",
 		opTableDate: "Fecha",
@@ -1743,6 +1798,10 @@ export const translations = {
 		breadcrumbError: "Error",
 		breadcrumbForbidden: "Forbidden",
 		breadcrumbUnauthorized: "Unauthorized",
+		breadcrumbMethodology: "Methodology",
+		breadcrumbAssessment: "Assessment",
+		breadcrumbEvaluations: "Evaluations",
+		breadcrumbCreateOperation: "Create operation",
 
 		// Sidebar
 		sidebarOrganizations: "Organizations",
@@ -1803,6 +1862,19 @@ export const translations = {
 		themeSystem: "System",
 		// Language
 		languageLabel: "Language",
+
+		// Data environment (AML / API data plane)
+		envDataPlane: "Data environment",
+		envLive: "Live",
+		envStaging: "Staging",
+		envDevelopment: "Development",
+		envBannerStaging:
+			"You are viewing staging data — changes do not affect live customers.",
+		envBannerDevelopment:
+			"You are viewing development data — for testing only.",
+		envSwitchConfirm: "Data environment updated",
+		envSwitchLive: "Live mode (production data)",
+		envDismiss: "Dismiss notice",
 
 		// Language
 		languageSpanish: "Español",
@@ -1922,6 +1994,13 @@ export const translations = {
 		// Client Form
 		clientNewTitle: "New Client",
 		clientNewSubtitle: "Register a new client in the system",
+		clientWizardStep1Title: "Client Information",
+		clientWizardStep1Description: "Basic data",
+		clientWizardStep2TitlePhysical: "KYC Documents",
+		clientWizardStep2TitleMoral: "Documents and Beneficiaries",
+		clientWizardStep2Description: "File",
+		clientWizardStep2Subtitle:
+			"Add the required documents to complete the KYC file",
 		clientEditTitle: "Edit Client",
 		clientEditSubtitle: "Modify client data",
 		clientDetailsTitle: "Client Details",
@@ -1973,6 +2052,8 @@ export const translations = {
 		clientBackToClients: "Back to Clients",
 		clientPersonalData: "Personal Data",
 		clientCompanyData: "Company Data",
+		clientKycOnboardingNote:
+			"The rest can be completed in the KYC onboarding process.",
 		clientPersonTypeNotModifiable:
 			"Person type cannot be modified after the client is created.",
 		clientRfcHintPhysical: "13 characters for individuals",
@@ -1994,12 +2075,36 @@ export const translations = {
 		tableRisk: "Risk",
 		tableContact: "Contact",
 		tableLocation: "Location",
+		unspecified: "Unspecified",
 		tableRegistration: "Registration",
 		tableKYC: "KYC",
 		tableScreening: "Screening",
 		screeningClear: "Clear",
 		screeningPending: "Pending",
 		screeningMedia: "Media",
+		// Watchlist Status Labels
+		watchlistStatusPending: "Pending",
+		watchlistStatusProcessing: "Processing",
+		watchlistStatusCompleted: "Completed",
+		watchlistStatusFailed: "Failed",
+		watchlistStatusSkipped: "Skipped",
+		// Adverse Risk Levels
+		adverseRiskNone: "None",
+		adverseRiskLow: "Low",
+		adverseRiskMedium: "Medium",
+		adverseRiskHigh: "High",
+		// Watchlist Match Labels
+		watchlistMatchSingular: "match",
+		watchlistMatchPlural: "matches",
+		// Screening Details
+		screeningRfcExact: "Exact RFC",
+		screeningPepOfficialLabel: "PEP Official (Transparency)",
+		screeningPepRecordSingular: "PEP record",
+		screeningPepRecordPlural: "PEP records",
+		screeningHideDetails: "Hide",
+		screeningShowDetails: "Show details",
+		screeningAdverseMediaLabel: "Adverse Media",
+		screeningRiskLabel: "Risk:",
 		tableDate: "Date",
 		tableAmount: "Amount",
 		tableStatus: "Status",
@@ -2925,6 +3030,11 @@ export const translations = {
 		opAccountDigits: "Account (last digits)",
 		opPaymentReference: "Payment reference",
 		opAddPaymentMethod: "Add payment method",
+
+		// Operations page
+		opPageSubtitle: "Manage your vulnerable activity operations",
+		opStatComplete: "Complete operations",
+		opStatNeedAttention: "Need attention",
 
 		// Operations table
 		opTableClient: "Client",

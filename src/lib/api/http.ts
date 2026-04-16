@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/nextjs";
+import { getDataEnvironment } from "@/lib/environment-store";
 
 export class ApiError extends Error {
 	name = "ApiError" as const;
@@ -205,6 +206,11 @@ export async function fetchJson<T>(
 		headers.Authorization = `Bearer ${jwt}`;
 	}
 
+	// Data plane isolation (session JWT has no environment claim)
+	if (isClientSide() && !isTestEnvironment()) {
+		headers["X-Environment"] = getDataEnvironment();
+	}
+
 	const res = await fetch(url, {
 		...fetchInit,
 		headers,
@@ -233,6 +239,9 @@ export async function fetchJson<T>(
 						...headers,
 						Authorization: `Bearer ${freshToken}`,
 					};
+					if (isClientSide() && !isTestEnvironment()) {
+						retryHeaders["X-Environment"] = getDataEnvironment();
+					}
 					const retryRes = await fetch(url, {
 						...fetchInit,
 						headers: retryHeaders,

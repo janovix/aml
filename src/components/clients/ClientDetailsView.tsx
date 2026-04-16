@@ -322,15 +322,17 @@ function ScreeningSourceRow({
 	label,
 	status,
 	count,
-	matchLabel = "coincidencia",
+	matchLabel,
 	riskBadge,
 	findingsText,
 	children,
 }: ScreeningSourceRowProps) {
+	const { t } = useLanguage();
 	const cfg =
 		WATCHLIST_STATUS_CONFIG[status as WatchlistStatus] ??
 		WATCHLIST_STATUS_CONFIG.pending;
 	const hasMatches = typeof count === "number" && count > 0;
+	const defaultMatchLabel = matchLabel ?? t("watchlistMatchSingular");
 
 	return (
 		<div className="py-3 px-4 bg-background">
@@ -350,7 +352,8 @@ function ScreeningSourceRow({
 				{hasMatches && (
 					<span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-red-200 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800 font-medium">
 						<AlertTriangle className="h-3 w-3" />
-						{count} {count === 1 ? matchLabel : `${matchLabel}s`}
+						{count}{" "}
+						{count === 1 ? defaultMatchLabel : `${t("watchlistMatchPlural")}`}
 					</span>
 				)}
 				{riskBadge}
@@ -725,7 +728,7 @@ export function ClientDetailsView({
 		return kycStatus.sections.find((s) => s.section.id === sectionId) || null;
 	};
 
-	const personTypeStyle = getPersonTypeStyle(client.personType);
+	const personTypeStyle = getPersonTypeStyle(client.personType, t);
 	const PersonTypeIcon = personTypeStyle.icon;
 
 	// Compute field-level tier map and completeness result
@@ -742,11 +745,12 @@ export function ClientDetailsView({
 			)
 		: null;
 
+	const displayName = getClientDisplayName(client);
 	return (
 		<div className="space-y-6">
 			<PageHero
 				title={t("clientDetailsTitle")}
-				subtitle={getClientDisplayName(client)}
+				subtitle={displayName}
 				icon={client.personType === "physical" ? User : Building2}
 				backButton={{
 					label: t("clientBackToClients"),
@@ -765,24 +769,31 @@ export function ClientDetailsView({
 			<Card>
 				<CardContent className="p-6">
 					<div className="flex flex-col sm:flex-row items-center gap-6 sm:justify-around">
-						{/* Person Type Badge — comes first */}
-						<div
-							className={`flex items-center gap-3 rounded-xl border ${personTypeStyle.borderColor} ${personTypeStyle.bgColor} p-4`}
-						>
-							<div
-								className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg ${personTypeStyle.bgColor}`}
-							>
-								<PersonTypeIcon
-									className={`h-6 w-6 ${personTypeStyle.iconColor}`}
-								/>
+						<div className="flex flex-col items-center gap-3">
+							<div>
+								<h1 className="text-2xl font-semibold">{displayName}</h1>
 							</div>
-							<div className="min-w-0">
-								<p className={`font-semibold ${personTypeStyle.iconColor}`}>
-									{personTypeStyle.label}
-								</p>
-								<p className="text-xs text-muted-foreground">
-									{personTypeStyle.description}
-								</p>
+							{/* Person Type Badge — comes first */}
+							<div
+								className={`flex items-center gap-3 rounded-xl border ${personTypeStyle.borderColor} ${personTypeStyle.bgColor} p-4`}
+							>
+								<div
+									className={`flex flex-col h-12 w-12 shrink-0 items-center justify-center rounded-lg ${personTypeStyle.bgColor}`}
+								>
+									<div>
+										<PersonTypeIcon
+											className={`h-6 w-6 ${personTypeStyle.iconColor}`}
+										/>
+									</div>
+								</div>
+								<div className="min-w-0">
+									<p className={`font-semibold ${personTypeStyle.iconColor}`}>
+										{personTypeStyle.label}
+									</p>
+									<p className="text-xs text-muted-foreground">
+										{personTypeStyle.description}
+									</p>
+								</div>
 							</div>
 						</div>
 
@@ -1023,7 +1034,11 @@ export function ClientDetailsView({
 									/>
 								</>
 							)}
-							<FieldDisplay label="RFC" value={client.rfc} tier={tierMap.rfc} />
+							<FieldDisplay
+								label={t("clientRfc")}
+								value={client.rfc}
+								tier={tierMap.rfc}
+							/>
 						</dl>
 
 						{/* CTA if incomplete */}
@@ -1629,7 +1644,9 @@ export function ClientDetailsView({
 																onClick={() => setOfacExpanded((v) => !v)}
 																className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
 															>
-																{ofacExpanded ? "Ocultar" : "Ver detalle"}
+																{ofacExpanded
+																	? t("screeningHideDetails")
+																	: t("screeningShowDetails")}
 																<ChevronDown
 																	className={cn(
 																		"h-3 w-3 transition-transform duration-200",
@@ -1798,7 +1815,9 @@ export function ClientDetailsView({
 																onClick={() => setUnExpanded((v) => !v)}
 																className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
 															>
-																{unExpanded ? "Ocultar" : "Ver detalle"}
+																{unExpanded
+																	? t("screeningHideDetails")
+																	: t("screeningShowDetails")}
 																<ChevronDown
 																	className={cn(
 																		"h-3 w-3 transition-transform duration-200",
@@ -2006,7 +2025,9 @@ export function ClientDetailsView({
 																onClick={() => setSat69bExpanded((v) => !v)}
 																className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
 															>
-																{sat69bExpanded ? "Ocultar" : "Ver detalle"}
+																{sat69bExpanded
+																	? t("screeningHideDetails")
+																	: t("screeningShowDetails")}
 																<ChevronDown
 																	className={cn(
 																		"h-3 w-3 transition-transform duration-200",
@@ -2086,7 +2107,7 @@ export function ClientDetailsView({
 																			</span>
 																			{match.breakdown.identifierMatch && (
 																				<span className="text-xs px-1.5 py-0.5 rounded bg-red-50 border border-red-200 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800 font-medium">
-																					RFC exacto
+																					{t("screeningRfcExact")}
 																				</span>
 																			)}
 																		</div>
@@ -2127,7 +2148,7 @@ export function ClientDetailsView({
 													<div className="py-3 px-4">
 														<div className="flex items-center gap-2 flex-wrap">
 															<span className="text-sm font-medium flex-1">
-																PEP Oficial (Transparencia)
+																{t("screeningPepOfficialLabel")}
 															</span>
 															<span
 																className={cn(
@@ -2148,8 +2169,8 @@ export function ClientDetailsView({
 																	<AlertTriangle className="h-3 w-3" />
 																	{src?.pepOfficialCount}{" "}
 																	{(src?.pepOfficialCount ?? 0) === 1
-																		? "registro PEP"
-																		: "registros PEPs"}
+																		? t("screeningPepRecordSingular")
+																		: t("screeningPepRecordPlural")}
 																</span>
 															)}
 															{pepOfficialRecords.length > 0 && (
@@ -2161,8 +2182,8 @@ export function ClientDetailsView({
 																	className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
 																>
 																	{pepRecordsExpanded
-																		? "Ocultar"
-																		: "Ver detalle"}
+																		? t("screeningHideDetails")
+																		: t("screeningShowDetails")}
 																	<ChevronDown
 																		className={cn(
 																			"h-3 w-3 transition-transform duration-200",
@@ -2329,7 +2350,7 @@ export function ClientDetailsView({
 											)}
 											{showAdverseMedia && (
 												<ScreeningSourceRow
-													label="Medios Adversos"
+													label={t("screeningAdverseMediaLabel")}
 													status={
 														src?.adverseMediaStatus ??
 														(client.adverseMediaFlagged
@@ -2344,12 +2365,13 @@ export function ClientDetailsView({
 																	ADVERSE_RISK_CONFIG[riskLevel].badgeClass,
 																)}
 															>
-																Riesgo: {ADVERSE_RISK_CONFIG[riskLevel].label}
+																{t("screeningRiskLabel")}{" "}
+																{ADVERSE_RISK_CONFIG[riskLevel].label}
 															</span>
 														) : client.adverseMediaFlagged ? (
 															<span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-red-200 bg-red-50 text-red-700 font-medium">
 																<AlertTriangle className="h-3 w-3" />
-																Medios Adversos
+																{t("screeningAdverseMediaLabel")}
 															</span>
 														) : undefined
 													}
@@ -2805,7 +2827,7 @@ export function ClientDetailsView({
 																		variant="destructive"
 																		className="text-xs"
 																	>
-																		Medios Adversos
+																		{t("screeningAdverseMediaLabel")}
 																	</Badge>
 																)}
 																{!bc.isPEP &&

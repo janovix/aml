@@ -22,6 +22,10 @@ import { useOrgStore } from "@/lib/org-store";
 import { getClientById } from "@/lib/api/clients";
 import { getClientDisplayName } from "@/types/client";
 import { getReportById } from "@/lib/api/reports";
+import { getAlertById } from "@/lib/api/alerts";
+import { getNoticeById } from "@/lib/api/notices";
+import { getInvoiceById } from "@/lib/api/invoices";
+import type { InvoiceEntity } from "@/types/invoice";
 import { useLanguage } from "@/components/LanguageProvider";
 import {
 	usePageStatus,
@@ -30,10 +34,29 @@ import {
 import { useJwt } from "@/hooks/useJwt";
 import type { TranslationKeys } from "@/lib/translations";
 
+function getInvoiceBreadcrumbLabel(invoice: InvoiceEntity): string {
+	const parts = [invoice.series, invoice.folio].filter(Boolean);
+	if (parts.length > 0) {
+		return parts.join("-");
+	}
+	if (invoice.uuid) {
+		const u = invoice.uuid;
+		return u.length > 12 ? `${u.slice(0, 8)}…` : u;
+	}
+	return invoice.id.length > 8 ? `${invoice.id.slice(0, 8)}…` : invoice.id;
+}
+
 /**
  * Route segment to translation key mapping
  */
 const ROUTE_LABEL_KEYS: Record<string, TranslationKeys> = {
+	dashboard: "navDashboard",
+	activity: "navActivity",
+	risk: "navRiskModels",
+	methodology: "breadcrumbMethodology",
+	assessment: "breadcrumbAssessment",
+	evaluations: "breadcrumbEvaluations",
+	"create-operation": "breadcrumbCreateOperation",
 	clients: "navClients",
 	transactions: "navTransactions",
 	operations: "navOperations",
@@ -101,7 +124,13 @@ interface BreadcrumbSegment {
 	/** ID for dynamic entities (e.g., client ID, report ID) that need name lookup */
 	entityId?: string;
 	/** Type of entity for dynamic lookup */
-	entityType?: "client" | "report" | "operation";
+	entityType?:
+		| "client"
+		| "report"
+		| "operation"
+		| "alert"
+		| "notice"
+		| "invoice";
 }
 
 export function NavBreadcrumb() {
@@ -150,6 +179,9 @@ export function NavBreadcrumb() {
 			// Check if this segment is an operation ID (segment after "operations")
 			const isOperationId =
 				prevSegment === "operations" && isIdSegment(segment);
+			const isAlertId = prevSegment === "alerts" && isIdSegment(segment);
+			const isNoticeId = prevSegment === "notices" && isIdSegment(segment);
+			const isInvoiceId = prevSegment === "invoices" && isIdSegment(segment);
 
 			// Get translation key or fallback
 			const labelKey = ROUTE_LABEL_KEYS[segment];
@@ -163,7 +195,14 @@ export function NavBreadcrumb() {
 			}
 
 			// Determine entity type for dynamic lookup
-			let entityType: "client" | "report" | "operation" | undefined;
+			let entityType:
+				| "client"
+				| "report"
+				| "operation"
+				| "alert"
+				| "notice"
+				| "invoice"
+				| undefined;
 			let entityId: string | undefined;
 			if (isClientId) {
 				entityType = "client";
@@ -173,6 +212,15 @@ export function NavBreadcrumb() {
 				entityId = segment;
 			} else if (isOperationId) {
 				entityType = "operation";
+				entityId = segment;
+			} else if (isAlertId) {
+				entityType = "alert";
+				entityId = segment;
+			} else if (isNoticeId) {
+				entityType = "notice";
+				entityId = segment;
+			} else if (isInvoiceId) {
+				entityType = "invoice";
 				entityId = segment;
 			}
 
@@ -225,6 +273,58 @@ export function NavBreadcrumb() {
 						setEntityNames((prev) => ({
 							...prev,
 							[segment.entityId!]: report.name,
+						}));
+					})
+					.catch(() => {
+						// Silently fail - keep showing truncated ID
+					});
+			} else if (segment.entityType === "alert") {
+				getAlertById({
+					id: segment.entityId,
+					signal: controller.signal,
+					jwt,
+				})
+					.then((alert) => {
+						const name = alert.alertRule?.name?.trim();
+						const label =
+							name && name.length > 0
+								? name
+								: segment.entityId!.length > 8
+									? `${segment.entityId!.slice(0, 8)}…`
+									: segment.entityId!;
+						setEntityNames((prev) => ({
+							...prev,
+							[segment.entityId!]: label,
+						}));
+					})
+					.catch(() => {
+						// Silently fail - keep showing truncated ID
+					});
+			} else if (segment.entityType === "notice") {
+				getNoticeById({
+					id: segment.entityId,
+					signal: controller.signal,
+					jwt,
+				})
+					.then((notice) => {
+						setEntityNames((prev) => ({
+							...prev,
+							[segment.entityId!]: notice.name,
+						}));
+					})
+					.catch(() => {
+						// Silently fail - keep showing truncated ID
+					});
+			} else if (segment.entityType === "invoice") {
+				getInvoiceById({
+					id: segment.entityId,
+					signal: controller.signal,
+					jwt,
+				})
+					.then((invoice) => {
+						setEntityNames((prev) => ({
+							...prev,
+							[segment.entityId!]: getInvoiceBreadcrumbLabel(invoice),
 						}));
 					})
 					.catch(() => {

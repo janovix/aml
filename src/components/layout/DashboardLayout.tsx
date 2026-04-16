@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useStore } from "@nanostores/react";
+import { toast } from "sonner";
 import {
 	SidebarInset,
 	SidebarProvider,
@@ -27,6 +29,7 @@ import {
 	LanguageSwitcher,
 	NotificationsWidget,
 	ThemeSwitcher,
+	EnvironmentBanner,
 } from "@algenium/blocks";
 import { NotificationsProvider } from "@/contexts/notifications-context";
 import { useLanguage } from "@/components/LanguageProvider";
@@ -35,6 +38,11 @@ import { useParams, useRouter } from "next/navigation";
 import type { Language } from "@/lib/translations";
 import { cn } from "@/lib/utils";
 import { EntitlementAttributionBar } from "@/components/layout/EntitlementAttributionBar";
+import {
+	environmentAtom,
+	envHydratedAtom,
+	type DataEnvironment,
+} from "@/lib/environment-store";
 
 const NAVBAR_LANGUAGE_META = {
 	en: { label: "EN", nativeName: "English" },
@@ -152,6 +160,24 @@ function DashboardHeader({
 		[setLanguage],
 	);
 
+	const dataEnvironment = useStore(environmentAtom);
+	const envHydrated = useStore(envHydratedAtom);
+	const prevEnvRef = React.useRef<DataEnvironment | null>(null);
+	React.useEffect(() => {
+		if (!envHydrated) return;
+		if (prevEnvRef.current === null) {
+			prevEnvRef.current = dataEnvironment;
+			return;
+		}
+		if (prevEnvRef.current === dataEnvironment) return;
+		prevEnvRef.current = dataEnvironment;
+		if (dataEnvironment !== "production") {
+			toast.info(t("envSwitchConfirm"));
+		} else {
+			toast.success(t("envSwitchLive"));
+		}
+	}, [envHydrated, dataEnvironment, t]);
+
 	return (
 		<TooltipProvider delayDuration={0}>
 			<header className="z-50 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 shadow-xs">
@@ -200,6 +226,13 @@ function DashboardHeader({
 					<NavbarChatButton />
 				</div>
 			</header>
+			<EnvironmentBanner
+				labels={{
+					stagingMessage: t("envBannerStaging"),
+					developmentMessage: t("envBannerDevelopment"),
+					dismiss: t("envDismiss"),
+				}}
+			/>
 		</TooltipProvider>
 	);
 }

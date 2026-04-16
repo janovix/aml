@@ -23,8 +23,10 @@ import { listOperations } from "@/lib/api/operations";
 import { useJwt } from "@/hooks/useJwt";
 import { useOrgStore } from "@/lib/org-store";
 import { CreateImportDialog } from "@/components/import/CreateImportDialog";
+import { useLanguage } from "@/components/LanguageProvider";
 
 export function OperationsPageContent(): React.ReactElement {
+	const { t } = useLanguage();
 	const { navigateTo } = useOrgNavigation();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const { currentOrg } = useOrgStore();
@@ -104,17 +106,17 @@ export function OperationsPageContent(): React.ReactElement {
 
 	const heroStats: StatCard[] = [
 		{
-			label: "Total operaciones",
+			label: t("statsTotalOperations"),
 			value: isLoading ? "..." : (totalCount ?? 0),
 			icon: FileText,
 		},
 		{
-			label: "Operaciones completas",
+			label: t("opStatComplete"),
 			value: isLoading ? "..." : (completeCount ?? "—"),
 			icon: CheckCircle2,
 		},
 		{
-			label: "Requieren atención",
+			label: t("opStatNeedAttention"),
 			value: isLoading ? "..." : (incompleteCount ?? "—"),
 			icon: AlertCircle,
 			variant: "primary",
@@ -123,13 +125,13 @@ export function OperationsPageContent(): React.ReactElement {
 
 	const heroActions: PageHeroAction[] = [
 		{
-			label: "Nueva operación",
+			label: t("opNewOperation"),
 			icon: Plus,
 			onClick: () => navigateTo("/operations/new"),
 			variant: "default",
 		},
 		{
-			label: "Importar operaciones",
+			label: t("importTransactions"),
 			icon: Upload,
 			onClick: () => setIsImportDialogOpen(true),
 			variant: "outline",
@@ -139,8 +141,8 @@ export function OperationsPageContent(): React.ReactElement {
 	return (
 		<div className="space-y-6">
 			<PageHero
-				title="Operaciones"
-				subtitle="Gestiona las operaciones de tu actividad vulnerable"
+				title={t("navOperations")}
+				subtitle={t("opPageSubtitle")}
 				icon={FileText}
 				stats={heroStats}
 				actions={heroActions}

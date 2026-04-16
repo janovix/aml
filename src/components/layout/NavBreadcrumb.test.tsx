@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import { NavBreadcrumb } from "./NavBreadcrumb";
 import { renderWithProviders } from "@/lib/testHelpers";
+import type { InvoiceEntity } from "@/types/invoice";
 import {
 	useSetPageStatus,
 	type PageStatus,
@@ -45,6 +46,21 @@ vi.mock("@/lib/api/clients", () => ({
 	getClientById: (opts: { id: string }) => mockGetClientById(opts),
 }));
 
+const mockGetAlertById = vi.fn();
+vi.mock("@/lib/api/alerts", () => ({
+	getAlertById: (opts: { id: string }) => mockGetAlertById(opts),
+}));
+
+const mockGetNoticeById = vi.fn();
+vi.mock("@/lib/api/notices", () => ({
+	getNoticeById: (opts: { id: string }) => mockGetNoticeById(opts),
+}));
+
+const mockGetInvoiceById = vi.fn();
+vi.mock("@/lib/api/invoices", () => ({
+	getInvoiceById: (opts: { id: string }) => mockGetInvoiceById(opts),
+}));
+
 // Mock useJwt to return a valid JWT
 vi.mock("@/hooks/useJwt", () => ({
 	useJwt: () => ({
@@ -59,6 +75,83 @@ describe("NavBreadcrumb", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockPathname.mockReturnValue("/test-org/clients");
+		mockGetAlertById.mockResolvedValue({
+			id: "ALERT123",
+			alertRuleId: "r1",
+			clientId: "c1",
+			status: "open",
+			severity: "high",
+			idempotencyKey: "k",
+			contextHash: "h",
+			metadata: {},
+			isManual: false,
+			isOverdue: false,
+			createdAt: "",
+			updatedAt: "",
+			alertRule: {
+				id: "r1",
+				name: "Regla de prueba",
+				active: true,
+				severity: "high",
+				isManualOnly: false,
+				activityCode: "VEH",
+				createdAt: "",
+				updatedAt: "",
+			},
+		});
+		mockGetNoticeById.mockResolvedValue({
+			id: "NOTICE1",
+			organizationId: "o1",
+			name: "Aviso enero",
+			status: "draft",
+			periodStart: "",
+			periodEnd: "",
+			reportedMonth: "",
+			recordCount: 0,
+			amendmentCycle: 0,
+			createdAt: "",
+			updatedAt: "",
+			alertSummary: { total: 0, bySeverity: {}, byStatus: {}, byRule: [] },
+			events: [],
+			alerts: [],
+		});
+		mockGetInvoiceById.mockResolvedValue({
+			id: "inv-uuid",
+			organizationId: "o1",
+			uuid: "AAA-BBB",
+			version: "4.0",
+			series: "A",
+			folio: "100",
+			issuerRfc: "X",
+			issuerName: "X",
+			issuerTaxRegimeCode: "601",
+			receiverRfc: "Y",
+			receiverName: "Y",
+			receiverUsageCode: null,
+			receiverTaxRegimeCode: null,
+			receiverPostalCode: null,
+			subtotal: "0",
+			discount: null,
+			total: "0",
+			currencyCode: "MXN",
+			exchangeRate: null,
+			paymentFormCode: null,
+			paymentMethodCode: null,
+			voucherTypeCode: "I",
+			issueDate: "",
+			certificationDate: null,
+			exportCode: null,
+			tfdUuid: null,
+			tfdSatCertificate: null,
+			tfdSignature: null,
+			tfdStampDate: null,
+			xmlContent: null,
+			notes: null,
+			createdAt: "",
+			updatedAt: "",
+			deletedAt: null,
+			items: [],
+		} as InvoiceEntity);
 		mockGetClientById.mockResolvedValue({
 			id: "CLT123456789",
 			personType: "physical",
@@ -133,6 +226,54 @@ describe("NavBreadcrumb", () => {
 		renderWithProviders(<NavBreadcrumb />);
 
 		expect(screen.getByText("Reportes")).toBeInTheDocument();
+	});
+
+	it("renders activity route", () => {
+		mockPathname.mockReturnValue("/test-org/activity");
+		renderWithProviders(<NavBreadcrumb />);
+
+		expect(screen.getByText("Actividad")).toBeInTheDocument();
+	});
+
+	it("renders risk models route", () => {
+		mockPathname.mockReturnValue("/test-org/risk");
+		renderWithProviders(<NavBreadcrumb />);
+
+		expect(screen.getByText("Modelos de Riesgo")).toBeInTheDocument();
+	});
+
+	it("renders risk methodology nested route", () => {
+		mockPathname.mockReturnValue("/test-org/risk/methodology");
+		renderWithProviders(<NavBreadcrumb />);
+
+		expect(screen.getByText("Modelos de Riesgo")).toBeInTheDocument();
+		expect(screen.getByText("Metodología")).toBeInTheDocument();
+	});
+
+	it("renders risk evaluations nested route", () => {
+		mockPathname.mockReturnValue("/test-org/risk/evaluations");
+		renderWithProviders(<NavBreadcrumb />);
+
+		expect(screen.getByText("Modelos de Riesgo")).toBeInTheDocument();
+		expect(screen.getByText("Evaluaciones")).toBeInTheDocument();
+	});
+
+	it("renders risk assessment nested route", () => {
+		mockPathname.mockReturnValue("/test-org/risk/assessment");
+		renderWithProviders(<NavBreadcrumb />);
+
+		expect(screen.getByText("Modelos de Riesgo")).toBeInTheDocument();
+		expect(screen.getByText("Evaluación")).toBeInTheDocument();
+	});
+
+	it("renders invoice create-operation nested route", () => {
+		mockPathname.mockReturnValue(
+			"/test-org/invoices/11111111-1111-1111-1111-111111111111/create-operation",
+		);
+		renderWithProviders(<NavBreadcrumb />);
+
+		expect(screen.getByText("Facturas")).toBeInTheDocument();
+		expect(screen.getByText("Crear operación")).toBeInTheDocument();
 	});
 
 	it("renders new client route", () => {
@@ -273,6 +414,46 @@ describe("NavBreadcrumb", () => {
 
 			// Should not call getClientById for operation IDs
 			expect(mockGetClientById).not.toHaveBeenCalled();
+		});
+
+		it("fetches and displays notice name on notice detail", async () => {
+			mockPathname.mockReturnValue("/test-org/notices/NOTICE1");
+			renderWithProviders(<NavBreadcrumb />);
+
+			await waitFor(() => {
+				expect(screen.getByText("Aviso enero")).toBeInTheDocument();
+			});
+			expect(mockGetNoticeById).toHaveBeenCalledWith(
+				expect.objectContaining({ id: "NOTICE1" }),
+			);
+		});
+
+		it("fetches and displays alert rule name on alert detail", async () => {
+			mockPathname.mockReturnValue("/test-org/alerts/ALERT123");
+			renderWithProviders(<NavBreadcrumb />);
+
+			await waitFor(() => {
+				expect(screen.getByText("Regla de prueba")).toBeInTheDocument();
+			});
+			expect(mockGetAlertById).toHaveBeenCalledWith(
+				expect.objectContaining({ id: "ALERT123" }),
+			);
+		});
+
+		it("fetches and displays invoice series-folio on invoice detail", async () => {
+			mockPathname.mockReturnValue(
+				"/test-org/invoices/11111111-1111-1111-1111-111111111111",
+			);
+			renderWithProviders(<NavBreadcrumb />);
+
+			await waitFor(() => {
+				expect(screen.getByText("A-100")).toBeInTheDocument();
+			});
+			expect(mockGetInvoiceById).toHaveBeenCalledWith(
+				expect.objectContaining({
+					id: "11111111-1111-1111-1111-111111111111",
+				}),
+			);
 		});
 	});
 

@@ -4,6 +4,9 @@ import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
 	plugins: [react(), tsconfigPaths()],
+	resolve: {
+		dedupe: ["react", "react-dom"],
+	},
 	test: {
 		environment: "jsdom",
 		setupFiles: ["./src/test/setup.ts"],
@@ -91,6 +94,8 @@ export default defineConfig({
 				"src/lib/navigation.ts",
 				// Test helpers themselves
 				"src/lib/testHelpers.ts",
+				"src/lib/environment-store.ts",
+				"src/components/DataEnvironmentProvider.tsx",
 				// Barrel exports (index.ts) - re-exports only, no runtime logic
 				"src/components/**/index.ts",
 				// Type definition files - no runtime code

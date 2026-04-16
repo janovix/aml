@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import { useStore } from "@nanostores/react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { useOrgStore } from "@/lib/org-store";
 import { useAuthSession } from "@/lib/auth/useAuthSession";
@@ -29,6 +30,7 @@ import { NoAMLAccess } from "@/components/subscription";
 import { ObligatedSubjectSetup } from "@/components/onboarding/ObligatedSubjectSetup";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { OrgSettingsContext } from "@/contexts/org-settings-context";
+import { environmentAtom } from "@/lib/environment-store";
 
 interface BootstrapData {
 	subscription: SubscriptionStatus | null;
@@ -231,7 +233,14 @@ export function OrgBootstrapper({
 	const [bootstrapData, setBootstrapData] = useState<BootstrapData | null>(
 		null,
 	);
+	const [isRevalidatingOrgSettingsForEnv, setIsRevalidatingOrgSettingsForEnv] =
+		useState(false);
 	const lastSyncedOrgRef = useRef<string | null | undefined>(null);
+	/** Tracks which org the env ref below is aligned with (skip env-only refetch after org URL sync). */
+	const bootstrapOrgIdForEnvRef = useRef<string | null>(null);
+	/** Last data environment applied to `bootstrapData.orgSettings` (null = not yet aligned for current org). */
+	const bootstrapEnvRef = useRef<string | null>(null);
+	const environment = useStore(environmentAtom);
 
 	// Set current user ID from session
 	useEffect(() => {
@@ -434,17 +443,84 @@ export function OrgBootstrapper({
 		// which is unnecessary and causes issues in tests.
 	]);
 
-	// Refresh org settings after ObligatedSubjectSetup completes
+	const refreshOrgSettingsIntoBootstrap = useCallback(
+		async (opts?: { signal?: AbortSignal; organizationId?: string | null }) => {
+			const orgId = opts?.organizationId ?? currentOrg?.id ?? null;
+			if (!orgId) return;
+			if (opts?.signal?.aborted) return;
+			const jwt = await tokenCache.getToken(orgId);
+			if (!jwt || opts?.signal?.aborted) return;
+			try {
+				const orgSettings = await getOrganizationSettings({
+					jwt,
+					signal: opts?.signal,
+				});
+				if (opts?.signal?.aborted) return;
+				setBootstrapData((prev) => (prev ? { ...prev, orgSettings } : prev));
+			} catch {
+				if (opts?.signal?.aborted) return;
+				// ignore — user can retry (leave existing bootstrap orgSettings unchanged)
+			}
+		},
+		[currentOrg?.id],
+	);
+
 	const handleOrgSettingsComplete = useCallback(async () => {
-		const jwt = await tokenCache.getToken(currentOrg?.id ?? null);
-		if (!jwt) return;
-		try {
-			const orgSettings = await getOrganizationSettings({ jwt });
-			setBootstrapData((prev) => (prev ? { ...prev, orgSettings } : prev));
-		} catch {
-			// ignore — user can retry
+		await refreshOrgSettingsIntoBootstrap();
+	}, [refreshOrgSettingsIntoBootstrap]);
+
+	// Refetch org settings when the data plane environment changes (X-Environment),
+	// so ObligatedSubjectSetup vs main app reflects the selected environment.
+	useEffect(() => {
+		if (!urlOrgSlug || !isReady || !currentOrg?.id) {
+			return;
 		}
-	}, [currentOrg?.id]);
+
+		const orgId = currentOrg.id;
+
+		if (bootstrapOrgIdForEnvRef.current !== orgId) {
+			bootstrapOrgIdForEnvRef.current = orgId;
+			bootstrapEnvRef.current = environment;
+			return;
+		}
+
+		if (bootstrapEnvRef.current === null) {
+			bootstrapEnvRef.current = environment;
+			return;
+		}
+
+		if (bootstrapEnvRef.current === environment) {
+			return;
+		}
+
+		const ac = new AbortController();
+
+		void (async () => {
+			setIsRevalidatingOrgSettingsForEnv(true);
+			try {
+				await refreshOrgSettingsIntoBootstrap({
+					signal: ac.signal,
+					organizationId: orgId,
+				});
+			} finally {
+				if (!ac.signal.aborted) {
+					bootstrapEnvRef.current = environment;
+					setIsRevalidatingOrgSettingsForEnv(false);
+				}
+			}
+		})();
+
+		return () => {
+			ac.abort();
+			setIsRevalidatingOrgSettingsForEnv(false);
+		};
+	}, [
+		urlOrgSlug,
+		isReady,
+		currentOrg?.id,
+		environment,
+		refreshOrgSettingsIntoBootstrap,
+	]);
 
 	// Check if we're on an error page (not-found, forbidden)
 	// These pages should ALWAYS render immediately, even without currentOrg
@@ -476,7 +552,8 @@ export function OrgBootstrapper({
 		!isReady ||
 		(urlOrgSlug && !currentOrg) ||
 		!bootstrapData ||
-		isOrgSwitching
+		isOrgSwitching ||
+		isRevalidatingOrgSettingsForEnv
 	) {
 		return <AppSkeletonWithView pathname={pathname || "/"} />;
 	}

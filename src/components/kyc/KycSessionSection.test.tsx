@@ -62,16 +62,18 @@ describe("KycSessionSection", () => {
 			});
 		});
 
-		const createButton = screen.getByRole("button", {
+		const createButton = await screen.findByRole("button", {
 			name: /crear y enviar enlace/i,
 		});
 		expect(createButton).toBeDisabled();
 
 		expect(
-			screen.getByText(/no se pueden crear enlaces de kyc autoservicio/i),
+			await screen.findByText(
+				/no se pueden crear enlaces de kyc autoservicio/i,
+			),
 		).toBeInTheDocument();
 		expect(
-			screen.getByRole("link", {
+			await screen.findByRole("link", {
 				name: /ir a configuración de cumplimiento pld/i,
 			}),
 		).toBeInTheDocument();
@@ -91,11 +93,7 @@ describe("KycSessionSection", () => {
 			/>,
 		);
 
-		await waitFor(() => {
-			expect(mockListKycSessions).toHaveBeenCalled();
-		});
-
-		const createButton = screen.getByRole("button", {
+		const createButton = await screen.findByRole("button", {
 			name: /crear enlace kyc/i,
 		});
 		expect(createButton).not.toBeDisabled();
@@ -119,11 +117,7 @@ describe("KycSessionSection", () => {
 			/>,
 		);
 
-		await waitFor(() => {
-			expect(mockListKycSessions).toHaveBeenCalled();
-		});
-
-		const createButton = screen.getByRole("button", {
+		const createButton = await screen.findByRole("button", {
 			name: /crear y enviar enlace/i,
 		});
 		expect(createButton).not.toBeDisabled();
@@ -149,11 +143,7 @@ describe("KycSessionSection", () => {
 			/>,
 		);
 
-		await waitFor(() => {
-			expect(mockListKycSessions).toHaveBeenCalled();
-		});
-
-		const createButton = screen.getByRole("button", {
+		const createButton = await screen.findByRole("button", {
 			name: /crear enlace kyc/i,
 		});
 		expect(createButton).not.toBeDisabled();
@@ -190,11 +180,7 @@ describe("KycSessionSection", () => {
 			<KycSessionSection clientId="client-1" clientEmail={null} />,
 		);
 
-		await waitFor(() => {
-			expect(mockListKycSessions).toHaveBeenCalled();
-		});
-
-		const createButton = screen.getByRole("button", {
+		const createButton = await screen.findByRole("button", {
 			name: /crear enlace kyc/i,
 		});
 		expect(createButton).not.toBeDisabled();
