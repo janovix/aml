@@ -12,6 +12,7 @@ import { TesseractProvider } from "@/lib/document-scanner/TesseractLoader";
 import type { OrganizationsData } from "@/lib/auth/organizations-server";
 import { useSessionSync } from "@/lib/auth/useSessionSync";
 import { useIOSKeyboardFix } from "@/hooks/use-ios-keyboard-fix";
+import { DataEnvironmentProvider } from "@/components/DataEnvironmentProvider";
 
 export default function ClientLayout({
 	children,
@@ -28,30 +29,32 @@ export default function ClientLayout({
 	return (
 		<ThemeProvider>
 			<LanguageProvider>
-				<PageStatusProvider>
-					<OpenCVProvider>
-						<TesseractProvider>
-							<ScrollRestoration />
-							{/*
-							 * OrgBootstrapper acts as the single readiness gate.
-							 * It pre-fetches JWT, subscription status, and org settings in parallel
-							 * alongside the member fetch, then mounts SubscriptionProvider with the
-							 * pre-loaded data so children see it fully initialized on first render.
-							 */}
-							<OrgBootstrapper
-								initialOrganizations={initialOrganizations || undefined}
-							>
-								<DashboardLayout
-									initialSidebarCollapsed={initialSidebarCollapsed}
+				<DataEnvironmentProvider>
+					<PageStatusProvider>
+						<OpenCVProvider>
+							<TesseractProvider>
+								<ScrollRestoration />
+								{/*
+								 * OrgBootstrapper acts as the single readiness gate.
+								 * It pre-fetches JWT, subscription status, and org settings in parallel
+								 * alongside the member fetch, then mounts SubscriptionProvider with the
+								 * pre-loaded data so children see it fully initialized on first render.
+								 */}
+								<OrgBootstrapper
+									initialOrganizations={initialOrganizations || undefined}
 								>
-									{children}
-								</DashboardLayout>
-							</OrgBootstrapper>
-							<Toaster />
-							<RateLimitBlocker />
-						</TesseractProvider>
-					</OpenCVProvider>
-				</PageStatusProvider>
+									<DashboardLayout
+										initialSidebarCollapsed={initialSidebarCollapsed}
+									>
+										{children}
+									</DashboardLayout>
+								</OrgBootstrapper>
+								<Toaster />
+								<RateLimitBlocker />
+							</TesseractProvider>
+						</OpenCVProvider>
+					</PageStatusProvider>
+				</DataEnvironmentProvider>
 			</LanguageProvider>
 		</ThemeProvider>
 	);

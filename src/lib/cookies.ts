@@ -134,4 +134,6 @@ export function deleteCookie(name: string): void {
 export const COOKIE_NAMES = {
 	THEME: "janovix-theme",
 	LANGUAGE: "janovix-lang",
+	/** Data plane isolation: production | staging | development */
+	ENVIRONMENT: "janovix-env",
 } as const;

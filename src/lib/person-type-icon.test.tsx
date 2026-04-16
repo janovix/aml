@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { getPersonTypeIcon, getPersonTypeStyle } from "./person-type-icon";
 import { User, Building2, Landmark } from "lucide-react";
 import type { PersonType } from "@/types/client";
+import { translations } from "./translations";
 
 describe("getPersonTypeIcon", () => {
 	it("returns User icon for physical person type", () => {
@@ -28,30 +29,40 @@ describe("getPersonTypeIcon", () => {
 });
 
 describe("getPersonTypeStyle", () => {
+	// Translation helper for Spanish
+	const t = (key: string) =>
+		translations.es[key as keyof typeof translations.es];
+
 	it("returns correct style for physical person type", () => {
-		const style = getPersonTypeStyle("physical");
+		const style = getPersonTypeStyle("physical", t);
 		expect(style.label).toBe("Persona Física");
 		expect(style.icon).toBe(User);
 		expect(style.iconColor).toContain("sky");
 	});
 
 	it("returns correct style for moral person type", () => {
-		const style = getPersonTypeStyle("moral");
+		const style = getPersonTypeStyle("moral", t);
 		expect(style.label).toBe("Persona Moral");
 		expect(style.icon).toBe(Building2);
 		expect(style.iconColor).toContain("violet");
 	});
 
 	it("returns correct style for trust person type", () => {
-		const style = getPersonTypeStyle("trust");
+		const style = getPersonTypeStyle("trust", t);
 		expect(style.label).toBe("Fideicomiso");
 		expect(style.icon).toBe(Landmark);
 		expect(style.iconColor).toContain("amber");
 	});
 
 	it("returns fallback style for unknown type", () => {
-		const style = getPersonTypeStyle("unknown" as PersonType);
-		expect(style.label).toBe("Desconocido");
+		const style = getPersonTypeStyle("unknown" as PersonType, t);
+		expect(style.label).toBe("Unknown");
 		expect(style.icon).toBe(User);
+	});
+
+	it("returns correct style without translation function (default)", () => {
+		const style = getPersonTypeStyle("physical");
+		expect(style.icon).toBe(User);
+		expect(style.iconColor).toContain("sky");
 	});
 });

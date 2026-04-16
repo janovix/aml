@@ -626,7 +626,7 @@ export function ClientEditView({
 
 	const lockedPersonType = formData.personType ?? client.personType;
 	const fieldTiers = getClientFieldTierMap(lockedPersonType);
-	const personTypeStyle = getPersonTypeStyle(lockedPersonType);
+	const personTypeStyle = getPersonTypeStyle(lockedPersonType, t);
 	const PersonTypeIcon = personTypeStyle.icon;
 
 	return (

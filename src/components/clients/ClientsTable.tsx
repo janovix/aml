@@ -7,6 +7,7 @@ import {
 	User,
 	Landmark,
 	MapPin,
+	Globe,
 	MoreHorizontal,
 	Eye,
 	Edit,
@@ -333,14 +334,44 @@ export function ClientsTable(): React.ReactElement {
 				accessorKey: "city",
 				sortable: true,
 				hideOnMobile: true,
-				cell: (item) => (
-					<div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-						<MapPin className="h-3.5 w-3.5 shrink-0" />
-						<span className="truncate">
-							{item.city}, {getStateName(item.stateCode)}
-						</span>
-					</div>
-				),
+				cell: (item) => {
+					const city = item.city?.trim();
+					const stateName = getStateName(item.stateCode);
+					const addressParts = [city, stateName].filter(Boolean);
+					const addressLabel =
+						addressParts.length > 0 ? addressParts.join(", ") : null;
+
+					const countryLabel =
+						(item.resolvedNames?.nationality || item.nationality)?.trim() ||
+						(item.resolvedNames?.country || item.country)?.trim() ||
+						null;
+
+					if (!countryLabel && !addressLabel) {
+						return (
+							<div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+								<MapPin className="h-3.5 w-3.5 shrink-0" />
+								<span className="truncate">{t("unspecified")}</span>
+							</div>
+						);
+					}
+
+					return (
+						<div className="flex flex-col gap-0.5">
+							{countryLabel && (
+								<div className="flex items-center gap-1.5 text-sm">
+									<Globe className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+									<span className="truncate">{countryLabel}</span>
+								</div>
+							)}
+							{addressLabel && (
+								<div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+									<MapPin className="h-3 w-3 shrink-0" />
+									<span className="truncate">{addressLabel}</span>
+								</div>
+							)}
+						</div>
+					);
+				},
 			},
 			{
 				id: "riskLevel",

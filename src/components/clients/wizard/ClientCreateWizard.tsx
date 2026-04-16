@@ -38,20 +38,20 @@ export function ClientCreateWizard(): React.JSX.Element {
 		const baseSteps = [
 			{
 				id: 1,
-				title: "Información del Cliente",
-				description: "Datos básicos",
+				title: t("clientWizardStep1Title"),
+				description: t("clientWizardStep1Description"),
 			},
 			{
 				id: 2,
 				title:
 					wizardState.personType === "physical"
-						? "Documentos KYC"
-						: "Documentos y Beneficiarios",
-				description: "Expediente",
+						? t("clientWizardStep2TitlePhysical")
+						: t("clientWizardStep2TitleMoral"),
+				description: t("clientWizardStep2Description"),
 			},
 		];
 		return baseSteps;
-	}, [wizardState.personType]);
+	}, [wizardState.personType, t]);
 
 	const handleClientCreated = useCallback((client: Client) => {
 		setWizardState((prev) => ({
@@ -122,7 +122,7 @@ export function ClientCreateWizard(): React.JSX.Element {
 				subtitle={
 					wizardState.currentStep === 1
 						? t("clientNewSubtitle")
-						: "Agrega los documentos requeridos para completar el expediente KYC"
+						: t("clientWizardStep2Subtitle")
 				}
 				icon={UserPlus}
 				backButton={{

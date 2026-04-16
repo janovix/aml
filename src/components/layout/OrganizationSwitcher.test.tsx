@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
 	OrganizationSwitcher,
@@ -7,6 +7,10 @@ import {
 } from "./OrganizationSwitcher";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { renderWithProviders } from "@/lib/testHelpers";
+import { LanguageProvider } from "@/components/LanguageProvider";
+import { PageStatusProvider } from "@/components/PageStatusProvider";
+import { ChatProvider } from "@/components/chat/ChatProvider";
+import { EnvironmentContext } from "@algenium/blocks";
 
 describe("OrganizationSwitcher", () => {
 	const mockOrganizations: Organization[] = [
@@ -283,5 +287,78 @@ describe("OrganizationSwitcher", () => {
 		// Org 2 has a logo
 		const logo = document.querySelector('img[alt="Org 2"]');
 		expect(logo).toBeInTheDocument();
+	});
+
+	it("shows environment mini badge when EnvironmentContext is provided", async () => {
+		const setEnvironment = vi.fn();
+		render(
+			<LanguageProvider defaultLanguage="es">
+				<PageStatusProvider>
+					<ChatProvider>
+						<EnvironmentContext.Provider
+							value={{
+								environment: "staging",
+								setEnvironment,
+								environments: ["production", "staging", "development"],
+							}}
+						>
+							<SidebarProvider defaultOpen={true}>
+								<OrganizationSwitcher
+									organizations={mockOrganizations}
+									activeOrganization={mockOrganizations[0]}
+									onOrganizationChange={vi.fn()}
+									isLoading={false}
+								/>
+							</SidebarProvider>
+						</EnvironmentContext.Provider>
+					</ChatProvider>
+				</PageStatusProvider>
+			</LanguageProvider>,
+		);
+
+		expect(await screen.findByText("Stg")).toBeInTheDocument();
+	});
+
+	it("shows data environment options in org dropdown submenu", async () => {
+		const setEnvironment = vi.fn();
+		const user = userEvent.setup();
+
+		render(
+			<LanguageProvider defaultLanguage="es">
+				<PageStatusProvider>
+					<ChatProvider>
+						<EnvironmentContext.Provider
+							value={{
+								environment: "production",
+								setEnvironment,
+								environments: ["production", "staging", "development"],
+							}}
+						>
+							<SidebarProvider defaultOpen={true}>
+								<OrganizationSwitcher
+									organizations={mockOrganizations}
+									activeOrganization={mockOrganizations[0]}
+									onOrganizationChange={vi.fn()}
+									isLoading={false}
+								/>
+							</SidebarProvider>
+						</EnvironmentContext.Provider>
+					</ChatProvider>
+				</PageStatusProvider>
+			</LanguageProvider>,
+		);
+
+		await user.click(screen.getByText("ORG 1"));
+		await user.click(await screen.findByText("Entorno de datos"));
+
+		expect(
+			await screen.findByTestId("org-switcher-env-production"),
+		).toBeInTheDocument();
+		expect(
+			await screen.findByTestId("org-switcher-env-staging"),
+		).toBeInTheDocument();
+		expect(
+			await screen.findByTestId("org-switcher-env-development"),
+		).toBeInTheDocument();
 	});
 });

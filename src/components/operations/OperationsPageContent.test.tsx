@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import { OperationsPageContent } from "./OperationsPageContent";
-import { renderWithProviders } from "@/lib/testHelpers";
+import { renderWithProviders, t } from "@/lib/testHelpers";
 
 vi.mock("@/lib/api/operations", () => ({
 	listOperations: vi.fn().mockResolvedValue({
@@ -113,14 +113,14 @@ describe("OperationsPageContent", () => {
 		});
 	});
 
-	it("renders Nueva operación and Importar operaciones actions", () => {
+	it("renders Nueva operación and import actions", () => {
 		renderWithProviders(<OperationsPageContent />);
 
 		const newOpsButtons = screen.getAllByRole("button", {
-			name: /nueva operación/i,
+			name: new RegExp(t("opNewOperation"), "i"),
 		});
 		const importButtons = screen.getAllByRole("button", {
-			name: /importar operaciones/i,
+			name: new RegExp(t("importTransactions"), "i"),
 		});
 		expect(newOpsButtons.length).toBeGreaterThan(0);
 		expect(importButtons.length).toBeGreaterThan(0);

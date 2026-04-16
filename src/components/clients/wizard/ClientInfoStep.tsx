@@ -598,11 +598,11 @@ export function ClientInfoStep({
 				<CardHeader>
 					<CardTitle className="text-lg">
 						{formData.personType === "physical"
-							? "Datos Personales"
-							: "Datos de la Empresa"}
+							? t("clientPersonalData")
+							: t("clientCompanyData")}
 					</CardTitle>
 					<p className="text-sm text-muted-foreground">
-						El resto puede completarse en el proceso de onboarding KYC.
+						{t("clientKycOnboardingNote")}
 					</p>
 				</CardHeader>
 				<CardContent className="space-y-4">
@@ -896,7 +896,7 @@ export function ClientInfoStep({
 								tier={fieldTiers.email}
 								required
 							>
-								Email
+								{t("clientEmail")}
 							</LabelWithInfo>
 							<Input
 								id="email"
@@ -919,7 +919,7 @@ export function ClientInfoStep({
 								description={getFieldDescription("phone")}
 								tier={fieldTiers.phone}
 							>
-								Teléfono
+								{t("clientPhone")}
 							</LabelWithInfo>
 							<PhoneInput
 								id="phone"
@@ -957,7 +957,7 @@ export function ClientInfoStep({
 								description={getFieldDescription("street")}
 								tier={fieldTiers.street}
 							>
-								Calle
+								{t("clientStreet")}
 							</LabelWithInfo>
 							<Input
 								id="street"
