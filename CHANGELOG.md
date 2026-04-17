@@ -1,3 +1,10 @@
+# [1.14.0](https://github.com/janovix/aml/compare/v1.13.0...v1.14.0) (2026-04-17)
+
+
+### Features
+
+* implement organization assessment queuing and polling in RiskDashboardView component ([4430d3f](https://github.com/janovix/aml/commit/4430d3fd62d7a54fd8b9bb9c9b18b45597bcafe8))
+
 # [1.14.0-rc.1](https://github.com/janovix/aml/compare/v1.13.0...v1.14.0-rc.1) (2026-04-17)
 
 
