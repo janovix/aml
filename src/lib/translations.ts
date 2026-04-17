@@ -1736,9 +1736,22 @@ export const translations = {
 		riskDashboardViewEvaluations: "Ver evaluaciones",
 		riskDashboardViewEvaluationsDesc:
 			"Consulta el historial completo de evaluaciones de riesgo",
+		riskDashboardViewOrgAssessment: "Evaluación organizacional",
+		riskDashboardViewOrgAssessmentDesc:
+			"EBR Art. 18-VII LFPIORPI: inicie o consulte la evaluación a nivel entidad",
+		riskDashboardLastRun: "Última evaluación",
+		riskDashboardAssessmentPeriod: "Período",
+		riskDashboardOrgPollRunning:
+			"Generando evaluación… El panel se actualizará automáticamente.",
+		riskDashboardOrgPollTimeout:
+			"La evaluación tardó más de lo esperado. Use la página de detalle o reintente.",
 		riskDashboardMethodology: "Metodología de riesgo",
 		riskDashboardMethodologyDesc:
 			"Configura y personaliza la metodología de evaluación de riesgo",
+		navRiskOrgAssessment: "Evaluación organizacional",
+		navRiskEvaluations: "Evaluaciones",
+		navRiskMethodology: "Metodología",
+		navRiskSubmenuToggle: "Mostrar u ocultar submenú de Modelos de Riesgo",
 
 		// Footer — org subscription scope
 		entitlementFooter:
@@ -3463,9 +3476,22 @@ export const translations = {
 		riskDashboardViewEvaluations: "View evaluations",
 		riskDashboardViewEvaluationsDesc:
 			"Browse the full history of risk evaluations",
+		riskDashboardViewOrgAssessment: "Organization assessment",
+		riskDashboardViewOrgAssessmentDesc:
+			"RBA Art. 18-VII LFPIORPI: start or review entity-level assessment",
+		riskDashboardLastRun: "Last run",
+		riskDashboardAssessmentPeriod: "Period",
+		riskDashboardOrgPollRunning:
+			"Generating assessment… This dashboard will refresh automatically.",
+		riskDashboardOrgPollTimeout:
+			"The assessment is taking longer than expected. Open the detail page or try again.",
 		riskDashboardMethodology: "Risk methodology",
 		riskDashboardMethodologyDesc:
 			"Configure and customize the risk assessment methodology",
+		navRiskOrgAssessment: "Organization assessment",
+		navRiskEvaluations: "Evaluations",
+		navRiskMethodology: "Methodology",
+		navRiskSubmenuToggle: "Show or hide Risk Models submenu",
 
 		// Footer — org subscription scope
 		entitlementFooter:

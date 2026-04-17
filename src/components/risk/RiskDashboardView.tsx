@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
 	Shield,
@@ -12,7 +12,10 @@ import {
 	ArrowRight,
 	ClipboardList,
 	Settings2,
+	Play,
+	Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { PageHero, type StatCard } from "@/components/page-hero/page-hero";
 import {
 	Card,
@@ -31,6 +34,7 @@ import { cn } from "@/lib/utils";
 import {
 	getRiskDashboard,
 	getOrgRiskAssessment,
+	triggerOrgRiskAssessment,
 	type ClientRiskDashboard,
 	type OrgRiskAssessment,
 } from "@/lib/api/risk";
@@ -42,6 +46,15 @@ import { RiskFactorBreakdown } from "./RiskFactorBreakdown";
 interface DashboardData {
 	clientDashboard: ClientRiskDashboard | null;
 	orgAssessment: OrgRiskAssessment | null;
+}
+
+type OrgAssessmentPollState = "idle" | "queuing" | "running" | "error";
+
+function formatAssessmentDate(iso: string, language: "es" | "en"): string {
+	return new Date(iso).toLocaleDateString(
+		language === "es" ? "es-MX" : "en-US",
+		{ year: "numeric", month: "short", day: "numeric" },
+	);
 }
 
 export function RiskDashboardView() {
@@ -56,6 +69,17 @@ export function RiskDashboardView() {
 	});
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const [orgPollState, setOrgPollState] =
+		useState<OrgAssessmentPollState>("idle");
+	const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+	const pollDeadlineRef = useRef<number>(0);
+
+	const clearOrgPoll = useCallback(() => {
+		if (pollIntervalRef.current !== null) {
+			clearInterval(pollIntervalRef.current);
+			pollIntervalRef.current = null;
+		}
+	}, []);
 
 	const fetchData = useCallback(
 		async (jwtToken: string) => {
@@ -91,6 +115,75 @@ export function RiskDashboardView() {
 		}
 		fetchData(jwt);
 	}, [isJwtLoading, jwt, currentOrg?.id, fetchData]);
+
+	useEffect(() => {
+		return () => {
+			clearOrgPoll();
+		};
+	}, [clearOrgPoll]);
+
+	useEffect(() => {
+		if (data.orgAssessment) {
+			clearOrgPoll();
+			setOrgPollState("idle");
+		}
+	}, [data.orgAssessment, clearOrgPoll]);
+
+	const handleStartOrgAssessment = useCallback(async () => {
+		if (!jwt) return;
+		setOrgPollState("queuing");
+		try {
+			await triggerOrgRiskAssessment({ jwt });
+			toast.success(
+				language === "es"
+					? "Evaluación organizacional encolada. Los resultados estarán disponibles en breve."
+					: "Organization assessment queued. Results will be available shortly.",
+			);
+			setOrgPollState("running");
+			pollDeadlineRef.current = Date.now() + 90_000;
+
+			const tick = async () => {
+				if (Date.now() > pollDeadlineRef.current) {
+					clearOrgPoll();
+					setOrgPollState("error");
+					toast.error(
+						language === "es"
+							? "La evaluación tardó más de lo esperado. Abra la página de detalle o reintente."
+							: "The assessment is taking longer than expected. Open the detail page or try again.",
+					);
+					return;
+				}
+				try {
+					const next = await getOrgRiskAssessment({ jwt });
+					if (next) {
+						clearOrgPoll();
+						setOrgPollState("idle");
+						await fetchData(jwt);
+						toast.success(
+							language === "es"
+								? "Evaluación organizacional lista."
+								: "Organization assessment is ready.",
+						);
+					}
+				} catch {
+					// keep polling until deadline
+				}
+			};
+
+			clearOrgPoll();
+			void tick();
+			pollIntervalRef.current = setInterval(() => {
+				void tick();
+			}, 5000);
+		} catch {
+			setOrgPollState("error");
+			toast.error(
+				language === "es"
+					? "Error al iniciar la evaluación"
+					: "Error triggering assessment",
+			);
+		}
+	}, [jwt, language, fetchData, clearOrgPoll]);
 
 	const dist = data.clientDashboard?.distribution;
 	const stats: StatCard[] = [];
@@ -197,6 +290,36 @@ export function RiskDashboardView() {
 							<CardContent>
 								{data.orgAssessment ? (
 									<div className="space-y-4">
+										<div className="space-y-2 rounded-lg border bg-muted/50 p-3 text-sm">
+											<div className="flex items-center justify-between gap-2">
+												<span className="text-muted-foreground">
+													{t("riskDashboardLastRun")}
+												</span>
+												<span className="font-medium tabular-nums">
+													{formatAssessmentDate(
+														data.orgAssessment.createdAt,
+														language,
+													)}
+												</span>
+											</div>
+											<div className="flex items-center justify-between gap-2">
+												<span className="text-muted-foreground">
+													{t("riskDashboardAssessmentPeriod")}
+												</span>
+												<span className="font-medium text-right">
+													{formatAssessmentDate(
+														data.orgAssessment.periodStartDate,
+														language,
+													)}{" "}
+													—{" "}
+													{formatAssessmentDate(
+														data.orgAssessment.periodEndDate,
+														language,
+													)}
+												</span>
+											</div>
+										</div>
+
 										<div className="flex items-center justify-around">
 											<RiskScoreGauge
 												score={data.orgAssessment.inherentRiskScore}
@@ -252,13 +375,55 @@ export function RiskDashboardView() {
 										</Link>
 									</div>
 								) : (
-									<div className="flex flex-col items-center justify-center py-8 text-center">
+									<div className="flex flex-col items-center justify-center py-8 text-center space-y-4">
 										<Building2 className="h-10 w-10 text-muted-foreground/50" />
-										<p className="mt-2 text-sm text-muted-foreground">
+										<p className="text-sm text-muted-foreground max-w-md">
 											{language === "es"
 												? "No se ha realizado una evaluación organizacional"
 												: "No organization assessment has been performed"}
 										</p>
+										{orgPollState === "running" && (
+											<p className="text-xs text-muted-foreground max-w-sm">
+												{t("riskDashboardOrgPollRunning")}
+											</p>
+										)}
+										{orgPollState === "error" && (
+											<p className="text-xs text-destructive max-w-sm">
+												{t("riskDashboardOrgPollTimeout")}
+											</p>
+										)}
+										<div className="flex flex-col sm:flex-row items-center gap-2 w-full max-w-sm">
+											<Button
+												className="w-full sm:flex-1"
+												onClick={() => void handleStartOrgAssessment()}
+												disabled={
+													orgPollState === "queuing" ||
+													orgPollState === "running"
+												}
+											>
+												{orgPollState === "queuing" ||
+												orgPollState === "running" ? (
+													<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+												) : (
+													<Play className="mr-2 h-4 w-4" />
+												)}
+												{language === "es"
+													? "Iniciar evaluación"
+													: "Start assessment"}
+											</Button>
+											<Button
+												variant="outline"
+												className="w-full sm:flex-1"
+												asChild
+											>
+												<Link href={orgPath("/risk/assessment")}>
+													{language === "es"
+														? "Abrir detalle"
+														: "Open detail page"}
+													<ArrowRight className="ml-2 h-4 w-4" />
+												</Link>
+											</Button>
+										</div>
 									</div>
 								)}
 							</CardContent>
@@ -301,7 +466,25 @@ export function RiskDashboardView() {
 					</div>
 
 					{/* Quick Actions */}
-					<div className="grid gap-4 @2xl/main:grid-cols-2">
+					<div className="grid gap-4 @2xl/main:grid-cols-2 @3xl/main:grid-cols-3">
+						<Link href={orgPath("/risk/assessment")}>
+							<Card className="h-full hover:border-primary/50 transition-colors cursor-pointer">
+								<CardContent className="flex items-center gap-4 py-5">
+									<div className="rounded-lg bg-primary/10 p-3">
+										<Building2 className="h-5 w-5 text-primary" />
+									</div>
+									<div className="flex-1 min-w-0">
+										<p className="font-medium">
+											{t("riskDashboardViewOrgAssessment")}
+										</p>
+										<p className="text-sm text-muted-foreground">
+											{t("riskDashboardViewOrgAssessmentDesc")}
+										</p>
+									</div>
+									<ArrowRight className="h-4 w-4 text-muted-foreground" />
+								</CardContent>
+							</Card>
+						</Link>
 						<Link href={orgPath("/risk/evaluations")}>
 							<Card className="h-full hover:border-primary/50 transition-colors cursor-pointer">
 								<CardContent className="flex items-center gap-4 py-5">

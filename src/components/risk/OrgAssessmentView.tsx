@@ -254,7 +254,23 @@ export function OrgAssessmentView() {
 							<div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
 								<span>
 									{language === "es" ? "Período" : "Period"}:{" "}
-									{assessment.periodStartDate} — {assessment.periodEndDate}
+									{new Date(assessment.periodStartDate).toLocaleDateString(
+										language === "es" ? "es-MX" : "en-US",
+										{
+											year: "numeric",
+											month: "short",
+											day: "numeric",
+										},
+									)}{" "}
+									—{" "}
+									{new Date(assessment.periodEndDate).toLocaleDateString(
+										language === "es" ? "es-MX" : "en-US",
+										{
+											year: "numeric",
+											month: "short",
+											day: "numeric",
+										},
+									)}
 								</span>
 								<Button
 									variant="outline"

@@ -1,21 +1,16 @@
-# [1.13.0](https://github.com/janovix/aml/compare/v1.12.1...v1.13.0) (2026-04-12)
-
-
-### Bug Fixes
-
-* enhance NoAMLAccess component and improve DashboardLayout responsiveness ([5e66754](https://github.com/janovix/aml/commit/5e66754bb3b809934ed2726562d55d00a3f40956))
-* update catalogKey in DonationForm component for donation types ([c10a701](https://github.com/janovix/aml/commit/c10a701fa50d67b801fce0bea7f104279cc3fe80))
-* update risk API endpoints to remove 'clients' from URL paths ([a2e493e](https://github.com/janovix/aml/commit/a2e493edc7963b1d503adc570402c344c5be8904))
+# [1.14.0-rc.1](https://github.com/janovix/aml/compare/v1.13.0...v1.14.0-rc.1) (2026-04-17)
 
 
 ### Features
 
-* add ApproachingUsageLimitBanner component and integrate it into OrgSlugLayout ([104adb7](https://github.com/janovix/aml/commit/104adb78f9a682c8a0e6c918729d6244d7a95019))
-* add EntitlementAttributionBar component to DashboardLayout and update translations for subscription information ([074f9bd](https://github.com/janovix/aml/commit/074f9bd9f7bca0c113d4ecd61ec4203573112a4d))
-* add flags service integration and update subscription components to utilize feature flags ([f40b0cc](https://github.com/janovix/aml/commit/f40b0cc9e55aaea4d78691af09ef714f9524f361))
-* add risk level column to ClientsTable and enhance risk evaluation details ([de56252](https://github.com/janovix/aml/commit/de5625286838966d09d934a6e954be90bc32fba8))
-* enhance ImportPage with new layout and localization support ([2dc3ed9](https://github.com/janovix/aml/commit/2dc3ed9255d02136d30847bc3ac9aa82a9957a46))
-* update environment URLs for local development and add new risk assessment components ([9f7a243](https://github.com/janovix/aml/commit/9f7a2431dda7b4fabe9262d9d213659ec1fa0bb4))
+* implement organization assessment queuing and polling in RiskDashboardView component ([4430d3f](https://github.com/janovix/aml/commit/4430d3fd62d7a54fd8b9bb9c9b18b45597bcafe8))
+
+# [1.13.0-rc.9](https://github.com/janovix/aml/compare/v1.13.0-rc.8...v1.13.0-rc.9) (2026-04-17)
+
+
+### Features
+
+* implement organization assessment queuing and polling in RiskDashboardView component ([4430d3f](https://github.com/janovix/aml/commit/4430d3fd62d7a54fd8b9bb9c9b18b45597bcafe8))
 
 # [1.13.0-rc.8](https://github.com/janovix/aml/compare/v1.13.0-rc.7...v1.13.0-rc.8) (2026-04-12)
 
@@ -45,16 +40,11 @@
 
 * update environment URLs for local development and add new risk assessment components ([9f7a243](https://github.com/janovix/aml/commit/9f7a2431dda7b4fabe9262d9d213659ec1fa0bb4))
 
-<<<<<<< dev
 # [1.13.0-rc.4](https://github.com/janovix/aml/compare/v1.13.0-rc.3...v1.13.0-rc.4) (2026-04-08)
-=======
-## [1.12.1](https://github.com/janovix/aml/compare/v1.12.0...v1.12.1) (2026-03-30)
->>>>>>> main
 
 
 ### Bug Fixes
 
-<<<<<<< dev
 * update catalogKey in DonationForm component for donation types ([c10a701](https://github.com/janovix/aml/commit/c10a701fa50d67b801fce0bea7f104279cc3fe80))
 
 # [1.13.0-rc.3](https://github.com/janovix/aml/compare/v1.13.0-rc.2...v1.13.0-rc.3) (2026-04-06)
@@ -84,9 +74,6 @@
 ### Bug Fixes
 
 * enhance NoAMLAccess component and improve DashboardLayout responsiveness ([5e66754](https://github.com/janovix/aml/commit/5e66754bb3b809934ed2726562d55d00a3f40956))
-=======
-* update theme color in web manifest and refactor middleware to prevent redirect loop for users with zero organizations ([78f5f50](https://github.com/janovix/aml/commit/78f5f500684dada0965eee03c2acadcd50916d0d))
->>>>>>> main
 
 ## [1.12.1-rc.1](https://github.com/janovix/aml/compare/v1.12.0...v1.12.1-rc.1) (2026-03-30)
 
