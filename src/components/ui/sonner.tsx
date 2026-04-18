@@ -9,9 +9,9 @@ import {
 	TriangleAlertIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
-import { Toaster as Sonner, type ToasterProps } from "sonner";
+import { Toaster as Sonner, toast, type ToasterProps } from "sonner";
 
-const Toaster = ({ position = "top-right", ...props }: ToasterProps) => {
+const Toaster = ({ position = "bottom-center", ...props }: ToasterProps) => {
 	const { theme = "system" } = useTheme();
 
 	return (
@@ -59,4 +59,4 @@ const Toaster = ({ position = "top-right", ...props }: ToasterProps) => {
 	);
 };
 
-export { Toaster };
+export { Toaster, toast };
