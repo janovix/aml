@@ -10,11 +10,13 @@ import {
 	RotateCcw,
 	X,
 	Users,
+	Loader2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ImportState } from "@/types/import";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface ImportProgressProps {
 	state: ImportState;
@@ -28,16 +30,55 @@ function CircularProgress({
 	progress,
 	isComplete,
 	isFailed,
+	indeterminate,
 	size = 80,
 	strokeWidth = 6,
 }: {
 	progress: number;
 	isComplete: boolean;
 	isFailed: boolean;
+	indeterminate?: boolean;
 	size?: number;
 	strokeWidth?: number;
 }) {
 	const radius = (size - strokeWidth) / 2;
+
+	if (indeterminate) {
+		return (
+			<div
+				className="relative flex items-center justify-center"
+				style={{ width: size, height: size }}
+				aria-busy
+				aria-valuetext="Loading"
+			>
+				<svg
+					className="transform -rotate-90 text-muted/30"
+					width={size}
+					height={size}
+					aria-hidden
+				>
+					<circle
+						cx={size / 2}
+						cy={size / 2}
+						r={radius}
+						stroke="currentColor"
+						strokeWidth={strokeWidth}
+						fill="none"
+					/>
+				</svg>
+				<div className="absolute inset-0 flex items-center justify-center">
+					<Loader2
+						className={cn(
+							"h-7 w-7 animate-spin",
+							isFailed ? "text-destructive" : "text-primary",
+						)}
+						aria-hidden
+					/>
+				</div>
+			</div>
+		);
+	}
+
 	const circumference = radius * 2 * Math.PI;
 	const offset = circumference - (progress / 100) * circumference;
 
@@ -95,12 +136,21 @@ function CircularProgress({
 }
 
 export function ImportProgress({ state, onReset }: ImportProgressProps) {
+	const { t } = useLanguage();
 	const progress =
 		state.totalRows > 0
 			? Math.min((state.processedRows / state.totalRows) * 100, 100)
 			: 0;
 	const isComplete = state.status === "completed";
 	const isFailed = state.status === "failed";
+	const showIndeterminate =
+		state.totalRows === 0 &&
+		!isComplete &&
+		!isFailed &&
+		(state.status === "queued" ||
+			state.status === "validating" ||
+			state.status === "processing" ||
+			state.status === "uploading");
 
 	const allStatItems = [
 		{
@@ -155,12 +205,20 @@ export function ImportProgress({ state, onReset }: ImportProgressProps) {
 	);
 
 	const getStatusText = () => {
-		if (isFailed) return "Importación fallida";
-		if (isComplete) return "Importación completada";
-		if (state.status === "processing")
-			return `Procesando fila ${state.processedRows} de ${state.totalRows}`;
-		if (state.status === "uploading") return "Subiendo archivo...";
-		return "Preparando...";
+		if (isFailed) return t("importsStatusFailed");
+		if (isComplete) return t("importsStatusComplete");
+		if (state.status === "queued") return t("importsStatusQueued");
+		if (state.status === "validating") return t("importsStatusValidating");
+		if (state.status === "uploading") return t("importsStatusUploading");
+		if (state.status === "processing") {
+			if (state.totalRows > 0) {
+				return t("importsStatusProcessingRow")
+					.replace("{current}", String(state.processedRows))
+					.replace("{total}", String(state.totalRows));
+			}
+			return t("importsStatusPreparing");
+		}
+		return t("importsStatusPreparing");
 	};
 
 	const EntityIcon = state.entityType === "OPERATION" ? FileSpreadsheet : Users;
@@ -185,11 +243,12 @@ export function ImportProgress({ state, onReset }: ImportProgressProps) {
 					{/* Top row on mobile: Progress + File info */}
 					<div className="flex items-center gap-4">
 						{/* Circular Progress */}
-						<div className="flex-shrink-0">
+						<div className="shrink-0">
 							<CircularProgress
 								progress={progress}
 								isComplete={isComplete}
 								isFailed={isFailed}
+								indeterminate={showIndeterminate}
 							/>
 						</div>
 
@@ -218,7 +277,7 @@ export function ImportProgress({ state, onReset }: ImportProgressProps) {
 									/>
 								</div>
 								<h3 className="font-semibold text-foreground truncate text-sm">
-									{state.fileName}
+									{state.fileName ?? ""}
 								</h3>
 							</div>
 							<p className="text-sm text-muted-foreground">{getStatusText()}</p>
@@ -252,7 +311,7 @@ export function ImportProgress({ state, onReset }: ImportProgressProps) {
 									/>
 								</div>
 								<h3 className="font-semibold text-foreground truncate">
-									{state.fileName}
+									{state.fileName ?? ""}
 								</h3>
 							</div>
 							<p className="text-sm text-muted-foreground">{getStatusText()}</p>
@@ -297,7 +356,7 @@ export function ImportProgress({ state, onReset }: ImportProgressProps) {
 					</div>
 
 					{/* Right: Actions - hidden on mobile */}
-					<div className="hidden sm:flex flex-shrink-0 flex-col gap-1">
+					<div className="hidden sm:flex shrink-0 flex-col gap-1">
 						{isComplete && (
 							<Button
 								variant="outline"
