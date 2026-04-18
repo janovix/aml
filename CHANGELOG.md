@@ -1,3 +1,10 @@
+# [1.14.0-rc.2](https://github.com/janovix/aml/compare/v1.14.0-rc.1...v1.14.0-rc.2) (2026-04-18)
+
+
+### Features
+
+* enhance import progress component with indeterminate state and localization support ([778dfa6](https://github.com/janovix/aml/commit/778dfa6031b6432ea01e645260a439cec1650fcb))
+
 # [1.14.0-rc.1](https://github.com/janovix/aml/compare/v1.13.0...v1.14.0-rc.1) (2026-04-17)
 
 
