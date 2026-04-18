@@ -1,3 +1,10 @@
+# [1.14.0-rc.3](https://github.com/janovix/aml/compare/v1.14.0-rc.2...v1.14.0-rc.3) (2026-04-18)
+
+
+### Features
+
+* add new API routes for chat and MCP, enhance chat functionality with tool approval and result handling ([73dc017](https://github.com/janovix/aml/commit/73dc0178cbceb97cc607cc0281fdd1575db117e5))
+
 # [1.14.0-rc.2](https://github.com/janovix/aml/compare/v1.14.0-rc.1...v1.14.0-rc.2) (2026-04-18)
 
 
