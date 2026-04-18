@@ -1,11 +1,7 @@
 "use client";
 
 /**
- * ChatProvider
- *
- * Provides chat state and context to child components.
- * Uses a simple implementation with useState and fetch.
- * Passes JWT token for authenticated API calls (data tools).
+ * ChatProvider — Janbot via @ai-sdk/react useChat + DefaultChatTransport (UIMessage stream).
  */
 
 import {
@@ -15,54 +11,57 @@ import {
 	useCallback,
 	useRef,
 	useEffect,
+	useMemo,
 	type ReactNode,
 } from "react";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport, isToolUIPart, type UIMessage } from "ai";
 import { type LlmModel, DEFAULT_MODEL, MODEL_CONFIGS } from "@/lib/ai/types";
 import { useJwt } from "@/hooks/useJwt";
 import { useOrgNavigation } from "@/hooks/useOrgNavigation";
+import { useOrgStore } from "@/lib/org-store";
+import { getAmlCoreBaseUrl } from "@/lib/api/config";
 import type { BotExpression } from "./AnimatedBotIcon";
 
-// File attachment type
+const JANBOT_THREAD_STORAGE_KEY = "janbot-thread-id";
+
 export interface ChatAttachment {
 	file: File;
 	entityType: "CLIENT" | "TRANSACTION";
 }
 
-// Message type
-export interface ChatMessage {
-	id: string;
-	role: "user" | "assistant" | "system";
-	content: string;
-	createdAt: Date;
-	attachment?: ChatAttachment;
-}
+export type JanbotMessageMetadata = {
+	janovixAttachment?: {
+		name: string;
+		entityType: "CLIENT" | "TRANSACTION";
+		size: number;
+	};
+};
+
+export type JanbotUIMessage = UIMessage<JanbotMessageMetadata>;
 
 interface ChatContextValue {
-	// Chat state
-	messages: ChatMessage[];
+	messages: JanbotUIMessage[];
 	input: string;
 	setInput: (input: string) => void;
-	handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+	handleSubmit: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
 	isLoading: boolean;
 	error: Error | undefined;
 	reload: () => void;
 	stop: () => void;
 	clearMessages: () => void;
-
-	// File attachment state
+	addToolApprovalResponse: (args: {
+		id: string;
+		approved: boolean;
+		reason?: string;
+	}) => void;
 	pendingFile: ChatAttachment | null;
 	setPendingFile: (file: ChatAttachment | null) => void;
-
-	// Bot expression state (for animated icon)
 	botExpression: BotExpression;
 	isSleeping: boolean;
 	wakeUp: () => void;
-
-	// Model selection
 	selectedModel: LlmModel;
 	setSelectedModel: (model: LlmModel) => void;
-
-	// Drawer state
 	isOpen: boolean;
 	openChat: () => void;
 	closeChat: () => void;
@@ -75,19 +74,11 @@ interface ChatProviderProps {
 	children: ReactNode;
 }
 
-function generateId(): string {
-	return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-}
-
-/**
- * Read file as base64 string
- */
 async function readFileAsBase64(file: File): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const reader = new FileReader();
 		reader.onload = () => {
 			const result = reader.result as string;
-			// Remove the data URL prefix (e.g., "data:text/csv;base64,")
 			const base64 = result.split(",")[1] || result;
 			resolve(base64);
 		};
@@ -96,11 +87,9 @@ async function readFileAsBase64(file: File): Promise<string> {
 	});
 }
 
-// Sleep timer constants (in milliseconds)
-const SLEEP_MIN_MS = 2 * 60 * 1000; // 2 minutes
-const SLEEP_MAX_MS = 5 * 60 * 1000; // 5 minutes
+const SLEEP_MIN_MS = 2 * 60 * 1000;
+const SLEEP_MAX_MS = 5 * 60 * 1000;
 
-/** Get a random sleep interval between min and max */
 function getRandomSleepInterval(): number {
 	return (
 		Math.floor(Math.random() * (SLEEP_MAX_MS - SLEEP_MIN_MS + 1)) + SLEEP_MIN_MS
@@ -112,49 +101,127 @@ const CHAT_DRAWER_STORAGE_KEY = "chatDrawerOpen";
 export function ChatProvider({ children }: ChatProviderProps) {
 	const { jwt } = useJwt();
 	const { orgSlug } = useOrgNavigation();
+	const organizationId = useOrgStore((s) => s.currentOrg?.id);
 	const [selectedModel, setSelectedModel] = useState<LlmModel>(DEFAULT_MODEL);
 	const [isOpen, setIsOpen] = useState(() => {
-		// Initialize from sessionStorage if available (client-side only)
 		if (typeof window !== "undefined") {
 			return sessionStorage.getItem(CHAT_DRAWER_STORAGE_KEY) === "true";
 		}
 		return false;
 	});
-	const [messages, setMessages] = useState<ChatMessage[]>([]);
 	const [input, setInput] = useState("");
-	const [isLoading, setIsLoading] = useState(false);
-	const [error, setError] = useState<Error | undefined>();
+	const [pendingFile, setPendingFile] = useState<ChatAttachment | null>(null);
 	const [botExpression, setBotExpression] = useState<BotExpression>("idle");
 	const [isSleeping, setIsSleeping] = useState(false);
-	const [pendingFile, setPendingFile] = useState<ChatAttachment | null>(null);
-	const abortControllerRef = useRef<AbortController | null>(null);
+	const [chatId] = useState(
+		() =>
+			`janbot-${typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : String(Date.now())}`,
+	);
+	const [threadId, setThreadId] = useState<string | null>(null);
+	const didHydrateRef = useRef(false);
+
 	const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const sleepTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-	// Start/reset the sleep timer
+	// Restore thread id from storage (client only)
+	useEffect(() => {
+		if (typeof window === "undefined") return;
+		const stored = localStorage.getItem(JANBOT_THREAD_STORAGE_KEY);
+		if (stored) setThreadId(stored);
+	}, []);
+
+	const transport = useMemo(
+		() =>
+			new DefaultChatTransport<JanbotUIMessage>({
+				api: "/api/chat",
+				headers: () =>
+					jwt
+						? { Authorization: `Bearer ${jwt}` }
+						: ({} as Record<string, string>),
+				body: () => ({
+					model: selectedModel,
+					orgSlug: orgSlug || undefined,
+					organizationId: organizationId ?? undefined,
+					threadId: threadId ?? undefined,
+				}),
+			}),
+		[jwt, selectedModel, orgSlug, organizationId, threadId],
+	);
+
+	const {
+		messages,
+		sendMessage,
+		status,
+		stop,
+		setMessages,
+		error,
+		clearError,
+		regenerate,
+		addToolApprovalResponse,
+	} = useChat<JanbotUIMessage>({
+		id: chatId,
+		experimental_throttle: 50,
+		transport,
+		sendAutomaticallyWhen: ({ messages: msgs }) => {
+			const last = msgs.at(-1);
+			if (!last || last.role !== "assistant") return false;
+			return last.parts.some(
+				(p) =>
+					isToolUIPart(p) &&
+					p.state === "approval-responded" &&
+					"approval" in p &&
+					!!p.approval,
+			);
+		},
+	});
+
+	const isLoading = status === "submitted" || status === "streaming";
+
+	// Load prior messages once per thread (after useChat provides setMessages)
+	useEffect(() => {
+		if (!jwt || !threadId || didHydrateRef.current) return;
+		didHydrateRef.current = true;
+		let cancelled = false;
+		void (async () => {
+			try {
+				const base = getAmlCoreBaseUrl();
+				const res = await fetch(
+					`${base}/api/v1/chat/threads/${encodeURIComponent(threadId)}/messages`,
+					{ headers: { Authorization: `Bearer ${jwt}` } },
+				);
+				if (!res.ok || cancelled) return;
+				const data = (await res.json()) as {
+					messages: JanbotUIMessage[];
+				};
+				if (data.messages?.length) {
+					setMessages(data.messages);
+				}
+			} catch {
+				// ignore
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, [jwt, threadId, setMessages]);
+
 	const startSleepTimer = useCallback(() => {
-		// Clear any existing sleep timeout
 		if (sleepTimeoutRef.current) {
 			clearTimeout(sleepTimeoutRef.current);
 		}
-
-		// Set a new random sleep timeout
 		const interval = getRandomSleepInterval();
 		sleepTimeoutRef.current = setTimeout(() => {
 			setIsSleeping(true);
 		}, interval);
 	}, []);
 
-	// Wake up the bot and restart the sleep timer
 	const wakeUp = useCallback(() => {
 		setIsSleeping(false);
 		startSleepTimer();
 	}, [startSleepTimer]);
 
-	// Initialize sleep timer on mount
 	useEffect(() => {
 		startSleepTimer();
-
 		return () => {
 			if (sleepTimeoutRef.current) {
 				clearTimeout(sleepTimeoutRef.current);
@@ -162,10 +229,8 @@ export function ChatProvider({ children }: ChatProviderProps) {
 		};
 	}, [startSleepTimer]);
 
-	// Reset sleep timer when there's user activity (messages, loading, etc.)
 	useEffect(() => {
 		if (isLoading || messages.length > 0) {
-			// User is active, wake up if sleeping and restart timer
 			if (isSleeping) {
 				setIsSleeping(false);
 			}
@@ -173,20 +238,16 @@ export function ChatProvider({ children }: ChatProviderProps) {
 		}
 	}, [isLoading, messages.length, isSleeping, startSleepTimer]);
 
-	// Persist drawer open state to sessionStorage
 	useEffect(() => {
 		sessionStorage.setItem(CHAT_DRAWER_STORAGE_KEY, String(isOpen));
 	}, [isOpen]);
 
-	// Derive bot expression from chat state
 	useEffect(() => {
-		// Clear any pending success timeout
 		if (successTimeoutRef.current) {
 			clearTimeout(successTimeoutRef.current);
 			successTimeoutRef.current = null;
 		}
 
-		// If sleeping, always show sleepy expression
 		if (isSleeping) {
 			setBotExpression("sleepy");
 			return;
@@ -197,14 +258,22 @@ export function ChatProvider({ children }: ChatProviderProps) {
 		} else if (isLoading) {
 			setBotExpression("thinking");
 		} else if (messages.length > 0) {
-			// Check if last message was a successful assistant response
 			const lastMessage = messages[messages.length - 1];
-			if (lastMessage?.role === "assistant" && lastMessage.content.length > 0) {
-				// Show success briefly then return to idle
-				setBotExpression("success");
-				successTimeoutRef.current = setTimeout(() => {
+			if (lastMessage?.role === "assistant") {
+				const hasText = lastMessage.parts.some(
+					(p) =>
+						p.type === "text" &&
+						"text" in p &&
+						(p as { text: string }).text?.length,
+				);
+				if (hasText) {
+					setBotExpression("success");
+					successTimeoutRef.current = setTimeout(() => {
+						setBotExpression("idle");
+					}, 2500);
+				} else {
 					setBotExpression("idle");
-				}, 2500);
+				}
 			} else {
 				setBotExpression("idle");
 			}
@@ -224,164 +293,102 @@ export function ChatProvider({ children }: ChatProviderProps) {
 			e.preventDefault();
 			if ((!input.trim() && !pendingFile) || isLoading) return;
 
-			// Build content with file info if present
-			let content = input.trim();
+			let activeThreadId = threadId;
+			if (!activeThreadId && jwt) {
+				try {
+					const base = getAmlCoreBaseUrl();
+					const res = await fetch(`${base}/api/v1/chat/threads`, {
+						method: "POST",
+						headers: {
+							Authorization: `Bearer ${jwt}`,
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({ model: selectedModel }),
+					});
+					if (res.ok) {
+						const data = (await res.json()) as { id: string };
+						activeThreadId = data.id;
+						localStorage.setItem(JANBOT_THREAD_STORAGE_KEY, data.id);
+						setThreadId(data.id);
+					}
+				} catch {
+					// continue without persistence
+				}
+			}
+
+			const lines: string[] = [];
+			if (input.trim()) lines.push(input.trim());
 			if (pendingFile) {
-				const fileInfo = `[Archivo adjunto: ${pendingFile.file.name} (${pendingFile.entityType === "CLIENT" ? "Clientes" : "Transacciones"})]`;
-				content = content ? `${content}\n\n${fileInfo}` : fileInfo;
+				const label =
+					pendingFile.entityType === "CLIENT" ? "Clientes" : "Transacciones";
+				lines.push(`[Archivo adjunto: ${pendingFile.file.name} (${label})]`);
 			}
+			const text = lines.join("\n\n") || " ";
 
-			const userMessage: ChatMessage = {
-				id: generateId(),
-				role: "user",
-				content,
-				createdAt: new Date(),
-				attachment: pendingFile ?? undefined,
-			};
+			const metadata: JanbotMessageMetadata | undefined = pendingFile
+				? {
+						janovixAttachment: {
+							name: pendingFile.file.name,
+							entityType: pendingFile.entityType,
+							size: pendingFile.file.size,
+						},
+					}
+				: undefined;
 
-			setMessages((prev) => [...prev, userMessage]);
-			setInput("");
-			const fileToUpload = pendingFile;
-			setPendingFile(null);
-			setIsLoading(true);
-			setError(undefined);
-
-			// Create abort controller
-			abortControllerRef.current = new AbortController();
-
-			try {
-				// Build headers with JWT if available
-				const headers: Record<string, string> = {
-					"Content-Type": "application/json",
-				};
-				if (jwt) {
-					headers.Authorization = `Bearer ${jwt}`;
-				}
-
-				// Build request body
-				const requestBody: {
-					messages: Array<{ role: string; content: string }>;
-					model: string;
-					orgSlug?: string;
-					fileUpload?: {
+			let fileUpload:
+				| {
 						fileName: string;
-						entityType: string;
+						entityType: "CLIENT" | "TRANSACTION";
 						fileContent: string;
-					};
-				} = {
-					messages: [...messages, userMessage].map((m) => ({
-						role: m.role,
-						content: m.content,
-					})),
-					model: selectedModel,
-					orgSlug: orgSlug || undefined,
+				  }
+				| undefined;
+			if (pendingFile && jwt) {
+				fileUpload = {
+					fileName: pendingFile.file.name,
+					entityType: pendingFile.entityType,
+					fileContent: await readFileAsBase64(pendingFile.file),
 				};
-
-				// If there's a file, read it and include in the request
-				if (fileToUpload) {
-					const fileContent = await readFileAsBase64(fileToUpload.file);
-					requestBody.fileUpload = {
-						fileName: fileToUpload.file.name,
-						entityType: fileToUpload.entityType,
-						fileContent,
-					};
-				}
-
-				const response = await fetch("/api/chat", {
-					method: "POST",
-					headers,
-					body: JSON.stringify(requestBody),
-					signal: abortControllerRef.current.signal,
-				});
-
-				if (!response.ok) {
-					const errorData = await response.json().catch(() => ({}));
-					throw new Error(
-						(errorData as { error?: string }).error ||
-							`Request failed: ${response.status}`,
-					);
-				}
-
-				// Read streaming response
-				const reader = response.body?.getReader();
-				if (!reader) {
-					throw new Error("No response body");
-				}
-
-				const assistantMessage: ChatMessage = {
-					id: generateId(),
-					role: "assistant",
-					content: "",
-					createdAt: new Date(),
-				};
-
-				setMessages((prev) => [...prev, assistantMessage]);
-
-				const decoder = new TextDecoder();
-				let accumulatedContent = "";
-
-				while (true) {
-					const { done, value } = await reader.read();
-					if (done) break;
-
-					const chunk = decoder.decode(value, { stream: true });
-					accumulatedContent += chunk;
-
-					// Update the assistant message with accumulated content
-					setMessages((prev) =>
-						prev.map((m) =>
-							m.id === assistantMessage.id
-								? { ...m, content: accumulatedContent }
-								: m,
-						),
-					);
-				}
-			} catch (err) {
-				if (err instanceof Error && err.name !== "AbortError") {
-					setError(err);
-					// Remove the empty assistant message if there was an error
-					setMessages((prev) =>
-						prev.filter((m) => m.role !== "assistant" || m.content.length > 0),
-					);
-				}
-			} finally {
-				setIsLoading(false);
-				abortControllerRef.current = null;
 			}
+
+			setInput("");
+			setPendingFile(null);
+
+			await sendMessage(
+				{ text, metadata },
+				{
+					body: {
+						fileUpload,
+						threadId: activeThreadId ?? undefined,
+						organizationId: organizationId ?? undefined,
+					},
+				},
+			);
 		},
-		[input, isLoading, messages, selectedModel, jwt, pendingFile, orgSlug],
+		[
+			input,
+			isLoading,
+			pendingFile,
+			jwt,
+			sendMessage,
+			threadId,
+			selectedModel,
+			organizationId,
+		],
 	);
 
-	const stop = useCallback(() => {
-		if (abortControllerRef.current) {
-			abortControllerRef.current.abort();
-			setIsLoading(false);
-		}
-	}, []);
-
 	const reload = useCallback(() => {
-		// Get the last user message and resend
-		const lastUserMessage = [...messages]
-			.reverse()
-			.find((m) => m.role === "user");
-		if (lastUserMessage) {
-			// Remove last assistant message and re-submit
-			setMessages((prev) => {
-				const lastAssistantIdx = prev.findIndex(
-					(m, i) =>
-						m.role === "assistant" &&
-						prev.slice(i + 1).every((next) => next.role !== "assistant"),
-				);
-				return lastAssistantIdx >= 0 ? prev.slice(0, lastAssistantIdx) : prev;
-			});
-			setInput(lastUserMessage.content);
-		}
-	}, [messages]);
+		void regenerate();
+	}, [regenerate]);
 
 	const clearMessages = useCallback(() => {
 		setMessages([]);
-		setError(undefined);
-	}, []);
+		clearError();
+		didHydrateRef.current = false;
+		if (typeof window !== "undefined") {
+			localStorage.removeItem(JANBOT_THREAD_STORAGE_KEY);
+		}
+		setThreadId(null);
+	}, [setMessages, clearError]);
 
 	const openChat = useCallback(() => setIsOpen(true), []);
 	const closeChat = useCallback(() => setIsOpen(false), []);
@@ -393,10 +400,11 @@ export function ChatProvider({ children }: ChatProviderProps) {
 		setInput,
 		handleSubmit,
 		isLoading,
-		error,
+		error: error ?? undefined,
 		reload,
 		stop,
 		clearMessages,
+		addToolApprovalResponse,
 		pendingFile,
 		setPendingFile,
 		botExpression,
@@ -421,9 +429,6 @@ export function useChats(): ChatContextValue {
 	return context;
 }
 
-/**
- * Get model display info
- */
 export function useModelInfo(model: LlmModel) {
 	const config = MODEL_CONFIGS[model];
 	return {

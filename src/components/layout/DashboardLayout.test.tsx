@@ -1,8 +1,9 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DashboardLayout } from "./DashboardLayout";
 import { renderWithProviders } from "@/lib/testHelpers";
+import { environmentAtom } from "@/lib/environment-store";
 
 // Mock cookies module to return Spanish language for tests
 vi.mock("@/lib/cookies", () => ({
@@ -86,11 +87,16 @@ vi.mock("@/lib/settings/settingsClient", () => ({
 describe("DashboardLayout", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		environmentAtom.set("production");
 		// Mock window.addEventListener to prevent unhandled rejections
 		if (typeof window !== "undefined") {
 			window.addEventListener = vi.fn();
 			window.removeEventListener = vi.fn();
 		}
+	});
+
+	afterEach(() => {
+		environmentAtom.set("production");
 	});
 
 	it("renders children", () => {
@@ -226,5 +232,18 @@ describe("DashboardLayout", () => {
 		// Check that the footer contains the Janovix text logo (viewBox 0 0 102 16)
 		const footerLogo = footer?.querySelector('svg[viewBox="0 0 102 16"]');
 		expect(footerLogo).toBeInTheDocument();
+	});
+
+	it("shows data environment badge in footer when not production", () => {
+		environmentAtom.set("staging");
+		renderWithProviders(
+			<DashboardLayout>
+				<div>Test</div>
+			</DashboardLayout>,
+		);
+
+		const footer = document.querySelector("footer");
+		expect(footer).toBeInTheDocument();
+		expect(footer?.textContent).toContain("Stg");
 	});
 });

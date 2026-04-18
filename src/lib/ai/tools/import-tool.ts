@@ -8,7 +8,7 @@
 import { z } from "zod";
 import { getAmlCoreBaseUrl } from "@/lib/api/config";
 
-interface FileUpload {
+export interface FileUpload {
 	fileName: string;
 	entityType: "CLIENT" | "TRANSACTION";
 	fileContent: string; // Base64 encoded
@@ -74,6 +74,7 @@ export function createImportTool(
 		processImport: {
 			description: `Process the uploaded file (${fileUpload.fileName}) to import ${fileUpload.entityType === "CLIENT" ? "clients" : "operations"}. This will validate and import all rows from the file.`,
 			inputSchema: processImportSchema,
+			needsApproval: true,
 			execute: async ({ confirm }: z.infer<typeof processImportSchema>) => {
 				if (!confirm) {
 					return "Import cancelled by user.";

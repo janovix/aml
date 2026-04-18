@@ -18,8 +18,22 @@ export {
 export type { GetModelOptions } from "./providers";
 
 // Tools/System Prompt
-export { SYSTEM_PROMPT, createDataTools, createImportTool } from "./tools";
-export type { DataTools, ImportTool } from "./tools";
+export {
+	SYSTEM_PROMPT,
+	buildJanbotSystemPrompt,
+	createDataTools,
+	createImportTool,
+	buildJanbotTools,
+	filterToolsByJanbotFlags,
+	getFullJanbotToolInventoryMarkdown,
+	JANBOT_TOOL_FLAG_PREFIX,
+} from "./tools";
+export type {
+	DataTools,
+	ImportTool,
+	JanbotTools,
+	FileUploadContext,
+} from "./tools";
 
 // Billing
 export {

@@ -1188,3 +1188,23 @@ export function createDataTools(jwt: string) {
 }
 
 export type DataTools = ReturnType<typeof createDataTools>;
+
+/** Placeholder JWT — only tool metadata (descriptions) is read; no network calls. */
+const TOOL_INVENTORY_JWT_PLACEHOLDER = "tool-inventory-placeholder";
+
+/**
+ * Markdown list of data tools and descriptions, derived from `createDataTools`
+ * so the system prompt cannot drift from the actual tool set.
+ */
+export function getDataToolInventoryMarkdown(): string {
+	const tools = createDataTools(TOOL_INVENTORY_JWT_PLACEHOLDER);
+	const lines: string[] = [];
+	for (const [name, def] of Object.entries(tools)) {
+		const description =
+			def && typeof (def as { description?: string }).description === "string"
+				? (def as { description: string }).description
+				: "";
+		lines.push(`- **${name}**: ${description}`);
+	}
+	return lines.join("\n\n");
+}

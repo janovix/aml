@@ -38,6 +38,7 @@ import { useParams, useRouter } from "next/navigation";
 import type { Language } from "@/lib/translations";
 import { cn } from "@/lib/utils";
 import { EntitlementAttributionBar } from "@/components/layout/EntitlementAttributionBar";
+import { DataEnvBadge } from "@/components/layout/DataEnvBadge";
 import {
 	environmentAtom,
 	envHydratedAtom,
@@ -333,6 +334,7 @@ function DashboardFooter() {
 						showTimezoneMismatch={true}
 					/>
 					<UmaBadge />
+					<DataEnvBadge />
 				</div>
 				<Logo
 					variant="logo"
