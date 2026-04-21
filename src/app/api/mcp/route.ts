@@ -39,9 +39,7 @@ function getOrganizationIdFromBody(body: unknown): string | undefined {
 }
 
 /** MCP must not expose HITL-gated tools (no approval UI on this channel). */
-function isMcpCallableTool(
-	def: unknown,
-): def is {
+function isMcpCallableTool(def: unknown): def is {
 	needsApproval?: boolean;
 	execute: (input: unknown) => Promise<unknown>;
 } {
