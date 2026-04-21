@@ -368,6 +368,8 @@ const ACTIVITY_VISUALS: Record<ActivityCode, ActivityVisual> = {
 		lfpiropiFraccion: "II-b,c",
 		identificationThresholdUma: 645,
 		noticeThresholdUma: 645,
+		disabled: true,
+		disabledReason: "No disponible para nuevas selecciones en la plataforma",
 	},
 	TDR: {
 		code: "TDR",
@@ -378,6 +380,8 @@ const ACTIVITY_VISUALS: Record<ActivityCode, ActivityVisual> = {
 		lfpiropiFraccion: "II-c",
 		identificationThresholdUma: 645,
 		noticeThresholdUma: 645,
+		disabled: true,
+		disabledReason: "No disponible para nuevas selecciones en la plataforma",
 	},
 	CHV: {
 		code: "CHV",
@@ -388,6 +392,8 @@ const ACTIVITY_VISUALS: Record<ActivityCode, ActivityVisual> = {
 		lfpiropiFraccion: "III",
 		identificationThresholdUma: "ALWAYS",
 		noticeThresholdUma: 645,
+		disabled: true,
+		disabledReason: "No disponible para nuevas selecciones en la plataforma",
 	},
 	MPC: {
 		code: "MPC",
@@ -530,6 +536,8 @@ const ACTIVITY_VISUALS: Record<ActivityCode, ActivityVisual> = {
 		lfpiropiFraccion: "XVI",
 		identificationThresholdUma: "ALWAYS",
 		noticeThresholdUma: 210,
+		disabled: true,
+		disabledReason: "No disponible para nuevas selecciones en la plataforma",
 	},
 };
 

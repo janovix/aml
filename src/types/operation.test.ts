@@ -8,10 +8,20 @@ import {
 } from "./operation";
 
 describe("ENABLED_ACTIVITY_CODES", () => {
-	it("excludes FES only", () => {
-		expect(ACTIVITY_CODES).toContain("FES");
-		expect(ENABLED_ACTIVITY_CODES).not.toContain("FES");
-		expect(ENABLED_ACTIVITY_CODES.length).toBe(ACTIVITY_CODES.length - 1);
+	it("excludes activities disabled for selection", () => {
+		for (const code of [
+			"FES",
+			"AVI",
+			"TPP",
+			"TDR",
+			"CHV",
+		] as const satisfies readonly ActivityCode[]) {
+			expect(ACTIVITY_CODES).toContain(code);
+			expect(ENABLED_ACTIVITY_CODES).not.toContain(code);
+		}
+		expect(ENABLED_ACTIVITY_CODES.length).toBe(
+			ACTIVITY_CODES.length - /* FES, AVI, TPP, TDR, CHV */ 5,
+		);
 	});
 });
 

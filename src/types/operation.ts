@@ -45,9 +45,20 @@ export const ACTIVITY_CODES: ActivityCode[] = [
 	"DIN",
 ];
 
-/** 18 enabled activity codes (FES excluded -- no XSD schema available) */
+/** Not offered in org onboarding or dev ?activityCode= overrides (types/API still support them). */
+export const ACTIVITY_CODES_DISABLED_FOR_SELECTION: ActivityCode[] = [
+	"FES",
+	"AVI",
+	"TPP",
+	"TDR",
+	"CHV",
+];
+
+const disabledForSelectionSet = new Set(ACTIVITY_CODES_DISABLED_FOR_SELECTION);
+
+/** Activity codes users may select for org setup and dev URL overrides */
 export const ENABLED_ACTIVITY_CODES: ActivityCode[] = ACTIVITY_CODES.filter(
-	(code) => code !== "FES",
+	(code) => !disabledForSelectionSet.has(code),
 );
 
 export type WatchlistStatus =
