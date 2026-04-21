@@ -1,3 +1,10 @@
+# [1.14.0-rc.5](https://github.com/janovix/aml/compare/v1.14.0-rc.4...v1.14.0-rc.5) (2026-04-21)
+
+
+### Features
+
+* integrate MRZ-specialized Tesseract model for ID OCR and enhance client wizard with document scanning capabilities ([0a2e971](https://github.com/janovix/aml/commit/0a2e971a5c74dac2ece77edadb051575094171d3))
+
 # [1.14.0-rc.4](https://github.com/janovix/aml/compare/v1.14.0-rc.3...v1.14.0-rc.4) (2026-04-18)
 
 
