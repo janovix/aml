@@ -99,6 +99,10 @@ export function ClientCreateWizard(): React.JSX.Element {
 		handleComplete();
 	}, [handleComplete]);
 
+	const handleStepBack = useCallback(() => {
+		setWizardState((prev) => ({ ...prev, currentStep: 1 }));
+	}, []);
+
 	// Scroll to top when transitioning to step 2 (pathname doesn't change, so
 	// ScrollRestoration doesn't run; browser preserves scroll from step 1)
 	useEffect(() => {
@@ -159,6 +163,7 @@ export function ClientCreateWizard(): React.JSX.Element {
 							personType={wizardState.personType}
 							onComplete={handleComplete}
 							onSkip={handleSkipDocuments}
+							onBack={handleStepBack}
 						/>
 					)}
 			</div>

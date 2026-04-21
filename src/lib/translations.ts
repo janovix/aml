@@ -29,6 +29,26 @@ export const translations = {
 		optional: "Opcional",
 		required: "Requerido",
 
+		// ID scan / OCR prefill (client wizard step 1)
+		idScanCtaTitle: "Escanear identificación para autocompletar",
+		idScanCtaHelper:
+			"Sube una foto o PDF del INE o pasaporte y autocompletaremos los datos personales que podamos leer. Solo rellenamos campos vacíos.",
+		idScanCtaButton: "Escanear identificación",
+		idScanPrefillBanner:
+			"Autocompletamos {{count}} campo(s) desde la identificación. Por favor revísalos antes de continuar.",
+		idScanPrefillBadge: "Autocompletado",
+		idScanPrefilledTooltip:
+			"Este valor fue extraído automáticamente del documento.",
+		idScanLowConfidenceBadge: "Verificar",
+		idScanLowConfidenceTooltip:
+			"Confianza baja en la lectura — verifica el valor con el documento.",
+		idScanOcrFailed:
+			"No pudimos leer la identificación. Captura los datos manualmente.",
+		idScanPrefillApplied:
+			"Autocompletamos {{count}} campo(s) desde la identificación.",
+		idScanPrefillNoChanges:
+			"La identificación se leyó correctamente, pero los datos ya estaban capturados.",
+
 		// Navigation
 		navDashboard: "Inicio",
 		navClients: "Clientes",
@@ -1784,6 +1804,24 @@ export const translations = {
 		no: "No",
 		optional: "Optional",
 		required: "Required",
+
+		// ID scan / OCR prefill (client wizard step 1)
+		idScanCtaTitle: "Scan ID to autofill",
+		idScanCtaHelper:
+			"Upload a photo or PDF of the INE or passport and we'll autofill what we can read. We only fill in empty fields.",
+		idScanCtaButton: "Scan ID",
+		idScanPrefillBanner:
+			"We autofilled {{count}} field(s) from the ID. Please double-check them before continuing.",
+		idScanPrefillBadge: "Prefilled",
+		idScanPrefilledTooltip: "This value was extracted from the document.",
+		idScanLowConfidenceBadge: "Verify",
+		idScanLowConfidenceTooltip:
+			"Low OCR confidence — please verify the value against the document.",
+		idScanOcrFailed:
+			"We could not read the ID. Please enter the data manually.",
+		idScanPrefillApplied: "Autofilled {{count}} field(s) from the ID.",
+		idScanPrefillNoChanges:
+			"The ID was read correctly, but those fields were already filled in.",
 
 		// Navigation
 		navDashboard: "Home",

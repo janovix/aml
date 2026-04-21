@@ -55,7 +55,7 @@ import {
 	rasterizePDF,
 	isPDFFile,
 	isImageFile,
-} from "@/lib/document-scanner/pdf-rasterizer";
+} from "@janovix/document-scanner";
 import { ScannerCanvas } from "./ScannerCanvas";
 import { ScannerSteps } from "./ScannerSteps";
 

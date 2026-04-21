@@ -3,6 +3,7 @@
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
 import * as Sentry from "@sentry/nextjs";
+import { configureMRZTesseract } from "@janovix/document-scanner";
 
 // Environment variables (set in Cloudflare Worker config or .env)
 // NEXT_PUBLIC_SENTRY_DSN: Your Sentry DSN from project settings
@@ -38,5 +39,30 @@ Sentry.init({
 	// https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
 	sendDefaultPii: true,
 });
+
+// Wire the MRZ-specialised Tesseract model for ID OCR. Opt-in via env: when
+// NEXT_PUBLIC_MRZ_TESSDATA_LANG_PATH is unset, @janovix/document-scanner falls
+// back to the stock `eng` model (safe for local dev / tests without R2 access).
+// Recommended production value: https://cdn.janovix.com/tessdata
+// Recommended language: `mrz` (tessdata_fast, ~1.4MB). Set to `mrz_best`
+// (tessdata_best, ~11MB) only if production breadcrumbs justify the bigger model.
+const mrzLangPath = process.env.NEXT_PUBLIC_MRZ_TESSDATA_LANG_PATH;
+const mrzLanguage = process.env.NEXT_PUBLIC_MRZ_TESSDATA_LANGUAGE;
+if (mrzLangPath && mrzLangPath.trim().length > 0) {
+	const resolvedLangPath = mrzLangPath.trim().replace(/\/$/, "");
+	const resolvedLanguage =
+		mrzLanguage && mrzLanguage.trim().length > 0 ? mrzLanguage.trim() : "mrz";
+	configureMRZTesseract({
+		langPath: resolvedLangPath,
+		language: resolvedLanguage,
+	});
+	console.info(
+		`[OCR-MRZ] MRZ Tesseract model configured: language=${resolvedLanguage} langPath=${resolvedLangPath}`,
+	);
+} else {
+	console.info(
+		"[OCR-MRZ] NEXT_PUBLIC_MRZ_TESSDATA_LANG_PATH not set — falling back to stock 'eng' model (no MRZ specialisation).",
+	);
+}
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

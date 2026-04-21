@@ -11,6 +11,7 @@ import {
 	FileText,
 	CheckCircle2,
 	ArrowRight,
+	ArrowLeft,
 	Users,
 	AlertCircle,
 } from "lucide-react";
@@ -45,6 +46,8 @@ interface DocumentsStepProps {
 	personType: PersonType;
 	onComplete: () => void;
 	onSkip: () => void;
+	/** Optional handler that returns to step 1 of the wizard. */
+	onBack?: () => void;
 }
 
 export function DocumentsStep({
@@ -53,6 +56,7 @@ export function DocumentsStep({
 	personType,
 	onComplete,
 	onSkip,
+	onBack,
 }: DocumentsStepProps) {
 	// Document state for each required document
 	const [idDocumentData, setIdDocumentData] = useState<IDDocumentData | null>(
@@ -491,14 +495,24 @@ export function DocumentsStep({
 			</Card>
 
 			{/* Action buttons */}
-			<div className="flex justify-end gap-3">
-				<Button variant="outline" onClick={handleSkipClick}>
-					Completar después
-				</Button>
-				<Button onClick={handleComplete}>
-					<CheckCircle2 className="h-4 w-4 mr-2" />
-					Finalizar
-				</Button>
+			<div className="flex flex-col-reverse @sm/main:flex-row gap-3 @sm/main:justify-between">
+				{onBack ? (
+					<Button variant="outline" onClick={onBack}>
+						<ArrowLeft className="h-4 w-4 mr-2" />
+						Volver
+					</Button>
+				) : (
+					<span aria-hidden="true" />
+				)}
+				<div className="flex gap-3 @sm/main:justify-end">
+					<Button variant="outline" onClick={handleSkipClick}>
+						Completar después
+					</Button>
+					<Button onClick={handleComplete}>
+						<CheckCircle2 className="h-4 w-4 mr-2" />
+						Finalizar
+					</Button>
+				</div>
 			</div>
 		</div>
 	);
