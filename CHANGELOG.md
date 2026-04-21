@@ -1,3 +1,10 @@
+# [1.14.0-rc.6](https://github.com/janovix/aml/compare/v1.14.0-rc.5...v1.14.0-rc.6) (2026-04-21)
+
+
+### Features
+
+* enhance activity selection logic and update tests for disabled activities ([d141fb2](https://github.com/janovix/aml/commit/d141fb276f11c9a91d3c836b214c23f0493d7553))
+
 # [1.14.0-rc.5](https://github.com/janovix/aml/compare/v1.14.0-rc.4...v1.14.0-rc.5) (2026-04-21)
 
 
