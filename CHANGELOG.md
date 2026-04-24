@@ -1,3 +1,10 @@
+# [1.14.0-rc.7](https://github.com/janovix/aml/compare/v1.14.0-rc.6...v1.14.0-rc.7) (2026-04-24)
+
+
+### Features
+
+* add invoices gate layout and screening history components ([088273a](https://github.com/janovix/aml/commit/088273a5e6ca1d013300afc73231dab90b6ad974))
+
 # [1.14.0-rc.6](https://github.com/janovix/aml/compare/v1.14.0-rc.5...v1.14.0-rc.6) (2026-04-21)
 
 
