@@ -53,7 +53,10 @@ import {
 	getWatchlistAppUrl,
 } from "@/lib/auth/config";
 import { useLanguage } from "@/components/LanguageProvider";
+import { useFlags } from "@/hooks/useFlags";
 import type { TranslationKeys } from "@/lib/translations";
+
+const CFDI_INVOICES_FLAG_KEY = "cfdi-invoices-enabled";
 
 type NavItem = {
 	titleKey: TranslationKeys;
@@ -154,6 +157,17 @@ export function AppSidebar({
 	const urlOrgSlug = params?.orgSlug as string | undefined;
 	const { isMobile, setOpenMobile } = useSidebar();
 	const { data: session, isPending } = useAuthSession();
+	const { flags: featureFlags } = useFlags([CFDI_INVOICES_FLAG_KEY]);
+	const cfdiInvoicesEnabled =
+		featureFlags[CFDI_INVOICES_FLAG_KEY] !== false;
+
+	const visibleMainNavItems = React.useMemo(
+		() =>
+			mainNavItems.filter(
+				(i) => i.titleKey !== "navInvoices" || cfdiInvoicesEnabled,
+			),
+		[cfdiInvoicesEnabled],
+	);
 
 	// Use org-store for organization state
 	const {
@@ -374,7 +388,7 @@ export function AppSidebar({
 						</SidebarGroupLabel>
 						<SidebarGroupContent>
 							<SidebarMenu>
-								{mainNavItems.map((item) => {
+								{visibleMainNavItems.map((item) => {
 									const Icon = item.icon;
 									const isActive = isNavActive(item.href);
 									const title = t(item.titleKey);

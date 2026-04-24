@@ -102,6 +102,7 @@ import type { FieldTier } from "@/types/completeness";
 import { TIER_COLORS } from "@/types/completeness";
 import { useOrgSettings } from "@/hooks/useOrgSettings";
 import { DocumentThumbnailRow } from "./DocumentThumbnailRow";
+import { ScreeningHistoryTimeline } from "./ScreeningHistoryTimeline";
 
 interface ClientDetailsViewProps {
 	clientId: string;
@@ -680,6 +681,7 @@ export function ClientDetailsView({
 	const kycStatus = calculateKYCStatus(client, {
 		documents,
 		beneficialControllers,
+		identificationTier: client.identificationTier,
 	});
 	const kycPct = client.kycCompletionPct ?? 0;
 	const kycComplete = kycPct === 100;
@@ -2419,6 +2421,8 @@ export function ClientDetailsView({
 										</div>
 									)}
 
+									<ScreeningHistoryTimeline clientId={client.id} />
+
 									{/* View watchlist query button */}
 									{client.watchlistQueryId && (
 										<div className="flex justify-end pt-2">
@@ -2844,6 +2848,10 @@ export function ClientDetailsView({
 																	)}
 															</div>
 														)}
+													<ScreeningHistoryTimeline
+														clientId={client.id}
+														mode={{ kind: "bc", bcId: bc.id }}
+													/>
 												</div>
 											</div>
 										</div>
