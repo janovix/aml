@@ -356,6 +356,54 @@ export const translations = {
 		clientReference: "Referencia",
 		clientObservations: "Observaciones",
 		clientSearchCountry: "Buscar país...",
+		// Client address (postal + neighborhood) and KYC form helpers
+		clientExteriorNumberAbbr: "Número Ext.",
+		clientInteriorNumberAbbr: "Número Int.",
+		clientPostalCodeHelper:
+			"Ingresa el código postal para auto-completar la dirección",
+		clientSelectNeighborhood: "Selecciona una colonia",
+		clientCustomNeighborhoodOption: "Escribir colonia personalizada",
+		clientNeighborhoodRequired: "Colonia es requerida",
+		clientCustomNeighborhoodLabel: "Colonia personalizada",
+		clientCustomNeighborhoodDescription:
+			"Ingresa el nombre de la colonia manualmente",
+		clientCustomNeighborhoodHelper:
+			"Ingresa el nombre exacto de la colonia si no aparece en la lista",
+		clientCustomNeighborhoodInputPlaceholder: "ESCRIBE EL NOMBRE DE LA COLONIA",
+		clientZipNotFoundCatalogToast:
+			"Código postal no encontrado en el catálogo. Puedes ingresar los datos manualmente.",
+		clientZipMultiSettlementsToast:
+			"Se encontraron {{count}} colonias para este código postal. Por favor, selecciona la colonia correspondiente para continuar.",
+		clientOneNeighborhoodAvailable: "1 colonia disponible",
+		clientManyNeighborhoodsAvailable: "{{count}} colonias disponibles",
+		clientForThisPostalCode: "para este código postal",
+		clientSearchState: "Buscar estado...",
+		clientSelectState: "Seleccionar estado",
+		clientOccupationPlaceholderExample: "Ej. COMERCIANTE",
+		clientSourceOfFundsPlaceholderExample: "Ej. SALARIO",
+		clientSourceWealthPlaceholderExample: "Ej. HERENCIA",
+		clientKycFieldGenderDescription: "Género del cliente",
+		clientKycFieldMaritalDescription: "Estado civil del cliente",
+		clientKycFieldOccupationDescription: "Ocupación o profesión del cliente",
+		clientKycFieldSourceOfFundsPhysical:
+			"De dónde provienen los recursos utilizados en la operación",
+		clientKycFieldSourceOfFundsCompany:
+			"De dónde provienen los recursos de la empresa utilizados en la operación",
+		clientKycFieldSourceWealthPhysical:
+			"Origen general del patrimonio del cliente",
+		clientKycFieldSourceWealthCompany:
+			"Origen general del patrimonio de la empresa",
+		clientOccupationPlaceholderList: "Ej. Empresario, Abogado, Médico",
+		clientSourceOfFundsPlaceholderEditPhysical:
+			"Ej. Salario, Inversiones, Herencia",
+		clientSourceOfFundsPlaceholderEditCompany:
+			"Ej. Actividad empresarial, Ventas, Prestación de servicios",
+		clientSourceWealthPlaceholderEditPhysical:
+			"Ej. Actividad empresarial, Profesión",
+		clientSourceWealthPlaceholderEditCompany:
+			"Ej. Capital social, Utilidades retenidas",
+		clientEconomicActivityFieldDescription:
+			"Actividad económica del catálogo SAT (7 dígitos)",
 		clientTransactionHistory: "Historial de Transacciones",
 		clientRegistrationDate: "Fecha de Registro",
 		clientLastUpdate: "Última Actualización",
@@ -2160,6 +2208,52 @@ export const translations = {
 		clientReference: "Reference",
 		clientObservations: "Observations",
 		clientSearchCountry: "Search country...",
+		// Client address (postal + neighborhood) and KYC form helpers
+		clientExteriorNumberAbbr: "Ext. no.",
+		clientInteriorNumberAbbr: "Int. no.",
+		clientPostalCodeHelper: "Enter the postal code to auto-fill the address",
+		clientSelectNeighborhood: "Select a neighborhood",
+		clientCustomNeighborhoodOption: "Enter a custom neighborhood",
+		clientNeighborhoodRequired: "Neighborhood is required",
+		clientCustomNeighborhoodLabel: "Custom neighborhood",
+		clientCustomNeighborhoodDescription: "Enter the neighborhood name manually",
+		clientCustomNeighborhoodHelper:
+			"Enter the exact neighborhood name if it does not appear in the list",
+		clientCustomNeighborhoodInputPlaceholder: "TYPE THE NEIGHBORHOOD NAME",
+		clientZipNotFoundCatalogToast:
+			"Postal code not found in the catalog. You can enter the data manually.",
+		clientZipMultiSettlementsToast:
+			"{{count}} neighborhoods were found for this postal code. Please select the correct neighborhood to continue.",
+		clientOneNeighborhoodAvailable: "1 neighborhood available",
+		clientManyNeighborhoodsAvailable: "{{count}} neighborhoods available",
+		clientForThisPostalCode: "for this postal code",
+		clientSearchState: "Search state...",
+		clientSelectState: "Select state",
+		clientOccupationPlaceholderExample: "E.g. MERCHANT",
+		clientSourceOfFundsPlaceholderExample: "E.g. SALARY",
+		clientSourceWealthPlaceholderExample: "E.g. INHERITANCE",
+		clientKycFieldGenderDescription: "Client's gender",
+		clientKycFieldMaritalDescription: "Client's marital status",
+		clientKycFieldOccupationDescription: "Client's occupation or profession",
+		clientKycFieldSourceOfFundsPhysical:
+			"Where the funds used in the operation come from",
+		clientKycFieldSourceOfFundsCompany:
+			"Where the company's funds used in the operation come from",
+		clientKycFieldSourceWealthPhysical:
+			"General source of the client's net worth",
+		clientKycFieldSourceWealthCompany:
+			"General source of the company's net worth",
+		clientOccupationPlaceholderList: "E.g. Business owner, Lawyer, Doctor",
+		clientSourceOfFundsPlaceholderEditPhysical:
+			"E.g. Salary, Investments, Inheritance",
+		clientSourceOfFundsPlaceholderEditCompany:
+			"E.g. Business activity, Sales, Services",
+		clientSourceWealthPlaceholderEditPhysical:
+			"E.g. Business activity, Profession",
+		clientSourceWealthPlaceholderEditCompany:
+			"E.g. Share capital, Retained earnings",
+		clientEconomicActivityFieldDescription:
+			"Economic activity from the SAT catalog (7 digits)",
 		clientTransactionHistory: "Transaction History",
 		clientRegistrationDate: "Registration Date",
 		clientLastUpdate: "Last Update",

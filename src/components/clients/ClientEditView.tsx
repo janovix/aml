@@ -1037,8 +1037,8 @@ export function ClientEditView({
 									{formData.personType !== "physical" && (
 										<CatalogSelector
 											catalogKey="countries"
-											label="País"
-											labelDescription="País de constitución de la entidad"
+											label={t("clientCountry")}
+											labelDescription={t("clientCountryOfConstitution")}
 											tier={fieldTiers.countryCode}
 											value={formData.countryCode}
 											searchPlaceholder={t("clientSearchCountry")}
@@ -1055,11 +1055,13 @@ export function ClientEditView({
 									)}
 									<CatalogSelector
 										catalogKey="economic-activities"
-										label="Actividad económica"
-										labelDescription="Actividad económica del catálogo SAT (7 dígitos)"
+										label={t("clientEconomicActivityLabel")}
+										labelDescription={t(
+											"clientEconomicActivityFieldDescription",
+										)}
 										tier={fieldTiers.economicActivityCode}
 										value={formData.economicActivityCode}
-										searchPlaceholder="Buscar actividad económica..."
+										searchPlaceholder={t("clientSearchActivity")}
 										resolvedName={client?.resolvedNames?.economicActivityCode}
 										onChange={(option) =>
 											handleInputChange(
@@ -1100,10 +1102,10 @@ export function ClientEditView({
 							<Card>
 								<CardHeader>
 									<CardTitle className="text-lg">
-										Información complementaria KYC
+										{t("clientKycComplementary")}
 									</CardTitle>
 									<p className="text-sm text-muted-foreground">
-										Datos adicionales para debida diligencia y perfil de riesgo
+										{t("clientKycComplementaryDesc")}
 									</p>
 								</CardHeader>
 								<CardContent className="space-y-4">
@@ -1113,10 +1115,10 @@ export function ClientEditView({
 												<div className="space-y-2">
 													<LabelWithInfo
 														htmlFor="gender"
-														description="Género del cliente"
+														description={t("clientKycFieldGenderDescription")}
 														tier={fieldTiers.gender}
 													>
-														Género
+														{t("clientGender")}
 													</LabelWithInfo>
 													<Select
 														value={formData.gender || undefined}
@@ -1125,22 +1127,30 @@ export function ClientEditView({
 														}
 													>
 														<SelectTrigger id="gender">
-															<SelectValue placeholder="Seleccionar género" />
+															<SelectValue
+																placeholder={t("clientSelectGender")}
+															/>
 														</SelectTrigger>
 														<SelectContent>
-															<SelectItem value="M">Masculino</SelectItem>
-															<SelectItem value="F">Femenino</SelectItem>
-															<SelectItem value="OTHER">Otro</SelectItem>
+															<SelectItem value="M">
+																{t("clientGenderMale")}
+															</SelectItem>
+															<SelectItem value="F">
+																{t("clientGenderFemale")}
+															</SelectItem>
+															<SelectItem value="OTHER">
+																{t("clientGenderOther")}
+															</SelectItem>
 														</SelectContent>
 													</Select>
 												</div>
 												<div className="space-y-2">
 													<LabelWithInfo
 														htmlFor="maritalStatus"
-														description="Estado civil del cliente"
+														description={t("clientKycFieldMaritalDescription")}
 														tier={fieldTiers.maritalStatus}
 													>
-														Estado civil
+														{t("clientMaritalStatus")}
 													</LabelWithInfo>
 													<Select
 														value={formData.maritalStatus || undefined}
@@ -1149,16 +1159,26 @@ export function ClientEditView({
 														}
 													>
 														<SelectTrigger id="maritalStatus">
-															<SelectValue placeholder="Seleccionar estado civil" />
+															<SelectValue
+																placeholder={t("clientSelectMaritalStatus")}
+															/>
 														</SelectTrigger>
 														<SelectContent>
-															<SelectItem value="SINGLE">Soltero/a</SelectItem>
-															<SelectItem value="MARRIED">Casado/a</SelectItem>
-															<SelectItem value="DIVORCED">
-																Divorciado/a
+															<SelectItem value="SINGLE">
+																{t("clientMaritalSingle")}
 															</SelectItem>
-															<SelectItem value="WIDOWED">Viudo/a</SelectItem>
-															<SelectItem value="OTHER">Otro</SelectItem>
+															<SelectItem value="MARRIED">
+																{t("clientMaritalMarried")}
+															</SelectItem>
+															<SelectItem value="DIVORCED">
+																{t("clientMaritalDivorced")}
+															</SelectItem>
+															<SelectItem value="WIDOWED">
+																{t("clientMaritalWidowed")}
+															</SelectItem>
+															<SelectItem value="OTHER">
+																{t("clientGenderOther")}
+															</SelectItem>
 														</SelectContent>
 													</Select>
 												</div>
@@ -1166,10 +1186,10 @@ export function ClientEditView({
 											<div className="space-y-2">
 												<LabelWithInfo
 													htmlFor="occupation"
-													description="Ocupación o profesión del cliente"
+													description={t("clientKycFieldOccupationDescription")}
 													tier={fieldTiers.occupation}
 												>
-													Ocupación / Profesión
+													{t("clientOccupationProfession")}
 												</LabelWithInfo>
 												<Input
 													id="occupation"
@@ -1177,7 +1197,7 @@ export function ClientEditView({
 													onChange={(e) =>
 														handleInputChange("occupation", e.target.value)
 													}
-													placeholder="Ej. Empresario, Abogado, Médico"
+													placeholder={t("clientOccupationPlaceholderList")}
 												/>
 											</div>
 										</>
@@ -1188,12 +1208,12 @@ export function ClientEditView({
 												htmlFor="sourceOfFunds"
 												description={
 													formData.personType === "physical"
-														? "De dónde provienen los recursos utilizados en la operación"
-														: "De dónde provienen los recursos de la empresa utilizados en la operación"
+														? t("clientKycFieldSourceOfFundsPhysical")
+														: t("clientKycFieldSourceOfFundsCompany")
 												}
 												tier={fieldTiers.sourceOfFunds}
 											>
-												Origen de los recursos
+												{t("clientResourceOrigin")}
 											</LabelWithInfo>
 											<Input
 												id="sourceOfFunds"
@@ -1203,8 +1223,8 @@ export function ClientEditView({
 												}
 												placeholder={
 													formData.personType === "physical"
-														? "Ej. Salario, Inversiones, Herencia"
-														: "Ej. Actividad empresarial, Ventas, Prestación de servicios"
+														? t("clientSourceOfFundsPlaceholderEditPhysical")
+														: t("clientSourceOfFundsPlaceholderEditCompany")
 												}
 											/>
 										</div>
@@ -1213,12 +1233,12 @@ export function ClientEditView({
 												htmlFor="sourceOfWealth"
 												description={
 													formData.personType === "physical"
-														? "Origen general del patrimonio del cliente"
-														: "Origen general del patrimonio de la empresa"
+														? t("clientKycFieldSourceWealthPhysical")
+														: t("clientKycFieldSourceWealthCompany")
 												}
 												tier={fieldTiers.sourceOfWealth}
 											>
-												Origen del patrimonio
+												{t("clientPatrimonyOrigin")}
 											</LabelWithInfo>
 											<Input
 												id="sourceOfWealth"
@@ -1228,8 +1248,8 @@ export function ClientEditView({
 												}
 												placeholder={
 													formData.personType === "physical"
-														? "Ej. Actividad empresarial, Profesión"
-														: "Ej. Capital social, Utilidades retenidas"
+														? t("clientSourceWealthPlaceholderEditPhysical")
+														: t("clientSourceWealthPlaceholderEditCompany")
 												}
 											/>
 										</div>

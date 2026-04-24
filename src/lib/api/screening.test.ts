@@ -14,11 +14,16 @@ describe("screening API", () => {
 	});
 
 	it("getClientScreeningHistory requests screening-history path", async () => {
-		const mockJson = { items: [], pagination: { limit: 20, offset: 0, total: 0, hasMore: false } };
+		const mockJson = {
+			items: [],
+			pagination: { limit: 20, offset: 0, total: 0, hasMore: false },
+		};
 		global.fetch = vi.fn().mockResolvedValue({
 			ok: true,
 			json: async () => mockJson,
-			headers: { get: (n: string) => (n === "content-type" ? "application/json" : null) },
+			headers: {
+				get: (n: string) => (n === "content-type" ? "application/json" : null),
+			},
 		});
 
 		await getClientScreeningHistory("c1", {
@@ -30,11 +35,16 @@ describe("screening API", () => {
 	});
 
 	it("getBeneficialControllerScreeningHistory includes bc segment", async () => {
-		const mockJson = { items: [], pagination: { limit: 20, offset: 0, total: 0, hasMore: false } };
+		const mockJson = {
+			items: [],
+			pagination: { limit: 20, offset: 0, total: 0, hasMore: false },
+		};
 		global.fetch = vi.fn().mockResolvedValue({
 			ok: true,
 			json: async () => mockJson,
-			headers: { get: (n: string) => (n === "content-type" ? "application/json" : null) },
+			headers: {
+				get: (n: string) => (n === "content-type" ? "application/json" : null),
+			},
 		});
 
 		await getBeneficialControllerScreeningHistory("c1", "bc1", {

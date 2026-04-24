@@ -158,8 +158,7 @@ export function AppSidebar({
 	const { isMobile, setOpenMobile } = useSidebar();
 	const { data: session, isPending } = useAuthSession();
 	const { flags: featureFlags } = useFlags([CFDI_INVOICES_FLAG_KEY]);
-	const cfdiInvoicesEnabled =
-		featureFlags[CFDI_INVOICES_FLAG_KEY] !== false;
+	const cfdiInvoicesEnabled = featureFlags[CFDI_INVOICES_FLAG_KEY] !== false;
 
 	const visibleMainNavItems = React.useMemo(
 		() =>

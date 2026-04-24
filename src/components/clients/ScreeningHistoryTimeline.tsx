@@ -1,7 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Calendar, ExternalLink, History, Loader2, AlertCircle } from "lucide-react";
+import {
+	Calendar,
+	ExternalLink,
+	History,
+	Loader2,
+	AlertCircle,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useJwt } from "@/hooks/useJwt";
 import { useLanguage } from "@/components/LanguageProvider";
@@ -69,9 +75,7 @@ function TriggerBadge({
 	v: string;
 }) {
 	const tk = TRIGGER_TRANSLATION[v];
-	const label = tk
-		? t(tk as TranslationKeys)
-		: v.replace(/_/g, " ");
+	const label = tk ? t(tk as TranslationKeys) : v.replace(/_/g, " ");
 	return (
 		<span className="inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-medium uppercase text-muted-foreground">
 			{label}
@@ -190,14 +194,20 @@ export function ScreeningHistoryTimeline(props: {
 									<div className="flex items-center gap-1.5 flex-wrap text-xs text-muted-foreground">
 										<Calendar className="h-3.5 w-3.5 shrink-0" />
 										<time dateTime={row.screenedAt}>
-											{formatLocalDateTime(row.screenedAt, language as "en" | "es")}
+											{formatLocalDateTime(
+												row.screenedAt,
+												language as "en" | "es",
+											)}
 										</time>
 										<TriggerBadge t={t} v={row.triggeredBy} />
 									</div>
 									<div className="mt-1 flex flex-wrap items-center gap-2">
 										<Badge
 											variant="outline"
-											className={cn("text-xs", resultBadgeClass(row.screeningResult))}
+											className={cn(
+												"text-xs",
+												resultBadgeClass(row.screeningResult),
+											)}
 										>
 											{row.screeningResult}
 										</Badge>

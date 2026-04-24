@@ -1087,11 +1087,11 @@ export function ClientInfoStep({
 					<div className="space-y-1">
 						<CatalogSelector
 							catalogKey="countries"
-							label="Nacionalidad"
+							label={t("clientNationality")}
 							labelDescription={getFieldDescription("nationality")}
 							tier={fieldTiers.countryCode}
 							value={formData.nationality}
-							searchPlaceholder="Buscar país..."
+							searchPlaceholder={t("clientSearchCountry")}
 							onChange={(option) => {
 								const code =
 									(option?.metadata as { code?: string } | null)?.code ?? "";
@@ -1103,11 +1103,11 @@ export function ClientInfoStep({
 					</div>
 					<CatalogSelector
 						catalogKey="economic-activities"
-						label="Actividad económica"
-						labelDescription="Código SAT de la actividad económica o giro mercantil del cliente."
+						label={t("clientEconomicActivityLabel")}
+						labelDescription={t("clientActivityDesc")}
 						tier={fieldTiers.economicActivityCode}
 						value={formData.economicActivityCode}
-						searchPlaceholder="Buscar actividad económica..."
+						searchPlaceholder={t("clientSearchActivity")}
 						onChange={(option) =>
 							handleInputChange(
 								"economicActivityCode",
@@ -1211,7 +1211,7 @@ export function ClientInfoStep({
 								htmlFor="externalNumber"
 								description={getFieldDescription("externalNumber")}
 							>
-								Número Ext.
+								{t("clientExteriorNumberAbbr")}
 							</LabelWithInfo>
 							<Input
 								id="externalNumber"
@@ -1230,7 +1230,7 @@ export function ClientInfoStep({
 								htmlFor="internalNumber"
 								description={getFieldDescription("internalNumber")}
 							>
-								Número Int.
+								{t("clientInteriorNumberAbbr")}
 							</LabelWithInfo>
 							<Input
 								id="internalNumber"
@@ -1274,7 +1274,7 @@ export function ClientInfoStep({
 			<Card>
 				<CardHeader>
 					<CardTitle className="text-lg">
-						Información complementaria KYC
+						{t("clientKycComplementary")}
 					</CardTitle>
 				</CardHeader>
 				<CardContent className="space-y-4">
@@ -1282,19 +1282,21 @@ export function ClientInfoStep({
 						<div className="grid grid-cols-1 @xl/main:grid-cols-2 gap-4">
 							<div className="space-y-2">
 								<LabelWithInfo htmlFor="gender" tier={fieldTiers.gender}>
-									Género
+									{t("clientGender")}
 								</LabelWithInfo>
 								<Select
 									value={formData.gender ?? ""}
 									onValueChange={(value) => handleInputChange("gender", value)}
 								>
 									<SelectTrigger id="gender">
-										<SelectValue placeholder="Seleccionar género" />
+										<SelectValue placeholder={t("clientSelectGender")} />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="M">Masculino</SelectItem>
-										<SelectItem value="F">Femenino</SelectItem>
-										<SelectItem value="OTHER">Otro</SelectItem>
+										<SelectItem value="M">{t("clientGenderMale")}</SelectItem>
+										<SelectItem value="F">{t("clientGenderFemale")}</SelectItem>
+										<SelectItem value="OTHER">
+											{t("clientGenderOther")}
+										</SelectItem>
 									</SelectContent>
 								</Select>
 								{fieldHints("gender")}
@@ -1304,7 +1306,7 @@ export function ClientInfoStep({
 									htmlFor="maritalStatus"
 									tier={fieldTiers.maritalStatus}
 								>
-									Estado civil
+									{t("clientMaritalStatus")}
 								</LabelWithInfo>
 								<Select
 									value={formData.maritalStatus ?? ""}
@@ -1313,14 +1315,24 @@ export function ClientInfoStep({
 									}
 								>
 									<SelectTrigger id="maritalStatus">
-										<SelectValue placeholder="Seleccionar estado civil" />
+										<SelectValue placeholder={t("clientSelectMaritalStatus")} />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="SINGLE">Soltero(a)</SelectItem>
-										<SelectItem value="MARRIED">Casado(a)</SelectItem>
-										<SelectItem value="DIVORCED">Divorciado(a)</SelectItem>
-										<SelectItem value="WIDOWED">Viudo(a)</SelectItem>
-										<SelectItem value="OTHER">Otro</SelectItem>
+										<SelectItem value="SINGLE">
+											{t("clientMaritalSingle")}
+										</SelectItem>
+										<SelectItem value="MARRIED">
+											{t("clientMaritalMarried")}
+										</SelectItem>
+										<SelectItem value="DIVORCED">
+											{t("clientMaritalDivorced")}
+										</SelectItem>
+										<SelectItem value="WIDOWED">
+											{t("clientMaritalWidowed")}
+										</SelectItem>
+										<SelectItem value="OTHER">
+											{t("clientGenderOther")}
+										</SelectItem>
 									</SelectContent>
 								</Select>
 							</div>
@@ -1329,7 +1341,7 @@ export function ClientInfoStep({
 					<div className="grid grid-cols-1 @xl/main:grid-cols-3 gap-4">
 						<div className="space-y-2">
 							<LabelWithInfo htmlFor="occupation" tier={fieldTiers.occupation}>
-								Ocupación / Profesión
+								{t("clientOccupationProfession")}
 							</LabelWithInfo>
 							<Input
 								id="occupation"
@@ -1337,7 +1349,7 @@ export function ClientInfoStep({
 								onChange={(e) =>
 									handleInputChange("occupation", e.target.value.toUpperCase())
 								}
-								placeholder="Ej. COMERCIANTE"
+								placeholder={t("clientOccupationPlaceholderExample")}
 							/>
 						</div>
 						<div className="space-y-2">
@@ -1345,7 +1357,7 @@ export function ClientInfoStep({
 								htmlFor="sourceOfFunds"
 								tier={fieldTiers.sourceOfFunds}
 							>
-								Origen de los recursos
+								{t("clientResourceOrigin")}
 							</LabelWithInfo>
 							<Input
 								id="sourceOfFunds"
@@ -1356,7 +1368,7 @@ export function ClientInfoStep({
 										e.target.value.toUpperCase(),
 									)
 								}
-								placeholder="Ej. SALARIO"
+								placeholder={t("clientSourceOfFundsPlaceholderExample")}
 							/>
 						</div>
 						<div className="space-y-2">
@@ -1364,7 +1376,7 @@ export function ClientInfoStep({
 								htmlFor="sourceOfWealth"
 								tier={fieldTiers.sourceOfWealth}
 							>
-								Origen del patrimonio
+								{t("clientPatrimonyOrigin")}
 							</LabelWithInfo>
 							<Input
 								id="sourceOfWealth"
@@ -1375,7 +1387,7 @@ export function ClientInfoStep({
 										e.target.value.toUpperCase(),
 									)
 								}
-								placeholder="Ej. HERENCIA"
+								placeholder={t("clientSourceWealthPlaceholderExample")}
 							/>
 						</div>
 					</div>
@@ -1390,7 +1402,7 @@ export function ClientInfoStep({
 				</CardHeader>
 				<CardContent>
 					<div className="space-y-2">
-						<Label htmlFor="notes">Observaciones</Label>
+						<Label htmlFor="notes">{t("clientObservations")}</Label>
 						<Textarea
 							id="notes"
 							value={formData.notes}
@@ -1398,7 +1410,7 @@ export function ClientInfoStep({
 								handleInputChange("notes", e.target.value)
 							}
 							rows={4}
-							placeholder="Agregue notas relevantes sobre el cliente..."
+							placeholder={t("clientNotesPlaceholder")}
 						/>
 					</div>
 				</CardContent>
@@ -1412,14 +1424,14 @@ export function ClientInfoStep({
 					onClick={onCancel}
 					disabled={isSubmitting}
 				>
-					Cancelar
+					{t("cancel")}
 				</Button>
 				<Button type="submit" loading={isSubmitting}>
 					{isSubmitting ? (
-						"Creando..."
+						t("clientCreating")
 					) : (
 						<>
-							Guardar y Continuar
+							{t("clientSaveAndContinue")}
 							<ArrowRight className="h-4 w-4 ml-2" />
 						</>
 					)}
