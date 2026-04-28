@@ -1,3 +1,10 @@
+# [1.14.0-rc.8](https://github.com/janovix/aml/compare/v1.14.0-rc.7...v1.14.0-rc.8) (2026-04-28)
+
+
+### Bug Fixes
+
+* associate trigger button with label for accessibility in CatalogSelector component ([582c3d8](https://github.com/janovix/aml/commit/582c3d8cc0dce552b6e7260bf7fd794a12de4f50))
+
 # [1.14.0-rc.7](https://github.com/janovix/aml/compare/v1.14.0-rc.6...v1.14.0-rc.7) (2026-04-24)
 
 
