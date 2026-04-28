@@ -811,7 +811,8 @@ export function CatalogSelector({
 
 	const triggerButton = (
 		<Button
-			id={id}
+			/* Associate `<Label htmlFor>` / assistive tech name with this trigger when `id` prop omitted */
+			id={id ?? labelId}
 			variant="outline"
 			role="combobox"
 			aria-expanded={open}
