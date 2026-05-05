@@ -235,8 +235,9 @@ describe("field-requirements", () => {
 				firstName: "Juan",
 				lastName: "García",
 				secondLastName: "López",
+				nationality: "MX",
 				countryCode: "MX",
-				economicActivityCode: "6111",
+				economicActivityCode: "1110100",
 				rfc: "GALO800101XXX",
 			};
 

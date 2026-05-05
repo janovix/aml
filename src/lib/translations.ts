@@ -1696,6 +1696,9 @@ export const translations = {
 		clientCompanyInfo: "Información de la Empresa",
 		clientCountryCode: "País/Nacionalidad (código)",
 		clientEconomicActivityLabel: "Actividad económica",
+		clientCommercialActivityLabel: "Giro mercantil",
+		catalogItemMissingCode:
+			"El elemento del catálogo no tiene código válido. Elija otro.",
 		clientContactInfoTitle: "Información de Contacto",
 		clientEmailLabel: "Correo Electrónico",
 		clientPhoneLabel: "Teléfono",
@@ -3540,6 +3543,9 @@ export const translations = {
 		clientCompanyInfo: "Company Information",
 		clientCountryCode: "Country/Nationality (code)",
 		clientEconomicActivityLabel: "Economic activity",
+		clientCommercialActivityLabel: "Commercial activity (sector)",
+		catalogItemMissingCode:
+			"This catalog item has no valid code. Please choose another.",
 		clientContactInfoTitle: "Contact Information",
 		clientEmailLabel: "Email",
 		clientPhoneLabel: "Phone",

@@ -99,6 +99,7 @@ interface ClientFormData {
 	notes?: string;
 	countryCode?: string;
 	economicActivityCode?: string;
+	commercialActivityCode?: string;
 	gender?: string;
 	maritalStatus?: string;
 	occupation?: string;
@@ -186,6 +187,7 @@ export function ClientEditView({
 		notes: "",
 		countryCode: "",
 		economicActivityCode: "",
+		commercialActivityCode: "",
 		gender: "",
 		maritalStatus: "",
 		occupation: "",
@@ -366,6 +368,7 @@ export function ClientEditView({
 					notes: data.notes ?? "",
 					countryCode: data.countryCode ?? "",
 					economicActivityCode: data.economicActivityCode ?? "",
+					commercialActivityCode: data.commercialActivityCode ?? "",
 					gender: data.gender ?? "",
 					maritalStatus: data.maritalStatus ?? "",
 					occupation: data.occupation ?? "",
@@ -558,17 +561,30 @@ export function ClientEditView({
 		}
 
 		// Add optional fields
-		if (formData.nationality) request.nationality = formData.nationality;
 		if (formData.internalNumber)
 			request.internalNumber = formData.internalNumber;
 		if (formData.reference) request.reference = formData.reference;
 		if (formData.notes) request.notes = formData.notes;
-		const countryCodeToSend =
+		const syncedCountry =
 			(formData.countryCode || "").trim() ||
 			(formData.nationality || "").trim();
-		if (countryCodeToSend) request.countryCode = countryCodeToSend;
-		if (formData.economicActivityCode)
-			request.economicActivityCode = formData.economicActivityCode;
+		if (syncedCountry) {
+			request.countryCode = syncedCountry;
+			request.nationality = syncedCountry;
+		}
+		if (
+			currentPersonType === "physical" &&
+			(formData.economicActivityCode || "").trim()
+		) {
+			request.economicActivityCode = formData.economicActivityCode!.trim();
+		}
+		if (
+			currentPersonType === "moral" &&
+			(formData.commercialActivityCode || "").trim()
+		) {
+			request.commercialActivityCode =
+				formData.commercialActivityCode!.trim();
+		}
 		if (formData.gender) request.gender = formData.gender as Gender;
 		if (formData.maritalStatus)
 			request.maritalStatus = formData.maritalStatus as MaritalStatus;
@@ -1016,62 +1032,104 @@ export function ClientEditView({
 											</p>
 										)}
 									</div>
-									{formData.personType === "physical" && (
-										<CatalogSelector
-											catalogKey="countries"
-											label={t("clientNationality")}
-											labelDescription={getFieldDescription("nationality")}
-											tier={fieldTiers.countryCode}
-											value={formData.nationality}
-											searchPlaceholder={t("clientSearchCountry")}
-											resolvedName={client?.resolvedNames?.nationality}
-											onChange={(option) => {
-												const code = option
-													? ((option.metadata?.code as string) ?? option.id)
-													: "";
-												handleInputChange("nationality", code);
-												handleInputChange("countryCode", code);
-											}}
-										/>
-									)}
-									{formData.personType !== "physical" && (
-										<CatalogSelector
-											catalogKey="countries"
-											label={t("clientCountry")}
-											labelDescription={t("clientCountryOfConstitution")}
-											tier={fieldTiers.countryCode}
-											value={formData.countryCode}
-											searchPlaceholder={t("clientSearchCountry")}
-											resolvedName={client?.resolvedNames?.countryCode}
-											onChange={(option) => {
-												handleInputChange(
-													"countryCode",
-													option
-														? ((option.metadata?.code as string) ?? option.id)
-														: "",
-												);
-											}}
-										/>
-									)}
 									<CatalogSelector
-										catalogKey="economic-activities"
-										label={t("clientEconomicActivityLabel")}
-										labelDescription={t(
-											"clientEconomicActivityFieldDescription",
-										)}
-										tier={fieldTiers.economicActivityCode}
-										value={formData.economicActivityCode}
-										searchPlaceholder={t("clientSearchActivity")}
-										resolvedName={client?.resolvedNames?.economicActivityCode}
-										onChange={(option) =>
-											handleInputChange(
-												"economicActivityCode",
-												option
-													? ((option.metadata?.code as string) ?? option.id)
-													: "",
-											)
+										catalogKey="countries"
+										label={t("clientNationality")}
+										labelDescription={
+											formData.personType === "physical"
+												? getFieldDescription("nationality")
+												: t("clientCountryOfConstitution")
 										}
+										tier={fieldTiers.countryCode}
+										value={
+											formData.personType === "physical"
+												? formData.nationality
+												: formData.countryCode ||
+													formData.nationality ||
+													""
+										}
+										searchPlaceholder={t("clientSearchCountry")}
+										resolvedName={
+											formData.personType === "physical"
+												? client?.resolvedNames?.nationality ??
+													client?.resolvedNames?.countryCode
+												: client?.resolvedNames?.countryCode ??
+													client?.resolvedNames?.nationality
+										}
+										onChange={(option) => {
+											if (!option) {
+												handleInputChange("nationality", "");
+												handleInputChange("countryCode", "");
+												return;
+											}
+											const code = (option.metadata as { code?: string } | null)
+												?.code;
+											if (!code) {
+												toast.error(t("catalogItemMissingCode"));
+												return;
+											}
+											handleInputChange("nationality", code);
+											handleInputChange("countryCode", code);
+										}}
 									/>
+									{formData.personType === "physical" ? (
+										<CatalogSelector
+											catalogKey="economic-activities"
+											label={t("clientEconomicActivityLabel")}
+											labelDescription={t(
+												"clientEconomicActivityFieldDescription",
+											)}
+											tier={fieldTiers.economicActivityCode}
+											value={formData.economicActivityCode}
+											searchPlaceholder={t("clientSearchActivity")}
+											resolvedName={
+												client?.resolvedNames?.economicActivityCode
+											}
+											onChange={(option) => {
+												if (!option) {
+													handleInputChange("economicActivityCode", "");
+													return;
+												}
+												const code = (
+													option.metadata as { code?: string } | null
+												)?.code;
+												if (!code) {
+													toast.error(t("catalogItemMissingCode"));
+													return;
+												}
+												handleInputChange("economicActivityCode", code);
+											}}
+										/>
+									) : null}
+									{formData.personType === "moral" ? (
+										<CatalogSelector
+											catalogKey="business-activities"
+											label={t("clientCommercialActivityLabel")}
+											labelDescription={t(
+												"clientEconomicActivityFieldDescription",
+											)}
+											tier={fieldTiers.commercialActivityCode}
+											value={formData.commercialActivityCode}
+											searchPlaceholder={t("clientSearchActivity")}
+											resolvedName={
+												client?.resolvedNames?.commercialActivityCode
+											}
+											onChange={(option) => {
+												if (!option) {
+													handleInputChange("commercialActivityCode", "");
+													return;
+												}
+												const code = (
+													option.metadata as { code?: string } | null
+												)?.code;
+												if (!code) {
+													toast.error(t("catalogItemMissingCode"));
+													return;
+												}
+												handleInputChange("commercialActivityCode", code);
+											}}
+										/>
+									) : null}
 								</CardContent>
 							</Card>
 

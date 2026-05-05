@@ -34,7 +34,8 @@ export interface Client {
 	rfc: string; // Primary key - RFC (Registro Federal de Contribuyentes)
 	nationality?: string | null;
 	countryCode?: string | null; // Reference to countries catalog (metadata.code)
-	economicActivityCode?: string | null; // Reference to economic-activities catalog (7-digit code)
+	economicActivityCode?: string | null; // Persona física: economic-activities (7-digit)
+	commercialActivityCode?: string | null; // Persona moral: business-activities / giro mercantil
 	email: string;
 	phone: string;
 	country: string;
@@ -105,6 +106,7 @@ export interface ClientCreateRequest {
 	nationality?: string | null;
 	countryCode?: string | null;
 	economicActivityCode?: string | null;
+	commercialActivityCode?: string | null;
 	email: string;
 	phone: string;
 	country: string;

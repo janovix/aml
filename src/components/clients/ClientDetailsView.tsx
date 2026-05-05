@@ -857,6 +857,7 @@ export function ClientDetailsView({
 							fieldPath.startsWith("client.businessName") ||
 							fieldPath.startsWith("client.countryCode") ||
 							fieldPath.startsWith("client.economicActivityCode") ||
+							fieldPath.startsWith("client.commercialActivityCode") ||
 							fieldPath.startsWith("client.rfc") ||
 							fieldPath.startsWith("client.curp") ||
 							fieldPath.startsWith("client.birthDate") ||
@@ -973,25 +974,16 @@ export function ClientDetailsView({
 									<FieldDisplay
 										label={t("clientNationality")}
 										value={
-											client.resolvedNames?.nationality || client.nationality
-										}
-										isMissing={!client.nationality}
-									/>
-									<FieldDisplay
-										label={t("clientCountryCode")}
-										value={
-											client.resolvedNames?.countryCode || client.countryCode
+											client.resolvedNames?.countryCode ??
+											client.resolvedNames?.nationality
 										}
 										icon={Flag}
-										isMissing={!client.countryCode}
-										tier={tierMap.countryCode}
+										isMissing={!client.nationality && !client.countryCode}
+										tier={tierMap.nationality ?? tierMap.countryCode}
 									/>
 									<FieldDisplay
 										label={t("clientEconomicActivityLabel")}
-										value={
-											client.resolvedNames?.economicActivityCode ||
-											client.economicActivityCode
-										}
+										value={client.resolvedNames?.economicActivityCode}
 										icon={Briefcase}
 										isMissing={!client.economicActivityCode}
 										tier={tierMap.economicActivityCode}
@@ -1016,24 +1008,24 @@ export function ClientDetailsView({
 										isMissing={!client.incorporationDate}
 									/>
 									<FieldDisplay
-										label={t("clientCountryCode")}
+										label={t("clientNationality")}
 										value={
-											client.resolvedNames?.countryCode || client.countryCode
+											client.resolvedNames?.countryCode ??
+											client.resolvedNames?.nationality
 										}
 										icon={Flag}
-										isMissing={!client.countryCode}
+										isMissing={!client.countryCode && !client.nationality}
 										tier={tierMap.countryCode}
 									/>
-									<FieldDisplay
-										label={t("clientEconomicActivityLabel")}
-										value={
-											client.resolvedNames?.economicActivityCode ||
-											client.economicActivityCode
-										}
-										icon={Briefcase}
-										isMissing={!client.economicActivityCode}
-										tier={tierMap.economicActivityCode}
-									/>
+									{client.personType === "moral" ? (
+										<FieldDisplay
+											label={t("clientCommercialActivityLabel")}
+											value={client.resolvedNames?.commercialActivityCode}
+											icon={Briefcase}
+											isMissing={!client.commercialActivityCode}
+											tier={tierMap.commercialActivityCode}
+										/>
+									) : null}
 								</>
 							)}
 							<FieldDisplay

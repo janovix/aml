@@ -91,9 +91,10 @@ interface ClientFormData {
 	postalCode: string;
 	reference?: string;
 	notes?: string;
-	// Country and economic activity
+	// Country and activity (physical: economic-activities; moral: business-activities)
 	countryCode?: string;
 	economicActivityCode?: string;
+	commercialActivityCode?: string;
 	// Enhanced KYC fields
 	gender?: Gender;
 	maritalStatus?: MaritalStatus;
@@ -145,6 +146,7 @@ const INITIAL_CLIENT_FORM_DATA: ClientFormData = {
 	/** Must stay in sync with nationality until the user picks another country */
 	countryCode: "MX",
 	economicActivityCode: "",
+	commercialActivityCode: "",
 	occupation: "",
 	sourceOfFunds: "",
 	sourceOfWealth: "",
@@ -373,6 +375,18 @@ export function ClientInfoStep({
 
 		setFormData((prev) => {
 			const updated = { ...prev, [field]: value };
+
+			if (field === "personType") {
+				const pt = value as PersonType;
+				if (pt === "physical") {
+					updated.commercialActivityCode = "";
+				} else if (pt === "moral") {
+					updated.economicActivityCode = "";
+				} else {
+					updated.economicActivityCode = "";
+					updated.commercialActivityCode = "";
+				}
+			}
 
 			// Validate CURP when CURP or related fields change
 			if (
@@ -724,8 +738,10 @@ export function ClientInfoStep({
 			(formData.countryCode || "").trim() ||
 			(formData.nationality || "").trim();
 		if (countryCodeToSend) request.countryCode = countryCodeToSend;
-		if (formData.economicActivityCode)
+		if (formData.personType === "physical" && formData.economicActivityCode)
 			request.economicActivityCode = formData.economicActivityCode;
+		if (formData.personType === "moral" && formData.commercialActivityCode)
+			request.commercialActivityCode = formData.commercialActivityCode;
 		if (formData.internalNumber)
 			request.internalNumber = formData.internalNumber;
 		if (formData.reference) request.reference = formData.reference;
@@ -1090,34 +1106,71 @@ export function ClientInfoStep({
 							label={t("clientNationality")}
 							labelDescription={getFieldDescription("nationality")}
 							tier={fieldTiers.countryCode}
-							value={formData.nationality}
+							value={
+								formData.personType === "physical"
+									? formData.nationality
+									: formData.countryCode || formData.nationality || ""
+							}
 							searchPlaceholder={t("clientSearchCountry")}
 							onChange={(option) => {
 								const code =
 									(option?.metadata as { code?: string } | null)?.code ?? "";
+								if (option && !code) {
+									toast.error(t("catalogItemMissingCode"));
+									return;
+								}
 								handleInputChange("nationality", code);
 								handleInputChange("countryCode", code);
 							}}
 						/>
 						{fieldHints("nationality")}
 					</div>
-					<CatalogSelector
-						catalogKey="economic-activities"
-						label={t("clientEconomicActivityLabel")}
-						labelDescription={t("clientActivityDesc")}
-						tier={fieldTiers.economicActivityCode}
-						value={formData.economicActivityCode}
-						searchPlaceholder={t("clientSearchActivity")}
-						onChange={(option) =>
-							handleInputChange(
-								"economicActivityCode",
-								option
-									? ((option.metadata as { code?: string } | null)?.code ??
-											option.id)
-									: "",
-							)
-						}
-					/>
+					{formData.personType === "physical" ? (
+						<CatalogSelector
+							catalogKey="economic-activities"
+							label={t("clientEconomicActivityLabel")}
+							labelDescription={t("clientActivityDesc")}
+							tier={fieldTiers.economicActivityCode}
+							value={formData.economicActivityCode}
+							searchPlaceholder={t("clientSearchActivity")}
+							onChange={(option) => {
+								if (!option) {
+									handleInputChange("economicActivityCode", "");
+									return;
+								}
+								const code = (option.metadata as { code?: string } | null)
+									?.code;
+								if (!code) {
+									toast.error(t("catalogItemMissingCode"));
+									return;
+								}
+								handleInputChange("economicActivityCode", code);
+							}}
+						/>
+					) : null}
+					{formData.personType === "moral" ? (
+						<CatalogSelector
+							catalogKey="business-activities"
+							label={t("clientCommercialActivityLabel")}
+							labelDescription={t("clientActivityDesc")}
+							tier={fieldTiers.commercialActivityCode}
+							value={formData.commercialActivityCode}
+							searchPlaceholder={t("clientSearchActivity")}
+							onChange={(option) => {
+								if (!option) {
+									handleInputChange("commercialActivityCode", "");
+									return;
+								}
+								const code = (option.metadata as { code?: string } | null)
+									?.code;
+								if (!code) {
+									toast.error(t("catalogItemMissingCode"));
+									return;
+								}
+								handleInputChange("commercialActivityCode", code);
+							}}
+						/>
+					) : null}
 				</CardContent>
 			</Card>
 

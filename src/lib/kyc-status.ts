@@ -39,11 +39,10 @@ export const KYC_SECTIONS: Record<string, KYCSection> = {
 			"curp",
 			"rfc",
 			"nationality",
-			"countryCode",
 		],
 		weight: 1.5,
 	},
-	companyInfo: {
+	companyInfoMoral: {
 		id: "companyInfo",
 		label: "Información de la Empresa",
 		fields: [
@@ -51,8 +50,14 @@ export const KYC_SECTIONS: Record<string, KYCSection> = {
 			"incorporationDate",
 			"rfc",
 			"countryCode",
-			"economicActivityCode",
+			"commercialActivityCode",
 		],
+		weight: 1.5,
+	},
+	companyInfoTrust: {
+		id: "companyInfo",
+		label: "Información de la Empresa",
+		fields: ["businessName", "incorporationDate", "rfc", "countryCode"],
 		weight: 1.5,
 	},
 	contactInfo: {
@@ -113,15 +118,22 @@ export function getApplicableSections(
 			KYC_SECTIONS.kycInfo,
 			KYC_SECTIONS.pepInfo,
 		];
-	} else {
-		// moral or trust
+	}
+	if (personType === "moral") {
 		return [
-			KYC_SECTIONS.companyInfo,
+			KYC_SECTIONS.companyInfoMoral,
 			KYC_SECTIONS.contactInfo,
 			KYC_SECTIONS.addressInfo,
 			KYC_SECTIONS.pepInfo,
 		];
 	}
+	// trust
+	return [
+		KYC_SECTIONS.companyInfoTrust,
+		KYC_SECTIONS.contactInfo,
+		KYC_SECTIONS.addressInfo,
+		KYC_SECTIONS.pepInfo,
+	];
 }
 
 function isFieldComplete(client: Client, fieldName: string): boolean {
@@ -296,6 +308,7 @@ export function getFieldLabel(fieldName: string): string {
 		postalCode: "Código Postal",
 		reference: "Referencia",
 		economicActivityCode: "Actividad Económica",
+		commercialActivityCode: "Giro Mercantil",
 		gender: "Género",
 		occupation: "Ocupación",
 		maritalStatus: "Estado Civil",
