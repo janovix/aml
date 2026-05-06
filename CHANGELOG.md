@@ -1,3 +1,10 @@
+# [1.14.0-rc.9](https://github.com/janovix/aml/compare/v1.14.0-rc.8...v1.14.0-rc.9) (2026-05-06)
+
+
+### Features
+
+* implement AML training module with course listings, enrollment management, and quiz functionality ([94d86a6](https://github.com/janovix/aml/commit/94d86a6549e0aa393ddfdb8cd77836e100c5a057))
+
 # [1.14.0-rc.8](https://github.com/janovix/aml/compare/v1.14.0-rc.7...v1.14.0-rc.8) (2026-04-28)
 
 
