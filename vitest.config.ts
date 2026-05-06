@@ -145,6 +145,9 @@ export default defineConfig({
 				"src/components/document-scanner/**",
 				// Manual alert creation - complex form, integration tested
 				"src/components/alerts/CreateManualAlertView.tsx",
+				// AML Training LMS — thin API wrappers + page shells
+				"src/lib/api/training.ts",
+				"src/components/training/**",
 			],
 			/*thresholds: {
 				lines: 75,
