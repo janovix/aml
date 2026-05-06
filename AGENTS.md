@@ -31,3 +31,11 @@ Pre-commit hooks run `lint-staged` + `typecheck` + `test`. Commit messages must 
 ### API documentation
 
 The `aml-svc` OpenAPI docs are at `https://aml-svc.janovix.workers.dev/docsz` (note: `/docsz` not `/docs`). The raw spec is at `/openapi.json`.
+
+### Cloud VM environment notes
+
+- **nvm path**: Node.js is managed via nvm at `/home/ubuntu/.nvm/nvm.sh` (not `/root/.nvm`). Source it before running node/pnpm commands: `export NVM_DIR="/home/ubuntu/.nvm" && source "$NVM_DIR/nvm.sh"`
+- **pnpm**: Activated via `corepack enable && corepack prepare pnpm@10.0.0 --activate`
+- **Caddy**: Installed from Ubuntu repos (`apt-get install caddy`). Requires `setcap 'cap_net_bind_service=+ep' $(which caddy)` for port 443 binding.
+- **Sentry DSN warning** on startup (`Invalid Sentry Dsn`) is expected in local dev without a real DSN — non-blocking.
+- **Middleware deprecation warning** (`"middleware" file convention is deprecated`) is a Next.js 16 notice — non-blocking.
