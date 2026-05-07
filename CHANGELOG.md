@@ -1,3 +1,10 @@
+# [1.14.0-rc.12](https://github.com/janovix/aml/compare/v1.14.0-rc.11...v1.14.0-rc.12) (2026-05-07)
+
+
+### Features
+
+* integrate organization context into training pages and components ([179fb41](https://github.com/janovix/aml/commit/179fb41d1ac0063f77074504052ac30b397068a5))
+
 # [1.14.0-rc.11](https://github.com/janovix/aml/compare/v1.14.0-rc.10...v1.14.0-rc.11) (2026-05-07)
 
 
