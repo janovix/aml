@@ -1,3 +1,10 @@
+# [1.14.0-rc.10](https://github.com/janovix/aml/compare/v1.14.0-rc.9...v1.14.0-rc.10) (2026-05-07)
+
+
+### Features
+
+* enhance training module functionality with image handling and breadcrumb updates ([9b12521](https://github.com/janovix/aml/commit/9b125214605b6a2ecda8c07f754876e56b17f00b))
+
 # [1.14.0-rc.9](https://github.com/janovix/aml/compare/v1.14.0-rc.8...v1.14.0-rc.9) (2026-05-06)
 
 
