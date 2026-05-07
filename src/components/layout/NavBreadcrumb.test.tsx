@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import { NavBreadcrumb } from "./NavBreadcrumb";
-import { renderWithProviders } from "@/lib/testHelpers";
+import { renderWithProviders, t } from "@/lib/testHelpers";
 import type { InvoiceEntity } from "@/types/invoice";
 import {
 	useSetPageStatus,
@@ -264,7 +264,7 @@ describe("NavBreadcrumb", () => {
 			renderWithProviders(<NavBreadcrumb />);
 
 			await waitFor(() => {
-				expect(screen.getByText(/capacitación aml/i)).toBeInTheDocument();
+				expect(screen.getByText(t("navTraining"))).toBeInTheDocument();
 			});
 		});
 

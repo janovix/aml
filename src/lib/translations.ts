@@ -63,7 +63,7 @@ export const translations = {
 		navOrganization: "Organización",
 		navComingSoon: "Pronto",
 		navRiskModels: "Modelos de Riesgo",
-		navTraining: "Capacitación AML",
+		navTraining: "Capacitación PLD",
 		navHistory: "Historial",
 		navAnalysis: "Análisis",
 		navWatchlist: "Watchlist",
