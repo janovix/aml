@@ -14,11 +14,13 @@ import {
 import { listMyCertifications } from "@/lib/api/training";
 import { getAmlCoreBaseUrl } from "@/lib/api/config";
 import { useLanguage } from "@/components/LanguageProvider";
+import { useOrgStore } from "@/lib/org-store";
 
 export default function TrainingCertificatesPage() {
 	const { t } = useLanguage();
 	const params = useParams();
 	const orgSlug = params.orgSlug as string;
+	const currentOrg = useOrgStore((s) => s.currentOrg);
 	const [loading, setLoading] = useState(true);
 	const [rows, setRows] = useState<
 		Array<{
@@ -30,9 +32,17 @@ export default function TrainingCertificatesPage() {
 	>([]);
 
 	useEffect(() => {
+		if (!currentOrg?.id) {
+			setLoading(false);
+			setRows([]);
+			return;
+		}
+
 		let cancelled = false;
-		(async () => {
+		setRows([]);
+		void (async () => {
 			try {
+				setLoading(true);
 				const { json } = await listMyCertifications();
 				if (!cancelled) setRows(json.data ?? []);
 			} finally {
@@ -42,7 +52,7 @@ export default function TrainingCertificatesPage() {
 		return () => {
 			cancelled = true;
 		};
-	}, []);
+	}, [currentOrg?.id]);
 
 	const base = getAmlCoreBaseUrl();
 

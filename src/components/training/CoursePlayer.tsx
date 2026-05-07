@@ -46,6 +46,7 @@ import {
 } from "@/lib/training/i18n";
 import { PDF_JS_WORKER_SRC } from "@/lib/pdf/pdfWorkerSrc";
 import { useLanguage } from "@/components/LanguageProvider";
+import { useOrgStore } from "@/lib/org-store";
 import type { TranslationKeys } from "@/lib/translations";
 
 const QUIZ_STEP_ID = "__training_quiz__";
@@ -91,6 +92,7 @@ export function CoursePlayer({
 	const router = useRouter();
 	const { language, t } = useLanguage();
 	const lang = language === "en" ? "en" : "es";
+	const currentOrg = useOrgStore((s) => s.currentOrg);
 	const [detail, setDetail] = useState<CourseDetailPayload | null>(
 		initialDetail,
 	);
@@ -114,8 +116,13 @@ export function CoursePlayer({
 	);
 
 	useEffect(() => {
+		setDetail(initialDetail);
+	}, [initialDetail]);
+
+	useEffect(() => {
 		initializedFromProgressRef.current = false;
-	}, [courseSlug]);
+		setIdx(0);
+	}, [courseSlug, currentOrg?.id]);
 
 	useEffect(() => {
 		if (!detail?.modules.length || initializedFromProgressRef.current) return;

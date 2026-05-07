@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { TrainingQuizRunner } from "@/components/training/TrainingQuizRunner";
 import { useLanguage } from "@/components/LanguageProvider";
+import { useOrgStore } from "@/lib/org-store";
 
 function QuizContent() {
 	const { t } = useLanguage();
@@ -15,6 +16,7 @@ function QuizContent() {
 	const orgSlug = params.orgSlug as string;
 	const courseSlug = params.courseSlug as string;
 	const enrollmentId = searchParams.get("enrollment");
+	const currentOrg = useOrgStore((s) => s.currentOrg);
 	const prefix = `/${orgSlug}`;
 
 	if (!enrollmentId) {
@@ -36,6 +38,7 @@ function QuizContent() {
 				<Link href={`${prefix}/training/${courseSlug}`}>{t("back")}</Link>
 			</Button>
 			<TrainingQuizRunner
+				key={`${currentOrg?.id ?? "no-org"}-${enrollmentId ?? "no-enrollment"}`}
 				orgSlug={orgSlug}
 				courseSlug={courseSlug}
 				enrollmentId={enrollmentId}

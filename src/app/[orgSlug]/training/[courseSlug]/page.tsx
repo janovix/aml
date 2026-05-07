@@ -11,19 +11,29 @@ import {
 } from "@/components/training/CoursePlayer";
 import { getTrainingCourseDetail } from "@/lib/api/training";
 import { useLanguage } from "@/components/LanguageProvider";
+import { useOrgStore } from "@/lib/org-store";
 
 export default function TrainingCoursePage() {
 	const { t } = useLanguage();
 	const params = useParams();
 	const orgSlug = params.orgSlug as string;
 	const courseSlug = params.courseSlug as string;
+	const currentOrg = useOrgStore((s) => s.currentOrg);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [detail, setDetail] = useState<CourseDetailPayload | null>(null);
 
 	useEffect(() => {
+		if (!currentOrg?.id) {
+			setLoading(false);
+			setDetail(null);
+			setError(null);
+			return;
+		}
+
 		let cancelled = false;
-		(async () => {
+		setDetail(null);
+		void (async () => {
 			try {
 				setLoading(true);
 				const res = await getTrainingCourseDetail(courseSlug);
@@ -42,7 +52,7 @@ export default function TrainingCoursePage() {
 		return () => {
 			cancelled = true;
 		};
-	}, [courseSlug]);
+	}, [courseSlug, currentOrg?.id]);
 
 	const prefix = `/${orgSlug}`;
 
@@ -61,6 +71,7 @@ export default function TrainingCoursePage() {
 
 			{detail != null && (
 				<CoursePlayer
+					key={`${currentOrg?.id ?? "no-org"}-${courseSlug}`}
 					orgSlug={orgSlug}
 					courseSlug={courseSlug}
 					initialDetail={detail}

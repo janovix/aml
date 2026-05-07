@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { listMyTrainingEnrollments } from "@/lib/api/training";
 import { useLanguage } from "@/components/LanguageProvider";
+import { useOrgStore } from "@/lib/org-store";
 import {
 	pickEnrollmentStatusKey,
 	pickTrainingTitle,
@@ -24,6 +25,7 @@ export default function TrainingHomePage() {
 	const lang = language === "en" ? "en" : "es";
 	const params = useParams();
 	const orgSlug = params.orgSlug as string;
+	const currentOrg = useOrgStore((s) => s.currentOrg);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [rows, setRows] = useState<
@@ -35,8 +37,16 @@ export default function TrainingHomePage() {
 	>([]);
 
 	useEffect(() => {
+		if (!currentOrg?.id) {
+			setLoading(false);
+			setRows([]);
+			setError(null);
+			return;
+		}
+
 		let cancelled = false;
-		(async () => {
+		setRows([]);
+		void (async () => {
 			try {
 				setLoading(true);
 				const { json } = await listMyTrainingEnrollments();
@@ -55,7 +65,7 @@ export default function TrainingHomePage() {
 		return () => {
 			cancelled = true;
 		};
-	}, []);
+	}, [currentOrg?.id]);
 
 	const prefix = `/${orgSlug}`;
 

@@ -54,6 +54,20 @@ vi.mock("@/lib/training/fetchTrainingModulePdf", async (importOriginal) => {
 	};
 });
 
+vi.mock("@/lib/org-store", () => {
+	const mockState = {
+		currentOrg: { id: "org-test", slug: "org", name: "Test Org" },
+	};
+	return {
+		useOrgStore: (selector?: (state: typeof mockState) => unknown) => {
+			if (typeof selector === "function") {
+				return selector(mockState);
+			}
+			return mockState;
+		},
+	};
+});
+
 describe("CoursePlayer", () => {
 	beforeEach(() => {
 		mockPush.mockReset();

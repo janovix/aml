@@ -12,8 +12,10 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { startTrainingQuiz, submitTrainingQuiz } from "@/lib/api/training";
+import { ApiError } from "@/lib/api/http";
 import { pickTrainingTitle } from "@/lib/training/i18n";
 import { useLanguage } from "@/components/LanguageProvider";
+import { useOrgStore } from "@/lib/org-store";
 
 type Question = {
 	id: string;
@@ -34,6 +36,7 @@ export function TrainingQuizRunner({
 	const { language, t } = useLanguage();
 	const lang = language === "en" ? "en" : "es";
 	const prefix = `/${orgSlug}`;
+	const currentOrg = useOrgStore((s) => s.currentOrg);
 
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -49,8 +52,24 @@ export function TrainingQuizRunner({
 	} | null>(null);
 
 	useEffect(() => {
+		if (!currentOrg?.id) {
+			setLoading(false);
+			setAttemptId(null);
+			setQuestions([]);
+			setAnswers({});
+			setResult(null);
+			setError(null);
+			return;
+		}
+
 		let cancelled = false;
-		(async () => {
+		setAttemptId(null);
+		setQuestions([]);
+		setAnswers({});
+		setResult(null);
+		setError(null);
+
+		void (async () => {
 			try {
 				setLoading(true);
 				const res = await startTrainingQuiz(enrollmentId);
@@ -64,7 +83,11 @@ export function TrainingQuizRunner({
 				setError(null);
 			} catch (e) {
 				if (!cancelled) {
-					setError(e instanceof Error ? e.message : "Error");
+					if (e instanceof ApiError && e.status === 404) {
+						setError(t("trainingMissingEnrollment"));
+					} else {
+						setError(e instanceof Error ? e.message : "Error");
+					}
 				}
 			} finally {
 				if (!cancelled) setLoading(false);
@@ -73,7 +96,7 @@ export function TrainingQuizRunner({
 		return () => {
 			cancelled = true;
 		};
-	}, [enrollmentId]);
+	}, [enrollmentId, currentOrg?.id, t]);
 
 	async function submit() {
 		if (!attemptId) return;
@@ -93,7 +116,11 @@ export function TrainingQuizRunner({
 				validUntil: body.validUntil,
 			});
 		} catch (e) {
-			setError(e instanceof Error ? e.message : "Submit failed");
+			if (e instanceof ApiError && e.status === 404) {
+				setError(t("trainingMissingEnrollment"));
+			} else {
+				setError(e instanceof Error ? e.message : "Submit failed");
+			}
 		} finally {
 			setSubmitting(false);
 		}
