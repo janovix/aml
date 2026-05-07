@@ -14,10 +14,14 @@ import {
 } from "@/components/ui/card";
 import { listMyTrainingEnrollments } from "@/lib/api/training";
 import { useLanguage } from "@/components/LanguageProvider";
-import { pickEnrollmentStatusKey } from "@/lib/training/i18n";
+import {
+	pickEnrollmentStatusKey,
+	pickTrainingTitle,
+} from "@/lib/training/i18n";
 
 export default function TrainingHomePage() {
-	const { t } = useLanguage();
+	const { t, language } = useLanguage();
+	const lang = language === "en" ? "en" : "es";
 	const params = useParams();
 	const orgSlug = params.orgSlug as string;
 	const [loading, setLoading] = useState(true);
@@ -78,11 +82,7 @@ export default function TrainingHomePage() {
 			<div className="grid gap-4">
 				{rows.map((r) => {
 					const title =
-						typeof r.course.titleI18n === "object" &&
-						r.course.titleI18n !== null &&
-						"es" in r.course.titleI18n
-							? String((r.course.titleI18n as { es?: string }).es ?? "")
-							: r.course.slug;
+						pickTrainingTitle(r.course.titleI18n, lang) || r.course.slug;
 
 					return (
 						<Card key={r.id}>

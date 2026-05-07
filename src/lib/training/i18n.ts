@@ -1,3 +1,5 @@
+import type { TranslationKeys } from "@/lib/translations";
+
 /** Resolve localized string from API i18n blobs */
 export function pickTrainingTitle(
 	titleI18n: unknown,
@@ -33,5 +35,21 @@ export function pickEnrollmentStatusKey(
 			return "trainingStatusFailed";
 		default:
 			return "trainingStatusLabel";
+	}
+}
+
+/** Training module `kind` → UI translation key */
+export function pickTrainingModuleKindKey(kind: string): TranslationKeys {
+	switch (kind) {
+		case "VIDEO":
+			return "trainingModuleKindVideo";
+		case "PDF":
+			return "trainingModuleKindPdf";
+		case "IMAGE":
+			return "trainingModuleKindImage";
+		case "TEXT":
+			return "trainingModuleKindText";
+		default:
+			return "trainingModuleKindUnknown";
 	}
 }

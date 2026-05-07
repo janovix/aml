@@ -89,3 +89,70 @@ export function mapTrainingModulePdfError(
 	}
 	return "trainingPdfLoadFailed";
 }
+
+/** @internal */
+export const IMAGE_SESSION_EXPIRED = "IMAGE_SESSION_EXPIRED";
+/** @internal */
+export const IMAGE_FETCH_FAILED = "IMAGE_FETCH_FAILED";
+/** @internal */
+export const IMAGE_INVALID_CONTENT_TYPE = "IMAGE_INVALID_CONTENT_TYPE";
+
+/**
+ * Fetches a training module image as a Blob with Bearer + environment headers.
+ * Does not log tokens, URLs, or blob contents.
+ */
+export async function fetchTrainingModuleImageBlob(
+	absoluteAssetUrl: string,
+	signal: AbortSignal,
+): Promise<Blob> {
+	if (signal.aborted) {
+		throw new DOMException("Aborted", "AbortError");
+	}
+
+	const jwt = await getJwtIfNeeded();
+
+	const headers: Record<string, string> = {
+		Accept: "image/*",
+	};
+
+	if (jwt) {
+		headers.Authorization = `Bearer ${jwt}`;
+	}
+
+	if (isClientSide() && !isTestEnvironment()) {
+		headers["X-Environment"] = getDataEnvironment();
+	}
+
+	const res = await fetch(absoluteAssetUrl, {
+		method: "GET",
+		signal,
+		cache: "no-store",
+		headers,
+	});
+
+	if (!res.ok) {
+		if (res.status === 401 || res.status === 403) {
+			throw new Error(IMAGE_SESSION_EXPIRED);
+		}
+		throw new Error(IMAGE_FETCH_FAILED);
+	}
+
+	const contentType = res.headers.get("Content-Type") ?? "";
+	if (!contentType.startsWith("image/")) {
+		throw new Error(IMAGE_INVALID_CONTENT_TYPE);
+	}
+
+	return res.blob();
+}
+
+export function mapTrainingModuleImageError(
+	error: unknown,
+): "trainingImageSessionExpired" | "trainingImageLoadFailed" {
+	if (error instanceof DOMException && error.name === "AbortError") {
+		return "trainingImageLoadFailed";
+	}
+	if (error instanceof Error && error.message === IMAGE_SESSION_EXPIRED) {
+		return "trainingImageSessionExpired";
+	}
+	return "trainingImageLoadFailed";
+}
