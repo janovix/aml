@@ -1,3 +1,10 @@
+# [1.14.0-rc.11](https://github.com/janovix/aml/compare/v1.14.0-rc.10...v1.14.0-rc.11) (2026-05-07)
+
+
+### Bug Fixes
+
+* update training translation from "Capacitación AML" to "Capacitación PLD" ([1c44ceb](https://github.com/janovix/aml/commit/1c44ceb0bd0e7dee5f473332406545d602117c02))
+
 # [1.14.0-rc.10](https://github.com/janovix/aml/compare/v1.14.0-rc.9...v1.14.0-rc.10) (2026-05-07)
 
 
