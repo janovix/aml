@@ -99,6 +99,7 @@ interface ClientFormData {
 	notes?: string;
 	countryCode?: string;
 	economicActivityCode?: string;
+	commercialActivityCode?: string;
 	gender?: string;
 	maritalStatus?: string;
 	occupation?: string;
@@ -186,6 +187,7 @@ export function ClientEditView({
 		notes: "",
 		countryCode: "",
 		economicActivityCode: "",
+		commercialActivityCode: "",
 		gender: "",
 		maritalStatus: "",
 		occupation: "",
@@ -366,6 +368,7 @@ export function ClientEditView({
 					notes: data.notes ?? "",
 					countryCode: data.countryCode ?? "",
 					economicActivityCode: data.economicActivityCode ?? "",
+					commercialActivityCode: data.commercialActivityCode ?? "",
 					gender: data.gender ?? "",
 					maritalStatus: data.maritalStatus ?? "",
 					occupation: data.occupation ?? "",
@@ -567,8 +570,12 @@ export function ClientEditView({
 			(formData.countryCode || "").trim() ||
 			(formData.nationality || "").trim();
 		if (countryCodeToSend) request.countryCode = countryCodeToSend;
-		if (formData.economicActivityCode)
+		if (currentPersonType === "physical" && formData.economicActivityCode) {
 			request.economicActivityCode = formData.economicActivityCode;
+		}
+		if (currentPersonType === "moral" && formData.commercialActivityCode) {
+			request.commercialActivityCode = formData.commercialActivityCode;
+		}
 		if (formData.gender) request.gender = formData.gender as Gender;
 		if (formData.maritalStatus)
 			request.maritalStatus = formData.maritalStatus as MaritalStatus;
@@ -1026,9 +1033,19 @@ export function ClientEditView({
 											searchPlaceholder={t("clientSearchCountry")}
 											resolvedName={client?.resolvedNames?.nationality}
 											onChange={(option) => {
-												const code = option
-													? ((option.metadata?.code as string) ?? option.id)
-													: "";
+												if (!option) {
+													handleInputChange("nationality", "");
+													handleInputChange("countryCode", "");
+													return;
+												}
+												const code =
+													(
+														option.metadata?.code as string | undefined
+													)?.trim() ?? "";
+												if (!code) {
+													toast.error(t("catalogItemMissingCode"));
+													return;
+												}
 												handleInputChange("nationality", code);
 												handleInputChange("countryCode", code);
 											}}
@@ -1037,41 +1054,89 @@ export function ClientEditView({
 									{formData.personType !== "physical" && (
 										<CatalogSelector
 											catalogKey="countries"
-											label={t("clientCountry")}
+											label={t("clientNationality")}
 											labelDescription={t("clientCountryOfConstitution")}
 											tier={fieldTiers.countryCode}
 											value={formData.countryCode}
 											searchPlaceholder={t("clientSearchCountry")}
 											resolvedName={client?.resolvedNames?.countryCode}
 											onChange={(option) => {
-												handleInputChange(
-													"countryCode",
-													option
-														? ((option.metadata?.code as string) ?? option.id)
-														: "",
-												);
+												if (!option) {
+													handleInputChange("countryCode", "");
+													handleInputChange("nationality", "");
+													return;
+												}
+												const code =
+													(
+														option.metadata?.code as string | undefined
+													)?.trim() ?? "";
+												if (!code) {
+													toast.error(t("catalogItemMissingCode"));
+													return;
+												}
+												handleInputChange("countryCode", code);
+												handleInputChange("nationality", code);
 											}}
 										/>
 									)}
-									<CatalogSelector
-										catalogKey="economic-activities"
-										label={t("clientEconomicActivityLabel")}
-										labelDescription={t(
-											"clientEconomicActivityFieldDescription",
-										)}
-										tier={fieldTiers.economicActivityCode}
-										value={formData.economicActivityCode}
-										searchPlaceholder={t("clientSearchActivity")}
-										resolvedName={client?.resolvedNames?.economicActivityCode}
-										onChange={(option) =>
-											handleInputChange(
-												"economicActivityCode",
-												option
-													? ((option.metadata?.code as string) ?? option.id)
-													: "",
-											)
-										}
-									/>
+									{formData.personType === "physical" && (
+										<CatalogSelector
+											catalogKey="economic-activities"
+											label={t("clientEconomicActivityLabel")}
+											labelDescription={t(
+												"clientEconomicActivityFieldDescription",
+											)}
+											tier={fieldTiers.economicActivityCode}
+											value={formData.economicActivityCode}
+											searchPlaceholder={t("clientSearchActivity")}
+											resolvedName={client?.resolvedNames?.economicActivityCode}
+											onChange={(option) => {
+												if (!option) {
+													handleInputChange("economicActivityCode", "");
+													return;
+												}
+												const code =
+													(
+														option.metadata?.code as string | undefined
+													)?.trim() ?? "";
+												if (!code) {
+													toast.error(t("catalogItemMissingCode"));
+													return;
+												}
+												handleInputChange("economicActivityCode", code);
+											}}
+										/>
+									)}
+									{formData.personType === "moral" && (
+										<CatalogSelector
+											catalogKey="business-activities"
+											label={t("clientCommercialActivityLabel")}
+											labelDescription={t(
+												"clientEconomicActivityFieldDescription",
+											)}
+											tier={fieldTiers.commercialActivityCode}
+											value={formData.commercialActivityCode}
+											searchPlaceholder={t("clientSearchActivity")}
+											resolvedName={
+												client?.resolvedNames?.commercialActivityCode
+											}
+											onChange={(option) => {
+												if (!option) {
+													handleInputChange("commercialActivityCode", "");
+													return;
+												}
+												const code =
+													(
+														option.metadata?.code as string | undefined
+													)?.trim() ?? "";
+												if (!code) {
+													toast.error(t("catalogItemMissingCode"));
+													return;
+												}
+												handleInputChange("commercialActivityCode", code);
+											}}
+										/>
+									)}
 								</CardContent>
 							</Card>
 

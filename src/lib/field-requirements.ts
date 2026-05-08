@@ -66,10 +66,38 @@ const CLIENT_PERSONA_MORAL_RED: FieldRequirement[] = [
 		xsdElement: "pais_nacionalidad",
 	},
 	{
-		fieldPath: "client.economicActivityCode",
+		fieldPath: "client.commercialActivityCode",
 		tier: "sat_required",
-		label: "Giro mercantil / Actividad económica",
+		label: "Giro mercantil",
 		xsdElement: "giro_mercantil",
+	},
+];
+
+/** Fideicomiso — XSD omits giro/actividad on the trust node */
+const CLIENT_PERSONA_TRUST_RED: FieldRequirement[] = [
+	{
+		fieldPath: "client.businessName",
+		tier: "sat_required",
+		label: "Denominación/Razón social",
+		xsdElement: "denominacion_razon",
+	},
+	{
+		fieldPath: "client.incorporationDate",
+		tier: "sat_required",
+		label: "Fecha de constitución",
+		xsdElement: "fecha_constitucion",
+	},
+	{
+		fieldPath: "client.rfc",
+		tier: "sat_required",
+		label: "RFC",
+		xsdElement: "rfc",
+	},
+	{
+		fieldPath: "client.countryCode",
+		tier: "sat_required",
+		label: "País/Nacionalidad",
+		xsdElement: "pais_nacionalidad",
 	},
 ];
 
@@ -902,9 +930,11 @@ export function getFieldRequirements(
 			const redFields =
 				personType === "physical"
 					? CLIENT_PERSONA_FISICA_RED
-					: personType === "moral" || personType === "trust"
+					: personType === "moral"
 						? CLIENT_PERSONA_MORAL_RED
-						: [...CLIENT_PERSONA_FISICA_RED, ...CLIENT_PERSONA_MORAL_RED];
+						: personType === "trust"
+							? CLIENT_PERSONA_TRUST_RED
+							: [...CLIENT_PERSONA_FISICA_RED, ...CLIENT_PERSONA_MORAL_RED];
 			const yellowFields =
 				personType === "physical"
 					? [...CLIENT_YELLOW_SHARED, ...CLIENT_YELLOW_FISICA]
@@ -1055,7 +1085,9 @@ export function getClientFieldTierMap(
 	const redFields =
 		personType === "physical"
 			? CLIENT_PERSONA_FISICA_RED
-			: CLIENT_PERSONA_MORAL_RED;
+			: personType === "moral"
+				? CLIENT_PERSONA_MORAL_RED
+				: CLIENT_PERSONA_TRUST_RED;
 
 	const yellowFields =
 		personType === "physical"

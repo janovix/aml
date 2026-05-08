@@ -94,6 +94,7 @@ interface ClientFormData {
 	// Country and economic activity
 	countryCode?: string;
 	economicActivityCode?: string;
+	commercialActivityCode?: string;
 	// Enhanced KYC fields
 	gender?: Gender;
 	maritalStatus?: MaritalStatus;
@@ -145,6 +146,7 @@ const INITIAL_CLIENT_FORM_DATA: ClientFormData = {
 	/** Must stay in sync with nationality until the user picks another country */
 	countryCode: "MX",
 	economicActivityCode: "",
+	commercialActivityCode: "",
 	occupation: "",
 	sourceOfFunds: "",
 	sourceOfWealth: "",
@@ -360,9 +362,28 @@ export function ClientInfoStep({
 		field: keyof ClientFormData,
 		value: string,
 	): void => {
-		// Notify parent of person type change BEFORE updating state
 		if (field === "personType") {
-			onPersonTypeChange(value as PersonType);
+			const next = value as PersonType;
+			onPersonTypeChange(next);
+			setFormData((prev) => {
+				let economicActivityCode = prev.economicActivityCode ?? "";
+				let commercialActivityCode = prev.commercialActivityCode ?? "";
+				if (next === "physical") {
+					commercialActivityCode = "";
+				} else if (next === "moral") {
+					economicActivityCode = "";
+				} else {
+					economicActivityCode = "";
+					commercialActivityCode = "";
+				}
+				return {
+					...prev,
+					personType: next,
+					economicActivityCode,
+					commercialActivityCode,
+				};
+			});
+			return;
 		}
 
 		// If the staff member edits a field that we previously prefilled
@@ -724,8 +745,12 @@ export function ClientInfoStep({
 			(formData.countryCode || "").trim() ||
 			(formData.nationality || "").trim();
 		if (countryCodeToSend) request.countryCode = countryCodeToSend;
-		if (formData.economicActivityCode)
+		if (formData.personType === "physical" && formData.economicActivityCode) {
 			request.economicActivityCode = formData.economicActivityCode;
+		}
+		if (formData.personType === "moral" && formData.commercialActivityCode) {
+			request.commercialActivityCode = formData.commercialActivityCode;
+		}
 		if (formData.internalNumber)
 			request.internalNumber = formData.internalNumber;
 		if (formData.reference) request.reference = formData.reference;
@@ -829,7 +854,9 @@ export function ClientInfoStep({
 					<CardTitle className="text-lg">
 						{formData.personType === "physical"
 							? t("clientPersonalData")
-							: t("clientCompanyData")}
+							: formData.personType === "trust"
+								? t("clientTrustCompanyData")
+								: t("clientCompanyData")}
 					</CardTitle>
 					<p className="text-sm text-muted-foreground">
 						{t("clientKycOnboardingNote")}
@@ -1094,30 +1121,67 @@ export function ClientInfoStep({
 							searchPlaceholder={t("clientSearchCountry")}
 							onChange={(option) => {
 								const code =
-									(option?.metadata as { code?: string } | null)?.code ?? "";
+									(
+										option?.metadata as { code?: string } | null
+									)?.code?.trim() ?? "";
+								if (option && !code) {
+									toast.error(t("catalogItemMissingCode"));
+									return;
+								}
 								handleInputChange("nationality", code);
 								handleInputChange("countryCode", code);
 							}}
 						/>
 						{fieldHints("nationality")}
 					</div>
-					<CatalogSelector
-						catalogKey="economic-activities"
-						label={t("clientEconomicActivityLabel")}
-						labelDescription={t("clientActivityDesc")}
-						tier={fieldTiers.economicActivityCode}
-						value={formData.economicActivityCode}
-						searchPlaceholder={t("clientSearchActivity")}
-						onChange={(option) =>
-							handleInputChange(
-								"economicActivityCode",
-								option
-									? ((option.metadata as { code?: string } | null)?.code ??
-											option.id)
-									: "",
-							)
-						}
-					/>
+					{formData.personType === "physical" && (
+						<CatalogSelector
+							catalogKey="economic-activities"
+							label={t("clientEconomicActivityLabel")}
+							labelDescription={t("clientActivityDesc")}
+							tier={fieldTiers.economicActivityCode}
+							value={formData.economicActivityCode}
+							searchPlaceholder={t("clientSearchActivity")}
+							onChange={(option) => {
+								if (!option) {
+									handleInputChange("economicActivityCode", "");
+									return;
+								}
+								const code =
+									(option.metadata as { code?: string } | null)?.code?.trim() ??
+									"";
+								if (!code) {
+									toast.error(t("catalogItemMissingCode"));
+									return;
+								}
+								handleInputChange("economicActivityCode", code);
+							}}
+						/>
+					)}
+					{formData.personType === "moral" && (
+						<CatalogSelector
+							catalogKey="business-activities"
+							label={t("clientCommercialActivityLabel")}
+							labelDescription={t("clientActivityDesc")}
+							tier={fieldTiers.commercialActivityCode}
+							value={formData.commercialActivityCode}
+							searchPlaceholder={t("clientSearchActivity")}
+							onChange={(option) => {
+								if (!option) {
+									handleInputChange("commercialActivityCode", "");
+									return;
+								}
+								const code =
+									(option.metadata as { code?: string } | null)?.code?.trim() ??
+									"";
+								if (!code) {
+									toast.error(t("catalogItemMissingCode"));
+									return;
+								}
+								handleInputChange("commercialActivityCode", code);
+							}}
+						/>
+					)}
 				</CardContent>
 			</Card>
 

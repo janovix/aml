@@ -5,9 +5,8 @@ import { useRouter } from "next/navigation";
 import { FileText } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { PdfViewerDialog } from "@algenium/blocks";
-
 import { CourseStepper } from "@/components/training/CourseStepper";
+import { PdfViewerDialog } from "@/components/media/PdfViewerDialog";
 import {
 	ImageGalleryDialog,
 	mergeImageGalleryLabels,

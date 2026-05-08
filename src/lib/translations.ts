@@ -1771,6 +1771,10 @@ export const translations = {
 		clientCompanyInfo: "Información de la Empresa",
 		clientCountryCode: "País/Nacionalidad (código)",
 		clientEconomicActivityLabel: "Actividad económica",
+		clientCommercialActivityLabel: "Giro mercantil",
+		clientTrustCompanyData: "Datos del fideicomiso",
+		catalogItemMissingCode:
+			"El elemento del catálogo no tiene código SAT. Elija otra opción.",
 		clientContactInfoTitle: "Información de Contacto",
 		clientEmailLabel: "Correo Electrónico",
 		clientPhoneLabel: "Teléfono",
@@ -3689,6 +3693,10 @@ export const translations = {
 		clientCompanyInfo: "Company Information",
 		clientCountryCode: "Country/Nationality (code)",
 		clientEconomicActivityLabel: "Economic activity",
+		clientCommercialActivityLabel: "Commercial activity",
+		clientTrustCompanyData: "Trust details",
+		catalogItemMissingCode:
+			"This catalog item has no SAT code. Please choose another option.",
 		clientContactInfoTitle: "Contact Information",
 		clientEmailLabel: "Email",
 		clientPhoneLabel: "Phone",

@@ -735,6 +735,12 @@ export function ClientDetailsView({
 
 	// Compute field-level tier map and completeness result
 	const tierMap = getClientFieldTierMap(client.personType);
+	const primaryKycSectionId =
+		client.personType === "physical"
+			? "personalInfo"
+			: client.personType === "moral"
+				? "companyInfoMoral"
+				: "companyInfoTrust";
 	const fullAddressLines = formatClientFullAddressLines(client, getStateName);
 	const completenessResult = activityCode
 		? computeCompleteness(
@@ -857,6 +863,7 @@ export function ClientDetailsView({
 							fieldPath.startsWith("client.businessName") ||
 							fieldPath.startsWith("client.countryCode") ||
 							fieldPath.startsWith("client.economicActivityCode") ||
+							fieldPath.startsWith("client.commercialActivityCode") ||
 							fieldPath.startsWith("client.rfc") ||
 							fieldPath.startsWith("client.curp") ||
 							fieldPath.startsWith("client.birthDate") ||
@@ -912,16 +919,14 @@ export function ClientDetailsView({
 								<span className="font-semibold">
 									{client.personType === "physical"
 										? t("clientPersonalInfo")
-										: t("clientCompanyInfo")}
+										: client.personType === "trust"
+											? t("clientTrustCompanyData")
+											: t("clientCompanyInfo")}
 								</span>
 							</div>
 							<div className="flex items-center gap-2">
 								{(() => {
-									const sectionStatus = getSectionStatus(
-										client.personType === "physical"
-											? "personalInfo"
-											: "companyInfo",
-									);
+									const sectionStatus = getSectionStatus(primaryKycSectionId);
 									if (!sectionStatus) return null;
 									return sectionStatus.isComplete ? (
 										<CheckCircle2 className="h-5 w-5 text-green-500" />
@@ -972,29 +977,50 @@ export function ClientDetailsView({
 									/>
 									<FieldDisplay
 										label={t("clientNationality")}
-										value={
-											client.resolvedNames?.nationality || client.nationality
-										}
+										value={client.resolvedNames?.nationality}
 										isMissing={!client.nationality}
+										tier={tierMap.countryCode}
+										icon={Flag}
 									/>
 									<FieldDisplay
-										label={t("clientCountryCode")}
+										label={t("clientEconomicActivityLabel")}
+										value={client.resolvedNames?.economicActivityCode}
+										icon={Briefcase}
+										isMissing={!client.economicActivityCode}
+										tier={tierMap.economicActivityCode}
+									/>
+								</>
+							) : client.personType === "moral" ? (
+								<>
+									<FieldDisplay
+										label={t("clientBusinessName")}
+										value={client.businessName}
+										isMissing={!client.businessName}
+										tier={tierMap.businessName}
+									/>
+									<FieldDisplay
+										label={t("clientConstitutionDate")}
 										value={
-											client.resolvedNames?.countryCode || client.countryCode
+											client.incorporationDate
+												? formatDate(client.incorporationDate)
+												: undefined
 										}
+										icon={Calendar}
+										isMissing={!client.incorporationDate}
+									/>
+									<FieldDisplay
+										label={t("clientNationality")}
+										value={client.resolvedNames?.countryCode}
 										icon={Flag}
 										isMissing={!client.countryCode}
 										tier={tierMap.countryCode}
 									/>
 									<FieldDisplay
-										label={t("clientEconomicActivityLabel")}
-										value={
-											client.resolvedNames?.economicActivityCode ||
-											client.economicActivityCode
-										}
+										label={t("clientCommercialActivityLabel")}
+										value={client.resolvedNames?.commercialActivityCode}
 										icon={Briefcase}
-										isMissing={!client.economicActivityCode}
-										tier={tierMap.economicActivityCode}
+										isMissing={!client.commercialActivityCode}
+										tier={tierMap.commercialActivityCode}
 									/>
 								</>
 							) : (
@@ -1016,23 +1042,11 @@ export function ClientDetailsView({
 										isMissing={!client.incorporationDate}
 									/>
 									<FieldDisplay
-										label={t("clientCountryCode")}
-										value={
-											client.resolvedNames?.countryCode || client.countryCode
-										}
+										label={t("clientNationality")}
+										value={client.resolvedNames?.countryCode}
 										icon={Flag}
 										isMissing={!client.countryCode}
 										tier={tierMap.countryCode}
-									/>
-									<FieldDisplay
-										label={t("clientEconomicActivityLabel")}
-										value={
-											client.resolvedNames?.economicActivityCode ||
-											client.economicActivityCode
-										}
-										icon={Briefcase}
-										isMissing={!client.economicActivityCode}
-										tier={tierMap.economicActivityCode}
 									/>
 								</>
 							)}
@@ -1045,11 +1059,7 @@ export function ClientDetailsView({
 
 						{/* CTA if incomplete */}
 						{(() => {
-							const sectionStatus = getSectionStatus(
-								client.personType === "physical"
-									? "personalInfo"
-									: "companyInfo",
-							);
+							const sectionStatus = getSectionStatus(primaryKycSectionId);
 							if (sectionStatus && !sectionStatus.isComplete) {
 								return (
 									<div className="mt-4 pt-4 border-t">

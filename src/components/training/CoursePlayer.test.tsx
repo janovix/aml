@@ -26,14 +26,10 @@ vi.mock("next/link", () => ({
 	}) => <a href={href}>{children}</a>,
 }));
 
-vi.mock("@algenium/blocks", async (importOriginal) => {
-	const actual = await importOriginal<typeof import("@algenium/blocks")>();
-	return {
-		...actual,
-		PdfViewerDialog: ({ open, title }: { open: boolean; title?: string }) =>
-			open ? <div data-testid="pdf-viewer-dialog">{title ?? ""}</div> : null,
-	};
-});
+vi.mock("@/components/media/PdfViewerDialog", () => ({
+	PdfViewerDialog: ({ open, title }: { open: boolean; title?: string }) =>
+		open ? <div data-testid="pdf-viewer-dialog">{title ?? ""}</div> : null,
+}));
 
 const ftMocks = vi.hoisted(() => ({
 	fetchPdf: vi.fn(async () => new ArrayBuffer(8)),
