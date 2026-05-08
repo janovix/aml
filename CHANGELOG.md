@@ -1,3 +1,10 @@
+# [1.14.0-rc.13](https://github.com/janovix/aml/compare/v1.14.0-rc.12...v1.14.0-rc.13) (2026-05-08)
+
+
+### Features
+
+* add commercial activity handling and PDF viewer component ([77d8e95](https://github.com/janovix/aml/commit/77d8e958fd72b6b333a52f7768eec1342c646a5b))
+
 # [1.14.0-rc.12](https://github.com/janovix/aml/compare/v1.14.0-rc.11...v1.14.0-rc.12) (2026-05-07)
 
 
