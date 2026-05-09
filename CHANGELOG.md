@@ -1,3 +1,10 @@
+# [1.14.0-rc.14](https://github.com/janovix/aml/compare/v1.14.0-rc.13...v1.14.0-rc.14) (2026-05-09)
+
+
+### Features
+
+* implement data environment handling in Janbot tools and add tests for new functionality ([4b65b1e](https://github.com/janovix/aml/commit/4b65b1e9e308a3375305b6edc7242d7318d1183d))
+
 # [1.14.0-rc.13](https://github.com/janovix/aml/compare/v1.14.0-rc.12...v1.14.0-rc.13) (2026-05-08)
 
 
