@@ -24,6 +24,8 @@ import {
 	type FileUploadContext,
 } from "@/lib/ai";
 import { getAmlCoreBaseUrl } from "@/lib/api/config";
+import { COOKIE_NAMES } from "@/lib/cookies";
+import { parseDataEnvironmentCookie } from "@/lib/environment-store";
 import { getAuthServiceUrl } from "@/lib/auth/config";
 import { scanUserTextForInjection } from "@/lib/ai/guardrails/injection";
 import { classifyJanbotIntent } from "@/lib/ai/guardrails/intent";
@@ -251,12 +253,23 @@ export async function POST(request: Request) {
 			}
 		}
 
+		const cookieStore = await cookies();
+		const cookieHeader = cookieStore
+			.getAll()
+			.map((c) => `${c.name}=${c.value}`)
+			.join("; ");
+		const dataEnvironment = parseDataEnvironmentCookie(
+			cookieStore.get(COOKIE_NAMES.ENVIRONMENT)?.value,
+		);
+
 		const rawTools = jwt
 			? buildJanbotTools({
 					jwt,
 					orgSlug,
 					organizationId,
 					fileUpload: bodyFileUpload && jwt ? bodyFileUpload : undefined,
+					dataEnvironment,
+					cookieHeader: cookieHeader || undefined,
 				})
 			: {};
 		const tools = jwt

@@ -1,12 +1,14 @@
 /**
  * Janbot tools that read organization / subscription context from auth-svc.
+ *
+ * Better Auth session resolution uses cookies — Bearer JWT is not accepted on these routes.
  */
 
 import { z } from "zod";
 import { getAuthServiceUrl } from "@/lib/auth/config";
 
 async function fetchAuthJson<T>(
-	jwt: string,
+	cookieHeader: string,
 	path: string,
 	init?: RequestInit,
 ): Promise<T> {
@@ -16,7 +18,7 @@ async function fetchAuthJson<T>(
 		{
 			...init,
 			headers: {
-				Authorization: `Bearer ${jwt}`,
+				Cookie: cookieHeader,
 				Accept: "application/json",
 				...(init?.headers ?? {}),
 			},
@@ -37,10 +39,16 @@ const orgIdSchema = z.object({
 		.describe("Organization id (UUID) to inspect membership for"),
 });
 
+export type CreateAuthJanbotToolsOptions = {
+	cookieHeader: string;
+};
+
 /**
- * Tools backed by auth-svc session (Bearer JWT).
+ * Tools backed by auth-svc session (Cookie header — same as server-side org fetchers).
  */
-export function createAuthJanbotTools(jwt: string) {
+export function createAuthJanbotTools(opts: CreateAuthJanbotToolsOptions) {
+	const { cookieHeader } = opts;
+
 	return {
 		listOrganizationsWithRole: {
 			description:
@@ -56,7 +64,7 @@ export function createAuthJanbotTools(jwt: string) {
 						role: string;
 						status: string;
 					}>;
-				}>(jwt, "/api/organization/list-with-role");
+				}>(cookieHeader, "/api/organization/list-with-role");
 				const rows = r.data ?? [];
 				return {
 					kind: "janbot.table" as const,
@@ -81,7 +89,7 @@ export function createAuthJanbotTools(jwt: string) {
 				const r = await fetchAuthJson<{
 					success: boolean;
 					data?: Record<string, unknown>;
-				}>(jwt, "/api/subscription/status?resolveFromOrg=true");
+				}>(cookieHeader, "/api/subscription/status?resolveFromOrg=true");
 				return {
 					kind: "janbot.api" as const,
 					title: "Subscription status",
@@ -100,7 +108,7 @@ export function createAuthJanbotTools(jwt: string) {
 					success: boolean;
 					data?: { role: string; organizationId: string } | null;
 				}>(
-					jwt,
+					cookieHeader,
 					`/api/settings/organization/${encodeURIComponent(organizationId)}/membership`,
 				);
 				return {
@@ -116,10 +124,12 @@ export function createAuthJanbotTools(jwt: string) {
 
 export type AuthJanbotTools = ReturnType<typeof createAuthJanbotTools>;
 
-const AUTH_TOOL_JWT_PLACEHOLDER = "auth-tool-inventory-placeholder";
+const AUTH_TOOL_COOKIE_PLACEHOLDER = "";
 
 export function getAuthToolInventoryMarkdown(): string {
-	const tools = createAuthJanbotTools(AUTH_TOOL_JWT_PLACEHOLDER);
+	const tools = createAuthJanbotTools({
+		cookieHeader: AUTH_TOOL_COOKIE_PLACEHOLDER,
+	});
 	const lines: string[] = [];
 	for (const [name, def] of Object.entries(tools)) {
 		const description =

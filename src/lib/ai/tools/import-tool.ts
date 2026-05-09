@@ -6,7 +6,12 @@
  */
 
 import { z } from "zod";
+import type { DataEnvironment } from "@/lib/environment-store";
 import { getAmlCoreBaseUrl } from "@/lib/api/config";
+
+export type CreateImportToolOptions = {
+	dataEnvironment?: DataEnvironment;
+};
 
 export interface FileUpload {
 	fileName: string;
@@ -69,7 +74,10 @@ export function createImportTool(
 	jwt: string,
 	fileUpload: FileUpload,
 	orgSlug?: string,
+	opts?: CreateImportToolOptions,
 ) {
+	const env = opts?.dataEnvironment ?? "production";
+
 	return {
 		processImport: {
 			description: `Process the uploaded file (${fileUpload.fileName}) to import ${fileUpload.entityType === "CLIENT" ? "clients" : "operations"}. This will validate and import all rows from the file.`,
@@ -101,6 +109,7 @@ export function createImportTool(
 						method: "POST",
 						headers: {
 							Authorization: `Bearer ${jwt}`,
+							"X-Environment": env,
 						},
 						body: formData,
 					});

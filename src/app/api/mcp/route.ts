@@ -7,6 +7,7 @@
  */
 
 import { buildJanbotTools, filterToolsByJanbotFlags } from "@/lib/ai";
+import { parseDataEnvironmentCookie } from "@/lib/environment-store";
 
 export const runtime = "nodejs";
 
@@ -79,10 +80,20 @@ export async function POST(request: Request) {
 	const id = req.id ?? null;
 	const method = req.method;
 
+	const dataEnvironment = parseDataEnvironmentCookie(
+		request.headers.get("X-Environment") ?? undefined,
+	);
+	const cookieHeader = request.headers.get("Cookie") ?? undefined;
+
 	if (method === "tools/list") {
 		const organizationId = getOrganizationIdFromBody(req.params);
 		const tools = await filterToolsByJanbotFlags(
-			buildJanbotTools({ jwt, organizationId }),
+			buildJanbotTools({
+				jwt,
+				organizationId,
+				dataEnvironment,
+				cookieHeader,
+			}),
 			jwt,
 			organizationId,
 		);
@@ -119,7 +130,12 @@ export async function POST(request: Request) {
 
 		const organizationId = params.organizationId;
 		const tools = (await filterToolsByJanbotFlags(
-			buildJanbotTools({ jwt, organizationId }),
+			buildJanbotTools({
+				jwt,
+				organizationId,
+				dataEnvironment,
+				cookieHeader,
+			}),
 			jwt,
 			organizationId,
 		)) as Record<string, { execute?: (input: unknown) => Promise<unknown> }>;

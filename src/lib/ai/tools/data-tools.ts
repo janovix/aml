@@ -6,11 +6,17 @@
  */
 
 import { z } from "zod";
+import type { DataEnvironment } from "@/lib/environment-store";
 import { getAmlCoreBaseUrl } from "@/lib/api/config";
+
+export type CreateDataToolsOptions = {
+	dataEnvironment?: DataEnvironment;
+};
 
 async function fetchWithAuth<T>(
 	endpoint: string,
 	jwt: string,
+	dataEnvironment: DataEnvironment,
 	params?: Record<string, string>,
 ): Promise<T> {
 	const baseUrl = getAmlCoreBaseUrl();
@@ -29,6 +35,7 @@ async function fetchWithAuth<T>(
 		headers: {
 			Authorization: `Bearer ${jwt}`,
 			Accept: "application/json",
+			"X-Environment": dataEnvironment,
 		},
 	});
 
@@ -241,7 +248,9 @@ function wrapWithArgs<T>(label: string, fn: (args: T) => Promise<string>) {
 // Tool factory
 // ---------------------------------------------------------------------------
 
-export function createDataTools(jwt: string) {
+export function createDataTools(jwt: string, opts?: CreateDataToolsOptions) {
+	const env = opts?.dataEnvironment ?? "production";
+
 	return {
 		// ===================================================================
 		// STATS
@@ -257,7 +266,7 @@ export function createDataTools(jwt: string) {
 					physicalClients: number;
 					moralClients: number;
 					trustClients: number;
-				}>("/api/v1/clients/stats", jwt);
+				}>("/api/v1/clients/stats", jwt, env);
 				return `Total clients: ${s.totalClients} (${s.physicalClients} physical, ${s.moralClients} moral/companies, ${s.trustClients} trusts)`;
 			}),
 		},
@@ -272,7 +281,7 @@ export function createDataTools(jwt: string) {
 					suspiciousOperations: number;
 					totalVolume: string;
 					totalOperations: number;
-				}>("/api/v1/operations/stats", jwt);
+				}>("/api/v1/operations/stats", jwt, env);
 				return `Operations today: ${s.operationsToday}, Active alerts: ${s.suspiciousOperations}, Total volume: ${fmtMoney(s.totalVolume)} MXN, Total operations: ${s.totalOperations}`;
 			}),
 		},
@@ -286,7 +295,7 @@ export function createDataTools(jwt: string) {
 					totalInvoices: number;
 					ingresoInvoices: number;
 					egresoInvoices: number;
-				}>("/api/v1/invoices/stats", jwt);
+				}>("/api/v1/invoices/stats", jwt, env);
 				return `Total invoices: ${s.totalInvoices} (${s.ingresoInvoices} ingreso/income, ${s.egresoInvoices} egreso/expense)`;
 			}),
 		},
@@ -321,7 +330,7 @@ export function createDataTools(jwt: string) {
 						stateCode?: string;
 						notes?: string;
 						createdAt: string;
-					}>(`/api/v1/clients/${id}`, jwt);
+					}>(`/api/v1/clients/${id}`, jwt, env);
 					const name =
 						c.personType === "MORAL"
 							? c.businessName
@@ -365,7 +374,7 @@ export function createDataTools(jwt: string) {
 						completenessStatus: string;
 						missingFields: string[];
 						kycCompletedAt: string | null;
-					}>(`/api/v1/clients/${id}/kyc-status`, jwt);
+					}>(`/api/v1/clients/${id}/kyc-status`, jwt, env);
 					const missing =
 						k.missingFields.length > 0
 							? `Missing fields: ${k.missingFields.join(", ")}`
@@ -397,7 +406,7 @@ export function createDataTools(jwt: string) {
 						plates?: string;
 						engineNumber?: string;
 						createdAt: string;
-					}>(`/api/v1/operations/${id}`, jwt);
+					}>(`/api/v1/operations/${id}`, jwt, env);
 					const vehicle =
 						o.brand || o.model
 							? `Vehicle: ${o.year ?? ""} ${o.brand ?? ""} ${o.model ?? ""} (${o.vehicleType ?? "N/A"})${o.plates ? `, Plates: ${o.plates}` : ""}${o.engineNumber ? `, Engine: ${o.engineNumber}` : ""}`
@@ -444,7 +453,7 @@ export function createDataTools(jwt: string) {
 						cancellationReason?: string;
 						createdAt: string;
 						alertRule?: { id: string; name: string; description?: string };
-					}>(`/api/v1/alerts/${id}`, jwt);
+					}>(`/api/v1/alerts/${id}`, jwt, env);
 					return [
 						`Alert ${a.id} — ${a.severity} / ${a.status}${a.isOverdue ? " ⚠️ OVERDUE" : ""}${a.isManual ? " (manual)" : ""}`,
 						a.alertRule
@@ -491,7 +500,7 @@ export function createDataTools(jwt: string) {
 						amendmentCycle: number;
 						notes?: string;
 						createdAt: string;
-					}>(`/api/v1/notices/${id}`, jwt);
+					}>(`/api/v1/notices/${id}`, jwt, env);
 					return [
 						`Notice: ${n.name} — ${n.status}`,
 						`Period: ${n.periodStart} to ${n.periodEnd} (reported month: ${n.reportedMonth})`,
@@ -548,7 +557,7 @@ export function createDataTools(jwt: string) {
 							limit: number;
 							totalPages: number;
 						};
-					}>("/api/v1/clients", jwt, params);
+					}>("/api/v1/clients", jwt, env, params);
 					if (r.data.length === 0)
 						return "No clients found matching the criteria.";
 					const list = r.data
@@ -584,7 +593,7 @@ export function createDataTools(jwt: string) {
 						page: String(page),
 					};
 					if (clientId) params.clientId = clientId;
-					if (activityCode) params.operationType = activityCode;
+					if (activityCode) params.activityCode = activityCode;
 					if (startDate) params.startDate = startDate;
 					if (endDate) params.endDate = endDate;
 					const r = await fetchWithAuth<{
@@ -605,7 +614,7 @@ export function createDataTools(jwt: string) {
 							limit: number;
 							totalPages: number;
 						};
-					}>("/api/v1/operations", jwt, params);
+					}>("/api/v1/operations", jwt, env, params);
 					if (r.data.length === 0)
 						return "No operations found matching the criteria.";
 					const list = r.data
@@ -659,7 +668,7 @@ export function createDataTools(jwt: string) {
 							limit: number;
 							totalPages: number;
 						};
-					}>("/api/v1/alerts", jwt, params);
+					}>("/api/v1/alerts", jwt, env, params);
 					if (r.data.length === 0)
 						return "No alerts found matching the criteria.";
 					const list = r.data
@@ -719,7 +728,7 @@ export function createDataTools(jwt: string) {
 							limit: number;
 							totalPages: number;
 						};
-					}>("/api/v1/invoices", jwt, params);
+					}>("/api/v1/invoices", jwt, env, params);
 					if (r.data.length === 0)
 						return "No invoices found matching the criteria.";
 					const list = r.data
@@ -770,7 +779,7 @@ export function createDataTools(jwt: string) {
 							limit: number;
 							totalPages: number;
 						};
-					}>("/api/v1/reports", jwt, params);
+					}>("/api/v1/reports", jwt, env, params);
 					if (r.data.length === 0)
 						return "No reports found matching the criteria.";
 					const list = r.data
@@ -818,7 +827,7 @@ export function createDataTools(jwt: string) {
 							limit: number;
 							totalPages: number;
 						};
-					}>("/api/v1/notices", jwt, params);
+					}>("/api/v1/notices", jwt, env, params);
 					if (r.data.length === 0)
 						return "No notices found matching the criteria.";
 					const list = r.data
@@ -868,7 +877,7 @@ export function createDataTools(jwt: string) {
 							limit: number;
 							totalPages: number;
 						};
-					}>("/api/v1/alert-rules", jwt, params);
+					}>("/api/v1/alert-rules", jwt, env, params);
 					if (r.data.length === 0) return "No alert rules found.";
 					const list = r.data
 						.map(
@@ -934,7 +943,7 @@ export function createDataTools(jwt: string) {
 							amountChange?: number;
 							clientsChange?: number;
 						};
-					}>("/api/v1/reports/aggregate/summary", jwt, params);
+					}>("/api/v1/reports/aggregate/summary", jwt, env, params);
 
 					const sevStr = Object.entries(s.alerts.bySeverity)
 						.map(([k, v]) => `${k}: ${v}`)
@@ -996,7 +1005,7 @@ export function createDataTools(jwt: string) {
 						byMonth: Array<{ month: string; count: number }>;
 						avgResolutionDays: number;
 						overdueCount: number;
-					}>("/api/v1/reports/aggregate/alerts", jwt, params);
+					}>("/api/v1/reports/aggregate/alerts", jwt, env, params);
 					const sevStr = Object.entries(a.bySeverity)
 						.map(([k, v]) => `${k}: ${v}`)
 						.join(", ");
@@ -1046,7 +1055,7 @@ export function createDataTools(jwt: string) {
 							count: number;
 							amount: number;
 						}>;
-					}>("/api/v1/reports/aggregate/transactions", jwt, params);
+					}>("/api/v1/reports/aggregate/operations", jwt, env, params);
 					const opTypeStr = Object.entries(t.byOperationType)
 						.map(([k, v]) => `  ${k}: ${v.count} ops, ${fmtMoney(v.amount)}`)
 						.join("\n");
@@ -1092,7 +1101,7 @@ export function createDataTools(jwt: string) {
 						hasSubmittedNotice: boolean;
 						noticeCount: number;
 					}>;
-				}>("/api/v1/notices/available-months", jwt);
+				}>("/api/v1/notices/available-months", jwt, env);
 				if (!r.months || r.months.length === 0)
 					return "No months available for notice creation.";
 				const list = r.months
@@ -1129,7 +1138,7 @@ export function createDataTools(jwt: string) {
 						reportedMonth: string;
 						displayName: string;
 						submissionDeadline: string;
-					}>("/api/v1/notices/preview", jwt, params);
+					}>("/api/v1/notices/preview", jwt, env, params);
 					const sevStr = Object.entries(p.bySeverity)
 						.map(([k, v]) => `${k}: ${v}`)
 						.join(", ");
@@ -1159,7 +1168,7 @@ export function createDataTools(jwt: string) {
 					dailyValue: string;
 					effectiveDate: string;
 					active: boolean;
-				}>("/api/v1/uma-values/active", jwt);
+				}>("/api/v1/uma-values/active", jwt, env);
 				return `Active UMA (${u.year}): $${u.dailyValue} MXN/day (effective since ${u.effectiveDate}). Example thresholds: 6,420 UMA = ${fmtMoney(parseFloat(u.dailyValue) * 6420)} MXN, 3,210 UMA = ${fmtMoney(parseFloat(u.dailyValue) * 3210)} MXN`;
 			}),
 		},
@@ -1179,7 +1188,7 @@ export function createDataTools(jwt: string) {
 						to: string;
 						rate: number;
 						date: string;
-					}>("/api/v1/exchange-rates", jwt, { from, to });
+					}>("/api/v1/exchange-rates", jwt, env, { from, to });
 					return `Exchange rate ${r.from}/${r.to}: ${r.rate.toFixed(4)} (as of ${r.date}). Example: 1,000 ${r.from} = ${fmtMoney(1000 * r.rate)} ${r.to}`;
 				},
 			),
@@ -1197,7 +1206,9 @@ const TOOL_INVENTORY_JWT_PLACEHOLDER = "tool-inventory-placeholder";
  * so the system prompt cannot drift from the actual tool set.
  */
 export function getDataToolInventoryMarkdown(): string {
-	const tools = createDataTools(TOOL_INVENTORY_JWT_PLACEHOLDER);
+	const tools = createDataTools(TOOL_INVENTORY_JWT_PLACEHOLDER, {
+		dataEnvironment: "production",
+	});
 	const lines: string[] = [];
 	for (const [name, def] of Object.entries(tools)) {
 		const description =

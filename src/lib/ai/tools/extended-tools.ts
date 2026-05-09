@@ -3,11 +3,17 @@
  */
 
 import { z } from "zod";
+import type { DataEnvironment } from "@/lib/environment-store";
 import { getAmlCoreBaseUrl } from "@/lib/api/config";
+
+export type CreateExtendedJanbotToolsOptions = {
+	dataEnvironment?: DataEnvironment;
+};
 
 async function amlFetch<T>(
 	jwt: string,
 	path: string,
+	dataEnvironment: DataEnvironment,
 	init?: RequestInit,
 ): Promise<T> {
 	const base = getAmlCoreBaseUrl().replace(/\/$/, "");
@@ -17,6 +23,7 @@ async function amlFetch<T>(
 		headers: {
 			Authorization: `Bearer ${jwt}`,
 			Accept: "application/json",
+			"X-Environment": dataEnvironment,
 			...(init?.headers ?? {}),
 		},
 	});
@@ -68,16 +75,26 @@ const cancelAlertSchema = z.object({
 	reason: z.string().min(3).max(500).describe("Cancellation reason for audit"),
 });
 
-export function createExtendedJanbotTools(jwt: string) {
+export function createExtendedJanbotTools(
+	jwt: string,
+	opts?: CreateExtendedJanbotToolsOptions,
+) {
+	const env = opts?.dataEnvironment ?? "production";
+
 	return {
 		getRiskDashboardSummary: {
 			description:
 				"Fetch the organization risk dashboard (counts, heatmaps metadata, queue health).",
 			inputSchema: z.object({}),
 			execute: async () => {
-				const data = await amlFetch<unknown>(jwt, "/api/v1/risk/dashboard", {
-					method: "GET",
-				});
+				const data = await amlFetch<unknown>(
+					jwt,
+					"/api/v1/risk/dashboard",
+					env,
+					{
+						method: "GET",
+					},
+				);
 				return {
 					kind: "janbot.api" as const,
 					title: "Risk dashboard",
@@ -94,6 +111,7 @@ export function createExtendedJanbotTools(jwt: string) {
 				const data = await amlFetch<unknown>(
 					jwt,
 					`/api/v1/risk/${encodeURIComponent(clientId)}/assessment`,
+					env,
 					{ method: "GET" },
 				);
 				return {
@@ -115,7 +133,7 @@ export function createExtendedJanbotTools(jwt: string) {
 				if (q.clientId) sp.set("clientId", q.clientId);
 				const qs = sp.toString();
 				const path = `/api/v1/risk/evaluations${qs ? `?${qs}` : ""}`;
-				const data = await amlFetch<unknown>(jwt, path, { method: "GET" });
+				const data = await amlFetch<unknown>(jwt, path, env, { method: "GET" });
 				return {
 					kind: "janbot.api" as const,
 					title: "Risk evaluations",
@@ -136,7 +154,7 @@ export function createExtendedJanbotTools(jwt: string) {
 				if (q.endDate) sp.set("endDate", q.endDate);
 				const qs = sp.toString();
 				const path = `/api/v1/operations/client/${encodeURIComponent(q.clientId)}/accumulated${qs ? `?${qs}` : ""}`;
-				const data = await amlFetch<unknown>(jwt, path, { method: "GET" });
+				const data = await amlFetch<unknown>(jwt, path, env, { method: "GET" });
 				return {
 					kind: "janbot.api" as const,
 					title: "Accumulated operations",
@@ -154,6 +172,7 @@ export function createExtendedJanbotTools(jwt: string) {
 				const data = await amlFetch<unknown>(
 					jwt,
 					`/api/v1/clients/check-rfc/${encodeURIComponent(rfc)}`,
+					env,
 					{ method: "GET" },
 				);
 				return {
@@ -174,7 +193,7 @@ export function createExtendedJanbotTools(jwt: string) {
 				if (q.limit != null) sp.set("limit", String(q.limit));
 				const qs = sp.toString();
 				const path = `/api/v1/kyc-sessions${qs ? `?${qs}` : ""}`;
-				const data = await amlFetch<unknown>(jwt, path, { method: "GET" });
+				const data = await amlFetch<unknown>(jwt, path, env, { method: "GET" });
 				return {
 					kind: "janbot.api" as const,
 					title: "KYC sessions",
@@ -191,6 +210,7 @@ export function createExtendedJanbotTools(jwt: string) {
 				const data = await amlFetch<unknown>(
 					jwt,
 					`/api/v1/kyc-sessions/${encodeURIComponent(sessionId)}`,
+					env,
 					{ method: "GET" },
 				);
 				return {
@@ -209,6 +229,7 @@ export function createExtendedJanbotTools(jwt: string) {
 				const data = await amlFetch<unknown>(
 					jwt,
 					`/api/v1/kyc-sessions/${encodeURIComponent(sessionId)}/events`,
+					env,
 					{ method: "GET" },
 				);
 				return {
@@ -228,6 +249,7 @@ export function createExtendedJanbotTools(jwt: string) {
 				const data = await amlFetch<unknown>(
 					jwt,
 					"/api/v1/organization-settings",
+					env,
 					{
 						method: "GET",
 					},
@@ -253,7 +275,7 @@ export function createExtendedJanbotTools(jwt: string) {
 					ofacCount: number;
 					unscCount: number;
 					sat69bCount: number;
-				}>(jwt, "/api/v1/janbot/watchlist/search", {
+				}>(jwt, "/api/v1/janbot/watchlist/search", env, {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({
@@ -281,6 +303,7 @@ export function createExtendedJanbotTools(jwt: string) {
 				const data = await amlFetch<unknown>(
 					jwt,
 					`/api/v1/alerts/${encodeURIComponent(input.alertId)}/cancel`,
+					env,
 					{
 						method: "POST",
 						headers: { "Content-Type": "application/json" },
@@ -303,7 +326,9 @@ export type ExtendedJanbotTools = ReturnType<typeof createExtendedJanbotTools>;
 const EXT_JWT_PLACEHOLDER = "extended-tool-inventory-placeholder";
 
 export function getExtendedToolInventoryMarkdown(): string {
-	const tools = createExtendedJanbotTools(EXT_JWT_PLACEHOLDER);
+	const tools = createExtendedJanbotTools(EXT_JWT_PLACEHOLDER, {
+		dataEnvironment: "production",
+	});
 	const lines: string[] = [];
 	for (const [name, def] of Object.entries(tools)) {
 		const description =

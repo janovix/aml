@@ -2,6 +2,7 @@
  * Unified Janbot tool registry (AML data tools + extensions + auth + optional import).
  */
 
+import type { DataEnvironment } from "@/lib/environment-store";
 import { getFlagsServiceUrl } from "@/lib/auth/config";
 import { createDataTools } from "./data-tools";
 import { createExtendedJanbotTools } from "./extended-tools";
@@ -89,13 +90,18 @@ export function buildJanbotTools(args: {
 	orgSlug?: string;
 	organizationId?: string;
 	fileUpload?: FileUploadContext;
+	/** Data plane scope for aml-svc (`X-Environment`), from `janovix-env` cookie */
+	dataEnvironment?: DataEnvironment;
+	/** Session cookies for auth-svc (Better Auth uses Cookie, not Bearer) */
+	cookieHeader?: string;
 }) {
-	const { jwt, orgSlug, fileUpload } = args;
+	const { jwt, orgSlug, fileUpload, dataEnvironment, cookieHeader } = args;
+	const amlOpts = { dataEnvironment: dataEnvironment ?? "production" };
 	return {
-		...createDataTools(jwt),
-		...createExtendedJanbotTools(jwt),
-		...createAuthJanbotTools(jwt),
-		...(fileUpload ? createImportTool(jwt, fileUpload, orgSlug) : {}),
+		...createDataTools(jwt, amlOpts),
+		...createExtendedJanbotTools(jwt, amlOpts),
+		...(cookieHeader ? createAuthJanbotTools({ cookieHeader }) : {}),
+		...(fileUpload ? createImportTool(jwt, fileUpload, orgSlug, amlOpts) : {}),
 	};
 }
 
