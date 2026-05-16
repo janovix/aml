@@ -14,6 +14,7 @@ import {
 	getImportPreview,
 	getImportTargetFields,
 	startImport,
+	type ImportStatus,
 } from "@/lib/api/imports";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -75,6 +76,22 @@ interface ImportViewContentProps {
 	importId: string;
 }
 
+function mapApiImportStatusToView(
+	api: ImportStatus,
+): "queued" | "validating" | "processing" {
+	switch (api) {
+		case "PENDING":
+			return "queued";
+		case "VALIDATING":
+			return "validating";
+		case "PROCESSING":
+			return "processing";
+		case "COMPLETED":
+		case "FAILED":
+			return "processing";
+	}
+}
+
 const initialState: ImportState = {
 	status: "idle",
 	importId: null,
@@ -97,7 +114,7 @@ export function ImportViewContent({ importId }: ImportViewContentProps) {
 	const [state, setState] = useState<ImportState>({
 		...initialState,
 		importId,
-		status: "processing",
+		status: "queued",
 	});
 	const [isLoading, setIsLoading] = useState(true);
 	const [mappingStepData, setMappingStepData] = useState<{
@@ -116,7 +133,11 @@ export function ImportViewContent({ importId }: ImportViewContentProps) {
 		error: sseError,
 	} = useImportSSE({
 		importId,
-		enabled: state.status === "processing" || state.status === "uploading",
+		enabled:
+			state.status === "queued" ||
+			state.status === "validating" ||
+			state.status === "processing" ||
+			state.status === "uploading",
 	});
 
 	// Load existing import on mount
@@ -172,7 +193,7 @@ export function ImportViewContent({ importId }: ImportViewContentProps) {
 							: "failed"
 						: needsMapping
 							? "mapping"
-							: "processing",
+							: mapApiImportStatusToView(importData.status),
 					importId: importData.id,
 					fileName: importData.fileName,
 					entityType: importData.entityType as ImportEntityType,
@@ -299,7 +320,7 @@ export function ImportViewContent({ importId }: ImportViewContentProps) {
 						? "completed"
 						: progress.status === "FAILED"
 							? "failed"
-							: "processing",
+							: mapApiImportStatusToView(progress.status),
 				totalRows: progress.totalRows,
 				processedRows: progress.processedRows,
 				successCount: progress.successCount,
@@ -365,7 +386,12 @@ export function ImportViewContent({ importId }: ImportViewContentProps) {
 
 	// Handle SSE error
 	useEffect(() => {
-		if (sseError && state.status === "processing") {
+		if (
+			sseError &&
+			(state.status === "queued" ||
+				state.status === "validating" ||
+				state.status === "processing")
+		) {
 			setState((prev) => ({
 				...prev,
 				status: "failed",
@@ -397,7 +423,7 @@ export function ImportViewContent({ importId }: ImportViewContentProps) {
 		try {
 			await startImport({ id: state.importId, columnMapping: mapping, jwt });
 			setMappingStepData(null);
-			setState((prev) => ({ ...prev, status: "processing" }));
+			setState((prev) => ({ ...prev, status: "queued" }));
 		} catch (error) {
 			toast.error(
 				error instanceof Error

@@ -20,6 +20,8 @@ import {
 	UserX,
 	FileWarning,
 	Activity,
+	Plus,
+	UserPlus,
 } from "lucide-react";
 
 import { PageHero, type StatCard } from "@/components/page-hero/page-hero";
@@ -128,7 +130,7 @@ export function DashboardView(): React.ReactElement {
 	const { t, language } = useLanguage();
 	const { jwt, isLoading: isJwtLoading } = useJwt();
 	const { currentOrg } = useOrgStore();
-	const { routes } = useOrgNavigation();
+	const { routes, navigateTo } = useOrgNavigation();
 
 	const locale = getLocaleForLanguage(language);
 
@@ -289,11 +291,27 @@ export function DashboardView(): React.ReactElement {
 				stats={stats.length > 0 ? stats : undefined}
 				actions={[
 					{
+						label: t("opNewOperation"),
+						icon: Plus,
+						onClick: () => {
+							navigateTo("/operations/new");
+						},
+						variant: "default",
+					},
+					{
 						label: t("dashboardRefresh"),
 						icon: RefreshCw,
 						onClick: handleRefresh,
 						variant: "outline",
 						disabled: isLoading,
+					},
+					{
+						label: t("clientsNew"),
+						icon: UserPlus,
+						onClick: () => {
+							navigateTo("/clients/new");
+						},
+						variant: "outline",
 					},
 				]}
 			/>

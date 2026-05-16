@@ -91,10 +91,18 @@ describe("activity-registry", () => {
 	});
 
 	describe("getEnabledActivityVisuals", () => {
-		it("excludes disabled activities (FES)", () => {
+		it("excludes disabled activities", () => {
 			const enabled = getEnabledActivityVisuals();
-			expect(enabled).toHaveLength(18); // 19 total - 1 disabled
-			expect(enabled.find((v) => v.code === "FES")).toBeUndefined();
+			expect(enabled).toHaveLength(14); // 19 total - 5 disabled
+			for (const code of [
+				"FES",
+				"AVI",
+				"TPP",
+				"TDR",
+				"CHV",
+			] satisfies ActivityCode[]) {
+				expect(enabled.find((v) => v.code === code)).toBeUndefined();
+			}
 		});
 
 		it("includes all non-disabled activities", () => {
@@ -102,7 +110,20 @@ describe("activity-registry", () => {
 			const enabledCodes = enabled.map((v) => v.code);
 			expect(enabledCodes).toContain("VEH");
 			expect(enabledCodes).toContain("INM");
-			expect(enabledCodes).toContain("AVI");
+			expect(enabledCodes).toContain("TSC");
+		});
+
+		it("marks AVI, TPP, TDR, CHV as disabled with reason", () => {
+			for (const code of [
+				"AVI",
+				"TPP",
+				"TDR",
+				"CHV",
+			] satisfies ActivityCode[]) {
+				const visual = getActivityVisual(code);
+				expect(visual.disabled).toBe(true);
+				expect(visual.disabledReason).toBeDefined();
+			}
 		});
 	});
 

@@ -11,6 +11,9 @@ importers:
       '@ai-sdk/anthropic':
         specifier: ^3.0.15
         version: 3.0.37(zod@4.3.6)
+      '@ai-sdk/gateway':
+        specifier: ^3.0.36
+        version: 3.0.36(zod@4.3.6)
       '@ai-sdk/google':
         specifier: ^3.0.10
         version: 3.0.21(zod@4.3.6)
@@ -21,11 +24,11 @@ importers:
         specifier: ^3.0.41
         version: 3.0.76(react@19.2.1)(zod@4.3.6)
       '@algenium/blocks':
-        specifier: ^1.5.0
-        version: 1.5.0(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(date-fns@4.1.0)(framer-motion@12.33.0(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(lucide-react@0.560.0(react@19.2.1))(next-themes@0.4.6(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(react-day-picker@9.14.0(react@19.2.1))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+        specifier: 1.7.0-rc.4
+        version: 1.7.0-rc.4(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(date-fns@4.1.0)(framer-motion@12.33.0(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(lucide-react@0.560.0(react@19.2.1))(next-themes@0.4.6(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(pdfjs-dist@5.4.624)(react-day-picker@9.14.0(react@19.2.1))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       '@janovix/document-scanner':
-        specifier: 1.0.0-rc.1
-        version: 1.0.0-rc.1(lucide-react@0.560.0(react@19.2.1))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+        specifier: 1.0.0-rc.12
+        version: 1.0.0-rc.12(lucide-react@0.560.0(react@19.2.1))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       '@nanostores/react':
         specifier: ^1.0.0
         version: 1.0.0(nanostores@1.1.0)(react@19.2.1)
@@ -331,13 +334,14 @@ packages:
     peerDependencies:
       react: ^18 || ~19.0.1 || ~19.1.2 || ^19.2.1
 
-  '@algenium/blocks@1.5.0':
-    resolution: {integrity: sha512-rmmno4eNgXS0eF3KHthAEDZ9qxC0GwRnO5Srfe1mc0WZYVZID814sdmkJPK3473FO1S3OyaRu4vSeQTo+6QFXQ==}
+  '@algenium/blocks@1.7.0-rc.4':
+    resolution: {integrity: sha512-a4Z8uCyVj8+T4cuwBzJJaDP/lqzCKnA8+sh3JXXjPyQvztXAd5Pc2+BXGHPsVAMKdvvq8UTFeI789NkVXOudgw==}
     peerDependencies:
       date-fns: '>=4.0.0'
       framer-motion: '>=11.0.0'
       lucide-react: '>=0.400.0'
       next-themes: '>=0.4.0'
+      pdfjs-dist: ^4.0.0 || ^5.0.0
       react: '>=18.0.0'
       react-day-picker: '>=9.0.0'
       react-dom: '>=18.0.0'
@@ -2239,8 +2243,8 @@ packages:
     resolution: {integrity: sha512-ZXRY4jNvVgSVQ8DL3LTcakaAtXwTVUxE81hslsyD2AtoXW/wVob10HkOJ1X/pAlcI7D+2YoZKg5do8G/w6RYgA==}
     engines: {node: '>=8'}
 
-  '@janovix/document-scanner@1.0.0-rc.1':
-    resolution: {integrity: sha512-mnkMduNUNQV3kl+6VSsCUhM5S/t/ujZFKe0eUCJZqok1g83aTNecV/8/OELQud0+Uf75rAR8ntn5SjWWiMO+RQ==}
+  '@janovix/document-scanner@1.0.0-rc.12':
+    resolution: {integrity: sha512-THpTpzb9vbMLpq5nGpvyq492yKDV78NyNgxUCho9x5Jao+qC+EgSAlj48D3/ZWTzvgU/dfry/YDGcDje/SwXFQ==}
     peerDependencies:
       lucide-react: '>=0.400.0'
       react: '>=18.0.0'
@@ -5141,6 +5145,9 @@ packages:
     resolution: {integrity: sha512-ej1sPFR5+0YWtaVp6S1N1FVz69TQCqmrkGeRvQxZeAB1nAIcjNTHVwrZtYtWFFBmQsF40/uDLehsW5KuYC99mg==}
     engines: {node: ^18.12.0 || >= 20.9.0}
 
+  card-validator@10.0.4:
+    resolution: {integrity: sha512-1Q/tDCSvM5iL3psPo6j8KF/VoI63WA7Y4Zthy1E7l/H4Iul2e2X+1S0vp33n3OMRjLgGU2+gLaK2NsGtwArJkQ==}
+
   case-sensitive-paths-webpack-plugin@2.4.0:
     resolution: {integrity: sha512-roIFONhcxog0JSSWbvVAh3OocukmSgpqOH6YpMkCvav/ySIV3JKg4Dc8vYtQjYi/UxpNE36r/9v+VqTQqgkYmw==}
     engines: {node: '>=4'}
@@ -5454,6 +5461,9 @@ packages:
 
   create-hmac@1.1.7:
     resolution: {integrity: sha512-MJG9liiZ+ogc4TzUwuvbER1JRdgvUFSB5+VR/g5h82fGaIRWMWddtKBHi7/sVhfjQZ6SehlyhvQYrcYkaUIpLg==}
+
+  credit-card-type@10.1.2:
+    resolution: {integrity: sha512-fP9vlyeYSHfKbIdE6IOR63YivTXMy0ZqyEkBhHxuAbvpltepe+zJmQ34A2Va7zJ8J7ZaB5IMAdD+1YJOmsajJA==}
 
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
@@ -5797,6 +5807,9 @@ packages:
   environment@1.1.0:
     resolution: {integrity: sha512-xUtoPkMggbz0MPyPiIWr1Kp4aeWJjDZ6SMvURhimjdZgsRuDplF5/s9hcgGhyXMhs+6vpnuoiZ2kFiu3FMnS8Q==}
     engines: {node: '>=18'}
+
+  err-code@2.0.3:
+    resolution: {integrity: sha512-2bmlRpNKBxT/CRmPOlyISQpNj+qSeYvcym/uT0Jx2bMOlKLtSy1ZmLuVxSEKKyor/N5yhvp/ZiG1oE3DEYMSFA==}
 
   error-ex@1.3.4:
     resolution: {integrity: sha512-sqQamAnR14VgCr1A618A3sGrygcpK+HEbenA/HiEAkkUwcZIIB/tgWqHFxWgOyDh4nB4JCRimh79dR5Ywc9MDQ==}
@@ -8230,6 +8243,10 @@ packages:
     resolution: {integrity: sha512-7PiHtLll5LdnKIMw100I+8xJXR5gW2QwWYkT6iJva0bXitZKa/XMrSbdmg3r2Xnaidz9Qumd0VPaMrZlF9V9sA==}
     engines: {node: '>=0.4.0'}
 
+  promise-retry@2.0.1:
+    resolution: {integrity: sha512-y+WKFlBR8BGXnsNlIHFGPZmyDf3DFMoLhaflAnyZgV6rG6xu+JwesTo2Q9R6XwYmtmwAFCkAk3e35jEdoeh/3g==}
+    engines: {node: '>=10'}
+
   prompts@2.4.2:
     resolution: {integrity: sha512-NxNv/kLguCA7p3jE8oL2aEBsrJWgAakBpgmgK6lpPWV+WuOmY6r2/zbAVnP+T8bQlA0nzHXSJSJW0Hq7ylaD2Q==}
     engines: {node: '>= 6'}
@@ -8501,6 +8518,10 @@ packages:
   restore-cursor@5.1.0:
     resolution: {integrity: sha512-oMA2dcrw6u0YfxJQXm342bFKX/E4sG9rbTzO9ptUcR/e8A33cHuvStiYOwH7fszkZlZ1z/ta9AAoPk2F4qIOHA==}
     engines: {node: '>=18'}
+
+  retry@0.12.0:
+    resolution: {integrity: sha512-9LkiTwjUh6rT555DtE9rTX+BKByPfrMzEAtnlEtdEwr3Nkffwiihqe2bWADg+OQRjt9gl6ICdmB/ZFDCGAtSow==}
+    engines: {node: '>= 4'}
 
   rettime@0.10.1:
     resolution: {integrity: sha512-uyDrIlUEH37cinabq0AX4QbgV4HbFZ/gqoiunWQ1UqBtRvTTytwhNYjE++pO/MjPTZL5KQCf2bEoJ/BJNVQ5Kw==}
@@ -9886,7 +9907,7 @@ snapshots:
     transitivePeerDependencies:
       - zod
 
-  '@algenium/blocks@1.5.0(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(date-fns@4.1.0)(framer-motion@12.33.0(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(lucide-react@0.560.0(react@19.2.1))(next-themes@0.4.6(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(react-day-picker@9.14.0(react@19.2.1))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)':
+  '@algenium/blocks@1.7.0-rc.4(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(date-fns@4.1.0)(framer-motion@12.33.0(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(lucide-react@0.560.0(react@19.2.1))(next-themes@0.4.6(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(pdfjs-dist@5.4.624)(react-day-picker@9.14.0(react@19.2.1))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)':
     dependencies:
       '@radix-ui/react-dialog': 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       '@radix-ui/react-dropdown-menu': 2.1.16(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
@@ -9896,10 +9917,12 @@ snapshots:
       '@radix-ui/react-slot': 1.2.4(@types/react@19.2.7)(react@19.2.1)
       '@radix-ui/react-toggle': 1.1.10(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       '@radix-ui/react-tooltip': 1.2.8(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+      card-validator: 10.0.4
       date-fns: 4.1.0
       framer-motion: 12.33.0(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       lucide-react: 0.560.0(react@19.2.1)
       next-themes: 0.4.6(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+      pdfjs-dist: 5.4.624
       react: 19.2.1
       react-day-picker: 9.14.0(react@19.2.1)
       react-dom: 19.2.1(react@19.2.1)
@@ -12479,7 +12502,7 @@ snapshots:
 
   '@istanbuljs/schema@0.1.3': {}
 
-  '@janovix/document-scanner@1.0.0-rc.1(lucide-react@0.560.0(react@19.2.1))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)':
+  '@janovix/document-scanner@1.0.0-rc.12(lucide-react@0.560.0(react@19.2.1))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)':
     dependencies:
       '@dnd-kit/core': 6.3.1(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       '@dnd-kit/sortable': 10.0.0(@dnd-kit/core@6.3.1(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(react@19.2.1)
@@ -12487,6 +12510,7 @@ snapshots:
       clsx: 2.1.1
       lucide-react: 0.560.0(react@19.2.1)
       pdf-lib: 1.17.1
+      promise-retry: 2.0.1
       react: 19.2.1
       react-dom: 19.2.1(react@19.2.1)
       tailwind-merge: 3.4.0
@@ -15894,6 +15918,10 @@ snapshots:
       node-addon-api: 7.1.1
       prebuild-install: 7.1.3
 
+  card-validator@10.0.4:
+    dependencies:
+      credit-card-type: 10.1.2
+
   case-sensitive-paths-webpack-plugin@2.4.0: {}
 
   ccount@2.0.1: {}
@@ -16211,6 +16239,8 @@ snapshots:
       ripemd160: 2.0.3
       safe-buffer: 5.2.1
       sha.js: 2.4.12
+
+  credit-card-type@10.1.2: {}
 
   cross-spawn@7.0.6:
     dependencies:
@@ -16546,6 +16576,8 @@ snapshots:
   env-paths@2.2.1: {}
 
   environment@1.1.0: {}
+
+  err-code@2.0.3: {}
 
   error-ex@1.3.4:
     dependencies:
@@ -19290,6 +19322,11 @@ snapshots:
 
   progress@2.0.3: {}
 
+  promise-retry@2.0.1:
+    dependencies:
+      err-code: 2.0.3
+      retry: 0.12.0
+
   prompts@2.4.2:
     dependencies:
       kleur: 3.0.3
@@ -19651,6 +19688,8 @@ snapshots:
     dependencies:
       onetime: 7.0.0
       signal-exit: 4.1.0
+
+  retry@0.12.0: {}
 
   rettime@0.10.1: {}
 

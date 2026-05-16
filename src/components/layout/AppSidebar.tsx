@@ -11,12 +11,12 @@ import {
 	Home,
 	Briefcase,
 	ReceiptText,
-	Settings,
 	Search,
 	Upload,
 	Mail,
 	Shield,
 	Activity,
+	GraduationCap,
 } from "lucide-react";
 
 import {
@@ -53,7 +53,13 @@ import {
 	getWatchlistAppUrl,
 } from "@/lib/auth/config";
 import { useLanguage } from "@/components/LanguageProvider";
+import { useFlags } from "@/hooks/useFlags";
 import type { TranslationKeys } from "@/lib/translations";
+import type { SidebarIndicatorKey } from "@/lib/api/sidebar";
+import { NavBadgeDot } from "@/components/layout/NavBadgeDot";
+import { useSidebarBadges } from "@/hooks/useSidebarBadges";
+
+const CFDI_INVOICES_FLAG_KEY = "cfdi-invoices-enabled";
 
 type NavItem = {
 	titleKey: TranslationKeys;
@@ -61,6 +67,7 @@ type NavItem = {
 	icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 	available: boolean;
 	externalUrl?: string; // If set, links to external URL instead of internal href
+	indicatorKey?: SidebarIndicatorKey;
 };
 
 const mainNavItems: NavItem[] = [
@@ -102,24 +109,35 @@ const complianceNavItems: NavItem[] = [
 		href: "/alerts",
 		icon: AlertTriangle,
 		available: true,
+		indicatorKey: "alerts",
 	},
 	{
 		titleKey: "navNotices",
 		href: "/notices",
 		icon: FileWarning,
 		available: true,
+		indicatorKey: "notices",
 	},
 	{
 		titleKey: "navReports",
 		href: "/reports",
 		icon: FileText,
 		available: true,
+		indicatorKey: "reports",
 	},
 	{
 		titleKey: "navRiskModels",
 		href: "/risk",
 		icon: Shield,
 		available: true,
+		indicatorKey: "riskModels",
+	},
+	{
+		titleKey: "navTraining",
+		href: "/training",
+		icon: GraduationCap,
+		available: true,
+		indicatorKey: "training",
 	},
 ];
 
@@ -129,6 +147,7 @@ const dataManagementNavItems: NavItem[] = [
 		href: "/import",
 		icon: Upload,
 		available: true,
+		indicatorKey: "imports",
 	},
 ];
 
@@ -154,6 +173,16 @@ export function AppSidebar({
 	const urlOrgSlug = params?.orgSlug as string | undefined;
 	const { isMobile, setOpenMobile } = useSidebar();
 	const { data: session, isPending } = useAuthSession();
+	const { flags: featureFlags } = useFlags([CFDI_INVOICES_FLAG_KEY]);
+	const cfdiInvoicesEnabled = featureFlags[CFDI_INVOICES_FLAG_KEY] !== false;
+
+	const visibleMainNavItems = React.useMemo(
+		() =>
+			mainNavItems.filter(
+				(i) => i.titleKey !== "navInvoices" || cfdiInvoicesEnabled,
+			),
+		[cfdiInvoicesEnabled],
+	);
 
 	// Use org-store for organization state
 	const {
@@ -202,6 +231,8 @@ export function AppSidebar({
 
 	// Get org slug from current org or URL
 	const orgSlug = currentOrg?.slug || urlOrgSlug;
+
+	const { badges } = useSidebarBadges(orgSlug);
 
 	// Helper to build org-prefixed paths
 	const orgPath = React.useCallback(
@@ -374,7 +405,7 @@ export function AppSidebar({
 						</SidebarGroupLabel>
 						<SidebarGroupContent>
 							<SidebarMenu>
-								{mainNavItems.map((item) => {
+								{visibleMainNavItems.map((item) => {
 									const Icon = item.icon;
 									const isActive = isNavActive(item.href);
 									const title = t(item.titleKey);
@@ -396,7 +427,17 @@ export function AppSidebar({
 													onClick={item.available ? handleLinkClick : undefined}
 												>
 													<Icon />
-													<span>{title}</span>
+													<span
+														className={
+															item.indicatorKey ? "flex-1 truncate" : undefined
+														}
+													>
+														{title}
+													</span>
+													{item.indicatorKey &&
+														(badges[item.indicatorKey] ?? 0) > 0 && (
+															<NavBadgeDot label={t("sidebarPending")} />
+														)}
 													{!item.available && (
 														<span className="ml-auto text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded group-data-[collapsible=icon]:hidden">
 															{t("navComingSoon")}
@@ -445,7 +486,11 @@ export function AppSidebar({
 														}
 													>
 														<Icon />
-														<span>{title}</span>
+														<span className="flex-1 truncate">{title}</span>
+														{item.indicatorKey &&
+															(badges[item.indicatorKey] ?? 0) > 0 && (
+																<NavBadgeDot label={t("sidebarPending")} />
+															)}
 														{!item.available && (
 															<span className="ml-auto text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded group-data-[collapsible=icon]:hidden">
 																{t("navComingSoon")}
@@ -491,7 +536,19 @@ export function AppSidebar({
 														}
 													>
 														<Icon />
-														<span>{title}</span>
+														<span
+															className={
+																item.indicatorKey
+																	? "flex-1 truncate"
+																	: undefined
+															}
+														>
+															{title}
+														</span>
+														{item.indicatorKey &&
+															(badges[item.indicatorKey] ?? 0) > 0 && (
+																<NavBadgeDot label={t("sidebarPending")} />
+															)}
 														{!item.available && (
 															<span className="ml-auto text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded group-data-[collapsible=icon]:hidden">
 																{t("navComingSoon")}

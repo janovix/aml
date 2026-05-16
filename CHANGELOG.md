@@ -1,9 +1,116 @@
-# [1.14.0](https://github.com/janovix/aml/compare/v1.13.0...v1.14.0) (2026-04-17)
+# [1.15.0-rc.1](https://github.com/janovix/aml/compare/v1.14.0...v1.15.0-rc.1) (2026-05-16)
+
+
+### Bug Fixes
+
+* associate trigger button with label for accessibility in CatalogSelector component ([582c3d8](https://github.com/janovix/aml/commit/582c3d8cc0dce552b6e7260bf7fd794a12de4f50))
+* update training translation from "Capacitación AML" to "Capacitación PLD" ([1c44ceb](https://github.com/janovix/aml/commit/1c44ceb0bd0e7dee5f473332406545d602117c02))
 
 
 ### Features
 
-* implement organization assessment queuing and polling in RiskDashboardView component ([4430d3f](https://github.com/janovix/aml/commit/4430d3fd62d7a54fd8b9bb9c9b18b45597bcafe8))
+* add commercial activity handling and PDF viewer component ([77d8e95](https://github.com/janovix/aml/commit/77d8e958fd72b6b333a52f7768eec1342c646a5b))
+* add invoices gate layout and screening history components ([088273a](https://github.com/janovix/aml/commit/088273a5e6ca1d013300afc73231dab90b6ad974))
+* add new API routes for chat and MCP, enhance chat functionality with tool approval and result handling ([73dc017](https://github.com/janovix/aml/commit/73dc0178cbceb97cc607cc0281fdd1575db117e5))
+* enhance activity selection logic and update tests for disabled activities ([d141fb2](https://github.com/janovix/aml/commit/d141fb276f11c9a91d3c836b214c23f0493d7553))
+* enhance import progress component with indeterminate state and localization support ([778dfa6](https://github.com/janovix/aml/commit/778dfa6031b6432ea01e645260a439cec1650fcb))
+* enhance training module functionality with image handling and breadcrumb updates ([9b12521](https://github.com/janovix/aml/commit/9b125214605b6a2ecda8c07f754876e56b17f00b))
+* implement AML training module with course listings, enrollment management, and quiz functionality ([94d86a6](https://github.com/janovix/aml/commit/94d86a6549e0aa393ddfdb8cd77836e100c5a057))
+* implement data environment handling in Janbot tools and add tests for new functionality ([4b65b1e](https://github.com/janovix/aml/commit/4b65b1e9e308a3375305b6edc7242d7318d1183d))
+* integrate MRZ-specialized Tesseract model for ID OCR and enhance client wizard with document scanning capabilities ([0a2e971](https://github.com/janovix/aml/commit/0a2e971a5c74dac2ece77edadb051575094171d3))
+* integrate organization context into training pages and components ([179fb41](https://github.com/janovix/aml/commit/179fb41d1ac0063f77074504052ac30b397068a5))
+* update Toaster component position and export toast function ([3966d7b](https://github.com/janovix/aml/commit/3966d7b0d7e3acfbd73e1a56518b18ecdd4a956d))
+
+# [1.14.0-rc.14](https://github.com/janovix/aml/compare/v1.14.0-rc.13...v1.14.0-rc.14) (2026-05-09)
+
+
+### Features
+
+* implement data environment handling in Janbot tools and add tests for new functionality ([4b65b1e](https://github.com/janovix/aml/commit/4b65b1e9e308a3375305b6edc7242d7318d1183d))
+
+# [1.14.0-rc.13](https://github.com/janovix/aml/compare/v1.14.0-rc.12...v1.14.0-rc.13) (2026-05-08)
+
+
+### Features
+
+* add commercial activity handling and PDF viewer component ([77d8e95](https://github.com/janovix/aml/commit/77d8e958fd72b6b333a52f7768eec1342c646a5b))
+
+# [1.14.0-rc.12](https://github.com/janovix/aml/compare/v1.14.0-rc.11...v1.14.0-rc.12) (2026-05-07)
+
+
+### Features
+
+* integrate organization context into training pages and components ([179fb41](https://github.com/janovix/aml/commit/179fb41d1ac0063f77074504052ac30b397068a5))
+
+# [1.14.0-rc.11](https://github.com/janovix/aml/compare/v1.14.0-rc.10...v1.14.0-rc.11) (2026-05-07)
+
+
+### Bug Fixes
+
+* update training translation from "Capacitación AML" to "Capacitación PLD" ([1c44ceb](https://github.com/janovix/aml/commit/1c44ceb0bd0e7dee5f473332406545d602117c02))
+
+# [1.14.0-rc.10](https://github.com/janovix/aml/compare/v1.14.0-rc.9...v1.14.0-rc.10) (2026-05-07)
+
+
+### Features
+
+* enhance training module functionality with image handling and breadcrumb updates ([9b12521](https://github.com/janovix/aml/commit/9b125214605b6a2ecda8c07f754876e56b17f00b))
+
+# [1.14.0-rc.9](https://github.com/janovix/aml/compare/v1.14.0-rc.8...v1.14.0-rc.9) (2026-05-06)
+
+
+### Features
+
+* implement AML training module with course listings, enrollment management, and quiz functionality ([94d86a6](https://github.com/janovix/aml/commit/94d86a6549e0aa393ddfdb8cd77836e100c5a057))
+
+# [1.14.0-rc.8](https://github.com/janovix/aml/compare/v1.14.0-rc.7...v1.14.0-rc.8) (2026-04-28)
+
+
+### Bug Fixes
+
+* associate trigger button with label for accessibility in CatalogSelector component ([582c3d8](https://github.com/janovix/aml/commit/582c3d8cc0dce552b6e7260bf7fd794a12de4f50))
+
+# [1.14.0-rc.7](https://github.com/janovix/aml/compare/v1.14.0-rc.6...v1.14.0-rc.7) (2026-04-24)
+
+
+### Features
+
+* add invoices gate layout and screening history components ([088273a](https://github.com/janovix/aml/commit/088273a5e6ca1d013300afc73231dab90b6ad974))
+
+# [1.14.0-rc.6](https://github.com/janovix/aml/compare/v1.14.0-rc.5...v1.14.0-rc.6) (2026-04-21)
+
+
+### Features
+
+* enhance activity selection logic and update tests for disabled activities ([d141fb2](https://github.com/janovix/aml/commit/d141fb276f11c9a91d3c836b214c23f0493d7553))
+
+# [1.14.0-rc.5](https://github.com/janovix/aml/compare/v1.14.0-rc.4...v1.14.0-rc.5) (2026-04-21)
+
+
+### Features
+
+* integrate MRZ-specialized Tesseract model for ID OCR and enhance client wizard with document scanning capabilities ([0a2e971](https://github.com/janovix/aml/commit/0a2e971a5c74dac2ece77edadb051575094171d3))
+
+# [1.14.0-rc.4](https://github.com/janovix/aml/compare/v1.14.0-rc.3...v1.14.0-rc.4) (2026-04-18)
+
+
+### Features
+
+* update Toaster component position and export toast function ([3966d7b](https://github.com/janovix/aml/commit/3966d7b0d7e3acfbd73e1a56518b18ecdd4a956d))
+
+# [1.14.0-rc.3](https://github.com/janovix/aml/compare/v1.14.0-rc.2...v1.14.0-rc.3) (2026-04-18)
+
+
+### Features
+
+* add new API routes for chat and MCP, enhance chat functionality with tool approval and result handling ([73dc017](https://github.com/janovix/aml/commit/73dc0178cbceb97cc607cc0281fdd1575db117e5))
+
+# [1.14.0-rc.2](https://github.com/janovix/aml/compare/v1.14.0-rc.1...v1.14.0-rc.2) (2026-04-18)
+
+
+### Features
+
+* enhance import progress component with indeterminate state and localization support ([778dfa6](https://github.com/janovix/aml/commit/778dfa6031b6432ea01e645260a439cec1650fcb))
 
 # [1.14.0-rc.1](https://github.com/janovix/aml/compare/v1.13.0...v1.14.0-rc.1) (2026-04-17)
 

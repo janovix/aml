@@ -83,6 +83,8 @@ export interface ImportState {
 		| "idle"
 		| "uploading"
 		| "mapping"
+		| "queued"
+		| "validating"
 		| "processing"
 		| "completed"
 		| "failed";

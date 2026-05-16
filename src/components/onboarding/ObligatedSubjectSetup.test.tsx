@@ -24,13 +24,20 @@ describe("ObligatedSubjectSetup", () => {
 		expect(screen.getByText("RFC del Sujeto Obligado")).toBeInTheDocument();
 	});
 
-	it("renders all activity options", () => {
+	it("renders activity options with selectable and disabled tiles", () => {
 		renderWithProviders(<ObligatedSubjectSetup onComplete={vi.fn()} />);
 
-		// Should see activity codes
 		expect(screen.getByText("VEH")).toBeInTheDocument();
 		expect(screen.getByText("INM")).toBeInTheDocument();
 		expect(screen.getByText("AVI")).toBeInTheDocument();
+
+		const aviButton = screen.getByText("AVI").closest("button");
+		expect(aviButton).toBeTruthy();
+		expect(aviButton).toBeDisabled();
+
+		const vehButton = screen.getByText("VEH").closest("button");
+		expect(vehButton).toBeTruthy();
+		expect(vehButton).not.toBeDisabled();
 	});
 
 	it("has disabled submit button initially", () => {

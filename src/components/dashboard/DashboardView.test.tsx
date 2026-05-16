@@ -4,6 +4,8 @@ import userEvent from "@testing-library/user-event";
 import { DashboardView } from "./DashboardView";
 import { renderWithProviders } from "@/lib/testHelpers";
 
+const { mockPush } = vi.hoisted(() => ({ mockPush: vi.fn() }));
+
 vi.mock("@/lib/cookies", () => ({
 	getCookie: (name: string) => {
 		if (name === "janovix-lang") return "es";
@@ -19,7 +21,7 @@ vi.mock("@/lib/cookies", () => ({
 
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
-		push: vi.fn(),
+		push: mockPush,
 		replace: vi.fn(),
 	}),
 	usePathname: () => "/test-org/dashboard",
@@ -109,6 +111,7 @@ const mockReportSummary = {
 describe("DashboardView", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mockPush.mockClear();
 	});
 
 	it("renders page header with dashboard title", async () => {
@@ -129,6 +132,40 @@ describe("DashboardView", () => {
 			});
 			expect(refreshButtons.length).toBeGreaterThan(0);
 		});
+	});
+
+	it("renders hero actions to create client and operation", async () => {
+		renderWithProviders(<DashboardView />);
+
+		await waitFor(() => {
+			expect(
+				screen.getAllByRole("button", { name: /nuevo cliente/i }).length,
+			).toBeGreaterThan(0);
+			expect(
+				screen.getAllByRole("button", { name: /nueva operación/i }).length,
+			).toBeGreaterThan(0);
+		});
+	});
+
+	it("navigates to new client and new operation from hero", async () => {
+		const user = userEvent.setup();
+		renderWithProviders(<DashboardView />);
+
+		await waitFor(() => {
+			expect(
+				screen.getAllByRole("button", { name: /nuevo cliente/i }).length,
+			).toBeGreaterThan(0);
+		});
+
+		await user.click(
+			screen.getAllByRole("button", { name: /nuevo cliente/i })[0],
+		);
+		expect(mockPush).toHaveBeenCalledWith("/test-org/clients/new");
+
+		await user.click(
+			screen.getAllByRole("button", { name: /nueva operación/i })[0],
+		);
+		expect(mockPush).toHaveBeenCalledWith("/test-org/operations/new");
 	});
 
 	it("renders operation stats card", async () => {

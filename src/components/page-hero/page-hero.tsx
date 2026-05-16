@@ -133,9 +133,9 @@ export function PageHero({
 
 				{/* Actions - uses container queries for responsive behavior */}
 				{resolvedActions.length > 0 && (
-					<div className="flex items-center gap-2 shrink-0">
+					<div className="flex flex-wrap items-center justify-end gap-2 shrink-0 min-w-0 max-w-full">
 						{/* Compact view (narrow container): show all buttons */}
-						<div className="flex items-center gap-2 @lg/main:hidden">
+						<div className="flex flex-wrap items-center justify-end gap-2 w-full @lg/main:w-auto @lg/main:hidden">
 							{secondaryActions.map((action) => {
 								const ActionIcon = action.icon;
 								return (
@@ -168,7 +168,7 @@ export function PageHero({
 							)}
 						</div>
 						{/* Full view (wide container): show all actions as buttons */}
-						<div className="hidden @lg/main:flex items-center gap-2">
+						<div className="hidden @lg/main:flex @lg/main:flex-wrap items-center justify-end gap-2 min-w-0 max-w-full">
 							{/* Secondary actions first (left side) */}
 							{secondaryActions.map((action) => {
 								const ActionIcon = action.icon;

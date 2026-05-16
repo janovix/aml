@@ -153,8 +153,8 @@ export function ChatInput({ className }: ChatInputProps) {
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
 		if (e.key === "Enter" && !e.shiftKey) {
 			e.preventDefault();
-			if (input.trim() && !isLoading) {
-				handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
+			if ((input.trim() || pendingFile) && !isLoading) {
+				void handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
 			}
 		}
 	};

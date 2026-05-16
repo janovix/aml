@@ -26,9 +26,52 @@ import {
 	parseAnyMRZ,
 	detectMRZType,
 	extractCURP,
+	normalizeTD1Line1,
+	normalizeTD1Line2,
+	normalizeTD1Line3,
+	normalizeTD3Line1,
+	normalizeTD3Line2,
 	type MRZResult,
 	type MRZDocumentType,
-} from "./mrz-parser";
+} from "@janovix/document-scanner";
+
+/**
+ * Per-position normalization for raw MRZ OCR output. The package's
+ * `normalizeTDxLineY` helpers know which positions must be digits, which
+ * must be alpha and which are filler, so they can disambiguate the
+ * KZX / 80 / O0 / 1I / 5S confusions that Tesseract routinely
+ * introduces. Running this pass before `parseMRZ` / `parsePassportMRZ`
+ * raises check-digit pass rates on field-shot mexican IDs without
+ * touching the rest of the OCR pipeline.
+ *
+ * The function is conservative: it only normalizes the first lines of
+ * the right length for each format (TD1: 30 chars × 3, TD3: 44 chars
+ * × 2). Anything else is passed through untouched so we never make a
+ * non-MRZ document look "more parsable" than it really is.
+ */
+function normalizeMrzText(rawText: string, kind: "TD1" | "TD3"): string {
+	if (!rawText) return rawText;
+	const lines = rawText
+		.split(/\r?\n/)
+		.map((l) => l.trim())
+		.filter(Boolean);
+
+	if (kind === "TD3") {
+		const expected = 44;
+		const candidates = lines.filter((l) => l.length === expected);
+		if (candidates.length < 2) return rawText;
+		const [l1, l2] = candidates;
+		const normalized = `${normalizeTD3Line1(l1)}\n${normalizeTD3Line2(l2)}`;
+		return normalized;
+	}
+
+	const expected = 30;
+	const candidates = lines.filter((l) => l.length === expected);
+	if (candidates.length < 3) return rawText;
+	const [l1, l2, l3] = candidates;
+	const normalized = `${normalizeTD1Line1(l1)}\n${normalizeTD1Line2(l2)}\n${normalizeTD1Line3(l3)}`;
+	return normalized;
+}
 
 const TESSERACT_URL =
 	"https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
@@ -1240,13 +1283,16 @@ export async function performOCR(
 
 		if (isPassport) {
 			// Use passport MRZ parser (TD3 format)
-			// Try MRZ-optimized text first, then fall back to combined text
-			mrzResult = parsePassportMRZ(mrzText);
+			// Try MRZ-optimized text first, then fall back to combined text.
+			// We pre-normalize each candidate via the package's per-position
+			// helpers so KZX / O0 / 1I confusions don't sink the parse.
+			const normalizedMrzText = normalizeMrzText(mrzText, "TD3");
+			mrzResult = parsePassportMRZ(normalizedMrzText);
 			if (!mrzResult.success) {
 				console.log(
 					"[OCR] MRZ-optimized parse failed, trying combined text...",
 				);
-				mrzResult = parsePassportMRZ(text);
+				mrzResult = parsePassportMRZ(normalizeMrzText(text, "TD3"));
 			}
 
 			if (mrzResult.success) {
@@ -1293,13 +1339,16 @@ export async function performOCR(
 			}
 		} else {
 			// Use INE MRZ parser (TD1 format)
-			// Try MRZ-optimized text first, then fall back to combined text
-			mrzResult = parseMRZ(mrzText);
+			// Try MRZ-optimized text first, then fall back to combined text.
+			// Pre-normalize via the package's per-position helpers — see the
+			// TD3 branch above for why this lifts KZX / O0 confusion rates.
+			const normalizedMrzText = normalizeMrzText(mrzText, "TD1");
+			mrzResult = parseMRZ(normalizedMrzText);
 			if (!mrzResult.success) {
 				console.log(
 					"[OCR] MRZ-optimized parse failed, trying combined text...",
 				);
-				mrzResult = parseMRZ(text);
+				mrzResult = parseMRZ(normalizeMrzText(text, "TD1"));
 			}
 
 			if (mrzResult.success) {

@@ -19,6 +19,7 @@ import { useZipCodeLookup } from "@/hooks/useZipCodeLookup";
 import { toast } from "sonner";
 import { Loader2, PencilLine } from "lucide-react";
 import type { CatalogItem } from "@/types/catalog";
+import { useLanguage } from "@/components/LanguageProvider";
 
 const CUSTOM_NEIGHBORHOOD_VALUE = "__CUSTOM__";
 
@@ -93,6 +94,7 @@ export function ZipCodeAddressFields({
 	resolvedStateCodeName,
 	fieldsRequired = true,
 }: ZipCodeAddressFieldsProps): React.JSX.Element {
+	const { t } = useLanguage();
 	const { lookup, loading } = useZipCodeLookup();
 
 	// Track if fields were auto-populated to handle user overrides
@@ -173,7 +175,10 @@ export function ZipCodeAddressFields({
 				) {
 					toastShownForZipCode.current = trimmedZipCode;
 					toast.info(
-						`Se encontraron ${result.settlements.length} colonias para este código postal. Por favor, selecciona la colonia correspondiente para continuar.`,
+						t("clientZipMultiSettlementsToast").replace(
+							"{{count}}",
+							String(result.settlements.length),
+						),
 						{ duration: 6000 },
 					);
 				} else if (result.settlements.length === 1) {
@@ -190,14 +195,12 @@ export function ZipCodeAddressFields({
 				// Only show toast once per zip code
 				if (toastShownForZipCode.current !== trimmedZipCode) {
 					toastShownForZipCode.current = trimmedZipCode;
-					toast.info(
-						"Código postal no encontrado en el catálogo. Puedes ingresar los datos manualmente.",
-						{ duration: 4000 },
-					);
+					toast.info(t("clientZipNotFoundCatalogToast"), { duration: 4000 });
 				}
 			}
 		},
 		[
+			t,
 			lookup,
 			disableAutoLookup,
 			lastLookedUpZipCode,
@@ -362,7 +365,7 @@ export function ZipCodeAddressFields({
 						description={getFieldDescription("postalCode")}
 						required={fieldsRequired}
 					>
-						Código Postal
+						{t("clientPostalCode")}
 					</LabelWithInfo>
 					<div className="relative">
 						<Input
@@ -380,7 +383,7 @@ export function ZipCodeAddressFields({
 						)}
 					</div>
 					<p className="text-xs text-muted-foreground">
-						Ingresa el código postal para auto-completar la dirección
+						{t("clientPostalCodeHelper")}
 					</p>
 				</div>
 
@@ -392,7 +395,7 @@ export function ZipCodeAddressFields({
 							description={getFieldDescription("neighborhood")}
 							required={fieldsRequired}
 						>
-							Colonia
+							{t("clientNeighborhood")}
 						</LabelWithInfo>
 						<Select
 							value={
@@ -412,7 +415,7 @@ export function ZipCodeAddressFields({
 								aria-invalid={coloniaRequiredError}
 								aria-required={fieldsRequired}
 							>
-								<SelectValue placeholder="Selecciona una colonia" />
+								<SelectValue placeholder={t("clientSelectNeighborhood")} />
 							</SelectTrigger>
 							<SelectContent className="max-h-[300px]">
 								{availableSettlements
@@ -434,21 +437,25 @@ export function ZipCodeAddressFields({
 									<div className="flex items-center gap-2 text-primary">
 										<PencilLine className="h-4 w-4" />
 										<span className="font-medium">
-											Escribir colonia personalizada
+											{t("clientCustomNeighborhoodOption")}
 										</span>
 									</div>
 								</SelectItem>
 							</SelectContent>
 						</Select>
 						<p className="text-xs text-muted-foreground">
-							{availableSettlements.length}{" "}
 							{availableSettlements.length === 1
-								? "colonia disponible"
-								: "colonias disponibles"}{" "}
-							para este código postal
+								? t("clientOneNeighborhoodAvailable")
+								: t("clientManyNeighborhoodsAvailable").replace(
+										"{{count}}",
+										String(availableSettlements.length),
+									)}{" "}
+							{t("clientForThisPostalCode")}
 						</p>
 						{coloniaRequiredError && (
-							<p className="text-xs text-destructive">Colonia es requerida</p>
+							<p className="text-xs text-destructive">
+								{t("clientNeighborhoodRequired")}
+							</p>
 						)}
 					</div>
 				)}
@@ -461,7 +468,7 @@ export function ZipCodeAddressFields({
 							description={getFieldDescription("neighborhood")}
 							required={fieldsRequired}
 						>
-							Colonia
+							{t("clientNeighborhood")}
 						</LabelWithInfo>
 						<Input
 							id="neighborhood-input"
@@ -477,7 +484,9 @@ export function ZipCodeAddressFields({
 							aria-invalid={coloniaRequiredError}
 						/>
 						{coloniaRequiredError && (
-							<p className="text-xs text-destructive">Colonia es requerida</p>
+							<p className="text-xs text-destructive">
+								{t("clientNeighborhoodRequired")}
+							</p>
 						)}
 					</div>
 				)}
@@ -488,21 +497,21 @@ export function ZipCodeAddressFields({
 				<div className="space-y-2">
 					<LabelWithInfo
 						htmlFor="custom-neighborhood"
-						description="Ingresa el nombre de la colonia manualmente"
+						description={t("clientCustomNeighborhoodDescription")}
 						required={fieldsRequired}
 					>
-						Colonia Personalizada
+						{t("clientCustomNeighborhoodLabel")}
 					</LabelWithInfo>
 					<Input
 						id="custom-neighborhood"
 						value={customNeighborhoodValue}
 						onChange={(e) => handleCustomNeighborhoodChange(e.target.value)}
-						placeholder="ESCRIBE EL NOMBRE DE LA COLONIA"
+						placeholder={t("clientCustomNeighborhoodInputPlaceholder")}
 						required={fieldsRequired}
 						autoFocus
 					/>
 					<p className="text-xs text-muted-foreground">
-						Ingresa el nombre exacto de la colonia si no aparece en la lista
+						{t("clientCustomNeighborhoodHelper")}
 					</p>
 				</div>
 			)}
@@ -518,7 +527,7 @@ export function ZipCodeAddressFields({
 								description={getFieldDescription("city")}
 								required={fieldsRequired}
 							>
-								Ciudad
+								{t("clientCity")}
 							</LabelWithInfo>
 							<Input
 								id="city"
@@ -534,7 +543,7 @@ export function ZipCodeAddressFields({
 								description={getFieldDescription("municipality")}
 								required={fieldsRequired}
 							>
-								Municipio
+								{t("clientMunicipality")}
 							</LabelWithInfo>
 							<Input
 								id="municipality"
@@ -549,11 +558,11 @@ export function ZipCodeAddressFields({
 						<div className="space-y-2">
 							<CatalogSelector
 								catalogKey="states"
-								label="Estado"
+								label={t("clientState")}
 								labelDescription={getFieldDescription("stateCode")}
 								value={stateCode}
-								searchPlaceholder="Buscar estado..."
-								placeholder="Seleccionar estado"
+								searchPlaceholder={t("clientSearchState")}
+								placeholder={t("clientSelectState")}
 								resolvedName={resolvedStateCodeName}
 								onChange={handleStateCodeChange}
 								getOptionValue={(option) => {
@@ -581,7 +590,7 @@ export function ZipCodeAddressFields({
 					{/* Row 3: Reference */}
 					{showReference && (
 						<div className="space-y-2">
-							<Label htmlFor="reference">Referencia</Label>
+							<Label htmlFor="reference">{t("clientReference")}</Label>
 							<Input
 								id="reference"
 								value={reference || ""}

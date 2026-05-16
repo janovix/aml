@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { ImportProgress } from "@/components/import/ImportProgress";
 import type { ImportState } from "@/types/import";
+import { LanguageProvider } from "@/components/LanguageProvider";
 
 const meta: Meta<typeof ImportProgress> = {
 	title: "Import/ImportProgress",
@@ -16,9 +17,11 @@ const meta: Meta<typeof ImportProgress> = {
 	},
 	decorators: [
 		(Story) => (
-			<div className="w-[500px]">
-				<Story />
-			</div>
+			<LanguageProvider defaultLanguage="es">
+				<div className="w-[500px]">
+					<Story />
+				</div>
+			</LanguageProvider>
 		),
 	],
 };
@@ -49,6 +52,39 @@ export const Uploading: Story = {
 			...baseState,
 			status: "uploading",
 			totalRows: 0,
+		},
+	},
+};
+
+export const Queued: Story = {
+	args: {
+		state: {
+			...baseState,
+			status: "queued",
+			totalRows: 0,
+			processedRows: 0,
+		},
+	},
+};
+
+export const Validating: Story = {
+	args: {
+		state: {
+			...baseState,
+			status: "validating",
+			totalRows: 0,
+			processedRows: 0,
+		},
+	},
+};
+
+export const PreparingRows: Story = {
+	args: {
+		state: {
+			...baseState,
+			status: "processing",
+			totalRows: 0,
+			processedRows: 0,
 		},
 	},
 };

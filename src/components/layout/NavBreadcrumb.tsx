@@ -25,6 +25,7 @@ import { getReportById } from "@/lib/api/reports";
 import { getAlertById } from "@/lib/api/alerts";
 import { getNoticeById } from "@/lib/api/notices";
 import { getInvoiceById } from "@/lib/api/invoices";
+import { getTrainingCourseDetail } from "@/lib/api/training";
 import type { InvoiceEntity } from "@/types/invoice";
 import { useLanguage } from "@/components/LanguageProvider";
 import {
@@ -33,6 +34,7 @@ import {
 } from "@/components/PageStatusProvider";
 import { useJwt } from "@/hooks/useJwt";
 import type { TranslationKeys } from "@/lib/translations";
+import { pickTrainingTitle } from "@/lib/training/i18n";
 
 function getInvoiceBreadcrumbLabel(invoice: InvoiceEntity): string {
 	const parts = [invoice.series, invoice.folio].filter(Boolean);
@@ -64,6 +66,7 @@ const ROUTE_LABEL_KEYS: Record<string, TranslationKeys> = {
 	alerts: "navAlerts",
 	notices: "navNotices",
 	reports: "navReports",
+	training: "navTraining",
 	import: "navImport",
 	new: "breadcrumbNew",
 	edit: "breadcrumbEdit",
@@ -130,7 +133,8 @@ interface BreadcrumbSegment {
 		| "operation"
 		| "alert"
 		| "notice"
-		| "invoice";
+		| "invoice"
+		| "course";
 }
 
 export function NavBreadcrumb() {
@@ -138,7 +142,8 @@ export function NavBreadcrumb() {
 	const params = useParams();
 	const { currentOrg } = useOrgStore();
 	const orgSlug = (params?.orgSlug as string) || currentOrg?.slug;
-	const { t } = useLanguage();
+	const { t, language } = useLanguage();
+	const lang = language === "en" ? "en" : "es";
 	const { jwt } = useJwt();
 	const { status } = usePageStatus();
 
@@ -146,6 +151,10 @@ export function NavBreadcrumb() {
 	const [entityNames, setEntityNames] = React.useState<Record<string, string>>(
 		{},
 	);
+
+	const [courseTitleI18n, setCourseTitleI18n] = React.useState<
+		Record<string, Record<string, string>>
+	>({});
 
 	// Get error status display info if not in normal state
 	const isErrorPage = status !== "normal";
@@ -182,9 +191,25 @@ export function NavBreadcrumb() {
 			const isAlertId = prevSegment === "alerts" && isIdSegment(segment);
 			const isNoticeId = prevSegment === "notices" && isIdSegment(segment);
 			const isInvoiceId = prevSegment === "invoices" && isIdSegment(segment);
+			const isTrainingCourseSlug =
+				prevSegment === "training" &&
+				segment !== "team" &&
+				segment !== "certificates";
 
 			// Get translation key or fallback
-			const labelKey = ROUTE_LABEL_KEYS[segment];
+			let labelKey: TranslationKeys | undefined = ROUTE_LABEL_KEYS[segment];
+			if (prevSegment === "training" && segment === "team") {
+				labelKey = "trainingBreadcrumbTeam";
+			} else if (prevSegment === "training" && segment === "certificates") {
+				labelKey = "trainingBreadcrumbCertificates";
+			} else if (
+				segment === "quiz" &&
+				i >= 2 &&
+				pathSegments[i - 2] === "training"
+			) {
+				labelKey = "trainingBreadcrumbQuiz";
+			}
+
 			let labelFallback: string;
 			if (isIdSegment(segment)) {
 				// Truncate long IDs for display
@@ -202,9 +227,14 @@ export function NavBreadcrumb() {
 				| "alert"
 				| "notice"
 				| "invoice"
+				| "course"
 				| undefined;
 			let entityId: string | undefined;
-			if (isClientId) {
+			if (isTrainingCourseSlug) {
+				entityType = "course";
+				entityId = segment;
+				labelKey = undefined;
+			} else if (isClientId) {
 				entityType = "client";
 				entityId = segment;
 			} else if (isReportId) {
@@ -243,7 +273,11 @@ export function NavBreadcrumb() {
 		if (!jwt) return;
 
 		const entitySegments = segments.filter(
-			(s) => s.entityType && s.entityId && !entityNames[s.entityId],
+			(s) =>
+				s.entityType &&
+				s.entityId &&
+				s.entityType !== "course" &&
+				!entityNames[s.entityId],
 		);
 		if (entitySegments.length === 0) return;
 
@@ -336,10 +370,45 @@ export function NavBreadcrumb() {
 		return () => controller.abort();
 	}, [segments, entityNames, jwt]);
 
+	React.useEffect(() => {
+		if (!jwt) return;
+
+		const courseSegments = segments.filter(
+			(s) =>
+				s.entityType === "course" && s.entityId && !courseTitleI18n[s.entityId],
+		);
+		if (courseSegments.length === 0) return;
+
+		for (const segment of courseSegments) {
+			if (!segment.entityId) continue;
+			getTrainingCourseDetail(segment.entityId)
+				.then(({ json }) => {
+					const detail = json as {
+						course?: { titleI18n?: Record<string, string> };
+					};
+					const ti = detail.course?.titleI18n;
+					if (ti && typeof ti === "object") {
+						setCourseTitleI18n((prev) => ({
+							...prev,
+							[segment.entityId!]: ti,
+						}));
+					}
+				})
+				.catch(() => {
+					// Keep slug fallback
+				});
+		}
+	}, [segments, jwt, courseTitleI18n]);
+
 	/**
 	 * Get the display label for a segment, using fetched entity name if available
 	 */
 	const getDisplayLabel = (segment: BreadcrumbSegment): string => {
+		if (segment.entityType === "course" && segment.entityId) {
+			const blob = courseTitleI18n[segment.entityId];
+			const picked = pickTrainingTitle(blob ?? {}, lang);
+			if (picked) return picked;
+		}
 		if (segment.entityId && entityNames[segment.entityId]) {
 			return entityNames[segment.entityId];
 		}

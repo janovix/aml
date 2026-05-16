@@ -75,7 +75,10 @@ const mockGetWatchlistAppUrl = vi
 	.fn()
 	.mockReturnValue("https://watchlist.test.com");
 const mockGetHomepageUrl = vi.fn().mockReturnValue("https://aml.test.com");
+// getAuthServiceUrl is inlined: serverAuthClient calls it at module load (before test `const` inits),
+// and vi.mock may run while TDZ for sibling mocks.
 vi.mock("@/lib/auth/config", () => ({
+	getAuthServiceUrl: () => "https://auth-svc.test.com",
 	getAuthAppUrl: () => mockGetAuthAppUrl(),
 	getWatchlistAppUrl: () => mockGetWatchlistAppUrl(),
 	getHomepageUrl: () => mockGetHomepageUrl(),

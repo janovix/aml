@@ -27,7 +27,11 @@ import type {
 	OperationPaymentInput,
 	ActivityCode,
 } from "@/types/operation";
-import { ACTIVITY_EXTENSION_KEY } from "@/types/operation";
+import {
+	ACTIVITY_EXTENSION_KEY,
+	ENABLED_ACTIVITY_CODES,
+} from "@/types/operation";
+import { authClient } from "@/lib/auth/authClient";
 import { getExtensionForm } from "@/components/operations/extensions";
 import { OperationPaymentForm } from "./OperationPaymentForm";
 import { ThresholdIndicator } from "./ThresholdIndicator";
@@ -89,16 +93,51 @@ export function OperationCreateView(): React.JSX.Element {
 	const { navigateTo, orgPath } = useOrgNavigation();
 	const searchParams = useSearchParams();
 	const {
-		activityCode,
+		activityCode: orgActivityCode,
 		isLoading: isSettingsLoading,
 		isConfigured,
 	} = useOrgSettings();
 	const [isSaving, setIsSaving] = useState(false);
+	/** E2E / dev: ?activityCode=INM when session is @e2e.janovix.com (or non-prod host). */
+	const [urlActivityOverride, setUrlActivityOverride] =
+		useState<ActivityCode | null>(null);
 
 	const invoiceIdParam = searchParams.get("invoiceId");
 	const dataSourceParam = searchParams.get("dataSource");
 	const clientIdParam = searchParams.get("clientId");
 	const isCfdiPrefill = dataSourceParam === "CFDI" && !!invoiceIdParam;
+
+	const activityCode = urlActivityOverride ?? orgActivityCode;
+
+	useEffect(() => {
+		const raw = searchParams.get("activityCode");
+		if (!raw || !ENABLED_ACTIVITY_CODES.includes(raw as ActivityCode)) {
+			setUrlActivityOverride(null);
+			return;
+		}
+		const wanted = raw as ActivityCode;
+		let cancelled = false;
+		void (async () => {
+			try {
+				const session = await authClient.getSession();
+				const email = session.data?.user?.email?.toLowerCase() ?? "";
+				const host =
+					typeof window !== "undefined" ? window.location.hostname : "";
+				const allowByHost =
+					host === "localhost" || host.endsWith(".workers.dev");
+				if (!cancelled && (allowByHost || email.endsWith("@e2e.janovix.com"))) {
+					setUrlActivityOverride(wanted);
+				} else if (!cancelled) {
+					setUrlActivityOverride(null);
+				}
+			} catch {
+				if (!cancelled) setUrlActivityOverride(null);
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, [searchParams]);
 
 	const [formData, setFormData, clearFormStorage] =
 		useSessionStorageForm<OperationFormData>(

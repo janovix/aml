@@ -39,20 +39,26 @@ export const KYC_SECTIONS: Record<string, KYCSection> = {
 			"curp",
 			"rfc",
 			"nationality",
-			"countryCode",
+			// countryCode mirrors nationality (ISO-2); counted via nationality only
 		],
 		weight: 1.5,
 	},
-	companyInfo: {
-		id: "companyInfo",
+	companyInfoMoral: {
+		id: "companyInfoMoral",
 		label: "Información de la Empresa",
 		fields: [
 			"businessName",
 			"incorporationDate",
 			"rfc",
 			"countryCode",
-			"economicActivityCode",
+			"commercialActivityCode",
 		],
+		weight: 1.5,
+	},
+	companyInfoTrust: {
+		id: "companyInfoTrust",
+		label: "Información del Fideicomiso",
+		fields: ["businessName", "incorporationDate", "rfc", "countryCode"],
 		weight: 1.5,
 	},
 	contactInfo: {
@@ -113,15 +119,22 @@ export function getApplicableSections(
 			KYC_SECTIONS.kycInfo,
 			KYC_SECTIONS.pepInfo,
 		];
-	} else {
-		// moral or trust
+	}
+	if (personType === "moral") {
 		return [
-			KYC_SECTIONS.companyInfo,
+			KYC_SECTIONS.companyInfoMoral,
 			KYC_SECTIONS.contactInfo,
 			KYC_SECTIONS.addressInfo,
 			KYC_SECTIONS.pepInfo,
 		];
 	}
+	// trust
+	return [
+		KYC_SECTIONS.companyInfoTrust,
+		KYC_SECTIONS.contactInfo,
+		KYC_SECTIONS.addressInfo,
+		KYC_SECTIONS.pepInfo,
+	];
 }
 
 function isFieldComplete(client: Client, fieldName: string): boolean {
@@ -177,6 +190,7 @@ export function calculateKYCStatus(
 	options?: {
 		documents?: ClientDocument[];
 		beneficialControllers?: BeneficialController[];
+		identificationTier?: Client["identificationTier"];
 	},
 ): KYCOverallStatus {
 	const applicableSections = getApplicableSections(client.personType);
@@ -185,27 +199,43 @@ export function calculateKYCStatus(
 	);
 
 	// Document section: each required document counts as one field
+	// (Art. 17 LFPIORPI: below identification threshold, documents are not required for profile completion)
 	const documents = options?.documents ?? [];
+	const isBelowThreshold = options?.identificationTier === "BELOW_THRESHOLD";
 	const requiredDocs = ALL_REQUIRED_DOCUMENTS[client.personType] ?? [];
 	const uploadedDocTypes = new Set(documents.map((d) => d.documentType));
 	const missingDocs = requiredDocs.filter((d) => !uploadedDocTypes.has(d));
 	const docsCompleted = requiredDocs.length - missingDocs.length;
-	const docsSection: KYCSectionStatus = {
-		section: {
-			id: "documents",
-			label: "Documentos",
-			fields: requiredDocs as string[],
-			weight: 2,
-		},
-		completedFields: docsCompleted,
-		totalFields: requiredDocs.length,
-		percentage:
-			requiredDocs.length > 0
-				? Math.round((docsCompleted / requiredDocs.length) * 100)
-				: 100,
-		isComplete: missingDocs.length === 0,
-		missingFields: missingDocs as string[],
-	};
+	const docsSection: KYCSectionStatus = isBelowThreshold
+		? {
+				section: {
+					id: "documents",
+					label: "Documentos",
+					fields: [],
+					weight: 2,
+				},
+				completedFields: 0,
+				totalFields: 0,
+				percentage: 100,
+				isComplete: true,
+				missingFields: [],
+			}
+		: {
+				section: {
+					id: "documents",
+					label: "Documentos",
+					fields: requiredDocs as string[],
+					weight: 2,
+				},
+				completedFields: docsCompleted,
+				totalFields: requiredDocs.length,
+				percentage:
+					requiredDocs.length > 0
+						? Math.round((docsCompleted / requiredDocs.length) * 100)
+						: 100,
+				isComplete: missingDocs.length === 0,
+				missingFields: missingDocs as string[],
+			};
 	sectionStatuses.push(docsSection);
 
 	// Beneficial controllers section (MORAL/TRUST only)
@@ -279,6 +309,7 @@ export function getFieldLabel(fieldName: string): string {
 		postalCode: "Código Postal",
 		reference: "Referencia",
 		economicActivityCode: "Actividad Económica",
+		commercialActivityCode: "Giro Mercantil",
 		gender: "Género",
 		occupation: "Ocupación",
 		maritalStatus: "Estado Civil",

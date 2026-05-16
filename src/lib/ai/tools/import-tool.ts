@@ -6,9 +6,14 @@
  */
 
 import { z } from "zod";
+import type { DataEnvironment } from "@/lib/environment-store";
 import { getAmlCoreBaseUrl } from "@/lib/api/config";
 
-interface FileUpload {
+export type CreateImportToolOptions = {
+	dataEnvironment?: DataEnvironment;
+};
+
+export interface FileUpload {
 	fileName: string;
 	entityType: "CLIENT" | "TRANSACTION";
 	fileContent: string; // Base64 encoded
@@ -69,11 +74,15 @@ export function createImportTool(
 	jwt: string,
 	fileUpload: FileUpload,
 	orgSlug?: string,
+	opts?: CreateImportToolOptions,
 ) {
+	const env = opts?.dataEnvironment ?? "production";
+
 	return {
 		processImport: {
 			description: `Process the uploaded file (${fileUpload.fileName}) to import ${fileUpload.entityType === "CLIENT" ? "clients" : "operations"}. This will validate and import all rows from the file.`,
 			inputSchema: processImportSchema,
+			needsApproval: true,
 			execute: async ({ confirm }: z.infer<typeof processImportSchema>) => {
 				if (!confirm) {
 					return "Import cancelled by user.";
@@ -100,6 +109,7 @@ export function createImportTool(
 						method: "POST",
 						headers: {
 							Authorization: `Bearer ${jwt}`,
+							"X-Environment": env,
 						},
 						body: formData,
 					});

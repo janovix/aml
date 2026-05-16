@@ -8,8 +8,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowRight, AlertTriangle } from "lucide-react";
+import { ArrowRight, AlertTriangle, ScanLine, Sparkles, X } from "lucide-react";
 import Link from "next/link";
+import {
+	DocumentScannerModal,
+	type DocumentExtractionData,
+} from "@/components/document-scanner";
+import {
+	LOW_CONFIDENCE_THRESHOLD,
+	ocrResultToPrefill,
+	hasAnyPrefilledField,
+	type OcrPrefillData,
+} from "@/lib/ocr-prefill";
 import type {
 	PersonType,
 	ClientCreateRequest,
@@ -84,6 +94,7 @@ interface ClientFormData {
 	// Country and economic activity
 	countryCode?: string;
 	economicActivityCode?: string;
+	commercialActivityCode?: string;
 	// Enhanced KYC fields
 	gender?: Gender;
 	maritalStatus?: MaritalStatus;
@@ -91,6 +102,23 @@ interface ClientFormData {
 	sourceOfFunds?: string;
 	sourceOfWealth?: string;
 }
+
+/**
+ * Fields the OCR step can populate. Kept narrow on purpose — we only
+ * touch fields the document-scanner package can extract reliably from
+ * passports / INE MRZ. Anything else stays under the staff's control.
+ */
+const PREFILLABLE_FIELDS = [
+	"firstName",
+	"lastName",
+	"secondLastName",
+	"birthDate",
+	"curp",
+	"nationality",
+	"gender",
+] as const;
+
+type PrefillableField = (typeof PREFILLABLE_FIELDS)[number];
 
 const INITIAL_CLIENT_FORM_DATA: ClientFormData = {
 	personType: "moral",
@@ -118,6 +146,7 @@ const INITIAL_CLIENT_FORM_DATA: ClientFormData = {
 	/** Must stay in sync with nationality until the user picks another country */
 	countryCode: "MX",
 	economicActivityCode: "",
+	commercialActivityCode: "",
 	occupation: "",
 	sourceOfFunds: "",
 	sourceOfWealth: "",
@@ -154,6 +183,23 @@ export function ClientInfoStep({
 	const [rfcDuplicate, setRfcDuplicate] = useState<CheckRfcResult | null>(null);
 	const rfcCheckAbortRef = useRef<AbortController | null>(null);
 
+	// ── OCR prefill state ───────────────────────────────────────────
+	// We open `DocumentScannerModal` from a CTA card at the top of the
+	// physical-person form. The modal hands back a `DocumentExtractionData`
+	// payload, which we project into the `OcrPrefillData` shape and apply
+	// to the form — only into fields that are still empty, so we never
+	// clobber a value the staff member has already typed in.
+	const [scanFile, setScanFile] = useState<File | null>(null);
+	const [scanOpen, setScanOpen] = useState(false);
+	const [prefilledFromScan, setPrefilledFromScan] = useState<
+		Set<PrefillableField>
+	>(new Set());
+	const [lowConfidenceFields, setLowConfidenceFields] = useState<
+		Set<PrefillableField>
+	>(new Set());
+	const [prefillBannerVisible, setPrefillBannerVisible] = useState(false);
+	const fileInputRef = useRef<HTMLInputElement | null>(null);
+
 	useEffect(() => {
 		setRfcDuplicate(null);
 
@@ -184,13 +230,166 @@ export function ClientInfoStep({
 
 	const fieldTiers = getClientFieldTierMap(formData.personType);
 
+	// ── OCR prefill handlers ────────────────────────────────────────
+	// `applyPrefillToForm` writes only into empty form fields and tracks
+	// which ones were touched (so we can render the "Prefilled" / "Verify"
+	// badges next to those inputs and clear them on manual edit).
+	//
+	// We read `formData` directly (not via a setState updater closure) so
+	// the resulting `prefilledFromScan` / `lowConfidenceFields` sets are
+	// computed deterministically before any state batching happens. That
+	// keeps the banner visibility check in lockstep with the form mutation.
+	const applyPrefillToForm = (prefill: OcrPrefillData): number => {
+		const updates: Partial<ClientFormData> = {};
+		const newlyPrefilled = new Set<PrefillableField>();
+		const newlyLowConfidence = new Set<PrefillableField>();
+
+		for (const field of PREFILLABLE_FIELDS) {
+			const incoming = prefill[field];
+			if (incoming === undefined) continue;
+			const current = formData[field];
+			if (typeof current === "string" && current.trim().length > 0) continue;
+			if (current && typeof current !== "string") continue;
+			// Names / curp are stored uppercased throughout this form.
+			const value =
+				field === "firstName" ||
+				field === "lastName" ||
+				field === "secondLastName" ||
+				field === "curp"
+					? String(incoming).toUpperCase()
+					: incoming;
+			(updates as Record<string, unknown>)[field] = value;
+			if (field === "nationality") {
+				updates.countryCode = String(incoming).toUpperCase();
+			}
+			newlyPrefilled.add(field);
+			const conf = prefill.confidenceByField[field];
+			if (typeof conf === "number" && conf < LOW_CONFIDENCE_THRESHOLD) {
+				newlyLowConfidence.add(field);
+			}
+		}
+
+		if (newlyPrefilled.size === 0) return 0;
+
+		setFormData((prev) => ({ ...prev, ...updates }));
+		setPrefilledFromScan(newlyPrefilled);
+		setLowConfidenceFields(newlyLowConfidence);
+		setPrefillBannerVisible(true);
+		return newlyPrefilled.size;
+	};
+
+	const handleScanFileChange = (
+		event: React.ChangeEvent<HTMLInputElement>,
+	): void => {
+		const file = event.target.files?.[0] ?? null;
+		// Reset the input so picking the same file twice in a row still fires.
+		event.target.value = "";
+		if (!file) return;
+		setScanFile(file);
+		setScanOpen(true);
+	};
+
+	const handleScanCtaClick = (): void => {
+		fileInputRef.current?.click();
+	};
+
+	const handleScanExtracted = (data: DocumentExtractionData): void => {
+		setScanOpen(false);
+		setScanFile(null);
+		if (!data.ocrResult) {
+			toast.error(t("idScanOcrFailed"));
+			return;
+		}
+
+		const prefill = ocrResultToPrefill(data.ocrResult);
+		if (!hasAnyPrefilledField(prefill)) {
+			toast.message(t("idScanOcrFailed"));
+			return;
+		}
+
+		const count = applyPrefillToForm(prefill);
+		if (count === 0) {
+			// All prefillable fields were already set — let the staff know
+			// nothing was overwritten so the "no badges" outcome doesn't
+			// look like a silent failure.
+			toast.message(t("idScanPrefillNoChanges"));
+			return;
+		}
+		toast.success(
+			t("idScanPrefillApplied").replace("{{count}}", String(count)),
+		);
+	};
+
+	const isFieldPrefilled = (name: PrefillableField): boolean =>
+		prefilledFromScan.has(name);
+
+	const isFieldLowConfidence = (name: PrefillableField): boolean =>
+		prefilledFromScan.has(name) && lowConfidenceFields.has(name);
+
+	const clearPrefillBadge = (name: PrefillableField): void => {
+		setPrefilledFromScan((prev) => {
+			if (!prev.has(name)) return prev;
+			const next = new Set(prev);
+			next.delete(name);
+			return next;
+		});
+	};
+
+	const fieldHints = (name: PrefillableField): React.JSX.Element | null => {
+		if (!isFieldPrefilled(name)) return null;
+		return (
+			<div className="flex items-center gap-1.5 mt-1">
+				<span
+					className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded"
+					title={t("idScanPrefilledTooltip")}
+				>
+					<Sparkles className="w-3 h-3" />
+					{t("idScanPrefillBadge")}
+				</span>
+				{isFieldLowConfidence(name) && (
+					<span
+						className="text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded"
+						title={t("idScanLowConfidenceTooltip")}
+					>
+						{t("idScanLowConfidenceBadge")}
+					</span>
+				)}
+			</div>
+		);
+	};
+
 	const handleInputChange = (
 		field: keyof ClientFormData,
 		value: string,
 	): void => {
-		// Notify parent of person type change BEFORE updating state
 		if (field === "personType") {
-			onPersonTypeChange(value as PersonType);
+			const next = value as PersonType;
+			onPersonTypeChange(next);
+			setFormData((prev) => {
+				let economicActivityCode = prev.economicActivityCode ?? "";
+				let commercialActivityCode = prev.commercialActivityCode ?? "";
+				if (next === "physical") {
+					commercialActivityCode = "";
+				} else if (next === "moral") {
+					economicActivityCode = "";
+				} else {
+					economicActivityCode = "";
+					commercialActivityCode = "";
+				}
+				return {
+					...prev,
+					personType: next,
+					economicActivityCode,
+					commercialActivityCode,
+				};
+			});
+			return;
+		}
+
+		// If the staff member edits a field that we previously prefilled
+		// from OCR, drop the badge — at that point the value is theirs.
+		if ((PREFILLABLE_FIELDS as readonly string[]).includes(field as string)) {
+			clearPrefillBadge(field as PrefillableField);
 		}
 
 		setFormData((prev) => {
@@ -546,8 +745,12 @@ export function ClientInfoStep({
 			(formData.countryCode || "").trim() ||
 			(formData.nationality || "").trim();
 		if (countryCodeToSend) request.countryCode = countryCodeToSend;
-		if (formData.economicActivityCode)
+		if (formData.personType === "physical" && formData.economicActivityCode) {
 			request.economicActivityCode = formData.economicActivityCode;
+		}
+		if (formData.personType === "moral" && formData.commercialActivityCode) {
+			request.commercialActivityCode = formData.commercialActivityCode;
+		}
 		if (formData.internalNumber)
 			request.internalNumber = formData.internalNumber;
 		if (formData.reference) request.reference = formData.reference;
@@ -594,12 +797,66 @@ export function ClientInfoStep({
 				</CardContent>
 			</Card>
 
+			{formData.personType === "physical" && (
+				<Card>
+					<CardHeader>
+						<CardTitle className="text-lg flex items-center gap-2">
+							<ScanLine className="w-5 h-5 text-primary" />
+							{t("idScanCtaTitle")}
+						</CardTitle>
+						<p className="text-sm text-muted-foreground">
+							{t("idScanCtaHelper")}
+						</p>
+					</CardHeader>
+					<CardContent>
+						<input
+							ref={fileInputRef}
+							type="file"
+							accept="image/*,application/pdf"
+							className="hidden"
+							onChange={handleScanFileChange}
+							data-testid="id-scan-file-input"
+						/>
+						<Button
+							type="button"
+							variant="outline"
+							onClick={handleScanCtaClick}
+						>
+							<ScanLine className="w-4 h-4 mr-2" />
+							{t("idScanCtaButton")}
+						</Button>
+					</CardContent>
+				</Card>
+			)}
+
+			{prefillBannerVisible && prefilledFromScan.size > 0 && (
+				<div className="flex items-start gap-3 rounded-md border border-emerald-200 bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-900/10 px-4 py-3 text-sm text-emerald-900 dark:text-emerald-100">
+					<Sparkles className="w-4 h-4 mt-0.5 shrink-0" />
+					<p className="flex-1">
+						{t("idScanPrefillBanner").replace(
+							"{{count}}",
+							String(prefilledFromScan.size),
+						)}
+					</p>
+					<button
+						type="button"
+						onClick={() => setPrefillBannerVisible(false)}
+						className="text-emerald-700 dark:text-emerald-300 hover:opacity-70"
+						aria-label={t("close")}
+					>
+						<X className="w-4 h-4" />
+					</button>
+				</div>
+			)}
+
 			<Card>
 				<CardHeader>
 					<CardTitle className="text-lg">
 						{formData.personType === "physical"
 							? t("clientPersonalData")
-							: t("clientCompanyData")}
+							: formData.personType === "trust"
+								? t("clientTrustCompanyData")
+								: t("clientCompanyData")}
 					</CardTitle>
 					<p className="text-sm text-muted-foreground">
 						{t("clientKycOnboardingNote")}
@@ -633,6 +890,7 @@ export function ClientInfoStep({
 										}
 										required
 									/>
+									{fieldHints("firstName")}
 									{validationErrors.firstName && (
 										<p className="text-xs text-destructive">
 											{validationErrors.firstName}
@@ -663,6 +921,7 @@ export function ClientInfoStep({
 										}
 										required
 									/>
+									{fieldHints("lastName")}
 									{validationErrors.lastName && (
 										<p className="text-xs text-destructive">
 											{validationErrors.lastName}
@@ -693,6 +952,7 @@ export function ClientInfoStep({
 												: ""
 										}
 									/>
+									{fieldHints("secondLastName")}
 									{validationErrors.secondLastName && (
 										<p className="text-xs text-destructive">
 											{validationErrors.secondLastName}
@@ -717,6 +977,7 @@ export function ClientInfoStep({
 											handleInputChange("birthDate", e.target.value)
 										}
 									/>
+									{fieldHints("birthDate")}
 								</div>
 								<div className="space-y-2">
 									<LabelWithInfo
@@ -737,6 +998,7 @@ export function ClientInfoStep({
 											validationErrors.curp ? "border-destructive" : ""
 										}
 									/>
+									{fieldHints("curp")}
 									{validationErrors.curp && (
 										<p className="text-xs text-destructive">
 											{validationErrors.curp}
@@ -849,37 +1111,77 @@ export function ClientInfoStep({
 							</div>
 						)}
 					</div>
-					<CatalogSelector
-						catalogKey="countries"
-						label="Nacionalidad"
-						labelDescription={getFieldDescription("nationality")}
-						tier={fieldTiers.countryCode}
-						value={formData.nationality}
-						searchPlaceholder="Buscar país..."
-						onChange={(option) => {
-							const code =
-								(option?.metadata as { code?: string } | null)?.code ?? "";
-							handleInputChange("nationality", code);
-							handleInputChange("countryCode", code);
-						}}
-					/>
-					<CatalogSelector
-						catalogKey="economic-activities"
-						label="Actividad económica"
-						labelDescription="Código SAT de la actividad económica o giro mercantil del cliente."
-						tier={fieldTiers.economicActivityCode}
-						value={formData.economicActivityCode}
-						searchPlaceholder="Buscar actividad económica..."
-						onChange={(option) =>
-							handleInputChange(
-								"economicActivityCode",
-								option
-									? ((option.metadata as { code?: string } | null)?.code ??
-											option.id)
-									: "",
-							)
-						}
-					/>
+					<div className="space-y-1">
+						<CatalogSelector
+							catalogKey="countries"
+							label={t("clientNationality")}
+							labelDescription={getFieldDescription("nationality")}
+							tier={fieldTiers.countryCode}
+							value={formData.nationality}
+							searchPlaceholder={t("clientSearchCountry")}
+							onChange={(option) => {
+								const code =
+									(
+										option?.metadata as { code?: string } | null
+									)?.code?.trim() ?? "";
+								if (option && !code) {
+									toast.error(t("catalogItemMissingCode"));
+									return;
+								}
+								handleInputChange("nationality", code);
+								handleInputChange("countryCode", code);
+							}}
+						/>
+						{fieldHints("nationality")}
+					</div>
+					{formData.personType === "physical" && (
+						<CatalogSelector
+							catalogKey="economic-activities"
+							label={t("clientEconomicActivityLabel")}
+							labelDescription={t("clientActivityDesc")}
+							tier={fieldTiers.economicActivityCode}
+							value={formData.economicActivityCode}
+							searchPlaceholder={t("clientSearchActivity")}
+							onChange={(option) => {
+								if (!option) {
+									handleInputChange("economicActivityCode", "");
+									return;
+								}
+								const code =
+									(option.metadata as { code?: string } | null)?.code?.trim() ??
+									"";
+								if (!code) {
+									toast.error(t("catalogItemMissingCode"));
+									return;
+								}
+								handleInputChange("economicActivityCode", code);
+							}}
+						/>
+					)}
+					{formData.personType === "moral" && (
+						<CatalogSelector
+							catalogKey="business-activities"
+							label={t("clientCommercialActivityLabel")}
+							labelDescription={t("clientActivityDesc")}
+							tier={fieldTiers.commercialActivityCode}
+							value={formData.commercialActivityCode}
+							searchPlaceholder={t("clientSearchActivity")}
+							onChange={(option) => {
+								if (!option) {
+									handleInputChange("commercialActivityCode", "");
+									return;
+								}
+								const code =
+									(option.metadata as { code?: string } | null)?.code?.trim() ??
+									"";
+								if (!code) {
+									toast.error(t("catalogItemMissingCode"));
+									return;
+								}
+								handleInputChange("commercialActivityCode", code);
+							}}
+						/>
+					)}
 				</CardContent>
 			</Card>
 
@@ -973,7 +1275,7 @@ export function ClientInfoStep({
 								htmlFor="externalNumber"
 								description={getFieldDescription("externalNumber")}
 							>
-								Número Ext.
+								{t("clientExteriorNumberAbbr")}
 							</LabelWithInfo>
 							<Input
 								id="externalNumber"
@@ -992,7 +1294,7 @@ export function ClientInfoStep({
 								htmlFor="internalNumber"
 								description={getFieldDescription("internalNumber")}
 							>
-								Número Int.
+								{t("clientInteriorNumberAbbr")}
 							</LabelWithInfo>
 							<Input
 								id="internalNumber"
@@ -1036,7 +1338,7 @@ export function ClientInfoStep({
 			<Card>
 				<CardHeader>
 					<CardTitle className="text-lg">
-						Información complementaria KYC
+						{t("clientKycComplementary")}
 					</CardTitle>
 				</CardHeader>
 				<CardContent className="space-y-4">
@@ -1044,28 +1346,31 @@ export function ClientInfoStep({
 						<div className="grid grid-cols-1 @xl/main:grid-cols-2 gap-4">
 							<div className="space-y-2">
 								<LabelWithInfo htmlFor="gender" tier={fieldTiers.gender}>
-									Género
+									{t("clientGender")}
 								</LabelWithInfo>
 								<Select
 									value={formData.gender ?? ""}
 									onValueChange={(value) => handleInputChange("gender", value)}
 								>
 									<SelectTrigger id="gender">
-										<SelectValue placeholder="Seleccionar género" />
+										<SelectValue placeholder={t("clientSelectGender")} />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="M">Masculino</SelectItem>
-										<SelectItem value="F">Femenino</SelectItem>
-										<SelectItem value="OTHER">Otro</SelectItem>
+										<SelectItem value="M">{t("clientGenderMale")}</SelectItem>
+										<SelectItem value="F">{t("clientGenderFemale")}</SelectItem>
+										<SelectItem value="OTHER">
+											{t("clientGenderOther")}
+										</SelectItem>
 									</SelectContent>
 								</Select>
+								{fieldHints("gender")}
 							</div>
 							<div className="space-y-2">
 								<LabelWithInfo
 									htmlFor="maritalStatus"
 									tier={fieldTiers.maritalStatus}
 								>
-									Estado civil
+									{t("clientMaritalStatus")}
 								</LabelWithInfo>
 								<Select
 									value={formData.maritalStatus ?? ""}
@@ -1074,14 +1379,24 @@ export function ClientInfoStep({
 									}
 								>
 									<SelectTrigger id="maritalStatus">
-										<SelectValue placeholder="Seleccionar estado civil" />
+										<SelectValue placeholder={t("clientSelectMaritalStatus")} />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="SINGLE">Soltero(a)</SelectItem>
-										<SelectItem value="MARRIED">Casado(a)</SelectItem>
-										<SelectItem value="DIVORCED">Divorciado(a)</SelectItem>
-										<SelectItem value="WIDOWED">Viudo(a)</SelectItem>
-										<SelectItem value="OTHER">Otro</SelectItem>
+										<SelectItem value="SINGLE">
+											{t("clientMaritalSingle")}
+										</SelectItem>
+										<SelectItem value="MARRIED">
+											{t("clientMaritalMarried")}
+										</SelectItem>
+										<SelectItem value="DIVORCED">
+											{t("clientMaritalDivorced")}
+										</SelectItem>
+										<SelectItem value="WIDOWED">
+											{t("clientMaritalWidowed")}
+										</SelectItem>
+										<SelectItem value="OTHER">
+											{t("clientGenderOther")}
+										</SelectItem>
 									</SelectContent>
 								</Select>
 							</div>
@@ -1090,7 +1405,7 @@ export function ClientInfoStep({
 					<div className="grid grid-cols-1 @xl/main:grid-cols-3 gap-4">
 						<div className="space-y-2">
 							<LabelWithInfo htmlFor="occupation" tier={fieldTiers.occupation}>
-								Ocupación / Profesión
+								{t("clientOccupationProfession")}
 							</LabelWithInfo>
 							<Input
 								id="occupation"
@@ -1098,7 +1413,7 @@ export function ClientInfoStep({
 								onChange={(e) =>
 									handleInputChange("occupation", e.target.value.toUpperCase())
 								}
-								placeholder="Ej. COMERCIANTE"
+								placeholder={t("clientOccupationPlaceholderExample")}
 							/>
 						</div>
 						<div className="space-y-2">
@@ -1106,7 +1421,7 @@ export function ClientInfoStep({
 								htmlFor="sourceOfFunds"
 								tier={fieldTiers.sourceOfFunds}
 							>
-								Origen de los recursos
+								{t("clientResourceOrigin")}
 							</LabelWithInfo>
 							<Input
 								id="sourceOfFunds"
@@ -1117,7 +1432,7 @@ export function ClientInfoStep({
 										e.target.value.toUpperCase(),
 									)
 								}
-								placeholder="Ej. SALARIO"
+								placeholder={t("clientSourceOfFundsPlaceholderExample")}
 							/>
 						</div>
 						<div className="space-y-2">
@@ -1125,7 +1440,7 @@ export function ClientInfoStep({
 								htmlFor="sourceOfWealth"
 								tier={fieldTiers.sourceOfWealth}
 							>
-								Origen del patrimonio
+								{t("clientPatrimonyOrigin")}
 							</LabelWithInfo>
 							<Input
 								id="sourceOfWealth"
@@ -1136,7 +1451,7 @@ export function ClientInfoStep({
 										e.target.value.toUpperCase(),
 									)
 								}
-								placeholder="Ej. HERENCIA"
+								placeholder={t("clientSourceWealthPlaceholderExample")}
 							/>
 						</div>
 					</div>
@@ -1151,7 +1466,7 @@ export function ClientInfoStep({
 				</CardHeader>
 				<CardContent>
 					<div className="space-y-2">
-						<Label htmlFor="notes">Observaciones</Label>
+						<Label htmlFor="notes">{t("clientObservations")}</Label>
 						<Textarea
 							id="notes"
 							value={formData.notes}
@@ -1159,7 +1474,7 @@ export function ClientInfoStep({
 								handleInputChange("notes", e.target.value)
 							}
 							rows={4}
-							placeholder="Agregue notas relevantes sobre el cliente..."
+							placeholder={t("clientNotesPlaceholder")}
 						/>
 					</div>
 				</CardContent>
@@ -1173,19 +1488,32 @@ export function ClientInfoStep({
 					onClick={onCancel}
 					disabled={isSubmitting}
 				>
-					Cancelar
+					{t("cancel")}
 				</Button>
 				<Button type="submit" loading={isSubmitting}>
 					{isSubmitting ? (
-						"Creando..."
+						t("clientCreating")
 					) : (
 						<>
-							Guardar y Continuar
+							{t("clientSaveAndContinue")}
 							<ArrowRight className="h-4 w-4 ml-2" />
 						</>
 					)}
 				</Button>
 			</div>
+
+			{scanFile && (
+				<DocumentScannerModal
+					open={scanOpen}
+					onOpenChange={(open) => {
+						setScanOpen(open);
+						if (!open) setScanFile(null);
+					}}
+					file={scanFile}
+					documentType="ID"
+					onExtracted={handleScanExtracted}
+				/>
+			)}
 		</form>
 	);
 }

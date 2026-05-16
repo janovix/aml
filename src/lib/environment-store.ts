@@ -10,9 +10,16 @@ export const DATA_ENVIRONMENTS: readonly DataEnvironment[] = [
 	"development",
 ] as const;
 
-function parseDataEnvironment(raw: string | undefined): DataEnvironment {
+/** Parse `janovix-env` cookie value (SSR-safe; matches client hydration). */
+export function parseDataEnvironmentCookie(
+	raw: string | undefined,
+): DataEnvironment {
 	if (raw === "staging" || raw === "development") return raw;
 	return "production";
+}
+
+function parseDataEnvironment(raw: string | undefined): DataEnvironment {
+	return parseDataEnvironmentCookie(raw);
 }
 
 export const environmentAtom = atom<DataEnvironment>("production");

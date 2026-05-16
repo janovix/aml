@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import { NavBreadcrumb } from "./NavBreadcrumb";
-import { renderWithProviders } from "@/lib/testHelpers";
+import { renderWithProviders, t } from "@/lib/testHelpers";
 import type { InvoiceEntity } from "@/types/invoice";
 import {
 	useSetPageStatus,
@@ -60,6 +60,19 @@ const mockGetInvoiceById = vi.fn();
 vi.mock("@/lib/api/invoices", () => ({
 	getInvoiceById: (opts: { id: string }) => mockGetInvoiceById(opts),
 }));
+
+const trainingApiMocks = vi.hoisted(() => ({
+	getTrainingCourseDetailMock: vi.fn(),
+}));
+
+vi.mock("@/lib/api/training", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("@/lib/api/training")>();
+	return {
+		...actual,
+		getTrainingCourseDetail: (...args: unknown[]) =>
+			trainingApiMocks.getTrainingCourseDetailMock(...args),
+	};
+});
 
 // Mock useJwt to return a valid JWT
 vi.mock("@/hooks/useJwt", () => ({
@@ -233,6 +246,67 @@ describe("NavBreadcrumb", () => {
 		renderWithProviders(<NavBreadcrumb />);
 
 		expect(screen.getByText("Actividad")).toBeInTheDocument();
+	});
+
+	describe("training routes", () => {
+		beforeEach(() => {
+			trainingApiMocks.getTrainingCourseDetailMock.mockResolvedValue({
+				json: {
+					course: {
+						titleI18n: { es: "Mi curso", en: "My course" },
+					},
+				},
+			});
+		});
+
+		it("labels training root segment", async () => {
+			mockPathname.mockReturnValue("/test-org/training");
+			renderWithProviders(<NavBreadcrumb />);
+
+			await waitFor(() => {
+				expect(screen.getByText(t("navTraining"))).toBeInTheDocument();
+			});
+		});
+
+		it("loads course title for slug after training", async () => {
+			mockPathname.mockReturnValue("/test-org/training/course-slug");
+			renderWithProviders(<NavBreadcrumb />);
+
+			await waitFor(() => {
+				expect(screen.getByText("Mi curso")).toBeInTheDocument();
+			});
+			expect(trainingApiMocks.getTrainingCourseDetailMock).toHaveBeenCalledWith(
+				"course-slug",
+			);
+		});
+
+		it("labels quiz segment under a training course", async () => {
+			mockPathname.mockReturnValue("/test-org/training/course-slug/quiz");
+			renderWithProviders(<NavBreadcrumb />);
+
+			await waitFor(() => {
+				const exams = screen.getAllByText(/examen/i);
+				expect(exams.length).toBeGreaterThan(0);
+			});
+		});
+
+		it("labels training team segment", async () => {
+			mockPathname.mockReturnValue("/test-org/training/team");
+			renderWithProviders(<NavBreadcrumb />);
+
+			await waitFor(() => {
+				expect(screen.getByText(/equipo/i)).toBeInTheDocument();
+			});
+		});
+
+		it("labels training certificates segment", async () => {
+			mockPathname.mockReturnValue("/test-org/training/certificates");
+			renderWithProviders(<NavBreadcrumb />);
+
+			await waitFor(() => {
+				expect(screen.getByText(/certificados/i)).toBeInTheDocument();
+			});
+		});
 	});
 
 	it("renders risk models route", () => {

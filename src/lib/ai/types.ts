@@ -16,9 +16,15 @@ export type LlmModel = OpenAIModel | AnthropicModel | GoogleModel;
 export interface ModelConfig {
 	provider: LlmProvider;
 	model: LlmModel;
+	/** Vercel AI Gateway model id, e.g. `openai/gpt-5.2` */
+	gatewayId?: string;
 	displayName: string;
 	description: string;
 	maxTokens?: number;
+	supportsReasoning?: boolean;
+	supportsImages?: boolean;
+	supportsPdf?: boolean;
+	contextWindow?: number;
 }
 
 // Token usage tracking
@@ -69,25 +75,39 @@ export const MODEL_CONFIGS: Record<LlmModel, ModelConfig> = {
 	"gpt-5.2": {
 		provider: "openai",
 		model: "gpt-5.2",
+		gatewayId: "openai/gpt-5.2",
 		displayName: "GPT-5.2",
 		description: "OpenAI flagship model",
 		maxTokens: 128000,
+		contextWindow: 128000,
+		supportsImages: true,
+		supportsPdf: true,
 	},
 	// Anthropic
 	"claude-sonnet-4-6": {
 		provider: "anthropic",
 		model: "claude-sonnet-4-6",
+		gatewayId: "anthropic/claude-sonnet-4-6",
 		displayName: "Claude Sonnet 4.6",
 		description: "Latest Claude Sonnet",
 		maxTokens: 64000,
+		contextWindow: 200000,
+		supportsReasoning: true,
+		supportsImages: true,
+		supportsPdf: true,
 	},
 	// Google
 	"gemini-3-flash-preview": {
 		provider: "google",
 		model: "gemini-3-flash-preview",
+		gatewayId: "google/gemini-3-flash-preview",
 		displayName: "Gemini 3 Flash (Preview)",
 		description: "Gemini 3 Flash",
 		maxTokens: 1000000,
+		contextWindow: 1000000,
+		supportsReasoning: false,
+		supportsImages: true,
+		supportsPdf: true,
 	},
 };
 
@@ -121,3 +141,6 @@ export function getModelConfig(model: LlmModel): ModelConfig | undefined {
 // Default model
 export const DEFAULT_MODEL: LlmModel = "gpt-5.2";
 export const DEFAULT_PROVIDER: LlmProvider = "openai";
+
+/** Fast model for Janbot intent / guardrail pre-classification */
+export const JANBOT_INTENT_MODEL: LlmModel = "gemini-3-flash-preview";
