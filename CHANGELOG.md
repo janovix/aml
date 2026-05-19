@@ -1,3 +1,10 @@
+# [1.15.0-rc.2](https://github.com/janovix/aml/compare/v1.15.0-rc.1...v1.15.0-rc.2) (2026-05-19)
+
+
+### Features
+
+* add exception handling for primera venta operations with evidence upload functionality ([3c42837](https://github.com/janovix/aml/commit/3c4283716e04ff9b81b773d08a0ad2e274aa6829))
+
 # [1.15.0-rc.1](https://github.com/janovix/aml/compare/v1.14.0...v1.15.0-rc.1) (2026-05-16)
 
 
