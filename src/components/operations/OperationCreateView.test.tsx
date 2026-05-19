@@ -9,6 +9,7 @@ vi.mock("next/navigation", () => ({
 
 const formData = {
 	clientId: "",
+	operationTypeCode: "",
 	operationDate: "2024-06-01",
 	branchPostalCode: "",
 	amount: "",

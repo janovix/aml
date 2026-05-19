@@ -46,6 +46,7 @@ import { BranchZipCodeDisplay } from "./BranchZipCodeDisplay";
 
 interface OperationFormData {
 	clientId: string;
+	operationTypeCode: string;
 	operationDate: string;
 	branchPostalCode: string;
 	amount: string;
@@ -60,8 +61,16 @@ interface OperationFormData {
 	extension: Record<string, unknown>;
 }
 
+const PRIMERA_VENTA_CODES = new Set(["503", "1603"]);
+
+const OPERATION_TYPE_CATALOG: Record<string, string> = {
+	INM: "inm-operation-types",
+	DIN: "din-operation-types",
+};
+
 const getInitialFormData = (): OperationFormData => ({
 	clientId: "",
+	operationTypeCode: "",
 	operationDate: new Date().toISOString().slice(0, 10),
 	branchPostalCode: "",
 	amount: "",
@@ -274,6 +283,7 @@ export function OperationCreateView(): React.JSX.Element {
 				const createData: OperationCreateRequest = {
 					clientId: formData.clientId,
 					activityCode,
+					operationTypeCode: formData.operationTypeCode || null,
 					operationDate:
 						formData.operationDate || new Date().toISOString().slice(0, 10),
 					branchPostalCode: formData.branchPostalCode,
@@ -488,6 +498,39 @@ export function OperationCreateView(): React.JSX.Element {
 						</div>
 					</CardContent>
 				</Card>
+
+				{/* Operation Type (INM/DIN) */}
+				{activityCode && OPERATION_TYPE_CATALOG[activityCode] && (
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-lg">
+								{t("opFieldOperationTypeCode")}
+							</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div className="max-w-md space-y-1">
+								<FieldLabel htmlFor="operationTypeCode" tier="sat_required">
+									{t("opFieldOperationTypeCode")}
+								</FieldLabel>
+								<CatalogSelector
+									catalogKey={OPERATION_TYPE_CATALOG[activityCode]}
+									value={formData.operationTypeCode}
+									onValueChange={(val) =>
+										handleFieldChange("operationTypeCode", val ?? "")
+									}
+									placeholder={t("selectPlaceholder")}
+									getOptionValue={getCatalogCode}
+								/>
+								{PRIMERA_VENTA_CODES.has(formData.operationTypeCode) && (
+									<p className="text-sm text-muted-foreground mt-2 flex items-center gap-1.5">
+										<Info className="h-4 w-4 shrink-0" />
+										{t("opPrimeraVentaHint")}
+									</p>
+								)}
+							</div>
+						</CardContent>
+					</Card>
+				)}
 
 				{/* Extension Form (activity-specific fields) */}
 				{ExtensionForm && (

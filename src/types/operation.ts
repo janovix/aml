@@ -456,6 +456,42 @@ export interface DevelopmentExtension {
 	resolvedNames?: Record<string, string> | null;
 }
 
+// --- Exception Entity ---
+
+export type ExceptionStatus = "INCOMPLETE" | "VALIDATED" | "INVALIDATED";
+
+export interface OperationExceptionEvidenceEntity {
+	id: string;
+	exceptionId: string;
+	evidenceType: string;
+	description: string | null;
+	docSvcDocumentId: string | null;
+	uploadedBy: string | null;
+	createdAt: string;
+}
+
+export interface OperationExceptionEntity {
+	id: string;
+	operationId: string;
+	organizationId: string;
+	environment: string;
+	exceptionType: string;
+	status: ExceptionStatus;
+	legalReference: string | null;
+	isFirstSale: boolean | null;
+	hasDevelopmentBankFunding: boolean | null;
+	developmentBankCode: string | null;
+	developmentBankName: string | null;
+	paidThroughFinancialSystem: boolean | null;
+	hasDocumentaryEvidence: boolean | null;
+	notes: string | null;
+	validatedAt: string | null;
+	validatedBy: string | null;
+	createdAt: string;
+	updatedAt: string;
+	evidence: OperationExceptionEvidenceEntity[];
+}
+
 // --- Main Operation Entity ---
 
 export interface OperationEntity {
@@ -519,6 +555,8 @@ export interface OperationEntity {
 	valuable?: ValuableExtension | null;
 	art?: ArtExtension | null;
 	development?: DevelopmentExtension | null;
+	// Exception (primera venta)
+	exception?: OperationExceptionEntity | null;
 	// Enriched catalog items
 	activityCatalog?: EnrichedCatalogItem | null;
 	operationTypeCatalog?: EnrichedCatalogItem | null;

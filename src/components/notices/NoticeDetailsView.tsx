@@ -61,6 +61,9 @@ import {
 	getDocumentDisplayUrls,
 } from "@/lib/api/file-upload";
 import { cn } from "@/lib/utils";
+import { listOperations } from "@/lib/api/operations";
+import { TrafficLightBadge } from "@/components/operations/exceptions/TrafficLightBadge";
+import type { OperationEntity } from "@/types/operation";
 
 interface NoticeDetailsViewProps {
 	noticeId: string;
@@ -840,6 +843,12 @@ export function NoticeDetailsView({
 				</Card>
 			)}
 
+			{/* Exempted Operations Info */}
+			<ExemptedOperationsCard
+				periodStart={notice.periodStart}
+				periodEnd={notice.periodEnd}
+			/>
+
 			{/* Event Timeline */}
 			{sortedEvents.length > 0 && (
 				<Card>
@@ -1237,5 +1246,88 @@ export function NoticeDetailsView({
 				</DialogContent>
 			</Dialog>
 		</div>
+	);
+}
+
+function ExemptedOperationsCard({
+	periodStart,
+	periodEnd,
+}: {
+	periodStart: string;
+	periodEnd: string;
+}) {
+	const { t } = useLanguage();
+	const [exempted, setExempted] = useState<OperationEntity[]>([]);
+	const [loading, setLoading] = useState(true);
+
+	useEffect(() => {
+		let cancelled = false;
+		(async () => {
+			try {
+				const result = await listOperations({
+					startDate: periodStart,
+					endDate: periodEnd,
+					limit: 100,
+				});
+				if (!cancelled) {
+					setExempted(
+						result.data.filter((op) => op.exception?.status === "VALIDATED"),
+					);
+				}
+			} catch {
+				/* gracefully ignore */
+			} finally {
+				if (!cancelled) setLoading(false);
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, [periodStart, periodEnd]);
+
+	if (loading || exempted.length === 0) return null;
+
+	return (
+		<Card>
+			<CardHeader>
+				<div className="flex items-center justify-between">
+					<CardTitle className="text-lg flex items-center gap-2">
+						<CheckCircle2 className="h-5 w-5 text-green-500" />
+						{t("opExceptionTabTitle")}
+					</CardTitle>
+					<Badge
+						variant="outline"
+						className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+					>
+						{exempted.length}
+					</Badge>
+				</div>
+			</CardHeader>
+			<CardContent>
+				<p className="text-sm text-muted-foreground mb-3">
+					{t("opExceptionTabTooltip")}
+				</p>
+				<div className="space-y-2">
+					{exempted.map((op) => (
+						<div
+							key={op.id}
+							className="flex items-center justify-between p-2 rounded-md border"
+						>
+							<div className="space-y-0.5">
+								<p className="text-sm font-medium">
+									{op.activityCode} — ${op.amount} {op.currencyCode}
+								</p>
+								<p className="text-xs text-muted-foreground">
+									{op.operationDate} · {op.operationTypeCode}
+								</p>
+							</div>
+							{op.exception && (
+								<TrafficLightBadge status={op.exception.status} />
+							)}
+						</div>
+					))}
+				</div>
+			</CardContent>
+		</Card>
 	);
 }

@@ -45,6 +45,11 @@ import { MissingFieldsList } from "@/components/completeness/MissingFieldsList";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { TranslationKeys } from "@/lib/translations";
+import { FirstSaleWizard } from "./exceptions/FirstSaleWizard";
+import { TrafficLightBadge } from "./exceptions/TrafficLightBadge";
+
+const PRIMERA_VENTA_CODES = new Set(["503", "1603"]);
+const EXCEPTION_ELIGIBLE_ACTIVITIES = new Set(["INM", "DIN"]);
 
 interface OperationDetailsViewProps {
 	operationId: string;
@@ -644,6 +649,22 @@ export function OperationDetailsView({
 							</CardContent>
 						</Card>
 					)}
+
+					{/* Primera venta exception wizard */}
+					{EXCEPTION_ELIGIBLE_ACTIVITIES.has(operation.activityCode) &&
+						PRIMERA_VENTA_CODES.has(operation.operationTypeCode ?? "") && (
+							<div className="@lg/main:col-span-2">
+								<FirstSaleWizard operationId={operation.id} />
+							</div>
+						)}
+
+					{/* Exception badge in header area (for non-primera-venta but has exception) */}
+					{operation.exception &&
+						!PRIMERA_VENTA_CODES.has(operation.operationTypeCode ?? "") && (
+							<div className="@lg/main:col-span-2">
+								<TrafficLightBadge status={operation.exception.status} />
+							</div>
+						)}
 				</div>
 			</div>
 

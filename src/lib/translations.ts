@@ -1047,6 +1047,34 @@ export const translations = {
 		monthNovember: "Noviembre",
 		monthDecember: "Diciembre",
 
+		// Operation type / primera venta
+		opFieldOperationTypeCode: "Tipo de operación",
+		opPrimeraVentaHint:
+			"Esta operación requiere completar el cuestionario de primera venta para verificar si aplica la excepción de aviso.",
+		opExceptionStatusValidated: "Excepción validada",
+		opExceptionStatusIncomplete: "Excepción incompleta",
+		opExceptionStatusInvalidated: "No aplica excepción",
+		opExceptionTabTitle: "Operaciones exceptuadas",
+		opExceptionTabTooltip:
+			"Operaciones clasificadas como primera venta que fueron exceptuadas de aviso, a diferencia de un informe en ceros donde no hay operaciones a reportar.",
+		opExceptionQuestionIsFirstSale:
+			"¿Se trata de la primera venta del inmueble?",
+		opExceptionQuestionHasBankFunding:
+			"¿El pago proviene de un organismo público de vivienda o banca de desarrollo?",
+		opExceptionQuestionPaidFinancial:
+			"¿El pago se realizó a través del sistema financiero?",
+		opExceptionQuestionHasEvidence:
+			"¿Se cuenta con evidencia documental que respalde la operación?",
+		opExceptionBankSelector: "Organismo de vivienda / Banca de desarrollo",
+		opExceptionBankNameLabel: "Nombre de la institución",
+		opExceptionEvidenceTitle: "Evidencia documental",
+		opExceptionEvidenceUpload: "Subir evidencia",
+		opExceptionEvidenceDelete: "Eliminar evidencia",
+		opExceptionLegalReference: "Referencia legal",
+		opExceptionNotes: "Notas adicionales",
+		opNoticeStatusRequired: "Aviso requerido",
+		opNoticeStatusEnCeros: "Informe en ceros",
+		opNoticeStatusExempted: "Operación exceptuada por primera venta",
 		// Operation form fields — Common / Shared
 		opFieldDescription: "Descripción",
 		opFieldItemTypeCode: "Tipo de bien",
@@ -2970,6 +2998,33 @@ export const translations = {
 		monthNovember: "November",
 		monthDecember: "December",
 
+		// Operation type / primera venta
+		opFieldOperationTypeCode: "Operation Type",
+		opPrimeraVentaHint:
+			"This operation requires completing the first-sale questionnaire to verify if the notice exception applies.",
+		opExceptionStatusValidated: "Exception validated",
+		opExceptionStatusIncomplete: "Exception incomplete",
+		opExceptionStatusInvalidated: "Exception does not apply",
+		opExceptionTabTitle: "Exempted operations",
+		opExceptionTabTooltip:
+			"Operations classified as first sale that were exempted from notice, unlike a zero report where there are no operations to report.",
+		opExceptionQuestionIsFirstSale: "Is this the first sale of the property?",
+		opExceptionQuestionHasBankFunding:
+			"Does payment come from a public housing organism or development bank?",
+		opExceptionQuestionPaidFinancial:
+			"Was payment made through the financial system?",
+		opExceptionQuestionHasEvidence:
+			"Is there documentary evidence supporting the operation?",
+		opExceptionBankSelector: "Housing organism / Development bank",
+		opExceptionBankNameLabel: "Institution name",
+		opExceptionEvidenceTitle: "Documentary evidence",
+		opExceptionEvidenceUpload: "Upload evidence",
+		opExceptionEvidenceDelete: "Delete evidence",
+		opExceptionLegalReference: "Legal reference",
+		opExceptionNotes: "Additional notes",
+		opNoticeStatusRequired: "Notice required",
+		opNoticeStatusEnCeros: "Zero report",
+		opNoticeStatusExempted: "Operation exempted by first sale",
 		// Operation form fields — Common / Shared
 		opFieldDescription: "Description",
 		opFieldItemTypeCode: "Item Type",
