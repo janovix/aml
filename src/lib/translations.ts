@@ -174,7 +174,7 @@ export const translations = {
 		sidebarVulnerableActivity: "Actividad vulnerable",
 
 		// App Switcher
-		appSwitcherTitle: "Apps de Janovix",
+		appSwitcherTitle: "Apps de Yenio",
 		appSwitcherHomepage: "Página Principal",
 		appSwitcherHomepageDescription: "Sitio web principal",
 		appSwitcherAml: "Plataforma AML",
@@ -892,7 +892,7 @@ export const translations = {
 			"La invitación puede haber expirado o ya ha sido utilizada.",
 		invitationBackToHome: "Volver al inicio",
 		invitationInvitedToJoin:
-			"Has sido invitado a unirte a una organización en Janovix.",
+			"Has sido invitado a unirte a una organización en Yenio.",
 		invitationAcceptQuestion:
 			"¿Te gustaría aceptar esta invitación y unirte al equipo?",
 		invitationSignedInAs: "Sesión iniciada como:",
@@ -2135,7 +2135,7 @@ export const translations = {
 		sidebarVulnerableActivity: "Vulnerable activity",
 
 		// App Switcher
-		appSwitcherTitle: "Janovix Apps",
+		appSwitcherTitle: "Yenio Apps",
 		appSwitcherHomepage: "Homepage",
 		appSwitcherHomepageDescription: "Main website",
 		appSwitcherAml: "AML Platform",
@@ -2846,7 +2846,7 @@ export const translations = {
 			"The invitation may have expired or has already been used.",
 		invitationBackToHome: "Back to home",
 		invitationInvitedToJoin:
-			"You have been invited to join an organization on Janovix.",
+			"You have been invited to join an organization on Yenio.",
 		invitationAcceptQuestion:
 			"Would you like to accept this invitation and join the team?",
 		invitationSignedInAs: "Signed in as:",

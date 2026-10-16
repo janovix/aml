@@ -245,7 +245,7 @@ export async function POST(request: Request) {
 							message:
 								intent.category === "jailbreak" || intent.category === "abuse"
 									? "This request is not allowed."
-									: "Janbot only answers questions about AML compliance and your Janovix workspace.",
+									: "Janbot only answers questions about AML compliance and your Yenio workspace.",
 						}),
 						{ status: 400, headers: { "Content-Type": "application/json" } },
 					);

@@ -142,7 +142,7 @@ export function ExternalLinkDialog({
 						<p className="text-sm text-muted-foreground">
 							Estás a punto de visitar{" "}
 							<span className="font-medium text-foreground">{hostname}</span>.
-							Este sitio no está bajo el control de Janovix y puede tener sus
+							Este sitio no está bajo el control de Yenio y puede tener sus
 							propias políticas de privacidad y términos de uso.
 						</p>
 						{url && (
