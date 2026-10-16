@@ -72,9 +72,9 @@ export function Logo({
 			<Isotype
 				width={w}
 				height={h}
-				className={`shrink-0 text-primary ${imgClassName ?? ""}`}
+				className={`block shrink-0 text-primary ${imgClassName ?? ""}`}
 			/>
-			<span className="font-semibold text-foreground tracking-tight">
+			<span className="font-semibold leading-none tracking-tight text-foreground">
 				Yenio
 			</span>
 		</div>
