@@ -235,6 +235,20 @@
 	}
 }
 
+.auth-shader-fallback {
+	background:
+		radial-gradient(
+			120% 90% at 12% 8%,
+			color-mix(in oklab, var(--primary) 62%, transparent),
+			transparent 52%
+		),
+		radial-gradient(
+			90% 80% at 88% 100%,
+			color-mix(in oklab, var(--primary) 28%, var(--background)),
+			var(--background)
+		);
+}
+
 /* Lock document scroll -- all scrolling happens inside the app's scroll container */
 html,
 body {

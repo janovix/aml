@@ -5,14 +5,8 @@ import { motion, AnimatePresence, type PanInfo } from "motion/react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/components/LanguageProvider";
+import { ShaderBackdrop } from "@/components/shader/shader-backdrop";
 import { AppSwitcher } from "./AppSwitcher";
-
-// Aurora background colors - matching the login/onboarding palette
-const AURORA_COLORS = {
-	blob1: "rgba(168, 85, 247, 0.4)", // purple-500
-	blob2: "rgba(139, 92, 246, 0.35)", // violet-500
-	blob3: "rgba(99, 102, 241, 0.3)", // indigo-500
-};
 
 interface MobileSidebarFullscreenProps {
 	open: boolean;
@@ -23,86 +17,6 @@ interface MobileSidebarFullscreenProps {
 	children: React.ReactNode;
 	/** Content for the fixed bottom section (e.g., Language/Theme/User) */
 	bottomContent?: React.ReactNode;
-}
-
-function AuroraBackground() {
-	return (
-		<div
-			className="pointer-events-none absolute inset-0 overflow-hidden"
-			aria-hidden="true"
-		>
-			{/* Base gradient */}
-			<div className="absolute inset-0 bg-linear-to-br from-background via-background to-background/95" />
-
-			{/* Aurora blob 1 - top left, moves more dramatically */}
-			<motion.div
-				className="absolute -left-20 -top-20 size-80 rounded-full blur-[80px]"
-				style={{ background: AURORA_COLORS.blob1 }}
-				animate={{
-					x: [0, 80, -40, 60, 0],
-					y: [0, -60, 80, -20, 0],
-					scale: [1, 1.3, 0.8, 1.2, 1],
-					opacity: [0.6, 0.8, 0.5, 0.7, 0.6],
-				}}
-				transition={{
-					duration: 8,
-					repeat: Infinity,
-					ease: "easeInOut",
-				}}
-			/>
-
-			{/* Aurora blob 2 - right side, sweeping motion */}
-			<motion.div
-				className="absolute -right-20 top-1/4 size-72 rounded-full blur-[70px]"
-				style={{ background: AURORA_COLORS.blob2 }}
-				animate={{
-					x: [0, -60, 40, -80, 0],
-					y: [0, 100, -60, 40, 0],
-					scale: [1, 0.7, 1.4, 0.9, 1],
-					opacity: [0.5, 0.7, 0.4, 0.8, 0.5],
-				}}
-				transition={{
-					duration: 10,
-					repeat: Infinity,
-					ease: "easeInOut",
-				}}
-			/>
-
-			{/* Aurora blob 3 - bottom, large sweeping */}
-			<motion.div
-				className="absolute -bottom-32 left-1/4 size-96 rounded-full blur-[100px]"
-				style={{ background: AURORA_COLORS.blob3 }}
-				animate={{
-					x: [0, 100, -60, 40, 0],
-					y: [0, -80, 40, -60, 0],
-					scale: [1, 1.2, 0.75, 1.1, 1],
-					opacity: [0.4, 0.6, 0.8, 0.5, 0.4],
-				}}
-				transition={{
-					duration: 12,
-					repeat: Infinity,
-					ease: "easeInOut",
-				}}
-			/>
-
-			{/* Aurora blob 4 - center accent, faster movement */}
-			<motion.div
-				className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 size-64 rounded-full blur-[60px]"
-				style={{ background: "rgba(192, 132, 252, 0.25)" }}
-				animate={{
-					x: [0, -50, 70, -30, 0],
-					y: [0, 60, -40, 80, 0],
-					scale: [0.8, 1.2, 0.9, 1.3, 0.8],
-					opacity: [0.3, 0.5, 0.2, 0.4, 0.3],
-				}}
-				transition={{
-					duration: 6,
-					repeat: Infinity,
-					ease: "easeInOut",
-				}}
-			/>
-		</div>
-	);
 }
 
 export function MobileSidebarFullscreen({
@@ -183,8 +97,7 @@ export function MobileSidebarFullscreen({
 						aria-modal="true"
 						aria-label={t("mobileSidebarNavigation")}
 					>
-						{/* Aurora background */}
-						<AuroraBackground />
+						<ShaderBackdrop position="absolute" />
 
 						{/* Content container */}
 						<div className="relative flex h-full flex-col">
