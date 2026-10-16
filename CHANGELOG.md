@@ -1,3 +1,10 @@
+# [1.15.0-rc.3](https://github.com/janovix/aml/compare/v1.15.0-rc.2...v1.15.0-rc.3) (2026-10-16)
+
+
+### Features
+
+* **brand:** rebrand visible Janovix branding to Yenio ([56fd0f8](https://github.com/janovix/aml/commit/56fd0f87626be3d73945ea9665289733ed0e0a73))
+
 # [1.15.0-rc.2](https://github.com/janovix/aml/compare/v1.15.0-rc.1...v1.15.0-rc.2) (2026-05-19)
 
 
