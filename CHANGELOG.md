@@ -1,3 +1,10 @@
+# [1.15.0-rc.4](https://github.com/janovix/aml/compare/v1.15.0-rc.3...v1.15.0-rc.4) (2026-10-16)
+
+
+### Features
+
+* **shader:** add ShaderBackdrop and ShaderField components for enhanced visual effects ([af64d0f](https://github.com/janovix/aml/commit/af64d0f81ab5c57237750abd246c5087fba1c047))
+
 # [1.15.0-rc.3](https://github.com/janovix/aml/compare/v1.15.0-rc.2...v1.15.0-rc.3) (2026-10-16)
 
 
