@@ -2,7 +2,7 @@
  * Cookie utilities for cross-subdomain storage
  *
  * Provides functions to read/write cookies with root domain support,
- * enabling shared preferences (theme, language) across all Yenio apps.
+ * enabling shared preferences (theme, language) across all Janovix apps.
  */
 
 export type JanovixEnvironment = "local" | "preview" | "dev" | "production";

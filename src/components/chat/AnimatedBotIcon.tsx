@@ -2016,11 +2016,14 @@ export function AnimatedBotIcon({
 		setMounted(true);
 	}, []);
 
-	// Theme-aware colors on the Yenio primary hue (oklch 260.13).
+	// Theme-aware colors
+	// Light mode: Purple (hue ~293)
+	// Dark mode: Pink (hue ~307)
 	const colors = useMemo(() => {
 		const isDark = mounted && resolvedTheme === "dark";
-		const hue = 260;
-		const chroma = isDark ? 0.12 : 0.18;
+		// Pink for dark, Purple for light
+		const hue = isDark ? 307 : 293;
+		const chroma = isDark ? 0.11 : 0.22;
 
 		return {
 			// Main helmet gradient
@@ -2079,7 +2082,7 @@ export function AnimatedBotIcon({
 			aria-label={`Bot ${expression}`}
 		>
 			<defs>
-				{/* Theme-aware metallic gradient for helmet — Yenio blue */}
+				{/* Theme-aware metallic gradient for helmet - Purple in light, Pink in dark */}
 				<linearGradient id="helmetMain" x1="0%" y1="0%" x2="100%" y2="100%">
 					<stop offset="0%" stopColor={colors.mainStart} />
 					<stop offset="40%" stopColor={colors.mainMid} />

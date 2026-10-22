@@ -210,10 +210,15 @@ describe("DashboardLayout", () => {
 		// Check for Logo SVG element (should be in sidebar header)
 		// When sidebar is open (defaultOpen={true}), OrganizationSwitcher shows "Crear organización"
 		// When collapsed, it shows the icon variant. Check for either the logo or the organization switcher
-		expect(screen.getAllByText("Yenio").length).toBeGreaterThan(0);
+		const logoSvg = document.querySelector('svg[viewBox="0 0 102 16"]');
+		const logoIcon = document.querySelector('svg[viewBox="0 0 200 200"]');
+		const orgSwitcher = screen.queryByText("Crear organización");
+
+		// Logo should be present either as full logo, icon, or organization switcher should be visible
+		expect(logoSvg || logoIcon || orgSwitcher).toBeTruthy();
 	});
 
-	it("renders footer with Yenio logo at the bottom", () => {
+	it("renders footer with Janovix logo at the bottom", () => {
 		renderWithProviders(
 			<DashboardLayout>
 				<div>Test</div>
@@ -224,7 +229,9 @@ describe("DashboardLayout", () => {
 		const footer = document.querySelector("footer");
 		expect(footer).toBeInTheDocument();
 
-		expect(footer).toHaveTextContent("Yenio");
+		// Check that the footer contains the Janovix text logo (viewBox 0 0 102 16)
+		const footerLogo = footer?.querySelector('svg[viewBox="0 0 102 16"]');
+		expect(footerLogo).toBeInTheDocument();
 	});
 
 	it("shows data environment badge in footer when not production", () => {

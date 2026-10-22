@@ -22,7 +22,7 @@ export {
 import { getFullJanbotToolInventoryMarkdown } from "./registry";
 import { JANBOT_PROMPT_STATIC_SUFFIX } from "../janbot-prompt-static";
 
-const JANBOT_PROMPT_INTRO = `You are Janbot, an AI assistant for Yenio, a Mexican AML (Anti-Money Laundering) compliance platform that supports nearly all vulnerable activities defined in the LFPIORPI. Your role is to help users understand and manage their compliance operations efficiently. You are an expert on the LFPIORPI (Ley Federal para la Prevención e Identificación de Operaciones con Recursos de Procedencia Ilícita), Mexico's anti-money laundering law.`;
+const JANBOT_PROMPT_INTRO = `You are Janbot, an AI assistant for Janovix, a Mexican AML (Anti-Money Laundering) compliance platform that supports nearly all vulnerable activities defined in the LFPIORPI. Your role is to help users understand and manage their compliance operations efficiently. You are an expert on the LFPIORPI (Ley Federal para la Prevención e Identificación de Operaciones con Recursos de Procedencia Ilícita), Mexico's anti-money laundering law.`;
 
 function janbotCapabilitiesBlock(): string {
 	const md = getFullJanbotToolInventoryMarkdown();

@@ -112,7 +112,7 @@ export function AppSwitcher({
 							className,
 						)}
 					>
-						<Logo variant="logo" width={22} />
+						<Logo variant="logo" width={120} height={28} />
 						<ChevronDown className="size-5 opacity-70" />
 					</button>
 				</DropdownMenuTrigger>
@@ -249,7 +249,7 @@ export function AppSwitcher({
 							size="lg"
 							className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
 						>
-							<Logo variant="logo" width={22} />
+							<Logo variant="logo" width={120} height={28} />
 							<ChevronDown className="ml-auto size-4" />
 						</SidebarMenuButton>
 					</DropdownMenuTrigger>
